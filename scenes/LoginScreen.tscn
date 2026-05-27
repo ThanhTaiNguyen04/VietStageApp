@@ -1,0 +1,197 @@
+[gd_scene load_steps=5 format=3 uid="uid://login_screen_001"]
+
+[ext_resource type="Script" path="res://scripts/LoginScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/bg_login.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui_logo.jpg" id="3_logo"]
+[ext_resource type="FontFile" path="res://assets/fonts/Nunito.ttf" id="4_font"]
+
+[node name="LoginScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BGOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.03, 0.01, 0.005, 0.65)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="PhoneCard" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(440, 620)
+layout_mode = 2
+
+[node name="Inner" type="MarginContainer" parent="Center/PhoneCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 44
+theme_override_constants/margin_right = 44
+theme_override_constants/margin_top = 44
+theme_override_constants/margin_bottom = 36
+
+[node name="VBox" type="VBoxContainer" parent="Center/PhoneCard/Inner"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LogoRect" type="TextureRect" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("3_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Gap1" type="Control" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="AppName" type="Label" parent="Center/PhoneCard/Inner/VBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 46
+text = "VietStage"
+horizontal_alignment = 1
+
+[node name="AppSub" type="Label" parent="Center/PhoneCard/Inner/VBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 16
+text = "Học nhạc cụ dân tộc Việt Nam"
+horizontal_alignment = 1
+
+[node name="Gap2" type="Control" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+
+[node name="Tabs" type="HBoxContainer" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TabLogin" type="Button" parent="Center/PhoneCard/Inner/VBox/Tabs"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 19
+text = "Đăng nhập"
+
+[node name="TabRegister" type="Button" parent="Center/PhoneCard/Inner/VBox/Tabs"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 19
+text = "Đăng ký"
+
+[node name="Gap3" type="Control" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+
+[node name="Form" type="VBoxContainer" parent="Center/PhoneCard/Inner/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="UserField" type="VBoxContainer" parent="Center/PhoneCard/Inner/VBox/Form"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="UserLabel" type="Label" parent="Center/PhoneCard/Inner/VBox/Form/UserField"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "TÊN ĐĂNG NHẬP"
+
+[node name="UserEdit" type="LineEdit" parent="Center/PhoneCard/Inner/VBox/Form/UserField"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Tên tài khoản..."
+
+[node name="EmailField" type="VBoxContainer" parent="Center/PhoneCard/Inner/VBox/Form"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="EmailLabel" type="Label" parent="Center/PhoneCard/Inner/VBox/Form/EmailField"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "EMAIL"
+
+[node name="EmailEdit" type="LineEdit" parent="Center/PhoneCard/Inner/VBox/Form/EmailField"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Địa chỉ email..."
+
+[node name="PassField" type="VBoxContainer" parent="Center/PhoneCard/Inner/VBox/Form"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PassLabel" type="Label" parent="Center/PhoneCard/Inner/VBox/Form/PassField"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "MẬT KHẨU"
+
+[node name="PassEdit" type="LineEdit" parent="Center/PhoneCard/Inner/VBox/Form/PassField"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+secret = true
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Mật khẩu..."
+
+[node name="Gap4" type="Control" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+
+[node name="ErrorLabel" type="Label" parent="Center/PhoneCard/Inner/VBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+
+[node name="Gap5" type="Control" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="SubmitBtn" type="Button" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 22
+text = "Bắt đầu học"
+
+[node name="Gap6" type="Control" parent="Center/PhoneCard/Inner/VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="FooterLabel" type="Label" parent="Center/PhoneCard/Inner/VBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 13
+text = "VietStage  ·  Đồ Án Tốt Nghiệp 2025"
+horizontal_alignment = 1

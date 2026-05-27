@@ -1,0 +1,496 @@
+[gd_scene load_steps=4 format=3 uid="uid://main_menu_001"]
+
+[ext_resource type="Script"    path="res://scripts/MainMenu.gd"                     id="1_script"]
+[ext_resource type="Texture2D" uid="uid://d1ljdpk4eu6fs" path="res://assets/textures/bg_main_menu.png"   id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="3_char"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BGOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.025, 0.01, 0.88)
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 0
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+
+[node name="TopMargin" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="TopHBox" type="HBoxContainer" parent="Root/TopBar/TopMargin"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Logo" type="Label" parent="Root/TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 36
+text = "VietStage"
+
+[node name="NavSpacer" type="Control" parent="Root/TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NavBtns" type="HBoxContainer" parent="Root/TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+alignment = 2
+theme_override_constants/separation = 8
+
+[node name="BtnHome" type="Button" parent="Root/TopBar/TopMargin/TopHBox/NavBtns"]
+custom_minimum_size = Vector2(160, 70)
+layout_mode = 2
+flat = true
+text = "Trang chủ"
+theme_override_font_sizes/font_size = 20
+
+[node name="BtnCourses" type="Button" parent="Root/TopBar/TopMargin/TopHBox/NavBtns"]
+custom_minimum_size = Vector2(160, 70)
+layout_mode = 2
+flat = true
+text = "Bài học"
+theme_override_font_sizes/font_size = 20
+
+[node name="BtnProgress" type="Button" parent="Root/TopBar/TopMargin/TopHBox/NavBtns"]
+custom_minimum_size = Vector2(160, 70)
+layout_mode = 2
+flat = true
+text = "Tiến độ"
+theme_override_font_sizes/font_size = 20
+
+[node name="BtnAccount" type="Button" parent="Root/TopBar/TopMargin/TopHBox/NavBtns"]
+custom_minimum_size = Vector2(160, 70)
+layout_mode = 2
+flat = true
+text = "Tài khoản"
+theme_override_font_sizes/font_size = 20
+
+[node name="StatsSpacer" type="Control" parent="Root/TopBar/TopMargin/TopHBox"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+
+[node name="StatsHBox" type="HBoxContainer" parent="Root/TopBar/TopMargin/TopHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 28
+
+[node name="StreakPill" type="PanelContainer" parent="Root/TopBar/TopMargin/TopHBox/StatsHBox"]
+layout_mode = 2
+
+[node name="SPMargin" type="MarginContainer" parent="Root/TopBar/TopMargin/TopHBox/StatsHBox/StreakPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="SPLabel" type="Label" parent="Root/TopBar/TopMargin/TopHBox/StatsHBox/StreakPill/SPMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "7 ngày"
+
+[node name="XPPill" type="PanelContainer" parent="Root/TopBar/TopMargin/TopHBox/StatsHBox"]
+layout_mode = 2
+
+[node name="XPMargin" type="MarginContainer" parent="Root/TopBar/TopMargin/TopHBox/StatsHBox/XPPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="XPLabel" type="Label" parent="Root/TopBar/TopMargin/TopHBox/StatsHBox/XPPill/XPMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "1240 XP"
+
+[node name="Content" type="HBoxContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftPanel" type="PanelContainer" parent="Root/Content"]
+custom_minimum_size = Vector2(440, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LeftMargin" type="MarginContainer" parent="Root/Content/LeftPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_bottom = 36
+
+[node name="LeftVBox" type="VBoxContainer" parent="Root/Content/LeftPanel/LeftMargin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="GreetLabel" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Xin chào!"
+
+[node name="NameLabel" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Linh"
+
+[node name="AvatarCircle" type="PanelContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="AvatarThumb" type="TextureRect" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/AvatarCircle"]
+layout_mode = 2
+texture = ExtResource("3_char")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SepLine" type="HSeparator" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox"]
+layout_mode = 2
+
+[node name="SectionTitle" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "BÀI HỌC HÔM NAY"
+
+[node name="LessonList" type="VBoxContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="LCard1" type="PanelContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList"]
+layout_mode = 2
+
+[node name="LC1M" type="MarginContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard1"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="LC1H" type="HBoxContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard1/LC1M"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LC1Icon" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard1/LC1M/LC1H"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 32
+text = "4"
+custom_minimum_size = Vector2(44, 0)
+
+[node name="LC1Info" type="VBoxContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard1/LC1M/LC1H"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="LC1Name" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard1/LC1M/LC1H/LC1Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Bài 4"
+
+[node name="LC1Sub" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard1/LC1M/LC1H/LC1Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Nhấn dây - Rung âm"
+
+[node name="LCard2" type="PanelContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList"]
+layout_mode = 2
+
+[node name="LC2M" type="MarginContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard2"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="LC2H" type="HBoxContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard2/LC2M"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LC2Icon" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard2/LC2M/LC2H"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 32
+text = "5"
+custom_minimum_size = Vector2(44, 0)
+
+[node name="LC2Info" type="VBoxContainer" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard2/LC2M/LC2H"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="LC2Name" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard2/LC2M/LC2H/LC2Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Bài 5"
+
+[node name="LC2Sub" type="Label" parent="Root/Content/LeftPanel/LeftMargin/LeftVBox/LessonList/LCard2/LC2M/LC2H/LC2Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Lướt âm - Song thanh"
+
+[node name="RightPanel" type="Control" parent="Root/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="RightMargin" type="MarginContainer" parent="Root/Content/RightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_bottom = 36
+
+[node name="RightVBox" type="VBoxContainer" parent="Root/Content/RightPanel/RightMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 28
+
+[node name="FeaturedCard" type="PanelContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FCMargin" type="MarginContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 52
+theme_override_constants/margin_right = 52
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="FCRow" type="HBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin"]
+layout_mode = 2
+theme_override_constants/separation = 48
+
+[node name="FCText" type="VBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="CourseTag" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "KHÓA HỌC CƠ BẢN"
+
+[node name="CourseTitle" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 52
+text = "Đàn Tranh Cơ Bản"
+autowrap_mode = 3
+
+[node name="CourseSub" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Bài 4: Kỹ thuật nhấn dây & rung âm"
+autowrap_mode = 3
+
+[node name="ProgressRow" type="HBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText"]
+layout_mode = 2
+theme_override_constants/separation = 18
+size_flags_vertical = 0
+
+[node name="ProgBar" type="ProgressBar" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText/ProgressRow"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 60.0
+show_percentage = false
+
+[node name="ProgPct" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText/ProgressRow"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 18
+text = "60%"
+
+[node name="BtnContinue" type="Button" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow/FCText"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Tiếp tục học"
+
+[node name="FCChar" type="TextureRect" parent="Root/Content/RightPanel/RightMargin/RightVBox/FeaturedCard/FCMargin/FCRow"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("3_char")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BottomRow" type="HBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="MiniCard1" type="PanelContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MC1M" type="MarginContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard1"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="MC1V" type="VBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard1/MC1M"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="MC1Icon" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard1/MC1M/MC1V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "4"
+horizontal_alignment = 1
+
+[node name="MC1Name" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard1/MC1M/MC1V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Bài 4"
+horizontal_alignment = 1
+
+[node name="MC1Sub" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard1/MC1M/MC1V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Nhấn dây"
+horizontal_alignment = 1
+
+[node name="MiniCard2" type="PanelContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MC2M" type="MarginContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard2"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="MC2V" type="VBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard2/MC2M"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="MC2Icon" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard2/MC2M/MC2V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "5"
+horizontal_alignment = 1
+
+[node name="MC2Name" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard2/MC2M/MC2V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Bài 5"
+horizontal_alignment = 1
+
+[node name="MC2Sub" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard2/MC2M/MC2V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Lướt âm"
+horizontal_alignment = 1
+
+[node name="MiniCard3" type="PanelContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MC3M" type="MarginContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard3"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="MC3V" type="VBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard3/MC3M"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="MC3Icon" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard3/MC3M/MC3V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "L"
+horizontal_alignment = 1
+
+[node name="MC3Name" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard3/MC3M/MC3V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Bài 6"
+horizontal_alignment = 1
+
+[node name="MC3Sub" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/MiniCard3/MC3M/MC3V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Chưa mở"
+horizontal_alignment = 1
+
+[node name="StreakCard" type="PanelContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SCM" type="MarginContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/StreakCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="SCV" type="VBoxContainer" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/StreakCard/SCM"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="SCIcon" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/StreakCard/SCM/SCV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "F"
+horizontal_alignment = 1
+
+[node name="SCValue" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/StreakCard/SCM/SCV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "7 ngày"
+horizontal_alignment = 1
+
+[node name="SCSub" type="Label" parent="Root/Content/RightPanel/RightMargin/RightVBox/BottomRow/StreakCard/SCM/SCV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Streak"
+horizontal_alignment = 1

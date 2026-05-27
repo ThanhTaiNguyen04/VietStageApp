@@ -1,0 +1,83 @@
+[gd_scene load_steps=3 format=3 uid="uid://splash_screen_001"]
+
+[ext_resource type="Script"    path="res://scripts/SplashScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui_logo.jpg" id="2_logo"]
+
+[node name="SplashScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.04, 0.015, 1.0)
+
+[node name="DecorLeft" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_right = 6
+color = Color(0.95, 0.72, 0.18, 0.55)
+
+[node name="DecorRight" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -6
+color = Color(0.95, 0.72, 0.18, 0.55)
+
+[node name="Center" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+offset_left = -340
+offset_top = -280
+offset_right = 340
+offset_bottom = 280
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="LogoRect" type="TextureRect" parent="Center"]
+custom_minimum_size = Vector2(360, 360)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="AppName" type="Label" parent="Center"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 84
+text = "VietStage"
+horizontal_alignment = 1
+
+[node name="Tagline" type="Label" parent="Center"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Học đàn tranh dễ nhìn, dễ hiểu, dễ nhớ"
+horizontal_alignment = 1
+
+[node name="OrnamentLine" type="ColorRect" parent="Center"]
+custom_minimum_size = Vector2(420, 2)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.95, 0.72, 0.18, 0.6)
+
+[node name="VersionLabel" type="Label" parent="Center"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "v1.0.0  ·  Đàn tranh"
+horizontal_alignment = 1

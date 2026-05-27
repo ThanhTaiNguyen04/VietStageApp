@@ -1,0 +1,232 @@
+[gd_scene load_steps=2 format=3 uid="uid://instrument_select_001"]
+
+[ext_resource type="Script" path="res://scripts/InstrumentSelect.gd" id="1_script"]
+
+[node name="InstrumentSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.04, 0.015, 1.0)
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 0
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+text = "Back"
+theme_override_font_sizes/font_size = 20
+
+[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 32
+text = "Chọn nhạc cụ"
+
+[node name="CardsArea" type="MarginContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="CardsHBox" type="HBoxContainer" parent="Root/CardsArea"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="CardDanTranh" type="PanelContainer" parent="Root/CardsArea/CardsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="DTMargin" type="MarginContainer" parent="Root/CardsArea/CardsHBox/CardDanTranh"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="DTVBox" type="VBoxContainer" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="DTIcon" type="Label" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin/DTVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "4"
+horizontal_alignment = 1
+
+[node name="DTName" type="Label" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin/DTVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Dan Tranh"
+horizontal_alignment = 1
+
+[node name="DTDesc" type="Label" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin/DTVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "16 day · 72 bai hoc · 3 cap do"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="DTBar" type="ProgressBar" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin/DTVBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+value = 60.0
+show_percentage = false
+
+[node name="DTPct" type="Label" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin/DTVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "60% hoan thanh"
+horizontal_alignment = 1
+
+[node name="DTBtn" type="Button" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTMargin/DTVBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Hoc ngay"
+
+[node name="CardSaoTruc" type="PanelContainer" parent="Root/CardsArea/CardsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="STMargin" type="MarginContainer" parent="Root/CardsArea/CardsHBox/CardSaoTruc"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="STVBox" type="VBoxContainer" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="STIcon" type="Label" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin/STVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "S"
+horizontal_alignment = 1
+
+[node name="STName" type="Label" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin/STVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Sao Truc"
+horizontal_alignment = 1
+
+[node name="STDesc" type="Label" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin/STVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Sao tre · 58 bai hoc · 2 cap do"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="STBar" type="ProgressBar" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin/STVBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+value = 0.0
+show_percentage = false
+
+[node name="STPct" type="Label" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin/STVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Chua bat dau"
+horizontal_alignment = 1
+
+[node name="STBtn" type="Button" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STMargin/STVBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Bat dau"
+
+[node name="CardDanBau" type="PanelContainer" parent="Root/CardsArea/CardsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="DBMargin" type="MarginContainer" parent="Root/CardsArea/CardsHBox/CardDanBau"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="DBVBox" type="VBoxContainer" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="DBIcon" type="Label" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin/DBVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "L"
+horizontal_alignment = 1
+
+[node name="DBName" type="Label" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin/DBVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Dan Bau"
+horizontal_alignment = 1
+
+[node name="DBDesc" type="Label" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin/DBVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Doc huyen cam · 45 bai hoc"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="DBLocked" type="Label" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin/DBVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "L"
+horizontal_alignment = 1
+
+[node name="DBSub" type="Label" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin/DBVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Sap ra mat"
+horizontal_alignment = 1
+
+[node name="DBBtn" type="Button" parent="Root/CardsArea/CardsHBox/CardDanBau/DBMargin/DBVBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Sap ra mat"
+disabled = true

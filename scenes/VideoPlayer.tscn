@@ -1,0 +1,176 @@
+[gd_scene load_steps=3 format=3 uid="uid://video_player_001"]
+
+[ext_resource type="Script" path="res://scripts/VideoPlayer.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://character_linh_ref" path="res://assets/textures/character_linh.jpg" id="2_linh"]
+
+[node name="VideoPlayer" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.03, 0.012, 1.0)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayerCard" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(1000, 720)
+layout_mode = 2
+
+[node name="CardM" type="MarginContainer" parent="Center/PlayerCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="PlayerVBox" type="VBoxContainer" parent="Center/PlayerCard/CardM"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TopRow" type="HBoxContainer" parent="Center/PlayerCard/CardM/PlayerVBox"]
+layout_mode = 2
+
+[node name="BackBtn" type="Button" parent="Center/PlayerCard/CardM/PlayerVBox/TopRow"]
+custom_minimum_size = Vector2(140, 42)
+layout_mode = 2
+text = "Quay lại"
+
+[node name="Spacer" type="Control" parent="Center/PlayerCard/CardM/PlayerVBox/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VideoTitle" type="Label" parent="Center/PlayerCard/CardM/PlayerVBox/TopRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Bài Học Video: Giới Thiệu Khóa Học"
+horizontal_alignment = 2
+
+[node name="VideoFrame" type="PanelContainer" parent="Center/PlayerCard/CardM/PlayerVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FrameM" type="MarginContainer" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="ScreenAnchor" type="Control" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScreenBG" type="ColorRect" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.07, 0.03, 1.0)
+
+[node name="LinhTexture" type="TextureRect" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_linh")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="PlayOverlay" type="PanelContainer" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -44.0
+offset_top = -44.0
+offset_right = 44.0
+offset_bottom = 44.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlayText" type="Label" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/PlayOverlay"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "▶"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubPanel" type="PanelContainer" parent="Center/PlayerCard/CardM/PlayerVBox"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+
+[node name="SubM" type="MarginContainer" parent="Center/PlayerCard/CardM/PlayerVBox/SubPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="SubLabel" type="Label" parent="Center/PlayerCard/CardM/PlayerVBox/SubPanel/SubM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Bấm Play để xem video hướng dẫn từ cô giáo Linh."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ControlRow" type="HBoxContainer" parent="Center/PlayerCard/CardM/PlayerVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PlayBtn" type="Button" parent="Center/PlayerCard/CardM/PlayerVBox/ControlRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "▶"
+
+[node name="TimeProgress" type="ProgressBar" parent="Center/PlayerCard/CardM/PlayerVBox/ControlRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+show_percentage = false
+
+[node name="TimeLabel" type="Label" parent="Center/PlayerCard/CardM/PlayerVBox/ControlRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "0:00 / 0:15"
+
+[node name="FooterRow" type="HBoxContainer" parent="Center/PlayerCard/CardM/PlayerVBox"]
+layout_mode = 2
+
+[node name="SkipBtn" type="Button" parent="Center/PlayerCard/CardM/PlayerVBox/FooterRow"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+text = "Xem sau"
+
+[node name="Spacer" type="Control" parent="Center/PlayerCard/CardM/PlayerVBox/FooterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CompleteBtn" type="Button" parent="Center/PlayerCard/CardM/PlayerVBox/FooterRow"]
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+text = "Hoàn Thành Video"

@@ -1,0 +1,311 @@
+[gd_scene load_steps=3 format=3 uid="uid://progress_screen_001"]
+
+[ext_resource type="Script"    path="res://scripts/ProgressScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="2_char"]
+
+[node name="ProgressScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.04, 0.015, 1.0)
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 0
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+text = "Back"
+theme_override_font_sizes/font_size = 20
+
+[node name="ExportBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+text = "Xuất"
+theme_override_font_sizes/font_size = 16
+
+[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 32
+text = "Tiến độ"
+
+[node name="Content" type="HBoxContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ProfilePanel" type="PanelContainer" parent="Root/Content"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ProfileM" type="MarginContainer" parent="Root/Content/ProfilePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_bottom = 28
+
+[node name="ProfileV" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="AvatarCircle" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+custom_minimum_size = Vector2(130, 130)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="AvatarThumb" type="TextureRect" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/AvatarCircle"]
+layout_mode = 2
+texture = ExtResource("2_char")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlayerName" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Linh"
+horizontal_alignment = 1
+
+[node name="LevelBadge" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="LBM" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="LBLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge/LBM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Cấp độ 8"
+horizontal_alignment = 1
+
+[node name="Sep" type="HSeparator" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+layout_mode = 2
+
+[node name="LvlHBox" type="HBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+layout_mode = 2
+
+[node name="LvlLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "Cấp độ 8"
+
+[node name="XpLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "1.240 / 2.000 XP"
+
+[node name="LvlBar" type="ProgressBar" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+value = 62.0
+show_percentage = false
+
+[node name="StatGrid" type="GridContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
+columns = 2
+layout_mode = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+
+[node name="S1" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
+layout_mode = 2
+
+[node name="S1M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="S1V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="S1Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "F"
+horizontal_alignment = 1
+
+[node name="S1Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "7"
+horizontal_alignment = 1
+
+[node name="S1Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Ngày"
+horizontal_alignment = 1
+
+[node name="S2" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
+layout_mode = 2
+
+[node name="S2M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="S2V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="S2Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "*"
+horizontal_alignment = 1
+
+[node name="S2Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "1.240"
+horizontal_alignment = 1
+
+[node name="S2Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "XP"
+horizontal_alignment = 1
+
+[node name="S3" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
+layout_mode = 2
+
+[node name="S3M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="S3V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="S3Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "T"
+horizontal_alignment = 1
+
+[node name="S3Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "14h"
+horizontal_alignment = 1
+
+[node name="S3Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Luyện tập"
+horizontal_alignment = 1
+
+[node name="S4" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
+layout_mode = 2
+
+[node name="S4M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="S4V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="S4Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "A"
+horizontal_alignment = 1
+
+[node name="S4Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "78%"
+horizontal_alignment = 1
+
+[node name="S4Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Chính xác"
+horizontal_alignment = 1
+
+[node name="AchPanel" type="PanelContainer" parent="Root/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="AchM" type="MarginContainer" parent="Root/Content/AchPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_bottom = 28
+
+[node name="AchV" type="VBoxContainer" parent="Root/Content/AchPanel/AchM"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="AchTitle" type="Label" parent="Root/Content/AchPanel/AchM/AchV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Huy hiệu"
+
+[node name="AchGrid" type="GridContainer" parent="Root/Content/AchPanel/AchM/AchV"]
+columns = 4
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
