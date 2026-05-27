@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://course_map_001"]
+[gd_scene load_steps=2 format=3 uid="uid://course_map_001"]
 
 [ext_resource type="Script" path="res://scripts/CourseMap.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/CourseSidebarTab.gd" id="2_tab_script"]
 
 [node name="CourseMap" type="Control"]
 layout_mode = 3
@@ -31,55 +30,51 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="LeftSidebar" type="PanelContainer" parent="RootHBox"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 
-[node name="SidebarM" type="MarginContainer" parent="RootHBox/LeftSidebar"]
+[node name="SideM" type="MarginContainer" parent="RootHBox/LeftSidebar"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-**theme_override_constants/margin_right = 16**
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_bottom = 32
 
-[node name="SidebarV" type="VBoxContainer" parent="RootHBox/LeftSidebar/SidebarM"]
+[node name="SideV" type="VBoxContainer" parent="RootHBox/LeftSidebar/SideM"]
 layout_mode = 2
-theme_override_constants/separation = 32
+theme_override_constants/separation = 8
+alignment = 0
 
-[node name="MenuBtn" type="Button" parent="RootHBox/LeftSidebar/SidebarM/SidebarV"]
-custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
-flat = true
-text = ""
-script = ExtResource("2_tab_script")
-
-[node name="Spacer" type="Control" parent="RootHBox/LeftSidebar/SidebarM/SidebarV"]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-
-[node name="TabCourses" type="Button" parent="RootHBox/LeftSidebar/SidebarM/SidebarV"]
-custom_minimum_size = Vector2(0, 80)
+[node name="BtnMenu" type="Button" parent="RootHBox/LeftSidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 flat = true
-text = "Bài học"
-script = ExtResource("2_tab_script")
-current_type = 1
-is_active = true
 
-[node name="TabSongs" type="Button" parent="RootHBox/LeftSidebar/SidebarM/SidebarV"]
-custom_minimum_size = Vector2(0, 80)
+[node name="TopSpacer" type="Control" parent="RootHBox/LeftSidebar/SideM/SideV"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+
+[node name="BtnCourses" type="Button" parent="RootHBox/LeftSidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+flat = true
+text = "Khóa học"
+
+[node name="BtnSongs" type="Button" parent="RootHBox/LeftSidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 140)
 layout_mode = 2
 flat = true
 text = "Bài hát"
-script = ExtResource("2_tab_script")
-current_type = 2
 
-[node name="TabGames" type="Button" parent="RootHBox/LeftSidebar/SidebarM/SidebarV"]
-custom_minimum_size = Vector2(0, 80)
+[node name="BotSpacer" type="Control" parent="RootHBox/LeftSidebar/SideM/SideV"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BtnAccount" type="Button" parent="RootHBox/LeftSidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 130)
 layout_mode = 2
 flat = true
-text = "Trò chơi"
-script = ExtResource("2_tab_script")
-current_type = 3
+text = "Hồ sơ"
 
 [node name="RightContent" type="VBoxContainer" parent="RootHBox"]
 layout_mode = 2

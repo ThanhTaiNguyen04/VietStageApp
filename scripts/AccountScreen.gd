@@ -32,12 +32,29 @@ func _ready() -> void:
 	logout_btn.pressed.connect(_on_logout)
 	_make_button_bouncy(back_btn)
 	_make_button_bouncy(logout_btn)
+	
+	# Connect Status Pill to toggle premium
+	var status_pill := $Root/Content/LeftCard/LeftM/LeftV/StatusPill as PanelContainer
+	status_pill.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	status_pill.pivot_offset = Vector2(100, 16) # default half size estimate
+	status_pill.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			var current_premium : bool = SecureDataManager.data.get("is_premium", false)
+			SecureDataManager.data["is_premium"] = not current_premium
+			SecureDataManager.save_data()
+			_update_premium_status()
+			
+			# Pop animation
+			var t := create_tween()
+			t.tween_property(status_pill, "scale", Vector2(1.08, 1.08), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			t.tween_property(status_pill, "scale", Vector2.ONE, 0.08).set_trans(Tween.TRANS_BACK)
+	)
 
 func _set_labels() -> void:
 	page_title.text = "Tài Khoản Của Tôi"
 	name_edit.text = "Linh"
 	email_lbl.text = "linh.vietstage@gmail.com"
-	status_lbl.text = "TÀI KHOẢN PREMIUM"
+	_update_premium_status()
 	logout_btn.text = "Đăng Xuất"
 	stats_title.text = "Thông Tin & Tiến Trình Học"
 	ver_label.text = "VietStage v1.0.0 · Đồ Án Tốt Nghiệp · Khoa CNTT"
@@ -47,6 +64,23 @@ func _set_labels() -> void:
 		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Icon") as Label).text = gd[1] as String
 		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Val")  as Label).text = gd[2] as String
 		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Lbl")  as Label).text = gd[3] as String
+
+func _update_premium_status() -> void:
+	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
+	var status_pill := $Root/Content/LeftCard/LeftM/LeftV/StatusPill as PanelContainer
+	if is_prem:
+		status_lbl.text = "⭐ TÀI KHOẢN PREMIUM"
+		var status_s := _flat(Color(0.28, 0.18, 0.03, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75), 30)
+		status_s.shadow_size = 8
+		status_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+		status_pill.add_theme_stylebox_override("panel", status_s)
+		status_lbl.add_theme_color_override("font_color", C_GOLD)
+	else:
+		status_lbl.text = "🔒 NÂNG CẤP PREMIUM (CLICK)"
+		var status_s := _flat(Color(0.12, 0.06, 0.04, 0.5), Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.4), 30)
+		status_s.shadow_size = 0
+		status_pill.add_theme_stylebox_override("panel", status_s)
+		status_lbl.add_theme_color_override("font_color", C_CREAM_DIM)
 
 func _build_theme() -> void:
 	# Top bar style
@@ -87,12 +121,6 @@ func _build_theme() -> void:
 
 	# Email label
 	email_lbl.add_theme_color_override("font_color", C_CREAM_DIM)
-
-	# Status pill
-	var status_s := _flat(Color(0.28, 0.18, 0.03, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75), 30)
-	status_s.shadow_size = 6; status_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.2)
-	($Root/Content/LeftCard/LeftM/LeftV/StatusPill as PanelContainer).add_theme_stylebox_override("panel", status_s)
-	status_lbl.add_theme_color_override("font_color", C_GOLD)
 
 	# Logout Button - red lacquer gold
 	var btn_s := _flat(Color(0.12, 0.06, 0.04, 0.5), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5), 18)

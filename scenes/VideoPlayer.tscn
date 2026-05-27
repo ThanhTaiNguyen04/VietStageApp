@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://video_player_001"]
 
 [ext_resource type="Script" path="res://scripts/VideoPlayer.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://character_linh_ref" path="res://assets/textures/character_linh.jpg" id="2_linh"]
+[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="2_linh"]
 
 [node name="VideoPlayer" type="Control"]
 layout_mode = 3

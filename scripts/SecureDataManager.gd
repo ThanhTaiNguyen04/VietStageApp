@@ -8,6 +8,7 @@ const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLe
 # Default player state synchronized across all scenes
 static var data := {
 	"selected_instrument": "dan_tranh",
+	"is_premium": false,
 	"unlocked_lessons": {
 		"dan_tranh": ["Node1", "Node2"],
 		"sao_truc": ["Node1", "Node2"]

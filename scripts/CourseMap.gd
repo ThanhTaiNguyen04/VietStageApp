@@ -3,7 +3,7 @@ extends Control
 class_name CourseMap
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
-const C_BG_DARK     := Color(0.07, 0.04, 0.015, 1.0)
+const C_BG_DARK     := Color(0.063, 0.024, 0.016, 1.0)
 const C_RED_SON     := Color(0.72, 0.12, 0.08, 1.0)
 const C_RED_SON_DK  := Color(0.38, 0.06, 0.04, 0.95)
 const C_GOLD        := Color(0.95, 0.72, 0.18, 1.0)
@@ -20,11 +20,13 @@ static var video_completed := false
 # ─── Refs ───
 @onready var course_title : Label         = $RootHBox/RightContent/TopBar/TopM/TopH/CourseTitle
 @onready var change_btn   : Button        = $RootHBox/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
-@onready var tab_courses  : Button        = $RootHBox/LeftSidebar/SidebarM/SidebarV/TabCourses
-@onready var tab_songs    : Button        = $RootHBox/LeftSidebar/SidebarM/SidebarV/TabSongs
-@onready var tab_games    : Button        = $RootHBox/LeftSidebar/SidebarM/SidebarV/TabGames
+@onready var btn_menu     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnMenu
+@onready var btn_courses  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnCourses
+@onready var btn_songs    : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnSongs
+@onready var btn_account  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnAccount
 @onready var map_hbox     : HBoxContainer = $RootHBox/RightContent/MapScroll/ScrollM/MapHBox
 
+var _active_side_btn : Button = null
 var _pulse_time := 0.0
 
 func _ready() -> void:
@@ -139,44 +141,44 @@ func _set_labels() -> void:
 		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 
-	tab_courses.text = "Bài học"
-	tab_songs.text = "Bài hát"
+	btn_courses.text = "Khóa học"
+	btn_songs.text = "Bài hát"
+	btn_account.text = "Hồ sơ"
 	change_btn.text = "Đổi nhạc cụ"
 
 func _build_theme() -> void:
-	# Left sidebar - glassmorphism semi-transparent lacquer red with gorgeous right shadow!
-	var side_s := _flat(C_RED_SON_DK, Color(0,0,0,0), 0)
-	side_s.border_width_right = 3
-	side_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0, 0, 0, 0.35)
+	# Left sidebar - match MainMenu exactly!
+	var side_s := _flat_sidebar(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
+	side_s.border_width_right = 2
+	side_s.shadow_size = 16
+	side_s.shadow_color = Color(0, 0, 0, 0.5)
 	side_s.shadow_offset = Vector2(4, 0)
 	($RootHBox/LeftSidebar as PanelContainer).add_theme_stylebox_override("panel", side_s)
 
-	# Sidebar tab style (Upgraded to premium 3D bubble style with content margins)
-	var courses_s := _flat(C_RED_SON, C_GOLD, 20, true, 4)
-	courses_s.border_width_left = 6; courses_s.border_width_right = 0; courses_s.border_width_top = 0; courses_s.border_width_bottom = 4
-	courses_s.content_margin_left = 64
-	tab_courses.add_theme_stylebox_override("normal", courses_s)
-	tab_courses.add_theme_color_override("font_color", C_GOLD)
+	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
 
-	var songs_s := _flat(Color(0,0,0,0), Color(0,0,0,0), 20)
-	songs_s.content_margin_left = 64
-	tab_songs.add_theme_stylebox_override("normal", songs_s)
-	tab_songs.add_theme_color_override("font_color", C_CREAM_DIM)
-	
-	var tab_h := _flat(Color(1,1,1,0.06), C_GOLD, 20, false, 2)
-	tab_h.content_margin_left = 64
-	tab_songs.add_theme_stylebox_override("hover", tab_h)
-	tab_songs.add_theme_color_override("font_hover_color", C_CREAM)
+	_style_side_icon_btn(btn_menu, false)
+	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_songs,    false, not is_prem)
+	_style_side_icon_btn(btn_account, false)
 
-	# Style TabGames just like TabSongs!
-	var games_s := _flat(Color(0,0,0,0), Color(0,0,0,0), 20)
-	games_s.content_margin_left = 64
-	tab_games.add_theme_stylebox_override("normal", games_s)
-	tab_games.add_theme_stylebox_override("hover", tab_h)
-	tab_games.add_theme_color_override("font_color", C_CREAM_DIM)
-	tab_games.add_theme_color_override("font_hover_color", C_CREAM)
+	# Clean up any existing IconDraw instances
+	for child in btn_menu.get_children():
+		if child.name == "IconDraw": child.queue_free()
+	for child in btn_courses.get_children():
+		if child.name == "IconDraw": child.queue_free()
+	for child in btn_songs.get_children():
+		if child.name == "IconDraw": child.queue_free()
+	for child in btn_account.get_children():
+		if child.name == "IconDraw": child.queue_free()
+
+	_attach_icon_draw(btn_menu,     0)
+	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_songs,    2, not is_prem)
+	_attach_icon_draw(btn_account,  5)
+
+	_active_side_btn = btn_courses
 
 	# Top bar
 	var top_s := _flat(C_RED_SON_DK, Color(0,0,0,0), 0)
@@ -196,6 +198,115 @@ func _build_theme() -> void:
 	change_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	change_btn.add_theme_color_override("font_color", C_CREAM)
 	change_btn.add_theme_color_override("font_hover_color", C_CREAM)
+
+func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
+	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.22), Color(0, 0, 0, 0), 18)
+	var bg_h := _flat_sidebar(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	var bg_p := _flat_sidebar(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.30) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+
+	bg_n.content_margin_top = 96
+	bg_n.content_margin_bottom = 8
+	bg_h.content_margin_top = 96
+	bg_h.content_margin_bottom = 8
+	bg_p.content_margin_top = 96
+	bg_p.content_margin_bottom = 8
+
+	if is_active:
+		bg_n.border_width_left = 6
+		bg_n.border_width_right = 0; bg_n.border_width_top = 0; bg_n.border_width_bottom = 0
+		bg_n.border_color = C_GOLD
+
+	btn.add_theme_stylebox_override("normal",  bg_n)
+	btn.add_theme_stylebox_override("hover",   bg_h)
+	btn.add_theme_stylebox_override("pressed", bg_p)
+	btn.add_theme_stylebox_override("focus",   _flat_sidebar(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
+	btn.add_theme_color_override("font_color",         C_GOLD if is_active else (C_CREAM_DIM.darkened(0.35) if is_locked else C_CREAM_DIM))
+	btn.add_theme_color_override("font_hover_color",   C_CREAM_DIM.darkened(0.2) if is_locked else C_CREAM)
+	btn.add_theme_color_override("font_pressed_color", C_GOLD if not is_locked else C_CREAM_DIM.darkened(0.35))
+	btn.add_theme_font_size_override("font_size", 22)
+
+func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
+	var ic := Control.new()
+	ic.name = "IconDraw"
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ic.layout_mode = 1
+	ic.anchors_preset = Control.PRESET_CENTER_TOP
+	ic.anchor_left = 0.5; ic.anchor_right = 0.5
+	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
+	ic.offset_left = -40; ic.offset_right = 40
+	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
+	btn.add_child(ic)
+
+func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
+	var sz := c.size
+	var cx := sz.x * 0.5
+	var cy := sz.y * 0.5
+	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
+
+	match t:
+		0: # Hamburger
+			for i in 3:
+				var y := cy - 12.0 + i * 12.0
+				c.draw_line(Vector2(cx - 15, y), Vector2(cx + 15, y), col, 4.0, true)
+		1: # Graduation
+			var pts := PackedVector2Array([
+				Vector2(cx, cy - 14),
+				Vector2(cx + 22, cy - 4),
+				Vector2(cx, cy + 6),
+				Vector2(cx - 22, cy - 4)
+			])
+			c.draw_colored_polygon(pts, col)
+			var base_pts := PackedVector2Array([
+				Vector2(cx - 11, cy + 1),
+				Vector2(cx + 11, cy + 1),
+				Vector2(cx + 8, cy + 8),
+				Vector2(cx - 8, cy + 8)
+			])
+			c.draw_colored_polygon(base_pts, col)
+			c.draw_line(Vector2(cx, cy - 4), Vector2(cx + 15, cy + 3), col, 3.0, true)
+			c.draw_circle(Vector2(cx + 15, cy + 6), 3.5, col)
+		2: # Notes
+			c.draw_rect(Rect2(cx - 13, cy - 14, 5, 20), col)
+			c.draw_rect(Rect2(cx + 3,  cy - 18, 5, 20), col)
+			c.draw_circle(Vector2(cx - 10,  cy + 6), 6.5, col)
+			c.draw_circle(Vector2(cx + 6,  cy + 2), 6.5, col)
+			c.draw_line(Vector2(cx - 8, cy - 14), Vector2(cx + 8, cy - 18), col, 4.0, true)
+		3: # Gamepad
+			c.draw_arc(Vector2(cx, cy), 16, 0, TAU, 32, col, 4.0, true)
+			c.draw_line(Vector2(cx - 10, cy), Vector2(cx - 4, cy), col, 3.5, true)
+			c.draw_line(Vector2(cx + 4, cy), Vector2(cx + 10, cy), col, 3.5, true)
+			c.draw_line(Vector2(cx, cy - 10), Vector2(cx, cy - 4), col, 3.5, true)
+			c.draw_line(Vector2(cx, cy + 4), Vector2(cx, cy + 10), col, 3.5, true)
+			c.draw_circle(Vector2(cx + 7, cy - 3), 3.5, col)
+			c.draw_circle(Vector2(cx + 7, cy + 3), 3.5, col)
+		4: # Bars
+			var bar_w := 8.0
+			var bars := [14.0, 22.0, 11.0, 19.0]
+			var base_y := cy + 14.0
+			for i in bars.size():
+				var x := cx - 18.0 + i * 12.0
+				c.draw_rect(Rect2(x, base_y - bars[i], bar_w, bars[i]), col)
+		5: # Person
+			c.draw_circle(Vector2(cx, cy - 8), 8.5, col)
+			c.draw_arc(Vector2(cx, cy + 14), 14, PI, TAU, 24, col, 4.0, true)
+
+	if is_locked:
+		var lx := cx + 12.0
+		var ly := cy + 10.0
+		# draw small lock
+		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_GOLD, true) # golden lock body
+		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_BG_DARK, false, 1.0)
+		c.draw_arc(Vector2(lx, ly - 2), 3.5, PI, TAU, 8, C_GOLD, 1.5, true)
+
+func _flat_sidebar(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg; s.border_color = border
+	s.border_width_left = 2; s.border_width_right  = 2
+	s.border_width_top  = 2; s.border_width_bottom = 2
+	s.corner_radius_top_left     = radius; s.corner_radius_top_right    = radius
+	s.corner_radius_bottom_left  = radius; s.corner_radius_bottom_right = radius
+	return s
 
 func _setup_nodes() -> void:
 	# Clear out any previous setups and set pivots for bouncy cartoon animations
@@ -318,23 +429,38 @@ func _connect_buttons() -> void:
 	_make_button_bouncy(change_btn)
 	
 	# Connect hamburger menu button back to main menu!
-	var menu_btn := $RootHBox/LeftSidebar/SidebarM/SidebarV/MenuBtn as Button
-	if menu_btn:
-		menu_btn.pressed.connect(func() -> void:
+	if btn_menu:
+		btn_menu.pressed.connect(func() -> void:
 			var t := create_tween()
 			t.tween_property(self, "modulate:a", 0.0, 0.22)
 			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 		)
-		_make_button_bouncy(menu_btn)
+		_make_button_bouncy(btn_menu)
 
-	# Connect TabGames to the MiniGame scene!
-	if tab_games:
-		tab_games.pressed.connect(func() -> void:
+	# Connect btn_songs with Premium Check
+	if btn_songs:
+		btn_songs.pressed.connect(func() -> void:
+			var is_prem : bool = SecureDataManager.data.get("is_premium", false)
+			if is_prem:
+				var t := create_tween()
+				t.tween_property(self, "modulate:a", 0.0, 0.22)
+				t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+			else:
+				VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
+		)
+		_make_button_bouncy(btn_songs)
+
+	# Connect btn_account to the Profile screen
+	if btn_account:
+		btn_account.pressed.connect(func() -> void:
 			var t := create_tween()
 			t.tween_property(self, "modulate:a", 0.0, 0.22)
-			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MiniGame.tscn"))
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
 		)
-		_make_button_bouncy(tab_games)
+		_make_button_bouncy(btn_account)
+
+	if btn_courses:
+		_make_button_bouncy(btn_courses)
 
 	var n1 := map_hbox.get_node("Node1") as PanelContainer
 	n1.gui_input.connect(func(e: InputEvent) -> void:
