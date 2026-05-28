@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/bg_main_menu.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/textures/virtual_artist_mai.jpg" id="3_avatar"]
+[ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://loading_screen_001"]
+[gd_scene load_steps=3 format=3 uid="uid://loading_screen_001"]
 
-[ext_resource type="Script" path="res://scripts/LoadingScreen.gd" id="1_script"]
+[ext_resource type="Script"    path="res://scripts/LoadingScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/ui_logo.jpg" id="2_logo"]
 
 [node name="LoadingScreen" type="Control"]
 layout_mode = 3
@@ -16,18 +17,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.07, 0.04, 0.015, 1.0)
-
-[node name="LogoSmall" type="Label" parent="."]
-layout_mode = 1
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 54
-offset_top = 38
-offset_right = 280
-offset_bottom = 90
-theme_override_font_sizes/font_size = 32
-text = "✦ VIETSTAGE"
+color = Color(0.031, 0.024, 0.047, 1.0)
 
 [node name="Center" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -38,49 +28,70 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
-offset_left = -440
-offset_top = -120
-offset_right = 440
-offset_bottom = 120
-theme_override_constants/separation = 28
+offset_left = -340
+offset_top = -190
+offset_right = 340
+offset_bottom = 190
+theme_override_constants/separation = 18
 alignment = 1
+
+[node name="LogoRect" type="TextureRect" parent="Center"]
+custom_minimum_size = Vector2(110, 110)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Gap1" type="Control" parent="Center"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="AppName" type="Label" parent="Center"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "VietStage"
+horizontal_alignment = 1
+
+[node name="Gap2" type="Control" parent="Center"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
 
 [node name="LoadTitle" type="Label" parent="Center"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 34
-text = "Dang chuan bi trai nghiem..."
+theme_override_font_sizes/font_size = 20
+text = "Đang chuẩn bị trải nghiệm..."
 horizontal_alignment = 1
-
-[node name="BarBG" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(880, 24)
-layout_mode = 2
-
-[node name="LoadBar" type="ProgressBar" parent="Center"]
-custom_minimum_size = Vector2(880, 24)
-layout_mode = 2
-value = 0.0
-show_percentage = false
 
 [node name="TipLabel" type="Label" parent="Center"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "Meo: Giai nhac cu dan toc can luyen tap moi ngay!"
+theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Dots" type="HBoxContainer" parent="Center"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 16
+[node name="BarArea" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -5
+offset_bottom = 0
 
-[node name="D1" type="ColorRect" parent="Center/Dots"]
-custom_minimum_size = Vector2(16, 16)
+[node name="BarBG" type="ColorRect" parent="BarArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(1.0, 1.0, 1.0, 0.08)
 
-[node name="D2" type="ColorRect" parent="Center/Dots"]
-custom_minimum_size = Vector2(16, 16)
-
-[node name="D3" type="ColorRect" parent="Center/Dots"]
-custom_minimum_size = Vector2(16, 16)
+[node name="LoadBar" type="ProgressBar" parent="BarArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+value = 0.0
+show_percentage = false
 
 [node name="BottomTag" type="Label" parent="."]
 layout_mode = 1
@@ -89,10 +100,10 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 grow_horizontal = 2
-offset_left = -320
-offset_top = -52
-offset_right = 320
-offset_bottom = -12
-theme_override_font_sizes/font_size = 19
-text = "VietStage  ©  2025  ·  Truong Dai hoc"
+offset_left = -280
+offset_top = -46
+offset_right = 280
+offset_bottom = -10
+theme_override_font_sizes/font_size = 15
+text = "VietStage  ©  2025"
 horizontal_alignment = 1

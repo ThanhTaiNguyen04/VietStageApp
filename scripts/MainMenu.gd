@@ -361,13 +361,37 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 
 # ─── Top Bar ──────────────────────────────────────────────────────────────────
 func _build_top_bar() -> void:
-	var av_s := _flat(C_BG_DARK, C_GOLD, 34)
-	av_s.border_width_left = 2; av_s.border_width_right = 2
-	av_s.border_width_top = 2; av_s.border_width_bottom = 2
-	av_s.shadow_size = 8; av_s.shadow_color = Color(0, 0, 0, 0.35)
+	# Khung avatar: nền tối, bo tròn hoàn toàn, viền vàng phát sáng
+	var av_s := StyleBoxFlat.new()
+	av_s.bg_color              = C_BG_DARK
+	av_s.border_color          = C_GOLD
+	av_s.border_width_left     = 3; av_s.border_width_right  = 3
+	av_s.border_width_top      = 3; av_s.border_width_bottom = 3
+	av_s.corner_radius_top_left     = 34; av_s.corner_radius_top_right    = 34
+	av_s.corner_radius_bottom_left  = 34; av_s.corner_radius_bottom_right = 34
+	av_s.shadow_size   = 14
+	av_s.shadow_color  = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40)
+	av_s.shadow_offset = Vector2(0, 2)
 	avatar_circle.add_theme_stylebox_override("panel", av_s)
-	
+
+	# Lớp vẽ vòng tròn bo góc phía trên avatar (đảm bảo cắt đúng)
+	var ring_draw := Control.new()
+	ring_draw.name = "RingDraw"
+	ring_draw.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ring_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring_draw.draw.connect(func() -> void:
+		var sz := ring_draw.size
+		var c  := sz / 2.0
+		var r  := minf(c.x, c.y) - 3.0
+		# Vòng nhẫn vàng ngoài cùng
+		ring_draw.draw_arc(c, r, 0, TAU, 64, C_GOLD, 3.0, true)
+		# Vòng nhẫn vàng nhạt phát sáng
+		ring_draw.draw_arc(c, r - 1.5, 0, TAU, 64, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 6.0, true)
+	)
+	avatar_circle.add_child(ring_draw)
+
 	greet_lbl.add_theme_color_override("font_color", C_CREAM)
+	greet_lbl.add_theme_font_size_override("font_size", 28)
 	greet_lbl.text = "Hi, Tai!"
 
 	var sp_s := _flat(C_BG_DARK, Color(0.9, 0.42, 0.08, 0.4), 22)
@@ -378,7 +402,7 @@ func _build_top_bar() -> void:
 	var xp_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 22)
 	xp_pill.add_theme_stylebox_override("panel", xp_s)
 	xp_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
-	
+
 	var total_xp : int = 1240 + int(SecureDataManager.data.practice_time_seconds) / 6
 	xp_label.text = str(total_xp) + " XP"
 

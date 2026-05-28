@@ -17,22 +17,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.07, 0.04, 0.015, 1.0)
-
-[node name="DecorLeft" type="ColorRect" parent="."]
-layout_mode = 1
-anchor_right = 0.0
-anchor_bottom = 1.0
-offset_right = 6
-color = Color(0.95, 0.72, 0.18, 0.55)
-
-[node name="DecorRight" type="ColorRect" parent="."]
-layout_mode = 1
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -6
-color = Color(0.95, 0.72, 0.18, 0.55)
+color = Color(0.031, 0.024, 0.047, 1.0)
 
 [node name="Center" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -43,41 +28,48 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
-offset_left = -340
+offset_left = -300
 offset_top = -280
-offset_right = 340
+offset_right = 300
 offset_bottom = 280
-theme_override_constants/separation = 24
+theme_override_constants/separation = 18
 alignment = 1
 
 [node name="LogoRect" type="TextureRect" parent="Center"]
-custom_minimum_size = Vector2(360, 360)
+custom_minimum_size = Vector2(220, 220)
 layout_mode = 2
 size_flags_horizontal = 4
 texture = ExtResource("2_logo")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="Gap1" type="Control" parent="Center"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
 [node name="AppName" type="Label" parent="Center"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 84
+theme_override_font_sizes/font_size = 76
 text = "VietStage"
 horizontal_alignment = 1
 
 [node name="Tagline" type="Label" parent="Center"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "Học đàn tranh dễ nhìn, dễ hiểu, dễ nhớ"
+theme_override_font_sizes/font_size = 21
+text = "Học nhạc cụ dân tộc · Mọi lúc · Mọi nơi"
 horizontal_alignment = 1
 
-[node name="OrnamentLine" type="ColorRect" parent="Center"]
-custom_minimum_size = Vector2(420, 2)
-layout_mode = 2
-size_flags_horizontal = 4
-color = Color(0.95, 0.72, 0.18, 0.6)
-
-[node name="VersionLabel" type="Label" parent="Center"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "v1.0.0  ·  Đàn tranh"
+[node name="VersionLabel" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+offset_left = -200
+offset_top = -46
+offset_right = 200
+offset_bottom = -12
+theme_override_font_sizes/font_size = 15
+text = "v1.0.0"
 horizontal_alignment = 1

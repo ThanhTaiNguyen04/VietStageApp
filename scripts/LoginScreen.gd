@@ -1,246 +1,280 @@
 extends Control
 
-# ── Palette ───────────────────────────────────────────────────────────────────
-const C_GOLD       := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LT    := Color(1.00, 0.87, 0.45, 1.0)
-const C_GOLD_DIM   := Color(0.60, 0.45, 0.10, 1.0)
-const C_RED        := Color(0.75, 0.10, 0.07, 1.0)
-const C_RED_LT     := Color(0.88, 0.18, 0.10, 1.0)
-const C_CREAM      := Color(1.00, 0.97, 0.91, 1.0)
-const C_CREAM_DIM  := Color(0.72, 0.67, 0.56, 1.0)
-const C_DARK       := Color(0.055, 0.027, 0.012, 1.0)
-const C_DARK_CARD  := Color(0.065, 0.032, 0.014, 0.97)
-const C_GREEN_OK   := Color(0.22, 0.74, 0.46, 1.0)
-const C_ERR        := Color(0.92, 0.26, 0.18, 1.0)
+# ── Palette đỏ sẫm cổ trang ──────────────────────────────────────────────────
+const C_GOLD        := Color(0.95, 0.72, 0.18, 1.0)
+const C_GOLD_LT     := Color(1.00, 0.87, 0.45, 1.0)
+const C_GOLD_DARK   := Color(0.06, 0.02, 0.00, 1.0)
+const C_WHITE       := Color(1.00, 1.00, 1.00, 1.00)
+const C_WHITE_DIM   := Color(1.00, 1.00, 1.00, 0.40)
+const C_ERR         := Color(0.98, 0.32, 0.22, 1.0)
+const C_GREEN_OK    := Color(0.25, 0.88, 0.55, 1.0)
+# Google brand
+const C_G_BLUE      := Color(0.26, 0.52, 0.96, 1.0)
+# Màu hạt hoạt hình
+const C_EMBER_1     := Color(0.98, 0.78, 0.22)   # vàng ánh lửa
+const C_EMBER_2     := Color(0.95, 0.45, 0.10)   # cam đỏ
+const C_PETAL_1     := Color(0.85, 0.20, 0.12)   # đỏ sẫm cổ
+const C_PETAL_2     := Color(0.70, 0.12, 0.08)   # đỏ thẫm
 
-enum Mode { LOGIN, REGISTER }
-var _mode := Mode.LOGIN
+const FP := "Center/Card/CardMargin/ContentVBox/"
 
-# ── Refs ──────────────────────────────────────────────────────────────────────
-@onready var phone_card   : PanelContainer = $Center/PhoneCard
-@onready var app_name     : Label          = $Center/PhoneCard/Inner/VBox/AppName
-@onready var logo_rect    : TextureRect    = $Center/PhoneCard/Inner/VBox/LogoRect
-@onready var tab_login    : Button         = $Center/PhoneCard/Inner/VBox/Tabs/TabLogin
-@onready var tab_register : Button         = $Center/PhoneCard/Inner/VBox/Tabs/TabRegister
-@onready var email_field  : VBoxContainer  = $Center/PhoneCard/Inner/VBox/Form/EmailField
-@onready var user_edit    : LineEdit       = $Center/PhoneCard/Inner/VBox/Form/UserField/UserEdit
-@onready var email_edit   : LineEdit       = $Center/PhoneCard/Inner/VBox/Form/EmailField/EmailEdit
-@onready var pass_edit    : LineEdit       = $Center/PhoneCard/Inner/VBox/Form/PassField/PassEdit
-@onready var error_label  : Label          = $Center/PhoneCard/Inner/VBox/ErrorLabel
-@onready var submit_btn   : Button         = $Center/PhoneCard/Inner/VBox/SubmitBtn
-@onready var footer_lbl   : Label          = $Center/PhoneCard/Inner/VBox/FooterLabel
+@onready var logo_rect      : TextureRect    = get_node(FP + "LogoVBox/LogoRect")
+@onready var app_name       : Label          = get_node(FP + "LogoVBox/AppName")
+@onready var app_sub        : Label          = get_node(FP + "LogoVBox/AppSub")
+@onready var email_edit     : LineEdit       = get_node(FP + "EmailEdit")
+@onready var error_label    : Label          = get_node(FP + "ErrorLabel")
+@onready var sign_in_btn    : Button         = get_node(FP + "SignInBtn")
+@onready var google_btn     : Button         = get_node(FP + "SocialRow/GoogleVBox/GoogleBtn")
+@onready var guest_btn      : Button         = get_node(FP + "SocialRow/GuestVBox/GuestBtn")
+@onready var or_label       : Label          = get_node(FP + "DivRow/OrLabel")
+@onready var google_lbl     : Label          = get_node(FP + "SocialRow/GoogleVBox/GoogleLbl")
+@onready var guest_lbl      : Label          = get_node(FP + "SocialRow/GuestVBox/GuestLbl")
+@onready var footer_lbl     : Label          = get_node(FP + "FooterLabel")
+@onready var card           : PanelContainer = $Center/Card
+@onready var particle_layer : Control        = $ParticleLayer
 
 func _ready() -> void:
 	_style_card()
-	_style_header()
-	_style_fields()
-	_style_submit()
-	_set_mode(Mode.LOGIN)
+	_style_all()
 	_connect_all()
+	_spawn_bg_particles()
 	_animate_in()
 
-# ── Entrance ──────────────────────────────────────────────────────────────────
+# ── Entrance animation ─────────────────────────────────────────────────────────
 func _animate_in() -> void:
-	modulate.a          = 0.0
-	phone_card.scale    = Vector2(0.88, 0.88)
-	phone_card.modulate = Color(1, 1, 1, 0)
+	modulate.a   = 0.0
+	card.scale   = Vector2(0.92, 0.92)
+	card.modulate.a = 0.0
 
 	var t := create_tween().set_parallel(true)
-	t.tween_property(self,       "modulate:a",         1.0,        0.3)
-	t.tween_property(phone_card, "modulate:a",         1.0,        0.45).set_delay(0.1)
-	t.tween_property(phone_card, "scale",   Vector2.ONE, 0.55).set_delay(0.1)\
+	t.tween_property(self, "modulate:a",    1.0,        0.50)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(card, "scale",         Vector2.ONE, 0.60).set_delay(0.10)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(card, "modulate:a",    1.0,         0.50).set_delay(0.10)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	t.chain().tween_callback(_start_logo_float)
 
 func _start_logo_float() -> void:
+	if not is_instance_valid(logo_rect): return
 	var lp := create_tween().set_loops()
-	lp.tween_property(logo_rect, "position:y", -8.0, 2.0)\
+	lp.tween_property(logo_rect, "position:y", -6.0, 2.5)\
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	lp.tween_property(logo_rect, "position:y",  0.0, 2.0)\
+	lp.tween_property(logo_rect, "position:y",  0.0, 2.5)\
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
-# ── Card background ───────────────────────────────────────────────────────────
+# ── Hệ thống hạt hoạt hình nền ────────────────────────────────────────────────
+func _spawn_bg_particles() -> void:
+	var vp := get_viewport_rect().size
+
+	# 14 hạt ánh lửa nhỏ (vàng/cam)
+	for _i in range(14):
+		var sz    := randf_range(5.0, 16.0)
+		var t_col := C_EMBER_1.lerp(C_EMBER_2, randf())
+		t_col.a   = randf_range(0.10, 0.30)
+		_create_particle(vp, sz, t_col, randf_range(3.5, 7.0), randf_range(0.0, 7.0))
+
+	# 8 cánh hoa lớn hơn (đỏ sẫm mờ)
+	for _i in range(8):
+		var sz    := randf_range(28.0, 65.0)
+		var t_col := C_PETAL_1.lerp(C_PETAL_2, randf())
+		t_col.a   = randf_range(0.05, 0.14)
+		_create_particle(vp, sz, t_col, randf_range(6.0, 12.0), randf_range(0.0, 9.0))
+
+	# 5 hạt ánh vàng lớn (hào quang)
+	for _i in range(5):
+		var sz    := randf_range(70.0, 130.0)
+		var t_col := C_GOLD
+		t_col.a   = randf_range(0.02, 0.07)
+		_create_particle(vp, sz, t_col, randf_range(9.0, 16.0), randf_range(0.0, 12.0))
+
+func _create_particle(vp: Vector2, sz: float, col: Color, dur: float, delay: float) -> void:
+	var p  := Panel.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = col
+	var r := int(sz / 2.0)
+	sb.corner_radius_top_left     = r; sb.corner_radius_top_right    = r
+	sb.corner_radius_bottom_left  = r; sb.corner_radius_bottom_right = r
+	sb.border_width_left = 0; sb.border_width_right  = 0
+	sb.border_width_top  = 0; sb.border_width_bottom = 0
+	p.add_theme_stylebox_override("panel", sb)
+	p.custom_minimum_size = Vector2(sz, sz)
+	p.size                = Vector2(sz, sz)
+	p.mouse_filter        = Control.MOUSE_FILTER_IGNORE
+	# Bắt đầu ngẫu nhiên trên/dưới màn hình để không đồng đều
+	var sx := randf_range(0.0, vp.x)
+	var sy := randf_range(vp.y * 0.35, vp.y + sz + 20.0)
+	p.position    = Vector2(sx, sy)
+	p.modulate.a  = 0.0
+	particle_layer.add_child(p)
+	_animate_particle(p, sx, sy, dur, delay, vp)
+
+func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float, vp: Vector2) -> void:
+	if not is_instance_valid(p) or not is_instance_valid(particle_layer):
+		return
+	var drift  := randf_range(-55.0, 55.0)
+	var end_y  := -p.size.y - 30.0
+
+	var t := create_tween().set_parallel(true)
+
+	# Fade vào (20% đầu)
+	t.tween_property(p, "modulate:a", 1.0, dur * 0.22).set_delay(delay)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Bay lên
+	t.tween_property(p, "position:y", end_y, dur).set_delay(delay)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Lắc lư nửa đầu
+	t.tween_property(p, "position:x", sx + drift, dur * 0.50).set_delay(delay)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Lắc lư nửa sau (về phía kia)
+	t.tween_property(p, "position:x", sx + drift * 0.40, dur * 0.50).set_delay(delay + dur * 0.50)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Fade ra (25% cuối)
+	t.tween_property(p, "modulate:a", 0.0, dur * 0.28).set_delay(delay + dur * 0.72)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+	# Khi xong: reset lại vị trí và loop
+	t.chain().tween_callback(func() -> void:
+		if not is_instance_valid(p) or not is_instance_valid(particle_layer): return
+		var new_sx := randf_range(0.0, vp.x)
+		p.position   = Vector2(new_sx, sy + randf_range(-40.0, 40.0))
+		p.modulate.a = 0.0
+		_animate_particle(p, new_sx, p.position.y, dur * randf_range(0.85, 1.15), 0.0, vp)
+	)
+
+# ── Card kính đỏ sẫm ─────────────────────────────────────────────────────────
 func _style_card() -> void:
-	# Outer card
 	var cs := StyleBoxFlat.new()
-	cs.bg_color    = C_DARK_CARD
-	cs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.38)
-	cs.border_width_left = 1; cs.border_width_right  = 1
-	cs.border_width_top  = 1; cs.border_width_bottom = 1
-	cs.corner_radius_top_left     = 36
-	cs.corner_radius_top_right    = 36
-	cs.corner_radius_bottom_left  = 36
-	cs.corner_radius_bottom_right = 36
-	cs.shadow_size  = 48
-	cs.shadow_color = Color(0, 0, 0, 0.70)
-	phone_card.add_theme_stylebox_override("panel", cs)
+	cs.bg_color              = Color(0.14, 0.03, 0.04, 0.88)
+	cs.border_color          = Color(0.95, 0.72, 0.18, 0.22)
+	cs.border_width_left     = 1; cs.border_width_right  = 1
+	cs.border_width_top      = 1; cs.border_width_bottom = 1
+	cs.corner_radius_top_left     = 28; cs.corner_radius_top_right    = 28
+	cs.corner_radius_bottom_left  = 28; cs.corner_radius_bottom_right = 28
+	cs.shadow_size   = 48
+	cs.shadow_color  = Color(0.0, 0.0, 0.0, 0.55)
+	cs.shadow_offset = Vector2(0, 10)
+	card.add_theme_stylebox_override("panel", cs)
+	card.pivot_offset = card.size / 2.0
+	card.resized.connect(func() -> void: card.pivot_offset = card.size / 2.0)
 
-# ── Header: logo + name + sub ────────────────────────────────────────────────
-func _style_header() -> void:
-	app_name.add_theme_color_override("font_color",         C_GOLD)
-	app_name.add_theme_color_override("font_outline_color", Color(0.38, 0.22, 0.02, 1.0))
-	app_name.add_theme_constant_override("outline_size",    5)
-	app_name.add_theme_color_override("font_shadow_color",  Color(0, 0, 0, 0.55))
-	app_name.add_theme_constant_override("shadow_offset_y", 4)
-
-	($Center/PhoneCard/Inner/VBox/AppSub as Label)\
-		.add_theme_color_override("font_color", C_CREAM_DIM)
-
-	footer_lbl.add_theme_color_override("font_color", Color(0.38, 0.34, 0.24, 0.9))
-
-	# Field tracker labels (uppercase caps)
-	for p in [
-		"Center/PhoneCard/Inner/VBox/Form/UserField/UserLabel",
-		"Center/PhoneCard/Inner/VBox/Form/EmailField/EmailLabel",
-		"Center/PhoneCard/Inner/VBox/Form/PassField/PassLabel",
-	]:
-		(get_node(p) as Label).add_theme_color_override("font_color",
-			Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.62))
-
-# ── Inputs ─────────────────────────────────────────────────────────────────────
-func _style_fields() -> void:
-	var base := _sbox(Color(0.04, 0.018, 0.007, 0.80),
-					  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 18)
-	var focus := _sbox(Color(0.05, 0.022, 0.010, 0.90),
-					   Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72), 18)
-	focus.shadow_size  = 10
-	focus.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16)
-
-	for e in [user_edit, email_edit, pass_edit]:
-		e.add_theme_stylebox_override("normal", base)
-		e.add_theme_stylebox_override("focus",  focus)
-		e.add_theme_color_override("font_color",        C_CREAM)
-		e.add_theme_color_override("placeholder_color", Color(0.42, 0.37, 0.26, 1.0))
-
+# ── Tô màu toàn bộ UI ─────────────────────────────────────────────────────────
+func _style_all() -> void:
+	app_name.add_theme_color_override("font_color",    C_GOLD)
+	app_sub.add_theme_color_override("font_color",     C_WHITE_DIM)
+	or_label.add_theme_color_override("font_color",    C_WHITE_DIM)
+	footer_lbl.add_theme_color_override("font_color",  Color(1,1,1,0.18))
 	error_label.add_theme_color_override("font_color", C_ERR)
+	google_lbl.add_theme_color_override("font_color",  C_WHITE_DIM)
+	guest_lbl.add_theme_color_override("font_color",   C_WHITE_DIM)
 
-# ── Submit button ─────────────────────────────────────────────────────────────
-func _style_submit() -> void:
-	var n := _sbox(C_RED,                 Color(1.0, 0.75, 0.25, 0.55), 24)
-	var h := _sbox(C_RED_LT,             Color(1.0, 0.85, 0.35, 0.88), 24)
-	var p := _sbox(C_RED.darkened(0.18), Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.25), 24)
-	var f := _sbox(Color(0,0,0,0),        Color(0,0,0,0), 0)
-	n.shadow_size = 16; n.shadow_color = Color(C_RED.r, C_RED.g, C_RED.b, 0.38)
-	h.shadow_size = 24; h.shadow_color = Color(C_RED.r, C_RED.g, C_RED.b, 0.52)
+	# Email: dark glass pill với viền vàng khi focus
+	var ei_n := _pill(Color(1,1,1,0.08),  Color(1,1,1,0.16), 28)
+	var ei_f := _pill(Color(1,1,1,0.12),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70), 28)
+	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	email_edit.add_theme_stylebox_override("normal", ei_n)
+	email_edit.add_theme_stylebox_override("focus",  ei_f)
+	email_edit.add_theme_color_override("font_color",        C_WHITE)
+	email_edit.add_theme_color_override("placeholder_color", Color(1,1,1,0.30))
+	email_edit.add_theme_color_override("caret_color",       C_GOLD)
 
-	submit_btn.add_theme_stylebox_override("normal",  n)
-	submit_btn.add_theme_stylebox_override("hover",   h)
-	submit_btn.add_theme_stylebox_override("pressed", p)
-	submit_btn.add_theme_stylebox_override("focus",   f)
-	submit_btn.add_theme_color_override("font_color",         C_GOLD)
-	submit_btn.add_theme_color_override("font_hover_color",   C_GOLD_LT)
-	submit_btn.add_theme_color_override("font_pressed_color", C_GOLD)
+	# Nút Đăng nhập: vàng rực rỡ
+	var si_n := _pill(C_GOLD,                 Color(0,0,0,0), 28)
+	var si_h := _pill(C_GOLD_LT,              Color(0,0,0,0), 28)
+	var si_p := _pill(C_GOLD.darkened(0.14),  Color(0,0,0,0), 28)
+	si_n.shadow_size = 20; si_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42)
+	si_h.shadow_size = 28; si_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58)
+	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
+	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
+	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
+	sign_in_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	sign_in_btn.add_theme_color_override("font_color",         C_GOLD_DARK)
+	sign_in_btn.add_theme_color_override("font_hover_color",   C_GOLD_DARK)
+	sign_in_btn.add_theme_color_override("font_pressed_color", C_GOLD_DARK)
 
-# ── Tab switching ─────────────────────────────────────────────────────────────
-func _set_mode(m: Mode) -> void:
-	_mode = m
-	error_label.text = ""
+	# Social buttons: kính tối
+	_style_social(google_btn)
+	_style_social(guest_btn)
+	# Google: chữ G xanh đặc trưng
+	google_btn.add_theme_color_override("font_color",         C_G_BLUE)
+	google_btn.add_theme_color_override("font_hover_color",   C_G_BLUE.lightened(0.1))
+	google_btn.add_theme_color_override("font_pressed_color", C_G_BLUE.darkened(0.1))
+	# Guest: trắng
+	guest_btn.add_theme_color_override("font_color",          C_WHITE)
+	guest_btn.add_theme_color_override("font_hover_color",    C_WHITE)
+	guest_btn.add_theme_color_override("font_pressed_color",  Color(1,1,1,0.75))
 
-	var on  := _sbox(Color(0.22, 0.13, 0.04, 1.0),   C_GOLD,                                     16)
-	var off := _sbox(Color(0.04, 0.018, 0.007, 0.0),  Color(C_GOLD.r,C_GOLD.g,C_GOLD.b, 0.0),    16)
-	var hov := _sbox(Color(0.12, 0.07, 0.025, 0.6),   Color(C_GOLD.r,C_GOLD.g,C_GOLD.b, 0.28),   16)
-	var foc := _sbox(Color(0,0,0,0), Color(0,0,0,0), 0)
-
-	if _mode == Mode.LOGIN:
-		_apply_tab(tab_login,    on,  on,  foc, C_GOLD)
-		_apply_tab(tab_register, off, hov, foc, C_CREAM_DIM)
-		email_field.visible = false
-		submit_btn.text = "Bắt đầu học"
-	else:
-		_apply_tab(tab_register, on,  on,  foc, C_GOLD)
-		_apply_tab(tab_login,    off, hov, foc, C_CREAM_DIM)
-		email_field.visible = true
-		submit_btn.text = "Tạo tài khoản"
-
-func _apply_tab(btn: Button, n: StyleBoxFlat, h: StyleBoxFlat,
-				f: StyleBoxFlat, color: Color) -> void:
+func _style_social(btn: Button) -> void:
+	var n := _pill(Color(1,1,1,0.08),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 18)
+	var h := _pill(Color(1,1,1,0.14),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.36), 18)
+	var p := _pill(Color(1,1,1,0.04),  Color(0,0,0,0), 18)
+	n.shadow_size = 10; n.shadow_color = Color(0,0,0,0.35)
+	h.shadow_size = 16; h.shadow_color = Color(0,0,0,0.40)
 	btn.add_theme_stylebox_override("normal",  n)
 	btn.add_theme_stylebox_override("hover",   h)
-	btn.add_theme_stylebox_override("pressed", n)
-	btn.add_theme_stylebox_override("focus",   f)
-	btn.add_theme_color_override("font_color", color)
+	btn.add_theme_stylebox_override("pressed", p)
+	btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 
-# ── Connections ───────────────────────────────────────────────────────────────
+# ── Kết nối sự kiện ──────────────────────────────────────────────────────────
 func _connect_all() -> void:
-	tab_login.pressed.connect(   func() -> void: _set_mode(Mode.LOGIN))
-	tab_register.pressed.connect(func() -> void: _set_mode(Mode.REGISTER))
-	submit_btn.pressed.connect(_on_submit)
-	pass_edit.text_submitted.connect(func(_s: String) -> void: _on_submit())
+	sign_in_btn.pressed.connect(_on_sign_in)
+	email_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
+	google_btn.pressed.connect(_go_main)
+	guest_btn.pressed.connect(_go_main)
+	_make_bouncy(sign_in_btn)
+	_make_bouncy(google_btn)
+	_make_bouncy(guest_btn)
 
-	_make_button_bouncy(tab_login)
-	_make_button_bouncy(tab_register)
-	_make_button_bouncy(submit_btn)
-
-# ── Submit logic ──────────────────────────────────────────────────────────────
-func _on_submit() -> void:
-	var user  := user_edit.text.strip_edges()
-	var pass_w:= pass_edit.text.strip_edges()
-	var email := email_edit.text.strip_edges()
-
-	if user.length() < 3:
-		error_label.text = "Tên đăng nhập phải có ít nhất 3 ký tự"
-		_shake(); return
-	if pass_w.length() < 4:
-		error_label.text = "Mật khẩu phải có ít nhất 4 ký tự"
-		_shake(); return
-	if _mode == Mode.REGISTER:
-		if email.length() == 0 or not "@" in email or not "." in email:
-			error_label.text = "Vui lòng nhập đúng định dạng email"
-			_shake(); return
-
-	# Success state
+func _on_sign_in() -> void:
+	var em := email_edit.text.strip_edges()
+	if em.length() < 5 or not "@" in em:
+		error_label.add_theme_color_override("font_color", C_ERR)
+		error_label.text = "Vui lòng nhập đúng định dạng email"
+		_shake(email_edit)
+		return
 	error_label.add_theme_color_override("font_color", C_GREEN_OK)
-	error_label.text = "Xin chào, " + user + "!"
-	user_edit.editable  = false
-	email_edit.editable = false
-	pass_edit.editable  = false
-	submit_btn.disabled = true
+	error_label.text = "Chào mừng!"
+	sign_in_btn.disabled = true
+	email_edit.editable  = false
+	_go_main()
 
+func _go_main() -> void:
 	var t := create_tween()
-	t.tween_property(submit_btn, "scale", Vector2(1.05, 0.96), 0.07)
-	t.tween_property(submit_btn, "scale", Vector2.ONE,         0.14)\
-		.set_trans(Tween.TRANS_BACK)
-	t.tween_property(self, "modulate:a", 0.0, 0.38).set_delay(0.22)
+	t.tween_property(self, "modulate:a", 0.0, 0.40).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+		get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
 
-# ── Card shake on error ───────────────────────────────────────────────────────
-func _shake() -> void:
-	var ox := phone_card.position.x
+# ── Hiệu ứng lắc khi nhập sai ────────────────────────────────────────────────
+func _shake(node: Control) -> void:
+	var ox := node.position.x
 	var t  := create_tween()
-	for d in [-14.0, 14.0, -9.0, 9.0, 0.0]:
-		t.tween_property(phone_card, "position:x", ox + d, 0.052)\
-			.set_trans(Tween.TRANS_SINE)
+	for d in [-12.0, 12.0, -7.0, 7.0, -3.0, 3.0, 0.0]:
+		t.tween_property(node, "position:x", ox + d, 0.045).set_trans(Tween.TRANS_SINE)
 
-# ── Stylebox factory ──────────────────────────────────────────────────────────
-func _sbox(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
+# ── Helpers ───────────────────────────────────────────────────────────────────
+func _pill(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
-	s.bg_color     = bg
+	s.bg_color    = bg
 	s.border_color = border
 	s.border_width_left   = 1; s.border_width_right  = 1
 	s.border_width_top    = 1; s.border_width_bottom = 1
-	s.corner_radius_top_left     = radius
-	s.corner_radius_top_right    = radius
-	s.corner_radius_bottom_left  = radius
-	s.corner_radius_bottom_right = radius
+	s.corner_radius_top_left     = radius; s.corner_radius_top_right    = radius
+	s.corner_radius_bottom_left  = radius; s.corner_radius_bottom_right = radius
 	return s
 
-func _make_button_bouncy(btn: Button) -> void:
+func _make_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
 	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
 	btn.mouse_entered.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(btn, "scale", Vector2(1.05, 1.05), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", Vector2(1.06, 1.06), 0.14)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
 	btn.mouse_exited.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(btn, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", Vector2.ONE, 0.14)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
 	btn.button_down.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(btn, "scale", Vector2(0.95, 0.95), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", Vector2(0.93, 0.93), 0.08)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT))
 	btn.button_up.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
+		var target := Vector2(1.06, 1.06) if btn.is_hovered() else Vector2.ONE
+		create_tween().tween_property(btn, "scale", target, 0.14)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
