@@ -21,12 +21,13 @@ driver/enable_input=true
 
 [autoload]
 
+DS="*res://scripts/DS.gd"
 VirtualArtist="*res://scripts/VirtualArtist.gd"
 
 [display]
 
-window/size/viewport_width=1920
-window/size/viewport_height=886
+window/size/viewport_width=844
+window/size/viewport_height=390
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

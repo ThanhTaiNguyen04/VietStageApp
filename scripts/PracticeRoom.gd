@@ -20,11 +20,11 @@ const C_RED_ERR    := Color(0.90, 0.25, 0.18, 1.0)
 @onready var rhythm_bars  : HBoxContainer = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmBars
 @onready var rhythm_acc   : Label         = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmAcc
 @onready var score_num    : Label         = $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreNum
-@onready var record_btn   : Button        = $Root/RecordBar/RecordM/RecordH/RecordBtn
+@onready var record_btn   : Button        = $Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH/RecordBtn
 @onready var notes_hbox   : HBoxContainer = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
 @onready var target_note_label : Label    = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel
-@onready var strings_hbox : VBoxContainer = $Root/StringsBoard/BoardM/BoardVBox/StringsFrame/StringsM/StringsHBox
-@onready var target_label : Label         = $Root/StringsBoard/BoardM/BoardVBox/TargetLabel
+@onready var strings_hbox : VBoxContainer = $Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/StringsFrame/StringsM/StringsHBox
+@onready var target_label : Label         = $Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/TargetLabel
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
 @onready var result_dialog: AcceptDialog  = $ResultDialog
 @onready var dots_hbox    : HBoxContainer = $Root/TopBar/TopM/TopH/DotsHBox
@@ -57,7 +57,7 @@ func _ready() -> void:
 	_connect_buttons()
 	
 	# Dynamically insert premium real-time microphone waveform visualizer!
-	var record_hbox := $Root/RecordBar/RecordM/RecordH
+	var record_hbox := $Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH
 	var analyzer_script := load("res://scripts/AudioCaptureAnalyzer.gd")
 	if record_hbox and analyzer_script:
 		var visualizer := Control.new()
@@ -96,9 +96,9 @@ func _set_labels() -> void:
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
 
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐÀN TRANH 16 DÂY  —  Chạm dây để gảy"
+	($Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐÀN TRANH 16 DÂY  —  Chạm dây để gảy"
 	record_btn.text = "Bắt đầu luyện tập"
-	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
+	($Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
 
 	speech_label.text = SPEECHES[0]
 
@@ -127,7 +127,7 @@ func _build_theme() -> void:
 	linh_s.border_width_right = 2; linh_s.border_width_left = 0; linh_s.border_width_top = 0; linh_s.border_width_bottom = 0
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
 
-	var bubble_s := _flat(Color(0.20, 0.12, 0.04, 0.92), Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.5), 14)
+	var bubble_s := _flat(Color(0.20, 0.12, 0.04, 0.92), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 14)
 	($Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer).add_theme_stylebox_override("panel", bubble_s)
 	speech_label.add_theme_color_override("font_color", C_CREAM)
 
@@ -154,23 +154,23 @@ func _build_theme() -> void:
 
 	# Strings board — mahogany wood
 	var sb_s := _flat(Color(0.12, 0.065, 0.025, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0)
-	sb_s.border_width_top = 3; sb_s.border_width_bottom = 0; sb_s.border_width_left = 0; sb_s.border_width_right = 0
-	($Root/StringsBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.65))
+	sb_s.border_width_top = 3; sb_s.border_width_bottom = 0; sb_s.border_width_left = 3; sb_s.border_width_right = 0
+	($Root/MiddleRow/RightPanel/StringsBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
+	($Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65))
 
 	# Dan tranh frame
-	var frame := $Root/StringsBoard/BoardM/BoardVBox/StringsFrame as PanelContainer
+	var frame := $Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/StringsFrame as PanelContainer
 	var frame_s := _flat(Color(0.16, 0.09, 0.03, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 10)
 	frame.add_theme_stylebox_override("panel", frame_s)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeTop as ColorRect).color = Color(0.62, 0.38, 0.12, 1.0)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeBottom as ColorRect).color = Color(0.62, 0.38, 0.12, 1.0)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeLeft as ColorRect).color = Color(0.50, 0.30, 0.08, 1.0)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeRight as ColorRect).color = Color(0.50, 0.30, 0.08, 1.0)
+	($Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeTop as ColorRect).color = Color(0.62, 0.38, 0.12, 1.0)
+	($Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeBottom as ColorRect).color = Color(0.62, 0.38, 0.12, 1.0)
+	($Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeLeft as ColorRect).color = Color(0.50, 0.30, 0.08, 1.0)
+	($Root/MiddleRow/RightPanel/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeRight as ColorRect).color = Color(0.50, 0.30, 0.08, 1.0)
 
 	# Record bar
 	var rec_bar_s := _flat(Color(0.05, 0.025, 0.010, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 0)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
-	($Root/RecordBar as PanelContainer).add_theme_stylebox_override("panel", rec_bar_s)
+	($Root/MiddleRow/RightPanel/RecordBar as PanelContainer).add_theme_stylebox_override("panel", rec_bar_s)
 
 	# Record button
 	var rn := _flat(C_RED_SON, Color(1.0, 0.4, 0.2, 0.5), 22)
@@ -183,7 +183,7 @@ func _build_theme() -> void:
 	record_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	record_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 
-	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
+	_style_outlined_btn($Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH/ResetBtn as Button)
 
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
@@ -371,7 +371,7 @@ func _connect_buttons() -> void:
 	var hint_btn := $Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button
 	var demo_btn := $Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button
 	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
-	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+	var reset_btn := $Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH/ResetBtn as Button
 
 	back_btn.pressed.connect(_go_back)
 	hint_btn.pressed.connect(func() -> void: hint_dialog.popup_centered())
@@ -389,7 +389,7 @@ func _connect_buttons() -> void:
 
 func _toggle_record() -> void:
 	_recording = not _recording
-	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	var visualizer = $Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if _recording:
 		record_btn.text = "Dừng luyện tập"
 		_va_say(SPEECHES[0])
@@ -500,7 +500,7 @@ func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 2
 	_build_notation()
 	record_btn.text   = "Bắt Đầu Luyện Tập"
-	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	var visualizer = $Root/MiddleRow/RightPanel/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if visualizer: visualizer.visible = false
 	pitch_note.text   = "—"
 	pitch_status.text = "Đang nghe..."

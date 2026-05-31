@@ -264,12 +264,12 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.30) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 
-	bg_n.content_margin_top = 96
-	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
-	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
-	bg_p.content_margin_bottom = 8
+	bg_n.content_margin_top = 44
+	bg_n.content_margin_bottom = 6
+	bg_h.content_margin_top = 44
+	bg_h.content_margin_bottom = 6
+	bg_p.content_margin_top = 44
+	bg_p.content_margin_bottom = 6
 
 	if is_active:
 		bg_n.border_width_left = 6
@@ -283,81 +283,83 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	btn.add_theme_color_override("font_color",         C_GOLD if is_active else (C_CREAM_DIM.darkened(0.35) if is_locked else C_CREAM_DIM))
 	btn.add_theme_color_override("font_hover_color",   C_CREAM_DIM.darkened(0.2) if is_locked else C_CREAM)
 	btn.add_theme_color_override("font_pressed_color", C_GOLD if not is_locked else C_CREAM_DIM.darkened(0.35))
-	btn.add_theme_font_size_override("font_size", 22)
+	btn.add_theme_font_size_override("font_size", 13)
 
 func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
 	var ic := Control.new()
 	ic.name = "IconDraw"
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ic.layout_mode = 1
-	ic.anchors_preset = Control.PRESET_CENTER_TOP
-	ic.anchor_left = 0.5; ic.anchor_right = 0.5
+	ic.anchor_left = 0.0; ic.anchor_right = 1.0
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
-	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_left = 0;   ic.offset_right = 0
+	ic.offset_top = 2;    ic.offset_bottom = 42
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
 func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
-	var sz := c.size
-	var cx := sz.x * 0.5
-	var cy := sz.y * 0.5
+	var sz  := c.size
+	var cx  := sz.x * 0.5
+	var cy  := sz.y * 0.5
+	var s   := minf(sz.x, sz.y) * 0.42  # scale unit proportional to icon area
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
 
 	match t:
 		0: # Hamburger
 			for i in 3:
-				var y := cy - 12.0 + i * 12.0
-				c.draw_line(Vector2(cx - 15, y), Vector2(cx + 15, y), col, 4.0, true)
-		1: # Graduation
+				var y := cy + (i - 1) * s * 0.65
+				c.draw_line(Vector2(cx - s, y), Vector2(cx + s, y), col, 3.5, true)
+		1: # Graduation cap
 			var pts := PackedVector2Array([
-				Vector2(cx, cy - 14),
-				Vector2(cx + 22, cy - 4),
-				Vector2(cx, cy + 6),
-				Vector2(cx - 22, cy - 4)
+				Vector2(cx,           cy - s * 0.95),
+				Vector2(cx + s * 1.5, cy - s * 0.30),
+				Vector2(cx,           cy + s * 0.40),
+				Vector2(cx - s * 1.5, cy - s * 0.30)
 			])
 			c.draw_colored_polygon(pts, col)
 			var base_pts := PackedVector2Array([
-				Vector2(cx - 11, cy + 1),
-				Vector2(cx + 11, cy + 1),
-				Vector2(cx + 8, cy + 8),
-				Vector2(cx - 8, cy + 8)
+				Vector2(cx - s * 0.75, cy + s * 0.05),
+				Vector2(cx + s * 0.75, cy + s * 0.05),
+				Vector2(cx + s * 0.55, cy + s * 0.60),
+				Vector2(cx - s * 0.55, cy + s * 0.60)
 			])
 			c.draw_colored_polygon(base_pts, col)
-			c.draw_line(Vector2(cx, cy - 4), Vector2(cx + 15, cy + 3), col, 3.0, true)
-			c.draw_circle(Vector2(cx + 15, cy + 6), 3.5, col)
-		2: # Notes
-			c.draw_rect(Rect2(cx - 13, cy - 14, 5, 20), col)
-			c.draw_rect(Rect2(cx + 3,  cy - 18, 5, 20), col)
-			c.draw_circle(Vector2(cx - 10,  cy + 6), 6.5, col)
-			c.draw_circle(Vector2(cx + 6,  cy + 2), 6.5, col)
-			c.draw_line(Vector2(cx - 8, cy - 14), Vector2(cx + 8, cy - 18), col, 4.0, true)
+			c.draw_line(Vector2(cx, cy - s * 0.25), Vector2(cx + s, cy + s * 0.20), col, 2.5, true)
+			c.draw_circle(Vector2(cx + s, cy + s * 0.45), s * 0.22, col)
+		2: # Music notes
+			c.draw_rect(Rect2(cx - s * 0.85, cy - s * 0.95, s * 0.32, s * 1.35), col)
+			c.draw_rect(Rect2(cx + s * 0.20, cy - s * 1.15, s * 0.32, s * 1.35), col)
+			c.draw_circle(Vector2(cx - s * 0.65, cy + s * 0.40), s * 0.42, col)
+			c.draw_circle(Vector2(cx + s * 0.40, cy + s * 0.20), s * 0.42, col)
+			c.draw_line(Vector2(cx - s * 0.53, cy - s * 0.95), Vector2(cx + s * 0.52, cy - s * 1.15), col, 3.5, true)
 		3: # Gamepad
-			c.draw_arc(Vector2(cx, cy), 16, 0, TAU, 32, col, 4.0, true)
-			c.draw_line(Vector2(cx - 10, cy), Vector2(cx - 4, cy), col, 3.5, true)
-			c.draw_line(Vector2(cx + 4, cy), Vector2(cx + 10, cy), col, 3.5, true)
-			c.draw_line(Vector2(cx, cy - 10), Vector2(cx, cy - 4), col, 3.5, true)
-			c.draw_line(Vector2(cx, cy + 4), Vector2(cx, cy + 10), col, 3.5, true)
-			c.draw_circle(Vector2(cx + 7, cy - 3), 3.5, col)
-			c.draw_circle(Vector2(cx + 7, cy + 3), 3.5, col)
-		4: # Bars
-			var bar_w := 8.0
-			var bars := [14.0, 22.0, 11.0, 19.0]
-			var base_y := cy + 14.0
-			for i in bars.size():
-				var x := cx - 18.0 + i * 12.0
-				c.draw_rect(Rect2(x, base_y - bars[i], bar_w, bars[i]), col)
+			c.draw_arc(Vector2(cx, cy), s * 0.90, 0, TAU, 32, col, 3.5, true)
+			c.draw_line(Vector2(cx - s * 0.55, cy), Vector2(cx - s * 0.22, cy), col, 3.0, true)
+			c.draw_line(Vector2(cx + s * 0.22, cy), Vector2(cx + s * 0.55, cy), col, 3.0, true)
+			c.draw_line(Vector2(cx, cy - s * 0.55), Vector2(cx, cy - s * 0.22), col, 3.0, true)
+			c.draw_line(Vector2(cx, cy + s * 0.22), Vector2(cx, cy + s * 0.55), col, 3.0, true)
+			c.draw_circle(Vector2(cx + s * 0.40, cy - s * 0.17), s * 0.18, col)
+			c.draw_circle(Vector2(cx + s * 0.40, cy + s * 0.17), s * 0.18, col)
+		4: # Bars chart
+			var bar_w := s * 0.42
+			var bar_hs := [s * 0.65, s, s * 0.50, s * 0.85]
+			var base_y := cy + s * 0.65
+			for i in bar_hs.size():
+				var x := cx - s * 0.90 + i * (bar_w + s * 0.18)
+				c.draw_rect(Rect2(x, base_y - bar_hs[i], bar_w, bar_hs[i]), col)
 		5: # Person
-			c.draw_circle(Vector2(cx, cy - 8), 8.5, col)
-			c.draw_arc(Vector2(cx, cy + 14), 14, PI, TAU, 24, col, 4.0, true)
+			var r_h := s * 0.52
+			var r_b := s * 0.76
+			c.draw_circle(Vector2(cx, cy - r_h * 0.85), r_h, col)
+			c.draw_arc(Vector2(cx, cy + r_b * 0.55), r_b, PI, TAU, 24, col, 3.5, true)
 
 	if is_locked:
-		var lx := cx + 12.0
-		var ly := cy + 10.0
-		# draw small lock
-		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_GOLD, true) # golden lock body
-		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_BG_DARK, false, 1.0)
-		c.draw_arc(Vector2(lx, ly - 2), 3.5, PI, TAU, 8, C_GOLD, 1.5, true)
+		var lx := cx + s * 0.70
+		var ly := cy + s * 0.55
+		var lw := s * 0.55; var lh := s * 0.45
+		c.draw_rect(Rect2(lx - lw * 0.5, ly - lh * 0.3, lw, lh), C_GOLD, true)
+		c.draw_rect(Rect2(lx - lw * 0.5, ly - lh * 0.3, lw, lh), C_BG_DARK, false, 1.0)
+		c.draw_arc(Vector2(lx, ly - lh * 0.3), lw * 0.35, PI, TAU, 8, C_GOLD, 1.5, true)
 
 # ─── Top Bar ──────────────────────────────────────────────────────────────────
 func _build_top_bar() -> void:

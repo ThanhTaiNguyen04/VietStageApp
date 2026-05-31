@@ -47,21 +47,16 @@ func _animate_in() -> void:
 	card.modulate.a = 0.0
 
 	var t := create_tween().set_parallel(true)
-	t.tween_property(self, "modulate:a",    1.0,        0.50)\
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(card, "scale",         Vector2.ONE, 0.60).set_delay(0.10)\
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(card, "modulate:a",    1.0,         0.50).set_delay(0.10)\
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "modulate:a", 1.0, 0.50).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(card, "scale", Vector2.ONE, 0.60).set_delay(0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(card, "modulate:a", 1.0, 0.50).set_delay(0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	t.chain().tween_callback(_start_logo_float)
 
 func _start_logo_float() -> void:
 	if not is_instance_valid(logo_rect): return
 	var lp := create_tween().set_loops()
-	lp.tween_property(logo_rect, "position:y", -6.0, 2.5)\
-		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	lp.tween_property(logo_rect, "position:y",  0.0, 2.5)\
-		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	lp.tween_property(logo_rect, "position:y", -6.0, 2.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	lp.tween_property(logo_rect, "position:y",  0.0, 2.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
 # ── Hệ thống hạt hoạt hình nền ────────────────────────────────────────────────
 func _spawn_bg_particles() -> void:
@@ -117,21 +112,11 @@ func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float,
 
 	var t := create_tween().set_parallel(true)
 
-	# Fade vào (20% đầu)
-	t.tween_property(p, "modulate:a", 1.0, dur * 0.22).set_delay(delay)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	# Bay lên
-	t.tween_property(p, "position:y", end_y, dur).set_delay(delay)\
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	# Lắc lư nửa đầu
-	t.tween_property(p, "position:x", sx + drift, dur * 0.50).set_delay(delay)\
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	# Lắc lư nửa sau (về phía kia)
-	t.tween_property(p, "position:x", sx + drift * 0.40, dur * 0.50).set_delay(delay + dur * 0.50)\
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	# Fade ra (25% cuối)
-	t.tween_property(p, "modulate:a", 0.0, dur * 0.28).set_delay(delay + dur * 0.72)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_property(p, "modulate:a", 1.0, dur * 0.22).set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(p, "position:y", end_y, dur).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(p, "position:x", sx + drift, dur * 0.50).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(p, "position:x", sx + drift * 0.40, dur * 0.50).set_delay(delay + dur * 0.50).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(p, "modulate:a", 0.0, dur * 0.28).set_delay(delay + dur * 0.72).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	# Khi xong: reset lại vị trí và loop
 	t.chain().tween_callback(func() -> void:
@@ -266,15 +251,15 @@ func _make_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
 	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
 	btn.mouse_entered.connect(func() -> void:
-		create_tween().tween_property(btn, "scale", Vector2(1.06, 1.06), 0.14)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
+		create_tween().tween_property(btn, "scale", Vector2(1.06, 1.06), 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
 	btn.mouse_exited.connect(func() -> void:
-		create_tween().tween_property(btn, "scale", Vector2.ONE, 0.14)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
+		create_tween().tween_property(btn, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
 	btn.button_down.connect(func() -> void:
-		create_tween().tween_property(btn, "scale", Vector2(0.93, 0.93), 0.08)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT))
+		create_tween().tween_property(btn, "scale", Vector2(0.93, 0.93), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	)
 	btn.button_up.connect(func() -> void:
 		var target := Vector2(1.06, 1.06) if btn.is_hovered() else Vector2.ONE
-		create_tween().tween_property(btn, "scale", target, 0.14)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
+		create_tween().tween_property(btn, "scale", target, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)

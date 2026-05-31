@@ -19,7 +19,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.031, 0.024, 0.047, 1.0)
 
-[node name="Center" type="VBoxContainer" parent="."]
+; ── Landscape: logo kiri + text kanan, căn giữa màn hình 844×390 ────────────
+[node name="Center" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -28,48 +29,55 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
-offset_left = -300
-offset_top = -280
-offset_right = 300
-offset_bottom = 280
-theme_override_constants/separation = 18
+offset_left = -320
+offset_top = -130
+offset_right = 320
+offset_bottom = 130
+theme_override_constants/separation = 28
 alignment = 1
 
 [node name="LogoRect" type="TextureRect" parent="Center"]
-custom_minimum_size = Vector2(220, 220)
+custom_minimum_size = Vector2(140, 140)
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_vertical = 4
 texture = ExtResource("2_logo")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Gap1" type="Control" parent="Center"]
-custom_minimum_size = Vector2(0, 8)
+[node name="TextVBox" type="VBoxContainer" parent="Center"]
 layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 10
+alignment = 1
 
-[node name="AppName" type="Label" parent="Center"]
+[node name="AppName" type="Label" parent="Center/TextVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 76
+theme_override_font_sizes/font_size = 56
 text = "VietStage"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
-[node name="Tagline" type="Label" parent="Center"]
+[node name="Gap1" type="Control" parent="Center/TextVBox"]
+custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
-theme_override_font_sizes/font_size = 21
+
+[node name="Tagline" type="Label" parent="Center/TextVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
 text = "Học nhạc cụ dân tộc · Mọi lúc · Mọi nơi"
-horizontal_alignment = 1
+horizontal_alignment = 0
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1
-anchor_left = 0.5
+anchor_left = 1.0
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-offset_left = -200
-offset_top = -46
-offset_right = 200
-offset_bottom = -12
-theme_override_font_sizes/font_size = 15
+grow_horizontal = 0
+grow_vertical = 0
+offset_left = -130
+offset_top = -32
+offset_right = -12
+offset_bottom = -10
+theme_override_font_sizes/font_size = 13
 text = "v1.0.0"
-horizontal_alignment = 1
+horizontal_alignment = 2

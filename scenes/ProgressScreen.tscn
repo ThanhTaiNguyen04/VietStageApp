@@ -26,68 +26,71 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 theme_override_constants/separation = 0
 
+; ── Top bar (56px) ────────────────────────────────────────────────────────────
 [node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 80)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 
 [node name="TopM" type="MarginContainer" parent="Root/TopBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_top = 0
+theme_override_constants/margin_left   = 24
+theme_override_constants/margin_right  = 24
+theme_override_constants/margin_top    = 0
 theme_override_constants/margin_bottom = 0
 
 [node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 18
 
 [node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(160, 0)
+custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 text = "Back"
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 16
 
 [node name="ExportBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(140, 0)
+custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 text = "Xuất"
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
 
 [node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 22
 text = "Tiến độ"
 
+; ── Nội dung: profile trái + huy hiệu phải ────────────────────────────────────
 [node name="Content" type="HBoxContainer" parent="Root"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
+; ── Panel hồ sơ (270px) ───────────────────────────────────────────────────────
 [node name="ProfilePanel" type="PanelContainer" parent="Root/Content"]
-custom_minimum_size = Vector2(340, 0)
+custom_minimum_size = Vector2(270, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="ProfileM" type="MarginContainer" parent="Root/Content/ProfilePanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_bottom = 28
+theme_override_constants/margin_left   = 18
+theme_override_constants/margin_right  = 18
+theme_override_constants/margin_top    = 16
+theme_override_constants/margin_bottom = 16
 
 [node name="ProfileV" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="AvatarCircle" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-custom_minimum_size = Vector2(130, 130)
+custom_minimum_size = Vector2(86, 86)
 layout_mode = 2
 size_flags_horizontal = 4
 
@@ -99,7 +102,7 @@ stretch_mode = 5
 
 [node name="PlayerName" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 22
 text = "Linh"
 horizontal_alignment = 1
 
@@ -109,14 +112,14 @@ size_flags_horizontal = 4
 
 [node name="LBM" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge"]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left   = 14
+theme_override_constants/margin_right  = 14
+theme_override_constants/margin_top    = 5
+theme_override_constants/margin_bottom = 5
 
 [node name="LBLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge/LBM"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 14
 text = "Cấp độ 8"
 horizontal_alignment = 1
 
@@ -129,56 +132,57 @@ layout_mode = 2
 [node name="LvlLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
 text = "Cấp độ 8"
 
 [node name="XpLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
 text = "1.240 / 2.000 XP"
 
 [node name="LvlBar" type="ProgressBar" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 value = 62.0
 show_percentage = false
 
+; Stats grid 2×2
 [node name="StatGrid" type="GridContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
 columns = 2
 layout_mode = 2
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
 
 [node name="S1" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
 layout_mode = 2
 
 [node name="S1M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 10
+theme_override_constants/margin_right  = 10
+theme_override_constants/margin_top    = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="S1V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="S1Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 text = "F"
 horizontal_alignment = 1
 
 [node name="S1Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 16
 text = "7"
 horizontal_alignment = 1
 
 [node name="S1Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Ngày"
 horizontal_alignment = 1
 
@@ -187,31 +191,31 @@ layout_mode = 2
 
 [node name="S2M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 10
+theme_override_constants/margin_right  = 10
+theme_override_constants/margin_top    = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="S2V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="S2Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 text = "*"
 horizontal_alignment = 1
 
 [node name="S2Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 16
 text = "1.240"
 horizontal_alignment = 1
 
 [node name="S2Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "XP"
 horizontal_alignment = 1
 
@@ -220,31 +224,31 @@ layout_mode = 2
 
 [node name="S3M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 10
+theme_override_constants/margin_right  = 10
+theme_override_constants/margin_top    = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="S3V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="S3Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 text = "T"
 horizontal_alignment = 1
 
 [node name="S3Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 16
 text = "14h"
 horizontal_alignment = 1
 
 [node name="S3Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Luyện tập"
 horizontal_alignment = 1
 
@@ -253,34 +257,35 @@ layout_mode = 2
 
 [node name="S4M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 10
+theme_override_constants/margin_right  = 10
+theme_override_constants/margin_top    = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="S4V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="S4Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 text = "A"
 horizontal_alignment = 1
 
 [node name="S4Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 16
 text = "78%"
 horizontal_alignment = 1
 
 [node name="S4Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 10
 text = "Chính xác"
 horizontal_alignment = 1
 
+; ── Panel huy hiệu (fills phần còn lại) ───────────────────────────────────────
 [node name="AchPanel" type="PanelContainer" parent="Root/Content"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -288,24 +293,24 @@ size_flags_vertical = 3
 
 [node name="AchM" type="MarginContainer" parent="Root/Content/AchPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_bottom = 28
+theme_override_constants/margin_left   = 20
+theme_override_constants/margin_right  = 20
+theme_override_constants/margin_top    = 16
+theme_override_constants/margin_bottom = 16
 
 [node name="AchV" type="VBoxContainer" parent="Root/Content/AchPanel/AchM"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 18
+theme_override_constants/separation = 12
 
 [node name="AchTitle" type="Label" parent="Root/Content/AchPanel/AchM/AchV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 18
 text = "Huy hiệu"
 
 [node name="AchGrid" type="GridContainer" parent="Root/Content/AchPanel/AchM/AchV"]
-columns = 4
+columns = 5
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12

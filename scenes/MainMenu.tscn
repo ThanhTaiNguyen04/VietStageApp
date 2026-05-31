@@ -40,39 +40,40 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
+; ── Sidebar dọc: 160px ────────────────────────────────────────────────────────
 [node name="Sidebar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(220, 0)
+custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 
 [node name="SideM" type="MarginContainer" parent="Root/Sidebar"]
 layout_mode = 2
-theme_override_constants/margin_left = 0
-theme_override_constants/margin_right = 0
-theme_override_constants/margin_top = 32
-theme_override_constants/margin_bottom = 32
+theme_override_constants/margin_left   = 0
+theme_override_constants/margin_right  = 0
+theme_override_constants/margin_top    = 14
+theme_override_constants/margin_bottom = 14
 
 [node name="SideV" type="VBoxContainer" parent="Root/Sidebar/SideM"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 0
 
 [node name="BtnMenu" type="Button" parent="Root/Sidebar/SideM/SideV"]
-custom_minimum_size = Vector2(220, 100)
+custom_minimum_size = Vector2(160, 52)
 layout_mode = 2
 flat = true
 
 [node name="TopSpacer" type="Control" parent="Root/Sidebar/SideM/SideV"]
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="BtnCourses" type="Button" parent="Root/Sidebar/SideM/SideV"]
-custom_minimum_size = Vector2(220, 140)
+custom_minimum_size = Vector2(160, 68)
 layout_mode = 2
 flat = true
 text = "Khóa học"
 
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV"]
-custom_minimum_size = Vector2(220, 140)
+custom_minimum_size = Vector2(160, 68)
 layout_mode = 2
 flat = true
 text = "Bài hát"
@@ -82,30 +83,32 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="BtnAccount" type="Button" parent="Root/Sidebar/SideM/SideV"]
-custom_minimum_size = Vector2(220, 130)
+custom_minimum_size = Vector2(160, 60)
 layout_mode = 2
 flat = true
 text = "Hồ sơ"
 
+; ── Nội dung phải ─────────────────────────────────────────────────────────────
 [node name="RightContent" type="VBoxContainer" parent="Root"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
+; ── Thanh trên: avatar + greeting + stats (64px cao) ─────────────────────────
 [node name="TopBar" type="MarginContainer" parent="Root/RightContent"]
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 62)
 layout_mode = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left   = 24
+theme_override_constants/margin_right  = 24
+theme_override_constants/margin_top    = 7
+theme_override_constants/margin_bottom = 7
 
 [node name="TopRow" type="HBoxContainer" parent="Root/RightContent/TopBar"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
 [node name="AvatarCircle" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow"]
-custom_minimum_size = Vector2(68, 68)
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 2
 size_flags_vertical = 4
 clip_contents = true
@@ -118,7 +121,8 @@ stretch_mode = 6
 
 [node name="GreetLabel" type="Label" parent="Root/RightContent/TopBar/TopRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 18
 text = "Hi, Tai!"
 
 [node name="Spacer" type="Control" parent="Root/RightContent/TopBar/TopRow"]
@@ -128,21 +132,21 @@ size_flags_horizontal = 3
 [node name="StatsRow" type="HBoxContainer" parent="Root/RightContent/TopBar/TopRow"]
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 
 [node name="StreakPill" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow"]
 layout_mode = 2
 
 [node name="SPMargin" type="MarginContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow/StreakPill"]
 layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left   = 14
+theme_override_constants/margin_right  = 14
+theme_override_constants/margin_top    = 5
+theme_override_constants/margin_bottom = 5
 
 [node name="SPLabel" type="Label" parent="Root/RightContent/TopBar/TopRow/StatsRow/StreakPill/SPMargin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 13
 text = "7 ngày"
 
 [node name="XPPill" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow"]
@@ -150,414 +154,416 @@ layout_mode = 2
 
 [node name="XPMargin" type="MarginContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow/XPPill"]
 layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left   = 14
+theme_override_constants/margin_right  = 14
+theme_override_constants/margin_top    = 5
+theme_override_constants/margin_bottom = 5
 
 [node name="XPLabel" type="Label" parent="Root/RightContent/TopBar/TopRow/StatsRow/XPPill/XPMargin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 13
 text = "1.240 XP"
 
+; ── Roadmap cuộn ngang ────────────────────────────────────────────────────────
 [node name="RoadmapScroll" type="ScrollContainer" parent="Root/RightContent"]
 layout_mode = 2
 size_flags_vertical = 3
 vertical_scroll_mode = 0
 
 [node name="RoadmapContent" type="Control" parent="Root/RightContent/RoadmapScroll"]
-custom_minimum_size = Vector2(2450, 760)
+custom_minimum_size = Vector2(2450, 310)
 layout_mode = 2
 
+; Nhãn hướng dẫn lộ trình
 [node name="RoadmapGuide" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
 layout_mode = 0
-offset_left = 40.0
-offset_top = 180.0
-offset_right = 500.0
-offset_bottom = 220.0
-theme_override_font_sizes/font_size = 22
+offset_left   = 40.0
+offset_top    = 14.0
+offset_right  = 500.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 16
 text = "🗺️ Lộ trình học tập của bạn"
 
 [node name="PathSoloistTitle" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
 layout_mode = 0
-offset_left = 1070.0
-offset_top = 40.0
-offset_right = 1600.0
-offset_bottom = 70.0
-theme_override_font_sizes/font_size = 18
+offset_left   = 1070.0
+offset_top    = 10.0
+offset_right  = 1600.0
+offset_bottom = 28.0
+theme_override_font_sizes/font_size = 13
 text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 
 [node name="PathChordsTitle" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
 layout_mode = 0
-offset_left = 1070.0
-offset_top = 400.0
-offset_right = 1600.0
-offset_bottom = 430.0
-theme_override_font_sizes/font_size = 18
+offset_left   = 1070.0
+offset_top    = 164.0
+offset_right  = 1600.0
+offset_bottom = 182.0
+theme_override_font_sizes/font_size = 13
 text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
 
+; ── Lane 1: Soloist (y 38→175) ────────────────────────────────────────────────
 [node name="CardBasic" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(460, 210)
+custom_minimum_size = Vector2(460, 137)
 layout_mode = 0
-offset_left = 40.0
-offset_top = 275.0
-offset_right = 500.0
-offset_bottom = 485.0
+offset_left   = 40.0
+offset_top    = 38.0
+offset_right  = 500.0
+offset_bottom = 175.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left   = 16
+theme_override_constants/margin_right  = 12
+theme_override_constants/margin_top    = 12
+theme_override_constants/margin_bottom = 12
 
 [node name="Row" type="HBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="TextV" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic/Margin/Row"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 3
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic/Margin/Row/TextV"]
 custom_minimum_size = Vector2(310, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 20
 text = "Nhập Môn Đàn Tranh"
 autowrap_mode = 3
 
 [node name="Desc" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic/Margin/Row/TextV"]
 custom_minimum_size = Vector2(310, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 13
 text = "Kỹ thuật gảy ngón, cách đặt tay và nhạc lý đàn tranh."
 autowrap_mode = 3
 
 [node name="Details" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic/Margin/Row/TextV"]
 custom_minimum_size = Vector2(310, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 11
 text = "📖 2 Bài Học | ⭐ 6 Sao | 60% Hoàn Thành"
 autowrap_mode = 3
 
 [node name="Visual" type="Control" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardBasic/Margin/Row"]
-custom_minimum_size = Vector2(80, 80)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
 size_flags_vertical = 4
 
 [node name="CardEssentials" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(460, 210)
+custom_minimum_size = Vector2(460, 137)
 layout_mode = 0
-offset_left = 550.0
-offset_top = 275.0
-offset_right = 1010.0
-offset_bottom = 485.0
+offset_left   = 550.0
+offset_top    = 38.0
+offset_right  = 1010.0
+offset_bottom = 175.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left   = 16
+theme_override_constants/margin_right  = 12
+theme_override_constants/margin_top    = 12
+theme_override_constants/margin_bottom = 12
 
 [node name="Row" type="HBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="TextV" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials/Margin/Row"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 3
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials/Margin/Row/TextV"]
 custom_minimum_size = Vector2(310, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
+theme_override_font_sizes/font_size = 20
 text = "Kỹ Thuật Nhấn Rung"
 autowrap_mode = 3
 
 [node name="Desc" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials/Margin/Row/TextV"]
 custom_minimum_size = Vector2(310, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 13
 text = "Luyện nhấn dây, tạo âm rung truyền cảm cả hai tay."
 autowrap_mode = 3
 
 [node name="Details" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials/Margin/Row/TextV"]
 custom_minimum_size = Vector2(310, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 11
 text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
 autowrap_mode = 3
 
 [node name="Visual" type="Control" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardEssentials/Margin/Row"]
-custom_minimum_size = Vector2(80, 80)
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
 size_flags_vertical = 4
 
 [node name="CardSoloistUnlock" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(280, 210)
+custom_minimum_size = Vector2(280, 137)
 layout_mode = 0
-offset_left = 1070.0
-offset_top = 95.0
-offset_right = 1350.0
-offset_bottom = 305.0
+offset_left   = 1070.0
+offset_top    = 38.0
+offset_right  = 1350.0
+offset_bottom = 175.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistUnlock"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 10
+theme_override_constants/margin_right  = 10
+theme_override_constants/margin_top    = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="VBox" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistUnlock/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistUnlock/Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 18
 text = "Độc Tấu"
 horizontal_alignment = 1
 
 [node name="LockedIcon" type="Control" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistUnlock/Margin/VBox"]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 
 [node name="BtnUnlock" type="Button" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistUnlock/Margin/VBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
 text = "MỞ KHÓA"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
 
 [node name="CardChordsUnlock" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(280, 210)
+custom_minimum_size = Vector2(280, 112)
 layout_mode = 0
-offset_left = 1070.0
-offset_top = 455.0
-offset_right = 1350.0
-offset_bottom = 665.0
+offset_left   = 1070.0
+offset_top    = 184.0
+offset_right  = 1350.0
+offset_bottom = 296.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsUnlock"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 10
+theme_override_constants/margin_right  = 10
+theme_override_constants/margin_top    = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="VBox" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsUnlock/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsUnlock/Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 18
 text = "Hợp Âm"
 horizontal_alignment = 1
 
 [node name="LockedIcon" type="Control" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsUnlock/Margin/VBox"]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
 [node name="BtnUnlock" type="Button" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsUnlock/Margin/VBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "MỞ KHÓA"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
 
 [node name="CardSoloistSkills" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(460, 210)
+custom_minimum_size = Vector2(460, 137)
 layout_mode = 0
-offset_left = 1410.0
-offset_top = 95.0
-offset_right = 1870.0
-offset_bottom = 305.0
+offset_left   = 1410.0
+offset_top    = 38.0
+offset_right  = 1870.0
+offset_bottom = 175.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistSkills"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 16
+theme_override_constants/margin_right  = 12
+theme_override_constants/margin_top    = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="HBox" type="HBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistSkills/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="TextV" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistSkills/Margin/HBox"]
 custom_minimum_size = Vector2(330, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistSkills/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 18
 text = "Kỹ Năng Độc Tấu"
 autowrap_mode = 3
 
 [node name="BulletList" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistSkills/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 12
 text = "✓ Kỹ thuật Song Thanh
 ✓ Kỹ thuật Rải âm (Vê dây)
 ✓ Đọc nhạc phổ Ngũ cung"
 autowrap_mode = 3
 
 [node name="BtnPlay" type="Button" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardSoloistSkills/Margin/HBox"]
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 
 [node name="CardChordsSkills" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(460, 210)
+custom_minimum_size = Vector2(460, 112)
 layout_mode = 0
-offset_left = 1410.0
-offset_top = 455.0
-offset_right = 1870.0
-offset_bottom = 665.0
+offset_left   = 1410.0
+offset_top    = 184.0
+offset_right  = 1870.0
+offset_bottom = 296.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 16
+theme_override_constants/margin_right  = 12
+theme_override_constants/margin_top    = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="HBox" type="HBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="TextV" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills/Margin/HBox"]
 custom_minimum_size = Vector2(330, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 18
 text = "Kỹ Năng Đệm Hát"
 autowrap_mode = 3
 
 [node name="BulletList" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 12
 text = "✓ 5 Hợp âm Ngũ cung cơ bản
 ✓ Đệm tiết tấu Dân ca 2/4"
 autowrap_mode = 3
 
 [node name="BtnPlay" type="Button" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills/Margin/HBox"]
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 
 [node name="CardClassical" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(460, 210)
+custom_minimum_size = Vector2(460, 137)
 layout_mode = 0
-offset_left = 1930.0
-offset_top = 95.0
-offset_right = 2390.0
-offset_bottom = 305.0
+offset_left   = 1930.0
+offset_top    = 38.0
+offset_right  = 2390.0
+offset_bottom = 175.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 16
+theme_override_constants/margin_right  = 12
+theme_override_constants/margin_top    = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="HBox" type="HBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="TextV" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical/Margin/HBox"]
 custom_minimum_size = Vector2(330, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 18
 text = "Nhạc Cổ Truyền"
 autowrap_mode = 3
 
 [node name="BulletList" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 12
 text = "✓ Dạ Cổ Hoài Lang
 ✓ Lý Mỹ Hưng"
 autowrap_mode = 3
 
 [node name="BtnPlay" type="Button" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical/Margin/HBox"]
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 
 [node name="CardPopChords" type="PanelContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
-custom_minimum_size = Vector2(460, 210)
+custom_minimum_size = Vector2(460, 112)
 layout_mode = 0
-offset_left = 1930.0
-offset_top = 455.0
-offset_right = 2390.0
-offset_bottom = 665.0
+offset_left   = 1930.0
+offset_top    = 184.0
+offset_right  = 2390.0
+offset_bottom = 296.0
 
 [node name="Margin" type="MarginContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left   = 16
+theme_override_constants/margin_right  = 12
+theme_override_constants/margin_top    = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="HBox" type="HBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="TextV" type="VBoxContainer" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords/Margin/HBox"]
 custom_minimum_size = Vector2(330, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="Title" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 18
 text = "Đệm Hát Hiện Đại"
 autowrap_mode = 3
 
 [node name="BulletList" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords/Margin/HBox/TextV"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 12
 text = "✓ Bèo Dạt Mây Trôi
 ✓ Đất Phương Nam"
 autowrap_mode = 3
 
 [node name="BtnPlay" type="Button" parent="Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords/Margin/HBox"]
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 size_flags_vertical = 4
-flat = true
 flat = true

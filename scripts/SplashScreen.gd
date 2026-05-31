@@ -9,15 +9,15 @@ func _ready() -> void:
 	_animate()
 
 func _style_text() -> void:
-	($Center/AppName    as Label).add_theme_color_override("font_color", C_GOLD)
-	($Center/Tagline    as Label).add_theme_color_override("font_color", C_WHITE_DIM)
-	($VersionLabel      as Label).add_theme_color_override("font_color", C_VER)
+	($Center/TextVBox/AppName as Label).add_theme_color_override("font_color", C_GOLD)
+	($Center/TextVBox/Tagline as Label).add_theme_color_override("font_color", C_WHITE_DIM)
+	($VersionLabel            as Label).add_theme_color_override("font_color", C_VER)
 
 func _animate() -> void:
 	modulate.a = 0.0
 	$Center.position.y += 28.0
-	($Center/Tagline as Label).modulate.a  = 0.0
-	($VersionLabel   as Label).modulate.a  = 0.0
+	($Center/TextVBox/Tagline as Label).modulate.a = 0.0
+	($VersionLabel            as Label).modulate.a = 0.0
 
 	var t := create_tween().set_parallel(true)
 
@@ -25,11 +25,10 @@ func _animate() -> void:
 	t.tween_property(self, "modulate:a", 1.0, 0.55)
 
 	# Logo + name block slides up
-	t.tween_property($Center, "position:y", $Center.position.y - 28.0, 0.70)\
-		.set_delay(0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property($Center, "position:y", $Center.position.y - 28.0, 0.70).set_delay(0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	# Tagline fades in
-	t.tween_property($Center/Tagline, "modulate:a", 1.0, 0.45).set_delay(0.50)
+	t.tween_property($Center/TextVBox/Tagline, "modulate:a", 1.0, 0.45).set_delay(0.50)
 
 	# Version fades in
 	t.tween_property($VersionLabel, "modulate:a", 1.0, 0.40).set_delay(0.70)
