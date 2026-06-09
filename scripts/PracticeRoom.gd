@@ -35,6 +35,8 @@ var _score       := 75.0
 var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 2
+var _string_streams: Array[AudioStreamWAV] = []
+const DanTranhStringScript = preload("res://scripts/DanTranhString.gd")
 
 const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
 const SHEET    : Array[String] = ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
@@ -47,6 +49,7 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	_generate_streams()
 	_set_labels()
 	_build_theme()
 	_build_notation()
@@ -194,11 +197,11 @@ func _build_notation() -> void:
 		var is_done   := i < _note_idx
 
 		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(88, 88)
+		card.custom_minimum_size = Vector2(70, 70)
 		var cs := StyleBoxFlat.new()
 		cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
-		cs.corner_radius_top_left = 44; cs.corner_radius_top_right = 44
-		cs.corner_radius_bottom_left = 44; cs.corner_radius_bottom_right = 44
+		cs.corner_radius_top_left = 35; cs.corner_radius_top_right = 35
+		cs.corner_radius_bottom_left = 35; cs.corner_radius_bottom_right = 35
 		if is_active:
 			cs.bg_color     = C_GOLD
 			cs.border_color = C_GOLD_LIGHT
@@ -215,7 +218,7 @@ func _build_notation() -> void:
 		lbl.text = note
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 24)
+		lbl.add_theme_font_size_override("font_size", 20)
 		lbl.add_theme_color_override("font_color",
 			Color(0.10, 0.05, 0.01, 1) if is_active else C_CREAM)
 		card.add_child(lbl)
@@ -242,70 +245,14 @@ func _build_strings() -> void:
 	for c in strings_hbox.get_children(): c.queue_free()
 
 	for i in 16:
-		var is_treble := i >= 8
-		var row := Control.new()
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.custom_minimum_size = Vector2(0, 12)
-
-		var line := ColorRect.new()
-		line.custom_minimum_size = Vector2(0, 3)
-		line.color = Color(0.82, 0.60, 0.20, 0.85) if is_treble else Color(0.72, 0.52, 0.18, 0.85)
-		line.anchor_left = 0.08
-		line.anchor_right = 0.92
-		line.anchor_top = 0.5
-		line.anchor_bottom = 0.5
-		line.offset_top = -1
-		line.offset_bottom = 1
-		line.layout_mode = 1
-		row.add_child(line)
-
-		var pluck_dot := ColorRect.new()
-		pluck_dot.custom_minimum_size = Vector2(10, 10)
-		pluck_dot.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55)
-		pluck_dot.anchor_left = 0.86
-		pluck_dot.anchor_right = 0.86
-		pluck_dot.anchor_top = 0.5
-		pluck_dot.anchor_bottom = 0.5
-		pluck_dot.offset_left = -5
-		pluck_dot.offset_right = 5
-		pluck_dot.offset_top = -5
-		pluck_dot.offset_bottom = 5
-		pluck_dot.layout_mode = 1
-		row.add_child(pluck_dot)
-
-		var num_lbl := Label.new()
-		num_lbl.text = str(i + 1)
-		num_lbl.add_theme_font_size_override("font_size", 11)
-		num_lbl.add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55))
-		num_lbl.anchor_left = 0.0
-		num_lbl.anchor_right = 0.08
-		num_lbl.anchor_top = 0.0
-		num_lbl.anchor_bottom = 1.0
-		num_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		num_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		num_lbl.layout_mode = 1
-		row.add_child(num_lbl)
-
-		var note_lbl := Label.new()
-		note_lbl.text = NOTES_VN[i % NOTES_VN.size()]
-		note_lbl.add_theme_font_size_override("font_size", 11)
-		note_lbl.add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70))
-		note_lbl.anchor_left = 0.92
-		note_lbl.anchor_right = 1.0
-		note_lbl.anchor_top = 0.0
-		note_lbl.anchor_bottom = 1.0
-		note_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		note_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		note_lbl.layout_mode = 1
-		row.add_child(note_lbl)
-
-		var idx := i
-		row.gui_input.connect(func(ev: InputEvent) -> void:
-			if ev is InputEventMouseButton and ev.pressed:
-				_pluck_string(idx, line, row)
-		)
-
-		strings_hbox.add_child(row)
+		var string_node := Control.new()
+		string_node.set_script(DanTranhStringScript)
+		string_node.init(i, NOTES_VN[i % NOTES_VN.size()], _get_string_frequency(i), _string_streams[i])
+		
+		string_node.string_plucked.connect(_on_string_plucked)
+		string_node.string_pressed.connect(_on_string_pressed)
+		
+		strings_hbox.add_child(string_node)
 
 	_update_target_indicator()
 
@@ -318,26 +265,77 @@ func _build_rhythm_bars() -> void:
 		bar.size_flags_vertical = Control.SIZE_SHRINK_END
 		rhythm_bars.add_child(bar)
 
-# ─── Pluck ────────────────────────────────────────────────────────────────────
-func _pluck_string(idx: int, line: ColorRect, row: Control) -> void:
-	var base_color := line.color
-	line.color = Color(1.0, 0.85, 0.25, 1.0)
-	row.modulate = Color(1.2, 1.1, 0.9, 1.0)
-	line.scale = Vector2(1.0, 1.0)
+# ─── Sound Generator ──────────────────────────────────────────────────────────
+func _generate_streams() -> void:
+	_string_streams.resize(16)
+	for i in 16:
+		var freq := _get_string_frequency(i)
+		_string_streams[i] = _generate_pluck_stream(freq)
 
-	var t := create_tween().set_parallel(true)
-	t.tween_property(line, "color", base_color, 0.35)
-	t.tween_property(row, "modulate", Color.WHITE, 0.35)
-	t.tween_property(line, "scale:y", 2.6, 0.08).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	t.tween_property(line, "scale:y", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+func _get_string_frequency(idx: int) -> float:
+	# Base frequencies for the first 7 strings (octave 0)
+	var base_freqs = [
+		130.81, # Hò (C3)
+		146.83, # Xự (D3)
+		174.61, # Xang (F3)
+		196.00, # Xê (G3)
+		220.00, # Công (A3)
+		261.63, # Liu (C4)
+		293.66  # Ú (D4)
+	]
+	var octave = idx / 7
+	var note_in_octave = idx % 7
+	return base_freqs[note_in_octave] * pow(2, octave)
 
-	var plucked := NOTES_VN[idx % NOTES_VN.size()]
-	pitch_note.text   = plucked
+func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 44100
+	stream.stereo = false
+	
+	var duration := 2.2 # 2.2 seconds decay
+	var sample_count := int(44100 * duration)
+	var byte_count := sample_count * 2
+	var data := PackedByteArray()
+	data.resize(byte_count)
+	
+	var phase := 0.0
+	var increment := freq * TAU / 44100.0
+	
+	for i in range(sample_count):
+		var t_sec = float(i) / 44100.0
+		# Pick pluck noise at start
+		var noise = randf_range(-1.0, 1.0) * 0.12 * exp(-t_sec * 120.0)
+		
+		# Additive harmonics synthesis representing a real metallic Dan Tranh string
+		var sample = 0.0
+		sample += sin(phase) * 0.40 * exp(-t_sec * 1.6)         # Fundamental
+		sample += sin(phase * 2.0) * 0.22 * exp(-t_sec * 3.2)   # 2nd harmonic
+		sample += sin(phase * 3.0) * 0.15 * exp(-t_sec * 4.8)   # 3rd harmonic
+		sample += sin(phase * 4.0) * 0.10 * exp(-t_sec * 6.4)   # 4th harmonic
+		sample += sin(phase * 5.0) * 0.06 * exp(-t_sec * 8.0)   # 5th harmonic
+		sample += sin(phase * 6.0) * 0.03 * exp(-t_sec * 10.0)  # 6th harmonic
+		
+		var final_val = (sample + noise) * 0.90
+		final_val = clamp(final_val, -1.0, 1.0)
+		
+		var val_i16 = int(final_val * 32767.0)
+		data[i * 2] = val_i16 & 0xFF
+		data[i * 2 + 1] = (val_i16 >> 8) & 0xFF
+		
+		phase += increment
+		
+	stream.data = data
+	return stream
+
+# ─── String Signal Handlers ───────────────────────────────────────────────────
+func _on_string_plucked(idx: int, plucked_note: String) -> void:
+	pitch_note.text   = plucked_note
 	pitch_status.text = "Dây %d  —  Vừa gảy" % (idx + 1)
 	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
-	if plucked == SHEET[_note_idx]:
+	if plucked_note == SHEET[_note_idx]:
 		_note_idx = (_note_idx + 1) % SHEET.size()
 		_build_notation()
 		_update_target_indicator()
@@ -345,19 +343,20 @@ func _pluck_string(idx: int, line: ColorRect, row: Control) -> void:
 		_refresh_score()
 		_va_say("Xuất sắc! Gảy đúng nốt rồi.")
 
-	# Spawn a soft halo to emphasize the pluck
-	var halo := ColorRect.new()
-	halo.color = Color(1.0, 0.86, 0.30, 0.45)
-	halo.custom_minimum_size = Vector2(8, 8)
-	halo.anchor_left = 0.86; halo.anchor_right = 0.86
-	halo.anchor_top = 0.5; halo.anchor_bottom = 0.5
-	halo.offset_left = -12; halo.offset_right = 12
-	halo.offset_top = -12; halo.offset_bottom = 12
-	row.add_child(halo)
-	var ht := create_tween()
-	ht.tween_property(halo, "custom_minimum_size", Vector2(140, 140), 0.28)
-	ht.tween_property(halo, "color", Color(1.0, 0.86, 0.30, 0.0), 0.38)
-	ht.tween_callback(func() -> void: halo.queue_free())
+func _on_string_pressed(idx: int, cents_offset: float) -> void:
+	if cents_offset > 5.0:
+		pitch_status.text = "Dây %d  —  Đang nhấn (+%d¢)" % [idx + 1, int(cents_offset)]
+		pitch_status.add_theme_color_override("font_color", C_GOLD)
+		
+		var note_name = NOTES_VN[idx % NOTES_VN.size()]
+		if note_name == SHEET[_note_idx]:
+			_score = clamp(_score + 0.1, 0, 100)
+			_refresh_score()
+			if randf() > 0.985:
+				_va_say(SPEECHES[3]) # "Âm rung mềm mại, nhịp đều hơn nhé."
+	else:
+		pitch_status.text = "Sẵn sàng"
+		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
 
 # ─── Float Linh ───────────────────────────────────────────────────────────────
 func _start_float() -> void:
@@ -412,13 +411,11 @@ func _demo() -> void:
 	var target_idx := NOTES_VN.find(target_note)
 	if target_idx == -1:
 		target_idx = 0
-	var row := strings_hbox.get_child(target_idx) as Control
-	if row and row.get_child_count() >= 2:
-		var line := row.get_child(0) as ColorRect
-		# small delay then pluck visually
+	var string_node = strings_hbox.get_child(target_idx)
+	if string_node and string_node.has_method("pluck"):
 		var dt := create_tween()
 		dt.set_delay(0.35)
-		dt.tween_callback(func() -> void: _pluck_string(target_idx, line, row))
+		dt.tween_callback(func() -> void: string_node.pluck())
 
 func _simulate_tick() -> void:
 	var ni := randi() % NOTES_VN.size()
@@ -487,14 +484,10 @@ func _update_target_indicator() -> void:
 	target_note_label.text = "Nốt cần gảy: %s" % target_note
 
 	for i in strings_hbox.get_child_count():
-		var row := strings_hbox.get_child(i) as Control
-		if row and row.get_child_count() >= 2:
-			var line := row.get_child(0) as ColorRect
-			var dot := row.get_child(1) as ColorRect
-			if line and dot:
-				var is_target := i == target_idx
-				line.color = Color(1.0, 0.85, 0.25, 0.95) if is_target else Color(0.82, 0.60, 0.20, 0.85)
-				dot.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.95) if is_target else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+		var string_node = strings_hbox.get_child(i)
+		if string_node and string_node.has_method("pluck"):
+			string_node.is_target = (i == target_idx)
+			string_node.queue_redraw()
 
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 2

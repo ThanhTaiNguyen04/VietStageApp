@@ -22,17 +22,18 @@ const C_SCREEN_BG  := Color(0.12, 0.07, 0.03, 1.0)
 @onready var screen_anch  : Control        = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor
 @onready var play_overlay : PanelContainer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/PlayOverlay
 @onready var linh_rect     : TextureRect    = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/LinhTexture
+@onready var video_stream_player : VideoStreamPlayer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/VideoStreamPlayer
 
 # ─── State ───
 var _playing     := false
 var _time        := 0.0
-const DURATION   := 15.0
+const DURATION   := 10.0
 
 const SUBTITLES := [
-	{"start": 0.0,  "end": 3.2,  "text": "Xin chào bạn! Tôi là Linh, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
-	{"start": 3.2,  "end": 7.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
-	{"start": 7.5,  "end": 11.8, "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
-	{"start": 11.8, "end": 15.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là Linh, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
+	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
+	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
 ]
 
 func _ready() -> void:
@@ -50,10 +51,13 @@ func _process(delta: float) -> void:
 			_playing = false
 			_update_play_state()
 			_va_success_prompt()
+			video_stream_player.stop()
+			linh_rect.visible = true
+			video_stream_player.visible = false
 		
 		# Update media progress
 		progress_bar.value = (_time / DURATION) * 100.0
-		time_label.text = "0:%02d / 0:15" % [int(_time)]
+		time_label.text = "0:%02d / 0:10" % [int(_time)]
 		
 		# Update subtitles
 		var sub_found := false
@@ -138,6 +142,7 @@ func _toggle_play() -> void:
 	if _time >= DURATION:
 		# replay from start
 		_time = 0.0
+		video_stream_player.stream_position = 0.0
 	_playing = not _playing
 	_update_play_state()
 
@@ -145,11 +150,17 @@ func _update_play_state() -> void:
 	if _playing:
 		play_btn.text = "⏸"
 		play_overlay.visible = false
-		linh_rect.modulate = Color.WHITE
+		linh_rect.visible = false
+		video_stream_player.visible = true
+		if video_stream_player.paused:
+			video_stream_player.paused = false
+		else:
+			video_stream_player.play()
 	else:
 		play_btn.text = "▶"
 		play_overlay.visible = true
-		linh_rect.modulate = Color(0.68, 0.65, 0.62, 1.0) # dim when paused
+		if video_stream_player.is_playing() and not video_stream_player.paused:
+			video_stream_player.paused = true
 
 func _va_success_prompt() -> void:
 	sub_label.text = "Tuyệt vời! Bài học hoàn thành. Hãy bấm nút 'Hoàn Thành Video' màu vàng để mở khóa thực hành!"
@@ -160,6 +171,7 @@ func _va_success_prompt() -> void:
 	ct.tween_property(complete_btn, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK)
 
 func _on_complete() -> void:
+	video_stream_player.stop()
 	var inst := InstrumentSelect.selected_instrument
 	SecureDataManager.complete_lesson(inst, "Node1", 3) # Mark Intro completed with 3 stars securely!
 	CourseMap.video_completed = true
@@ -168,6 +180,7 @@ func _on_complete() -> void:
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
 
 func _go_back() -> void:
+	video_stream_player.stop()
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))

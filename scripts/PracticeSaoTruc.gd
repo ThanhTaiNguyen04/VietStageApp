@@ -26,12 +26,38 @@ const C_RED_ERR    := Color(0.90, 0.25, 0.18, 1.0)
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
 @onready var result_dialog: AcceptDialog  = $ResultDialog
 @onready var dots_hbox    : HBoxContainer = $Root/TopBar/TopM/TopH/DotsHBox
+@onready var breath_progress : ProgressBar = $Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathProgress
+@onready var breath_status   : Label       = $Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathStatus
 
 var _recording   := false
 var _score       := 75.0
 var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
+var _covered_states : Array[bool] = [true, true, true, true, true, true]
+var _flute_streams : Dictionary = {}
+var _active_player : AudioStreamPlayer = null
+var _breath_pressure := 0.0
+
+const FREQS := {
+	"Đô": 261.63, # C4
+	"Rê": 293.66, # D4
+	"Mi": 329.63, # E4
+	"Fa": 349.23, # F4
+	"Sol": 392.00, # G4
+	"La": 440.00, # A4
+	"Si": 493.88  # B4
+}
+
+const FINGERINGS := {
+	"Đô": [true, true, true, true, true, true],
+	"Rê": [true, true, true, true, true, false],
+	"Mi": [true, true, true, true, false, false],
+	"Fa": [true, true, true, false, false, false],
+	"Sol": [true, true, false, false, false, false],
+	"La": [true, false, false, false, false, false],
+	"Si": [false, false, false, false, false, false]
+}
 
 const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 const SHEET    : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
@@ -44,6 +70,7 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	_generate_streams()
 	_set_labels()
 	_build_theme()
 	_build_notation()
@@ -75,6 +102,8 @@ func _process(delta: float) -> void:
 		if _sim_timer >= 1.2:
 			_sim_timer = 0.0
 			_simulate_tick()
+			
+	_update_breath_physics(delta)
 
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
@@ -153,8 +182,20 @@ func _build_theme() -> void:
 	var frame_s := _flat(Color(0.16, 0.09, 0.03, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 10)
 	frame.add_theme_stylebox_override("panel", frame_s)
 
-	var body := $Root/FluteBoard/BoardM/BoardVBox/FluteFrame/FluteM/FluteStack/FluteBody as ColorRect
-	body.color = Color(0.24, 0.13, 0.05, 1.0)
+	# FluteBody is a custom control that draws itself
+	
+	# Breath progress styling
+	var bf := StyleBoxFlat.new()
+	bf.bg_color = C_JADE
+	bf.corner_radius_top_left = 6; bf.corner_radius_top_right = 6
+	bf.corner_radius_bottom_left = 6; bf.corner_radius_bottom_right = 6
+	var bb := StyleBoxFlat.new()
+	bb.bg_color = Color(0.0, 0.0, 0.0, 0.45)
+	bb.corner_radius_top_left = 6; bb.corner_radius_top_right = 6
+	bb.corner_radius_bottom_left = 6; bb.corner_radius_bottom_right = 6
+	breath_progress.add_theme_stylebox_override("fill", bf)
+	breath_progress.add_theme_stylebox_override("background", bb)
+	($Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathLabel as Label).add_theme_color_override("font_color", C_GOLD)
 
 	var rec_bar_s := _flat(Color(0.05, 0.025, 0.010, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 0)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
@@ -177,20 +218,29 @@ func _build_flute() -> void:
 
 	for i in HOLES:
 		var hole := PanelContainer.new()
-		hole.custom_minimum_size = Vector2(26, 26)
+		hole.custom_minimum_size = Vector2(50, 50)
+		hole.pivot_offset = Vector2(25, 25)
+		hole.mouse_filter = Control.MOUSE_FILTER_STOP
+		
 		var hs := StyleBoxFlat.new()
-		hs.bg_color = Color(0.08, 0.05, 0.02, 1.0)
-		hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
-		hs.border_width_left = 2; hs.border_width_right = 2
-		hs.border_width_top = 2; hs.border_width_bottom = 2
-		hs.corner_radius_top_left = 13; hs.corner_radius_top_right = 13
-		hs.corner_radius_bottom_left = 13; hs.corner_radius_bottom_right = 13
+		hs.border_width_left = 3; hs.border_width_right = 3
+		hs.border_width_top = 3; hs.border_width_bottom = 3
+		hs.corner_radius_top_left = 25; hs.corner_radius_top_right = 25
+		hs.corner_radius_bottom_left = 25; hs.corner_radius_bottom_right = 25
+		
+		if _covered_states[i]:
+			hs.bg_color = C_GOLD
+			hs.border_color = C_GOLD_LIGHT
+		else:
+			hs.bg_color = Color(0.04, 0.02, 0.01)
+			hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+			
 		hole.add_theme_stylebox_override("panel", hs)
 
 		var idx := i
 		hole.gui_input.connect(func(ev: InputEvent) -> void:
-			if ev is InputEventMouseButton and ev.pressed:
-				_cover_hole(idx, hole, hs)
+			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+				_toggle_hole_state(idx, hole, hs)
 		)
 
 		holes_hbox.add_child(hole)
@@ -205,11 +255,11 @@ func _build_notation() -> void:
 		var is_done   := i < _note_idx
 
 		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(88, 88)
+		card.custom_minimum_size = Vector2(70, 70)
 		var cs := StyleBoxFlat.new()
 		cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
-		cs.corner_radius_top_left = 44; cs.corner_radius_top_right = 44
-		cs.corner_radius_bottom_left = 44; cs.corner_radius_bottom_right = 44
+		cs.corner_radius_top_left = 35; cs.corner_radius_top_right = 35
+		cs.corner_radius_bottom_left = 35; cs.corner_radius_bottom_right = 35
 		if is_active:
 			cs.bg_color     = C_GOLD
 			cs.border_color = C_GOLD_LIGHT
@@ -226,7 +276,7 @@ func _build_notation() -> void:
 		lbl.text = note
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 24)
+		lbl.add_theme_font_size_override("font_size", 20)
 		lbl.add_theme_color_override("font_color",
 			Color(0.10, 0.05, 0.01, 1) if is_active else C_CREAM)
 		card.add_child(lbl)
@@ -249,49 +299,179 @@ func _build_rhythm_bars() -> void:
 		bar.size_flags_vertical = Control.SIZE_SHRINK_END
 		rhythm_bars.add_child(bar)
 
-func _cover_hole(idx: int, hole: PanelContainer, hs: StyleBoxFlat) -> void:
-	hs.bg_color = Color(0.02, 0.02, 0.02, 1.0)
-	hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.9)
+# ─── Sound Generator ──────────────────────────────────────────────────────────
+func _generate_streams() -> void:
+	for note in NOTES_VN:
+		var freq = FREQS[note]
+		_flute_streams[note] = _generate_flute_stream(freq)
 
+func _generate_flute_stream(freq: float) -> AudioStreamWAV:
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 44100
+	stream.stereo = false
+	
+	# Loop settings for a sustained blowing sound
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = int(44100 * 0.3)
+	stream.loop_end = int(44100 * 1.7)
+	
+	var duration := 2.0 # 2 seconds total buffer
+	var sample_count := int(44100 * duration)
+	var byte_count := sample_count * 2
+	var data := PackedByteArray()
+	data.resize(byte_count)
+	
+	var phase := 0.0
+	var increment := freq * TAU / 44100.0
+	
+	for i in range(sample_count):
+		var t_sec = float(i) / 44100.0
+		# Gentle organic pitch vibrato (6Hz modulation)
+		var vibrato = 1.0 + 0.012 * sin(t_sec * 6.0 * TAU)
+		# Air blow friction white noise (hiss)
+		var air_noise = randf_range(-1.0, 1.0) * (0.05 * exp(-t_sec * 5.0) + 0.02)
+		
+		var sample = 0.0
+		sample += sin(phase) * 0.50                      # Fundamental
+		sample += sin(phase * 2.0) * 0.06                 # 2nd harmonic
+		sample += sin(phase * 3.0) * 0.03                 # 3rd harmonic
+		
+		# Breath attack fade-in over 80ms
+		var attack = clamp(t_sec / 0.08, 0.0, 1.0)
+		var decay = clamp((duration - t_sec) / 0.3, 0.0, 1.0)
+		
+		var final_val = (sample * attack + air_noise) * decay * 0.85
+		final_val = clamp(final_val, -1.0, 1.0)
+		
+		var val_i16 = int(final_val * 32767.0)
+		data[i * 2] = val_i16 & 0xFF
+		data[i * 2 + 1] = (val_i16 >> 8) & 0xFF
+		
+		phase += increment * vibrato
+		
+	stream.data = data
+	return stream
+
+func _play_flute_sound(note: String) -> void:
+	if not _flute_streams.has(note): return
+	
+	if _active_player and is_instance_valid(_active_player):
+		var old_player = _active_player
+		var fade_t = create_tween()
+		fade_t.tween_property(old_player, "volume_db", -30.0, 0.08)
+		fade_t.tween_callback(func() -> void:
+			old_player.stop()
+			old_player.queue_free()
+		)
+		
+	_active_player = AudioStreamPlayer.new()
+	_active_player.stream = _flute_streams[note]
+	_active_player.volume_db = -3.0
+	add_child(_active_player)
+	_active_player.play()
+
+func _play_preview_or_sound() -> void:
+	var current_note = _get_current_note()
+	_play_flute_sound(current_note)
+	if not _recording:
+		# Preview note for 0.6s if not recording
+		var temp_player = _active_player
+		get_tree().create_timer(0.6).timeout.connect(func() -> void:
+			if is_instance_valid(temp_player) and temp_player == _active_player and not _recording:
+				var fade = create_tween()
+				fade.tween_property(temp_player, "volume_db", -30.0, 0.12)
+				fade.tween_callback(temp_player.queue_free)
+				if _active_player == temp_player:
+					_active_player = null
+		)
+
+# ─── Fingering Logic ─────────────────────────────────────────────────────────
+func _get_current_note() -> String:
+	var covered_count := 0
+	for i in range(HOLES):
+		if _covered_states[i]:
+			covered_count += 1
+		else:
+			break
+	var notes = ["Si", "La", "Sol", "Fa", "Mi", "Rê", "Đô"]
+	return notes[covered_count]
+
+func _toggle_hole_state(idx: int, hole: PanelContainer, hs: StyleBoxFlat) -> void:
+	_covered_states[idx] = not _covered_states[idx]
+	var is_covered = _covered_states[idx]
+	
+	if is_covered:
+		hs.bg_color = C_GOLD
+		hs.border_color = C_GOLD_LIGHT
+	else:
+		hs.bg_color = Color(0.04, 0.02, 0.01)
+		hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+		
 	var t := create_tween().set_parallel(true)
-	t.tween_property(hole, "scale", Vector2(1.1, 1.1), 0.06)
+	t.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.06)
 	t.tween_property(hole, "scale", Vector2.ONE, 0.12)
-
-	var target_idx := _note_idx % HOLES
-	if idx == target_idx:
+	
+	var current_note = _get_current_note()
+	pitch_note.text = current_note
+	pitch_status.text = "Thế bấm: %s" % current_note
+	pitch_status.add_theme_color_override("font_color", C_GOLD)
+	
+	_play_preview_or_sound()
+		
+	var target_note = SHEET[_note_idx]
+	if current_note == target_note:
 		_note_idx = (_note_idx + 1) % SHEET.size()
 		_build_notation()
 		_update_target_indicator()
 		_score = clamp(_score + 4.0, 0, 100)
 		_refresh_score()
 		_va_say("Đúng rồi, giữ hơi đều.")
-
-		# Subtle halo on correct cover
+		
+		# Glowing correct halo
 		var halo := ColorRect.new()
-		halo.color = Color(0.98, 0.85, 0.35, 0.5)
-		halo.custom_minimum_size = Vector2(18, 18)
+		halo.color = Color(0.98, 0.85, 0.35, 0.45)
+		halo.custom_minimum_size = Vector2(30, 30)
 		halo.set_anchors_preset(Control.PRESET_FULL_RECT)
-		halo.offset_left = -24; halo.offset_right = 24
-		halo.offset_top = -24; halo.offset_bottom = 24
+		halo.offset_left = -30; halo.offset_right = 30
+		halo.offset_top = -30; halo.offset_bottom = 30
 		hole.add_child(halo)
 		var ht := create_tween()
-		ht.tween_property(halo, "custom_minimum_size", Vector2(120, 120), 0.28)
+		ht.tween_property(halo, "custom_minimum_size", Vector2(160, 160), 0.28)
 		ht.tween_property(halo, "color", Color(0.98, 0.85, 0.35, 0.0), 0.36)
 		ht.tween_callback(func() -> void: halo.queue_free())
 
 func _update_target_indicator() -> void:
 	var target_note := SHEET[_note_idx]
-	var target_idx := _note_idx % HOLES
-	target_label.text = "Lỗ cần che: %d" % (target_idx + 1)
 	target_note_label.text = "Nốt cần thổi: %s" % target_note
-
+	
+	var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+	
+	var target_holes_txt := ""
+	for i in range(HOLES):
+		if target_fingering[i]:
+			if target_holes_txt != "": target_holes_txt += ", "
+			target_holes_txt += str(i + 1)
+			
+	if target_holes_txt == "":
+		target_label.text = "Thế bấm nốt %s: Mở tất cả các lỗ" % target_note
+	else:
+		target_label.text = "Thế bấm nốt %s: Che lỗ %s" % [target_note, target_holes_txt]
+		
 	for i in holes_hbox.get_child_count():
 		var hole := holes_hbox.get_child(i) as PanelContainer
 		if hole:
 			var style := hole.get_theme_stylebox("panel") as StyleBoxFlat
 			if style:
-				var is_target := i == target_idx
-				style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.95) if is_target else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+				var is_target_covered = target_fingering[i]
+				if is_target_covered:
+					style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.95)
+					style.border_width_left = 3; style.border_width_right = 3
+					style.border_width_top = 3; style.border_width_bottom = 3
+				else:
+					style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+					style.border_width_left = 2; style.border_width_right = 2
+					style.border_width_top = 2; style.border_width_bottom = 2
 
 func _start_float() -> void:
 	_float_tween = create_tween().set_loops()
@@ -319,6 +499,18 @@ func _connect_buttons() -> void:
 	_make_button_bouncy(record_btn)
 	_make_button_bouncy(reset_btn)
 
+	# Click flute body to blow/play preview
+	var flute_body := $Root/FluteBoard/BoardM/BoardVBox/FluteFrame/FluteM/FluteStack/FluteBody as Control
+	if flute_body:
+		flute_body.mouse_filter = Control.MOUSE_FILTER_STOP
+		flute_body.gui_input.connect(func(ev: InputEvent) -> void:
+			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+				_play_preview_or_sound()
+				var t := create_tween()
+				t.tween_property(flute_body, "scale", Vector2(1.02, 1.02), 0.06).set_trans(Tween.TRANS_QUAD)
+				t.tween_property(flute_body, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_QUAD)
+		)
+
 func _toggle_record() -> void:
 	_recording = not _recording
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
@@ -327,33 +519,38 @@ func _toggle_record() -> void:
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
 		if visualizer: visualizer.visible = true
+		_play_flute_sound(_get_current_note())
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
 		_show_result()
 		_stop_pitch_detection()
 		if visualizer: visualizer.visible = false
+		if _active_player and is_instance_valid(_active_player):
+			_active_player.stop()
+			_active_player.queue_free()
+			_active_player = null
 
 func _demo() -> void:
-	_va_say("Quan sát tư thế thổi và che lỗ chuẩn.")
+	var target_note := SHEET[_note_idx]
+	_va_say("Lắng nghe nốt %s mẫu và thế bấm chuẩn." % target_note)
+	
 	var t := create_tween()
 	t.tween_property(char_linh, "modulate", Color(1.5, 1.1, 0.6, 1.0), 0.3)
 	t.tween_property(char_linh, "modulate", Color.WHITE, 0.5)
 
-	# Demo sequence: briefly highlight the next 3 target holes in order
-	var seq := []
-	for i in range(3):
-		seq.append((_note_idx + i) % HOLES)
-	var delay := 0.18
-	for hidx in seq:
-		var hole := holes_hbox.get_child(hidx) as PanelContainer
-		if hole:
-			# animate border glow
-			var dt := create_tween()
-			dt.set_delay(delay)
-			dt.tween_property(hole, "scale", Vector2(1.08,1.08), 0.08)
-			dt.tween_property(hole, "scale", Vector2(1,1), 0.14)
-			dt.tween_callback(func() -> void: _va_say("Che lỗ %d" % (hidx + 1)))
-			delay += 0.28
+	_play_flute_sound(target_note)
+
+	var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+	var delay := 0.1
+	for i in range(HOLES):
+		if target_fingering[i]:
+			var hole := holes_hbox.get_child(i) as PanelContainer
+			if hole:
+				var dt := create_tween()
+				dt.set_delay(delay)
+				dt.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.08)
+				dt.tween_property(hole, "scale", Vector2.ONE, 0.12)
+				delay += 0.15
 
 
 func _simulate_tick() -> void:
@@ -422,13 +619,19 @@ func _show_result() -> void:
 func _reset() -> void:
 	_note_idx = 0
 	_score = 75.0
+	_covered_states = [true, true, true, true, true, true]
 	_build_notation()
+	_build_flute()
 	_update_target_indicator()
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if visualizer: visualizer.visible = false
 	pitch_note.text = "-"
 	pitch_status.text = "Đang nghe..."
 	rhythm_acc.text = "Đang nghe..."
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stop()
+		_active_player.queue_free()
+		_active_player = null
 
 func _go_back() -> void:
 	var t := create_tween()
@@ -500,3 +703,57 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _update_breath_physics(delta: float) -> void:
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	var target_breath := 0.0
+	
+	if _recording:
+		if visualizer and visualizer.current_amplitude_db > -60.0:
+			# Microphone volume-driven breath pressure
+			var db = visualizer.current_amplitude_db
+			target_breath = clamp((db + 60.0) / 45.0, 0.0, 1.0) * 100.0
+		else:
+			# Automatically simulate natural breath with slight organic lung pressure wobbling
+			target_breath = 65.0 + sin(Time.get_ticks_msec() * 0.005) * 2.5
+	else:
+		# Decay breath pressure to 0 when not blowing
+		target_breath = 0.0
+		
+	_breath_pressure = lerp(_breath_pressure, target_breath, 0.15)
+	breath_progress.value = _breath_pressure
+	
+	var fill_style = breath_progress.get_theme_stylebox("fill") as StyleBoxFlat
+	if not fill_style:
+		fill_style = StyleBoxFlat.new()
+		fill_style.corner_radius_top_left = 6; fill_style.corner_radius_top_right = 6
+		fill_style.corner_radius_bottom_left = 6; fill_style.corner_radius_bottom_right = 6
+		breath_progress.add_theme_stylebox_override("fill", fill_style)
+		
+	if _breath_pressure < 15.0:
+		breath_status.text = "Chờ hơi thổi..."
+		breath_status.add_theme_color_override("font_color", C_CREAM_DIM)
+		fill_style.bg_color = C_CREAM_DIM
+		if _recording and _active_player and is_instance_valid(_active_player):
+			_active_player.volume_db = -80.0
+	elif _breath_pressure >= 15.0 and _breath_pressure < 40.0:
+		breath_status.text = "Hơi yếu (Hơi thấp)"
+		breath_status.add_theme_color_override("font_color", C_WARN)
+		fill_style.bg_color = C_WARN
+		if _recording and _active_player and is_instance_valid(_active_player):
+			_active_player.volume_db = -12.0
+			_active_player.pitch_scale = 0.985
+	elif _breath_pressure >= 40.0 and _breath_pressure <= 82.0:
+		breath_status.text = "Ổn định (Đạt chuẩn)"
+		breath_status.add_theme_color_override("font_color", C_GREEN_OK)
+		fill_style.bg_color = C_JADE
+		if _recording and _active_player and is_instance_valid(_active_player):
+			_active_player.volume_db = -3.0
+			_active_player.pitch_scale = 1.0
+	else:
+		breath_status.text = "Hơi quá mạnh (Overblow +1 Octave)"
+		breath_status.add_theme_color_override("font_color", C_RED_ERR)
+		fill_style.bg_color = C_RED_ERR
+		if _recording and _active_player and is_instance_valid(_active_player):
+			_active_player.volume_db = -1.0
+			_active_player.pitch_scale = 2.0
