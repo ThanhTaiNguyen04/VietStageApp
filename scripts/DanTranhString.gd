@@ -45,12 +45,13 @@ func init(idx: int, note: String, freq: float, stream: AudioStreamWAV) -> void:
 	note_name       = note
 	base_frequency  = freq
 	base_stream     = stream
-	# Chiều cao thoải mái để dễ chạm tay trên mobile (28px mỗi dây)
-	custom_minimum_size = Vector2(0, 28)
+	custom_minimum_size   = Vector2(0, 16)
 	size_flags_horizontal = SIZE_EXPAND_FILL
-	mouse_filter = MOUSE_FILTER_STOP   # nhận tất cả mouse events
+	size_flags_vertical   = SIZE_EXPAND_FILL
+	mouse_filter = MOUSE_FILTER_STOP
 
 func _ready() -> void:
+	resized.connect(queue_redraw)
 	queue_redraw()
 
 # ─── Process ──────────────────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ func _draw() -> void:
 		var speed := 55.0 + base_frequency * 0.12  # tần số cao rung nhanh hơn
 		for k in range(1, divs):
 			var ratio := float(k) / float(divs)
-			var sx := lerp(bridge_x, str_r, ratio)
+			var sx := lerpf(bridge_x, str_r, ratio)
 			var env := sin(ratio * PI)              # envelope: 0 tại đầu & cuối
 			var osc := sin(ratio * PI * 2.0 - pluck_time * speed) * pluck_amplitude * 4.5
 			pts.append(Vector2(sx, cy + env * osc))
@@ -341,7 +342,7 @@ func _get_current_pitch_scale() -> float:
 	var h       := size.y
 	var cy      := h * 0.5
 	var max_bend := h * 0.48
-	var bend    := clamp((press_pos.y - cy) / max_bend, 0.0, 1.0)
+	var bend    := clampf((press_pos.y - cy) / max_bend, 0.0, 1.0)
 	# Nhấn dây tạo semi-tone lên đến +200 cents (major second)
 	return 1.0 + bend * 0.12246  # 2^(2/12) - 1 ≈ 0.12246
 

@@ -29,11 +29,11 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 @onready var record_btn   : Button        = $Root/RecordBar/RecordM/RecordH/RecordBtn
 @onready var notes_hbox   : HBoxContainer = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
 @onready var target_note_label : Label    = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel
-@onready var strings_hbox : VBoxContainer = $Root/StringsBoard/BoardM/BoardVBox/StringsFrame/StringsM/StringsHBox
 @onready var target_label : Label         = $Root/StringsBoard/BoardM/BoardVBox/TargetLabel
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
 @onready var result_dialog: AcceptDialog  = $ResultDialog
 @onready var dots_hbox    : HBoxContainer = $Root/TopBar/TopM/TopH/DotsHBox
+@onready var _board       : Control       = $Root/StringsBoard/BoardM/BoardVBox/DanTranhBoard
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var _recording   := false
@@ -42,7 +42,6 @@ var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 2
 var _string_streams: Array[AudioStreamWAV] = []
-const DanTranhStringScript = preload("res://scripts/DanTranhString.gd")
 
 const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
 const SHEET    : Array[String] = ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
@@ -176,24 +175,6 @@ func _build_theme() -> void:
 	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75))
 	($Root/StringsBoard/BoardM/BoardVBox/TargetLabel as Label).add_theme_color_override("font_color", Color(1.0, 0.92, 0.70, 1.0))
 
-	# Dan tranh frame — rich lacquered body
-	var frame := $Root/StringsBoard/BoardM/BoardVBox/StringsFrame as PanelContainer
-	var frame_s := StyleBoxFlat.new()
-	frame_s.bg_color = Color(0.14, 0.075, 0.030, 1.0)
-	frame_s.border_color = Color(0.75, 0.50, 0.15, 0.65)
-	frame_s.border_width_left = 3; frame_s.border_width_right = 3
-	frame_s.border_width_top  = 3; frame_s.border_width_bottom = 3
-	frame_s.corner_radius_top_left = 6; frame_s.corner_radius_top_right = 6
-	frame_s.corner_radius_bottom_left = 6; frame_s.corner_radius_bottom_right = 6
-	frame_s.shadow_size = 12
-	frame_s.shadow_color = Color(0, 0, 0, 0.55)
-	frame.add_theme_stylebox_override("panel", frame_s)
-	# Bridges trang trí (đầu và đuôi đàn)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeTop    as ColorRect).color = Color(0.52, 0.30, 0.08, 1.0)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeBottom as ColorRect).color = Color(0.52, 0.30, 0.08, 1.0)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeLeft   as ColorRect).color = Color(0.42, 0.24, 0.06, 1.0)
-	($Root/StringsBoard/BoardM/BoardVBox/StringsFrame/BridgeRight  as ColorRect).color = Color(0.42, 0.24, 0.06, 1.0)
-
 	# Record bar
 	var rec_bar_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
@@ -221,11 +202,11 @@ func _build_notation() -> void:
 		var is_done   := i < _note_idx
 
 		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(70, 70)
+		card.custom_minimum_size = Vector2(60, 60)
 		var cs := StyleBoxFlat.new()
 		cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
-		cs.corner_radius_top_left = 35; cs.corner_radius_top_right = 35
-		cs.corner_radius_bottom_left = 35; cs.corner_radius_bottom_right = 35
+		cs.corner_radius_top_left = 30; cs.corner_radius_top_right = 30
+		cs.corner_radius_bottom_left = 30; cs.corner_radius_bottom_right = 30
 		if is_active:
 			cs.bg_color     = C_GOLD
 			cs.border_color = Color(1.0, 0.9, 0.6, 1.0)
@@ -242,7 +223,7 @@ func _build_notation() -> void:
 		lbl.text = note
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 20)
+		lbl.add_theme_font_size_override("font_size", 17)
 		lbl.add_theme_color_override("font_color",
 			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
 		card.add_child(lbl)
@@ -257,25 +238,14 @@ func _build_dots() -> void:
 		if d:
 			d.color = C_GOLD if i < done else Color(0.85, 0.82, 0.75, 1.0)
 
-# ─── 16 Dan Tranh Strings (horizontal lines) ────────────────────────────────
+# ─── Dan Tranh Board ─────────────────────────────────────────────────────────
 func _build_strings() -> void:
-	for c in strings_hbox.get_children(): c.queue_free()
-
+	var freqs: Array[float] = []
 	for i in 16:
-		var string_node := Control.new()
-		string_node.set_script(DanTranhStringScript)
-		string_node.init(i, NOTES_VN[i % NOTES_VN.size()], _get_string_frequency(i), _string_streams[i])
-		
-		string_node.string_plucked.connect(_on_string_plucked)
-		string_node.string_pressed.connect(_on_string_pressed)
-		# Kết nối sự kiện thoát chuột để cập nhật hover state
-		string_node.mouse_exited.connect(func() -> void:
-			if string_node and is_instance_valid(string_node):
-				string_node._mouse_exited()
-		)
-		
-		strings_hbox.add_child(string_node)
-
+		freqs.append(_get_string_frequency(i))
+	_board.init(NOTES_VN, _string_streams, freqs)
+	_board.string_plucked.connect(_on_string_plucked)
+	_board.string_pressed.connect(_on_string_pressed)
 	_update_target_indicator()
 
 func _build_rhythm_bars() -> void:
@@ -414,7 +384,7 @@ func _connect_buttons() -> void:
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 
 	back_btn.pressed.connect(_go_back)
-	hint_btn.pressed.connect(func() -> void: hint_dialog.popup_centered())
+	hint_btn.pressed.connect(_show_custom_hint)
 	demo_btn.pressed.connect(_demo)
 	slow_btn.pressed.connect(func() -> void: _va_say("Xem chậm x0.5 – dễ học từng bước."))
 	record_btn.pressed.connect(_toggle_record)
@@ -437,7 +407,7 @@ func _toggle_record() -> void:
 		if visualizer: visualizer.visible = true
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
-		_show_result()
+		_show_custom_result()
 		_stop_pitch_detection()
 		if visualizer: visualizer.visible = false
 
@@ -447,16 +417,13 @@ func _demo() -> void:
 	t.tween_property(char_linh, "modulate", Color(1.5, 1.1, 0.6, 1.0), 0.3)
 	t.tween_property(char_linh, "modulate", Color.WHITE, 0.5)
 
-	# Demo: highlight and pluck the current target string for visual guidance
 	var target_note := SHEET[_note_idx]
-	var target_idx := NOTES_VN.find(target_note)
-	if target_idx == -1:
-		target_idx = 0
-	var string_node = strings_hbox.get_child(target_idx)
-	if string_node and string_node.has_method("pluck"):
+	var target_idx  := NOTES_VN.find(target_note)
+	if target_idx == -1: target_idx = 0
+	if _board:
 		var dt := create_tween()
-		dt.set_delay(0.35)
-		dt.tween_callback(func() -> void: string_node.pluck())
+		dt.tween_interval(0.35)
+		dt.tween_callback(func() -> void: _board.pluck(target_idx))
 
 func _simulate_tick() -> void:
 	var ni := randi() % NOTES_VN.size()
@@ -518,17 +485,11 @@ func _va_say(text: String) -> void:
 
 func _update_target_indicator() -> void:
 	var target_note := SHEET[_note_idx]
-	var target_idx := NOTES_VN.find(target_note)
-	if target_idx == -1:
-		target_idx = 0
-	target_label.text = "Dây cần gảy: %d" % (target_idx + 1)
+	var target_idx  := NOTES_VN.find(target_note)
+	if target_idx == -1: target_idx = 0
+	target_label.text      = "Dây cần gảy: %d" % (target_idx + 1)
 	target_note_label.text = "Nốt cần gảy: %s" % target_note
-
-	for i in strings_hbox.get_child_count():
-		var string_node = strings_hbox.get_child(i)
-		if string_node and string_node.has_method("pluck"):
-			string_node.is_target = (i == target_idx)
-			string_node.queue_redraw()
+	if _board: _board.set_target(target_idx)
 
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 2
@@ -544,15 +505,20 @@ func _reset() -> void:
 	_refresh_score()
 	_va_say("Làm lại nào!\nLuyện tập giúp bạn cải thiện mỗi ngày.")
 
-func _show_result() -> void:
-	var rating := "Xuất sắc" if _score >= 85.0 else ("Tốt" if _score >= 70.0 else "Cần cố gắng")
-	result_dialog.title = "Kết Quả Luyện Tập"
-	result_dialog.dialog_text = (
-		"Điểm tổng: %d / 100 (%s)\n\n" +
-		"Cao độ: 82%%   ·   Nhịp điệu: 71%%   ·   Kỹ thuật: 79%%\n\n" +
-		"+ 80 XP   ·   Đã mở khóa Bài 5"
-	) % [int(_score), rating]
-	result_dialog.popup_centered()
+func _show_custom_hint() -> void:
+	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
+	if popup_scene:
+		var popup = popup_scene.instantiate()
+		add_child(popup)
+		var text := "[b]🎵 GẢY DÂY:[/b]\nChạm vào phần bên phải nhạn đàn (▲) để phát âm.\n\n[b]🎵 NHẤN RUNG:[/b]\nGiữ và kéo phần bên trái nhạn đàn để tạo tiếng nhấn rung.\n\n[b]💡 HƯỚNG DẪN KỸ THUẬT:[/b]\n• Dùng đầu ngón tay phải gảy nhẹ và dứt khoát.\n• Ngón tay trái nhấn nhẹ phía trái nhạn đàn 2-3mm.\n• Kéo và thả để tạo tiếng rung (vibrato).\n• Giữ cổ tay thả lỏng, ngón tay vuông góc với dây."
+		popup.setup_hint("Gợi ý kỹ thuật", text)
+
+func _show_custom_result() -> void:
+	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
+	if popup_scene:
+		var popup = popup_scene.instantiate()
+		add_child(popup)
+		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa Bài 5")
 
 func _go_back() -> void:
 	var t := create_tween()

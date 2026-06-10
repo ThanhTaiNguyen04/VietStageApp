@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwbyqem4oc75s"
-valid=false
+uid="uid://d3ewwh4ccte6v"
+path="res://.godot/imported/virtual_artist_mai.png-33b1e6629d5380c2e71284ef1e66c931.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/textures/virtual_artist_mai.png"
+dest_files=["res://.godot/imported/virtual_artist_mai.png-33b1e6629d5380c2e71284ef1e66c931.ctex"]
 
 [params]
 

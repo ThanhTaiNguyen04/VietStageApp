@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dpoxxmsc22owc"
-path="res://.godot/imported/default_avatar.png-0474356bf64f9f1a37ed589eeb69c177.ctex"
+uid="uid://cyjihvsw5lrsc"
+path="res://.godot/imported/dan_bau.jpg-4d8c5980562bce8fb563bae0b28cbc51.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/default_avatar.png"
-dest_files=["res://.godot/imported/default_avatar.png-0474356bf64f9f1a37ed589eeb69c177.ctex"]
+source_file="res://image/dan_bau.jpg"
+dest_files=["res://.godot/imported/dan_bau.jpg-4d8c5980562bce8fb563bae0b28cbc51.ctex"]
 
 [params]
 

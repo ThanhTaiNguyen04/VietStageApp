@@ -231,7 +231,9 @@ func _build_theme() -> void:
 	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
 
 func _build_flute() -> void:
-	for c in holes_hbox.get_children(): c.queue_free()
+	for c in holes_hbox.get_children():
+		holes_hbox.remove_child(c)
+		c.queue_free()
 
 	for i in HOLES:
 		var hole := PanelContainer.new()
@@ -503,7 +505,7 @@ func _connect_buttons() -> void:
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 
 	back_btn.pressed.connect(_go_back)
-	hint_btn.pressed.connect(func() -> void: hint_dialog.popup_centered())
+	hint_btn.pressed.connect(_show_custom_hint)
 	demo_btn.pressed.connect(_demo)
 	slow_btn.pressed.connect(func() -> void: _va_say("Xem chậm x0.5 – dễ học từng bước."))
 	record_btn.pressed.connect(_toggle_record)
@@ -539,7 +541,7 @@ func _toggle_record() -> void:
 		_play_flute_sound(_get_current_note())
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
-		_show_result()
+		_show_custom_result()
 		_stop_pitch_detection()
 		if visualizer: visualizer.visible = false
 		if _active_player and is_instance_valid(_active_player):
@@ -628,10 +630,23 @@ func _va_say(text: String) -> void:
 	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
 	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
 
-func _show_result() -> void:
-	result_dialog.title = "Kết quả luyện tập"
-	result_dialog.dialog_text = "Điểm số: %d\nCao độ: %.0f%%\nNhịp: %.0f%%" % [int(_score), randf_range(70, 92), randf_range(65, 90)]
-	result_dialog.popup_centered()
+func _show_custom_hint() -> void:
+	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
+	if popup_scene:
+		var popup = popup_scene.instantiate()
+		add_child(popup)
+		var text := "[b]🎵 HƠI THỞ:[/b]\nThổi hơi đều, ổn định, không quá mạnh để tránh bị quá quãng (overblow).\n\n[b]🎵 THẾ BẤM CHE LỖ:[/b]\nĐặt các đầu ngón tay phủ kín hoàn toàn các lỗ sáo sẫm màu theo thế bấm nốt nhạc mục tiêu.\n\n[b]💡 HƯỚNG DẪN KỸ THUẬT:[/b]\n• Giữ môi khép nhẹ, thổi luồng hơi tập trung.\n• Thả lỏng cổ tay và ngón tay khi che lỗ sáo.\n• Lắng nghe cao độ phản hồi để điều chỉnh thế bấm.\n• Luyện tập hơi dài và đều đặn mỗi ngày."
+		popup.setup_hint("Gợi ý kỹ thuật", text)
+
+func _show_custom_result() -> void:
+	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
+	if popup_scene:
+		var popup = popup_scene.instantiate()
+		add_child(popup)
+		var p := randf_range(70, 92)
+		var r := randf_range(65, 90)
+		var t := clampf((_score * 3.0 - p - r), 60, 95)
+		popup.setup_result(_score, p, r, t, 80, "Đã mở khóa Bài 2")
 
 func _reset() -> void:
 	_note_idx = 0

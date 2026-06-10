@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dpoxxmsc22owc"
-path="res://.godot/imported/default_avatar.png-0474356bf64f9f1a37ed589eeb69c177.ctex"
+uid="uid://bdvp4w3v84e7y"
+path="res://.godot/imported/sao_truc.jpg-57e9fa1fd2bcfde5e7f1c89b15156a73.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/default_avatar.png"
-dest_files=["res://.godot/imported/default_avatar.png-0474356bf64f9f1a37ed589eeb69c177.ctex"]
+source_file="res://image/sao_truc.jpg"
+dest_files=["res://.godot/imported/sao_truc.jpg-57e9fa1fd2bcfde5e7f1c89b15156a73.ctex"]
 
 [params]
 
