@@ -142,48 +142,48 @@ func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float,
 		_animate_particle(p, new_sx, p.position.y, dur * randf_range(0.85, 1.15), 0.0, vp)
 	)
 
-# ── Card kính đỏ sẫm ─────────────────────────────────────────────────────────
+# ── Card kính sáng Alabaster Glass ───────────────────────────────────────────
 func _style_card() -> void:
 	var cs := StyleBoxFlat.new()
-	cs.bg_color              = Color(0.14, 0.03, 0.04, 0.88)
-	cs.border_color          = Color(0.95, 0.72, 0.18, 0.22)
+	cs.bg_color              = Color(1.0, 1.0, 1.0, 0.88)
+	cs.border_color          = Color(0.77, 0.58, 0.15, 0.25)
 	cs.border_width_left     = 1; cs.border_width_right  = 1
 	cs.border_width_top      = 1; cs.border_width_bottom = 1
 	cs.corner_radius_top_left     = 28; cs.corner_radius_top_right    = 28
 	cs.corner_radius_bottom_left  = 28; cs.corner_radius_bottom_right = 28
-	cs.shadow_size   = 48
-	cs.shadow_color  = Color(0.0, 0.0, 0.0, 0.55)
+	cs.shadow_size   = 40
+	cs.shadow_color  = Color(0.13, 0.08, 0.05, 0.12)
 	cs.shadow_offset = Vector2(0, 10)
 	card.add_theme_stylebox_override("panel", cs)
 	card.pivot_offset = card.size / 2.0
 	card.resized.connect(func() -> void: card.pivot_offset = card.size / 2.0)
 
-# ── Tô màu toàn bộ UI ─────────────────────────────────────────────────────────
+# ── Tô màu toàn bộ UI theo Cream/Espresso ─────────────────────────────────────
 func _style_all() -> void:
-	app_name.add_theme_color_override("font_color",    C_GOLD)
-	app_sub.add_theme_color_override("font_color",     C_WHITE_DIM)
-	or_label.add_theme_color_override("font_color",    C_WHITE_DIM)
-	footer_lbl.add_theme_color_override("font_color",  Color(1,1,1,0.18))
+	app_name.add_theme_color_override("font_color",    C_PETAL_2) # đỏ thẫm sơn mài
+	app_sub.add_theme_color_override("font_color",     Color(0.43, 0.38, 0.33, 1.0))
+	or_label.add_theme_color_override("font_color",    Color(0.43, 0.38, 0.33, 1.0))
+	footer_lbl.add_theme_color_override("font_color",  Color(0.13, 0.08, 0.05, 0.35))
 	error_label.add_theme_color_override("font_color", C_ERR)
-	google_lbl.add_theme_color_override("font_color",  C_WHITE_DIM)
-	guest_lbl.add_theme_color_override("font_color",   C_WHITE_DIM)
+	google_lbl.add_theme_color_override("font_color",  Color(0.43, 0.38, 0.33, 1.0))
+	guest_lbl.add_theme_color_override("font_color",   Color(0.43, 0.38, 0.33, 1.0))
 
-	# Email: dark glass pill với viền vàng khi focus
-	var ei_n := _pill(Color(1,1,1,0.08),  Color(1,1,1,0.16), 28)
-	var ei_f := _pill(Color(1,1,1,0.12),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70), 28)
-	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	# Email: Light warm glass pill
+	var ei_n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(0.13, 0.08, 0.05, 0.15), 28)
+	var ei_f := _pill(Color(1.00, 1.00, 1.00, 1.00),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
+	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
-	email_edit.add_theme_color_override("font_color",        C_WHITE)
-	email_edit.add_theme_color_override("placeholder_color", Color(1,1,1,0.30))
+	email_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	email_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
 	email_edit.add_theme_color_override("caret_color",       C_GOLD)
 
-	# Nút Đăng nhập: vàng rực rỡ
+	# Nút Đăng nhập: Vàng đồng rực rỡ
 	var si_n := _pill(C_GOLD,                 Color(0,0,0,0), 28)
 	var si_h := _pill(C_GOLD_LT,              Color(0,0,0,0), 28)
 	var si_p := _pill(C_GOLD.darkened(0.14),  Color(0,0,0,0), 28)
-	si_n.shadow_size = 20; si_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42)
-	si_h.shadow_size = 28; si_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58)
+	si_n.shadow_size = 16; si_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	si_h.shadow_size = 24; si_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.48)
 	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
 	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
 	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
@@ -192,24 +192,24 @@ func _style_all() -> void:
 	sign_in_btn.add_theme_color_override("font_hover_color",   C_GOLD_DARK)
 	sign_in_btn.add_theme_color_override("font_pressed_color", C_GOLD_DARK)
 
-	# Social buttons: kính tối
+	# Social buttons: Social pills sáng màu
 	_style_social(google_btn)
 	_style_social(guest_btn)
 	# Google: chữ G xanh đặc trưng
 	google_btn.add_theme_color_override("font_color",         C_G_BLUE)
 	google_btn.add_theme_color_override("font_hover_color",   C_G_BLUE.lightened(0.1))
 	google_btn.add_theme_color_override("font_pressed_color", C_G_BLUE.darkened(0.1))
-	# Guest: trắng
-	guest_btn.add_theme_color_override("font_color",          C_WHITE)
-	guest_btn.add_theme_color_override("font_hover_color",    C_WHITE)
-	guest_btn.add_theme_color_override("font_pressed_color",  Color(1,1,1,0.75))
+	# Guest: Nâu sẫm
+	guest_btn.add_theme_color_override("font_color",          Color(0.13, 0.08, 0.05, 1.0))
+	guest_btn.add_theme_color_override("font_hover_color",    Color(0.13, 0.08, 0.05, 1.0))
+	guest_btn.add_theme_color_override("font_pressed_color",  Color(0.13, 0.08, 0.05, 0.75))
 
 func _style_social(btn: Button) -> void:
-	var n := _pill(Color(1,1,1,0.08),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 18)
-	var h := _pill(Color(1,1,1,0.14),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.36), 18)
-	var p := _pill(Color(1,1,1,0.04),  Color(0,0,0,0), 18)
-	n.shadow_size = 10; n.shadow_color = Color(0,0,0,0.35)
-	h.shadow_size = 16; h.shadow_color = Color(0,0,0,0.40)
+	var n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 18)
+	var h := _pill(Color(0.95, 0.93, 0.89, 0.90),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.36), 18)
+	var p := _pill(Color(0.90, 0.87, 0.82, 1.00),  Color(0,0,0,0), 18)
+	n.shadow_size = 6; n.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
+	h.shadow_size = 10; h.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
 	btn.add_theme_stylebox_override("normal",  n)
 	btn.add_theme_stylebox_override("hover",   h)
 	btn.add_theme_stylebox_override("pressed", p)

@@ -1,18 +1,24 @@
 extends Control
 
 # ─── Vietnamese Traditional Color Palette ──────────────────────────────────────
-const C_GOLD       := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LIGHT := Color(1.00, 0.87, 0.45, 1.0)
-const C_JADE       := Color(0.18, 0.62, 0.42, 1.0)
-const C_RED_SON    := Color(0.72, 0.12, 0.08, 1.0)
+const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
+const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
+const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
+const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
 
+const C_BG         := Color(0.98, 0.97, 0.93, 1.0)
+const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
+const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
+const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
+const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
+
 const GRID_DATA := [
-	["G1", "", "7 Ngày", "Chuỗi học liên tiếp", Color(0.40,0.12,0.02,0.9), Color(0.90,0.40,0.08,0.7), Color(1.0,0.65,0.18,1)],
-	["G2", "", "1.240 XP", "Tổng điểm tích lũy", Color(0.22,0.18,0.02,0.9), Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.7), C_GOLD_LIGHT],
-	["G3", "", "Cấp Độ 8", "Hạng vàng tuần này", Color(0.05,0.20,0.12,0.9), Color(C_JADE.r,C_JADE.g,C_JADE.b,0.7), Color(0.5,0.95,0.72,1)],
-	["G4", "", "26/05/2026", "Ngày gia nhập", Color(0.08,0.08,0.22,0.9), Color(0.40,0.55,0.92,0.7), Color(0.55,0.75,0.98,1)],
+	["G1", "🔥", "7 Ngày", "Chuỗi học liên tiếp", Color(0.99, 0.94, 0.90, 1.0), Color(0.95, 0.75, 0.60, 0.6), Color(0.90, 0.45, 0.10, 1.0)],
+	["G2", "✨", "1.240 XP", "Tổng điểm tích lũy", Color(0.99, 0.97, 0.90, 1.0), Color(0.92, 0.85, 0.60, 0.6), Color(0.77, 0.58, 0.15, 1.0)],
+	["G3", "🏆", "Cấp Độ 8", "Hạng vàng tuần này", Color(0.93, 0.97, 0.94, 1.0), Color(0.75, 0.88, 0.80, 0.6), Color(0.12, 0.37, 0.23, 1.0)],
+	["G4", "📅", "26/05/2026", "Ngày gia nhập", Color(0.94, 0.95, 0.99, 1.0), Color(0.78, 0.82, 0.95, 0.6), Color(0.20, 0.40, 0.80, 1.0)],
 ]
 
 @onready var back_btn: Button        = $Root/TopBar/TopM/TopH/BackBtn
@@ -70,88 +76,90 @@ func _update_premium_status() -> void:
 	var status_pill := $Root/Content/LeftCard/LeftM/LeftV/StatusPill as PanelContainer
 	if is_prem:
 		status_lbl.text = "⭐ TÀI KHOẢN PREMIUM"
-		var status_s := _flat(Color(0.28, 0.18, 0.03, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75), 30)
-		status_s.shadow_size = 8
-		status_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+		var status_s := _flat(C_GOLD, Color(1, 1, 1, 0.15), 30)
 		status_pill.add_theme_stylebox_override("panel", status_s)
-		status_lbl.add_theme_color_override("font_color", C_GOLD)
+		status_lbl.add_theme_color_override("font_color", Color(1,1,1,1))
 	else:
 		status_lbl.text = "🔒 NÂNG CẤP PREMIUM (CLICK)"
-		var status_s := _flat(Color(0.12, 0.06, 0.04, 0.5), Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.4), 30)
-		status_s.shadow_size = 0
+		var status_s := _flat(C_BG_BAR, Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.4), 30)
 		status_pill.add_theme_stylebox_override("panel", status_s)
-		status_lbl.add_theme_color_override("font_color", C_CREAM_DIM)
+		status_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
 
 func _build_theme() -> void:
+	# Main Background ColorRect
+	var bg_rect := get_node_or_null("BG") as ColorRect
+	if bg_rect:
+		bg_rect.color = C_BG
+
 	# Top bar style
-	var top_s := _flat(Color(0.06, 0.03, 0.012, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), 0)
-	top_s.border_width_bottom = 3; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
+	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
-	page_title.add_theme_color_override("font_color", C_GOLD)
+	page_title.add_theme_color_override("font_color", C_RED_SON)
 
 	# Back button style
-	back_btn.add_theme_color_override("font_color", C_GOLD)
-	back_btn.add_theme_color_override("font_hover_color", C_GOLD_LIGHT)
+	back_btn.add_theme_color_override("font_color", C_RED_SON)
+	back_btn.add_theme_color_override("font_hover_color", C_RED_SON.lightened(0.15))
 	back_btn.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("hover",   _flat(Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.12), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.20), Color(0,0,0,0), 8))
+	back_btn.add_theme_stylebox_override("hover",   _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.12), Color(0,0,0,0), 8))
+	back_btn.add_theme_stylebox_override("pressed", _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.20), Color(0,0,0,0), 8))
 	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	back_btn.text = "Quay Lại"
 
-	# Left panel / card style - lacquer dark wood style
-	var left_s := _flat(Color(0.07, 0.038, 0.015, 0.97), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 0)
+	# Left panel / card style - beige panel with right border
+	var left_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
 	left_s.border_width_right = 2; left_s.border_width_left = 0; left_s.border_width_top = 0; left_s.border_width_bottom = 0
 	($Root/Content/LeftCard as PanelContainer).add_theme_stylebox_override("panel", left_s)
 
 	# Avatar Circle
-	var av_s := _flat(Color(0.20, 0.13, 0.04, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.80), 80)
-	av_s.border_width_left = 5; av_s.border_width_right = 5; av_s.border_width_top = 5; av_s.border_width_bottom = 5
-	av_s.shadow_size = 14; av_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.32)
+	var av_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 80)
+	av_s.border_width_left = 4; av_s.border_width_right = 4; av_s.border_width_top = 4; av_s.border_width_bottom = 4
+	av_s.shadow_size = 10; av_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
 	($Root/Content/LeftCard/LeftM/LeftV/AvatarCircle as PanelContainer).add_theme_stylebox_override("panel", av_s)
 
 	# Name LineEdit
 	var name_s := StyleBoxFlat.new()
-	name_s.bg_color = Color(0, 0, 0, 0.25)
-	name_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+	name_s.bg_color = Color(0, 0, 0, 0.05)
+	name_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	name_s.border_width_bottom = 2
 	name_s.corner_radius_top_left = 6; name_s.corner_radius_top_right = 6
 	name_edit.add_theme_stylebox_override("normal", name_s)
 	name_edit.add_theme_stylebox_override("focus", name_s)
-	name_edit.add_theme_color_override("font_color", C_CREAM)
+	name_edit.add_theme_color_override("font_color", C_TEXT)
 
 	# Email label
-	email_lbl.add_theme_color_override("font_color", C_CREAM_DIM)
+	email_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
 
-	# Logout Button - red lacquer gold
-	var btn_s := _flat(Color(0.12, 0.06, 0.04, 0.5), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5), 18)
-	var btn_s_h := _flat(C_RED_SON, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 18)
-	btn_s_h.shadow_size = 10; btn_s_h.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.3)
+	# Logout Button - light container with red border
+	var btn_s := _flat(C_CARD, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.45), 18)
+	var btn_s_h := _flat(C_CARD, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.85), 18)
+	btn_s_h.shadow_size = 5; btn_s_h.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15)
 	
 	logout_btn.add_theme_stylebox_override("normal", btn_s)
 	logout_btn.add_theme_stylebox_override("hover", btn_s_h)
-	logout_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.2), Color(0,0,0,0), 18))
+	logout_btn.add_theme_stylebox_override("pressed", _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5), 18))
 	logout_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	logout_btn.add_theme_color_override("font_color", C_CREAM_DIM)
-	logout_btn.add_theme_color_override("font_hover_color", C_GOLD)
+	logout_btn.add_theme_color_override("font_color", C_TEXT)
+	logout_btn.add_theme_color_override("font_hover_color", C_RED_SON)
 
 	# Right panel style
-	var right_s := _flat(Color(0.09, 0.05, 0.02, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	var right_s := _flat(C_BG, Color(0, 0, 0, 0), 0)
 	($Root/Content/RightCard as PanelContainer).add_theme_stylebox_override("panel", right_s)
-	stats_title.add_theme_color_override("font_color", C_GOLD)
-	ver_label.add_theme_color_override("font_color", Color(0.40, 0.36, 0.26, 1.0))
+	stats_title.add_theme_color_override("font_color", C_RED_SON)
+	ver_label.add_theme_color_override("font_color", C_TEXT_MUTED)
 
 	# Stat cards
 	for gd in GRID_DATA:
 		var name_node := gd[0] as String
 		var card := $Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node) as PanelContainer
 		var cs := _flat(gd[4] as Color, gd[5] as Color, 18)
-		cs.shadow_size = 8; cs.shadow_color = Color(0,0,0,0.3)
+		cs.shadow_size = 5; cs.shadow_color = Color(0,0,0,0.06)
 		card.add_theme_stylebox_override("panel", cs)
 		
 		var col := gd[6] as Color
 		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Icon") as Label).add_theme_color_override("font_color", col)
-		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Val")  as Label).add_theme_color_override("font_color", C_CREAM)
-		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Lbl")  as Label).add_theme_color_override("font_color", C_CREAM_DIM)
+		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Val")  as Label).add_theme_color_override("font_color", C_TEXT)
+		($Root/Content/RightCard/RightM/RightV/Grid.get_node(name_node + "/" + name_node + "M/" + name_node + "V/Lbl")  as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 
 func _animate_in() -> void:
 	modulate.a = 0.0

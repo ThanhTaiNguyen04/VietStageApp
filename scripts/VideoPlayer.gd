@@ -1,14 +1,14 @@
 extends Control
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
-const C_GOLD       := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LIGHT := Color(1.00, 0.87, 0.45, 1.0)
-const C_JADE       := Color(0.18, 0.62, 0.42, 1.0)
-const C_RED_SON    := Color(0.72, 0.12, 0.08, 1.0)
+const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
+const C_GOLD_LIGHT := Color(0.92, 0.76, 0.30, 1.0)
+const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
+const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
-const C_DARK_WOOD  := Color(0.08, 0.04, 0.015, 0.98)
-const C_SCREEN_BG  := Color(0.12, 0.07, 0.03, 1.0)
+const C_DARK_WOOD  := Color(0.98, 0.97, 0.94, 1.0) # main background cream
+const C_SCREEN_BG  := Color(0.95, 0.93, 0.89, 1.0) # screen placeholder gray-cream
 
 # ─── Refs ───
 @onready var player_card  : PanelContainer = $Center/PlayerCard
@@ -73,8 +73,8 @@ func _process(delta: float) -> void:
 
 func _build_theme() -> void:
 	# Main card container
-	var card_s := _flat(C_DARK_WOOD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 28)
-	card_s.shadow_size = 36; card_s.shadow_color = Color(0,0,0,0.6)
+	var card_s := _flat(Color(1.0, 1.0, 1.0, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 28)
+	card_s.shadow_size = 30; card_s.shadow_color = Color(0.13, 0.08, 0.05, 0.10)
 	player_card.add_theme_stylebox_override("panel", card_s)
 
 	# Video screen box
@@ -83,14 +83,14 @@ func _build_theme() -> void:
 
 	# Play Overlay circle button
 	var overlay_s := _flat(C_GOLD, C_GOLD_LIGHT, 44)
-	overlay_s.shadow_size = 8; overlay_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
+	overlay_s.shadow_size = 8; overlay_s.shadow_color = Color(0.13, 0.08, 0.05, 0.18)
 	play_overlay.add_theme_stylebox_override("panel", overlay_s)
-	play_overlay.get_node("PlayText").add_theme_color_override("font_color", C_DARK_WOOD)
+	play_overlay.get_node("PlayText").add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
 
-	# Subtitles box
-	var sub_s := _flat(Color(0.04, 0.02, 0.008, 0.75), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), 16)
+	# Subtitles box - light warm background
+	var sub_s := _flat(Color(0.95, 0.93, 0.89, 0.85), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 16)
 	($Center/PlayerCard/CardM/PlayerVBox/SubPanel as PanelContainer).add_theme_stylebox_override("panel", sub_s)
-	sub_label.add_theme_color_override("font_color", C_CREAM)
+	sub_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
 
 	# Buttons
 	_style_outlined_btn(back_btn, 18)
@@ -99,28 +99,28 @@ func _build_theme() -> void:
 
 	# Complete Btn (Gold filled primary CTA)
 	var c_n := _flat(C_GOLD, Color(1,1,1,0.2), 22)
-	c_n.shadow_size = 12; c_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	c_n.shadow_size = 12; c_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
 	var c_h := _flat(C_GOLD_LIGHT, Color(1,1,1,0.3), 22)
-	c_h.shadow_size = 18; c_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+	c_h.shadow_size = 18; c_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	complete_btn.add_theme_stylebox_override("normal", c_n)
 	complete_btn.add_theme_stylebox_override("hover", c_h)
 	complete_btn.add_theme_stylebox_override("pressed", _flat(C_GOLD.darkened(0.18), Color(0,0,0,0.2), 22))
 	complete_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	complete_btn.add_theme_color_override("font_color", C_DARK_WOOD)
-	complete_btn.add_theme_color_override("font_hover_color", C_DARK_WOOD)
-	complete_btn.add_theme_color_override("font_pressed_color", C_DARK_WOOD)
+	complete_btn.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	complete_btn.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	complete_btn.add_theme_color_override("font_pressed_color", Color(0.13, 0.08, 0.05, 1.0))
 	complete_btn.add_theme_font_size_override("font_size", 20)
 
 	# Progress bar
 	var pf := StyleBoxFlat.new(); pf.bg_color = C_GOLD
 	pf.corner_radius_top_left = 6; pf.corner_radius_top_right = 6
 	pf.corner_radius_bottom_left = 6; pf.corner_radius_bottom_right = 6
-	var pb := StyleBoxFlat.new(); pb.bg_color = Color(0.04, 0.02, 0.008, 0.8)
+	var pb := StyleBoxFlat.new(); pb.bg_color = Color(0.13, 0.08, 0.05, 0.08)
 	pb.corner_radius_top_left = 6; pb.corner_radius_top_right = 6
 	pb.corner_radius_bottom_left = 6; pb.corner_radius_bottom_right = 6
 	progress_bar.add_theme_stylebox_override("fill", pf)
 	progress_bar.add_theme_stylebox_override("background", pb)
-	time_label.add_theme_color_override("font_color", C_CREAM_DIM)
+	time_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.70))
 
 func _connect_buttons() -> void:
 	back_btn.pressed.connect(_go_back)
@@ -164,7 +164,7 @@ func _update_play_state() -> void:
 
 func _va_success_prompt() -> void:
 	sub_label.text = "Tuyệt vời! Bài học hoàn thành. Hãy bấm nút 'Hoàn Thành Video' màu vàng để mở khóa thực hành!"
-	sub_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	sub_label.add_theme_color_override("font_color", C_RED_SON)
 	# Flash the complete button
 	var ct := create_tween()
 	ct.tween_property(complete_btn, "scale", Vector2(1.08, 1.08), 0.15).set_trans(Tween.TRANS_BACK)
@@ -186,14 +186,14 @@ func _go_back() -> void:
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
 
 func _style_outlined_btn(btn: Button, radius: int) -> void:
-	var bn := _flat(Color(0.12, 0.07, 0.03, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), radius)
-	var bh := _flat(Color(0.18, 0.11, 0.05, 0.85), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72), radius)
+	var bn := _flat(Color(0,0,0,0), Color(0.13, 0.08, 0.05, 0.20), radius)
+	var bh := _flat(Color(0,0,0,0.04), Color(0.70, 0.12, 0.08, 0.60), radius)
 	btn.add_theme_stylebox_override("normal", bn)
 	btn.add_theme_stylebox_override("hover", bh)
-	btn.add_theme_stylebox_override("pressed", _flat(Color(0.08, 0.04, 0.02, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), radius))
+	btn.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.08), C_GOLD, radius))
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	btn.add_theme_color_override("font_color", C_GOLD)
-	btn.add_theme_color_override("font_hover_color", C_GOLD_LIGHT)
+	btn.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(0.70, 0.12, 0.08, 1.0))
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

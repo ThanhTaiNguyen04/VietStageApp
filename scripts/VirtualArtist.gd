@@ -1,9 +1,10 @@
 extends CanvasLayer
 
-const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LT   := Color(1.00, 0.87, 0.45, 1.0)
-const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.75)
-const C_BUBBLE_BG := Color(0.06, 0.04, 0.14, 0.96)
+const C_GOLD      := Color(0.77, 0.58, 0.15, 1.0)
+const C_GOLD_LT   := Color(0.95, 0.82, 0.45, 1.0)
+const C_WHITE_DIM := Color(0.13, 0.08, 0.05, 1.0)
+const C_BUBBLE_BG := Color(1.00, 1.00, 1.00, 0.98)
+const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 
 const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "MainMenu", "CourseMap"]
 
@@ -70,8 +71,8 @@ func _build_ui() -> void:
 	_speech_bubble.offset_bottom = -112.0
 	_speech_bubble.visible = false
 
-	var bub_s := _flat(C_BUBBLE_BG, Color(1, 1, 1, 0.18), 16)
-	bub_s.shadow_size = 20; bub_s.shadow_color = Color(0, 0, 0, 0.45)
+	var bub_s := _flat(C_BUBBLE_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 16)
+	bub_s.shadow_size = 12; bub_s.shadow_color = Color(0, 0, 0, 0.08)
 	bub_s.border_width_left = 1; bub_s.border_width_right  = 1
 	bub_s.border_width_top  = 1; bub_s.border_width_bottom = 3
 	_speech_bubble.add_theme_stylebox_override("panel", bub_s)
@@ -123,17 +124,17 @@ func _build_ui() -> void:
 	_toggle_btn.clip_contents = false  # KHÔNG clip — nhân vật float ra ngoài
 
 	# Nút tròn: nền đỏ sẫm + viền vàng
-	var tb_n := _flat(Color(0.18, 0.04, 0.04, 0.95), C_GOLD,    32)
+	var tb_n := _flat(C_RED_SON, C_GOLD,    32)
 	tb_n.border_width_left = 2; tb_n.border_width_right  = 2
 	tb_n.border_width_top  = 2; tb_n.border_width_bottom = 2
-	tb_n.shadow_size = 16; tb_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
-	var tb_h := _flat(Color(0.28, 0.06, 0.06, 0.98), C_GOLD_LT, 32)
+	tb_n.shadow_size = 12; tb_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+	var tb_h := _flat(C_RED_SON.lightened(0.12), C_GOLD_LT, 32)
 	tb_h.border_width_left = 2; tb_h.border_width_right  = 2
 	tb_h.border_width_top  = 2; tb_h.border_width_bottom = 2
-	tb_h.shadow_size = 22; tb_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.60)
+	tb_h.shadow_size = 18; tb_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	_toggle_btn.add_theme_stylebox_override("normal",  tb_n)
 	_toggle_btn.add_theme_stylebox_override("hover",   tb_h)
-	_toggle_btn.add_theme_stylebox_override("pressed", _flat(Color(0.10, 0.02, 0.02, 0.95), C_GOLD, 32))
+	_toggle_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.15), C_GOLD, 32))
 	_toggle_btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
 	_toggle_btn.pressed.connect(_on_toggle_pressed)
 	_root.add_child(_toggle_btn)

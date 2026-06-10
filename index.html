@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="vietstage">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,141 +8,248 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- daisyUI CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <!-- Line Awesome CDN (Icons8) -->
+  <link rel="stylesheet" href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css" />
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            espresso: '#22150C',
+            taupe: '#6E6053',
+            lacquer: '#B31F14',
+            gold: '#C59426',
+            jade: '#1E5E3A',
+            cream: '#FAF7EE',
+            'cream-dim': '#F3EFE3'
+          },
+          fontFamily: {
+            title: ['Outfit', 'sans-serif'],
+            body: ['Be Vietnam Pro', 'sans-serif'],
+          }
+        }
+      },
+      daisyui: {
+        themes: [
+          {
+            vietstage: {
+              "primary": "#B31F14",
+              "secondary": "#C59426",
+              "accent": "#1E5E3A",
+              "neutral": "#22150C",
+              "base-100": "#FAF7EE",
+              "base-200": "#F3EFE3",
+              "info": "#3abff8",
+              "success": "#36d399",
+              "warning": "#fbbd23",
+              "error": "#f87272",
+            },
+          },
+          "light"
+        ],
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css?v=1.1" />
 </head>
-<body>
-  <!-- ===== NAV ===== -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-inner">
-      <div class="nav-logo">
-        <span class="logo-icon">🎵</span>
-        <span class="logo-text">Viet<span class="accent">Stage</span></span>
+<body class="bg-cream text-espresso font-body antialiased min-h-screen">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar bg-cream-dim/95 backdrop-blur-md sticky top-0 z-50 border-b border-lacquer/10 px-4 md:px-8 shadow-sm">
+    <div class="navbar-start">
+      <div class="flex items-center gap-2 text-2xl font-black font-title">
+        <span class="text-3xl"><i class="las la-music text-lacquer"></i></span>
+        <span>Viet<span class="text-lacquer">Stage</span></span>
       </div>
-      <div class="nav-links" id="navLinks">
-        <a href="#" class="nav-link active" data-page="home">Trang chủ</a>
-        <a href="#" class="nav-link" data-page="learn">Học ngay</a>
-        <a href="#" class="nav-link" data-page="practice">Luyện tập</a>
-        <a href="#" class="nav-link" data-page="games">Mini-Games</a>
-        <a href="#" class="nav-link" data-page="progress">Tiến độ</a>
+    </div>
+    
+    <div class="navbar-center hidden lg:flex">
+      <ul class="menu menu-horizontal px-1 gap-2" id="navLinks">
+        <li><a href="#" class="nav-link tab-nav-btn active font-bold text-taupe hover:text-lacquer rounded-full py-2 px-4 bg-transparent" data-page="home">Trang chủ</a></li>
+        <li><a href="#" class="nav-link tab-nav-btn font-bold text-taupe hover:text-lacquer rounded-full py-2 px-4 bg-transparent" data-page="learn">Học ngay</a></li>
+        <li><a href="#" class="nav-link tab-nav-btn font-bold text-taupe hover:text-lacquer rounded-full py-2 px-4 bg-transparent" data-page="practice">Luyện tập</a></li>
+        <li><a href="#" class="nav-link tab-nav-btn font-bold text-taupe hover:text-lacquer rounded-full py-2 px-4 bg-transparent" data-page="games">Mini-Games</a></li>
+        <li><a href="#" class="nav-link tab-nav-btn font-bold text-taupe hover:text-lacquer rounded-full py-2 px-4 bg-transparent" data-page="progress">Tiến độ</a></li>
+      </ul>
+    </div>
+    
+    <div class="navbar-end gap-3">
+      <!-- Streak & XP Badges -->
+      <div class="badge gap-1 py-3 px-4 font-bold border border-orange-500/20 text-orange-800 bg-orange-100 rounded-full" title="Chuỗi ngày học">
+        <i class="las la-fire text-lg text-orange-600 animate-pulse"></i> 7
       </div>
-      <div class="nav-actions">
-        <div class="streak-badge" title="Chuỗi ngày học">🔥 7</div>
-        <div class="xp-badge">⭐ 1,240 XP</div>
-        <div class="user-avatar" id="userAvatarBtn">
-          <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=vietstage&backgroundColor=b6e3f4" alt="Avatar" />
+      <div class="badge gap-1 py-3 px-4 font-bold border border-yellow-500/20 text-yellow-800 bg-yellow-100 rounded-full">
+        <i class="las la-star text-lg text-yellow-600"></i> 1,240 XP
+      </div>
+      
+      <!-- Dropdown Avatar for Mobile Navigation -->
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar border-2 border-gold hover:scale-105 transition-all">
+          <div class="w-10 rounded-full">
+            <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=vietstage&backgroundColor=b6e3f4" alt="Avatar" />
+          </div>
         </div>
+        <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-gold/10 lg:hidden">
+          <li><a onclick="navigateTo('home')"><i class="las la-home"></i> Trang chủ</a></li>
+          <li><a onclick="navigateTo('learn')"><i class="las la-graduation-cap"></i> Học ngay</a></li>
+          <li><a onclick="navigateTo('practice')"><i class="las la-music"></i> Luyện tập</a></li>
+          <li><a onclick="navigateTo('games')"><i class="las la-gamepad"></i> Mini-Games</a></li>
+          <li><a onclick="navigateTo('progress')"><i class="las la-chart-bar"></i> Tiến độ</a></li>
+        </ul>
       </div>
     </div>
   </nav>
 
-  <!-- ===== PAGES ===== -->
-  <main id="app">
-    <!-- HOME PAGE -->
+  <!-- ===== MAIN CONTENT CONTAINER ===== -->
+  <main id="app" class="max-w-7xl mx-auto px-4 md:px-8 py-8">
+    
+    <!-- ================= HOME PAGE ================= -->
     <div class="page active" id="page-home">
       <!-- Hero -->
-      <section class="hero">
-        <div class="hero-content">
-          <div class="hero-badge">✨ Ứng dụng học nhạc dân tộc #1 Việt Nam</div>
-          <h1 class="hero-title">Học Nhạc Cụ<br/><span class="gradient-text">Dân Tộc Việt Nam</span><br/>Theo Cách Thú Vị Nhất</h1>
-          <p class="hero-subtitle">Luyện tập cùng nghệ sĩ ảo, nhận phản hồi thực thời, chinh phục hàng trăm bài học – ngay trên điện thoại hay máy tính của bạn.</p>
-          <div class="hero-cta">
-            <button class="btn btn-primary" onclick="navigateTo('learn')">Bắt đầu miễn phí</button>
-            <button class="btn btn-ghost" onclick="navigateTo('practice')">Xem demo luyện tập</button>
-          </div>
-          <div class="hero-stats">
-            <div class="stat-item"><span class="stat-num">12K+</span><span class="stat-label">Học viên</span></div>
-            <div class="stat-divider"></div>
-            <div class="stat-item"><span class="stat-num">4</span><span class="stat-label">Nhạc cụ</span></div>
-            <div class="stat-divider"></div>
-            <div class="stat-item"><span class="stat-num">280+</span><span class="stat-label">Bài học</span></div>
-          </div>
-        </div>
-        <div class="hero-visual">
-          <div class="hero-room-card">
-            <div class="room-glow"></div>
-            <div class="character-wrapper">
-              <div class="character-img-wrap">
-                <img src="C:\Users\Admin\.gemini\antigravity\brain\c576d20f-b8ba-4956-a7b2-cc9bfd9c8ee5\virtual_artist_character_1779730958678.png" alt="Nghệ sĩ ảo" class="character-img" />
-                <div class="character-aura"></div>
+      <section class="hero min-h-[60vh] py-8">
+        <div class="hero-content flex-col lg:flex-row-reverse gap-12 p-0 w-full justify-between">
+          <!-- Right Column visual card -->
+          <div class="w-full lg:w-1/2 flex justify-center lg:justify-end">
+            <div class="card w-full max-w-[360px] bg-base-100 shadow-xl border-2 border-gold/20 relative overflow-hidden p-8 hover:shadow-2xl transition-all duration-300">
+              <div class="absolute -top-10 -left-10 w-40 h-40 bg-gold/5 rounded-full blur-2xl"></div>
+              <div class="flex flex-col items-center gap-6 z-10">
+                <div class="avatar online">
+                  <div class="w-44 rounded-full border-4 border-gold shadow-md">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=vietstage&backgroundColor=b6e3f4" alt="Nghệ sĩ ảo" />
+                  </div>
+                </div>
+                <div class="badge badge-accent bg-jade/10 text-jade border-jade/20 py-4 px-5 font-bold flex gap-2 rounded-full">
+                  <span class="animate-bounce">🎵</span> Đang chơi: Lý Cây Xanh
+                </div>
               </div>
+              
+              <!-- Floating note animations -->
+              <div class="absolute top-12 left-10 text-2xl text-gold/30 animate-pulse">♪</div>
+              <div class="absolute top-8 right-10 text-2xl text-gold/30 animate-bounce">♫</div>
+              <div class="absolute bottom-24 left-8 text-xl text-gold/30 animate-bounce">♩</div>
+              <div class="absolute bottom-20 right-10 text-2xl text-gold/30 animate-pulse">𝄞</div>
             </div>
-            <div class="floating-notes">
-              <span class="note n1">♪</span>
-              <span class="note n2">♫</span>
-              <span class="note n3">♩</span>
-              <span class="note n4">𝄞</span>
+          </div>
+          
+          <!-- Left Column content -->
+          <div class="w-full lg:w-1/2 flex flex-col items-start gap-6">
+            <div class="badge badge-outline border-gold/40 text-gold py-3 px-4 font-bold rounded-full flex gap-1 items-center">
+              <i class="las la-crown"></i> Ứng dụng học nhạc dân tộc #1 Việt Nam
             </div>
-            <div class="hero-card-badge">
-              <span>🎵</span> Đang chơi: Lý Cây Xanh
+            <h1 class="text-4xl md:text-5xl font-black font-title leading-tight">
+              Học Nhạc Cụ <br/>
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-lacquer to-gold">Dân Tộc Việt Nam</span> <br/>
+              Theo Cách Thú Vị Nhất
+            </h1>
+            <p class="text-taupe text-base md:text-lg max-w-[500px]">
+              Luyện tập cùng nghệ sĩ ảo, nhận phản hồi thực thời, chinh phục hàng trăm bài học – ngay trên điện thoại hay máy tính của bạn.
+            </p>
+            <div class="flex flex-wrap gap-4 mt-2">
+              <button class="btn btn-primary bg-lacquer hover:bg-red-800 border-none text-white shadow-lg shadow-lacquer/20 rounded-xl px-8" onclick="navigateTo('learn')">
+                Bắt đầu miễn phí <i class="las la-arrow-right"></i>
+              </button>
+              <button class="btn btn-ghost bg-cream-dim border border-taupe/20 hover:bg-taupe/10 rounded-xl px-6" onclick="navigateTo('practice')">
+                Xem demo <i class="las la-play-circle"></i>
+              </button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats bg-transparent shadow-none w-full grid grid-cols-3 divide-x divide-taupe/10 mt-6 p-0">
+              <div class="stat p-2 text-center lg:text-left">
+                <div class="stat-value text-lacquer text-2xl md:text-3xl font-black">12K+</div>
+                <div class="stat-title text-xs md:text-sm text-taupe font-semibold">Học viên</div>
+              </div>
+              <div class="stat p-2 text-center lg:text-left pl-4">
+                <div class="stat-value text-lacquer text-2xl md:text-3xl font-black">4</div>
+                <div class="stat-title text-xs md:text-sm text-taupe font-semibold">Nhạc cụ</div>
+              </div>
+              <div class="stat p-2 text-center lg:text-left pl-4">
+                <div class="stat-value text-lacquer text-2xl md:text-3xl font-black">280+</div>
+                <div class="stat-title text-xs md:text-sm text-taupe font-semibold">Bài học</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Instruments Showcase -->
-      <section class="section" id="instruments">
-        <div class="section-header">
-          <h2 class="section-title">Chọn nhạc cụ của bạn</h2>
-          <p class="section-sub">Bắt đầu hành trình âm nhạc với nhạc cụ bạn yêu thích</p>
+      <section class="py-12 border-t border-taupe/10" id="instruments">
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-black font-title">Chọn nhạc cụ của bạn</h2>
+          <p class="text-taupe text-sm">Bắt đầu hành trình âm nhạc truyền thống ngay hôm nay</p>
         </div>
-        <div class="instruments-grid">
-          <div class="instrument-card selected" onclick="selectInstrument(this, 'dan-tranh')">
-            <div class="instrument-glow"></div>
-            <div class="instrument-emoji">🎼</div>
-            <div class="instrument-img-wrap">
-              <img src="C:\Users\Admin\.gemini\antigravity\brain\c576d20f-b8ba-4956-a7b2-cc9bfd9c8ee5\instrument_dan_tranh_1779730989919.png" alt="Đàn Tranh" />
-            </div>
-            <div class="instrument-info">
-              <h3>Đàn Tranh</h3>
-              <p>Đàn tranh 16 dây – tiếng đàn trữ tình, sâu lắng</p>
-              <div class="instrument-meta">
-                <span class="tag">72 bài học</span>
-                <span class="tag tag-green">Phổ biến nhất</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Đàn Tranh -->
+          <div class="card bg-base-100 border border-taupe/15 hover:border-gold shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer instrument-card selected relative overflow-hidden" onclick="selectInstrument(this, 'dan-tranh')">
+            <figure class="px-4 pt-4">
+              <div class="h-36 w-full rounded-xl bg-cream-dim flex items-center justify-center overflow-hidden relative">
+                <span class="absolute top-2 left-2 text-2xl"><i class="las la-music text-gold"></i></span>
+                <img src="https://images.unsplash.com/photo-1598387993441-a364f854c3e1?auto=format&fit=crop&q=80&w=400" alt="Đàn Tranh" class="object-cover w-full h-full" />
+              </div>
+            </figure>
+            <div class="card-body p-5 gap-3">
+              <h2 class="card-title text-lg font-bold">Đàn Tranh</h2>
+              <p class="text-xs text-taupe">Đàn tranh 16 dây – tiếng đàn trữ tình, sâu lắng.</p>
+              <div class="card-actions justify-start gap-1">
+                <div class="badge badge-sm bg-cream-dim text-taupe font-bold border-none py-2 px-3">72 bài học</div>
+                <div class="badge badge-sm bg-jade/10 text-jade font-bold border-none py-2 px-3">Phổ biến</div>
               </div>
             </div>
-            <div class="instrument-select-badge">✓ Đã chọn</div>
+            <div class="instrument-select-badge absolute top-3 right-3 bg-lacquer text-white text-[10px] uppercase font-bold py-1 px-3 rounded-full">✓ Đã chọn</div>
           </div>
-          <div class="instrument-card" onclick="selectInstrument(this, 'sao-truc')">
-            <div class="instrument-glow"></div>
-            <div class="instrument-emoji">🎋</div>
-            <div class="instrument-img-wrap">
-              <img src="C:\Users\Admin\.gemini\antigravity\brain\c576d20f-b8ba-4956-a7b2-cc9bfd9c8ee5\instrument_sao_truc_1779731006902.png" alt="Sáo Trúc" />
-            </div>
-            <div class="instrument-info">
-              <h3>Sáo Trúc</h3>
-              <p>Sáo trúc – âm thanh trong vắt, bay bổng như tiếng gió</p>
-              <div class="instrument-meta">
-                <span class="tag">58 bài học</span>
+          
+          <!-- Sáo Trúc -->
+          <div class="card bg-base-100 border border-taupe/15 hover:border-gold shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer instrument-card relative" onclick="selectInstrument(this, 'sao-truc')">
+            <figure class="px-4 pt-4">
+              <div class="h-36 w-full rounded-xl bg-cream-dim flex items-center justify-center overflow-hidden relative">
+                <span class="absolute top-2 left-2 text-2xl"><i class="las la-leaf text-jade"></i></span>
+                <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&q=80&w=400" alt="Sáo Trúc" class="object-cover w-full h-full" />
               </div>
-            </div>
-          </div>
-          <div class="instrument-card" onclick="selectInstrument(this, 'dan-bau')">
-            <div class="instrument-glow"></div>
-            <div class="instrument-emoji">🎻</div>
-            <div class="instrument-img-wrap instrument-placeholder">
-              <div class="placeholder-icon">🎻</div>
-            </div>
-            <div class="instrument-info">
-              <h3>Đàn Bầu</h3>
-              <p>Đàn bầu một dây – nhạc cụ độc đáo chỉ có ở Việt Nam</p>
-              <div class="instrument-meta">
-                <span class="tag">45 bài học</span>
-                <span class="tag tag-orange">Sắp ra mắt</span>
+            </figure>
+            <div class="card-body p-5 gap-3">
+              <h2 class="card-title text-lg font-bold">Sáo Trúc</h2>
+              <p class="text-xs text-taupe">Sáo trúc – âm thanh trong vắt, bay bổng tựa mây trời.</p>
+              <div class="card-actions justify-start gap-1">
+                <div class="badge badge-sm bg-cream-dim text-taupe font-bold border-none py-2 px-3">58 bài học</div>
               </div>
             </div>
           </div>
-          <div class="instrument-card" onclick="selectInstrument(this, 'trong')">
-            <div class="instrument-glow"></div>
-            <div class="instrument-emoji">🥁</div>
-            <div class="instrument-img-wrap instrument-placeholder">
-              <div class="placeholder-icon">🥁</div>
+
+          <!-- Đàn Bầu -->
+          <div class="card bg-base-100 border border-taupe/15 hover:border-gold shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer instrument-card opacity-75 relative" onclick="selectInstrument(this, 'dan-bau')">
+            <figure class="px-4 pt-4">
+              <div class="h-36 w-full rounded-xl bg-cream-dim flex items-center justify-center relative">
+                <span class="text-4xl text-taupe/40"><i class="las la-guitar"></i></span>
+              </div>
+            </figure>
+            <div class="card-body p-5 gap-3">
+              <h2 class="card-title text-lg font-bold">Đàn Bầu</h2>
+              <p class="text-xs text-taupe">Đàn bầu một dây – tiếng đàn độc đáo có một không hai của Việt Nam.</p>
+              <div class="card-actions justify-start gap-1">
+                <div class="badge badge-sm bg-cream-dim text-taupe font-bold border-none py-2 px-3">45 bài học</div>
+                <div class="badge badge-sm bg-gold/10 text-gold font-bold border-none py-2 px-3">Sắp ra mắt</div>
+              </div>
             </div>
-            <div class="instrument-info">
-              <h3>Trống Dân Tộc</h3>
-              <p>Trống – nhịp điệu trái tim của âm nhạc dân gian Việt</p>
-              <div class="instrument-meta">
-                <span class="tag">38 bài học</span>
-                <span class="tag tag-orange">Sắp ra mắt</span>
+          </div>
+
+          <!-- Trống -->
+          <div class="card bg-base-100 border border-taupe/15 hover:border-gold shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer instrument-card opacity-75 relative" onclick="selectInstrument(this, 'trong')">
+            <figure class="px-4 pt-4">
+              <div class="h-36 w-full rounded-xl bg-cream-dim flex items-center justify-center relative">
+                <span class="text-4xl text-taupe/40"><i class="las la-drum"></i></span>
+              </div>
+            </figure>
+            <div class="card-body p-5 gap-3">
+              <h2 class="card-title text-lg font-bold">Trống Dân Tộc</h2>
+              <p class="text-xs text-taupe">Trống cái, trống cơm – nhịp đập trái tim âm nhạc dân gian Việt.</p>
+              <div class="card-actions justify-start gap-1">
+                <div class="badge badge-sm bg-cream-dim text-taupe font-bold border-none py-2 px-3">38 bài học</div>
+                <div class="badge badge-sm bg-gold/10 text-gold font-bold border-none py-2 px-3">Sắp ra mắt</div>
               </div>
             </div>
           </div>
@@ -150,493 +257,575 @@
       </section>
 
       <!-- Features -->
-      <section class="section features-section">
-        <div class="section-header">
-          <h2 class="section-title">Tại sao chọn VietStage?</h2>
+      <section class="py-12 border-t border-taupe/10">
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-black font-title">Tại sao chọn VietStage?</h2>
+          <p class="text-taupe text-sm">Học tập hiệu quả với các công cụ tối tân nhất</p>
         </div>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">🎯</div>
-            <h3>Phản hồi thực thời</h3>
-            <p>AI phân tích âm thanh trong vòng &lt;100ms, chỉ ra lỗi cao độ và nhịp điệu ngay lập tức</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-6 flex flex-row gap-4 items-start hover:shadow-lg transition-all">
+            <div class="text-3xl text-lacquer p-3 rounded-xl bg-lacquer/5 shrink-0"><i class="las la-bolt"></i></div>
+            <div>
+              <h3 class="font-bold text-lg mb-1">Phản hồi thực thời</h3>
+              <p class="text-xs text-taupe">AI phân tích âm thanh trong vòng &lt;100ms, chỉ ra lỗi cao độ và nhịp điệu ngay lập tức.</p>
+            </div>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🎮</div>
-            <h3>Học qua trò chơi</h3>
-            <p>Mini-games thú vị: ghép nhịp, nhận diện nốt, hoàn thiện giai điệu – học mà như chơi</p>
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-6 flex flex-row gap-4 items-start hover:shadow-lg transition-all">
+            <div class="text-3xl text-gold p-3 rounded-xl bg-gold/5 shrink-0"><i class="las la-gamepad"></i></div>
+            <div>
+              <h3 class="font-bold text-lg mb-1">Học qua trò chơi</h3>
+              <p class="text-xs text-taupe">Mini-games ghép nhịp, nhận diện nốt, hoàn thiện giai điệu – học mà như chơi.</p>
+            </div>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🏆</div>
-            <h3>Hệ thống thành tích</h3>
-            <p>Kiếm sao, mở khóa trang trí phòng nhạc ảo, leo bảng xếp hạng toàn quốc</p>
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-6 flex flex-row gap-4 items-start hover:shadow-lg transition-all">
+            <div class="text-3xl text-jade p-3 rounded-xl bg-jade/5 shrink-0"><i class="las la-trophy"></i></div>
+            <div>
+              <h3 class="font-bold text-lg mb-1">Hệ thống thành tích</h3>
+              <p class="text-xs text-taupe">Kiếm sao, mở khóa trang trí phòng nhạc ảo, leo bảng xếp hạng toàn quốc.</p>
+            </div>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3>Theo dõi tiến độ</h3>
-            <p>Biểu đồ chi tiết về độ chính xác cao độ, nhịp điệu, thời gian luyện tập mỗi ngày</p>
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-6 flex flex-row gap-4 items-start hover:shadow-lg transition-all">
+            <div class="text-3xl text-blue-600 p-3 rounded-xl bg-blue-500/5 shrink-0"><i class="las la-chart-bar"></i></div>
+            <div>
+              <h3 class="font-bold text-lg mb-1">Theo dõi tiến độ</h3>
+              <p class="text-xs text-taupe">Biểu đồ chi tiết về độ chính xác cao độ, nhịp điệu, thời gian luyện tập mỗi ngày.</p>
+            </div>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🎭</div>
-            <h3>Nghệ sĩ ảo 2.5D</h3>
-            <p>Nhân vật hoạt hình biểu diễn kỹ thuật đặt tay, nhấn phím với animation chi tiết</p>
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-6 flex flex-row gap-4 items-start hover:shadow-lg transition-all">
+            <div class="text-3xl text-purple-600 p-3 rounded-xl bg-purple-500/5 shrink-0"><i class="las la-user-astronaut"></i></div>
+            <div>
+              <h3 class="font-bold text-lg mb-1">Nghệ sĩ ảo 2.5D</h3>
+              <p class="text-xs text-taupe">Nhân vật hoạt hình biểu diễn kỹ thuật đặt tay, nhấn phím với animation chi tiết.</p>
+            </div>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">📴</div>
-            <h3>Học offline</h3>
-            <p>Tải bài học về máy, luyện tập ngay cả khi không có internet, tự động đồng bộ sau</p>
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-6 flex flex-row gap-4 items-start hover:shadow-lg transition-all">
+            <div class="text-3xl text-indigo-600 p-3 rounded-xl bg-indigo-500/5 shrink-0"><i class="las la-wifi"></i></div>
+            <div>
+              <h3 class="font-bold text-lg mb-1">Học offline</h3>
+              <p class="text-xs text-taupe">Tải bài học về máy, luyện tập ngay cả khi không có internet, tự động đồng bộ sau.</p>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- Daily Challenge Banner -->
-      <section class="section">
-        <div class="daily-challenge-banner">
-          <div class="dc-left">
-            <div class="dc-badge">🔥 Thử thách hôm nay</div>
-            <h3>Lý Cây Xanh – Độ khó: Trung bình</h3>
-            <p>Hoàn thành bài này để nhận <strong>+150 XP</strong> và huy hiệu "Lá Xanh Mùa Hè"</p>
-            <button class="btn btn-primary" onclick="navigateTo('practice')">Bắt đầu thử thách →</button>
+      <section class="py-8">
+        <div class="hero rounded-3xl bg-amber-50 border border-gold/30 shadow-md p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div class="flex flex-col gap-3 items-start w-full md:w-2/3">
+            <div class="badge badge-warning text-xs font-black py-2.5 px-4 text-yellow-800 rounded-full"><i class="las la-fire animate-bounce"></i> THỬ THÁCH HÔM NAY</div>
+            <h3 class="text-2xl font-black font-title">Lý Cây Xanh – Độ khó: Trung bình</h3>
+            <p class="text-taupe text-sm">Hoàn thành bài này để nhận <strong>+150 XP</strong> và huy hiệu "Lá Xanh Mùa Hè"</p>
+            <button class="btn btn-primary bg-lacquer hover:bg-red-800 text-white border-none rounded-xl" onclick="navigateTo('practice')">
+              Bắt đầu thử thách <i class="las la-arrow-right"></i>
+            </button>
           </div>
-          <div class="dc-right">
-            <div class="dc-timer">
-              <span class="dc-timer-label">Còn lại</span>
-              <div class="dc-timer-digits" id="challengeTimer">08:42:17</div>
-            </div>
-            <div class="dc-participants">👥 2,341 người đang tham gia</div>
+          <div class="flex flex-col items-center md:items-end gap-2 w-full md:w-1/3">
+            <span class="text-xs text-taupe font-bold uppercase tracking-wider">Thời gian còn lại</span>
+            <div class="text-4xl font-black font-title text-lacquer" id="challengeTimer">08:42:17</div>
+            <div class="text-xs text-taupe"><i class="las la-users"></i> 2,341 người đang tham gia</div>
           </div>
         </div>
       </section>
 
       <!-- Leaderboard + Continue learning -->
-      <section class="section two-col-section">
-        <div class="continue-learning">
-          <h3 class="subsection-title">Tiếp tục học</h3>
-          <div class="lesson-continue-card" onclick="navigateTo('practice')">
-            <div class="lccard-left">
-              <div class="lccard-icon">🎼</div>
-              <div class="lccard-info">
-                <div class="lccard-title">Đàn Tranh – Bài 3: Vị trí tay phải</div>
-                <div class="lccard-sub">Gói Cơ bản · Đã hoàn thành 60%</div>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: 60%"></div>
-                </div>
+      <section class="py-12 border-t border-taupe/10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Continue learning -->
+        <div class="flex flex-col gap-4">
+          <h3 class="text-2xl font-black border-l-4 border-lacquer pl-3 font-title">Tiếp tục học</h3>
+          
+          <!-- Card 1 -->
+          <div class="card bg-base-100 shadow-sm border border-taupe/10 hover:border-gold hover:translate-x-1 transition-all duration-300 p-4 flex flex-row items-center justify-between gap-4 cursor-pointer" onclick="navigateTo('practice')">
+            <div class="flex items-center gap-4 flex-grow">
+              <div class="w-12 h-12 rounded-xl bg-cream-dim flex items-center justify-center text-2xl text-lacquer shrink-0"><i class="las la-music"></i></div>
+              <div class="flex-grow">
+                <h4 class="font-bold text-sm">Đàn Tranh – Bài 3: Vị trí tay phải</h4>
+                <p class="text-[11px] text-taupe mb-1">Gói Cơ bản · Đã hoàn thành 60%</p>
+                <progress class="progress progress-primary w-full" value="60" max="100"></progress>
               </div>
             </div>
-            <button class="btn btn-sm btn-primary">Tiếp tục ▶</button>
+            <button class="btn btn-primary btn-sm bg-lacquer text-white border-none rounded-lg ml-2 shrink-0">Tiếp tục</button>
           </div>
-          <div class="lesson-continue-card" onclick="navigateTo('learn')">
-            <div class="lccard-left">
-              <div class="lccard-icon">🎋</div>
-              <div class="lccard-info">
-                <div class="lccard-title">Sáo Trúc – Bài 1: Kỹ thuật thổi cơ bản</div>
-                <div class="lccard-sub">Gói Cơ bản · Chưa bắt đầu</div>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: 0%"></div>
-                </div>
+
+          <!-- Card 2 -->
+          <div class="card bg-base-100 shadow-sm border border-taupe/10 hover:border-gold hover:translate-x-1 transition-all duration-300 p-4 flex flex-row items-center justify-between gap-4 cursor-pointer" onclick="navigateTo('learn')">
+            <div class="flex items-center gap-4 flex-grow">
+              <div class="w-12 h-12 rounded-xl bg-cream-dim flex items-center justify-center text-2xl text-jade shrink-0"><i class="las la-leaf"></i></div>
+              <div class="flex-grow">
+                <h4 class="font-bold text-sm">Sáo Trúc – Bài 1: Kỹ thuật thổi cơ bản</h4>
+                <p class="text-[11px] text-taupe mb-1">Gói Cơ bản · Chưa bắt đầu</p>
+                <progress class="progress progress-neutral w-full" value="0" max="100"></progress>
               </div>
             </div>
-            <button class="btn btn-sm btn-ghost">Bắt đầu</button>
+            <button class="btn btn-ghost btn-sm bg-cream-dim rounded-lg ml-2 shrink-0">Bắt đầu</button>
           </div>
-          <div class="lesson-continue-card done">
-            <div class="lccard-left">
-              <div class="lccard-icon">🎼</div>
-              <div class="lccard-info">
-                <div class="lccard-title">Đàn Tranh – Bài 2: Nốt cơ bản</div>
-                <div class="lccard-sub">Gói Cơ bản · ⭐⭐⭐ Hoàn thành</div>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: 100%"></div>
-                </div>
+
+          <!-- Card 3 (Completed) -->
+          <div class="card bg-base-100 shadow-sm border border-jade/30 bg-jade/5 p-4 flex flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4 flex-grow">
+              <div class="w-12 h-12 rounded-xl bg-cream-dim flex items-center justify-center text-2xl text-gold shrink-0"><i class="las la-trophy"></i></div>
+              <div class="flex-grow">
+                <h4 class="font-bold text-sm">Đàn Tranh – Bài 2: Nốt cơ bản</h4>
+                <p class="text-[11px] text-taupe mb-1">Gói Cơ bản · ⭐⭐⭐ Hoàn thành</p>
+                <progress class="progress progress-success w-full" value="100" max="100"></progress>
               </div>
             </div>
-            <div class="done-badge">✓</div>
+            <div class="w-8 h-8 rounded-full bg-jade text-white flex items-center justify-center font-bold text-sm shrink-0">✓</div>
           </div>
         </div>
-        <div class="leaderboard-widget">
-          <h3 class="subsection-title">🏆 Bảng xếp hạng tuần</h3>
-          <div class="lb-list">
-            <div class="lb-item rank-1">
-              <span class="lb-rank">🥇</span>
-              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=user1&backgroundColor=ffd5dc" class="lb-avatar" alt="u1"/>
-              <span class="lb-name">Minh Châu</span>
-              <span class="lb-xp">4,820 XP</span>
+        
+        <!-- Leaderboard -->
+        <div class="flex flex-col gap-4">
+          <h3 class="text-2xl font-black border-l-4 border-lacquer pl-3 font-title">🏆 Bảng xếp hạng tuần</h3>
+          
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-5 flex flex-col gap-3">
+            <!-- Rank 1 -->
+            <div class="flex items-center justify-between p-2 rounded-xl hover:bg-cream-dim transition-all">
+              <div class="flex items-center gap-3">
+                <span class="text-xl">🥇</span>
+                <div class="avatar">
+                  <div class="w-10 rounded-full border border-gold/30">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=user1&backgroundColor=ffd5dc" alt="u1" />
+                  </div>
+                </div>
+                <span class="font-bold text-sm">Minh Châu</span>
+              </div>
+              <span class="font-bold text-sm text-gold">4,820 XP</span>
             </div>
-            <div class="lb-item rank-2">
-              <span class="lb-rank">🥈</span>
-              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=user2&backgroundColor=c0f0d0" class="lb-avatar" alt="u2"/>
-              <span class="lb-name">Tuấn Khải</span>
-              <span class="lb-xp">4,210 XP</span>
+            
+            <!-- Rank 2 -->
+            <div class="flex items-center justify-between p-2 rounded-xl hover:bg-cream-dim transition-all">
+              <div class="flex items-center gap-3">
+                <span class="text-xl">🥈</span>
+                <div class="avatar">
+                  <div class="w-10 rounded-full border border-gold/30">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=user2&backgroundColor=c0f0d0" alt="u2" />
+                  </div>
+                </div>
+                <span class="font-bold text-sm">Tuấn Khải</span>
+              </div>
+              <span class="font-bold text-sm text-gold">4,210 XP</span>
             </div>
-            <div class="lb-item rank-3">
-              <span class="lb-rank">🥉</span>
-              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=user3&backgroundColor=c0d8ff" class="lb-avatar" alt="u3"/>
-              <span class="lb-name">Lan Anh</span>
-              <span class="lb-xp">3,905 XP</span>
+
+            <!-- Rank 3 -->
+            <div class="flex items-center justify-between p-2 rounded-xl hover:bg-cream-dim transition-all">
+              <div class="flex items-center gap-3">
+                <span class="text-xl">🥉</span>
+                <div class="avatar">
+                  <div class="w-10 rounded-full border border-gold/30">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=user3&backgroundColor=c0d8ff" alt="u3" />
+                  </div>
+                </div>
+                <span class="font-bold text-sm">Lan Anh</span>
+              </div>
+              <span class="font-bold text-sm text-gold">3,905 XP</span>
             </div>
-            <div class="lb-item lb-you">
-              <span class="lb-rank">12</span>
-              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=vietstage&backgroundColor=b6e3f4" class="lb-avatar" alt="you"/>
-              <span class="lb-name">Bạn ★</span>
-              <span class="lb-xp">1,240 XP</span>
+
+            <!-- You -->
+            <div class="flex items-center justify-between p-2 rounded-xl bg-gold/10 border border-dashed border-gold">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-bold text-taupe w-6 text-center">12</span>
+                <div class="avatar">
+                  <div class="w-10 rounded-full border border-gold">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=vietstage&backgroundColor=b6e3f4" alt="you" />
+                  </div>
+                </div>
+                <span class="font-bold text-sm text-gold">Bạn ★</span>
+              </div>
+              <span class="font-bold text-sm text-gold">1,240 XP</span>
             </div>
+            
+            <button class="btn btn-ghost bg-cream-dim hover:bg-taupe/10 border-none rounded-xl mt-2 w-full text-xs">Xem tất cả →</button>
           </div>
-          <button class="btn btn-ghost btn-full-width">Xem tất cả →</button>
         </div>
       </section>
     </div>
 
-    <!-- LEARN PAGE -->
+    <!-- ================= LEARN PAGE ================= -->
     <div class="page" id="page-learn">
-      <div class="page-hero learn-hero">
-        <h1 class="page-title">🎓 Thư viện Bài học</h1>
-        <p class="page-sub">Chọn nhạc cụ và bắt đầu hành trình âm nhạc của bạn</p>
+      <div class="page-hero bg-cream-dim border border-taupe/10 rounded-3xl p-8 text-center mb-8 shadow-sm">
+        <h1 class="text-3xl font-black font-title flex items-center justify-center gap-2"><i class="las la-graduation-cap text-lacquer"></i> Thư viện Bài học</h1>
+        <p class="text-taupe text-sm mt-1">Chọn nhạc cụ và bắt đầu hành trình chinh phục âm nhạc dân tộc</p>
       </div>
-      <div class="section">
-        <div class="learn-tabs" id="learnTabs">
-          <button class="tab-btn active" data-tab="dan-tranh" onclick="switchLearnTab(this)">🎼 Đàn Tranh</button>
-          <button class="tab-btn" data-tab="sao-truc" onclick="switchLearnTab(this)">🎋 Sáo Trúc</button>
-          <button class="tab-btn" data-tab="dan-bau" onclick="switchLearnTab(this)">🎻 Đàn Bầu</button>
-          <button class="tab-btn" data-tab="trong" onclick="switchLearnTab(this)">🥁 Trống</button>
+      
+      <div class="section p-0">
+        <!-- daisyUI Lifted Tabs -->
+        <div class="tabs tabs-lifted justify-center mb-8" id="learnTabs">
+          <button class="tab tab-btn tab-active font-bold text-base [--tab-bg:#FAF7EE] text-lacquer" data-tab="dan-tranh" onclick="switchLearnTab(this)">🎼 Đàn Tranh</button>
+          <button class="tab tab-btn font-bold text-base [--tab-bg:#FAF7EE]" data-tab="sao-truc" onclick="switchLearnTab(this)">🎋 Sáo Trúc</button>
+          <button class="tab tab-btn font-bold text-base [--tab-bg:#FAF7EE]" data-tab="dan-bau" onclick="switchLearnTab(this)">🎻 Đàn Bầu</button>
+          <button class="tab tab-btn font-bold text-base [--tab-bg:#FAF7EE]" data-tab="trong" onclick="switchLearnTab(this)">🥁 Trống</button>
         </div>
 
         <!-- Difficulty Filter -->
-        <div class="difficulty-filter">
-          <button class="diff-btn active" onclick="filterDifficulty(this, 'all')">Tất cả</button>
-          <button class="diff-btn" onclick="filterDifficulty(this, 'beginner')">🟢 Cơ bản</button>
-          <button class="diff-btn" onclick="filterDifficulty(this, 'intermediate')">🟡 Trung cấp</button>
-          <button class="diff-btn" onclick="filterDifficulty(this, 'advanced')">🔴 Nâng cao</button>
+        <div class="flex justify-center gap-2 mb-8 difficulty-filter">
+          <button class="btn btn-sm btn-outline rounded-full diff-btn active" onclick="filterDifficulty(this, 'all')">Tất cả</button>
+          <button class="btn btn-sm btn-outline rounded-full diff-btn text-jade border-jade/40 hover:bg-jade hover:text-white" onclick="filterDifficulty(this, 'beginner')">🟢 Cơ bản</button>
+          <button class="btn btn-sm btn-outline rounded-full diff-btn text-gold border-gold/40 hover:bg-gold hover:text-white" onclick="filterDifficulty(this, 'intermediate')">🟡 Trung cấp</button>
+          <button class="btn btn-sm btn-outline rounded-full diff-btn text-lacquer border-lacquer/40 hover:bg-lacquer hover:text-white" onclick="filterDifficulty(this, 'advanced')">🔴 Nâng cao</button>
         </div>
 
-        <!-- Lesson Path -->
-        <div class="lesson-path" id="lessonPath">
+        <!-- Lesson Path Map -->
+        <div class="lesson-path flex flex-col gap-8" id="lessonPath">
           <!-- Beginner Section -->
-          <div class="path-section" data-difficulty="beginner">
-            <div class="path-section-header">
-              <div class="path-section-icon">🟢</div>
-              <div>
-                <h3>Gói Cơ Bản</h3>
-                <p>8 bài · Đã hoàn thành 3/8</p>
+          <div class="path-section card bg-base-100 border border-taupe/10 shadow-sm" data-difficulty="beginner">
+            <div class="path-section-header bg-cream-dim p-5 flex items-center justify-between border-b border-taupe/10">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl"><i class="las la-award text-jade"></i></span>
+                <div>
+                  <h3 class="font-bold text-lg">Gói Cơ Bản</h3>
+                  <p class="text-xs text-taupe">8 bài · Đã hoàn thành 3/8</p>
+                </div>
               </div>
-              <div class="path-progress-ring">
-                <svg width="52" height="52" viewBox="0 0 52 52">
-                  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
-                  <circle cx="26" cy="26" r="22" fill="none" stroke="#4ade80" stroke-width="4"
-                    stroke-dasharray="138.2" stroke-dashoffset="96.7" stroke-linecap="round" transform="rotate(-90 26 26)"/>
+              
+              <div class="path-progress-ring relative w-12 h-12 flex items-center justify-center">
+                <svg width="48" height="48" viewBox="0 0 52 52">
+                  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="4"/>
+                  <circle cx="26" cy="26" r="22" fill="none" stroke="#1E5E3A" stroke-width="4"
+                    stroke-dasharray="138.2" stroke-dashoffset="85" stroke-linecap="round" transform="rotate(-90 26 26)"/>
                 </svg>
-                <span class="ring-text">38%</span>
+                <span class="absolute text-[10px] font-black text-jade">38%</span>
               </div>
             </div>
-            <div class="lessons-list">
-              <div class="lesson-item completed" onclick="navigateTo('practice')">
-                <div class="lesson-node completed-node">✓</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 1: Giới thiệu đàn tranh & tư thế ngồi</div>
-                  <div class="lesson-item-meta"><span>⭐⭐⭐</span> · 5 phút · Lý thuyết + Video</div>
+            
+            <div class="lessons-list divide-y divide-taupe/5">
+              <!-- Lesson 1 -->
+              <div class="lesson-item flex items-center justify-between p-5 hover:bg-cream-dim/30 transition-all cursor-pointer completed" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-jade text-white flex items-center justify-center font-bold text-sm">✓</div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 1: Giới thiệu đàn tranh & tư thế ngồi</h4>
+                    <p class="text-xs text-taupe">⭐⭐⭐ · 5 phút · Lý thuyết + Video</p>
+                  </div>
                 </div>
-                <div class="lesson-stars">⭐⭐⭐</div>
+                <div class="text-gold text-sm">⭐⭐⭐</div>
               </div>
-              <div class="lesson-item completed" onclick="navigateTo('practice')">
-                <div class="lesson-node completed-node">✓</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 2: Nốt nhạc cơ bản – Đồ Rê Mi</div>
-                  <div class="lesson-item-meta"><span>⭐⭐⭐</span> · 8 phút · Lý thuyết + Luyện tập</div>
+              
+              <!-- Lesson 2 -->
+              <div class="lesson-item flex items-center justify-between p-5 hover:bg-cream-dim/30 transition-all cursor-pointer completed" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-jade text-white flex items-center justify-center font-bold text-sm">✓</div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 2: Nốt nhạc cơ bản – Đồ Rê Mi</h4>
+                    <p class="text-xs text-taupe">⭐⭐⭐ · 8 phút · Lý thuyết + Luyện tập</p>
+                  </div>
                 </div>
-                <div class="lesson-stars">⭐⭐⭐</div>
+                <div class="text-gold text-sm">⭐⭐⭐</div>
               </div>
-              <div class="lesson-item completed" onclick="navigateTo('practice')">
-                <div class="lesson-node completed-node">✓</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 3: Vị trí ngón tay phải – Gảy cơ bản</div>
-                  <div class="lesson-item-meta"><span>⭐⭐☆</span> · 12 phút · Luyện tập thực hành</div>
+
+              <!-- Lesson 3 -->
+              <div class="lesson-item flex items-center justify-between p-5 hover:bg-cream-dim/30 transition-all cursor-pointer completed" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-jade text-white flex items-center justify-center font-bold text-sm">✓</div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 3: Vị trí ngón tay phải – Gảy cơ bản</h4>
+                    <p class="text-xs text-taupe">⭐⭐☆ · 12 phút · Luyện tập thực hành</p>
+                  </div>
                 </div>
-                <div class="lesson-stars">⭐⭐☆</div>
+                <div class="text-gold text-sm">⭐⭐☆</div>
               </div>
-              <div class="lesson-item current" onclick="navigateTo('practice')">
-                <div class="lesson-node current-node">▶</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 4: Kỹ thuật nhấn dây – Tạo rung âm</div>
-                  <div class="lesson-item-meta">⏱ 15 phút · Đang học · 60% hoàn thành</div>
+
+              <!-- Lesson 4 -->
+              <div class="lesson-item flex items-center justify-between p-5 hover:bg-cream-dim/30 transition-all cursor-pointer current" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-lacquer text-white flex items-center justify-center font-bold text-sm">▶</div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 4: Kỹ thuật nhấn dây – Tạo rung âm</h4>
+                    <p class="text-xs text-taupe">⏱ 15 phút · Đang học · 60% hoàn thành</p>
+                  </div>
                 </div>
-                <button class="btn btn-sm btn-primary">Tiếp tục</button>
+                <button class="btn btn-sm btn-primary bg-lacquer text-white border-none rounded-lg">Tiếp tục</button>
               </div>
-              <div class="lesson-item locked">
-                <div class="lesson-node locked-node">🔒</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 5: Giai điệu đơn giản – Lý Con Sáo</div>
-                  <div class="lesson-item-meta">⏱ 18 phút · Hoàn thành Bài 4 để mở khóa</div>
-                </div>
-              </div>
-              <div class="lesson-item locked">
-                <div class="lesson-node locked-node">🔒</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 6: Phối hợp hai tay cơ bản</div>
-                  <div class="lesson-item-meta">⏱ 20 phút</div>
-                </div>
-              </div>
-              <div class="lesson-item locked">
-                <div class="lesson-node locked-node">🔒</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 7: Bài kiểm tra Cơ Bản #1</div>
-                  <div class="lesson-item-meta">⏱ 10 phút · Đánh giá tổng thể</div>
+
+              <!-- Lesson 5 -->
+              <div class="lesson-item flex items-center justify-between p-5 locked opacity-60 cursor-default" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-cream-dim text-taupe flex items-center justify-center font-bold text-sm"><i class="las la-lock"></i></div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 5: Giai điệu đơn giản – Lý Con Sáo</h4>
+                    <p class="text-xs text-taupe">⏱ 18 phút · Hoàn thành Bài 4 để mở khóa</p>
+                  </div>
                 </div>
               </div>
-              <div class="lesson-item locked">
-                <div class="lesson-node locked-node">🏆</div>
-                <div class="lesson-item-info">
-                  <div class="lesson-item-title">Bài 8: Mini Concert – Lý Cây Xanh</div>
-                  <div class="lesson-item-meta">🎖 Bài cuối – nhận huy hiệu Cơ Bản</div>
+
+              <!-- Lesson 6 -->
+              <div class="lesson-item flex items-center justify-between p-5 locked opacity-60 cursor-default" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-cream-dim text-taupe flex items-center justify-center font-bold text-sm"><i class="las la-lock"></i></div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 6: Phối hợp hai tay cơ bản</h4>
+                    <p class="text-xs text-taupe">⏱ 20 phút</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lesson 7 -->
+              <div class="lesson-item flex items-center justify-between p-5 locked opacity-60 cursor-default" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-cream-dim text-taupe flex items-center justify-center font-bold text-sm"><i class="las la-lock"></i></div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 7: Bài kiểm tra Cơ Bản #1</h4>
+                    <p class="text-xs text-taupe">⏱ 10 phút · Đánh giá tổng hợp</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lesson 8 -->
+              <div class="lesson-item flex items-center justify-between p-5 locked opacity-60 cursor-default" onclick="navigateTo('practice')">
+                <div class="flex items-center gap-4 flex-grow">
+                  <div class="lesson-node w-10 h-10 rounded-full bg-cream-dim text-taupe flex items-center justify-center font-bold text-sm"><i class="las la-trophy"></i></div>
+                  <div>
+                    <h4 class="font-bold text-sm">Bài 8: Mini Concert – Lý Cây Xanh</h4>
+                    <p class="text-xs text-taupe">🎖 Nhận huy hiệu hoàn thành Gói Cơ Bản</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Intermediate Section -->
-          <div class="path-section locked-section" data-difficulty="intermediate">
-            <div class="path-section-header">
-              <div class="path-section-icon">🟡</div>
-              <div>
-                <h3>Gói Trung Cấp</h3>
-                <p>10 bài · Hoàn thành Cơ Bản để mở khóa</p>
+          <div class="path-section card bg-base-100 border border-taupe/10 shadow-sm locked-section opacity-75" data-difficulty="intermediate">
+            <div class="path-section-header bg-cream-dim/50 p-5 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl"><i class="las la-lock text-taupe"></i></span>
+                <div>
+                  <h3 class="font-bold text-lg text-taupe">Gói Trung Cấp</h3>
+                  <p class="text-xs text-taupe">10 bài · Hoàn thành Gói Cơ Bản để mở khóa</p>
+                </div>
               </div>
-              <div class="lock-icon">🔒</div>
+              <div class="lock-icon text-xl text-taupe/50"><i class="las la-lock"></i></div>
             </div>
           </div>
 
           <!-- Advanced Section -->
-          <div class="path-section locked-section" data-difficulty="advanced">
-            <div class="path-section-header">
-              <div class="path-section-icon">🔴</div>
-              <div>
-                <h3>Gói Nâng Cao</h3>
-                <p>12 bài · Hoàn thành Trung Cấp để mở khóa</p>
+          <div class="path-section card bg-base-100 border border-taupe/10 shadow-sm locked-section opacity-75" data-difficulty="advanced">
+            <div class="path-section-header bg-cream-dim/50 p-5 flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl"><i class="las la-lock text-taupe"></i></span>
+                <div>
+                  <h3 class="font-bold text-lg text-taupe">Gói Nâng Cao</h3>
+                  <p class="text-xs text-taupe">12 bài · Hoàn thành Gói Trung Cấp để mở khóa</p>
+                </div>
               </div>
-              <div class="lock-icon">🔒</div>
+              <div class="lock-icon text-xl text-taupe/50"><i class="las la-lock"></i></div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- PRACTICE PAGE -->
+    <!-- ================= PRACTICE PAGE ================= -->
     <div class="page" id="page-practice">
-      <div class="practice-layout">
-        <!-- Left: Lesson Info -->
-        <div class="practice-sidebar">
-          <div class="practice-lesson-info">
-            <div class="pli-back">
-              <button class="btn btn-ghost btn-sm" onclick="navigateTo('learn')">← Quay lại</button>
-            </div>
-            <div class="pli-badge">🎼 Đàn Tranh · Bài 4</div>
-            <h2 class="pli-title">Kỹ thuật nhấn dây – Tạo rung âm</h2>
-            <div class="pli-meta">⏱ ~15 phút · Cấp độ: Cơ bản</div>
-            <div class="pli-progress">
-              <div class="pli-progress-label">Tiến độ bài học</div>
-              <div class="progress-bar thick">
-                <div class="progress-fill" style="width: 60%" id="lessonProgress"></div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left: Lesson Info, VA, Ref Audio (Col 3) -->
+        <div class="lg:col-span-3 flex flex-col gap-6 w-full">
+          <!-- Lesson Card -->
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-5">
+            <button class="btn btn-ghost btn-xs text-lacquer gap-1 self-start p-0 hover:bg-transparent" onclick="navigateTo('learn')">
+              <i class="las la-arrow-left"></i> Quay lại
+            </button>
+            <div class="text-[11px] text-lacquer font-bold mt-2">🎼 Đàn Tranh · Bài 4</div>
+            <h2 class="font-black text-lg mt-1 mb-2 leading-snug">Kỹ thuật nhấn dây – Tạo rung âm</h2>
+            <div class="text-xs text-taupe mb-4">⏱ ~15 phút · Cấp độ: Cơ bản</div>
+            <div class="w-full">
+              <div class="flex justify-between text-xs font-bold text-taupe mb-1">
+                <span>Tiến độ bài học</span>
+                <span id="lessonProgressNum">60%</span>
               </div>
-              <div class="pli-progress-num">60%</div>
-            </div>
-          </div>
-
-          <!-- Virtual Artist -->
-          <div class="virtual-artist-panel">
-            <div class="va-header">🎭 Nghệ sĩ ảo – Linh</div>
-            <div class="va-body">
-              <div class="va-character">
-                <img src="C:\Users\Admin\.gemini\antigravity\brain\c576d20f-b8ba-4956-a7b2-cc9bfd9c8ee5\virtual_artist_character_1779730958678.png" alt="Virtual Artist Linh" class="va-img" />
-                <div class="va-status-dot" id="vaStatusDot"></div>
-              </div>
-              <div class="va-speech-bubble" id="vaSpeech">
-                Hãy nhấn nhẹ vào dây số 3 và kéo về phía bạn để tạo âm rung. Giữ ngón tay cái cố định!
-              </div>
-            </div>
-            <div class="va-actions">
-              <button class="btn btn-sm btn-ghost" onclick="vaSpeak('demo')">▶ Xem demo</button>
-              <button class="btn btn-sm btn-ghost" onclick="vaSpeak('slow')">🐢 Chậm x0.5</button>
+              <progress class="progress progress-primary w-full" value="60" max="100" id="lessonProgress"></progress>
             </div>
           </div>
 
-          <!-- Reference Audio -->
-          <div class="reference-audio-panel">
-            <div class="rap-header">🎵 Âm thanh tham chiếu</div>
-            <div class="audio-player">
-              <div class="audio-waveform" id="refWaveform">
-                <canvas id="waveformCanvas" width="220" height="50"></canvas>
+          <!-- Virtual Artist Chat -->
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-5">
+            <h3 class="font-bold text-sm border-b border-taupe/10 pb-2 mb-3"><i class="las la-user-astronaut"></i> Trợ lý ảo – Linh</h3>
+            <div class="flex gap-3 items-start mb-4">
+              <div class="avatar online shrink-0">
+                <div class="w-12 h-12 rounded-full border border-gold">
+                  <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=vietstage&backgroundColor=b6e3f4" alt="Linh" />
+                </div>
               </div>
-              <div class="audio-controls">
-                <button class="audio-btn" onclick="toggleRefAudio()" id="refPlayBtn">▶</button>
-                <div class="audio-time" id="refAudioTime">0:00 / 0:23</div>
-                <button class="audio-btn" onclick="toggleSlowmo()" id="slowmoBtn">0.5x</button>
+              <div class="chat chat-start flex-grow min-w-0">
+                <div class="chat-bubble bg-cream-dim border border-gold/30 text-espresso text-xs font-semibold leading-relaxed shadow-sm after:border-r-cream-dim" id="vaSpeech">
+                  Hãy nhấn nhẹ vào dây số 3 và kéo về phía bạn để tạo âm rung. Giữ ngón tay cái cố định!
+                </div>
               </div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm btn-outline btn-primary flex-1 rounded-xl" onclick="vaSpeak('demo')">▶ Demo</button>
+              <button class="btn btn-sm btn-outline btn-neutral flex-1 rounded-xl" onclick="vaSpeak('slow')">🐢 Chậm x0.5</button>
             </div>
           </div>
-        </div>
 
-        <!-- Center: Practice Area -->
-        <div class="practice-main">
-          <div class="practice-stage">
-            <!-- Instrument Visualization -->
-            <div class="instrument-viz">
-              <div class="dan-tranh-viz">
-                <div class="dt-body">
-                  <div class="dt-strings-wrap">
-                    <div class="dt-string-labels">
-                      <span>Hò</span><span>Xự</span><span>Xang</span><span>Xê</span><span>Công</span>
-                      <span>Hò</span><span>Xự</span><span>Xang</span><span>Xê</span><span>Công</span>
-                    </div>
-                    <div class="dt-strings" id="dtStrings">
-                      <!-- strings generated by JS -->
-                    </div>
-                  </div>
-                  <div class="dt-bridges">
-                    <div class="dt-bridge b1"></div>
-                    <div class="dt-bridge b2"></div>
-                    <div class="dt-bridge b3"></div>
-                  </div>
-                </div>
-                <div class="dt-instruction-overlay">
-                  <div class="finger-indicator" id="fingerIndicator">
-                    <div class="finger-ring"></div>
-                    <span>Nhấn đây</span>
-                  </div>
-                </div>
+          <!-- Reference Audio Card -->
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-5">
+            <h3 class="font-bold text-sm mb-3"><i class="las la-volume-up"></i> Âm thanh tham chiếu</h3>
+            <div class="bg-cream-dim rounded-xl p-3 flex flex-col gap-3">
+              <div class="bg-white/45 h-12 rounded-lg overflow-hidden border border-gold/15" id="refWaveform">
+                <canvas id="waveformCanvas" class="w-full h-full"></canvas>
               </div>
-            </div>
-
-            <!-- Pitch & Rhythm Meters -->
-            <div class="feedback-meters">
-              <div class="meter-card">
-                <div class="meter-label">🎵 Cao Độ (Pitch)</div>
-                <div class="pitch-display">
-                  <div class="pitch-note-name" id="pitchNoteName">—</div>
-                  <div class="pitch-cents" id="pitchCents">Đang chờ âm thanh...</div>
-                </div>
-                <div class="pitch-meter-wrap">
-                  <div class="pitch-scale">
-                    <span>-50¢</span><span>0</span><span>+50¢</span>
-                  </div>
-                  <div class="pitch-meter-bar">
-                    <div class="pitch-target-line"></div>
-                    <div class="pitch-needle" id="pitchNeedle"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="meter-card">
-                <div class="meter-label">🥁 Nhịp Điệu (Rhythm)</div>
-                <div class="rhythm-bars" id="rhythmBars">
-                  <!-- generated by JS -->
-                </div>
-                <div class="rhythm-accuracy" id="rhythmAccuracy">Chờ nhịp...</div>
-              </div>
-
-              <div class="meter-card score-meter">
-                <div class="meter-label">⭐ Điểm số</div>
-                <div class="score-ring-wrap">
-                  <svg class="score-ring" width="100" height="100" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="url(#scoreGrad)" stroke-width="8"
-                      stroke-dasharray="251.3" id="scoreArc" stroke-dashoffset="63" stroke-linecap="round" transform="rotate(-90 50 50)"/>
-                    <defs>
-                      <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" style="stop-color:#f59e0b"/>
-                        <stop offset="100%" style="stop-color:#10b981"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div class="score-text">
-                    <div class="score-num" id="scoreNum">75</div>
-                    <div class="score-unit">/ 100</div>
-                  </div>
-                </div>
-                <div class="score-breakdown">
-                  <div class="sb-row"><span>Cao độ</span><span class="sb-val good">82%</span></div>
-                  <div class="sb-row"><span>Nhịp điệu</span><span class="sb-val ok">71%</span></div>
-                  <div class="sb-row"><span>Kỹ thuật</span><span class="sb-val good">79%</span></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recording Controls -->
-            <div class="recording-controls">
-              <div class="rc-status" id="rcStatus">
-                <div class="rc-status-dot"></div>
-                <span>Sẵn sàng ghi âm</span>
-              </div>
-              <div class="rc-buttons">
-                <button class="btn btn-ghost btn-sm" onclick="showHint()">💡 Gợi ý</button>
-                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
-                  <span class="record-icon">🎤</span>
-                  <span id="recordBtnText">Bắt đầu luyện tập</span>
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="resetPractice()">↺ Làm lại</button>
-              </div>
-              <div class="mic-level-wrap">
-                <span>🎤</span>
-                <div class="mic-level-bar">
-                  <div class="mic-level-fill" id="micLevel"></div>
-                </div>
+              <div class="flex items-center justify-between gap-2">
+                <button class="btn btn-circle btn-primary btn-sm text-white" onclick="toggleRefAudio()" id="refPlayBtn">▶</button>
+                <span class="text-xs font-bold text-taupe" id="refAudioTime">0:00 / 0:23</span>
+                <button class="btn btn-outline btn-xs rounded-lg text-lacquer border-lacquer/40 hover:bg-lacquer hover:text-white" onclick="toggleSlowmo()" id="slowmoBtn">0.5x</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Right: Steps & Notes -->
-        <div class="practice-right">
-          <div class="practice-steps-card">
-            <div class="psc-title">📝 Hướng dẫn bài học</div>
-            <div class="practice-steps" id="practiceSteps">
-              <div class="step-item done">
-                <div class="step-num done-step">✓</div>
-                <div class="step-content">Xem demo của nghệ sĩ ảo Linh</div>
+        <!-- Center: Instrument viz & meters (Col 6) -->
+        <div class="lg:col-span-6 flex flex-col gap-6 w-full">
+          <!-- Instrument Viewport -->
+          <div class="card bg-base-100 shadow-md border-2 border-gold/30 overflow-hidden relative">
+            <div class="bg-gradient-to-b from-cream to-cream-dim/60 h-64 relative flex items-center justify-center p-6">
+              <div class="w-11/12 h-32 bg-amber-950 rounded-xl relative border-4 border-amber-800 shadow-xl flex flex-col justify-between p-4 z-10">
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"></div>
+                <div class="w-full flex justify-between px-4 text-[9px] font-bold text-white/50 select-none">
+                  <span>Hò</span><span>Xự</span><span>Xang</span><span>Xê</span><span>Công</span>
+                  <span>Hò</span><span>Xự</span><span>Xang</span><span>Xê</span><span>Công</span>
+                </div>
+                <!-- strings container generated by JS -->
+                <div class="flex flex-col justify-between h-20 w-full" id="dtStrings"></div>
+                
+                <!-- Bridges -->
+                <div class="absolute left-[20%] top-0 w-3 h-full bg-amber-600 border-l border-amber-900 shadow rounded"></div>
+                <div class="absolute left-[50%] top-0 w-3 h-full bg-amber-600 border-l border-amber-900 shadow rounded"></div>
+                <div class="absolute left-[80%] top-0 w-3 h-full bg-amber-600 border-l border-amber-900 shadow rounded"></div>
               </div>
-              <div class="step-item done">
-                <div class="step-num done-step">✓</div>
-                <div class="step-content">Nghe âm thanh tham chiếu × 2</div>
-              </div>
-              <div class="step-item active">
-                <div class="step-num active-step">3</div>
-                <div class="step-content"><strong>Thực hành gảy dây số 3</strong> – giữ nốt 2 giây</div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">4</div>
-                <div class="step-content">Tạo rung âm bằng cách nhấn nhẹ dây</div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">5</div>
-                <div class="step-content">Chơi toàn bộ đoạn kỹ thuật × 3</div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">6</div>
-                <div class="step-content">Kiểm tra điểm cuối bài ≥ 80%</div>
+              
+              <!-- Finger pointer -->
+              <div class="absolute flex flex-col items-center gap-1 z-20 pointer-events-none transition-all duration-200" id="fingerIndicator" style="display:none">
+                <div class="w-7 h-7 rounded-full border-4 border-lacquer bg-lacquer/20 animate-ping"></div>
+                <span class="bg-lacquer text-white text-[9px] font-black py-0.5 px-2 rounded-md">Nhấn đây</span>
               </div>
             </div>
           </div>
-
-          <div class="tip-card">
-            <div class="tip-card-header">💡 Mẹo kỹ thuật</div>
-            <p>Khi nhấn dây để tạo rung âm, hãy dùng đầu ngón trỏ trái, nhấn nhẹ phía bên trái của nhạn (ngựa đàn) để tăng độ cao khoảng 1/4 tone.</p>
-          </div>
-
-          <div class="achievements-mini">
-            <div class="achievements-mini-title">🏅 Sắp đạt được</div>
-            <div class="achievement-mini-item">
-              <div class="ach-icon">🌊</div>
-              <div class="ach-info">
-                <div class="ach-name">Rung Âm Điêu Luyện</div>
-                <div class="ach-progress-bar">
-                  <div class="ach-progress-fill" style="width: 70%"></div>
+          
+          <!-- Metrics Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Pitch Card -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 shadow-sm">
+              <span class="text-[10px] font-bold text-taupe mb-2"><i class="las la-wave-square"></i> CAO ĐỘ (PITCH)</span>
+              <div class="flex flex-col items-center my-2">
+                <div class="text-4xl font-black text-lacquer tracking-wide" id="pitchNoteName">—</div>
+                <div class="text-xs font-bold text-taupe mt-1" id="pitchCents">Đang chờ...</div>
+              </div>
+              <div class="w-full mt-2">
+                <div class="flex justify-between text-[8px] font-bold text-taupe mb-1">
+                  <span>-50¢</span><span>0</span><span>+50¢</span>
                 </div>
-                <div class="ach-label">7/10 kỹ thuật rung âm đúng</div>
+                <div class="h-2 bg-gray-300/60 rounded-full relative">
+                  <div class="absolute left-1/2 top-0 w-0.5 h-full bg-jade"></div>
+                  <!-- pitch needle -->
+                  <div class="absolute -top-1.5 left-1/2 w-2 h-5 bg-lacquer rounded-full -translate-x-1/2 transition-all duration-150" id="pitchNeedle"></div>
+                </div>
               </div>
             </div>
-            <div class="achievement-mini-item">
-              <div class="ach-icon">🔥</div>
-              <div class="ach-info">
-                <div class="ach-name">Chuỗi 7 ngày</div>
-                <div class="ach-progress-bar">
-                  <div class="ach-progress-fill" style="width: 100%"></div>
+
+            <!-- Rhythm Card -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 shadow-sm">
+              <span class="text-[10px] font-bold text-taupe mb-2"><i class="las la-drum"></i> NHỊP ĐIỆU (RHYTHM)</span>
+              <div class="h-12 flex items-end justify-center gap-1 my-2" id="rhythmBars"></div>
+              <div class="text-xs font-bold text-taupe text-center mt-1" id="rhythmAccuracy">Chờ nhịp...</div>
+            </div>
+
+            <!-- Score Card -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 flex flex-col items-center shadow-sm">
+              <span class="text-[10px] font-bold text-taupe mb-2 self-start"><i class="las la-award"></i> ĐIỂM SỐ</span>
+              <div class="relative w-18 h-18 flex items-center justify-center my-1">
+                <svg class="-rotate-90 w-full h-full" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="8"/>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="url(#scoreGradWeb)" stroke-width="8"
+                    stroke-dasharray="251.3" id="scoreArc" stroke-dashoffset="63" stroke-linecap="round"/>
+                  <defs>
+                    <linearGradient id="scoreGradWeb" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style="stop-color:#C59426"/>
+                      <stop offset="100%" style="stop-color:#1E5E3A"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="absolute flex flex-col items-center leading-none">
+                  <span class="text-xl font-black text-espresso" id="scoreNum">75</span>
+                  <span class="text-[8px] text-taupe font-bold mt-0.5">/ 100</span>
                 </div>
-                <div class="ach-label">7/7 ngày – Hoàn thành hôm nay!</div>
+              </div>
+              <div class="w-full flex flex-col gap-0.5 text-[9px] mt-2">
+                <div class="flex justify-between">
+                  <span class="text-taupe">Cao độ</span>
+                  <span class="font-bold text-jade">82%</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-taupe">Nhịp điệu</span>
+                  <span class="font-bold text-gold">71%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recording Controls -->
+          <div class="card bg-cream-dim border border-taupe/10 p-5 flex flex-col items-center gap-4 shadow-sm">
+            <div class="flex items-center gap-2 text-xs font-bold text-taupe" id="rcStatus">
+              <div class="w-2.5 h-2.5 rounded-full bg-taupe/40"></div>
+              <span>Sẵn sàng ghi âm</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 w-full justify-center">
+              <button class="btn btn-sm btn-ghost rounded-xl border border-taupe/20 px-4" onclick="showHint()">💡 Gợi ý</button>
+              <button class="btn btn-primary bg-lacquer hover:bg-red-800 text-white border-none rounded-full px-8 shadow-lg shadow-lacquer/20 flex items-center gap-2" id="recordBtn" onclick="toggleRecording()">
+                <span class="text-xl">🎤</span> <span id="recordBtnText">Bắt đầu luyện tập</span>
+              </button>
+              <button class="btn btn-sm btn-ghost rounded-xl border border-taupe/20 px-4" onclick="resetPractice()">↺ Làm lại</button>
+            </div>
+            <div class="flex items-center gap-3 w-full max-w-[320px] mt-2">
+              <span class="text-xs"><i class="las la-microphone text-lacquer"></i></span>
+              <div class="h-2 bg-gray-300/60 rounded-full flex-grow overflow-hidden">
+                <div class="h-full bg-gold transition-all duration-100" id="micLevel" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Guide instructions (Col 3) -->
+        <div class="lg:col-span-3 flex flex-col gap-6 w-full">
+          <!-- Steps guides -->
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-5">
+            <h3 class="font-bold text-sm border-b border-taupe/10 pb-2 mb-4"><i class="las la-list-ol"></i> Hướng dẫn bài học</h3>
+            <ul class="steps steps-vertical w-full text-xs" id="practiceSteps">
+              <li class="step step-primary" data-content="✓"><span class="text-left font-bold text-taupe">Xem demo nghệ sĩ Linh</span></li>
+              <li class="step step-primary" data-content="✓"><span class="text-left font-bold text-taupe">Nghe âm thanh tham chiếu</span></li>
+              <li class="step step-primary" data-content="3"><span class="text-left font-black text-espresso">Thực hành gảy dây số 3</span></li>
+              <li class="step" data-content="4"><span class="text-left text-taupe">Nhấn nhẹ tạo rung âm</span></li>
+              <li class="step" data-content="5"><span class="text-left text-taupe">Chơi toàn bộ giai điệu x3</span></li>
+              <li class="step" data-content="6"><span class="text-left text-taupe">Kiểm tra điểm số &gt;80</span></li>
+            </ul>
+          </div>
+
+          <!-- Quick Tip -->
+          <div class="card bg-yellow-50 border border-dashed border-gold/45 p-4">
+            <h4 class="font-bold text-xs text-yellow-800 flex items-center gap-1 mb-2"><i class="las la-lightbulb"></i> Mẹo luyện tập</h4>
+            <p class="text-[11px] text-yellow-900/80 leading-relaxed">
+              Khi nhấn dây để tạo rung âm, hãy dùng đầu ngón trỏ trái, nhấn nhẹ phía bên trái của nhạn (ngựa đàn) để tăng độ cao khoảng 1/4 tone.
+            </p>
+          </div>
+
+          <!-- Achievements Mini panel -->
+          <div class="card bg-base-100 shadow-md border border-taupe/10 p-5">
+            <h3 class="font-bold text-sm mb-3"><i class="las la-award text-gold"></i> Sắp hoàn thành</h3>
+            <div class="flex flex-col gap-3">
+              <div class="flex gap-3 items-center">
+                <span class="text-2xl">🌊</span>
+                <div class="flex-grow">
+                  <h4 class="font-bold text-xs">Rung Âm Điêu Luyện</h4>
+                  <progress class="progress progress-warning w-full" value="70" max="100"></progress>
+                  <span class="text-[9px] text-taupe">7/10 kỹ thuật đúng</span>
+                </div>
+              </div>
+              <div class="flex gap-3 items-center">
+                <span class="text-2xl">🔥</span>
+                <div class="flex-grow">
+                  <h4 class="font-bold text-xs">Chuỗi 7 ngày</h4>
+                  <progress class="progress progress-warning w-full" value="100" max="100"></progress>
+                  <span class="text-[9px] text-taupe">7/7 ngày – Hoàn thành!</span>
+                </div>
               </div>
             </div>
           </div>
@@ -644,256 +833,233 @@
       </div>
     </div>
 
-    <!-- MINI GAMES PAGE -->
+    <!-- ================= MINI GAMES PAGE ================= -->
     <div class="page" id="page-games">
-      <div class="page-hero games-hero">
-        <h1 class="page-title">🎮 Mini-Games</h1>
-        <p class="page-sub">Học mà chơi – chơi mà học!</p>
+      <div class="page-hero bg-cream-dim border border-taupe/10 rounded-3xl p-8 text-center mb-8 shadow-sm">
+        <h1 class="text-3xl font-black font-title flex items-center justify-center gap-2"><i class="las la-gamepad text-lacquer"></i> Mini-Games</h1>
+        <p class="text-taupe text-sm mt-1">Luyện tập cảm âm và gõ nhịp qua các thử thách tương tác vui nhộn</p>
       </div>
-      <div class="section">
-        <div class="games-grid">
-          <!-- Rhythm Match -->
-          <div class="game-card" onclick="openGame('rhythm')">
-            <div class="game-card-bg rhythm-bg"></div>
-            <div class="game-card-content">
-              <div class="game-icon-wrap">🥁</div>
-              <h3>Ghép Nhịp</h3>
-              <p>Gõ đúng nhịp theo bản nhạc đang phát. Càng chính xác càng nhiều điểm!</p>
-              <div class="game-meta">
-                <span class="game-difficulty easy">Dễ</span>
-                <span class="game-best">Kỷ lục: 2,450 điểm</span>
-              </div>
-              <button class="btn btn-primary btn-sm">Chơi ngay →</button>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 games-grid">
+        <!-- Game 1: Ghép nhịp -->
+        <div class="card bg-base-100 border border-taupe/10 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer" onclick="openGame('rhythm')">
+          <div class="h-24 bg-amber-100 flex items-center justify-center text-4xl"><i class="las la-drum text-orange-600"></i></div>
+          <div class="card-body p-6 gap-3">
+            <h3 class="font-bold text-lg">Ghép Nhịp (Rhythm Match)</h3>
+            <p class="text-xs text-taupe">Gõ đúng nhịp theo bản nhạc đang phát. Càng chính xác càng nhiều điểm!</p>
+            <div class="flex justify-between items-center mt-2">
+              <div class="badge badge-success bg-jade/10 text-jade font-bold border-none">Dễ</div>
+              <span class="text-[11px] font-bold text-taupe">Kỷ lục: 2,450 điểm</span>
             </div>
+            <button class="btn btn-sm btn-primary bg-lacquer text-white border-none rounded-lg mt-2">Chơi ngay <i class="las la-arrow-right"></i></button>
           </div>
+        </div>
 
-          <!-- Note Quiz -->
-          <div class="game-card" onclick="openGame('quiz')">
-            <div class="game-card-bg quiz-bg"></div>
-            <div class="game-card-content">
-              <div class="game-icon-wrap">🎵</div>
-              <h3>Nhận Diện Nốt</h3>
-              <p>Nghe âm thanh và chọn đúng nốt nhạc. Huấn luyện tai nghe tuyệt vời!</p>
-              <div class="game-meta">
-                <span class="game-difficulty medium">Trung bình</span>
-                <span class="game-best">Kỷ lục: 18/20</span>
-              </div>
-              <button class="btn btn-primary btn-sm">Chơi ngay →</button>
+        <!-- Game 2: Nhận diện nốt -->
+        <div class="card bg-base-100 border border-taupe/10 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer" onclick="openGame('quiz')">
+          <div class="h-24 bg-red-100 flex items-center justify-center text-4xl"><i class="las la-music text-lacquer"></i></div>
+          <div class="card-body p-6 gap-3">
+            <h3 class="font-bold text-lg">Nhận Diện Nốt (Note Quiz)</h3>
+            <p class="text-xs text-taupe">Nghe âm thanh và chọn đúng nốt nhạc dân tộc. Huấn luyện tai nghe tuyệt vời!</p>
+            <div class="flex justify-between items-center mt-2">
+              <div class="badge badge-warning bg-gold/10 text-gold font-bold border-none">Trung bình</div>
+              <span class="text-[11px] font-bold text-taupe">Kỷ lục: 18/20</span>
             </div>
+            <button class="btn btn-sm btn-primary bg-lacquer text-white border-none rounded-lg mt-2">Chơi ngay <i class="las la-arrow-right"></i></button>
           </div>
+        </div>
 
-          <!-- Melody Completion -->
-          <div class="game-card" onclick="openGame('melody')">
-            <div class="game-card-bg melody-bg"></div>
-            <div class="game-card-content">
-              <div class="game-icon-wrap">🎶</div>
-              <h3>Hoàn Thiện Giai Điệu</h3>
-              <p>Nghe giai điệu còn thiếu và chơi phần kết thúc. Kiểm tra cảm âm của bạn!</p>
-              <div class="game-meta">
-                <span class="game-difficulty hard">Khó</span>
-                <span class="game-best">Chưa chơi</span>
-              </div>
-              <button class="btn btn-primary btn-sm">Chơi ngay →</button>
-            </div>
-          </div>
-
-          <!-- Speed Reading -->
-          <div class="game-card" onclick="openGame('reading')">
-            <div class="game-card-bg reading-bg"></div>
-            <div class="game-card-content">
-              <div class="game-icon-wrap">📖</div>
-              <h3>Đọc Nhạc Tốc Độ</h3>
-              <p>Nhìn bản nhạc và chơi nhanh nhất có thể. Dành cho học viên trung cấp trở lên.</p>
-              <div class="game-meta">
-                <span class="game-difficulty hard">Khó</span>
-                <span class="game-best">Kỷ lục: 92%</span>
-              </div>
-              <button class="btn btn-primary btn-sm">Chơi ngay →</button>
+        <!-- Game 3: Hoàn thiện giai điệu -->
+        <div class="card bg-base-100 border border-taupe/10 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all opacity-75 cursor-not-allowed">
+          <div class="h-24 bg-green-100 flex items-center justify-center text-4xl"><i class="las la-guitar text-jade"></i></div>
+          <div class="card-body p-6 gap-3">
+            <h3 class="font-bold text-lg">Hoàn Thiện Giai Điệu</h3>
+            <p class="text-xs text-taupe">Nghe giai điệu còn thiếu và chơi phần kết thúc. Kiểm tra cảm âm nâng cao.</p>
+            <div class="flex justify-between items-center mt-2">
+              <div class="badge badge-error bg-red-100 text-lacquer font-bold border-none">Khó</div>
+              <span class="text-[11px] font-bold text-taupe">Chưa chơi</span>
             </div>
           </div>
         </div>
 
-        <!-- Active Rhythm Game -->
-        <div class="game-active-area" id="rhythmGame" style="display:none">
-          <div class="game-active-header">
-            <h3>🥁 Ghép Nhịp – Đang chơi</h3>
-            <div class="game-score-live">Điểm: <span id="rhythmScore">0</span></div>
-            <button class="btn btn-ghost btn-sm" onclick="closeGame()">✕ Thoát</button>
-          </div>
-          <div class="rhythm-game-area">
-            <div class="rhythm-track">
-              <div class="rhythm-lane" id="rhythmLane">
-                <!-- notes injected by JS -->
-              </div>
-              <div class="rhythm-hit-zone"></div>
-            </div>
-            <div class="rhythm-feedback" id="rhythmFeedback"></div>
-            <div class="rhythm-tap-btn" id="rhythmTapArea" onclick="tapRhythm()">
-              <div class="tap-ring"></div>
-              GÕ ĐÂY (Space / Click)
+        <!-- Game 4: Đọc nhạc tốc độ -->
+        <div class="card bg-base-100 border border-taupe/10 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all opacity-75 cursor-not-allowed">
+          <div class="h-24 bg-blue-100 flex items-center justify-center text-4xl"><i class="las la-book-open text-blue-600"></i></div>
+          <div class="card-body p-6 gap-3">
+            <h3 class="font-bold text-lg">Đọc Nhạc Tốc Độ</h3>
+            <p class="text-xs text-taupe">Nhìn bản nhạc và chơi nhanh nhất có thể. Dành cho học viên nâng cao.</p>
+            <div class="flex justify-between items-center mt-2">
+              <div class="badge badge-error bg-red-100 text-lacquer font-bold border-none">Khó</div>
+              <span class="text-[11px] font-bold text-taupe">Kỷ lục: 92%</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Quiz Game -->
-        <div class="game-active-area" id="quizGame" style="display:none">
-          <div class="game-active-header">
-            <h3>🎵 Nhận Diện Nốt – Câu <span id="quizQ">1</span>/10</h3>
-            <div class="game-score-live">Điểm: <span id="quizScore">0</span></div>
-            <button class="btn btn-ghost btn-sm" onclick="closeGame()">✕ Thoát</button>
+      <!-- Rhythm Game Play area -->
+      <div class="game-active-area card bg-base-100 border border-gold/30 shadow-lg p-6 my-8" id="rhythmGame" style="display:none">
+        <div class="flex items-center justify-between border-b border-taupe/10 pb-4 mb-6">
+          <h3 class="font-black text-xl flex items-center gap-2"><i class="las la-drum"></i> Ghép Nhịp – Đang chơi</h3>
+          <div class="text-lg font-black text-gold">Điểm: <span id="rhythmScore">0</span></div>
+          <button class="btn btn-sm btn-ghost btn-circle" onclick="closeGame()">✕</button>
+        </div>
+        
+        <div class="flex flex-col items-center gap-6">
+          <div class="rhythm-track w-full max-w-[600px] h-20 bg-cream-dim rounded-xl relative overflow-hidden border-2 border-taupe/15">
+            <div class="rhythmLane absolute inset-0" id="rhythmLane"></div>
+            <div class="rhythm-hit-zone absolute right-[60px] top-0 w-10 h-full border-l-2 border-r-2 border-dashed border-lacquer bg-lacquer/5"></div>
           </div>
-          <div class="quiz-area">
-            <div class="quiz-play-btn" onclick="playQuizNote()">
-              <div class="quiz-play-icon">▶</div>
-              <p>Nhấn để nghe nốt nhạc</p>
-            </div>
-            <div class="quiz-options" id="quizOptions">
-              <!-- options injected by JS -->
-            </div>
-            <div class="quiz-feedback" id="quizFeedback"></div>
-          </div>
+          <div class="h-6 font-black text-lg text-espresso" id="rhythmFeedback">Sẵn sàng...</div>
+          <button class="btn btn-primary bg-lacquer hover:bg-red-800 text-white border-none rounded-full px-12 py-6 h-auto text-xl shadow-lg shadow-lacquer/20" id="rhythmTapArea" onclick="tapRhythm()">
+            GÕ ĐÂY (Space / Click)
+          </button>
+        </div>
+      </div>
+
+      <!-- Quiz Game Play area -->
+      <div class="game-active-area card bg-base-100 border border-gold/30 shadow-lg p-6 my-8" id="quizGame" style="display:none">
+        <div class="flex items-center justify-between border-b border-taupe/10 pb-4 mb-6">
+          <h3 class="font-black text-xl flex items-center gap-2"><i class="las la-headphones"></i> Nhận Diện Nốt – Câu <span id="quizQ">1</span>/10</h3>
+          <div class="text-lg font-black text-gold">Điểm: <span id="quizScore">0</span></div>
+          <button class="btn btn-sm btn-ghost btn-circle" onclick="closeGame()">✕</button>
+        </div>
+        
+        <div class="flex flex-col items-center gap-6">
+          <button class="btn btn-circle w-32 h-32 btn-primary bg-gold hover:bg-amber-600 text-white border-none flex flex-col gap-1 shadow-lg shadow-gold/20" onclick="playQuizNote()">
+            <span class="text-4xl"><i class="las la-play"></i></span>
+            <span class="text-[9px] font-bold uppercase tracking-wide">Phát nốt nhạc</span>
+          </button>
+          
+          <div class="grid grid-cols-2 gap-4 w-full max-w-[480px]" id="quizOptions"></div>
+          <div class="h-6 font-black text-sm text-center text-espresso" id="quizFeedback">Hãy nghe nốt nhạc và chọn nốt đúng.</div>
         </div>
       </div>
     </div>
 
-    <!-- PROGRESS PAGE -->
+    <!-- ================= PROGRESS PAGE ================= -->
     <div class="page" id="page-progress">
-      <div class="page-hero progress-hero">
-        <h1 class="page-title">📊 Tiến độ của bạn</h1>
-        <p class="page-sub">Theo dõi hành trình âm nhạc từng ngày</p>
+      <div class="page-hero bg-cream-dim border border-taupe/10 rounded-3xl p-8 text-center mb-8 shadow-sm">
+        <h1 class="text-3xl font-black font-title flex items-center justify-center gap-2"><i class="las la-chart-bar text-lacquer"></i> Tiến độ của bạn</h1>
+        <p class="text-taupe text-sm mt-1">Theo dõi hành trình âm nhạc truyền thống từng ngày</p>
       </div>
-      <div class="section">
-        <!-- Stats Overview -->
-        <div class="stats-overview">
-          <div class="stat-card">
-            <div class="stat-card-icon">🔥</div>
-            <div class="stat-card-num">7</div>
-            <div class="stat-card-label">Chuỗi ngày học</div>
-            <div class="stat-card-sub">Kỷ lục: 14 ngày</div>
+      
+      <div class="section p-0">
+        <!-- Stats daisyUI statistics component -->
+        <div class="stats stats-vertical lg:stats-horizontal shadow bg-base-100 border border-taupe/10 w-full mb-8 rounded-2xl">
+          <div class="stat p-6 items-center text-center lg:text-left">
+            <div class="stat-figure text-orange-600 text-4xl"><i class="las la-fire animate-pulse"></i></div>
+            <div class="stat-title text-taupe font-bold">Chuỗi ngày học</div>
+            <div class="stat-value text-orange-600 text-3xl font-black">7 Ngày</div>
+            <div class="stat-desc text-taupe">Kỷ lục: 14 ngày</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card-icon">⭐</div>
-            <div class="stat-card-num">1,240</div>
-            <div class="stat-card-label">Tổng XP</div>
-            <div class="stat-card-sub">Cấp độ 8 / 50</div>
+          
+          <div class="stat p-6 items-center text-center lg:text-left pl-6">
+            <div class="stat-figure text-gold text-4xl"><i class="las la-star"></i></div>
+            <div class="stat-title text-taupe font-bold">Tổng XP tích lũy</div>
+            <div class="stat-value text-gold text-3xl font-black">1,240</div>
+            <div class="stat-desc text-taupe">Cấp độ 8 / 50</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card-icon">⏱</div>
-            <div class="stat-card-num">14h 32m</div>
-            <div class="stat-card-label">Tổng thời gian</div>
-            <div class="stat-card-sub">Tuần này: 2h 10m</div>
+          
+          <div class="stat p-6 items-center text-center lg:text-left pl-6">
+            <div class="stat-figure text-blue-600 text-4xl"><i class="las la-clock"></i></div>
+            <div class="stat-title text-taupe font-bold">Thời gian tập</div>
+            <div class="stat-value text-blue-600 text-3xl font-black">14h 32m</div>
+            <div class="stat-desc text-taupe">Tuần này: 2h 10m</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card-icon">🎯</div>
-            <div class="stat-card-num">78%</div>
-            <div class="stat-card-label">Độ chính xác TB</div>
-            <div class="stat-card-sub">↑ +5% so tuần trước</div>
+          
+          <div class="stat p-6 items-center text-center lg:text-left pl-6">
+            <div class="stat-figure text-jade text-4xl"><i class="las la-bullseye"></i></div>
+            <div class="stat-title text-taupe font-bold">Độ chính xác TB</div>
+            <div class="stat-value text-jade text-3xl font-black">78%</div>
+            <div class="stat-desc text-jade font-semibold">↑ +5% so với tuần trước</div>
           </div>
         </div>
 
-        <!-- Charts Row -->
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>📈 Độ chính xác 7 ngày qua</h3>
-            </div>
-            <div class="bar-chart" id="accuracyChart">
-              <!-- bars generated by JS -->
-            </div>
-            <div class="chart-legend">
-              <span class="legend-dot pitch"></span> Cao độ
-              <span class="legend-dot rhythm"></span> Nhịp điệu
+        <!-- Charts row layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <!-- Double Bar accuracy chart -->
+          <div class="card bg-base-100 border border-taupe/10 shadow-sm p-6">
+            <h3 class="font-bold text-sm mb-4"><i class="las la-chart-bar text-lacquer"></i> Độ chính xác 7 ngày qua</h3>
+            <div class="bar-chart h-44 flex items-end justify-between px-4 pb-2 border-b border-taupe/20" id="accuracyChart"></div>
+            <div class="flex justify-center gap-4 text-xs font-bold text-taupe mt-4">
+              <span class="flex items-center gap-1"><span class="w-3 h-3 bg-lacquer rounded-full"></span> Cao độ</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-3 bg-gold rounded-full"></span> Nhịp điệu</span>
             </div>
           </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>⏱ Thời gian luyện tập</h3>
-            </div>
-            <div class="heatmap" id="practiceHeatmap">
-              <!-- generated by JS -->
-            </div>
-            <div class="heatmap-legend">
+          
+          <!-- Heatmap practice duration chart -->
+          <div class="card bg-base-100 border border-taupe/10 shadow-sm p-6">
+            <h3 class="font-bold text-sm mb-4"><i class="las la-calendar-check text-gold"></i> Thời gian luyện tập</h3>
+            <div class="heatmap grid grid-cols-7 gap-1.5 mb-3" id="practiceHeatmap"></div>
+            <div class="flex justify-center items-center gap-2 text-xs text-taupe font-bold">
               <span>Ít</span>
-              <div class="heatmap-scale">
-                <div class="hm-block hm-0"></div>
-                <div class="hm-block hm-1"></div>
-                <div class="hm-block hm-2"></div>
-                <div class="hm-block hm-3"></div>
-                <div class="hm-block hm-4"></div>
+              <div class="flex gap-1">
+                <div class="w-3.5 h-3.5 bg-cream-dim rounded"></div>
+                <div class="w-3.5 h-3.5 bg-amber-100 rounded"></div>
+                <div class="w-3.5 h-3.5 bg-amber-200 rounded"></div>
+                <div class="w-3.5 h-3.5 bg-amber-300 rounded"></div>
+                <div class="w-3.5 h-3.5 bg-gold rounded"></div>
               </div>
               <span>Nhiều</span>
             </div>
           </div>
         </div>
 
-        <!-- Achievements -->
-        <div class="achievements-section">
-          <h3 class="subsection-title">🏅 Huy hiệu & Thành tích</h3>
-          <div class="achievements-grid">
-            <div class="achievement-badge earned">
-              <div class="badge-icon">🌟</div>
-              <div class="badge-name">Ngôi Sao Đầu Tiên</div>
-              <div class="badge-date">21/05/2026</div>
+        <!-- Badges achievements grid -->
+        <div class="card bg-base-100 border border-taupe/10 shadow-sm p-6 mb-8">
+          <h3 class="font-black text-lg border-l-4 border-lacquer pl-3 font-title mb-6">🏅 Huy hiệu & Thành tích</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Badge 1 -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 items-center text-center hover:scale-[1.02] transition-all">
+              <span class="text-4xl">🌟</span>
+              <h4 class="font-bold text-xs mt-2">Ngôi Sao Đầu Tiên</h4>
+              <span class="text-[10px] text-taupe">21/05/2026</span>
             </div>
-            <div class="achievement-badge earned">
-              <div class="badge-icon">🔥</div>
-              <div class="badge-name">7 Ngày Liên Tiếp</div>
-              <div class="badge-date">Hôm nay</div>
+            <!-- Badge 2 -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 items-center text-center hover:scale-[1.02] transition-all">
+              <span class="text-4xl">🔥</span>
+              <h4 class="font-bold text-xs mt-2">7 Ngày Liên Tiếp</h4>
+              <span class="text-[10px] text-taupe">Hôm nay</span>
             </div>
-            <div class="achievement-badge earned">
-              <div class="badge-icon">🎼</div>
-              <div class="badge-name">Nhạc Sĩ Đàn Tranh</div>
-              <div class="badge-date">18/05/2026</div>
+            <!-- Badge 3 -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 items-center text-center hover:scale-[1.02] transition-all">
+              <span class="text-4xl">🎼</span>
+              <h4 class="font-bold text-xs mt-2">Nhạc Sĩ Đàn Tranh</h4>
+              <span class="text-[10px] text-taupe">18/05/2026</span>
             </div>
-            <div class="achievement-badge earned">
-              <div class="badge-icon">🎯</div>
-              <div class="badge-name">Bắn Chính Xác</div>
-              <div class="badge-date">15/05/2026</div>
-            </div>
-            <div class="achievement-badge locked">
-              <div class="badge-icon">🏆</div>
-              <div class="badge-name">Hoàn Thành Cơ Bản</div>
-              <div class="badge-date">Còn 5 bài</div>
-            </div>
-            <div class="achievement-badge locked">
-              <div class="badge-icon">🌊</div>
-              <div class="badge-name">Rung Âm Điêu Luyện</div>
-              <div class="badge-date">Còn 3/10</div>
-            </div>
-            <div class="achievement-badge locked">
-              <div class="badge-icon">💎</div>
-              <div class="badge-name">14 Ngày Liên Tiếp</div>
-              <div class="badge-date">Còn 7 ngày</div>
-            </div>
-            <div class="achievement-badge locked">
-              <div class="badge-icon">🎭</div>
-              <div class="badge-name">Nghệ Sĩ Sân Khấu</div>
-              <div class="badge-date">Chưa mở khóa</div>
+            <!-- Badge 4 -->
+            <div class="card bg-cream-dim border border-taupe/10 p-4 items-center text-center hover:scale-[1.02] transition-all">
+              <span class="text-4xl">🎯</span>
+              <h4 class="font-bold text-xs mt-2">Bắn Chính Xác</h4>
+              <span class="text-[10px] text-taupe">15/05/2026</span>
             </div>
           </div>
         </div>
 
-        <!-- Virtual Room -->
-        <div class="virtual-room-section">
-          <h3 class="subsection-title">🏠 Phòng Nhạc Ảo của bạn</h3>
-          <div class="virtual-room-preview">
-            <div class="vr-bg">
-              <img src="C:\Users\Admin\.gemini\antigravity\brain\c576d20f-b8ba-4956-a7b2-cc9bfd9c8ee5\vietstage_hero_room_1779730944034.png" alt="Phòng nhạc ảo" class="vr-room-img" />
-              <div class="vr-unlocked-items">
-                <div class="vr-item" title="Đèn lồng đỏ – Đã mở khóa">🏮</div>
-                <div class="vr-item" title="Cây trúc – Đã mở khóa">🎋</div>
-                <div class="vr-item locked-item" title="Tranh thư pháp – Chưa mở khóa">🖼️🔒</div>
-                <div class="vr-item locked-item" title="Chiếu hoa – Chưa mở khóa">🌸🔒</div>
-              </div>
+        <!-- Virtual Room Card -->
+        <div class="card bg-base-100 border border-taupe/10 shadow-md overflow-hidden grid grid-cols-1 lg:grid-cols-2 mb-8">
+          <div class="relative h-64 bg-cream-dim">
+            <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=600" alt="Phòng nhạc ảo" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-4">
+              <div class="badge badge-warning text-yellow-800 font-bold border-none">Phòng cấp độ 3</div>
             </div>
-            <div class="vr-info">
-              <div class="vr-level">Phòng cấp độ 3</div>
-              <p>Hoàn thành thêm bài học để mở khóa vật phẩm trang trí cho phòng nhạc của bạn!</p>
-              <div class="vr-items-progress">
-                <div class="vip-row"><span>Đèn lồng đỏ</span><span class="unlocked">✓ Đã có</span></div>
-                <div class="vip-row"><span>Cây trúc</span><span class="unlocked">✓ Đã có</span></div>
-                <div class="vip-row"><span>Tranh thư pháp</span><span class="locked-text">Hoàn thành Cơ bản</span></div>
-                <div class="vip-row"><span>Chiếu hoa</span><span class="locked-text">Đạt 14-ngày streak</span></div>
+          </div>
+          <div class="p-6 flex flex-col justify-center gap-3">
+            <h3 class="font-black text-xl font-title">🏠 Phòng Nhạc Ảo Của Bạn</h3>
+            <p class="text-xs text-taupe">Hoàn thành các thử thách học để mở khóa thêm nhiều đồ trang trí truyền thống cho phòng nhạc ảo của bạn!</p>
+            
+            <div class="flex flex-col gap-2 mt-2 text-xs">
+              <div class="flex justify-between border-b border-taupe/5 pb-1">
+                <span class="font-bold text-espresso">🏮 Đèn lồng đỏ</span>
+                <span class="text-jade font-bold">✓ Đã sở hữu</span>
+              </div>
+              <div class="flex justify-between border-b border-taupe/5 pb-1">
+                <span class="font-bold text-espresso">🎋 Cây trúc phong thủy</span>
+                <span class="text-jade font-bold">✓ Đã sở hữu</span>
+              </div>
+              <div class="flex justify-between border-b border-taupe/5 pb-1">
+                <span class="font-bold text-espresso">🖼️ Tranh thư pháp cổ</span>
+                <span class="text-taupe opacity-50">Cần bài học nâng cao</span>
               </div>
             </div>
           </div>
@@ -902,43 +1068,52 @@
     </div>
   </main>
 
-  <!-- RESULT MODAL -->
-  <div class="modal-overlay" id="resultModal" style="display:none">
-    <div class="modal-card result-modal">
-      <div class="result-confetti" id="confettiArea"></div>
-      <div class="result-header">
-        <div class="result-stars" id="resultStars">⭐⭐⭐</div>
-        <h2 id="resultTitle">Xuất sắc!</h2>
-        <p id="resultSubtitle">Bài 4 – Kỹ thuật nhấn dây</p>
+  <!-- ===== RESULT MODAL ===== -->
+  <div class="modal-overlay fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" id="resultModal" style="display:none">
+    <div class="modal-box max-w-sm bg-base-100 border-2 border-gold/30 shadow-2xl p-6 text-center">
+      <div class="text-4xl text-gold mb-3" id="resultStars">⭐⭐⭐</div>
+      <h2 class="text-2xl font-black font-title mb-1" id="resultTitle">Xuất sắc!</h2>
+      <p class="text-xs text-taupe mb-4" id="resultSubtitle">Bài 4 – Kỹ thuật nhấn dây</p>
+      
+      <div class="flex flex-col gap-2 bg-cream-dim p-4 rounded-xl mb-4 text-xs font-bold text-espresso">
+        <div class="flex justify-between">
+          <span class="text-taupe">Cao độ</span><span>84%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-taupe">Nhịp điệu</span><span>78%</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-taupe">Kỹ thuật</span><span>81%</span>
+        </div>
+        <div class="flex justify-between border-t border-taupe/15 pt-2 mt-1 font-black text-sm">
+          <span>Tổng điểm</span><span class="text-lacquer">81%</span>
+        </div>
       </div>
-      <div class="result-scores">
-        <div class="rs-item"><span class="rs-label">Cao độ</span><span class="rs-val">84%</span></div>
-        <div class="rs-item"><span class="rs-label">Nhịp điệu</span><span class="rs-val">78%</span></div>
-        <div class="rs-item"><span class="rs-label">Kỹ thuật</span><span class="rs-val">81%</span></div>
-        <div class="rs-item rs-total"><span class="rs-label">Tổng</span><span class="rs-val">81%</span></div>
+      
+      <div class="flex gap-2 justify-center mb-6">
+        <div class="badge badge-success bg-jade/10 text-jade border-none py-2 px-3 font-bold">+80 XP</div>
+        <div class="badge badge-success bg-jade/10 text-jade border-none py-2 px-3 font-bold">🔓 Mở khóa Bài 5</div>
       </div>
-      <div class="result-rewards">
-        <div class="reward-item">+80 XP</div>
-        <div class="reward-item">🔓 Mở khóa Bài 5</div>
-      </div>
-      <div class="result-actions">
-        <button class="btn btn-ghost" onclick="closeModal('resultModal')">Thử lại</button>
-        <button class="btn btn-primary" onclick="nextLesson()">Bài tiếp theo →</button>
+      
+      <div class="flex gap-2">
+        <button class="btn btn-ghost flex-1 rounded-xl" onclick="closeModal('resultModal')">Thử lại</button>
+        <button class="btn btn-primary flex-1 bg-lacquer hover:bg-red-800 text-white border-none rounded-xl" onclick="nextLesson()">Bài tiếp theo →</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="hintModal" style="display:none">
-    <div class="modal-card hint-modal">
-      <div class="hint-header">💡 Gợi ý</div>
-      <p>Khi nhấn dây đàn tranh để tạo rung âm, hãy chú ý:</p>
-      <ul>
+  <!-- ===== HINT MODAL ===== -->
+  <div class="modal-overlay fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" id="hintModal" style="display:none">
+    <div class="modal-box max-w-sm bg-base-100 border-2 border-gold/30 shadow-2xl p-6">
+      <h3 class="text-xl font-black text-gold flex items-center gap-1 mb-4">💡 Gợi ý kỹ thuật</h3>
+      <p class="text-xs text-taupe leading-relaxed mb-4">Khi nhấn dây đàn tranh để tạo rung âm, hãy chú ý:</p>
+      <ul class="list-disc pl-5 text-xs text-taupe leading-relaxed flex flex-col gap-2 mb-6">
         <li>Dùng đầu ngón trỏ tay trái</li>
         <li>Nhấn nhẹ phía trái của nhạn đàn (khoảng 2–3mm)</li>
         <li>Kéo dây về phía bạn rồi thả ra nhẹ nhàng</li>
         <li>Giữ nhịp 2 lần rung mỗi phách</li>
       </ul>
-      <button class="btn btn-primary" onclick="closeModal('hintModal')">Đã hiểu!</button>
+      <button class="btn btn-primary w-full bg-lacquer hover:bg-red-800 text-white border-none rounded-xl" onclick="closeModal('hintModal')">Đã hiểu!</button>
     </div>
   </div>
 

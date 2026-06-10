@@ -1,15 +1,21 @@
 extends Control
 
 # Colors
-const C_BG_DARK     := Color(0.07, 0.04, 0.015, 1.0)
-const C_RED_SON     := Color(0.72, 0.12, 0.08, 1.0)
-const C_RED_SON_DK  := Color(0.38, 0.06, 0.04, 0.95)
-const C_GOLD        := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LIGHT  := Color(1.00, 0.87, 0.45, 1.0)
-const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
-const C_JADE_LIGHT  := Color(0.35, 0.85, 0.60, 1.0)
+const C_BG_DARK     := Color(0.98, 0.97, 0.93, 1.0)
+const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON_DK  := Color(0.50, 0.08, 0.05, 1.0)
+const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0)
+const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0)
+const C_JADE        := Color(0.12, 0.37, 0.23, 1.0)
+const C_JADE_LIGHT  := Color(0.18, 0.58, 0.38, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
+
+const C_BG         := Color(0.98, 0.97, 0.93, 1.0)
+const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
+const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
+const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
+const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
 # Notes mapping to frequencies
 const NOTES = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
@@ -59,40 +65,37 @@ func _draw() -> void:
 
 func _build_theme() -> void:
 	# Top bar
-	var top_s := _flat(C_RED_SON_DK, Color(0,0,0,0), 0)
-	top_s.border_width_bottom = 3
-	top_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	top_s.border_width_bottom = 2
 	$Root/TopBar.add_theme_stylebox_override("panel", top_s)
 	
-	$Root/TopBar/TopM/TopH/Title.add_theme_color_override("font_color", C_GOLD)
-	$Root/TopBar/TopM/TopH/Title.add_theme_constant_override("outline_size", 6)
-	$Root/TopBar/TopM/TopH/Title.add_theme_color_override("font_outline_color", C_RED_SON_DK)
+	$Root/TopBar/TopM/TopH/Title.add_theme_color_override("font_color", C_RED_SON)
 	
 	# Back Button
-	var btn_s := _flat(C_RED_SON, C_GOLD, 16, true, 3)
+	var btn_s := _flat(C_CARD, C_RED_SON, 16, true, 2)
 	back_btn.add_theme_stylebox_override("normal", btn_s)
-	back_btn.add_theme_stylebox_override("hover", _flat(C_RED_SON_DK, C_GOLD_LIGHT, 16, true, 3))
-	back_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON_DK, C_GOLD, 16, false, 1))
-	back_btn.add_theme_color_override("font_color", C_CREAM)
+	back_btn.add_theme_stylebox_override("hover", _flat(C_CARD, C_RED_SON.lightened(0.15), 16, true, 2))
+	back_btn.add_theme_stylebox_override("pressed", _flat(C_BG_BAR, C_RED_SON, 16, false, 1))
+	back_btn.add_theme_color_override("font_color", C_TEXT)
 	
-	# Main Game Card (Wooden frame look)
-	var card_s := _flat(Color(0.12, 0.06, 0.03, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 28, true, 8)
+	# Main Game Card
+	var card_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 28, true, 4)
 	$Root/Card.add_theme_stylebox_override("panel", card_s)
 	
 	# Header styling
-	round_label.add_theme_color_override("font_color", C_GOLD)
-	score_label.add_theme_color_override("font_color", C_JADE_LIGHT)
-	prompt_label.add_theme_color_override("font_color", C_CREAM)
+	round_label.add_theme_color_override("font_color", C_RED_SON)
+	score_label.add_theme_color_override("font_color", C_JADE)
+	prompt_label.add_theme_color_override("font_color", C_TEXT)
 	
 	# Play sound button circle 3D
-	var play_s := _flat(C_GOLD, C_GOLD_LIGHT, 64, true, 6)
+	var play_s := _flat(C_GOLD, C_GOLD_LIGHT, 64, true, 4)
 	$Root/Card/CardM/GameVBox/PlayCircle.add_theme_stylebox_override("panel", play_s)
-	play_btn.add_theme_color_override("font_color", C_RED_SON_DK)
+	play_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 	
 	# Feedback panel
-	var feed_s := _flat(C_RED_SON_DK, Color(0,0,0,0), 16)
+	var feed_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 16)
 	feedback_pan.add_theme_stylebox_override("panel", feed_s)
-	result_lbl.add_theme_color_override("font_color", C_CREAM)
+	result_lbl.add_theme_color_override("font_color", C_TEXT)
 	feedback_pan.visible = false
 
 func _connect_buttons() -> void:
@@ -141,19 +144,19 @@ func _start_new_round() -> void:
 		btn.custom_minimum_size = Vector2(220, 68)
 		btn.add_theme_font_size_override("font_size", 22)
 		
-		# Build gorgeous cartoon 3D bubble styleboxes for options!
-		var b_n := _flat(C_CREAM, C_RED_SON, 20, true, 4)
-		var b_h := _flat(C_CREAM, C_GOLD, 20, true, 4)
-		var b_p := _flat(C_CREAM_DIM, C_RED_SON_DK, 20, false, 1)
+		# Build gorgeous bubble styleboxes for options
+		var b_n := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 20, true, 3)
+		var b_h := _flat(C_CARD, C_RED_SON, 20, true, 3)
+		var b_p := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 20, false, 1)
 		
 		btn.add_theme_stylebox_override("normal", b_n)
 		btn.add_theme_stylebox_override("hover", b_h)
 		btn.add_theme_stylebox_override("pressed", b_p)
 		btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 		
-		btn.add_theme_color_override("font_color", C_RED_SON_DK)
+		btn.add_theme_color_override("font_color", C_TEXT)
 		btn.add_theme_color_override("font_hover_color", C_RED_SON)
-		btn.add_theme_color_override("font_pressed_color", C_RED_SON_DK)
+		btn.add_theme_color_override("font_pressed_color", C_TEXT)
 		
 		btn.pressed.connect(func() -> void: _submit_answer(opt, btn))
 		_make_button_bouncy(btn)
@@ -212,11 +215,11 @@ func _submit_answer(ans: String, btn: Button) -> void:
 		t.tween_property(btn, "scale", Vector2(1.12, 1.12), 0.12).set_trans(Tween.TRANS_BACK)
 		t.tween_property(btn, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK)
 		
-		btn.add_theme_stylebox_override("normal", _flat(C_JADE, C_JADE_LIGHT, 20, true, 4))
-		btn.add_theme_color_override("font_color", C_CREAM)
+		btn.add_theme_stylebox_override("normal", _flat(C_JADE, Color(0.35, 0.85, 0.60, 0.6), 20, true, 3))
+		btn.add_theme_color_override("font_color", Color(1,1,1,1))
 		
 		result_lbl.text = "Rất xuất sắc! Chúc mừng bạn gán đúng nốt."
-		feedback_pan.add_theme_stylebox_override("panel", _flat(C_JADE, C_JADE_LIGHT, 16))
+		feedback_pan.add_theme_stylebox_override("panel", _flat(C_JADE, Color(0.35, 0.85, 0.60, 0.6), 16))
 	else:
 		_play_synth_note(130.81) # Play low wrong tone!
 		
@@ -227,18 +230,18 @@ func _submit_answer(ans: String, btn: Button) -> void:
 		t.tween_property(btn, "position:x", ox + 10.0, 0.05)
 		t.tween_property(btn, "position:x", ox,        0.05)
 		
-		btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, Color(1,1,1,0.3), 20, true, 4))
-		btn.add_theme_color_override("font_color", C_CREAM)
+		btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, Color(1,1,1,0.2), 20, true, 3))
+		btn.add_theme_color_override("font_color", Color(1,1,1,1))
 		
 		# Highlight the correct one
 		for c in option_grid.get_children():
 			var opt_btn = c as Button
 			if opt_btn and opt_btn.text == correct_note:
-				opt_btn.add_theme_stylebox_override("normal", _flat(C_JADE, C_JADE_LIGHT, 20, true, 4))
-				opt_btn.add_theme_color_override("font_color", C_CREAM)
+				opt_btn.add_theme_stylebox_override("normal", _flat(C_JADE, Color(0.35, 0.85, 0.60, 0.6), 20, true, 3))
+				opt_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 				
 		result_lbl.text = "Tiếc quá! Hãy gập lại hơi và lắng nghe nốt."
-		feedback_pan.add_theme_stylebox_override("panel", _flat(C_RED_SON_DK, Color(0,0,0,0), 16))
+		feedback_pan.add_theme_stylebox_override("panel", _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25), 16))
 		
 	feedback_pan.visible = true
 	
@@ -267,7 +270,7 @@ func _show_end_summary() -> void:
 	else:
 		result_lbl.text = "Bạn đạt được %d điểm! Hãy cố gắng luyện tập thêm tai nhạc nữa nhé." % score
 		
-	result_lbl.add_theme_color_override("font_color", C_RED_SON_DK)
+	result_lbl.add_theme_color_override("font_color", C_TEXT)
 	
 	# Re-style play button to go back
 	var anchor := Control.new()
@@ -278,9 +281,9 @@ func _show_end_summary() -> void:
 	btn.text = "Quay Lại Bản Đồ"
 	btn.custom_minimum_size = Vector2(280, 68)
 	btn.add_theme_font_size_override("font_size", 22)
-	btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, C_GOLD, 20, true, 4))
-	btn.add_theme_stylebox_override("hover", _flat(C_RED_SON_DK, C_GOLD_LIGHT, 20, true, 4))
-	btn.add_theme_color_override("font_color", C_CREAM)
+	btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, C_GOLD, 20, true, 3))
+	btn.add_theme_stylebox_override("hover", _flat(C_RED_SON_DK, C_GOLD_LIGHT, 20, true, 3))
+	btn.add_theme_color_override("font_color", Color(1,1,1,1))
 	btn.pressed.connect(_go_back)
 	_make_button_bouncy(btn)
 	anchor.add_child(btn)

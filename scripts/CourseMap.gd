@@ -3,16 +3,16 @@ extends Control
 class_name CourseMap
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
-const C_BG_DARK     := Color(0.063, 0.024, 0.016, 1.0)
-const C_RED_SON     := Color(0.72, 0.12, 0.08, 1.0)
-const C_RED_SON_DK  := Color(0.38, 0.06, 0.04, 0.95)
-const C_GOLD        := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LIGHT  := Color(1.00, 0.87, 0.45, 1.0)
-const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
-const C_JADE_LIGHT  := Color(0.35, 0.85, 0.60, 1.0)
+const C_BG_DARK     := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
+const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0) # lacquer red
+const C_RED_SON_DK  := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream for panels/sidebar
+const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # gold
+const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
+const C_JADE        := Color(0.12, 0.37, 0.23, 1.0) # bamboo jade
+const C_JADE_LIGHT  := Color(0.25, 0.65, 0.45, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
-const C_LOCKED      := Color(0.12, 0.08, 0.04, 0.65)
+const C_LOCKED      := Color(0.88, 0.86, 0.82, 0.80) # light gray-cream for locked nodes
 
 # ─── Static Progress State ────────────────────────────────────────────────────
 static var video_completed := false
@@ -148,11 +148,11 @@ func _set_labels() -> void:
 
 func _build_theme() -> void:
 	# Left sidebar - match MainMenu exactly!
-	var side_s := _flat_sidebar(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	var side_s := _flat_sidebar(C_RED_SON_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
-	side_s.shadow_size = 16
-	side_s.shadow_color = Color(0, 0, 0, 0.5)
+	side_s.shadow_size = 12
+	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	($RootHBox/LeftSidebar as PanelContainer).add_theme_stylebox_override("panel", side_s)
 
@@ -185,13 +185,18 @@ func _build_theme() -> void:
 	top_s.border_width_bottom = 3
 	top_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
 	($RootHBox/RightContent/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
-	course_title.add_theme_color_override("font_color", C_GOLD)
-	course_title.add_theme_color_override("font_outline_color", Color(0.38, 0.06, 0.04, 1.0))
-	course_title.add_theme_constant_override("outline_size", 6)
+	
+	var font_title := load("res://assets/fonts/Lora-Bold.ttf")
+	if font_title:
+		course_title.add_theme_font_override("font", font_title)
+		
+	course_title.add_theme_color_override("font_color", C_RED_SON)
+	course_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0))
+	course_title.add_theme_constant_override("outline_size", 0)
 
 	# Change Course Button (Upgraded to beautiful solid lacquer red & gold 3D button)
 	var c_n := _flat(C_RED_SON, C_GOLD, 20, true, 4)
-	var c_h := _flat(C_RED_SON_DK, C_GOLD_LIGHT, 20, true, 4)
+	var c_h := _flat(C_RED_SON.lightened(0.12), C_GOLD_LIGHT, 20, true, 4)
 	change_btn.add_theme_stylebox_override("normal", c_n)
 	change_btn.add_theme_stylebox_override("hover", c_h)
 	change_btn.add_theme_stylebox_override("pressed", _flat(Color(0.2, 0.05, 0.03, 1.0), C_GOLD, 20, false, 1))
@@ -200,9 +205,9 @@ func _build_theme() -> void:
 	change_btn.add_theme_color_override("font_hover_color", C_CREAM)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.22), Color(0, 0, 0, 0), 18)
-	var bg_h := _flat_sidebar(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
-	var bg_p := _flat_sidebar(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.30) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
+	var bg_h := _flat_sidebar(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	var bg_p := _flat_sidebar(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 
 	bg_n.content_margin_top = 96
 	bg_n.content_margin_bottom = 8
@@ -220,9 +225,9 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	btn.add_theme_stylebox_override("hover",   bg_h)
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus",   _flat_sidebar(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_GOLD if is_active else (C_CREAM_DIM.darkened(0.35) if is_locked else C_CREAM_DIM))
-	btn.add_theme_color_override("font_hover_color",   C_CREAM_DIM.darkened(0.2) if is_locked else C_CREAM)
-	btn.add_theme_color_override("font_pressed_color", C_GOLD if not is_locked else C_CREAM_DIM.darkened(0.35))
+	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
+	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
 	btn.add_theme_font_size_override("font_size", 22)
 
 func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
@@ -332,23 +337,23 @@ func _setup_nodes() -> void:
 		var n_lbl := node.get_node(name_node.replace("Node","N") + "V/Title") as Label
 		
 		# Upgrade to gorgeous 3D cartoon stylebox
-		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.3), 90, true, 5))
-		n_icon.add_theme_stylebox_override("panel", _flat(C_RED_SON_DK, Color(0,0,0,0), 22, false, 2))
+		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(0.13, 0.08, 0.05, 0.15), 90, true, 5))
+		n_icon.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.15), Color(0,0,0,0), 22, false, 2))
 		_setup_icon_pill(n_icon, 2) # LOCK vector icon
-		n_lbl.add_theme_color_override("font_color", Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.45))
+		n_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.45))
 
 	if not video_completed:
 		# Node 1 is active (3D bubble cream circle, gold border)
 		n1.add_theme_stylebox_override("panel", _flat(C_CREAM, C_GOLD, 90, true, 6))
 		n1_icon.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 22, false, 2))
 		_setup_icon_pill(n1_icon, 0) # PLAY vector icon
-		n1_lbl.add_theme_color_override("font_color", C_RED_SON_DK)
+		n1_lbl.add_theme_color_override("font_color", C_RED_SON)
 
 		# Node 2 is locked (3D bubble dark circle)
-		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.3), 90, true, 5))
-		n2_icon.add_theme_stylebox_override("panel", _flat(C_RED_SON_DK, Color(0,0,0,0), 22, false, 2))
+		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(0.13, 0.08, 0.05, 0.15), 90, true, 5))
+		n2_icon.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.15), Color(0,0,0,0), 22, false, 2))
 		_setup_icon_pill(n2_icon, 2) # LOCK vector icon
-		n2_lbl.add_theme_color_override("font_color", Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.45))
+		n2_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.45))
 
 		# Hide Node 2's "NEXT" tooltip
 		n2_tooltip.visible = false
@@ -360,18 +365,18 @@ func _setup_nodes() -> void:
 		n1.add_theme_stylebox_override("panel", _flat(C_JADE, C_JADE_LIGHT, 90, true, 4))
 		n1_icon.add_theme_stylebox_override("panel", _flat(C_JADE_LIGHT, C_CREAM, 22, false, 2))
 		_setup_icon_pill(n1_icon, 1) # CHECK vector icon
-		n1_lbl.add_theme_color_override("font_color", C_CREAM)
+		n1_lbl.add_theme_color_override("font_color", C_JADE)
 
 		# Node 2 is unlocked (white circle, red border)
 		n2.add_theme_stylebox_override("panel", _flat(C_CREAM, C_RED_SON, 90, true, 6))
 		n2_icon.add_theme_stylebox_override("panel", _flat(C_RED_SON, C_CREAM, 22, false, 2))
 		_setup_icon_pill(n2_icon, 3) # MUSIC vector icon
-		n2_lbl.add_theme_color_override("font_color", C_RED_SON_DK)
+		n2_lbl.add_theme_color_override("font_color", C_RED_SON)
 
 		# Show Node 2's yellow NEXT tooltip (gorgeous 3D bubble speech indicator)
 		n2_tooltip.visible = true
 		n2_tooltip.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 12, true, 3))
-		n2_tooltip.get_node("TooltipText").add_theme_color_override("font_color", C_RED_SON_DK)
+		n2_tooltip.get_node("TooltipText").add_theme_color_override("font_color", C_RED_SON)
 		_animate_bob(n2_tooltip)
 
 func _setup_icon_pill(pill: PanelContainer, type: int) -> void:

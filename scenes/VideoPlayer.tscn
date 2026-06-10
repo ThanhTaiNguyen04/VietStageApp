@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/VideoPlayer.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="2_linh"]
 [ext_resource type="VideoStream" path="res://Video/intro_video.ogv" id="3_video"]
+[ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="4_font_title"]
 
 [node name="VideoPlayer" type="Control"]
 layout_mode = 3
@@ -20,7 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.06, 0.03, 0.012, 1.0)
+color = Color(0.98, 0.97, 0.94, 1.0)
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -59,6 +60,7 @@ size_flags_horizontal = 3
 
 [node name="VideoTitle" type="Label" parent="Center/PlayerCard/CardM/PlayerVBox/TopRow"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font_title")
 theme_override_font_sizes/font_size = 22
 text = "Bài Học Video: Giới Thiệu Khóa Học"
 horizontal_alignment = 2
@@ -85,7 +87,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.12, 0.07, 0.03, 1.0)
+color = Color(0.95, 0.93, 0.89, 1.0)
 
 [node name="LinhTexture" type="TextureRect" parent="Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor"]
 layout_mode = 1

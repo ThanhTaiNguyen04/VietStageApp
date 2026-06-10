@@ -29,17 +29,17 @@ func _ready() -> void:
 	_animate_bar()
 
 func _build_style() -> void:
-	app_name.add_theme_color_override("font_color", C_GOLD)
-	load_title.add_theme_color_override("font_color", C_WHITE_DIM)
-	tip_label.add_theme_color_override("font_color", C_DIM)
-	($BottomTag as Label).add_theme_color_override("font_color", Color(1, 1, 1, 0.14))
+	app_name.add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0)) # lacquer red app name
+	load_title.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.70)) # Espresso
+	tip_label.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0)) # Taupe
+	($BottomTag as Label).add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.30))
 
 	var pf := StyleBoxFlat.new()
 	pf.bg_color = C_GOLD
 	pf.corner_radius_top_left    = 3; pf.corner_radius_top_right    = 3
 	pf.corner_radius_bottom_left = 3; pf.corner_radius_bottom_right = 3
-	pf.shadow_size  = 10
-	pf.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55)
+	pf.shadow_size  = 6
+	pf.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
 
 	var pb := StyleBoxFlat.new()
 	pb.bg_color = Color(0, 0, 0, 0)

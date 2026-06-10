@@ -1,14 +1,21 @@
 extends Control
 
-const C_GOLD       := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LIGHT := Color(1.00, 0.87, 0.45, 1.0)
-const C_JADE       := Color(0.18, 0.62, 0.42, 1.0)
-const C_RED_SON    := Color(0.72, 0.12, 0.08, 1.0)
+# ─── Color Palette ─────────────────────────────────────────────────────────────
+const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
+const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
+const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
+const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
-const C_GREEN_OK   := Color(0.28, 0.85, 0.48, 1.0)
-const C_WARN       := Color(0.95, 0.75, 0.18, 1.0)
-const C_RED_ERR    := Color(0.90, 0.25, 0.18, 1.0)
+const C_GREEN_OK   := Color(0.12, 0.37, 0.23, 1.0)
+const C_WARN       := Color(0.77, 0.58, 0.15, 1.0)
+const C_RED_ERR    := Color(0.70, 0.12, 0.08, 1.0)
+
+const C_BG         := Color(0.98, 0.97, 0.93, 1.0)
+const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
+const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
+const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
+const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
 @onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
@@ -131,83 +138,93 @@ func _set_labels() -> void:
 	hint_dialog.dialog_text = "Khi thổi sáo trúc:\n\n• Môi khép nhẹ, không cắn lưỡi gà\n• Thổi đều hơi, không gấp\n• Che kín lỗ bằng thịt đầu ngón\n• Giữ cổ tay thư giãn\n• Lắng nghe cao độ rõ ràng"
 
 func _build_theme() -> void:
-	var top_s := _flat(Color(0.05, 0.025, 0.010, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 0)
+	# Background overlay
+	var bg_over := get_node_or_null("BGOverlay") as ColorRect
+	if bg_over:
+		bg_over.color = C_BG
+
+	# Top bar
+	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
 	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
 
-	($Root/TopBar/TopM/TopH/LessonTag   as Label).add_theme_color_override("font_color", Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.7))
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).add_theme_color_override("font_color", C_CREAM)
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_CREAM_DIM)
-	_style_progress_bar(lesson_bar, C_GOLD, Color(0,0,0,0.4))
+	($Root/TopBar/TopM/TopH/LessonTag   as Label).add_theme_color_override("font_color", C_RED_SON)
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).add_theme_color_override("font_color", C_TEXT)
+	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	_style_progress_bar(lesson_bar, C_RED_SON, Color(0,0,0,0.08))
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	_style_text_btn(back, C_GOLD, C_GOLD_LIGHT)
+	_style_text_btn(back, C_RED_SON, C_RED_SON.lightened(0.15))
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
 		_style_outlined_btn($Root/TopBar/TopM/TopH/CtrlBtns.get_node(bn) as Button)
 
-	var linh_s := _flat(Color(0.06, 0.03, 0.012, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), 0)
+	# Linh panel
+	var linh_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
 	linh_s.border_width_right = 2; linh_s.border_width_left = 0; linh_s.border_width_top = 0; linh_s.border_width_bottom = 0
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
 
-	var bubble_s := _flat(Color(0.20, 0.12, 0.04, 0.92), Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.5), 14)
+	var bubble_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 14)
 	($Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer).add_theme_stylebox_override("panel", bubble_s)
-	speech_label.add_theme_color_override("font_color", C_CREAM)
+	speech_label.add_theme_color_override("font_color", C_TEXT)
 
-	var na_s := _flat(Color(0.52, 0.36, 0.08, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 0)
+	# Notation Area — light parchment card
+	var na_s := _flat(Color(0.99, 0.98, 0.95, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12)
 	($Root/MiddleRow/MainContent/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", Color(0.14,0.08,0.02,0.85))
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", Color(0.14,0.08,0.02,0.95))
+	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
 
-	var stat_bg := _flat(Color(0.07, 0.04, 0.015, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), 0)
+	# Stats panels
+	var stat_bg := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 12)
 	($Root/MiddleRow/MainContent/StatsRow/PitchPanel  as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
 	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel  as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
 
-	pitch_note.add_theme_color_override("font_color",   C_GOLD)
-	pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
-	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).add_theme_color_override("font_color", Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.65))
-	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).add_theme_color_override("font_color", Color(C_JADE.r,C_JADE.g,C_JADE.b,0.9))
-	rhythm_acc.add_theme_color_override("font_color", C_CREAM_DIM)
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle as Label).add_theme_color_override("font_color", C_GOLD)
-	score_num.add_theme_color_override("font_color", C_GOLD)
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).add_theme_color_override("font_color", C_CREAM_DIM)
+	pitch_note.add_theme_color_override("font_color",   C_RED_SON)
+	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	rhythm_acc.add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	score_num.add_theme_color_override("font_color", C_RED_SON)
+	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 
-	var sb_s := _flat(Color(0.12, 0.065, 0.025, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0)
-	sb_s.border_width_top = 3; sb_s.border_width_bottom = 0; sb_s.border_width_left = 0; sb_s.border_width_right = 0
+	# Flute board
+	var sb_s := _flat(C_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 0)
+	sb_s.border_width_top = 2; sb_s.border_width_bottom = 0; sb_s.border_width_left = 0; sb_s.border_width_right = 0
 	($Root/FluteBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
-	($Root/FluteBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.65))
-	($Root/FluteBoard/BoardM/BoardVBox/TargetLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.85))
+	($Root/FluteBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/FluteBoard/BoardM/BoardVBox/TargetLabel as Label).add_theme_color_override("font_color", C_TEXT)
+	($Root/FluteBoard/BoardM/BoardVBox/GuidanceLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 
+	# Flute frame
 	var frame := $Root/FluteBoard/BoardM/BoardVBox/FluteFrame as PanelContainer
-	var frame_s := _flat(Color(0.16, 0.09, 0.03, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 10)
+	var frame_s := _flat(Color(0.24, 0.14, 0.06, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 10)
 	frame.add_theme_stylebox_override("panel", frame_s)
 
-	# FluteBody is a custom control that draws itself
-	
 	# Breath progress styling
 	var bf := StyleBoxFlat.new()
 	bf.bg_color = C_JADE
 	bf.corner_radius_top_left = 6; bf.corner_radius_top_right = 6
 	bf.corner_radius_bottom_left = 6; bf.corner_radius_bottom_right = 6
 	var bb := StyleBoxFlat.new()
-	bb.bg_color = Color(0.0, 0.0, 0.0, 0.45)
+	bb.bg_color = Color(0.0, 0.0, 0.0, 0.08)
 	bb.corner_radius_top_left = 6; bb.corner_radius_top_right = 6
 	bb.corner_radius_bottom_left = 6; bb.corner_radius_bottom_right = 6
 	breath_progress.add_theme_stylebox_override("fill", bf)
 	breath_progress.add_theme_stylebox_override("background", bb)
-	($Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathLabel as Label).add_theme_color_override("font_color", C_GOLD)
+	($Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 
-	var rec_bar_s := _flat(Color(0.05, 0.025, 0.010, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 0)
+	var rec_bar_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
 	($Root/RecordBar as PanelContainer).add_theme_stylebox_override("panel", rec_bar_s)
 
-	var rn := _flat(C_RED_SON, Color(1.0, 0.4, 0.2, 0.5), 22)
-	rn.shadow_size = 14; rn.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.40)
-	var rh := _flat(C_RED_SON.lightened(0.14), Color(1.0, 0.4, 0.2, 0.7), 22)
-	rh.shadow_size = 20; rh.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.50)
+	var rn := _flat(C_RED_SON, Color(1.0, 0.4, 0.2, 0.4), 22)
+	rn.shadow_size = 10; rn.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25)
+	var rh := _flat(C_RED_SON.lightened(0.12), Color(1.0, 0.4, 0.2, 0.6), 22)
+	rh.shadow_size = 14; rh.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.35)
 	record_btn.add_theme_stylebox_override("normal",  rn)
 	record_btn.add_theme_stylebox_override("hover",   rh)
-	record_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.18), Color(0,0,0,0.2), 22))
+	record_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.15), Color(0,0,0,0.15), 22))
 	record_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	record_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 
@@ -262,14 +279,14 @@ func _build_notation() -> void:
 		cs.corner_radius_bottom_left = 35; cs.corner_radius_bottom_right = 35
 		if is_active:
 			cs.bg_color     = C_GOLD
-			cs.border_color = C_GOLD_LIGHT
-			cs.shadow_size  = 18; cs.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55)
+			cs.border_color = Color(1.0, 0.9, 0.6, 1.0)
+			cs.shadow_size  = 12; cs.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 		elif is_done:
 			cs.bg_color     = C_JADE
 			cs.border_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.8)
 		else:
-			cs.bg_color     = Color(0.28, 0.18, 0.06, 0.75)
-			cs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+			cs.bg_color     = Color(0.95, 0.93, 0.89, 1.0)
+			cs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.2)
 		card.add_theme_stylebox_override("panel", cs)
 
 		var lbl := Label.new()
@@ -278,7 +295,7 @@ func _build_notation() -> void:
 		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 		lbl.add_theme_font_size_override("font_size", 20)
 		lbl.add_theme_color_override("font_color",
-			Color(0.10, 0.05, 0.01, 1) if is_active else C_CREAM)
+			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
 		card.add_child(lbl)
 		notes_hbox.add_child(card)
 
@@ -288,14 +305,14 @@ func _build_dots() -> void:
 	for i in total:
 		var d := dots_hbox.get_child(i) as ColorRect
 		if d:
-			d.color = C_GOLD if i < done else Color(0.25, 0.15, 0.04, 0.8)
+			d.color = C_GOLD if i < done else Color(0.85, 0.82, 0.75, 1.0)
 
 func _build_rhythm_bars() -> void:
 	for c in rhythm_bars.get_children(): c.queue_free()
 	for _i in range(14):
 		var bar := ColorRect.new()
 		bar.custom_minimum_size = Vector2(9, 10)
-		bar.color = Color(0.22, 0.14, 0.04, 0.6)
+		bar.color = Color(0.85, 0.82, 0.75, 1.0)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_END
 		rhythm_bars.add_child(bar)
 
@@ -599,7 +616,7 @@ func _update_rhythm() -> void:
 			t.tween_property(cr, "custom_minimum_size:y", h, 0.08)
 			t.tween_property(cr, "color", C_JADE if randf() > 0.2 else C_GOLD, 0.07)
 			t.chain().parallel().tween_property(cr, "custom_minimum_size:y", 10.0, 0.36)
-			t.parallel().tween_property(cr, "color", Color(0.22, 0.14, 0.04, 0.6), 0.36)
+			t.parallel().tween_property(cr, "color", Color(0.85, 0.82, 0.75, 1.0), 0.36)
 	var pct := int(float(ok) / float(bars.size()) * 100.0)
 	rhythm_acc.text = "Độ chính xác: %d%%" % pct
 	rhythm_acc.add_theme_color_override("font_color",
@@ -627,6 +644,8 @@ func _reset() -> void:
 	if visualizer: visualizer.visible = false
 	pitch_note.text = "-"
 	pitch_status.text = "Đang nghe..."
+	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+	pitch_note.add_theme_color_override("font_color", C_RED_SON)
 	rhythm_acc.text = "Đang nghe..."
 	if _active_player and is_instance_valid(_active_player):
 		_active_player.stop()
@@ -675,14 +694,16 @@ func _style_text_btn(btn: Button, col: Color, hover: Color) -> void:
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 func _style_outlined_btn(btn: Button) -> void:
-	var bn := _flat(Color(0.10, 0.06, 0.02, 0.7), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 16)
-	var bh := _flat(Color(0.14, 0.08, 0.03, 0.9), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 16)
+	var bn := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 14)
+	var bh := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85), 14)
+	bh.shadow_size = 5; bh.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
 	btn.add_theme_stylebox_override("normal",  bn)
 	btn.add_theme_stylebox_override("hover",   bh)
-	btn.add_theme_stylebox_override("pressed", _flat(Color(0.16,0.09,0.03,1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 16))
+	btn.add_theme_stylebox_override("pressed", _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 14))
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	btn.add_theme_color_override("font_color", C_GOLD)
-	btn.add_theme_color_override("font_hover_color", C_GOLD_LIGHT)
+	btn.add_theme_color_override("font_color",         C_TEXT)
+	btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+	btn.add_theme_color_override("font_pressed_color", C_TEXT)
 
 func _make_button_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0

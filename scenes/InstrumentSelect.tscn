@@ -1,7 +1,8 @@
 [gd_scene load_steps=3 format=3 uid="uid://instrument_select_001"]
 
 [ext_resource type="Script"  path="res://scripts/InstrumentSelect.gd" id="1_script"]
-[ext_resource type="FontFile" path="res://assets/fonts/Nunito.ttf"    id="2_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="2_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="3_font_title"]
 
 [node name="InstrumentSelect" type="Control"]
 layout_mode = 3
@@ -17,7 +18,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.051, 0.031, 0.137, 1.0)
+color = Color(0.98, 0.97, 0.94, 1.0)
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -55,7 +56,7 @@ text = "← Quay lại"
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_fonts/font = ExtResource("2_font")
+theme_override_fonts/font = ExtResource("3_font_title")
 theme_override_font_sizes/font_size = 28
 text = "Chọn Nhạc Cụ"
 
@@ -112,7 +113,7 @@ theme_override_constants/separation = 10
 
 [node name="DTName" type="Label" parent="Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
+theme_override_fonts/font = ExtResource("3_font_title")
 theme_override_font_sizes/font_size = 28
 text = "Đàn Tranh"
 
@@ -185,7 +186,7 @@ theme_override_constants/separation = 10
 
 [node name="STName" type="Label" parent="Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
+theme_override_fonts/font = ExtResource("3_font_title")
 theme_override_font_sizes/font_size = 28
 text = "Sáo Trúc"
 
@@ -258,7 +259,7 @@ theme_override_constants/separation = 10
 
 [node name="DBName" type="Label" parent="Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
+theme_override_fonts/font = ExtResource("3_font_title")
 theme_override_font_sizes/font_size = 28
 text = "Đàn Bầu"
 

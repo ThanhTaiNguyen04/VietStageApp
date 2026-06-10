@@ -39,7 +39,7 @@ func _setup_images() -> void:
 			"area":   $Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTImageArea,
 			"cvbox":  $Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
 			"path":   IMG_DAN_TRANH,
-			"bg":     Color(0.10, 0.03, 0.06, 1.0),
+			"bg":     Color(0.97, 0.91, 0.85, 1.0), # soft peach/gold
 			"accent": C_GOLD,
 			"kind":   "dan_tranh",
 			"tag":    "Nhạc cụ dây",
@@ -49,7 +49,7 @@ func _setup_images() -> void:
 			"area":   $Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STImageArea,
 			"cvbox":  $Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
 			"path":   IMG_SAO_TRUC,
-			"bg":     Color(0.03, 0.09, 0.05, 1.0),
+			"bg":     Color(0.88, 0.94, 0.90, 1.0), # soft sage green
 			"accent": C_JADE,
 			"kind":   "sao_truc",
 			"tag":    "Nhạc cụ hơi",
@@ -59,7 +59,7 @@ func _setup_images() -> void:
 			"area":   $Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBImageArea,
 			"cvbox":  $Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
 			"path":   IMG_DAN_BAU,
-			"bg":     Color(0.06, 0.04, 0.12, 1.0),
+			"bg":     Color(0.92, 0.90, 0.95, 1.0), # soft lavender/gray
 			"accent": Color(0.55, 0.45, 0.80, 1.0),
 			"kind":   "dan_bau",
 			"tag":    "Nhạc cụ dây",
@@ -363,31 +363,31 @@ func _draw_dan_bau(c: Control, ac: Color) -> void:
 
 # ── Card theming ──────────────────────────────────────────────────────────────
 func _build_theme() -> void:
-	var top_s := _flat(Color(0.04, 0.024, 0.11, 0.98), Color(1, 1, 1, 0.08), 0)
+	var top_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(0.77, 0.58, 0.15, 0.15), 0)
 	top_s.border_width_top    = 0; top_s.border_width_left  = 0
 	top_s.border_width_right  = 0; top_s.border_width_bottom = 1
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
-	($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_color_override("font_color", C_WHITE)
+	($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0))
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	back.add_theme_color_override("font_color",       C_GOLD)
-	back.add_theme_color_override("font_hover_color", C_GOLD_LT)
+	back.add_theme_color_override("font_color",       Color(0.13, 0.08, 0.05, 1.0))
+	back.add_theme_color_override("font_hover_color", Color(0.70, 0.12, 0.08, 1.0))
 	back.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 10))
-	back.add_theme_stylebox_override("hover",   _flat(Color(1,1,1,0.07), Color(0,0,0,0), 10))
-	back.add_theme_stylebox_override("pressed", _flat(Color(1,1,1,0.12), Color(0,0,0,0), 10))
+	back.add_theme_stylebox_override("hover",   _flat(Color(0,0,0,0.06), Color(0,0,0,0), 10))
+	back.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.12), Color(0,0,0,0), 10))
 	back.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	_style_card(
 		$Root/CardsArea/CardsHBox/CardDanTranh,
 		$Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
-		Color(0.11, 0.03, 0.06, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50),
-		C_GOLD, Color(0.68, 0.10, 0.07, 1.0), "DTBar", "DTBtn", "DTPct")
+		Color(1.0, 1.0, 1.0, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25),
+		C_GOLD, Color(0.70, 0.12, 0.08, 1.0), "DTBar", "DTBtn", "DTPct")
 
 	_style_card(
 		$Root/CardsArea/CardsHBox/CardSaoTruc,
 		$Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
-		Color(0.03, 0.10, 0.06, 0.98), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.50),
-		C_JADE, Color(0.07, 0.48, 0.30, 1.0), "STBar", "STBtn", "STPct")
+		Color(1.0, 1.0, 1.0, 0.95), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.25),
+		C_JADE, Color(0.12, 0.37, 0.23, 1.0), "STBar", "STBtn", "STPct")
 
 	_style_card_locked(
 		$Root/CardsArea/CardsHBox/CardDanBau,
@@ -397,23 +397,23 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 		bg: Color, border: Color, accent: Color, btn_col: Color,
 		bar_name: String, btn_name: String, pct_name: String) -> void:
 	var cs := _flat(bg, border, 24)
-	cs.shadow_size = 40; cs.shadow_color = Color(0, 0, 0, 0.60)
+	cs.shadow_size = 30; cs.shadow_color = Color(0.13, 0.08, 0.05, 0.10)
 	cs.border_width_top = 3; cs.border_width_left = 1
 	cs.border_width_right = 1; cs.border_width_bottom = 1
 	card.add_theme_stylebox_override("panel", cs)
 
-	(cvbox.get_child(0) as Label).add_theme_color_override("font_color", C_WHITE)
-	(cvbox.get_child(1) as Label).add_theme_color_override("font_color", C_WHITE_DIM)
-	(cvbox.get_node(pct_name) as Label).add_theme_color_override("font_color", C_DIM)
+	(cvbox.get_child(0) as Label).add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	(cvbox.get_child(1) as Label).add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	(cvbox.get_node(pct_name) as Label).add_theme_color_override("font_color", Color(0.55, 0.50, 0.45, 1.0))
 
 	var pb  := cvbox.get_node(bar_name) as ProgressBar
 	var pf  := StyleBoxFlat.new()
 	pf.bg_color = accent
 	pf.corner_radius_top_left = 3; pf.corner_radius_top_right    = 3
 	pf.corner_radius_bottom_left = 3; pf.corner_radius_bottom_right = 3
-	pf.shadow_size = 8; pf.shadow_color = Color(accent.r, accent.g, accent.b, 0.50)
+	pf.shadow_size = 8; pf.shadow_color = Color(accent.r, accent.g, accent.b, 0.35)
 	var pbg := StyleBoxFlat.new()
-	pbg.bg_color = Color(1, 1, 1, 0.07)
+	pbg.bg_color = Color(0.13, 0.08, 0.05, 0.07)
 	pbg.corner_radius_top_left = 3; pbg.corner_radius_top_right    = 3
 	pbg.corner_radius_bottom_left = 3; pbg.corner_radius_bottom_right = 3
 	pb.add_theme_stylebox_override("fill", pf)
@@ -421,9 +421,9 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 
 	var btn := cvbox.get_node(btn_name) as Button
 	var bn  := _flat(btn_col, Color(1, 1, 1, 0.15), 28)
-	bn.shadow_size = 16; bn.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.45)
-	var bh  := _flat(btn_col.lightened(0.22), Color(1, 1, 1, 0.28), 28)
-	bh.shadow_size = 26; bh.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.60)
+	bn.shadow_size = 12; bn.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.25)
+	var bh  := _flat(btn_col.lightened(0.15), Color(1, 1, 1, 0.28), 28)
+	bh.shadow_size = 18; bh.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.38)
 	btn.add_theme_stylebox_override("normal",  bn)
 	btn.add_theme_stylebox_override("hover",   bh)
 	btn.add_theme_stylebox_override("pressed", _flat(btn_col.darkened(0.15), Color(0,0,0,0), 28))
@@ -433,22 +433,22 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 	btn.add_theme_color_override("font_pressed_color", C_WHITE)
 
 func _style_card_locked(card: PanelContainer, cvbox: VBoxContainer) -> void:
-	var cs := _flat(Color(0.07, 0.05, 0.13, 0.88), Color(1, 1, 1, 0.08), 24)
-	cs.shadow_size = 12; cs.shadow_color = Color(0, 0, 0, 0.28)
+	var cs := _flat(Color(0.95, 0.93, 0.89, 0.65), Color(0.13, 0.08, 0.05, 0.08), 24)
+	cs.shadow_size = 10; cs.shadow_color = Color(0.13, 0.08, 0.05, 0.05)
 	cs.border_width_top = 1; cs.border_width_left = 1
 	cs.border_width_right = 1; cs.border_width_bottom = 1
 	card.add_theme_stylebox_override("panel", cs)
-	card.modulate.a = 0.52
+	card.modulate.a = 0.68
 
 	for child in cvbox.get_children():
 		if child is Label:
-			(child as Label).add_theme_color_override("font_color", C_DIM)
+			(child as Label).add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.50))
 
 	var btn := cvbox.get_node("DBBtn") as Button
-	btn.add_theme_stylebox_override("normal",   _flat(Color(1,1,1,0.05), Color(1,1,1,0.08), 28))
-	btn.add_theme_stylebox_override("disabled", _flat(Color(1,1,1,0.03), Color(1,1,1,0.05), 28))
-	btn.add_theme_color_override("font_color",          Color(1,1,1,0.26))
-	btn.add_theme_color_override("font_disabled_color", Color(1,1,1,0.20))
+	btn.add_theme_stylebox_override("normal",   _flat(Color(0,0,0,0.03), Color(0.13, 0.08, 0.05, 0.10), 28))
+	btn.add_theme_stylebox_override("disabled", _flat(Color(0,0,0,0.01), Color(0.13, 0.08, 0.05, 0.05), 28))
+	btn.add_theme_color_override("font_color",          Color(0.13, 0.08, 0.05, 0.35))
+	btn.add_theme_color_override("font_disabled_color", Color(0.13, 0.08, 0.05, 0.25))
 
 # ── Entrance animation ────────────────────────────────────────────────────────
 func _animate_in() -> void:
