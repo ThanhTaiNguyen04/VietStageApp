@@ -33,8 +33,7 @@ var _time : float = 0.0
 
 @onready var top_bar       : MarginContainer = $Root/RightContent/TopBar
 @onready var avatar_circle : PanelContainer  = $Root/RightContent/TopBar/TopRow/AvatarCircle
-@onready var avatar_thumb  : TextureRect     = $Root/RightContent/TopBar/TopRow/AvatarCircle/AvatarThumb
-@onready var greet_lbl     : Label           = $Root/RightContent/TopBar/TopRow/GreetLabel
+
 @onready var streak_pill   : PanelContainer  = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill
 @onready var sp_label      : Label           = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill/SPMargin/SPLabel
 @onready var xp_pill       : PanelContainer  = $Root/RightContent/TopBar/TopRow/StatsRow/XPPill
@@ -61,6 +60,7 @@ var _time : float = 0.0
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 func _ready() -> void:
 	SecureDataManager.load_data()
+	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	_build_sidebar()
 	_build_top_bar()
 	_build_roadmap_cards()
@@ -390,10 +390,6 @@ func _build_top_bar() -> void:
 		ring_draw.draw_arc(c, r - 1.5, 0, TAU, 64, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 6.0, true)
 	)
 	avatar_circle.add_child(ring_draw)
-
-	greet_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	greet_lbl.add_theme_font_size_override("font_size", 28)
-	greet_lbl.text = "Hi, Tai!"
 
 	var sp_s := _flat(Color(0.13, 0.08, 0.05, 0.9), Color(0.9, 0.42, 0.08, 0.4), 22)
 	streak_pill.add_theme_stylebox_override("panel", sp_s)

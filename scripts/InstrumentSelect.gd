@@ -468,10 +468,14 @@ func _animate_in() -> void:
 # ── Navigation ────────────────────────────────────────────────────────────────
 func _go_practice_tranh() -> void:
 	selected_instrument = "dan_tranh"
+	SecureDataManager.data["selected_instrument"] = "dan_tranh"
+	SecureDataManager.save_data()
 	_fade_to("res://scenes/MainMenu.tscn")
 
 func _go_practice_sao() -> void:
 	selected_instrument = "sao_truc"
+	SecureDataManager.data["selected_instrument"] = "sao_truc"
+	SecureDataManager.save_data()
 	_fade_to("res://scenes/MainMenu.tscn")
 
 func _go_back() -> void:
