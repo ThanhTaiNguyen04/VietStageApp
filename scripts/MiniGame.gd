@@ -59,6 +59,9 @@ func _ready() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
+
 func _draw() -> void:
 	# Draw Mahogany heritage background
 	draw_rect(Rect2(Vector2.ZERO, size), C_BG_DARK)
@@ -138,11 +141,12 @@ func _start_new_round() -> void:
 	for child in option_grid.get_children():
 		child.queue_free()
 		
+	var is_mobile = get_viewport().size.x < get_viewport().size.y or get_viewport().size.x < 768
 	for opt in options:
 		var btn := Button.new()
 		btn.text = opt
-		btn.custom_minimum_size = Vector2(220, 68)
-		btn.add_theme_font_size_override("font_size", 22)
+		btn.custom_minimum_size = Vector2(280, 56) if is_mobile else Vector2(220, 68)
+		btn.add_theme_font_size_override("font_size", 18 if is_mobile else 22)
 		
 		# Build gorgeous bubble styleboxes for options
 		var b_n := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 20, true, 3)
@@ -273,21 +277,18 @@ func _show_end_summary() -> void:
 	result_lbl.add_theme_color_override("font_color", C_TEXT)
 	
 	# Re-style play button to go back
-	var anchor := Control.new()
-	anchor.custom_minimum_size = Vector2(0, 80)
-	$Root/Card/CardM/GameVBox.add_child(anchor)
-	
 	var btn := Button.new()
 	btn.text = "Quay Lại Bản Đồ"
 	btn.custom_minimum_size = Vector2(280, 68)
-	btn.add_theme_font_size_override("font_size", 22)
+	var is_mobile_end = get_viewport().size.x < get_viewport().size.y or get_viewport().size.x < 768
+	btn.add_theme_font_size_override("font_size", 18 if is_mobile_end else 22)
 	btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, C_GOLD, 20, true, 3))
 	btn.add_theme_stylebox_override("hover", _flat(C_RED_SON_DK, C_GOLD_LIGHT, 20, true, 3))
 	btn.add_theme_color_override("font_color", Color(1,1,1,1))
 	btn.pressed.connect(_go_back)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_make_button_bouncy(btn)
-	anchor.add_child(btn)
-	btn.position = Vector2(($Root/Card.size.x - 280) / 2.0 - 24, 0)
+	$Root/Card/CardM/GameVBox.add_child(btn)
 
 func _flat(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -323,3 +324,54 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	
+	# Reflow Card size
+	var card := $Root/Card as PanelContainer
+	if is_mobile:
+		card.custom_minimum_size = Vector2(size.x - 32, 0)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	else:
+		card.custom_minimum_size = Vector2(1000, 640)
+		card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+	# Options grid columns reflow
+	option_grid.columns = 1 if is_mobile else 2
+
+	# UI Margins and spacing adjustments
+	if is_mobile:
+		$Root/TopBar/TopM.add_theme_constant_override("margin_left", 16)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_right", 16)
+		$Root/Card/CardM.add_theme_constant_override("margin_left", 16)
+		$Root/Card/CardM.add_theme_constant_override("margin_right", 16)
+		$Root/Card/CardM.add_theme_constant_override("margin_top", 20)
+		$Root/Card/CardM.add_theme_constant_override("margin_bottom", 20)
+		
+		$Root/TopBar/TopM/TopH/Title.add_theme_font_size_override("font_size", 18)
+		round_label.add_theme_font_size_override("font_size", 16)
+		score_label.add_theme_font_size_override("font_size", 16)
+		prompt_label.add_theme_font_size_override("font_size", 16)
+		result_lbl.add_theme_font_size_override("font_size", 16)
+		
+		# Shrink BackBtn on mobile
+		back_btn.custom_minimum_size = Vector2(120, 40)
+		back_btn.add_theme_font_size_override("font_size", 14)
+	else:
+		$Root/TopBar/TopM.add_theme_constant_override("margin_left", 48)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_right", 48)
+		$Root/Card/CardM.add_theme_constant_override("margin_left", 48)
+		$Root/Card/CardM.add_theme_constant_override("margin_right", 48)
+		$Root/Card/CardM.add_theme_constant_override("margin_top", 32)
+		$Root/Card/CardM.add_theme_constant_override("margin_bottom", 32)
+		
+		$Root/TopBar/TopM/TopH/Title.add_theme_font_size_override("font_size", 26)
+		round_label.add_theme_font_size_override("font_size", 22)
+		score_label.add_theme_font_size_override("font_size", 22)
+		prompt_label.add_theme_font_size_override("font_size", 24)
+		result_lbl.add_theme_font_size_override("font_size", 20)
+		
+		back_btn.custom_minimum_size = Vector2(180, 48)
+		back_btn.add_theme_font_size_override("font_size", 20)

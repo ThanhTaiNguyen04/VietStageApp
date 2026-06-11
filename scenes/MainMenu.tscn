@@ -555,4 +555,35 @@ custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
+
+[node name="BottomBar" type="PanelContainer" parent="Root/RightContent"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="BottomM" type="MarginContainer" parent="Root/RightContent/BottomBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+
+[node name="BottomH" type="HBoxContainer" parent="Root/RightContent/BottomBar/BottomM"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="BtnCoursesMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
 flat = true
+text = "Khóa học"
+
+[node name="BtnSongsMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Bài hát"
+
+[node name="BtnAccountMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Hồ sơ"

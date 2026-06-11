@@ -28,6 +28,14 @@ func _ready() -> void:
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.45)
 	_animate_bar()
 
+	# Add dynamic vector spinner
+	var spinner_script := load("res://scripts/Spinner.gd")
+	if spinner_script:
+		var spinner := Control.new()
+		spinner.set_script(spinner_script)
+		$Center.add_child(spinner)
+		$Center.move_child(spinner, 4)
+
 func _build_style() -> void:
 	app_name.add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0)) # lacquer red app name
 	load_title.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.70)) # Espresso

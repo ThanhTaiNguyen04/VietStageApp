@@ -11,17 +11,30 @@ const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 
 @onready var map_hbox : HBoxContainer = $"../MapHBox"
 
-# Traditional Vietnamese-themed background drawings that scroll!
-var _sparkles = [
-	Vector2(140, 110), Vector2(250, 480), Vector2(480, 140),
-	Vector2(620, 460), Vector2(780, 110), Vector2(940, 470),
-	Vector2(1080, 150), Vector2(1250, 460), Vector2(1410, 120),
-	Vector2(1580, 480)
-]
+var _sparkles : Array[Vector2] = []
+var _clouds : Array[Vector2] = []
+var _decorations_generated := false
 
-var _clouds = [
-	Vector2(320, 160), Vector2(720, 440), Vector2(1180, 180), Vector2(1500, 420)
-]
+func _generate_decorations() -> void:
+	var w := size.x
+	var h := size.y
+	if w <= 0.0 or h <= 0.0: return
+	
+	_clouds.clear()
+	var cloud_count := 4 if w < 1200 else 6
+	for i in range(cloud_count):
+		var cx = (i + 0.5) * (w / cloud_count) + randf_range(-60.0, 60.0)
+		var cy = h * (0.2 + 0.5 * (i % 2)) + randf_range(-30.0, 30.0)
+		_clouds.append(Vector2(cx, cy))
+		
+	_sparkles.clear()
+	var sparkle_count := 8 if w < 1200 else 12
+	for i in range(sparkle_count):
+		var sx = (i + 0.5) * (w / sparkle_count) + randf_range(-40.0, 40.0)
+		var sy = h * (0.15 + 0.65 * randf())
+		_sparkles.append(Vector2(sx, sy))
+		
+	_decorations_generated = true
 
 func _ready() -> void:
 	# Hide the static PathLine ColorRect
@@ -29,7 +42,10 @@ func _ready() -> void:
 		get_node("PathLine").visible = false
 	
 	# Redraw on size changes or process
-	item_rect_changed.connect(queue_redraw)
+	item_rect_changed.connect(func() -> void:
+		_decorations_generated = false
+		queue_redraw()
+	)
 
 func _process(_delta: float) -> void:
 	# Redraw to catch layout changes during Godot container sorting
@@ -37,6 +53,9 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	if not map_hbox: return
+	
+	if not _decorations_generated or _sparkles.is_empty():
+		_generate_decorations()
 	
 	# 1. Draw beautiful traditional background clouds and sparkles first (so they are under the path line)
 	for cloud_pos in _clouds:

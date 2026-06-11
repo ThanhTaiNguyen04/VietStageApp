@@ -64,7 +64,7 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 36
 text = "Tài Khoản Của Tôi"
 
-[node name="Content" type="HBoxContainer" parent="Root"]
+[node name="Content" type="BoxContainer" parent="Root"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0

@@ -42,6 +42,7 @@ var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 2
 var _string_streams: Array[AudioStreamWAV] = []
+var _rec_tween   : Tween
 
 const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
 const SHEET    : Array[String] = ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
@@ -64,6 +65,17 @@ func _ready() -> void:
 	_start_float()
 	_connect_buttons()
 	
+	# Check mic permission/driver state
+	if not ProjectSettings.get_setting("audio/driver/enable_input"):
+		var mic_dialog := AcceptDialog.new()
+		mic_dialog.title = "Cảnh Báo Thiết Bị"
+		mic_dialog.dialog_text = "Ứng dụng chưa được cấp quyền truy cập Microphone hoặc tính năng Audio Input bị vô hiệu hóa trong cài đặt.\n\nVui lòng kiểm tra lại thiết bị thu âm để thực hiện bài học."
+		var dialog_style := _flat(C_BG_BAR, C_GOLD, 16)
+		mic_dialog.add_theme_stylebox_override("panel", dialog_style)
+		mic_dialog.add_theme_color_override("title_color", C_RED_SON)
+		add_child(mic_dialog)
+		mic_dialog.popup_centered()
+	
 	# Dynamically insert premium real-time microphone waveform visualizer!
 	var record_hbox := $Root/RecordBar/RecordM/RecordH
 	var analyzer_script := load("res://scripts/AudioCaptureAnalyzer.gd")
@@ -76,6 +88,40 @@ func _ready() -> void:
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
+
+		# Programmatically add pulsing "REC" recording indicator next to record button
+		var rec_indicator := HBoxContainer.new()
+		rec_indicator.name = "RecIndicator"
+		rec_indicator.alignment = BoxContainer.ALIGNMENT_CENTER
+		rec_indicator.visible = false
+		
+		# Small red dot
+		var dot := Panel.new()
+		dot.custom_minimum_size = Vector2(12, 12)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var dot_style := StyleBoxFlat.new()
+		dot_style.bg_color = C_RED_SON
+		dot_style.corner_radius_top_left = 6
+		dot_style.corner_radius_top_right = 6
+		dot_style.corner_radius_bottom_left = 6
+		dot_style.corner_radius_bottom_right = 6
+		dot.add_theme_stylebox_override("panel", dot_style)
+		
+		# REC Label
+		var lbl := Label.new()
+		lbl.text = "REC"
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", C_RED_SON)
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		
+		rec_indicator.add_child(dot)
+		rec_indicator.add_child(lbl)
+		rec_indicator.add_theme_constants_override("separation", 6)
+		rec_indicator.custom_minimum_size = Vector2(60, 30)
+		
+		record_hbox.add_child(rec_indicator)
+		# Position next to record button
+		record_hbox.move_child(rec_indicator, 2)
 		
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
@@ -400,6 +446,7 @@ func _connect_buttons() -> void:
 func _toggle_record() -> void:
 	_recording = not _recording
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	_update_rec_pulse(_recording)
 	if _recording:
 		record_btn.text = "Dừng luyện tập"
 		_va_say(SPEECHES[0])
@@ -495,6 +542,7 @@ func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 2
 	_build_notation()
 	record_btn.text   = "Bắt Đầu Luyện Tập"
+	_update_rec_pulse(false)
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if visualizer: visualizer.visible = false
 	pitch_note.text   = "—"
@@ -596,3 +644,24 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _update_rec_pulse(active: bool) -> void:
+	var rec_indicator := $Root/RecordBar/RecordM/RecordH.get_node_or_null("RecIndicator") as Control
+	if not rec_indicator: return
+	
+	if _rec_tween and _rec_tween.is_valid():
+		_rec_tween.kill()
+		
+	rec_indicator.visible = active
+	if active:
+		rec_indicator.modulate.a = 1.0
+		rec_indicator.scale = Vector2.ONE
+		rec_indicator.pivot_offset = Vector2(30, 15)
+		
+		_rec_tween = create_tween().set_loops()
+		_rec_tween.set_parallel(true)
+		_rec_tween.tween_property(rec_indicator, "modulate:a", 0.3, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.tween_property(rec_indicator, "scale", Vector2(1.08, 1.08), 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.chain().parallel()
+		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

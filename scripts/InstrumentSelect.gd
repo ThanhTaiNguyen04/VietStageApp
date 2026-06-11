@@ -5,8 +5,9 @@ static var selected_instrument := "dan_tranh"
 
 const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
 const C_GOLD_LT   := Color(1.00, 0.87, 0.45, 1.0)
-const C_JADE      := Color(0.22, 0.86, 0.55, 1.0)
-const C_JADE_LT   := Color(0.42, 0.95, 0.70, 1.0)
+const C_JADE       := Color(0.12, 0.37, 0.23, 1.0) # Standard dark jade
+const C_JADE_LIGHT := Color(0.22, 0.86, 0.55, 1.0) # Standard light jade
+const C_JADE_LT    := Color(0.42, 0.95, 0.70, 1.0) # Sage/mint overlay
 const C_WHITE     := Color(1.00, 1.00, 1.00, 1.0)
 const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.50)
 const C_DIM       := Color(1.00, 1.00, 1.00, 0.24)
@@ -23,21 +24,24 @@ func _ready() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn as Button).pressed.connect(_go_back)
 	_make_bouncy($Root/TopBar/TopM/TopH/BackBtn as Button)
 
-	var dt_btn := $Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox/DTBtn as Button
+	var dt_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox/DTBtn as Button
 	dt_btn.pressed.connect(_go_practice_tranh)
 	_make_bouncy(dt_btn)
 
-	var st_btn := $Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox/STBtn as Button
+	var st_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox/STBtn as Button
 	st_btn.pressed.connect(_go_practice_sao)
 	_make_bouncy(st_btn)
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
 
 # ── Image / Illustration setup ────────────────────────────────────────────────
 func _setup_images() -> void:
 	var cards := [
 		{
-			"img":    $Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTImageArea/DTImage,
-			"area":   $Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTImageArea,
-			"cvbox":  $Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
+			"img":    $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTImageArea/DTImage,
+			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTImageArea,
+			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
 			"path":   IMG_DAN_TRANH,
 			"bg":     Color(0.97, 0.91, 0.85, 1.0), # soft peach/gold
 			"accent": C_GOLD,
@@ -45,19 +49,19 @@ func _setup_images() -> void:
 			"tag":    "Nhạc cụ dây",
 		},
 		{
-			"img":    $Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STImageArea/STImage,
-			"area":   $Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STImageArea,
-			"cvbox":  $Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
+			"img":    $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STImageArea/STImage,
+			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STImageArea,
+			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
 			"path":   IMG_SAO_TRUC,
 			"bg":     Color(0.88, 0.94, 0.90, 1.0), # soft sage green
-			"accent": C_JADE,
+			"accent": C_JADE_LIGHT,
 			"kind":   "sao_truc",
 			"tag":    "Nhạc cụ hơi",
 		},
 		{
-			"img":    $Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBImageArea/DBImage,
-			"area":   $Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBImageArea,
-			"cvbox":  $Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
+			"img":    $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBImageArea/DBImage,
+			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBImageArea,
+			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
 			"path":   IMG_DAN_BAU,
 			"bg":     Color(0.92, 0.90, 0.95, 1.0), # soft lavender/gray
 			"accent": Color(0.55, 0.45, 0.80, 1.0),
@@ -378,20 +382,40 @@ func _build_theme() -> void:
 	back.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	_style_card(
-		$Root/CardsArea/CardsHBox/CardDanTranh,
-		$Root/CardsArea/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
+		$Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh,
+		$Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
 		Color(1.0, 1.0, 1.0, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25),
 		C_GOLD, Color(0.70, 0.12, 0.08, 1.0), "DTBar", "DTBtn", "DTPct")
 
 	_style_card(
-		$Root/CardsArea/CardsHBox/CardSaoTruc,
-		$Root/CardsArea/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
-		Color(1.0, 1.0, 1.0, 0.95), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.25),
-		C_JADE, Color(0.12, 0.37, 0.23, 1.0), "STBar", "STBtn", "STPct")
+		$Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc,
+		$Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
+		Color(1.0, 1.0, 1.0, 0.95), Color(C_JADE_LIGHT.r, C_JADE_LIGHT.g, C_JADE_LIGHT.b, 0.25),
+		C_JADE_LIGHT, C_JADE, "STBar", "STBtn", "STPct")
 
 	_style_card_locked(
-		$Root/CardsArea/CardsHBox/CardDanBau,
-		$Root/CardsArea/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox)
+		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau,
+		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox)
+
+	# Custom scrollbar styling
+	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
+	if scroll:
+		var h_scrollbar := scroll.get_h_scroll_bar()
+		var bar_style := StyleBoxFlat.new()
+		bar_style.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+		bar_style.corner_radius_top_left = 4; bar_style.corner_radius_top_right = 4
+		bar_style.corner_radius_bottom_left = 4; bar_style.corner_radius_bottom_right = 4
+		
+		var grabber_style := StyleBoxFlat.new()
+		grabber_style.bg_color = C_GOLD
+		grabber_style.corner_radius_top_left = 4; grabber_style.corner_radius_top_right = 4
+		grabber_style.corner_radius_bottom_left = 4; grabber_style.corner_radius_bottom_right = 4
+		
+		h_scrollbar.add_theme_stylebox_override("scroll", bar_style)
+		h_scrollbar.add_theme_stylebox_override("grabber", grabber_style)
+		h_scrollbar.add_theme_stylebox_override("grabber_highlight", grabber_style)
+		h_scrollbar.add_theme_stylebox_override("grabber_pressed", grabber_style)
+		h_scrollbar.custom_minimum_size = Vector2(h_scrollbar.custom_minimum_size.x, 8)
 
 func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 		bg: Color, border: Color, accent: Color, btn_col: Color,
@@ -455,7 +479,7 @@ func _animate_in() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.32)
 	var delay := 0.08
-	for card in ($Root/CardsArea/CardsHBox as HBoxContainer).get_children():
+	for card in ($Root/CardsArea/CardsScroll/CardsHBox as HBoxContainer).get_children():
 		var c := card as Control
 		c.modulate.a = 0.0
 		c.position.y += 44.0
@@ -464,6 +488,45 @@ func _animate_in() -> void:
 		t.tween_property(c, "position:y", 0.0, 0.58).set_delay(delay)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		delay += 0.13
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	
+	# Cards scaling
+	var cards_hbox := $Root/CardsArea/CardsScroll/CardsHBox as HBoxContainer
+	for card in cards_hbox.get_children():
+		var c := card as Control
+		if is_mobile:
+			c.custom_minimum_size = Vector2(300, 0)
+			c.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		else:
+			c.custom_minimum_size = Vector2(0, 0)
+			c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			
+	# TopBar padding
+	var top_m := $Root/TopBar/TopM as MarginContainer
+	var cards_area := $Root/CardsArea as MarginContainer
+	if is_mobile:
+		top_m.add_theme_constant_override("margin_left", 16)
+		top_m.add_theme_constant_override("margin_right", 16)
+		cards_area.add_theme_constant_override("margin_left", 16)
+		cards_area.add_theme_constant_override("margin_right", 16)
+		cards_area.add_theme_constant_override("margin_top", 16)
+		cards_area.add_theme_constant_override("margin_bottom", 16)
+		var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
+		back_btn.custom_minimum_size = Vector2(100, back_btn.custom_minimum_size.y)
+		($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_font_size_override("font_size", 20)
+	else:
+		top_m.add_theme_constant_override("margin_left", 36)
+		top_m.add_theme_constant_override("margin_right", 36)
+		cards_area.add_theme_constant_override("margin_left", 44)
+		cards_area.add_theme_constant_override("margin_right", 44)
+		cards_area.add_theme_constant_override("margin_top", 36)
+		cards_area.add_theme_constant_override("margin_bottom", 36)
+		var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
+		back_btn.custom_minimum_size = Vector2(140, back_btn.custom_minimum_size.y)
+		($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_font_size_override("font_size", 28)
 
 # ── Navigation ────────────────────────────────────────────────────────────────
 func _go_practice_tranh() -> void:

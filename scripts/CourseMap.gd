@@ -26,6 +26,11 @@ static var video_completed := false
 @onready var btn_account  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnAccount
 @onready var map_hbox     : HBoxContainer = $RootHBox/RightContent/MapScroll/ScrollM/MapHBox
 
+@onready var bottom_bar      : PanelContainer = $RootHBox/RightContent/BottomBar
+@onready var btn_courses_mob : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnCoursesMobile
+@onready var btn_songs_mob   : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnSongsMobile
+@onready var btn_account_mob : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnAccountMobile
+
 var _active_side_btn : Button = null
 var _pulse_time := 0.0
 
@@ -69,12 +74,16 @@ func _ready() -> void:
 		if n5: n5.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 	_build_theme()
+	_build_bottom_bar()
 	_set_labels()
 	_animate_in()
 	_setup_nodes()
 	_connect_buttons()
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
 
 func _process(delta: float) -> void:
 	# Gentle breathing scale animation on active lesson node
@@ -313,6 +322,64 @@ func _flat_sidebar(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	s.corner_radius_bottom_left  = radius; s.corner_radius_bottom_right = radius
 	return s
 
+func _build_bottom_bar() -> void:
+	var bottom_s := _flat_sidebar(C_RED_SON_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
+	bottom_s.border_width_top = 2
+	bottom_s.shadow_size = 12
+	bottom_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	bottom_s.shadow_offset = Vector2(0, -4)
+	bottom_bar.add_theme_stylebox_override("panel", bottom_s)
+
+	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
+
+	_style_bottom_icon_btn(btn_courses_mob, true)
+	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
+	_style_bottom_icon_btn(btn_account_mob, false)
+
+	_attach_bottom_icon_draw(btn_courses_mob, 1)
+	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
+	_attach_bottom_icon_draw(btn_account_mob, 5)
+
+func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
+	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
+	var bg_h := _flat_sidebar(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	var bg_p := _flat_sidebar(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+
+	bg_n.content_margin_top = 42
+	bg_n.content_margin_bottom = 6
+	bg_h.content_margin_top = 42
+	bg_h.content_margin_bottom = 6
+	bg_p.content_margin_top = 42
+	bg_p.content_margin_bottom = 6
+
+	if is_active:
+		bg_n.border_width_top = 4
+		bg_n.border_width_left = 0; bg_n.border_width_right = 0; bg_n.border_width_bottom = 0
+		bg_n.border_color = C_GOLD
+
+	btn.add_theme_stylebox_override("normal",  bg_n)
+	btn.add_theme_stylebox_override("hover",   bg_h)
+	btn.add_theme_stylebox_override("pressed", bg_p)
+	btn.add_theme_stylebox_override("focus",   _flat_sidebar(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
+	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
+	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	btn.add_theme_font_size_override("font_size", 14)
+
+func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
+	var ic := Control.new()
+	ic.name = "IconDraw"
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ic.layout_mode = 1
+	ic.anchors_preset = Control.PRESET_CENTER_TOP
+	ic.anchor_left = 0.5; ic.anchor_right = 0.5
+	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
+	ic.offset_left = -20; ic.offset_right = 20
+	ic.offset_top = 6;    ic.offset_bottom = 38
+	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
+	btn.add_child(ic)
+
 func _setup_nodes() -> void:
 	# Clear out any previous setups and set pivots for bouncy cartoon animations
 	for c in map_hbox.get_children():
@@ -467,6 +534,28 @@ func _connect_buttons() -> void:
 	if btn_courses:
 		_make_button_bouncy(btn_courses)
 
+	# Mobile tabs events
+	btn_courses_mob.pressed.connect(func() -> void:
+		pass
+	)
+	btn_songs_mob.pressed.connect(func() -> void:
+		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
+		if is_prem:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+		else:
+			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
+	)
+	btn_account_mob.pressed.connect(func() -> void:
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
+	)
+
+	for btn in [btn_courses_mob, btn_songs_mob, btn_account_mob]:
+		_make_button_bouncy(btn)
+
 	var n1 := map_hbox.get_node("Node1") as PanelContainer
 	n1.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
@@ -580,3 +669,78 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	
+	# Root container vertical orientation
+	var root_hbox := $RootHBox as BoxContainer
+	root_hbox.vertical = is_mobile
+	
+	# Left sidebar visibility
+	$RootHBox/LeftSidebar.visible = not is_mobile
+	bottom_bar.visible = is_mobile
+	
+	# Map margins and separation overrides
+	var scroll_m := $RootHBox/RightContent/MapScroll/ScrollM as MarginContainer
+	if is_mobile:
+		scroll_m.add_theme_constant_override("margin_top", 100)
+		scroll_m.add_theme_constant_override("margin_bottom", 100)
+		scroll_m.add_theme_constant_override("margin_left", 36)
+		scroll_m.add_theme_constant_override("margin_right", 36)
+		map_hbox.add_theme_constant_override("separation", 64)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_left", 16)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_right", 16)
+		change_btn.custom_minimum_size = Vector2(120, change_btn.custom_minimum_size.y)
+		course_title.add_theme_font_size_override("font_size", 18)
+	else:
+		scroll_m.add_theme_constant_override("margin_top", 170)
+		scroll_m.add_theme_constant_override("margin_bottom", 170)
+		scroll_m.add_theme_constant_override("margin_left", 80)
+		scroll_m.add_theme_constant_override("margin_right", 80)
+		map_hbox.add_theme_constant_override("separation", 96)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_left", 32)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_right", 32)
+		change_btn.custom_minimum_size = Vector2(180, change_btn.custom_minimum_size.y)
+		course_title.add_theme_font_size_override("font_size", 28)
+		
+	# Scale circular map nodes dynamically
+	var node_size := Vector2(130, 130) if is_mobile else Vector2(180, 180)
+	var title_font_size := 14 if is_mobile else 20
+	var icon_pill_offset := -22.0 if is_mobile else -32.0
+	var icon_pill_size := Vector2(36, 36) if is_mobile else Vector2(44, 44)
+	var icon_pill_offset_xy := 8.0 if is_mobile else 12.0
+	
+	for c in map_hbox.get_children():
+		var node := c as PanelContainer
+		node.custom_minimum_size = node_size
+		node.pivot_offset = node_size / 2.0
+		
+		# Update title font size
+		var v_box = node.get_child(0) as VBoxContainer
+		if v_box:
+			var label = v_box.get_node_or_null("Title") as Label
+			if label:
+				label.add_theme_font_size_override("font_size", title_font_size)
+				
+		# Update icon pill anchor and offsets
+		var anchor = node.get_node_or_null("IconAnchor") as Control
+		if anchor:
+			var pill = anchor.get_node_or_null("IconPill") as PanelContainer
+			if pill:
+				pill.custom_minimum_size = icon_pill_size
+				pill.offset_left = icon_pill_offset
+				pill.offset_top = icon_pill_offset
+				pill.offset_right = icon_pill_offset_xy
+				pill.offset_bottom = icon_pill_offset_xy
+				
+		# Update tooltip anchors
+		var tooltip_anchor = node.get_node_or_null("TooltipAnchor") as Control
+		if tooltip_anchor:
+			var tooltip = tooltip_anchor.get_node_or_null("Tooltip") as PanelContainer
+			if tooltip:
+				if is_mobile:
+					tooltip.offset_top = -54
+				else:
+					tooltip.offset_top = -68

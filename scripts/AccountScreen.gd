@@ -56,6 +56,9 @@ func _ready() -> void:
 			t.tween_property(status_pill, "scale", Vector2.ONE, 0.08).set_trans(Tween.TRANS_BACK)
 	)
 
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
+
 func _set_labels() -> void:
 	page_title.text = "Tài Khoản Của Tôi"
 	name_edit.text = "Linh"
@@ -106,10 +109,7 @@ func _build_theme() -> void:
 	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	back_btn.text = "Quay Lại"
 
-	# Left panel / card style - beige panel with right border
-	var left_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
-	left_s.border_width_right = 2; left_s.border_width_left = 0; left_s.border_width_top = 0; left_s.border_width_bottom = 0
-	($Root/Content/LeftCard as PanelContainer).add_theme_stylebox_override("panel", left_s)
+	# Left panel / card style styled dynamically in _on_viewport_size_changed
 
 	# Avatar Circle
 	var av_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 80)
@@ -215,4 +215,67 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+
+	# Toggle Content direction
+	var content_box := $Root/Content as BoxContainer
+	content_box.vertical = is_mobile
+
+	# Reflow LeftCard & dynamic border
+	var left_card := $Root/Content/LeftCard as PanelContainer
+	var left_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
+	if is_mobile:
+		left_card.custom_minimum_size = Vector2(0, left_card.custom_minimum_size.y)
+		left_s.border_width_bottom = 2
+		left_s.border_width_right = 0
+		left_s.border_width_left = 0
+		left_s.border_width_top = 0
+	else:
+		left_card.custom_minimum_size = Vector2(500, left_card.custom_minimum_size.y)
+		left_s.border_width_right = 2
+		left_s.border_width_left = 0
+		left_s.border_width_top = 0
+		left_s.border_width_bottom = 0
+	left_card.add_theme_stylebox_override("panel", left_s)
+
+	# Grid columns reflow
+	var grid := $Root/Content/RightCard/RightM/RightV/Grid as GridContainer
+	grid.columns = 1 if is_mobile else 2
+
+	# Typography and margin adjustments
+	if is_mobile:
+		page_title.add_theme_font_size_override("font_size", 28)
+		stats_title.add_theme_font_size_override("font_size", 22)
+		name_edit.add_theme_font_size_override("font_size", 20)
+		email_lbl.add_theme_font_size_override("font_size", 14)
+		
+		$Root/TopBar/TopM.add_theme_constant_override("margin_left", 16)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_right", 16)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_left", 16)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_right", 16)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_top", 24)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_bottom", 24)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_left", 16)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_right", 16)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_top", 24)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_bottom", 24)
+	else:
+		page_title.add_theme_font_size_override("font_size", 36)
+		stats_title.add_theme_font_size_override("font_size", 28)
+		name_edit.add_theme_font_size_override("font_size", 24)
+		email_lbl.add_theme_font_size_override("font_size", 18)
+		
+		$Root/TopBar/TopM.add_theme_constant_override("margin_left", 48)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_right", 48)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_left", 48)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_right", 48)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_top", 40)
+		$Root/Content/LeftCard/LeftM.add_theme_constant_override("margin_bottom", 40)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_left", 48)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_right", 48)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_top", 40)
+		$Root/Content/RightCard/RightM.add_theme_constant_override("margin_bottom", 40)
 
