@@ -228,8 +228,9 @@ func _export_csv() -> void:
 	($Root/TopBar/TopM/TopH/PageTitle as Label).text = "Đã xuất: %s" % path
 	var t := create_tween()
 	t.tween_property($Root/TopBar/TopM/TopH/PageTitle, "modulate:a", 0.6, 0.0)
-	t.tween_property($Root/TopBar/TopM/TopH/PageTitle, "modulate:a", 1.0, 0.4).set_delay(0.0)
-	t.set_delay(1.6).tween_callback(func() -> void: ($Root/TopBar/TopM/TopH/PageTitle as Label).text = old)
+	t.tween_property($Root/TopBar/TopM/TopH/PageTitle, "modulate:a", 1.0, 0.4)
+	t.tween_interval(1.6)
+	t.tween_callback(func() -> void: ($Root/TopBar/TopM/TopH/PageTitle as Label).text = old)
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

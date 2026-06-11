@@ -566,8 +566,7 @@ func _demo() -> void:
 			var hole := holes_hbox.get_child(i) as PanelContainer
 			if hole:
 				var dt := create_tween()
-				dt.set_delay(delay)
-				dt.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.08)
+				dt.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.08).set_delay(delay)
 				dt.tween_property(hole, "scale", Vector2.ONE, 0.12)
 				delay += 0.15
 

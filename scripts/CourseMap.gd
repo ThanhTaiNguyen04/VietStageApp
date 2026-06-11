@@ -12,7 +12,7 @@ const C_JADE        := Color(0.12, 0.37, 0.23, 1.0) # bamboo jade
 const C_JADE_LIGHT  := Color(0.25, 0.65, 0.45, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
-const C_LOCKED      := Color(0.88, 0.86, 0.82, 0.80) # light gray-cream for locked nodes
+const C_LOCKED      := Color(0.92, 0.90, 0.86, 1.0) # light warm cream-gray for locked nodes
 
 # ─── Static Progress State ────────────────────────────────────────────────────
 static var video_completed := false
@@ -103,14 +103,14 @@ func _draw() -> void:
 	_draw_bronze_motif(br_center, 260.0)
 
 func _draw_bronze_motif(cntr: Vector2, max_radius: float) -> void:
-	var gold_trans := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08)
-	var gold_dim := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.035)
+	var gold_trans := Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.28)
+	var gold_dim := Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.16)
 	
 	# Draw concentric thin golden rings
-	draw_arc(cntr, max_radius * 0.22, 0.0, TAU, 64, gold_trans, 2.0, true)
-	draw_arc(cntr, max_radius * 0.44, 0.0, TAU, 80, gold_dim, 1.5, true)
-	draw_arc(cntr, max_radius * 0.66, 0.0, TAU, 96, gold_trans, 2.0, true)
-	draw_arc(cntr, max_radius * 0.88, 0.0, TAU, 120, gold_dim, 1.0, true)
+	draw_arc(cntr, max_radius * 0.22, 0.0, TAU, 64, gold_trans, 3.0, true)
+	draw_arc(cntr, max_radius * 0.44, 0.0, TAU, 80, gold_dim, 2.0, true)
+	draw_arc(cntr, max_radius * 0.66, 0.0, TAU, 96, gold_trans, 3.0, true)
+	draw_arc(cntr, max_radius * 0.88, 0.0, TAU, 120, gold_dim, 2.0, true)
 	
 	# Draw traditional center 12-ray sun symbol
 	var rays := 12
@@ -119,12 +119,12 @@ func _draw_bronze_motif(cntr: Vector2, max_radius: float) -> void:
 	for i in range(rays):
 		var angle := float(i) * (TAU / float(rays))
 		var dir := Vector2(cos(angle), sin(angle))
-		draw_line(cntr + dir * inner_r, cntr + dir * outer_r, gold_trans, 2.5, true)
+		draw_line(cntr + dir * inner_r, cntr + dir * outer_r, gold_trans, 3.5, true)
 		
 		# Draw decorative small dots in between the sun rays
 		var mid_angle := angle + (PI / float(rays))
 		var mid_dir := Vector2(cos(mid_angle), sin(mid_angle))
-		draw_circle(cntr + mid_dir * (inner_r + outer_r) * 0.52, 2.8, gold_dim)
+		draw_circle(cntr + mid_dir * (inner_r + outer_r) * 0.52, 3.5, gold_dim)
 
 func _set_labels() -> void:
 	var inst := InstrumentSelect.selected_instrument
@@ -337,23 +337,23 @@ func _setup_nodes() -> void:
 		var n_lbl := node.get_node(name_node.replace("Node","N") + "V/Title") as Label
 		
 		# Upgrade to gorgeous 3D cartoon stylebox
-		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(0.13, 0.08, 0.05, 0.15), 90, true, 5))
-		n_icon.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.15), Color(0,0,0,0), 22, false, 2))
+		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
+		n_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
 		_setup_icon_pill(n_icon, 2) # LOCK vector icon
-		n_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.45))
+		n_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
 
 	if not video_completed:
 		# Node 1 is active (3D bubble cream circle, gold border)
-		n1.add_theme_stylebox_override("panel", _flat(C_CREAM, C_GOLD, 90, true, 6))
+		n1.add_theme_stylebox_override("panel", _flat(C_CREAM, C_GOLD_LIGHT, 90, true, 6))
 		n1_icon.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 22, false, 2))
 		_setup_icon_pill(n1_icon, 0) # PLAY vector icon
 		n1_lbl.add_theme_color_override("font_color", C_RED_SON)
 
 		# Node 2 is locked (3D bubble dark circle)
-		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(0.13, 0.08, 0.05, 0.15), 90, true, 5))
-		n2_icon.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.15), Color(0,0,0,0), 22, false, 2))
+		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
+		n2_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
 		_setup_icon_pill(n2_icon, 2) # LOCK vector icon
-		n2_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.45))
+		n2_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
 
 		# Hide Node 2's "NEXT" tooltip
 		n2_tooltip.visible = false
