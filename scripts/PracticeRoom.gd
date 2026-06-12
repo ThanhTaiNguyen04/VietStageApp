@@ -45,7 +45,10 @@ var _string_streams: Array[AudioStreamWAV] = []
 var _rec_tween   : Tween
 
 const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
-const SHEET    : Array[String] = ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
+static var current_song_title := ""
+static var current_song_sheet : Array[String] = []
+
+var sheet_notes : Array[String] = ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
 const SPEECHES : Array[String] = [
 	"Gảy nhẹ dây số 3,\nnhấn rung bên trái nhạn đàn.",
 	"Rất tốt!\nGiữ ngón cố định hơn nhé.",
@@ -55,6 +58,8 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	if current_song_title != "":
+		sheet_notes = current_song_sheet
 	_generate_streams()
 	_set_labels()
 	_build_theme()
@@ -116,7 +121,7 @@ func _ready() -> void:
 		
 		rec_indicator.add_child(dot)
 		rec_indicator.add_child(lbl)
-		rec_indicator.add_theme_constants_override("separation", 6)
+		rec_indicator.add_theme_constant_override("separation", 6)
 		rec_indicator.custom_minimum_size = Vector2(60, 30)
 		
 		record_hbox.add_child(rec_indicator)
@@ -136,9 +141,9 @@ func _process(delta: float) -> void:
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
-	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  BÀI 4"
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Kỹ Thuật Nhấn Dây & Rung Âm"
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "60%"
+	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  BÀI 4" if current_song_title == "" else "ĐÀN TRANH  ·  BÀI HÁT"
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Kỹ Thuật Nhấn Dây & Rung Âm" if current_song_title == "" else current_song_title
+	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
 	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
 	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
@@ -242,8 +247,8 @@ func _build_theme() -> void:
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
 	for c in notes_hbox.get_children(): c.queue_free()
-	for i in SHEET.size():
-		var note     := SHEET[i]
+	for i in sheet_notes.size():
+		var note     := sheet_notes[i]
 		var is_active := i == _note_idx
 		var is_done   := i < _note_idx
 
@@ -392,8 +397,8 @@ func _on_string_plucked(idx: int, plucked_note: String) -> void:
 	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
-	if plucked_note == SHEET[_note_idx]:
-		_note_idx = (_note_idx + 1) % SHEET.size()
+	if plucked_note == sheet_notes[_note_idx]:
+		_note_idx = (_note_idx + 1) % sheet_notes.size()
 		_build_notation()
 		_update_target_indicator()
 		_score = clamp(_score + 4.0, 0, 100)
@@ -406,7 +411,7 @@ func _on_string_pressed(idx: int, cents_offset: float) -> void:
 		pitch_status.add_theme_color_override("font_color", C_GOLD)
 		
 		var note_name = NOTES_VN[idx % NOTES_VN.size()]
-		if note_name == SHEET[_note_idx]:
+		if note_name == sheet_notes[_note_idx]:
 			_score = clamp(_score + 0.1, 0, 100)
 			_refresh_score()
 			if randf() > 0.985:
@@ -464,7 +469,7 @@ func _demo() -> void:
 	t.tween_property(char_linh, "modulate", Color(1.5, 1.1, 0.6, 1.0), 0.3)
 	t.tween_property(char_linh, "modulate", Color.WHITE, 0.5)
 
-	var target_note := SHEET[_note_idx]
+	var target_note := sheet_notes[_note_idx]
 	var target_idx  := NOTES_VN.find(target_note)
 	if target_idx == -1: target_idx = 0
 	if _board:
@@ -490,8 +495,8 @@ func _simulate_tick() -> void:
 		pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 		pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
 
-	if NOTES_VN[ni] == SHEET[_note_idx] and randf() > 0.5:
-		_note_idx = (_note_idx + 1) % SHEET.size()
+	if NOTES_VN[ni] == sheet_notes[_note_idx] and randf() > 0.5:
+		_note_idx = (_note_idx + 1) % sheet_notes.size()
 		_build_notation()
 		_update_target_indicator()
 
@@ -531,7 +536,7 @@ func _va_say(text: String) -> void:
 	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
 
 func _update_target_indicator() -> void:
-	var target_note := SHEET[_note_idx]
+	var target_note := sheet_notes[_note_idx]
 	var target_idx  := NOTES_VN.find(target_note)
 	if target_idx == -1: target_idx = 0
 	target_label.text      = "Dây cần gảy: %d" % (target_idx + 1)

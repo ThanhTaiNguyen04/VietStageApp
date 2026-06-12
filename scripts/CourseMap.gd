@@ -22,12 +22,14 @@ static var video_completed := false
 @onready var change_btn   : Button        = $RootHBox/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
 @onready var btn_menu     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnMenu
 @onready var btn_courses  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnCourses
+@onready var btn_room     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnRoom
 @onready var btn_songs    : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnSongs
 @onready var btn_account  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnAccount
 @onready var map_hbox     : HBoxContainer = $RootHBox/RightContent/MapScroll/ScrollM/MapHBox
 
 @onready var bottom_bar      : PanelContainer = $RootHBox/RightContent/BottomBar
 @onready var btn_courses_mob : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnCoursesMobile
+@onready var btn_room_mob    : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnRoomMobile
 @onready var btn_songs_mob   : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnSongsMobile
 @onready var btn_account_mob : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnAccountMobile
 
@@ -149,8 +151,9 @@ func _set_labels() -> void:
 		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Luyện Ngón"
 		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
-
+ 
 	btn_courses.text = "Khóa học"
+	btn_room.text = "Phòng ảo"
 	btn_songs.text = "Bài hát"
 	btn_account.text = "Hồ sơ"
 	change_btn.text = "Đổi nhạc cụ"
@@ -169,6 +172,7 @@ func _build_theme() -> void:
 
 	_style_side_icon_btn(btn_menu, false)
 	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false, not is_prem)
 	_style_side_icon_btn(btn_account, false)
 
@@ -177,6 +181,8 @@ func _build_theme() -> void:
 		if child.name == "IconDraw": child.queue_free()
 	for child in btn_courses.get_children():
 		if child.name == "IconDraw": child.queue_free()
+	for child in btn_room.get_children():
+		if child.name == "IconDraw": child.queue_free()
 	for child in btn_songs.get_children():
 		if child.name == "IconDraw": child.queue_free()
 	for child in btn_account.get_children():
@@ -184,6 +190,7 @@ func _build_theme() -> void:
 
 	_attach_icon_draw(btn_menu,     0)
 	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2, not is_prem)
 	_attach_icon_draw(btn_account,  5)
 
@@ -258,60 +265,33 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var cy := sz.y * 0.5
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
 
+	var tex_name := ""
 	match t:
-		0: # Hamburger
-			for i in 3:
-				var y := cy - 12.0 + i * 12.0
-				c.draw_line(Vector2(cx - 15, y), Vector2(cx + 15, y), col, 4.0, true)
-		1: # Graduation
-			var pts := PackedVector2Array([
-				Vector2(cx, cy - 14),
-				Vector2(cx + 22, cy - 4),
-				Vector2(cx, cy + 6),
-				Vector2(cx - 22, cy - 4)
-			])
-			c.draw_colored_polygon(pts, col)
-			var base_pts := PackedVector2Array([
-				Vector2(cx - 11, cy + 1),
-				Vector2(cx + 11, cy + 1),
-				Vector2(cx + 8, cy + 8),
-				Vector2(cx - 8, cy + 8)
-			])
-			c.draw_colored_polygon(base_pts, col)
-			c.draw_line(Vector2(cx, cy - 4), Vector2(cx + 15, cy + 3), col, 3.0, true)
-			c.draw_circle(Vector2(cx + 15, cy + 6), 3.5, col)
-		2: # Notes
-			c.draw_rect(Rect2(cx - 13, cy - 14, 5, 20), col)
-			c.draw_rect(Rect2(cx + 3,  cy - 18, 5, 20), col)
-			c.draw_circle(Vector2(cx - 10,  cy + 6), 6.5, col)
-			c.draw_circle(Vector2(cx + 6,  cy + 2), 6.5, col)
-			c.draw_line(Vector2(cx - 8, cy - 14), Vector2(cx + 8, cy - 18), col, 4.0, true)
-		3: # Gamepad
-			c.draw_arc(Vector2(cx, cy), 16, 0, TAU, 32, col, 4.0, true)
-			c.draw_line(Vector2(cx - 10, cy), Vector2(cx - 4, cy), col, 3.5, true)
-			c.draw_line(Vector2(cx + 4, cy), Vector2(cx + 10, cy), col, 3.5, true)
-			c.draw_line(Vector2(cx, cy - 10), Vector2(cx, cy - 4), col, 3.5, true)
-			c.draw_line(Vector2(cx, cy + 4), Vector2(cx, cy + 10), col, 3.5, true)
-			c.draw_circle(Vector2(cx + 7, cy - 3), 3.5, col)
-			c.draw_circle(Vector2(cx + 7, cy + 3), 3.5, col)
-		4: # Bars
-			var bar_w := 8.0
-			var bars := [14.0, 22.0, 11.0, 19.0]
-			var base_y := cy + 14.0
-			for i in bars.size():
-				var x := cx - 18.0 + i * 12.0
-				c.draw_rect(Rect2(x, base_y - bars[i], bar_w, bars[i]), col)
-		5: # Person
-			c.draw_circle(Vector2(cx, cy - 8), 8.5, col)
-			c.draw_arc(Vector2(cx, cy + 14), 14, PI, TAU, 24, col, 4.0, true)
-
+		0: tex_name = "menu"
+		1: tex_name = "course"
+		2: tex_name = "songs"
+		3: tex_name = "game"
+		4: tex_name = "progress"
+		5: tex_name = "account"
+		6: tex_name = "room"
+	
+	var texture : Texture2D = null
+	if tex_name != "":
+		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
+	
+	if texture:
+		var icon_sz := Vector2(36, 36)
+		if t == 0:
+			icon_sz = Vector2(28, 28)
+		var rect := Rect2(Vector2(cx - icon_sz.x/2, cy - icon_sz.y/2), icon_sz)
+		c.draw_texture_rect(texture, rect, false, col)
+	
 	if is_locked:
-		var lx := cx + 12.0
-		var ly := cy + 10.0
-		# draw small lock
-		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_GOLD, true) # golden lock body
-		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_BG_DARK, false, 1.0)
-		c.draw_arc(Vector2(lx, ly - 2), 3.5, PI, TAU, 8, C_GOLD, 1.5, true)
+		var lock_tex := load("res://assets/textures/icons8/lock.png") as Texture2D
+		if lock_tex:
+			var lx := cx + 10.0
+			var ly := cy + 8.0
+			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, C_GOLD)
 
 func _flat_sidebar(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -334,10 +314,12 @@ func _build_bottom_bar() -> void:
 	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
 
 	_style_bottom_icon_btn(btn_courses_mob, true)
+	_style_bottom_icon_btn(btn_room_mob,    false)
 	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
 	_style_bottom_icon_btn(btn_account_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
+	_attach_bottom_icon_draw(btn_room_mob,    6)
 	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
 
@@ -509,6 +491,15 @@ func _connect_buttons() -> void:
 		)
 		_make_button_bouncy(btn_menu)
 
+	# Connect btn_room to virtual room
+	if btn_room:
+		btn_room.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
+		)
+		_make_button_bouncy(btn_room)
+
 	# Connect btn_songs with Premium Check
 	if btn_songs:
 		btn_songs.pressed.connect(func() -> void:
@@ -516,7 +507,7 @@ func _connect_buttons() -> void:
 			if is_prem:
 				var t := create_tween()
 				t.tween_property(self, "modulate:a", 0.0, 0.22)
-				t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+				t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/SongScreen.tscn"))
 			else:
 				VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
 		)
@@ -538,12 +529,17 @@ func _connect_buttons() -> void:
 	btn_courses_mob.pressed.connect(func() -> void:
 		pass
 	)
+	btn_room_mob.pressed.connect(func() -> void:
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
+	)
 	btn_songs_mob.pressed.connect(func() -> void:
 		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
 		if is_prem:
 			var t := create_tween()
 			t.tween_property(self, "modulate:a", 0.0, 0.22)
-			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/SongScreen.tscn"))
 		else:
 			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
 	)
@@ -553,7 +549,7 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
 	)
 
-	for btn in [btn_courses_mob, btn_songs_mob, btn_account_mob]:
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
 		_make_button_bouncy(btn)
 
 	var n1 := map_hbox.get_node("Node1") as PanelContainer

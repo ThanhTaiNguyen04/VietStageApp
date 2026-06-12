@@ -71,6 +71,12 @@ layout_mode = 2
 flat = true
 text = "Khóa học"
 
+[node name="BtnRoom" type="Button" parent="Root/Sidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+flat = true
+text = "Phòng ảo"
+
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV"]
 custom_minimum_size = Vector2(220, 140)
 layout_mode = 2
@@ -575,6 +581,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 flat = true
 text = "Khóa học"
+
+[node name="BtnRoomMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Phòng ảo"
 
 [node name="BtnSongsMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
 layout_mode = 2

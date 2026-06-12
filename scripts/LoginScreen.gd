@@ -21,9 +21,14 @@ const FP := "Center/Card/CardMargin/ContentVBox/"
 @onready var logo_rect      : TextureRect    = get_node(FP + "LogoVBox/LogoRect")
 @onready var app_name       : Label          = get_node(FP + "LogoVBox/AppName")
 @onready var app_sub        : Label          = get_node(FP + "LogoVBox/AppSub")
+@onready var name_edit     : LineEdit       = get_node(FP + "NameEdit")
+@onready var gap_name      : Control        = get_node(FP + "GapName")
 @onready var email_edit     : LineEdit       = get_node(FP + "EmailEdit")
 @onready var error_label    : Label          = get_node(FP + "ErrorLabel")
 @onready var sign_in_btn    : Button         = get_node(FP + "SignInBtn")
+@onready var toggle_mode_btn: Button         = get_node(FP + "ToggleModeBtn")
+
+var is_register_mode := false
 @onready var google_btn     : Button         = get_node(FP + "SocialRow/GoogleVBox/GoogleBtn")
 @onready var guest_btn      : Button         = get_node(FP + "SocialRow/GuestVBox/GuestBtn")
 @onready var or_label       : Label          = get_node(FP + "DivRow/OrLabel")
@@ -34,6 +39,8 @@ const FP := "Center/Card/CardMargin/ContentVBox/"
 @onready var particle_layer : Control        = $ParticleLayer
 
 func _ready() -> void:
+	name_edit.visible = false
+	gap_name.visible = false
 	_style_card()
 	_style_all()
 	_connect_all()
@@ -195,15 +202,22 @@ func _style_all() -> void:
 	google_lbl.add_theme_color_override("font_color",  Color(0.43, 0.38, 0.33, 1.0))
 	guest_lbl.add_theme_color_override("font_color",   Color(0.43, 0.38, 0.33, 1.0))
 
-	# Email: Light warm glass pill
+	# Name & Email: Light warm glass pill
 	var ei_n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(0.13, 0.08, 0.05, 0.15), 28)
 	var ei_f := _pill(Color(1.00, 1.00, 1.00, 1.00),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
 	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
 	email_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
 	email_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
 	email_edit.add_theme_color_override("caret_color",       C_GOLD)
+
+	name_edit.add_theme_stylebox_override("normal", ei_n)
+	name_edit.add_theme_stylebox_override("focus",  ei_f)
+	name_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	name_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	name_edit.add_theme_color_override("caret_color",       C_GOLD)
 
 	# Nút Đăng nhập: Vàng đồng rực rỡ
 	var si_n := _pill(C_GOLD,                 Color(0,0,0,0), 28)
@@ -218,6 +232,15 @@ func _style_all() -> void:
 	sign_in_btn.add_theme_color_override("font_color",         C_GOLD_DARK)
 	sign_in_btn.add_theme_color_override("font_hover_color",   C_GOLD_DARK)
 	sign_in_btn.add_theme_color_override("font_pressed_color", C_GOLD_DARK)
+
+	# Nút Chuyển chế độ: Flat link button
+	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))
+	toggle_mode_btn.add_theme_color_override("font_hover_color",   C_PETAL_1)
+	toggle_mode_btn.add_theme_color_override("font_pressed_color", C_PETAL_2)
+	toggle_mode_btn.add_theme_stylebox_override("normal",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("hover",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("pressed", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	# Social buttons: Social pills sáng màu
 	_style_social(google_btn)
@@ -246,11 +269,37 @@ func _style_social(btn: Button) -> void:
 func _connect_all() -> void:
 	sign_in_btn.pressed.connect(_on_sign_in)
 	email_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
-	google_btn.pressed.connect(_go_main)
-	guest_btn.pressed.connect(_go_main)
+	name_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
+	toggle_mode_btn.pressed.connect(_on_toggle_mode)
+	google_btn.pressed.connect(_on_google_pressed)
+	guest_btn.pressed.connect(_on_guest_pressed)
 	_make_bouncy(sign_in_btn)
 	_make_bouncy(google_btn)
 	_make_bouncy(guest_btn)
+	_make_bouncy(toggle_mode_btn)
+
+func _on_toggle_mode() -> void:
+	is_register_mode = not is_register_mode
+	if is_register_mode:
+		name_edit.visible = true
+		gap_name.visible = true
+		name_edit.modulate.a = 0.0
+		name_edit.scale = Vector2(0.95, 0.95)
+		var t := create_tween().set_parallel(true)
+		t.tween_property(name_edit, "modulate:a", 1.0, 0.15)
+		t.tween_property(name_edit, "scale", Vector2.ONE, 0.15)
+		sign_in_btn.text = "ĐĂNG KÝ"
+		toggle_mode_btn.text = "Đã có tài khoản? Đăng nhập"
+	else:
+		var t := create_tween().set_parallel(true)
+		t.tween_property(name_edit, "modulate:a", 0.0, 0.1)
+		t.tween_property(name_edit, "scale", Vector2(0.95, 0.95), 0.1)
+		t.chain().tween_callback(func() -> void:
+			name_edit.visible = false
+			gap_name.visible = false
+		)
+		sign_in_btn.text = "ĐĂNG NHẬP"
+		toggle_mode_btn.text = "Chưa có tài khoản? Đăng ký ngay"
 
 func _on_sign_in() -> void:
 	var em := email_edit.text.strip_edges()
@@ -259,10 +308,50 @@ func _on_sign_in() -> void:
 		error_label.text = "Vui lòng nhập đúng định dạng email"
 		_shake(email_edit)
 		return
+	
+	if is_register_mode:
+		var nm := name_edit.text.strip_edges()
+		if nm.length() < 2:
+			error_label.add_theme_color_override("font_color", C_ERR)
+			error_label.text = "Tên hiển thị phải có ít nhất 2 ký tự"
+			_shake(name_edit)
+			return
+		SecureDataManager.data["user_name"] = nm
+		SecureDataManager.data["user_email"] = em
+		SecureDataManager.save_data()
+	else:
+		# Login mode: check if we already have this user registered.
+		# If yes, keep their name. If not, auto-register them using their email prefix!
+		var saved_email = SecureDataManager.data.get("user_email", "")
+		if em.to_lower() == saved_email.to_lower():
+			# Keep existing user name
+			pass
+		else:
+			# Auto-register new email: prefix from email
+			var prefix := em.split("@")[0]
+			var nm := prefix.capitalize()
+			SecureDataManager.data["user_name"] = nm
+			SecureDataManager.data["user_email"] = em
+			SecureDataManager.save_data()
+			
 	error_label.add_theme_color_override("font_color", C_GREEN_OK)
 	error_label.text = "Chào mừng!"
 	sign_in_btn.disabled = true
 	email_edit.editable  = false
+	if is_register_mode:
+		name_edit.editable = false
+	_go_main()
+
+func _on_google_pressed() -> void:
+	SecureDataManager.data["user_name"] = "Google User"
+	SecureDataManager.data["user_email"] = "google.user@gmail.com"
+	SecureDataManager.save_data()
+	_go_main()
+
+func _on_guest_pressed() -> void:
+	SecureDataManager.data["user_name"] = "Khách"
+	SecureDataManager.data["user_email"] = "khach@vietstage.vn"
+	SecureDataManager.save_data()
 	_go_main()
 
 func _go_main() -> void:

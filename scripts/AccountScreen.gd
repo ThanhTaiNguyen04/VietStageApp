@@ -39,6 +39,13 @@ func _ready() -> void:
 	_make_button_bouncy(back_btn)
 	_make_button_bouncy(logout_btn)
 	
+	name_edit.text_submitted.connect(func(new_name: String) -> void:
+		_save_profile_name(new_name)
+	)
+	name_edit.focus_exited.connect(func() -> void:
+		_save_profile_name(name_edit.text)
+	)
+	
 	# Connect Status Pill to toggle premium
 	var status_pill := $Root/Content/LeftCard/LeftM/LeftV/StatusPill as PanelContainer
 	status_pill.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -61,9 +68,15 @@ func _ready() -> void:
 
 func _set_labels() -> void:
 	page_title.text = "Tài Khoản Của Tôi"
-	name_edit.text = "Linh"
-	email_lbl.text = "linh.vietstage@gmail.com"
+	name_edit.text = SecureDataManager.data.get("user_name", "Linh")
+	email_lbl.text = SecureDataManager.data.get("user_email", "linh.vietstage@gmail.com")
 	_update_premium_status()
+
+func _save_profile_name(new_name: String) -> void:
+	var nm := new_name.strip_edges()
+	if nm.length() >= 2:
+		SecureDataManager.data["user_name"] = nm
+		SecureDataManager.save_data()
 	logout_btn.text = "Đăng Xuất"
 	stats_title.text = "Thông Tin & Tiến Trình Học"
 	ver_label.text = "VietStage v1.0.0 · Đồ Án Tốt Nghiệp · Khoa CNTT"
