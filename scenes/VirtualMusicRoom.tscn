@@ -73,21 +73,6 @@ offset_right = 920.0
 offset_bottom = 680.0
 flat = true
 
-[node name="StationBookshelf" type="Button" parent="RoomContent"]
-layout_mode = 0
-offset_left = 180.0
-offset_top = 180.0
-offset_right = 330.0
-offset_bottom = 350.0
-flat = true
-
-[node name="StationLeaderboard" type="Button" parent="RoomContent"]
-layout_mode = 0
-offset_left = 870.0
-offset_top = 180.0
-offset_right = 1020.0
-offset_bottom = 350.0
-flat = true
 
 [node name="CharLinh" type="Control" parent="RoomContent"]
 layout_mode = 0
@@ -119,25 +104,6 @@ text = "Ấn [E] để tương tác"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SpeechBubble" type="PanelContainer" parent="RoomContent"]
-layout_mode = 0
-offset_left = 420.0
-offset_top = 80.0
-offset_right = 780.0
-offset_bottom = 190.0
-
-[node name="Margin" type="MarginContainer" parent="RoomContent/SpeechBubble"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="Text" type="Label" parent="RoomContent/SpeechBubble/Margin"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Chào mừng bạn đến với Phòng Nhạc Ảo 2.5D! Hãy chọn một nhạc cụ để bắt đầu tập luyện nhé."
-autowrap_mode = 3
 
 [node name="StationTooltip" type="PanelContainer" parent="RoomContent"]
 visible = false
@@ -343,7 +309,7 @@ theme_override_constants/separation = 16
 [node name="PopupTitle" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Cận Cảnh Nhạc Cụ"
+text = "Giới Thiệu Nhạc Cụ"
 horizontal_alignment = 1
 
 [node name="TabHBox" type="HBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent"]

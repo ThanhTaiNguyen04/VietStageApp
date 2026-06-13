@@ -83,6 +83,10 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
 
+	btn_room.hide()
+	btn_room_mob.hide()
+	avatar_circle.hide()
+
 func _process(delta: float) -> void:
 	_time += delta
 	bg_canvas.queue_redraw()

@@ -87,6 +87,9 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
+	
+	btn_room.hide()
+	btn_room_mob.hide()
 
 func _process(delta: float) -> void:
 	# Gentle breathing scale animation on active lesson node
