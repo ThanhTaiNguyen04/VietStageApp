@@ -141,6 +141,7 @@ const SONGS_DATA := [
 # ─── Filtering State ──────────────────────────────────────────────────────────
 var current_filter := "all"
 var search_text := ""
+var _sidebar_icons_cache := {}
 
 func _ready() -> void:
 	_build_theme()
@@ -271,8 +272,11 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		6: tex_name = "room"
 	
 	var texture : Texture2D = null
-	if tex_name != "":
+	if _sidebar_icons_cache.has(t):
+		texture = _sidebar_icons_cache[t]
+	elif tex_name != "":
 		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
+		_sidebar_icons_cache[t] = texture
 	
 	if texture:
 		var icon_sz := Vector2(36, 36)
@@ -282,7 +286,13 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		c.draw_texture_rect(texture, rect, false, col)
 	
 	if is_locked:
-		var lock_tex := load("res://assets/textures/icons8/lock.png") as Texture2D
+		var lock_tex : Texture2D = null
+		if _sidebar_icons_cache.has("lock"):
+			lock_tex = _sidebar_icons_cache["lock"]
+		else:
+			lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
+			_sidebar_icons_cache["lock"] = lock_tex
+			
 		if lock_tex:
 			var lx := cx + 10.0
 			var ly := cy + 8.0

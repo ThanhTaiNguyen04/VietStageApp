@@ -145,6 +145,18 @@ placeholder_text = "Email của bạn"
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
+[node name="PasswordEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+secret = true
+placeholder_text = "Mật khẩu của bạn"
+
+[node name="GapPassword" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
 [node name="ErrorLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 22)
 layout_mode = 2

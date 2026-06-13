@@ -75,7 +75,7 @@ text = "Khóa học"
 custom_minimum_size = Vector2(220, 140)
 layout_mode = 2
 flat = true
-text = "Phòng ảo"
+text = "Phòng nhạc"
 
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV"]
 custom_minimum_size = Vector2(220, 140)
@@ -586,7 +586,7 @@ text = "Khóa học"
 layout_mode = 2
 size_flags_horizontal = 3
 flat = true
-text = "Phòng ảo"
+text = "Phòng nhạc"
 
 [node name="BtnSongsMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
 layout_mode = 2

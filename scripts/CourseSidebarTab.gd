@@ -41,7 +41,7 @@ func _ready() -> void:
 		text = "Hồ sơ"
 		add_theme_font_size_override("font_size", 24)
 	elif current_type == TabType.ROOM:
-		text = "Phòng ảo"
+		text = "Phòng nhạc"
 		add_theme_font_size_override("font_size", 24)
 	elif current_type == TabType.MENU:
 		text = "" # No text for menu button, just custom drawn lines!

@@ -24,6 +24,7 @@ const FP := "Center/Card/CardMargin/ContentVBox/"
 @onready var name_edit     : LineEdit       = get_node(FP + "NameEdit")
 @onready var gap_name      : Control        = get_node(FP + "GapName")
 @onready var email_edit     : LineEdit       = get_node(FP + "EmailEdit")
+@onready var password_edit  : LineEdit       = get_node(FP + "PasswordEdit")
 @onready var error_label    : Label          = get_node(FP + "ErrorLabel")
 @onready var sign_in_btn    : Button         = get_node(FP + "SignInBtn")
 @onready var toggle_mode_btn: Button         = get_node(FP + "ToggleModeBtn")
@@ -219,6 +220,12 @@ func _style_all() -> void:
 	name_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
 	name_edit.add_theme_color_override("caret_color",       C_GOLD)
 
+	password_edit.add_theme_stylebox_override("normal", ei_n)
+	password_edit.add_theme_stylebox_override("focus",  ei_f)
+	password_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	password_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	password_edit.add_theme_color_override("caret_color",       C_GOLD)
+
 	# Nút Đăng nhập: Vàng đồng rực rỡ
 	var si_n := _pill(C_GOLD,                 Color(0,0,0,0), 28)
 	var si_h := _pill(C_GOLD_LT,              Color(0,0,0,0), 28)
@@ -269,6 +276,7 @@ func _style_social(btn: Button) -> void:
 func _connect_all() -> void:
 	sign_in_btn.pressed.connect(_on_sign_in)
 	email_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
+	password_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
 	name_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
 	toggle_mode_btn.pressed.connect(_on_toggle_mode)
 	google_btn.pressed.connect(_on_google_pressed)
@@ -308,6 +316,13 @@ func _on_sign_in() -> void:
 		error_label.text = "Vui lòng nhập đúng định dạng email"
 		_shake(email_edit)
 		return
+		
+	var pw := password_edit.text.strip_edges()
+	if pw.length() < 6:
+		error_label.add_theme_color_override("font_color", C_ERR)
+		error_label.text = "Mật khẩu phải có ít nhất 6 ký tự"
+		_shake(password_edit)
+		return
 	
 	if is_register_mode:
 		var nm := name_edit.text.strip_edges()
@@ -338,6 +353,7 @@ func _on_sign_in() -> void:
 	error_label.text = "Chào mừng!"
 	sign_in_btn.disabled = true
 	email_edit.editable  = false
+	password_edit.editable = false
 	if is_register_mode:
 		name_edit.editable = false
 	_go_main()
@@ -358,7 +374,7 @@ func _go_main() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.40).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+		get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
 
 # ── Hiệu ứng lắc khi nhập sai ────────────────────────────────────────────────
 func _shake(node: Control) -> void:

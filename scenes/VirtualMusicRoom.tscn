@@ -96,12 +96,6 @@ offset_top = 220.0
 offset_right = 680.0
 offset_bottom = 380.0
 
-[node name="PlayerChar" type="Control" parent="RoomContent"]
-layout_mode = 0
-offset_left = 600.0
-offset_top = 480.0
-offset_right = 680.0
-offset_bottom = 580.0
 
 [node name="InteractPrompt" type="PanelContainer" parent="RoomContent"]
 visible = false
@@ -165,6 +159,17 @@ vertical_alignment = 1
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
+[node name="BtnBack" type="Button" parent="HUD"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 3
+anchors_preset = 0
+offset_left = 32.0
+offset_top = 32.0
+offset_right = 192.0
+offset_bottom = 80.0
+theme_override_font_sizes/font_size = 14
+text = "← QUAY LẠI"
+
 [node name="Root" type="HBoxContainer" parent="HUD"]
 anchors_preset = 15
 anchor_right = 1.0
@@ -209,7 +214,7 @@ text = "Khóa học"
 custom_minimum_size = Vector2(220, 140)
 layout_mode = 2
 flat = true
-text = "Phòng ảo"
+text = "Phòng nhạc"
 
 [node name="BtnSongs" type="Button" parent="HUD/Root/Sidebar/SideM/SideV"]
 custom_minimum_size = Vector2(220, 140)
@@ -268,7 +273,7 @@ text = "Khóa học"
 layout_mode = 2
 size_flags_horizontal = 3
 flat = true
-text = "Phòng ảo"
+text = "Phòng nhạc"
 
 [node name="BtnSongsMobile" type="Button" parent="HUD/Root/RightSpacer/BottomBar/BottomM/BottomH"]
 layout_mode = 2
