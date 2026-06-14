@@ -5,6 +5,7 @@ static var selected_instrument := "dan_tranh"
 
 const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
 const C_GOLD_LT   := Color(1.00, 0.87, 0.45, 1.0)
+const C_RED_SON   := Color(0.70, 0.12, 0.08, 1.0)
 const C_JADE       := Color(0.12, 0.37, 0.23, 1.0) # Standard dark jade
 const C_JADE_LIGHT := Color(0.22, 0.86, 0.55, 1.0) # Standard light jade
 const C_JADE_LT    := Color(0.42, 0.95, 0.70, 1.0) # Sage/mint overlay
@@ -31,6 +32,10 @@ func _ready() -> void:
 	var st_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox/STBtn as Button
 	st_btn.pressed.connect(_go_practice_sao)
 	_make_bouncy(st_btn)
+
+	var db_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox/DBBtn as Button
+	db_btn.pressed.connect(_go_practice_bau)
+	_make_bouncy(db_btn)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
@@ -310,60 +315,76 @@ func _draw_sao_truc(c: Control, ac: Color) -> void:
 	c.draw_arc(end_cap, hw * 0.95, 0, TAU, 24,
 		Color(ac.r, ac.g, ac.b, 0.40), 1.5)
 
-# ── Đàn Bầu illustration (locked, dim) ───────────────────────────────────────
+# ── Đàn Bầu illustration ──────────────────────────────────────────────────────
 func _draw_dan_bau(c: Control, ac: Color) -> void:
 	var w := c.size.x; var h := c.size.y
 	var cx := w * 0.50; var cy := h * 0.54
 
-	# Faint glow
-	c.draw_circle(Vector2(cx, cy), h * 0.38, Color(ac.r, ac.g, ac.b, 0.025))
+	# Deep warm ambient glow
+	for i in range(5):
+		var r := h * (0.55 - i * 0.07)
+		c.draw_circle(Vector2(cx, cy), r, Color(ac.r, ac.g, ac.b, 0.022))
 
-	# Resonator box (rectangular body)
-	var bw := w * 0.60; var bh := h * 0.22
+	# Drop shadow beneath zither body
+	for i in range(3):
+		c.draw_rect(Rect2(cx - w*0.30, cy + h*0.09 + i*4, w*0.60, 10.0), Color(0, 0, 0, 0.15))
+
+	# Resonator box (rectangular body) - rich dark rosewood
+	var bw := w * 0.62; var bh := h * 0.20
 	var box_pts := PackedVector2Array([
 		Vector2(cx - bw/2, cy + bh/2),
 		Vector2(cx + bw/2, cy + bh/2),
-		Vector2(cx + bw/2, cy - bh/2),
-		Vector2(cx - bw/2, cy - bh/2),
+		Vector2(cx + bw/2 - 20, cy - bh/2),
+		Vector2(cx - bw/2 + 20, cy - bh/2),
 	])
-	c.draw_colored_polygon(box_pts, Color(0.20, 0.14, 0.08, 0.35))
+	c.draw_colored_polygon(box_pts, Color(0.24, 0.11, 0.04, 0.95)) # mahogany wood
+	
+	# Wood grain details
+	for i in range(5):
+		var t := float(i) / 4.0
+		var gy := (cy - bh/2 + 4) + t * (bh - 8)
+		var lx := cx - bw/2 + 20.0 + (1.0 - t)*5.0
+		var rx := cx + bw/2 - 20.0 - (1.0 - t)*5.0
+		c.draw_line(Vector2(lx, gy), Vector2(rx, gy), Color(0.55, 0.28, 0.10, 0.12), 1.0)
+
+	# Traditional gold/ivory border outlines
 	for i in range(4):
-		c.draw_line(box_pts[i], box_pts[(i+1)%4],
-			Color(ac.r, ac.g, ac.b, 0.22), 1.5)
+		c.draw_line(box_pts[i], box_pts[(i+1)%4], Color(0.95, 0.72, 0.18, 0.85), 2.0)
 
-	# Sound hole on box
-	c.draw_circle(Vector2(cx, cy), 12.0, Color(0.04, 0.03, 0.08, 0.60))
-	c.draw_arc(Vector2(cx, cy), 12.0, 0, TAU, 24,
-		Color(ac.r, ac.g, ac.b, 0.22), 1.2)
+	# Sound hole on box - shiny gold bordered circle
+	c.draw_circle(Vector2(cx, cy), 13.0, Color(0.04, 0.02, 0.01, 0.98))
+	c.draw_arc(Vector2(cx, cy), 13.0, 0, TAU, 24, Color(0.95, 0.72, 0.18, 0.75), 1.5)
 
-	# Neck / cần đàn (vertical rod from box top)
+	# Neck / cần đàn - curved black buffalo horn rod on the left
 	var neck_x := cx - bw * 0.38
-	c.draw_line(Vector2(neck_x, cy - bh/2), Vector2(neck_x, cy - h*0.32),
-		Color(ac.r, ac.g, ac.b, 0.22), 7.0)
+	var rod_start := Vector2(neck_x, cy + bh * 0.2)
+	var rod_control := Vector2(neck_x - 30.0, cy - h*0.1)
+	var rod_end := Vector2(neck_x - 15.0, cy - h*0.35)
+	
+	# Draw horn rod as a thick curve
+	var curve_pts := PackedVector2Array()
+	for k in range(16):
+		var t := float(k)/15.0
+		var p_t := (1.0-t)*(1.0-t)*rod_start + 2.0*(1.0-t)*t*rod_control + t*t*rod_end
+		curve_pts.append(p_t)
+	c.draw_polyline(curve_pts, Color(0.12, 0.12, 0.12, 1.0), 6.0, true)
 
-	# Tuning peg
-	c.draw_circle(Vector2(neck_x, cy - h*0.33), 6.0,
-		Color(ac.r, ac.g, ac.b, 0.22))
+	# Golden Gourd (Bầu) at the end of the horn rod
+	var gourd_center := rod_end
+	c.draw_circle(gourd_center, 10.0, Color(0.77, 0.58, 0.15))
+	c.draw_circle(gourd_center + Vector2(0, -6.0), 7.0, Color(0.77, 0.58, 0.15))
+	c.draw_circle(gourd_center, 4.0, Color(0.95, 0.82, 0.45)) # highlight
 
-	# Single string (horizontal across box)
-	var str_y := cy - bh * 0.10
-	c.draw_line(Vector2(cx - bw/2 - 20, str_y), Vector2(cx + bw/2 + 20, str_y),
-		Color(ac.r, ac.g, ac.b, 0.28), 1.5)
-
-	# Viet Tuong (đầu cần uốn cong)
-	c.draw_arc(Vector2(neck_x + 18, cy - h*0.28), 18, deg_to_rad(150), deg_to_rad(340),
-		16, Color(ac.r, ac.g, ac.b, 0.22), 5.0)
-
-	# "Sắp ra mắt" ghost text
-	var lbl := Label.new()
-	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	lbl.text = "Sắp\nra mắt"
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", 28)
-	lbl.add_theme_color_override("font_color", Color(ac.r, ac.g, ac.b, 0.18))
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	c.add_child(lbl)
+	# Single golden string running from the gourd to the right block
+	var str_start := gourd_center
+	var str_end := Vector2(cx + bw * 0.45, cy + bh * 0.1)
+	
+	# Shadow of the string
+	c.draw_line(str_start + Vector2(0, 3.0), str_end + Vector2(0, 3.0), Color(0.0, 0.0, 0.0, 0.25), 1.0)
+	# Glowing aura of string
+	c.draw_line(str_start, str_end, Color(0.95, 0.72, 0.18, 0.2), 3.0)
+	# String core
+	c.draw_line(str_start, str_end, Color(0.95, 0.82, 0.45, 1.0), 1.5)
 
 # ── Card theming ──────────────────────────────────────────────────────────────
 func _build_theme() -> void:
@@ -393,9 +414,11 @@ func _build_theme() -> void:
 		Color(1.0, 1.0, 1.0, 0.95), Color(C_JADE_LIGHT.r, C_JADE_LIGHT.g, C_JADE_LIGHT.b, 0.25),
 		C_JADE_LIGHT, C_JADE, "STBar", "STBtn", "STPct")
 
-	_style_card_locked(
+	_style_card(
 		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau,
-		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox)
+		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
+		Color(1.0, 1.0, 1.0, 0.95), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25),
+		C_RED_SON, C_RED_SON, "DBBar", "DBBtn", "DBPct")
 
 	# Custom scrollbar styling
 	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
@@ -538,6 +561,12 @@ func _go_practice_tranh() -> void:
 func _go_practice_sao() -> void:
 	selected_instrument = "sao_truc"
 	SecureDataManager.data["selected_instrument"] = "sao_truc"
+	SecureDataManager.save_data()
+	_fade_to("res://scenes/MainMenu.tscn")
+
+func _go_practice_bau() -> void:
+	selected_instrument = "dan_bau"
+	SecureDataManager.data["selected_instrument"] = "dan_bau"
 	SecureDataManager.save_data()
 	_fade_to("res://scenes/MainMenu.tscn")
 

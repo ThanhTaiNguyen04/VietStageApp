@@ -148,6 +148,12 @@ func _set_labels() -> void:
 		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Nhấn & Rung"
 		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Song Thanh"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
+	elif inst == "dan_bau":
+		course_title.text = "Khóa Học Đàn Bầu Cơ Bản"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hài Âm Cơ Bản"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Uốn Vòi Đàn"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Luyến Láy"
+		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 	else:
 		course_title.text = "Khóa Học Sáo Trúc Cơ Bản"
 		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hơi & Che Lỗ"
@@ -610,7 +616,13 @@ func _go_video_lesson() -> void:
 
 func _go_practice_room() -> void:
 	var inst := InstrumentSelect.selected_instrument
-	var path := "res://scenes/PracticeRoom.tscn" if inst == "dan_tranh" else "res://scenes/PracticeSaoTruc.tscn"
+	var path := "res://scenes/PracticeRoom.tscn"
+	if inst == "dan_tranh":
+		path = "res://scenes/PracticeRoom.tscn"
+	elif inst == "dan_bau":
+		path = "res://scenes/PracticeDanBau.tscn"
+	else:
+		path = "res://scenes/PracticeSaoTruc.tscn"
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))

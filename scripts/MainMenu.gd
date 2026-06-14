@@ -519,7 +519,7 @@ func _build_roadmap_cards() -> void:
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
 
-	if is_tranh:
+	if instrument == "dan_tranh":
 		# Lộ trình Đàn Tranh
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
@@ -546,6 +546,33 @@ func _build_roadmap_cards() -> void:
 		
 		pop_chords_title.text = "Đệm Hát Hiện Đại"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Đất Phương Nam (Đệm hát)\n✓ Nhạc Pop & Quê hương trữ tình"
+	elif instrument == "dan_bau":
+		# Lộ trình Đàn Bầu
+		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
+		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
+		
+		basic_title.text = "Nhập Môn Đàn Bầu"
+		basic_desc.text = "Học tư thế ngồi, cách cầm que gảy và gảy các âm bồi/hài âm cơ bản trên một dây."
+		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 40% Hoàn Thành"
+		
+		ess_title.text = "Kỹ Thuật Uốn Cần"
+		ess_desc.text = "Luyện kỹ thuật uốn cần đàn luyến láy để thay đổi cao độ tiếng đàn ngân nga."
+		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		
+		soloist_unlock_title.text = "Độc Tấu"
+		chords_unlock_title.text = "Đệm Hát"
+		
+		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
+		soloist_skills_bullets.text = "✓ Kỹ thuật Hài âm nâng cao\n✓ Rung cần tạo ngân rung sâu\n✓ Đọc nhạc phổ Độc huyền cầm"
+		
+		chords_skills_title.text = "Đệm Hát Đàn Bầu"
+		chords_skills_bullets.text = "✓ Cách uốn nốt theo lời ca\n✓ Đệm các làn điệu dân ca cổ\n✓ Kỹ thuật luyến láy lướt âm"
+		
+		classical_title.text = "Nhạc Cổ Truyền"
+		classical_desc.text = "✓ Dạ Cổ Hoài Lang (Đàn Bầu)\n✓ Làn điệu cổ truyền Bắc Bộ\n✓ Độc tấu nhạc cổ điệu da diết"
+		
+		pop_chords_title.text = "Đệm Hát Quê Hương"
+		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Trống Cơm / Lý Kéo Chài\n✓ Nhạc quê hương & trữ tình sâu lắng"
 	else:
 		# Lộ trình Sáo Trúc
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -786,6 +813,8 @@ func _go_practice() -> void:
 	var instrument : String = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	if instrument == "dan_tranh":
 		_fade_to("res://scenes/PracticeRoom.tscn")
+	elif instrument == "dan_bau":
+		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 

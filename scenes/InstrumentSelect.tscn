@@ -281,17 +281,21 @@ autowrap_mode = 3
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="DBComingSoon" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+[node name="DBBar" type="ProgressBar" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+value = 0.0
+show_percentage = false
+
+[node name="DBPct" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 13
-text = "Sắp ra mắt"
-horizontal_alignment = 1
+text = "Chưa bắt đầu"
 
 [node name="DBBtn" type="Button" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
 custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 18
-text = "Sắp Ra Mắt"
-disabled = true
+text = "Bắt đầu"

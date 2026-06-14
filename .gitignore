@@ -1,3 +1,9 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Temporary check & log files
+godot_check.txt
+godot_check_err.txt
+godot_temp.log
+.sconsign.dblite

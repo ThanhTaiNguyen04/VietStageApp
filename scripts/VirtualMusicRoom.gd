@@ -30,19 +30,6 @@ const C_JADE        := Color(0.12, 0.37, 0.23, 1.0) # bamboo jade green
 @onready var s_trong       : Button         = $RoomContent/StationTrong
 
 # Navigation
-@onready var sidebar       : PanelContainer = $HUD/Root/Sidebar
-@onready var btn_menu      : Button         = $HUD/Root/Sidebar/SideM/SideV/BtnMenu
-@onready var btn_courses   : Button         = $HUD/Root/Sidebar/SideM/SideV/BtnCourses
-@onready var btn_room      : Button         = $HUD/Root/Sidebar/SideM/SideV/BtnRoom
-@onready var btn_songs     : Button         = $HUD/Root/Sidebar/SideM/SideV/BtnSongs
-@onready var btn_account   : Button         = $HUD/Root/Sidebar/SideM/SideV/BtnAccount
-@onready var btn_collapse  : Button         = $HUD/Root/Sidebar/SideM/SideV/BtnCollapse
-
-@onready var bottom_bar      : PanelContainer = $HUD/Root/RightSpacer/BottomBar
-@onready var btn_courses_mob : Button         = $HUD/Root/RightSpacer/BottomBar/BottomM/BottomH/BtnCoursesMobile
-@onready var btn_room_mob    : Button         = $HUD/Root/RightSpacer/BottomBar/BottomM/BottomH/BtnRoomMobile
-@onready var btn_songs_mob   : Button         = $HUD/Root/RightSpacer/BottomBar/BottomM/BottomH/BtnSongsMobile
-@onready var btn_account_mob : Button         = $HUD/Root/RightSpacer/BottomBar/BottomM/BottomH/BtnAccountMobile
 @onready var btn_back        : Button         = $HUD/BtnBack
 
 # Focus Mode Popup
@@ -65,8 +52,7 @@ var _time : float = 0.0
 var _hovered_station : String = ""
 var _linh_base_y : float = 220.0
 var _speech_timer : float = 0.0
-var _sidebar_collapsed : bool = false
-var _sidebar_icons_cache := {}
+
 var _current_popup_instrument : String = ""
 
 var _linh_is_moving : bool = false
@@ -91,6 +77,13 @@ const LINH_TIPS := [
 ]
 
 func _ready() -> void:
+	# Reset anchors to Top-Left to allow manual absolute positioning in _on_viewport_size_changed()
+	room_content.anchor_left = 0.0
+	room_content.anchor_top = 0.0
+	room_content.anchor_right = 0.0
+	room_content.anchor_bottom = 0.0
+	room_content.size = Vector2(1200, 800)
+
 	SecureDataManager.load_data()
 	_tex_tranh = load("res://image/dan_tranh.jpg") as Texture2D
 	_tex_sao = load("res://image/sao_truc.jpg") as Texture2D
@@ -139,14 +132,7 @@ func _ready() -> void:
 	diagram_theory.draw.connect(_draw_diagram_theory.bind(diagram_theory))
 	diagram_fingering.draw.connect(_draw_diagram_fingering.bind(diagram_fingering))
 	
-	# Sidebar Collapse
-	btn_collapse.pressed.connect(_on_sidebar_collapse_toggled)
-	_make_btn_bouncy(btn_collapse)
-	
-	# Connect HUD Navigation Buttons
-	_build_sidebar()
-	_build_bottom_bar()
-	_connect_hud_buttons()
+
 	
 	# Setup Tooltip Box Style
 	station_tooltip.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, C_RED_SON, 12, true, 2))
@@ -180,7 +166,8 @@ func _ready() -> void:
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
 	
-	# Setup Back to Login button
+	# Setup Back button to return to Main Menu
+	btn_back.show()
 	_style_popup_button(btn_back, true)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
@@ -194,9 +181,6 @@ func _ready() -> void:
 	# Responsive connection
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-	
-	btn_room.hide()
-	btn_room_mob.hide()
 
 func _process(delta: float) -> void:
 	_time += delta
@@ -204,13 +188,22 @@ func _process(delta: float) -> void:
 	floor_canvas.queue_redraw()
 	char_linh.queue_redraw()
 	
-	# Update particles
+	# Update particles drift across visible widescreen boundaries
+	var rx := room_content.position.x
+	var ry := room_content.position.y
+	var scale := room_content.scale.x
+	var viewport_size : Vector2 = self.size
+	var left_bound : float = -rx / scale if scale > 0.0 else 0.0
+	var right_bound : float = (viewport_size.x - rx) / scale if scale > 0.0 else 1200.0
+	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
+	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
+
 	for p in _particles:
 		p.pos += p.speed * delta
 		p.rot += p.rot_speed * delta
-		if p.pos.y > 800 or p.pos.x < 0 or p.pos.x > 1200:
+		if p.pos.y > 800 or p.pos.x < left_bound or p.pos.x > right_bound:
 			p.pos.y = -50
-			p.pos.x = randf_range(0, 1200)
+			p.pos.x = randf_range(left_bound, right_bound)
 			p.speed.y = randf_range(50, 110)
 			p.speed.x = randf_range(-30, 30)
 
@@ -354,63 +347,7 @@ func _on_char_linh_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed:
 		_linh_talk(LINH_TIPS.pick_random())
 
-# ─── Sidebar Collapse ──────────────────────────────────────────────────────────
-func _on_sidebar_collapse_toggled() -> void:
-	_sidebar_collapsed = not _sidebar_collapsed
-	
-	# Animate sidebar width transition
-	var target_w : float = 80.0 if _sidebar_collapsed else 220.0
-	var t := create_tween().set_parallel(true)
-	t.tween_property(sidebar, "custom_minimum_size:x", target_w, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	t.tween_callback(func() -> void:
-		_update_sidebar_button_texts()
-		_on_viewport_size_changed()
-	).set_delay(0.12)
-	
-	# Arrow labels toggle
-	btn_collapse.text = "»" if _sidebar_collapsed else "Thu gọn"
-	
-	# Redraw icons in centered mode
-	for btn in [btn_menu, btn_courses, btn_room, btn_songs, btn_account, btn_collapse]:
-		var ic = btn.get_node_or_null("IconDraw") as Control
-		if ic:
-			if _sidebar_collapsed:
-				ic.offset_left = -20
-				ic.offset_right = 20
-			else:
-				ic.offset_left = -40
-				ic.offset_right = 40
-			ic.queue_redraw()
 
-func _update_sidebar_button_texts() -> void:
-	if _sidebar_collapsed:
-		btn_courses.text = ""
-		btn_room.text = ""
-		btn_songs.text = ""
-		btn_account.text = ""
-		
-		# Reset content margins in collapsed mode so icons align center
-		for btn in [btn_courses, btn_room, btn_songs, btn_account]:
-			for style_name in ["normal", "hover", "pressed", "focus", "disabled"]:
-				var sb = btn.get_theme_stylebox(style_name) as StyleBoxFlat
-				if sb:
-					var sb_dup = sb.duplicate() as StyleBoxFlat
-					sb_dup.content_margin_left = 12
-					btn.add_theme_stylebox_override(style_name, sb_dup)
-	else:
-		btn_courses.text = "Khóa học"
-		btn_room.text = "Phòng nhạc"
-		btn_songs.text = "Bài hát"
-		btn_account.text = "Hồ sơ"
-		
-		# Restore margins
-		for btn in [btn_courses, btn_room, btn_songs, btn_account]:
-			for style_name in ["normal", "hover", "pressed", "focus", "disabled"]:
-				var sb = btn.get_theme_stylebox(style_name) as StyleBoxFlat
-				if sb:
-					var sb_dup = sb.duplicate() as StyleBoxFlat
-					sb_dup.content_margin_left = 76
-					btn.add_theme_stylebox_override(style_name, sb_dup)
 
 # ─── Focus Mode Popup ──────────────────────────────────────────────────────────
 func _setup_focus_popup_controls() -> void:
@@ -443,6 +380,11 @@ func _setup_focus_popup_controls() -> void:
 			SecureDataManager.data["selected_instrument"] = "sao_truc"
 			SecureDataManager.save_data()
 			_fade_to("res://scenes/MainMenu.tscn")
+		elif _current_popup_instrument == "bau":
+			InstrumentSelect.selected_instrument = "dan_bau"
+			SecureDataManager.data["selected_instrument"] = "dan_bau"
+			SecureDataManager.save_data()
+			_fade_to("res://scenes/MainMenu.tscn")
 	)
 	
 	_make_btn_bouncy(btn_tab_theory)
@@ -472,7 +414,7 @@ func _open_focus_mode_popup(inst: String) -> void:
 		text_theory.text = "Đàn Bầu (Độc huyền cầm) chỉ sử dụng một dây tơ duy nhất căng trên thân tre gỗ. Các nốt nhạc được tạo ra bằng cách gảy vào các điểm hài âm và uốn vòi đàn để đổi cao độ."
 		text_fingering.text = "Tay phải: Dùng que gảy nhỏ gảy vào dây đồng thời chạm cạnh bàn tay vào điểm hài âm để tạo tiếng bầu trầm bổng.\nTay trái: Cầm vòi đàn uốn về phía trước (giảm cao độ) hoặc kéo về sau (tăng cao độ)."
 		btn_popup_play.visible = true
-		btn_popup_play.text = "SẮP RA MẮT" # locked
+		btn_popup_play.text = "VÀO HỌC"
 	elif inst == "trong":
 		popup_title.text = "Giới Thiệu Trống Chầu"
 		text_theory.text = "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền. Mặt trống bằng da bò căng chặt tạo tiếng vang đanh thép rực lửa."
@@ -526,7 +468,7 @@ func _style_popup_button(btn: Button, primary: bool) -> void:
 
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
-	var viewport_size := bg_canvas.get_viewport_rect().size
+	var viewport_size : Vector2 = self.size
 	# 1. Deep background — aged indigo/midnight tone
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.07, 0.05, 0.04))
 	
@@ -535,28 +477,39 @@ func _draw_room_background() -> void:
 	var sz := Vector2(1200, 800)
 	var wall_h := 310.0
 	
-	# ── 2. Wall: aged vermilion lacquer plaster ──────────────────────────────────
-	var wall_base := Color(0.42, 0.08, 0.05)  # deep cinnabar red
-	bg_canvas.draw_rect(Rect2(0, 0, sz.x, wall_h), wall_base)
+	# Calculate visible screen boundaries in transformed coordinates to stretch room background
+	var rx := room_content.position.x
+	var ry := room_content.position.y
+	var scale := room_content.scale.x
+	var left_bound : float = -rx / scale if scale > 0.0 else 0.0
+	var right_bound : float = (viewport_size.x - rx) / scale if scale > 0.0 else 1200.0
+	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
+	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
 	
-	# Subtle aged plaster texture — horizontal streaks of slightly lighter/darker tone
-	for i in range(0, int(wall_h), 8):
+	# ── 2. Wall: aged vermilion lacquer plaster (Stretched!) ──────────────────────
+	var wall_base := Color(0.42, 0.08, 0.05)  # deep cinnabar red
+	bg_canvas.draw_rect(Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound), wall_base)
+	
+	# Subtle aged plaster texture — horizontal streaks stretching across bounds
+	for i in range(int(top_bound), int(wall_h), 8):
 		var streak_a := 0.06 * sin(float(i) * 0.3 + _time * 0.1)
 		var streak_col := Color(0.45 + streak_a, 0.10, 0.06, 0.35)
-		bg_canvas.draw_line(Vector2(0, i), Vector2(sz.x, i), streak_col, 1.0)
+		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
 	
-	# ── 3. Ornate upper cornice (horizontal gilded beam) ─────────────────────────
+	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
 	var cornice_y := wall_h - 36.0
-	bg_canvas.draw_rect(Rect2(0, cornice_y, sz.x, 36), Color(0.22, 0.12, 0.05))
+	bg_canvas.draw_rect(Rect2(left_bound, cornice_y, right_bound - left_bound, 36), Color(0.22, 0.12, 0.05))
 	# Gold leaf trim lines
-	bg_canvas.draw_line(Vector2(0, cornice_y), Vector2(sz.x, cornice_y), C_GOLD, 3.0)
-	bg_canvas.draw_line(Vector2(0, cornice_y + 6), Vector2(sz.x, cornice_y + 6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 1.0)
-	bg_canvas.draw_line(Vector2(0, wall_h - 3), Vector2(sz.x, wall_h - 3), C_GOLD, 3.0)
-	# Cornice notches (decorative repeating motif)
-	for cx_n in range(60, int(sz.x), 80):
+	bg_canvas.draw_line(Vector2(left_bound, cornice_y), Vector2(right_bound, cornice_y), C_GOLD, 3.0)
+	bg_canvas.draw_line(Vector2(left_bound, cornice_y + 6), Vector2(right_bound, cornice_y + 6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 1.0)
+	bg_canvas.draw_line(Vector2(left_bound, wall_h - 3), Vector2(right_bound, wall_h - 3), C_GOLD, 3.0)
+	
+	# Cornice notches (repeating motif across bounds)
+	var start_notch : float = floor(left_bound / 80.0) * 80.0
+	for cx_n in range(start_notch, right_bound, 80.0):
 		bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
 	
-	# ── 4. Central hanging scroll calligraphy panel ───────────────────────────────
+	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
 	var scroll_w := 220.0
 	var scroll_h := 230.0
 	var scroll_x := (sz.x - scroll_w) / 2.0
@@ -598,7 +551,7 @@ func _draw_room_background() -> void:
 	bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
 	bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
-	# ── 5. Side column pillars (lacquered red wooden columns) ────────────────────
+	# ── 5. Side column pillars (lacquered red wooden columns - Remains Framed!) ──
 	for col_x in [60.0, sz.x - 80.0]:
 		# Column base shadow
 		bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.25))
@@ -635,29 +588,30 @@ func _draw_room_background() -> void:
 			var flen := 18.0 + sin(fi * 1.2 + _time * 2.0) * 4.0
 			bg_canvas.draw_line(Vector2(lan_x + fi * 4, lan_y + lh + 4), Vector2(lan_x + fi * 4 + sin(_time + fi) * 2, lan_y + lh + 4 + flen), Color(0.90, 0.65, 0.15, 0.85), 1.5)
 	
-	# ── 7. Dark lacquered hardwood floor with traditional mat pattern ─────────────
+	# ── 7. Dark lacquered hardwood floor (Stretched!) ─────────────────────────────
 	var floor_pts := PackedVector2Array([
-		Vector2(0, wall_h), Vector2(sz.x, wall_h),
-		Vector2(sz.x, sz.y), Vector2(0, sz.y)
+		Vector2(left_bound, wall_h), Vector2(right_bound, wall_h),
+		Vector2(right_bound, bottom_bound), Vector2(left_bound, bottom_bound)
 	])
 	bg_canvas.draw_colored_polygon(floor_pts, Color(0.22, 0.14, 0.07))  # dark teak wood
 	
-	# Horizontal plank grain lines
+	# Horizontal plank grain lines stretching across bounds
 	var plank_h := 26.0
-	for y_floor in range(int(wall_h), int(sz.y), int(plank_h)):
-		bg_canvas.draw_line(Vector2(0, y_floor), Vector2(sz.x, y_floor), Color(0.15, 0.09, 0.04, 0.7), 1.2)
+	for y_floor in range(int(wall_h), int(bottom_bound), int(plank_h)):
+		bg_canvas.draw_line(Vector2(left_bound, y_floor), Vector2(right_bound, y_floor), Color(0.15, 0.09, 0.04, 0.7), 1.2)
 		# Staggered joint
 		var joint_off := int(y_floor / plank_h) % 2 * 300
-		for x_j in range(joint_off, int(sz.x), 500):
+		var start_joint : float = floor((left_bound - joint_off) / 500.0) * 500.0 + joint_off
+		for x_j in range(start_joint, right_bound, 500.0):
 			bg_canvas.draw_line(Vector2(x_j, y_floor), Vector2(x_j, y_floor + plank_h), Color(0.15, 0.09, 0.04, 0.55), 1.0)
 		# Subtle lacquer sheen highlights
-		bg_canvas.draw_line(Vector2(0, y_floor + 3), Vector2(sz.x, y_floor + 3), Color(0.38, 0.25, 0.12, 0.12), 1.5)
+		bg_canvas.draw_line(Vector2(left_bound, y_floor + 3), Vector2(right_bound, y_floor + 3), Color(0.38, 0.25, 0.12, 0.12), 1.5)
 	
-	# Deep shadow at the base of the wall (adds 2.5D depth)
+	# Deep shadow at the base of the wall (Stretched!)
 	for j in range(30):
 		var y_pos := wall_h + j * 4.0
 		var alpha := (1.0 - float(j) / 30.0) * 0.75
-		bg_canvas.draw_line(Vector2(0, y_pos), Vector2(sz.x, y_pos), Color(0.04, 0.02, 0.01, alpha), 5.0)
+		bg_canvas.draw_line(Vector2(left_bound, y_pos), Vector2(right_bound, y_pos), Color(0.04, 0.02, 0.01, alpha), 5.0)
 	
 	# ── 8. Drifting golden dust motes (incense smoke atmosphere) ─────────────────
 	for p in _particles:
@@ -1168,201 +1122,6 @@ func _draw_diagram_fingering(c: Control) -> void:
 	else:
 		c.draw_string(font, Vector2(sz.x * 0.5 - 100, cy - 10), "HỆ THỐNG PHẦN THƯỞNG", HORIZONTAL_ALIGNMENT_CENTER, -1, 16, C_RED_DK)
 
-# ─── Navigation & HUD Sync ───────────────────────────────────────────────────
-func _build_sidebar() -> void:
-	var side_s := _flat_sb(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
-	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
-	side_s.border_width_right = 2
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	side_s.shadow_offset = Vector2(4, 0)
-	sidebar.add_theme_stylebox_override("panel", side_s)
-
-	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-	_style_side_icon_btn(btn_menu, false)
-	_style_side_icon_btn(btn_courses, false)
-	_style_side_icon_btn(btn_room, true)
-	_style_side_icon_btn(btn_songs, false, not is_prem)
-	_style_side_icon_btn(btn_account, false)
-	_style_side_icon_btn(btn_collapse, false)
-
-	_attach_side_icon_draw(btn_menu, 0)
-	_attach_side_icon_draw(btn_courses, 1)
-	_attach_side_icon_draw(btn_room, 6)
-	_attach_side_icon_draw(btn_songs, 2, not is_prem)
-	_attach_side_icon_draw(btn_account, 5)
-
-func _build_bottom_bar() -> void:
-	var bottom_s := _flat_sb(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
-	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
-	bottom_s.border_width_top = 2
-	bottom_s.shadow_size = 12
-	bottom_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	bottom_s.shadow_offset = Vector2(0, -4)
-	bottom_bar.add_theme_stylebox_override("panel", bottom_s)
-
-	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-	_style_bottom_icon_btn(btn_courses_mob, false)
-	_style_bottom_icon_btn(btn_room_mob, true)
-	_style_bottom_icon_btn(btn_songs_mob, false, not is_prem)
-	_style_bottom_icon_btn(btn_account_mob, false)
-
-	_attach_bottom_icon_draw(btn_courses_mob, 1)
-	_attach_bottom_icon_draw(btn_room_mob, 6)
-	_attach_bottom_icon_draw(btn_songs_mob, 2, not is_prem)
-	_attach_bottom_icon_draw(btn_account_mob, 5)
-
-func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat_sb(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
-	var bg_h := _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
-	var bg_p := _flat_sb(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
-
-	bg_n.content_margin_top = 96
-	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
-	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
-	bg_p.content_margin_bottom = 8
-	
-	# Adjust margin left based on collapse state
-	var ml = 12 if (_sidebar_collapsed and btn != btn_collapse) else 76
-	bg_n.content_margin_left = ml
-	bg_h.content_margin_left = ml
-	bg_p.content_margin_left = ml
-
-	if is_active:
-		bg_n.border_width_left = 6
-		bg_n.border_width_right = 0; bg_n.border_width_top = 0; bg_n.border_width_bottom = 0
-		bg_n.border_color = C_GOLD
-
-	btn.add_theme_stylebox_override("normal",  bg_n)
-	btn.add_theme_stylebox_override("hover",   bg_h)
-	btn.add_theme_stylebox_override("pressed", bg_p)
-	btn.add_theme_stylebox_override("focus",   _flat_sb(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
-	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
-	btn.add_theme_font_size_override("font_size", 22)
-
-func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat_sb(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
-	var bg_h := _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
-	var bg_p := _flat_sb(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
-
-	bg_n.content_margin_top = 42
-	bg_n.content_margin_bottom = 6
-	bg_h.content_margin_top = 42
-	bg_h.content_margin_bottom = 6
-	bg_p.content_margin_top = 42
-	bg_p.content_margin_bottom = 6
-
-	if is_active:
-		bg_n.border_width_top = 4
-		bg_n.border_width_left = 0; bg_n.border_width_right = 0; bg_n.border_width_bottom = 0
-		bg_n.border_color = C_GOLD
-
-	btn.add_theme_stylebox_override("normal",  bg_n)
-	btn.add_theme_stylebox_override("hover",   bg_h)
-	btn.add_theme_stylebox_override("pressed", bg_p)
-	btn.add_theme_stylebox_override("focus",   _flat_sb(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
-	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
-	btn.add_theme_font_size_override("font_size", 14)
-
-func _attach_side_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
-	var ic := Control.new()
-	ic.name = "IconDraw"
-	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ic.layout_mode = 1
-	ic.anchors_preset = Control.PRESET_CENTER_TOP
-	ic.anchor_left = 0.5; ic.anchor_right = 0.5
-	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
-	ic.offset_left = -20 if _sidebar_collapsed else -40
-	ic.offset_right = 20 if _sidebar_collapsed else 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
-	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
-	btn.add_child(ic)
-
-func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
-	var ic := Control.new()
-	ic.name = "IconDraw"
-	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ic.layout_mode = 1
-	ic.anchors_preset = Control.PRESET_CENTER_TOP
-	ic.anchor_left = 0.5; ic.anchor_right = 0.5
-	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
-	ic.offset_left = -20; ic.offset_right = 20
-	ic.offset_top = 6;    ic.offset_bottom = 38
-	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
-	btn.add_child(ic)
-
-func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
-	var sz := c.size
-	var cx := sz.x * 0.5
-	var cy := sz.y * 0.5
-	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
-
-	var tex_name := ""
-	match t:
-		0: tex_name = "menu"
-		1: tex_name = "course"
-		2: tex_name = "songs"
-		3: tex_name = "game"
-		4: tex_name = "progress"
-		5: tex_name = "account"
-		6: tex_name = "room"
-	
-	var texture : Texture2D = null
-	if _sidebar_icons_cache.has(t):
-		texture = _sidebar_icons_cache[t]
-	elif tex_name != "":
-		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
-		_sidebar_icons_cache[t] = texture
-	
-	if texture:
-		var icon_sz := Vector2(36, 36)
-		if t == 0:
-			icon_sz = Vector2(28, 28)
-		var rect := Rect2(Vector2(cx - icon_sz.x/2, cy - icon_sz.y/2), icon_sz)
-		c.draw_texture_rect(texture, rect, false, col)
-	
-	if is_locked:
-		var lock_tex : Texture2D = null
-		if _sidebar_icons_cache.has("lock"):
-			lock_tex = _sidebar_icons_cache["lock"]
-		else:
-			lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
-			_sidebar_icons_cache["lock"] = lock_tex
-			
-		if lock_tex:
-			var lx := cx + 10.0
-			var ly := cy + 8.0
-			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, C_GOLD)
-
-func _connect_hud_buttons() -> void:
-	# Bouncy animations
-	for btn in [btn_menu, btn_courses, btn_room, btn_songs, btn_account]:
-		_make_btn_bouncy(btn)
-	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
-		_make_btn_bouncy(btn)
-
-	# Click actions using bind
-	btn_menu.pressed.connect(_fade_to.bind("res://scenes/MainMenu.tscn"))
-	btn_courses.pressed.connect(_fade_to.bind("res://scenes/CourseMap.tscn"))
-	btn_courses_mob.pressed.connect(_fade_to.bind("res://scenes/CourseMap.tscn"))
-	btn_songs.pressed.connect(_on_songs_tab_pressed)
-	btn_songs_mob.pressed.connect(_on_songs_tab_pressed)
-	btn_account.pressed.connect(_fade_to.bind("res://scenes/AccountScreen.tscn"))
-	btn_account_mob.pressed.connect(_fade_to.bind("res://scenes/AccountScreen.tscn"))
-
-func _on_songs_tab_pressed() -> void:
-	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-	if is_prem:
-		_fade_to("res://scenes/SongScreen.tscn")
-	else:
-		VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
-
 func _fade_to(path: String) -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.25)
@@ -1370,12 +1129,8 @@ func _fade_to(path: String) -> void:
 
 # ─── Responsive Layout ────────────────────────────────────────────────────────
 func _on_viewport_size_changed() -> void:
-	var size : Vector2i = get_viewport().size
-	var is_mobile : bool = size.x < size.y or size.x < 768
-	
-	# Handle Nav Bars visibility
-	$HUD/Root/Sidebar.visible = false
-	bottom_bar.visible = false
+	var size : Vector2 = self.size
+	var is_mobile := size.x < size.y or size.x < 768
 	
 	# Scale the 2.5D Room content container to fit inside screen boundaries
 	var margin_l : float = 0.0

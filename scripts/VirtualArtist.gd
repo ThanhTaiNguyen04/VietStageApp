@@ -24,7 +24,6 @@ var _last_scene : String = ""
 var _root          : Control
 var _speech_bubble : PanelContainer
 var _bubble_label  : Label
-var _toggle_btn    : Button
 
 func _ready() -> void:
 	layer = 100
@@ -109,57 +108,8 @@ func _build_ui() -> void:
 	)
 	_speech_bubble.add_child(tail)
 
-	# ── Nút bấm hình tròn nhỏ — góc dưới phải ────────────────────────────────
-	_toggle_btn = Button.new()
-	_toggle_btn.text = ""
-	_toggle_btn.custom_minimum_size = Vector2(64, 64)
-	_toggle_btn.anchor_left   = 1.0; _toggle_btn.anchor_right  = 1.0
-	_toggle_btn.anchor_top    = 1.0; _toggle_btn.anchor_bottom = 1.0
-	_toggle_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_toggle_btn.grow_vertical   = Control.GROW_DIRECTION_BEGIN
-	_toggle_btn.offset_left   = -84.0
-	_toggle_btn.offset_top    = -84.0
-	_toggle_btn.offset_right  = -20.0
-	_toggle_btn.offset_bottom = -20.0
-	_toggle_btn.clip_contents = false  # KHÔNG clip — nhân vật float ra ngoài
-
-	# Nút tròn: nền đỏ sẫm + viền vàng
-	var tb_n := _flat(C_RED_SON, C_GOLD,    32)
-	tb_n.border_width_left = 2; tb_n.border_width_right  = 2
-	tb_n.border_width_top  = 2; tb_n.border_width_bottom = 2
-	tb_n.shadow_size = 12; tb_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
-	var tb_h := _flat(C_RED_SON.lightened(0.12), C_GOLD_LT, 32)
-	tb_h.border_width_left = 2; tb_h.border_width_right  = 2
-	tb_h.border_width_top  = 2; tb_h.border_width_bottom = 2
-	tb_h.shadow_size = 18; tb_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-	_toggle_btn.add_theme_stylebox_override("normal",  tb_n)
-	_toggle_btn.add_theme_stylebox_override("hover",   tb_h)
-	_toggle_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.15), C_GOLD, 32))
-	_toggle_btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	_toggle_btn.pressed.connect(_on_toggle_pressed)
-	_root.add_child(_toggle_btn)
-
-	# Biểu tượng nốt nhạc trên nút (thay vì ảnh nhân vật nhét vào nút)
-	var note_draw := Control.new()
-	note_draw.set_anchors_preset(Control.PRESET_FULL_RECT)
-	note_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	note_draw.draw.connect(func() -> void:
-		var sz := note_draw.size
-		var cx := sz.x * 0.5; var cy := sz.y * 0.5
-		# Hình nốt nhạc vàng
-		note_draw.draw_rect(Rect2(cx - 3, cy - 12, 5, 16), C_GOLD)
-		note_draw.draw_circle(Vector2(cx - 5, cy + 4), 6, C_GOLD)
-		note_draw.draw_rect(Rect2(cx + 6, cy - 16, 5, 14), C_GOLD)
-		note_draw.draw_circle(Vector2(cx + 4, cy - 2), 6, C_GOLD)
-		note_draw.draw_line(Vector2(cx - 3 + 5, cy - 12), Vector2(cx + 6 + 5, cy - 16), C_GOLD, 2.5)
-	)
-	_toggle_btn.add_child(note_draw)
-
-func _on_toggle_pressed() -> void:
-	if _is_open:
-		_close_bubble()
-	else:
-		show_random_tip()
+func play_happy(text: String) -> void:
+	show_tip(text)
 
 func _close_bubble() -> void:
 	_is_open = false

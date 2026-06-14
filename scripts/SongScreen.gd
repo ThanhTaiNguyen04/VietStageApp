@@ -119,10 +119,37 @@ const SONGS_DATA := [
 		"genre_label": "Trữ tình",
 		"xp": 120,
 		"sheet": ["Đô","Rê","Mi","Sol","Mi","Rê","Đô","Rê","Mi","Rê","Đô"]
+	},
+	{
+		"id": "song_009",
+		"title": "Lý Kéo Chài",
+		"desc": "Làn điệu dân ca Nam Bộ mộc mạc rộn rã, phù hợp với tiếng đàn bầu ngân vang.",
+		"instrument": "dan_bau",
+		"instrument_label": "Đàn Bầu",
+		"difficulty": "Dễ",
+		"difficulty_color": Color(0.12, 0.37, 0.23, 1.0), # Jade green
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 120,
+		"sheet": ["Hò","Xang","Xê","Liu","Ú","Liu","Xê","Xang","Xự","Hò"]
+	},
+	{
+		"id": "song_010",
+		"title": "Trống Cơm",
+		"desc": "Điệu dân ca dí dỏm, ngắt nhịp vui nhộn, rất độc đáo khi biểu diễn trên đàn bầu.",
+		"instrument": "dan_bau",
+		"instrument_label": "Đàn Bầu",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0), # Gold
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 160,
+		"sheet": ["Hò","Xang","Xê","Liu","Ú","Liu","Xê","Xang","Xự","Hò","Liu"]
 	}
 ]
 
 # ─── @onready references ─────────────────────────────────────────────────────
+@onready var bg_overlay      : ColorRect      = $BGOverlay
 @onready var back_btn        : Button         = $Root/TopBar/TopM/TopH/BackBtn
 @onready var page_title      : Label          = $Root/TopBar/TopM/TopH/PageTitle
 @onready var search_edit     : LineEdit       = $Root/Content/ContentMargin/MainVBox/SearchFilterHBox/SearchEdit
@@ -144,6 +171,7 @@ var search_text := ""
 var _sidebar_icons_cache := {}
 
 func _ready() -> void:
+	SecureDataManager.load_data()
 	_build_theme()
 	_connect_events()
 	_populate_songs()
@@ -156,38 +184,63 @@ func _ready() -> void:
 
 # ─── Theme & Layout Customization ─────────────────────────────────────────────
 func _build_theme() -> void:
-	# Top bar style matching global alabaster design
-	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	var bg_overlay_color := Color(0.06, 0.03, 0.012, 0.94) # deep warm mahogany
+	var inst_label := "Đàn Tranh"
+	
+	if selected_inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = C_JADE_LIGHT
+		bg_overlay_color = Color(0.01, 0.05, 0.03, 0.95) # deep jade green
+		inst_label = "Sáo Trúc"
+	elif selected_inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0) # purple
+		accent_color = Color(0.55, 0.45, 0.80, 1.0) # lavender
+		bg_overlay_color = Color(0.03, 0.02, 0.06, 0.95) # deep midnight purple
+		inst_label = "Đàn Bầu"
+		
+	# Apply dynamic title
+	page_title.text = "Kho Bài Hát - " + inst_label
+	
+	# Apply background overlay color
+	if bg_overlay:
+		bg_overlay.color = bg_overlay_color
+	
+	# Top bar style matching global design
+	var top_s := _flat(C_BG_BAR, Color(theme_color.r, theme_color.g, theme_color.b, 0.15), 0)
 	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
 	$Root/TopBar.add_theme_stylebox_override("panel", top_s)
-	page_title.add_theme_color_override("font_color", C_RED_SON)
+	page_title.add_theme_color_override("font_color", theme_color)
 
 	# Back button style
-	back_btn.add_theme_color_override("font_color", C_RED_SON)
-	back_btn.add_theme_color_override("font_hover_color", C_RED_SON.lightened(0.15))
+	back_btn.add_theme_color_override("font_color", theme_color)
+	back_btn.add_theme_color_override("font_hover_color", theme_color.lightened(0.15))
 	back_btn.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("hover",   _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.12), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("pressed", _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.20), Color(0,0,0,0), 8))
+	back_btn.add_theme_stylebox_override("hover",   _flat(Color(theme_color.r,theme_color.g,theme_color.b,0.12), Color(0,0,0,0), 8))
+	back_btn.add_theme_stylebox_override("pressed", _flat(Color(theme_color.r,theme_color.g,theme_color.b,0.20), Color(0,0,0,0), 8))
 	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	# Search LineEdit style
 	var se_n := _flat(Color(1.0, 1.0, 1.0, 0.8), Color(0.13, 0.08, 0.05, 0.15), 24)
-	var se_f := _flat(Color(1.0, 1.0, 1.0, 1.0), C_GOLD, 24)
-	se_f.shadow_size = 10; se_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+	var se_f := _flat(Color(1.0, 1.0, 1.0, 1.0), accent_color, 24)
+	se_f.shadow_size = 10; se_f.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.15)
 	search_edit.add_theme_stylebox_override("normal", se_n)
 	search_edit.add_theme_stylebox_override("focus",  se_f)
 	search_edit.add_theme_color_override("font_color",        C_TEXT)
 	search_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
-	search_edit.add_theme_color_override("caret_color",       C_GOLD)
+	search_edit.add_theme_color_override("caret_color",       accent_color)
 
 	# Filter buttons style
-	_style_filter_btn(btn_all, true)
-	_style_filter_btn(btn_danca, false)
-	_style_filter_btn(btn_trutinh, false)
-	_style_filter_btn(btn_cotruyen, false)
+	_style_filter_btn(btn_all, current_filter == "all")
+	_style_filter_btn(btn_danca, current_filter == "dan_ca")
+	_style_filter_btn(btn_trutinh, current_filter == "tru_tinh")
+	_style_filter_btn(btn_cotruyen, current_filter == "co_truyen")
 
 	# Mobile Bottom bar style
-	var bottom_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	var bottom_s := _flat(C_BG_BAR, Color(accent_color.r, accent_color.g, accent_color.b, 0.15), 0)
 	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
 	bottom_s.border_width_top = 2
 	bottom_bar.add_theme_stylebox_override("panel", bottom_s)
@@ -203,9 +256,21 @@ func _build_theme() -> void:
 	_attach_bottom_icon_draw(btn_account_mob, 5, false)
 
 func _style_filter_btn(btn: Button, active: bool) -> void:
-	var bg := C_RED_SON if active else Color(0.95, 0.93, 0.89, 0.6)
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	
+	if selected_inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = C_JADE_LIGHT
+	elif selected_inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0)
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+
+	var bg := theme_color if active else Color(0.95, 0.93, 0.89, 0.6)
 	var fg := C_BG_DARK if active else C_TEXT_MUTED
-	var border := C_RED_SON if active else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20)
+	var border := theme_color if active else Color(accent_color.r, accent_color.g, accent_color.b, 0.20)
 	
 	var style := _flat(bg, border, 16)
 	btn.add_theme_stylebox_override("normal", style)
@@ -217,9 +282,21 @@ func _style_filter_btn(btn: Button, active: bool) -> void:
 	btn.add_theme_color_override("font_pressed_color", fg)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
-	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
-	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	
+	if selected_inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = C_JADE_LIGHT
+	elif selected_inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0)
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+
+	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(theme_color.r, theme_color.g, theme_color.b, 0.08), Color(0, 0, 0, 0), 12)
+	var bg_h := _flat(Color(accent_color.r, accent_color.g, accent_color.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	var bg_p := _flat(Color(theme_color.r, theme_color.g, theme_color.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
 
 	bg_n.content_margin_top = 42
 	bg_n.content_margin_bottom = 6
@@ -231,15 +308,15 @@ func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = fals
 	if is_active:
 		bg_n.border_width_top = 4
 		bg_n.border_width_left = 0; bg_n.border_width_right = 0; bg_n.border_width_bottom = 0
-		bg_n.border_color = C_GOLD
+		bg_n.border_color = accent_color
 
 	btn.add_theme_stylebox_override("normal",  bg_n)
 	btn.add_theme_stylebox_override("hover",   bg_h)
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
+	btn.add_theme_color_override("font_color",         theme_color if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
 	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	btn.add_theme_color_override("font_pressed_color", theme_color if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
 
 func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
 	for c in btn.get_children():
@@ -262,6 +339,13 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var cx := sz.x * 0.5
 	var cy := sz.y * 0.5
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
+
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	var accent_color := C_GOLD
+	if selected_inst == "sao_truc":
+		accent_color = C_JADE_LIGHT
+	elif selected_inst == "dan_bau":
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
 
 	var tex_name := ""
 	match t:
@@ -298,7 +382,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		if lock_tex:
 			var lx := cx + 10.0
 			var ly := cy + 8.0
-			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, C_GOLD)
+			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, accent_color)
 
 # ─── Setup Events ─────────────────────────────────────────────────────────────
 func _connect_events() -> void:
@@ -339,7 +423,12 @@ func _populate_songs() -> void:
 	for child in songs_grid.get_children():
 		child.queue_free()
 
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+
 	for song in SONGS_DATA:
+		# Filter by instrument selection
+		if song.instrument != selected_inst:
+			continue
 		# Search Filter
 		if search_text != "" and not search_text.to_lower() in song.title.to_lower():
 			continue
@@ -352,7 +441,19 @@ func _populate_songs() -> void:
 
 func _create_song_card(song: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
-	var card_style := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), 20)
+	
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	
+	if selected_inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = C_JADE_LIGHT
+	elif selected_inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0)
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+
+	var card_style := _flat(C_CARD, Color(accent_color.r, accent_color.g, accent_color.b, 0.22), 20)
 	card_style.shadow_size = 12
 	card_style.shadow_color = Color(0, 0, 0, 0.05)
 	card_style.shadow_offset = Vector2(0, 4)
@@ -379,13 +480,29 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	var icon_circle := PanelContainer.new()
 	icon_circle.custom_minimum_size = Vector2(58, 58)
 	icon_circle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var icon_bg_color = Color(0.97, 0.91, 0.85, 1.0) if song.instrument == "dan_tranh" else Color(0.88, 0.94, 0.90, 1.0)
-	var icon_border_color = C_GOLD if song.instrument == "dan_tranh" else C_JADE_LIGHT
+	
+	var icon_bg_color := Color(0.97, 0.91, 0.85, 1.0)
+	var icon_border_color := C_GOLD
+	if song.instrument == "dan_tranh":
+		icon_bg_color = Color(0.97, 0.91, 0.85, 1.0)
+		icon_border_color = C_GOLD
+	elif song.instrument == "sao_truc":
+		icon_bg_color = Color(0.88, 0.94, 0.90, 1.0)
+		icon_border_color = C_JADE_LIGHT
+	elif song.instrument == "dan_bau":
+		icon_bg_color = Color(0.92, 0.90, 0.95, 1.0)
+		icon_border_color = Color(0.55, 0.45, 0.80, 1.0)
+		
 	var icon_circle_style := _flat(icon_bg_color, icon_border_color, 29)
 	icon_circle.add_theme_stylebox_override("panel", icon_circle_style)
 
 	var icon_lbl := Label.new()
-	icon_lbl.text = "箏" if song.instrument == "dan_tranh" else "🪈"
+	if song.instrument == "dan_tranh":
+		icon_lbl.text = "箏"
+	elif song.instrument == "sao_truc":
+		icon_lbl.text = "🪈"
+	else:
+		icon_lbl.text = "🪕"
 	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	icon_lbl.add_theme_font_size_override("font_size", 24)
@@ -423,8 +540,15 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 
 	# Instrument Tag
 	var inst_pill := PanelContainer.new()
-	var inst_bg = C_GOLD if song.instrument == "dan_tranh" else C_JADE
+	var inst_bg := C_GOLD
+	if song.instrument == "dan_tranh":
+		inst_bg = C_GOLD
+	elif song.instrument == "sao_truc":
+		inst_bg = C_JADE
+	elif song.instrument == "dan_bau":
+		inst_bg = Color(0.55, 0.45, 0.80, 1.0)
 	inst_pill.add_theme_stylebox_override("panel", _flat(inst_bg, Color(0,0,0,0), 6))
+	
 	var inst_lbl := Label.new()
 	inst_lbl.text = song.instrument_label
 	inst_lbl.add_theme_font_size_override("font_size", 10)
@@ -452,30 +576,30 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	xp_pill.add_child(xp_lbl)
 	tags_hbox.add_child(xp_pill)
 
-	# Right Column: Bouncy Red Play Button
+	# Right Column: Bouncy Dynamic Play Button
 	var play_btn := Button.new()
 	play_btn.custom_minimum_size = Vector2(48, 48)
 	play_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_style_circular_play_btn(play_btn)
+	_style_circular_play_btn(play_btn, theme_color, accent_color)
 	_make_btn_bouncy(play_btn)
 	play_btn.pressed.connect(func() -> void: _on_play_song(song))
 	hbox.add_child(play_btn)
 
 	return card
 
-func _style_circular_play_btn(btn: Button) -> void:
-	var pb_n := _flat(C_RED_SON, C_GOLD, 24)
+func _style_circular_play_btn(btn: Button, theme_color: Color, accent_color: Color) -> void:
+	var pb_n := _flat(theme_color, accent_color, 24)
 	pb_n.border_width_left = 2; pb_n.border_width_right = 2
 	pb_n.border_width_top = 2; pb_n.border_width_bottom = 2
-	pb_n.shadow_size = 6; pb_n.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.3)
+	pb_n.shadow_size = 6; pb_n.shadow_color = Color(theme_color.r, theme_color.g, theme_color.b, 0.3)
 	
-	var pb_h := _flat(Color(0.85, 0.18, 0.12, 1.0), Color.WHITE, 24)
+	var pb_h := _flat(theme_color.lightened(0.15), Color.WHITE, 24)
 	pb_h.border_width_left = 2; pb_h.border_width_right = 2
 	pb_h.border_width_top = 2; pb_h.border_width_bottom = 2
 	
 	btn.add_theme_stylebox_override("normal", pb_n)
 	btn.add_theme_stylebox_override("hover", pb_h)
-	btn.add_theme_stylebox_override("pressed", _flat(C_RED_DK, C_GOLD, 24))
+	btn.add_theme_stylebox_override("pressed", _flat(theme_color.darkened(0.15), accent_color, 24))
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	
 	var draw_node := Control.new()
@@ -508,6 +632,12 @@ func _on_play_song(song: Dictionary) -> void:
 			pr_script.current_song_title = song.title
 			pr_script.current_song_sheet = song.sheet
 		_fade_to("res://scenes/PracticeRoom.tscn")
+	elif song.instrument == "dan_bau":
+		var pr_script = load("res://scripts/PracticeDanBau.gd")
+		if pr_script:
+			pr_script.current_song_title = song.title
+			pr_script.current_song_sheet = song.sheet
+		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		var pr_script = load("res://scripts/PracticeSaoTruc.gd")
 		if pr_script:

@@ -11,15 +11,18 @@ static var data := {
 	"is_premium": false,
 	"unlocked_lessons": {
 		"dan_tranh": ["Node1", "Node2"],
-		"sao_truc": ["Node1", "Node2"]
+		"sao_truc": ["Node1", "Node2"],
+		"dan_bau": ["Node1", "Node2"]
 	},
 	"completed_lessons": {
 		"dan_tranh": [],
-		"sao_truc": []
+		"sao_truc": [],
+		"dan_bau": []
 	},
 	"stars": {
 		"dan_tranh": {},
-		"sao_truc": {}
+		"sao_truc": {},
+		"dan_bau": {}
 	},
 	"daily_streak": 1,
 	"last_practice_date": "",
