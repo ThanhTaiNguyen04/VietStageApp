@@ -19,7 +19,6 @@ static var video_completed := false
 
 # ─── Refs ───
 @onready var course_title : Label         = $RootHBox/RightContent/TopBar/TopM/TopH/CourseTitle
-@onready var change_btn   : Button        = $RootHBox/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
 @onready var btn_menu     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnMenu
 @onready var btn_courses  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnCourses
 @onready var btn_room     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnRoom
@@ -160,7 +159,6 @@ func _set_labels() -> void:
 	btn_room.text = "Phòng nhạc"
 	btn_songs.text = "Bài hát"
 	btn_account.text = "Hồ sơ"
-	change_btn.text = "Đổi nhạc cụ"
 
 func _build_theme() -> void:
 	# Left sidebar - match MainMenu exactly!
@@ -214,15 +212,7 @@ func _build_theme() -> void:
 	course_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0))
 	course_title.add_theme_constant_override("outline_size", 0)
 
-	# Change Course Button (Upgraded to beautiful solid lacquer red & gold 3D button)
-	var c_n := _flat(C_RED_SON, C_GOLD, 20, true, 4)
-	var c_h := _flat(C_RED_SON.lightened(0.12), C_GOLD_LIGHT, 20, true, 4)
-	change_btn.add_theme_stylebox_override("normal", c_n)
-	change_btn.add_theme_stylebox_override("hover", c_h)
-	change_btn.add_theme_stylebox_override("pressed", _flat(Color(0.2, 0.05, 0.03, 1.0), C_GOLD, 20, false, 1))
-	change_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	change_btn.add_theme_color_override("font_color", C_CREAM)
-	change_btn.add_theme_color_override("font_hover_color", C_CREAM)
+
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
@@ -492,9 +482,6 @@ func _animate_bob(node: Control) -> void:
 	t.tween_property(node, "position:y", oy,        0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 func _connect_buttons() -> void:
-	change_btn.pressed.connect(_go_change_course)
-	_make_button_bouncy(change_btn)
-	
 	# Connect hamburger menu button back to main menu!
 	if btn_menu:
 		btn_menu.pressed.connect(func() -> void:
@@ -628,11 +615,6 @@ func _go_practice_room() -> void:
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
 
-func _go_change_course() -> void:
-	var t := create_tween()
-	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
-
 func _animate_in() -> void:
 	var delay := 0.15
 	for card in map_hbox.get_children():
@@ -701,7 +683,6 @@ func _on_viewport_size_changed() -> void:
 		map_hbox.add_theme_constant_override("separation", 64)
 		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_left", 16)
 		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_right", 16)
-		change_btn.custom_minimum_size = Vector2(120, change_btn.custom_minimum_size.y)
 		course_title.add_theme_font_size_override("font_size", 18)
 	else:
 		scroll_m.add_theme_constant_override("margin_top", 170)
@@ -711,7 +692,6 @@ func _on_viewport_size_changed() -> void:
 		map_hbox.add_theme_constant_override("separation", 96)
 		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_left", 32)
 		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_right", 32)
-		change_btn.custom_minimum_size = Vector2(180, change_btn.custom_minimum_size.y)
 		course_title.add_theme_font_size_override("font_size", 28)
 		
 	# Scale circular map nodes dynamically

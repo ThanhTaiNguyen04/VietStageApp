@@ -116,12 +116,6 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 28
 text = "Đàn Tranh Cơ Bản"
 
-[node name="ChangeCourseBtn" type="Button" parent="RootHBox/RightContent/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(180, 42)
-layout_mode = 2
-size_flags_vertical = 4
-text = "Đổi nhạc cụ"
-
 [node name="MapScroll" type="ScrollContainer" parent="RootHBox/RightContent"]
 layout_mode = 2
 size_flags_vertical = 3
