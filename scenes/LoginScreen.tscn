@@ -2,7 +2,7 @@
 
 [ext_resource type="Script"    path="res://scripts/LoginScreen.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/bg_login.jpg" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/textures/ui_logo.jpg" id="3_logo"]
+[ext_resource type="Texture2D" path="res://assets/textures/logovuongtachnen.png" id="3_logo"]
 [ext_resource type="FontFile"  path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="4_font"]
 [ext_resource type="FontFile"  path="res://assets/fonts/Lora-Bold.ttf" id="5_font_title"]
 

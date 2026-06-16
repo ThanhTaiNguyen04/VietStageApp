@@ -1,16 +1,16 @@
 extends Control
 
-const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
-const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.40)
-const C_VER       := Color(1.00, 1.00, 1.00, 0.20)
+const C_RED       := Color(0.38, 0.0, 0.0, 1.0)
+const C_CHARCOAL  := Color(0.13, 0.08, 0.05, 0.70)
+const C_VER       := Color(0.13, 0.08, 0.05, 0.35)
 
 func _ready() -> void:
 	_style_text()
 	_animate()
 
 func _style_text() -> void:
-	($Center/AppName    as Label).add_theme_color_override("font_color", C_GOLD)
-	($Center/Tagline    as Label).add_theme_color_override("font_color", C_WHITE_DIM)
+	($Center/AppName    as Label).add_theme_color_override("font_color", C_RED)
+	($Center/Tagline    as Label).add_theme_color_override("font_color", C_CHARCOAL)
 	($VersionLabel      as Label).add_theme_color_override("font_color", C_VER)
 
 func _animate() -> void:
