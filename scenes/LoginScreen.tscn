@@ -122,7 +122,18 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 
-; ── Ô nhập email ─────────────────────────────────────────────────────────────
+; ── Ô nhập tên (Đăng ký) và email ──────────────────────────────────────────────
+[node name="NameEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Tên hiển thị của bạn"
+
+[node name="GapName" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
 [node name="EmailEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
@@ -131,6 +142,18 @@ theme_override_font_sizes/font_size = 18
 placeholder_text = "Email của bạn"
 
 [node name="Gap2" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="PasswordEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+secret = true
+placeholder_text = "Mật khẩu của bạn"
+
+[node name="GapPassword" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
@@ -152,6 +175,18 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 20
 text = "ĐĂNG NHẬP"
+
+[node name="GapToggle" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ToggleModeBtn" type="Button" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "Chưa có tài khoản? Đăng ký ngay"
+flat = true
 
 [node name="Gap3" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 28)

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/AccountScreen.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/bg_main_menu.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/textures/character_linh.png" id="3_avatar"]
+[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="3_avatar"]
 
 [node name="AccountScreen" type="Control"]
 layout_mode = 3
@@ -64,7 +64,7 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 36
 text = "Tài Khoản Của Tôi"
 
-[node name="Content" type="HBoxContainer" parent="Root"]
+[node name="Content" type="BoxContainer" parent="Root"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0

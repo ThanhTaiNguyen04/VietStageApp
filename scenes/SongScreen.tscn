@@ -1,0 +1,188 @@
+[gd_scene load_steps=5 format=3 uid="uid://song_screen_001"]
+
+[ext_resource type="Script" path="res://scripts/SongScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/bg_main_menu.png" id="2_bg"]
+[ext_resource type="FontFile" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="3_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="4_font_title"]
+
+[node name="SongScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BGOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.03, 0.012, 0.94)
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+
+[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_right = 48
+
+[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 22
+flat = true
+text = "Quay Lại"
+
+[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_fonts/font = ExtResource("4_font_title")
+theme_override_font_sizes/font_size = 36
+text = "Kho Bài Hát Dân Tộc"
+
+[node name="Content" type="VBoxContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ContentMargin" type="MarginContainer" parent="Root/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_bottom = 28
+
+[node name="MainVBox" type="VBoxContainer" parent="Root/Content/ContentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="SearchFilterHBox" type="HBoxContainer" parent="Root/Content/ContentMargin/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SearchEdit" type="LineEdit" parent="Root/Content/ContentMargin/MainVBox/SearchFilterHBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Tìm kiếm tên bài hát..."
+
+[node name="FilterTabs" type="HBoxContainer" parent="Root/Content/ContentMargin/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnAll" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "Tất Cả"
+
+[node name="BtnDanCa" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "Dân Ca"
+
+[node name="BtnTruTinh" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "Trữ Tình"
+
+[node name="BtnCoTruyen" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+custom_minimum_size = Vector2(130, 44)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "Cổ Truyền"
+
+[node name="SongsScroll" type="ScrollContainer" parent="Root/Content/ContentMargin/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 3
+
+[node name="SongsGrid" type="GridContainer" parent="Root/Content/ContentMargin/MainVBox/SongsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 24
+columns = 2
+
+[node name="BottomBar" type="PanelContainer" parent="Root"]
+visible = false
+layout_mode = 2
+
+[node name="BottomM" type="MarginContainer" parent="Root/BottomBar"]
+layout_mode = 2
+
+[node name="BottomH" type="HBoxContainer" parent="Root/BottomBar/BottomM"]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="BtnCoursesMobile" type="Button" parent="Root/BottomBar/BottomM/BottomH"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "Khóa học"
+
+[node name="BtnRoomMobile" type="Button" parent="Root/BottomBar/BottomM/BottomH"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "Phòng nhạc"
+
+[node name="BtnSongsMobile" type="Button" parent="Root/BottomBar/BottomM/BottomH"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "Bài hát"
+
+[node name="BtnAccountMobile" type="Button" parent="Root/BottomBar/BottomM/BottomH"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "Hồ sơ"

@@ -11,17 +11,30 @@ const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 
 @onready var map_hbox : HBoxContainer = $"../MapHBox"
 
-# Traditional Vietnamese-themed background drawings that scroll!
-var _sparkles = [
-	Vector2(140, 110), Vector2(250, 480), Vector2(480, 140),
-	Vector2(620, 460), Vector2(780, 110), Vector2(940, 470),
-	Vector2(1080, 150), Vector2(1250, 460), Vector2(1410, 120),
-	Vector2(1580, 480)
-]
+var _sparkles : Array[Vector2] = []
+var _clouds : Array[Vector2] = []
+var _decorations_generated := false
 
-var _clouds = [
-	Vector2(320, 160), Vector2(720, 440), Vector2(1180, 180), Vector2(1500, 420)
-]
+func _generate_decorations() -> void:
+	var w := size.x
+	var h := size.y
+	if w <= 0.0 or h <= 0.0: return
+	
+	_clouds.clear()
+	var cloud_count := 4 if w < 1200 else 6
+	for i in range(cloud_count):
+		var cx = (i + 0.5) * (w / cloud_count) + randf_range(-60.0, 60.0)
+		var cy = h * (0.2 + 0.5 * (i % 2)) + randf_range(-30.0, 30.0)
+		_clouds.append(Vector2(cx, cy))
+		
+	_sparkles.clear()
+	var sparkle_count := 8 if w < 1200 else 12
+	for i in range(sparkle_count):
+		var sx = (i + 0.5) * (w / sparkle_count) + randf_range(-40.0, 40.0)
+		var sy = h * (0.15 + 0.65 * randf())
+		_sparkles.append(Vector2(sx, sy))
+		
+	_decorations_generated = true
 
 func _ready() -> void:
 	# Hide the static PathLine ColorRect
@@ -29,7 +42,10 @@ func _ready() -> void:
 		get_node("PathLine").visible = false
 	
 	# Redraw on size changes or process
-	item_rect_changed.connect(queue_redraw)
+	item_rect_changed.connect(func() -> void:
+		_decorations_generated = false
+		queue_redraw()
+	)
 
 func _process(_delta: float) -> void:
 	# Redraw to catch layout changes during Godot container sorting
@@ -37,6 +53,9 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	if not map_hbox: return
+	
+	if not _decorations_generated or _sparkles.is_empty():
+		_generate_decorations()
 	
 	# 1. Draw beautiful traditional background clouds and sparkles first (so they are under the path line)
 	for cloud_pos in _clouds:
@@ -96,21 +115,21 @@ func _draw() -> void:
 			color_fill = C_GOLD
 			color_highlight = C_CREAM
 		else:
-			color_outline = Color(C_RED_SON_DK.r, C_RED_SON_DK.g, C_RED_SON_DK.b, 0.4)
-			color_fill = Color(C_RED_SON_DK.r, C_RED_SON_DK.g, C_RED_SON_DK.b, 0.25)
-			color_highlight = Color(C_RED_SON_DK.r, C_RED_SON_DK.g, C_RED_SON_DK.b, 0.1)
+			color_outline = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+			color_fill = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28)
+			color_highlight = Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.2)
 		
 		# Draw Shadow (3D offset bottom)
-		draw_polyline(_offset_points(points, Vector2(0, 6)), Color(0.04, 0.02, 0.01, 0.45), 18.0, true)
+		draw_polyline(_offset_points(points, Vector2(0, 6)), Color(0.04, 0.02, 0.01, 0.45), 20.0, true)
 		
 		# Draw Outer Outline
-		draw_polyline(points, color_outline, 16.0, true)
+		draw_polyline(points, color_outline, 18.0, true)
 		
 		# Draw Main Path Fill
-		draw_polyline(points, color_fill, 10.0, true)
+		draw_polyline(points, color_fill, 12.0, true)
 		
 		# Draw Inner Glossy Highlight
-		draw_polyline(_offset_points(points, Vector2(0, -2)), color_highlight, 3.0, true)
+		draw_polyline(_offset_points(points, Vector2(0, -2)), color_highlight, 4.0, true)
 
 func _offset_points(pts_in: PackedVector2Array, offset: Vector2) -> PackedVector2Array:
 	var pts_out := PackedVector2Array()
@@ -143,7 +162,7 @@ func _draw_sparkle(cntr: Vector2, size_sparkle: float) -> void:
 		cntr + Vector2(-size_sparkle, 0),
 		cntr + Vector2(-size_sparkle * 0.25, -size_sparkle * 0.25),
 	])
-	draw_colored_polygon(points, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16))
+	draw_colored_polygon(points, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.38))
 	
 	var inner_points := PackedVector2Array([
 		cntr + Vector2(0, -size_sparkle * 0.5),
@@ -155,10 +174,10 @@ func _draw_sparkle(cntr: Vector2, size_sparkle: float) -> void:
 		cntr + Vector2(-size_sparkle * 0.5, 0),
 		cntr + Vector2(-size_sparkle * 0.12, -size_sparkle * 0.12),
 	])
-	draw_colored_polygon(inner_points, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.35))
-
+	draw_colored_polygon(inner_points, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.75))
+ 
 func _draw_cloud(cntr: Vector2, w: float) -> void:
-	var cloud_color := Color(C_CREAM.r, C_CREAM.g, C_CREAM.b, 0.035)
+	var cloud_color := Color(C_CREAM.r, C_CREAM.g, C_CREAM.b, 0.14)
 	# Overlapping vector circles for a dreamy traditional cloud look
 	draw_circle(cntr + Vector2(-w * 0.25, 0), w * 0.32, cloud_color)
 	draw_circle(cntr + Vector2(w * 0.25, -w * 0.05), w * 0.28, cloud_color)

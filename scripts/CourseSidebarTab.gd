@@ -1,6 +1,6 @@
 extends Button
 
-enum TabType { MENU, LESSON, SONG, GAME, ACCOUNT }
+enum TabType { MENU, LESSON, SONG, GAME, ACCOUNT, ROOM }
 
 @export var current_type: TabType = TabType.MENU
 @export var is_active: bool = false
@@ -39,6 +39,9 @@ func _ready() -> void:
 		add_theme_font_size_override("font_size", 24)
 	elif current_type == TabType.ACCOUNT:
 		text = "Hồ sơ"
+		add_theme_font_size_override("font_size", 24)
+	elif current_type == TabType.ROOM:
+		text = "Phòng nhạc"
 		add_theme_font_size_override("font_size", 24)
 	elif current_type == TabType.MENU:
 		text = "" # No text for menu button, just custom drawn lines!
@@ -112,6 +115,10 @@ func _draw() -> void:
 		# Draw a beautiful head-and-shoulders person profile icon!
 		_draw_person(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
 		_draw_person(r, active_color)
+	elif current_type == TabType.ROOM:
+		# Draw a beautiful traditional gate/house outline!
+		_draw_house(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
+		_draw_house(r, active_color)
 
 func _draw_cap(pos: Vector2, color: Color) -> void:
 	# Rhombus cap board
@@ -175,3 +182,17 @@ func _draw_person(pos: Vector2, color: Color) -> void:
 	draw_circle(pos + Vector2(0, -6), 6.5, color)
 	# Shoulders arc
 	draw_arc(pos + Vector2(0, 10), 10.0, PI, TAU, 16, color, 3.0, true)
+
+func _draw_house(pos: Vector2, color: Color) -> void:
+	# Pitched roof (triangle)
+	var roof_pts := PackedVector2Array([
+		pos + Vector2(0, -12),
+		pos + Vector2(16, -2),
+		pos + Vector2(-16, -2)
+	])
+	draw_colored_polygon(roof_pts, color)
+	# House body (rectangle)
+	draw_rect(Rect2(pos + Vector2(-12, -2), Vector2(24, 14)), color, true)
+	# Door cutout (darker color)
+	var door_col := C_RED_SON_DK if color != Color(0.04, 0.02, 0.01, 0.45) else Color(0.12, 0.06, 0.03, 0.8)
+	draw_rect(Rect2(pos + Vector2(-3, 4), Vector2(6, 8)), door_col, true)

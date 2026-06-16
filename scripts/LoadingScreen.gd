@@ -31,6 +31,14 @@ func _ready() -> void:
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.45)
 	_animate_bar()
 
+	# Add dynamic vector spinner
+	var spinner_script := load("res://scripts/Spinner.gd")
+	if spinner_script:
+		var spinner := Control.new()
+		spinner.set_script(spinner_script)
+		$Center.add_child(spinner)
+		$Center.move_child(spinner, 4)
+
 func _build_style() -> void:
 	app_name.add_theme_color_override("font_color", C_GOLD) # Gold
 	load_title.add_theme_color_override("font_color", Color(0.98, 0.97, 0.94, 0.85)) # Light Cream

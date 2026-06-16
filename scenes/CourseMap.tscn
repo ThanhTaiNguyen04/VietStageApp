@@ -20,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.98, 0.97, 0.94, 1.0)
 
-[node name="RootHBox" type="HBoxContainer" parent="."]
+[node name="RootHBox" type="BoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -59,6 +59,12 @@ custom_minimum_size = Vector2(220, 140)
 layout_mode = 2
 flat = true
 text = "Khóa học"
+
+[node name="BtnRoom" type="Button" parent="RootHBox/LeftSidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+flat = true
+text = "Phòng nhạc"
 
 [node name="BtnSongs" type="Button" parent="RootHBox/LeftSidebar/SideM/SideV"]
 custom_minimum_size = Vector2(220, 140)
@@ -109,12 +115,6 @@ size_flags_horizontal = 3
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 28
 text = "Đàn Tranh Cơ Bản"
-
-[node name="ChangeCourseBtn" type="Button" parent="RootHBox/RightContent/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(180, 42)
-layout_mode = 2
-size_flags_vertical = 4
-text = "Đổi nhạc cụ"
 
 [node name="MapScroll" type="ScrollContainer" parent="RootHBox/RightContent"]
 layout_mode = 2
@@ -380,3 +380,41 @@ theme_override_font_sizes/font_size = 18
 text = "🔒"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="BottomBar" type="PanelContainer" parent="RootHBox/RightContent"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="BottomM" type="MarginContainer" parent="RootHBox/RightContent/BottomBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+
+[node name="BottomH" type="HBoxContainer" parent="RootHBox/RightContent/BottomBar/BottomM"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="BtnCoursesMobile" type="Button" parent="RootHBox/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Khóa học"
+
+[node name="BtnRoomMobile" type="Button" parent="RootHBox/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Phòng nhạc"
+
+[node name="BtnSongsMobile" type="Button" parent="RootHBox/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Bài hát"
+
+[node name="BtnAccountMobile" type="Button" parent="RootHBox/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Hồ sơ"

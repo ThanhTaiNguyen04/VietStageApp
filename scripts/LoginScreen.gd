@@ -21,9 +21,15 @@ const FP := "Center/Card/CardMargin/ContentVBox/"
 @onready var logo_rect      : TextureRect    = get_node(FP + "LogoVBox/LogoRect")
 @onready var app_name       : Label          = get_node(FP + "LogoVBox/AppName")
 @onready var app_sub        : Label          = get_node(FP + "LogoVBox/AppSub")
+@onready var name_edit     : LineEdit       = get_node(FP + "NameEdit")
+@onready var gap_name      : Control        = get_node(FP + "GapName")
 @onready var email_edit     : LineEdit       = get_node(FP + "EmailEdit")
+@onready var password_edit  : LineEdit       = get_node(FP + "PasswordEdit")
 @onready var error_label    : Label          = get_node(FP + "ErrorLabel")
 @onready var sign_in_btn    : Button         = get_node(FP + "SignInBtn")
+@onready var toggle_mode_btn: Button         = get_node(FP + "ToggleModeBtn")
+
+var is_register_mode := false
 @onready var google_btn     : Button         = get_node(FP + "SocialRow/GoogleVBox/GoogleBtn")
 @onready var guest_btn      : Button         = get_node(FP + "SocialRow/GuestVBox/GuestBtn")
 @onready var or_label       : Label          = get_node(FP + "DivRow/OrLabel")
@@ -34,11 +40,16 @@ const FP := "Center/Card/CardMargin/ContentVBox/"
 @onready var particle_layer : Control        = $ParticleLayer
 
 func _ready() -> void:
+	name_edit.visible = false
+	gap_name.visible = false
 	_style_card()
 	_style_all()
 	_connect_all()
 	_spawn_bg_particles()
 	_animate_in()
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
 
 # ── Entrance animation ─────────────────────────────────────────────────────────
 func _animate_in() -> void:
@@ -62,6 +73,30 @@ func _start_logo_float() -> void:
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	lp.tween_property(logo_rect, "position:y",  0.0, 2.5)\
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	
+	var content_vbox := get_node(FP) as VBoxContainer
+	var card_margin := $Center/Card/CardMargin as MarginContainer
+	
+	if is_mobile:
+		content_vbox.custom_minimum_size = Vector2(0, content_vbox.custom_minimum_size.y)
+		card.custom_minimum_size = Vector2(size.x - 32, card.custom_minimum_size.y)
+		card_margin.add_theme_constant_override("margin_left", 20)
+		card_margin.add_theme_constant_override("margin_right", 20)
+		card_margin.add_theme_constant_override("margin_top", 32)
+		card_margin.add_theme_constant_override("margin_bottom", 32)
+		app_name.add_theme_font_size_override("font_size", 42)
+	else:
+		content_vbox.custom_minimum_size = Vector2(460, content_vbox.custom_minimum_size.y)
+		card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
+		card_margin.add_theme_constant_override("margin_left", 64)
+		card_margin.add_theme_constant_override("margin_right", 64)
+		card_margin.add_theme_constant_override("margin_top", 52)
+		card_margin.add_theme_constant_override("margin_bottom", 52)
+		app_name.add_theme_font_size_override("font_size", 58)
 
 # ── Hệ thống hạt hoạt hình nền ────────────────────────────────────────────────
 func _spawn_bg_particles() -> void:
@@ -168,15 +203,28 @@ func _style_all() -> void:
 	google_lbl.add_theme_color_override("font_color",  Color(0.43, 0.38, 0.33, 1.0))
 	guest_lbl.add_theme_color_override("font_color",   Color(0.43, 0.38, 0.33, 1.0))
 
-	# Email: Light warm glass pill
+	# Name & Email: Light warm glass pill
 	var ei_n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(0.13, 0.08, 0.05, 0.15), 28)
 	var ei_f := _pill(Color(1.00, 1.00, 1.00, 1.00),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
 	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
 	email_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
 	email_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
 	email_edit.add_theme_color_override("caret_color",       C_GOLD)
+
+	name_edit.add_theme_stylebox_override("normal", ei_n)
+	name_edit.add_theme_stylebox_override("focus",  ei_f)
+	name_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	name_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	name_edit.add_theme_color_override("caret_color",       C_GOLD)
+
+	password_edit.add_theme_stylebox_override("normal", ei_n)
+	password_edit.add_theme_stylebox_override("focus",  ei_f)
+	password_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	password_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	password_edit.add_theme_color_override("caret_color",       C_GOLD)
 
 	# Nút Đăng nhập: Vàng đồng rực rỡ
 	var si_n := _pill(C_GOLD,                 Color(0,0,0,0), 28)
@@ -191,6 +239,15 @@ func _style_all() -> void:
 	sign_in_btn.add_theme_color_override("font_color",         C_GOLD_DARK)
 	sign_in_btn.add_theme_color_override("font_hover_color",   C_GOLD_DARK)
 	sign_in_btn.add_theme_color_override("font_pressed_color", C_GOLD_DARK)
+
+	# Nút Chuyển chế độ: Flat link button
+	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))
+	toggle_mode_btn.add_theme_color_override("font_hover_color",   C_PETAL_1)
+	toggle_mode_btn.add_theme_color_override("font_pressed_color", C_PETAL_2)
+	toggle_mode_btn.add_theme_stylebox_override("normal",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("hover",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("pressed", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	# Social buttons: Social pills sáng màu
 	_style_social(google_btn)
@@ -219,11 +276,38 @@ func _style_social(btn: Button) -> void:
 func _connect_all() -> void:
 	sign_in_btn.pressed.connect(_on_sign_in)
 	email_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
-	google_btn.pressed.connect(_go_main)
-	guest_btn.pressed.connect(_go_main)
+	password_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
+	name_edit.text_submitted.connect(func(_s: String) -> void: _on_sign_in())
+	toggle_mode_btn.pressed.connect(_on_toggle_mode)
+	google_btn.pressed.connect(_on_google_pressed)
+	guest_btn.pressed.connect(_on_guest_pressed)
 	_make_bouncy(sign_in_btn)
 	_make_bouncy(google_btn)
 	_make_bouncy(guest_btn)
+	_make_bouncy(toggle_mode_btn)
+
+func _on_toggle_mode() -> void:
+	is_register_mode = not is_register_mode
+	if is_register_mode:
+		name_edit.visible = true
+		gap_name.visible = true
+		name_edit.modulate.a = 0.0
+		name_edit.scale = Vector2(0.95, 0.95)
+		var t := create_tween().set_parallel(true)
+		t.tween_property(name_edit, "modulate:a", 1.0, 0.15)
+		t.tween_property(name_edit, "scale", Vector2.ONE, 0.15)
+		sign_in_btn.text = "ĐĂNG KÝ"
+		toggle_mode_btn.text = "Đã có tài khoản? Đăng nhập"
+	else:
+		var t := create_tween().set_parallel(true)
+		t.tween_property(name_edit, "modulate:a", 0.0, 0.1)
+		t.tween_property(name_edit, "scale", Vector2(0.95, 0.95), 0.1)
+		t.chain().tween_callback(func() -> void:
+			name_edit.visible = false
+			gap_name.visible = false
+		)
+		sign_in_btn.text = "ĐĂNG NHẬP"
+		toggle_mode_btn.text = "Chưa có tài khoản? Đăng ký ngay"
 
 func _on_sign_in() -> void:
 	var em := email_edit.text.strip_edges()
@@ -232,17 +316,65 @@ func _on_sign_in() -> void:
 		error_label.text = "Vui lòng nhập đúng định dạng email"
 		_shake(email_edit)
 		return
+		
+	var pw := password_edit.text.strip_edges()
+	if pw.length() < 6:
+		error_label.add_theme_color_override("font_color", C_ERR)
+		error_label.text = "Mật khẩu phải có ít nhất 6 ký tự"
+		_shake(password_edit)
+		return
+	
+	if is_register_mode:
+		var nm := name_edit.text.strip_edges()
+		if nm.length() < 2:
+			error_label.add_theme_color_override("font_color", C_ERR)
+			error_label.text = "Tên hiển thị phải có ít nhất 2 ký tự"
+			_shake(name_edit)
+			return
+		SecureDataManager.data["user_name"] = nm
+		SecureDataManager.data["user_email"] = em
+		SecureDataManager.save_data()
+	else:
+		# Login mode: check if we already have this user registered.
+		# If yes, keep their name. If not, auto-register them using their email prefix!
+		var saved_email = SecureDataManager.data.get("user_email", "")
+		if em.to_lower() == saved_email.to_lower():
+			# Keep existing user name
+			pass
+		else:
+			# Auto-register new email: prefix from email
+			var prefix := em.split("@")[0]
+			var nm := prefix.capitalize()
+			SecureDataManager.data["user_name"] = nm
+			SecureDataManager.data["user_email"] = em
+			SecureDataManager.save_data()
+			
 	error_label.add_theme_color_override("font_color", C_GREEN_OK)
 	error_label.text = "Chào mừng!"
 	sign_in_btn.disabled = true
 	email_edit.editable  = false
+	password_edit.editable = false
+	if is_register_mode:
+		name_edit.editable = false
+	_go_main()
+
+func _on_google_pressed() -> void:
+	SecureDataManager.data["user_name"] = "Google User"
+	SecureDataManager.data["user_email"] = "google.user@gmail.com"
+	SecureDataManager.save_data()
+	_go_main()
+
+func _on_guest_pressed() -> void:
+	SecureDataManager.data["user_name"] = "Khách"
+	SecureDataManager.data["user_email"] = "khach@vietstage.vn"
+	SecureDataManager.save_data()
 	_go_main()
 
 func _go_main() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.40).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+		get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
 
 # ── Hiệu ứng lắc khi nhập sai ────────────────────────────────────────────────
 func _shake(node: Control) -> void:

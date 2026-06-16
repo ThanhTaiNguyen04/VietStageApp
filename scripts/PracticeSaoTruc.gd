@@ -45,6 +45,7 @@ var _covered_states : Array[bool] = [true, true, true, true, true, true]
 var _flute_streams : Dictionary = {}
 var _active_player : AudioStreamPlayer = null
 var _breath_pressure := 0.0
+var _rec_tween   : Tween
 
 const FREQS := {
 	"Đô": 261.63, # C4
@@ -67,7 +68,10 @@ const FINGERINGS := {
 }
 
 const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
-const SHEET    : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
+static var current_song_title := ""
+static var current_song_sheet : Array[String] = []
+
+var sheet_notes : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
 const HOLES    := 6
 const SPEECHES : Array[String] = [
 	"Thở đều, môi khép nhẹ.",
@@ -77,6 +81,8 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	if current_song_title != "":
+		sheet_notes = current_song_sheet
 	_generate_streams()
 	_set_labels()
 	_build_theme()
@@ -86,6 +92,17 @@ func _ready() -> void:
 	_build_rhythm_bars()
 	_start_float()
 	_connect_buttons()
+	
+	# Check mic permission/driver state
+	if not ProjectSettings.get_setting("audio/driver/enable_input"):
+		var mic_dialog := AcceptDialog.new()
+		mic_dialog.title = "Cảnh Báo Thiết Bị"
+		mic_dialog.dialog_text = "Ứng dụng chưa được cấp quyền truy cập Microphone hoặc tính năng Audio Input bị vô hiệu hóa trong cài đặt.\n\nVui lòng kiểm tra lại thiết bị thu âm để thực hiện bài học."
+		var dialog_style := _flat(C_BG_BAR, C_GOLD, 16)
+		mic_dialog.add_theme_stylebox_override("panel", dialog_style)
+		mic_dialog.add_theme_color_override("title_color", C_RED_SON)
+		add_child(mic_dialog)
+		mic_dialog.popup_centered()
 	
 	# Dynamically insert premium real-time microphone waveform visualizer!
 	var record_hbox := $Root/RecordBar/RecordM/RecordH
@@ -99,6 +116,40 @@ func _ready() -> void:
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
+
+		# Programmatically add pulsing "REC" recording indicator next to record button
+		var rec_indicator := HBoxContainer.new()
+		rec_indicator.name = "RecIndicator"
+		rec_indicator.alignment = BoxContainer.ALIGNMENT_CENTER
+		rec_indicator.visible = false
+		
+		# Small red dot
+		var dot := Panel.new()
+		dot.custom_minimum_size = Vector2(12, 12)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var dot_style := StyleBoxFlat.new()
+		dot_style.bg_color = C_RED_SON
+		dot_style.corner_radius_top_left = 6
+		dot_style.corner_radius_top_right = 6
+		dot_style.corner_radius_bottom_left = 6
+		dot_style.corner_radius_bottom_right = 6
+		dot.add_theme_stylebox_override("panel", dot_style)
+		
+		# REC Label
+		var lbl := Label.new()
+		lbl.text = "REC"
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", C_RED_SON)
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		
+		rec_indicator.add_child(dot)
+		rec_indicator.add_child(lbl)
+		rec_indicator.add_theme_constant_override("separation", 6)
+		rec_indicator.custom_minimum_size = Vector2(60, 30)
+		
+		record_hbox.add_child(rec_indicator)
+		# Position next to record button
+		record_hbox.move_child(rec_indicator, 2)
 		
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
@@ -114,9 +165,9 @@ func _process(delta: float) -> void:
 
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
-	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "SÁO TRÚC  ·  BÀI 1"
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Hơi thở & che lỗ cơ bản"
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "20%"
+	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "SÁO TRÚC  ·  BÀI 1" if current_song_title == "" else "SÁO TRÚC  ·  BÀI HÁT"
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Hơi thở & che lỗ cơ bản" if current_song_title == "" else current_song_title
+	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "20%" if current_song_title == "" else "100%"
 	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
 	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
@@ -268,8 +319,8 @@ func _build_flute() -> void:
 
 func _build_notation() -> void:
 	for c in notes_hbox.get_children(): c.queue_free()
-	for i in SHEET.size():
-		var note     := SHEET[i]
+	for i in sheet_notes.size():
+		var note     := sheet_notes[i]
 		var is_active := i == _note_idx
 		var is_done   := i < _note_idx
 
@@ -438,9 +489,9 @@ func _toggle_hole_state(idx: int, hole: PanelContainer, hs: StyleBoxFlat) -> voi
 	
 	_play_preview_or_sound()
 		
-	var target_note = SHEET[_note_idx]
+	var target_note = sheet_notes[_note_idx]
 	if current_note == target_note:
-		_note_idx = (_note_idx + 1) % SHEET.size()
+		_note_idx = (_note_idx + 1) % sheet_notes.size()
 		_build_notation()
 		_update_target_indicator()
 		_score = clamp(_score + 4.0, 0, 100)
@@ -461,7 +512,7 @@ func _toggle_hole_state(idx: int, hole: PanelContainer, hs: StyleBoxFlat) -> voi
 		ht.tween_callback(func() -> void: halo.queue_free())
 
 func _update_target_indicator() -> void:
-	var target_note := SHEET[_note_idx]
+	var target_note := sheet_notes[_note_idx]
 	target_note_label.text = "Nốt cần thổi: %s" % target_note
 	
 	var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
@@ -533,6 +584,7 @@ func _connect_buttons() -> void:
 func _toggle_record() -> void:
 	_recording = not _recording
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	_update_rec_pulse(_recording)
 	if _recording:
 		record_btn.text = "Dừng luyện tập"
 		_va_say(SPEECHES[0])
@@ -550,7 +602,7 @@ func _toggle_record() -> void:
 			_active_player = null
 
 func _demo() -> void:
-	var target_note := SHEET[_note_idx]
+	var target_note := sheet_notes[_note_idx]
 	_va_say("Lắng nghe nốt %s mẫu và thế bấm chuẩn." % target_note)
 	
 	var t := create_tween()
@@ -566,8 +618,7 @@ func _demo() -> void:
 			var hole := holes_hbox.get_child(i) as PanelContainer
 			if hole:
 				var dt := create_tween()
-				dt.set_delay(delay)
-				dt.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.08)
+				dt.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.08).set_delay(delay)
 				dt.tween_property(hole, "scale", Vector2.ONE, 0.12)
 				delay += 0.15
 
@@ -590,8 +641,8 @@ func _simulate_tick() -> void:
 		pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 		pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
 
-	if NOTES_VN[ni] == SHEET[_note_idx] and randf() > 0.5:
-		_note_idx = (_note_idx + 1) % SHEET.size()
+	if NOTES_VN[ni] == sheet_notes[_note_idx] and randf() > 0.5:
+		_note_idx = (_note_idx + 1) % sheet_notes.size()
 		_build_notation()
 		_update_target_indicator()
 
@@ -655,6 +706,7 @@ func _reset() -> void:
 	_build_notation()
 	_build_flute()
 	_update_target_indicator()
+	_update_rec_pulse(false)
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if visualizer: visualizer.visible = false
 	pitch_note.text = "-"
@@ -793,3 +845,24 @@ func _update_breath_physics(delta: float) -> void:
 		if _recording and _active_player and is_instance_valid(_active_player):
 			_active_player.volume_db = -1.0
 			_active_player.pitch_scale = 2.0
+
+func _update_rec_pulse(active: bool) -> void:
+	var rec_indicator := $Root/RecordBar/RecordM/RecordH.get_node_or_null("RecIndicator") as Control
+	if not rec_indicator: return
+	
+	if _rec_tween and _rec_tween.is_valid():
+		_rec_tween.kill()
+		
+	rec_indicator.visible = active
+	if active:
+		rec_indicator.modulate.a = 1.0
+		rec_indicator.scale = Vector2.ONE
+		rec_indicator.pivot_offset = Vector2(30, 15)
+		
+		_rec_tween = create_tween().set_loops()
+		_rec_tween.set_parallel(true)
+		_rec_tween.tween_property(rec_indicator, "modulate:a", 0.3, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.tween_property(rec_indicator, "scale", Vector2(1.08, 1.08), 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.chain().parallel()
+		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

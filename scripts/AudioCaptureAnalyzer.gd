@@ -15,8 +15,13 @@ const MAX_SAMPLES := 180
 
 var current_pitch := 0.0
 var current_amplitude_db := -80.0
+var _analyzer: RefCounted = null
 
 func _ready() -> void:
+	# Try to instantiate the C++ AudioAnalyzer class from GDExtension
+	if ClassDB.class_exists("AudioAnalyzer"):
+		_analyzer = ClassDB.instantiate("AudioAnalyzer")
+		
 	_setup_audio_bus()
 	
 	# Pre-fill sample history
@@ -54,34 +59,49 @@ func _process(_delta: float) -> void:
 	if samples_available > 0:
 		var frames = _effect.get_buffer(samples_available)
 		if frames.size() > 0:
-			# Analyze amplitude peak
-			var peak := 0.0
-			for frame in frames:
-				var amp = (abs(frame.x) + abs(frame.y)) * 0.5
-				if amp > peak:
-					peak = amp
-					
-			# Convert peak to decibels
-			if peak > 0.0001:
-				current_amplitude_db = 20.0 * log(peak) / log(10)
+			# Convert frames to mono float array
+			var mono_samples := PackedFloat32Array()
+			mono_samples.resize(frames.size())
+			for i in range(frames.size()):
+				mono_samples[i] = (frames[i].x + frames[i].y) * 0.5
+				
+			if _analyzer:
+				# Use high-performance GDExtension C++ module for analysis
+				current_amplitude_db = _analyzer.calculate_peak_db(mono_samples)
+				if current_amplitude_db > -45.0:
+					var detected_pitch = _analyzer.analyze_pitch(mono_samples, AudioServer.get_mix_rate())
+					if detected_pitch > 0.0:
+						current_pitch = lerp(current_pitch, detected_pitch, 0.15)
+					else:
+						current_pitch = lerp(current_pitch, 0.0, 0.2)
+				else:
+					current_pitch = lerp(current_pitch, 0.0, 0.2)
 			else:
-				current_amplitude_db = -80.0
+				# Fallback to pure GDScript analysis & simulation if C++ binary is not compiled yet
+				var peak := 0.0
+				for val in mono_samples:
+					var abs_val = abs(val)
+					if abs_val > peak:
+						peak = abs_val
+						
+				if peak > 0.0001:
+					current_amplitude_db = 20.0 * log(peak) / log(10)
+				else:
+					current_amplitude_db = -80.0
+					
+				if current_amplitude_db > -45.0:
+					var sim_freq = 440.0 + sin(Time.get_ticks_msec() * 0.005) * 50.0
+					current_pitch = lerp(current_pitch, sim_freq, 0.15)
+				else:
+					current_pitch = lerp(current_pitch, 0.0, 0.2)
 				
 			# Add samples to history for visualization
-			var step = max(1, frames.size() / 10)
-			for i in range(0, frames.size(), step):
-				var f = frames[i]
-				var val = (f.x + f.y) * 0.5
+			var step = max(1, mono_samples.size() / 10)
+			for i in range(0, mono_samples.size(), step):
+				var val = mono_samples[i]
 				if _sample_history.size() > 0:
 					_sample_history.remove_at(0)
 				_sample_history.append(val)
-				
-			# Simulate low-latency pitch detection (YIN) based on real microphone volume
-			if current_amplitude_db > -45.0:
-				var sim_freq = 440.0 + sin(Time.get_ticks_msec() * 0.005) * 50.0
-				current_pitch = lerp(current_pitch, sim_freq, 0.15)
-			else:
-				current_pitch = lerp(current_pitch, 0.0, 0.2)
 				
 			queue_redraw()
 

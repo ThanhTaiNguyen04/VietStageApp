@@ -13,6 +13,9 @@ const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
 const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
+var _filter_earned_only := false
+var empty_state_panel : PanelContainer = null
+
 const ACHIEVEMENTS: Array[Dictionary] = [
 	{"icon":"⭐", "name":"Ngôi Sao\nĐầu Tiên",  "sub":"21/05/2025",  "earned":true,  "col":Color(0.77,0.58,0.15,1)},
 	{"icon":"🔥", "name":"7 Ngày\nLiên Tiếp",   "sub":"Streak 7",    "earned":true,  "col":Color(0.90,0.45,0.10,1)},
@@ -44,6 +47,22 @@ func _ready() -> void:
 		var export_btn := $Root/TopBar/TopM/TopH/ExportBtn as Button
 		export_btn.pressed.connect(_export_csv)
 		_make_button_bouncy(export_btn)
+
+	# Dynamic check button filter
+	var filter_btn := CheckButton.new()
+	filter_btn.text = "Chỉ hiển thị đã đạt"
+	filter_btn.add_theme_font_size_override("font_size", 14)
+	filter_btn.add_theme_color_override("font_color", C_TEXT_MUTED)
+	filter_btn.focus_mode = Control.FOCUS_NONE
+	$Root/Content/AchPanel/AchM/AchV.add_child(filter_btn)
+	$Root/Content/AchPanel/AchM/AchV.move_child(filter_btn, 1)
+	filter_btn.toggled.connect(func(button_pressed: bool) -> void:
+		_filter_earned_only = button_pressed
+		_build_achievements()
+	)
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
 
 
 func _set_labels() -> void:
@@ -135,12 +154,59 @@ func _build_theme() -> void:
 	($Root/Content/AchPanel as PanelContainer).add_theme_stylebox_override("panel", ap_s)
 	($Root/Content/AchPanel/AchM/AchV/AchTitle as Label).add_theme_color_override("font_color", C_RED_SON)
 
+func _build_empty_state_node() -> void:
+	if empty_state_panel: return
+	
+	empty_state_panel = PanelContainer.new()
+	empty_state_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	empty_state_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	var es := StyleBoxFlat.new()
+	es.bg_color = Color(0.95, 0.93, 0.89, 0.5)
+	es.corner_radius_top_left = 22; es.corner_radius_top_right = 22
+	es.corner_radius_bottom_left = 22; es.corner_radius_bottom_right = 22
+	empty_state_panel.add_theme_stylebox_override("panel", es)
+	
+	var vb := VBoxContainer.new()
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	vb.add_theme_constant_override("separation", 12)
+	
+	var icon := Label.new()
+	icon.text = "🏆"
+	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon.add_theme_font_size_override("font_size", 54)
+	icon.modulate.a = 0.35
+	
+	var title := Label.new()
+	title.text = "Chưa có huy hiệu"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", C_TEXT)
+	
+	var desc := Label.new()
+	desc.text = "Hoàn thành các bài học để mở khóa huy hiệu."
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.add_theme_font_size_override("font_size", 14)
+	desc.add_theme_color_override("font_color", C_TEXT_MUTED)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+	
+	vb.add_child(icon)
+	vb.add_child(title)
+	vb.add_child(desc)
+	empty_state_panel.add_child(vb)
+	$Root/Content/AchPanel/AchM/AchV.add_child(empty_state_panel)
+
 func _build_achievements() -> void:
 	var grid := $Root/Content/AchPanel/AchM/AchV/AchGrid as GridContainer
 	for c in grid.get_children(): c.queue_free()
 
+	var count := 0
 	for ach: Dictionary in ACHIEVEMENTS:
 		var earned : bool  = ach["earned"]
+		if _filter_earned_only and not earned:
+			continue
+			
+		count += 1
 		var col    : Color = ach["col"]
 
 		var card := PanelContainer.new()
@@ -185,6 +251,16 @@ func _build_achievements() -> void:
 		card.add_child(vb)
 		grid.add_child(card)
 
+	if count == 0:
+		_build_empty_state_node()
+		empty_state_panel.visible = true
+		grid.visible = false
+	else:
+		if empty_state_panel:
+			empty_state_panel.visible = false
+		grid.visible = true
+		_animate_in()
+
 func _animate_in() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
@@ -228,8 +304,9 @@ func _export_csv() -> void:
 	($Root/TopBar/TopM/TopH/PageTitle as Label).text = "Đã xuất: %s" % path
 	var t := create_tween()
 	t.tween_property($Root/TopBar/TopM/TopH/PageTitle, "modulate:a", 0.6, 0.0)
-	t.tween_property($Root/TopBar/TopM/TopH/PageTitle, "modulate:a", 1.0, 0.4).set_delay(0.0)
-	t.set_delay(1.6).tween_callback(func() -> void: ($Root/TopBar/TopM/TopH/PageTitle as Label).text = old)
+	t.tween_property($Root/TopBar/TopM/TopH/PageTitle, "modulate:a", 1.0, 0.4)
+	t.tween_interval(1.6)
+	t.tween_callback(func() -> void: ($Root/TopBar/TopM/TopH/PageTitle as Label).text = old)
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -259,4 +336,40 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	
+	var content_box := $Root/Content as BoxContainer
+	content_box.vertical = is_mobile
+	
+	var profile_panel := $Root/Content/ProfilePanel as PanelContainer
+	var grid := $Root/Content/AchPanel/AchM/AchV/AchGrid as GridContainer
+	var pp_s = profile_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	
+	if is_mobile:
+		profile_panel.custom_minimum_size = Vector2(0, profile_panel.custom_minimum_size.y)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_left", 16)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_right", 16)
+		if pp_s:
+			pp_s.border_width_right = 0
+			pp_s.border_width_bottom = 2
+		grid.columns = 2
+		
+		var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
+		back_btn.custom_minimum_size = Vector2(100, back_btn.custom_minimum_size.y)
+		($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_font_size_override("font_size", 20)
+	else:
+		profile_panel.custom_minimum_size = Vector2(340, profile_panel.custom_minimum_size.y)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_left", 32)
+		$Root/TopBar/TopM.add_theme_constant_override("margin_right", 32)
+		if pp_s:
+			pp_s.border_width_right = 2
+			pp_s.border_width_bottom = 0
+		grid.columns = 4
+		
+		var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
+		back_btn.custom_minimum_size = Vector2(160, back_btn.custom_minimum_size.y)
+		($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_font_size_override("font_size", 32)
 

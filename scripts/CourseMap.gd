@@ -12,22 +12,29 @@ const C_JADE        := Color(0.12, 0.37, 0.23, 1.0) # bamboo jade
 const C_JADE_LIGHT  := Color(0.25, 0.65, 0.45, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
-const C_LOCKED      := Color(0.88, 0.86, 0.82, 0.80) # light gray-cream for locked nodes
+const C_LOCKED      := Color(0.92, 0.90, 0.86, 1.0) # light warm cream-gray for locked nodes
 
 # ─── Static Progress State ────────────────────────────────────────────────────
 static var video_completed := false
 
 # ─── Refs ───
 @onready var course_title : Label         = $RootHBox/RightContent/TopBar/TopM/TopH/CourseTitle
-@onready var change_btn   : Button        = $RootHBox/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
 @onready var btn_menu     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnMenu
 @onready var btn_courses  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnCourses
+@onready var btn_room     : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnRoom
 @onready var btn_songs    : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnSongs
 @onready var btn_account  : Button        = $RootHBox/LeftSidebar/SideM/SideV/BtnAccount
 @onready var map_hbox     : HBoxContainer = $RootHBox/RightContent/MapScroll/ScrollM/MapHBox
 
+@onready var bottom_bar      : PanelContainer = $RootHBox/RightContent/BottomBar
+@onready var btn_courses_mob : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnCoursesMobile
+@onready var btn_room_mob    : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnRoomMobile
+@onready var btn_songs_mob   : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnSongsMobile
+@onready var btn_account_mob : Button         = $RootHBox/RightContent/BottomBar/BottomM/BottomH/BtnAccountMobile
+
 var _active_side_btn : Button = null
 var _pulse_time := 0.0
+var _sidebar_icons_cache := {}
 
 func _ready() -> void:
 	# Hide or remove the default ColorRect to draw canvas backdrop directly
@@ -69,12 +76,19 @@ func _ready() -> void:
 		if n5: n5.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 	_build_theme()
+	_build_bottom_bar()
 	_set_labels()
 	_animate_in()
 	_setup_nodes()
 	_connect_buttons()
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
+	
+	btn_room.hide()
+	btn_room_mob.hide()
 
 func _process(delta: float) -> void:
 	# Gentle breathing scale animation on active lesson node
@@ -103,14 +117,14 @@ func _draw() -> void:
 	_draw_bronze_motif(br_center, 260.0)
 
 func _draw_bronze_motif(cntr: Vector2, max_radius: float) -> void:
-	var gold_trans := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08)
-	var gold_dim := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.035)
+	var gold_trans := Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.28)
+	var gold_dim := Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.16)
 	
 	# Draw concentric thin golden rings
-	draw_arc(cntr, max_radius * 0.22, 0.0, TAU, 64, gold_trans, 2.0, true)
-	draw_arc(cntr, max_radius * 0.44, 0.0, TAU, 80, gold_dim, 1.5, true)
-	draw_arc(cntr, max_radius * 0.66, 0.0, TAU, 96, gold_trans, 2.0, true)
-	draw_arc(cntr, max_radius * 0.88, 0.0, TAU, 120, gold_dim, 1.0, true)
+	draw_arc(cntr, max_radius * 0.22, 0.0, TAU, 64, gold_trans, 3.0, true)
+	draw_arc(cntr, max_radius * 0.44, 0.0, TAU, 80, gold_dim, 2.0, true)
+	draw_arc(cntr, max_radius * 0.66, 0.0, TAU, 96, gold_trans, 3.0, true)
+	draw_arc(cntr, max_radius * 0.88, 0.0, TAU, 120, gold_dim, 2.0, true)
 	
 	# Draw traditional center 12-ray sun symbol
 	var rays := 12
@@ -119,12 +133,12 @@ func _draw_bronze_motif(cntr: Vector2, max_radius: float) -> void:
 	for i in range(rays):
 		var angle := float(i) * (TAU / float(rays))
 		var dir := Vector2(cos(angle), sin(angle))
-		draw_line(cntr + dir * inner_r, cntr + dir * outer_r, gold_trans, 2.5, true)
+		draw_line(cntr + dir * inner_r, cntr + dir * outer_r, gold_trans, 3.5, true)
 		
 		# Draw decorative small dots in between the sun rays
 		var mid_angle := angle + (PI / float(rays))
 		var mid_dir := Vector2(cos(mid_angle), sin(mid_angle))
-		draw_circle(cntr + mid_dir * (inner_r + outer_r) * 0.52, 2.8, gold_dim)
+		draw_circle(cntr + mid_dir * (inner_r + outer_r) * 0.52, 3.5, gold_dim)
 
 func _set_labels() -> void:
 	var inst := InstrumentSelect.selected_instrument
@@ -134,17 +148,23 @@ func _set_labels() -> void:
 		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Nhấn & Rung"
 		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Song Thanh"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
+	elif inst == "dan_bau":
+		course_title.text = "Khóa Học Đàn Bầu Cơ Bản"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hài Âm Cơ Bản"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Uốn Vòi Đàn"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Luyến Láy"
+		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 	else:
 		course_title.text = "Khóa Học Sáo Trúc Cơ Bản"
 		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hơi & Che Lỗ"
 		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Luyện Ngón"
 		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
-
+ 
 	btn_courses.text = "Khóa học"
+	btn_room.text = "Phòng nhạc"
 	btn_songs.text = "Bài hát"
 	btn_account.text = "Hồ sơ"
-	change_btn.text = "Đổi nhạc cụ"
 
 func _build_theme() -> void:
 	# Left sidebar - match MainMenu exactly!
@@ -160,6 +180,7 @@ func _build_theme() -> void:
 
 	_style_side_icon_btn(btn_menu, false)
 	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false, not is_prem)
 	_style_side_icon_btn(btn_account, false)
 
@@ -168,6 +189,8 @@ func _build_theme() -> void:
 		if child.name == "IconDraw": child.queue_free()
 	for child in btn_courses.get_children():
 		if child.name == "IconDraw": child.queue_free()
+	for child in btn_room.get_children():
+		if child.name == "IconDraw": child.queue_free()
 	for child in btn_songs.get_children():
 		if child.name == "IconDraw": child.queue_free()
 	for child in btn_account.get_children():
@@ -175,6 +198,7 @@ func _build_theme() -> void:
 
 	_attach_icon_draw(btn_menu,     0)
 	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2, not is_prem)
 	_attach_icon_draw(btn_account,  5)
 
@@ -194,15 +218,7 @@ func _build_theme() -> void:
 	course_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0))
 	course_title.add_theme_constant_override("outline_size", 0)
 
-	# Change Course Button (Upgraded to beautiful solid lacquer red & gold 3D button)
-	var c_n := _flat(C_RED_SON, C_GOLD, 20, true, 4)
-	var c_h := _flat(C_RED_SON.lightened(0.12), C_GOLD_LIGHT, 20, true, 4)
-	change_btn.add_theme_stylebox_override("normal", c_n)
-	change_btn.add_theme_stylebox_override("hover", c_h)
-	change_btn.add_theme_stylebox_override("pressed", _flat(Color(0.2, 0.05, 0.03, 1.0), C_GOLD, 20, false, 1))
-	change_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	change_btn.add_theme_color_override("font_color", C_CREAM)
-	change_btn.add_theme_color_override("font_hover_color", C_CREAM)
+
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
@@ -249,60 +265,42 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var cy := sz.y * 0.5
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
 
+	var tex_name := ""
 	match t:
-		0: # Hamburger
-			for i in 3:
-				var y := cy - 12.0 + i * 12.0
-				c.draw_line(Vector2(cx - 15, y), Vector2(cx + 15, y), col, 4.0, true)
-		1: # Graduation
-			var pts := PackedVector2Array([
-				Vector2(cx, cy - 14),
-				Vector2(cx + 22, cy - 4),
-				Vector2(cx, cy + 6),
-				Vector2(cx - 22, cy - 4)
-			])
-			c.draw_colored_polygon(pts, col)
-			var base_pts := PackedVector2Array([
-				Vector2(cx - 11, cy + 1),
-				Vector2(cx + 11, cy + 1),
-				Vector2(cx + 8, cy + 8),
-				Vector2(cx - 8, cy + 8)
-			])
-			c.draw_colored_polygon(base_pts, col)
-			c.draw_line(Vector2(cx, cy - 4), Vector2(cx + 15, cy + 3), col, 3.0, true)
-			c.draw_circle(Vector2(cx + 15, cy + 6), 3.5, col)
-		2: # Notes
-			c.draw_rect(Rect2(cx - 13, cy - 14, 5, 20), col)
-			c.draw_rect(Rect2(cx + 3,  cy - 18, 5, 20), col)
-			c.draw_circle(Vector2(cx - 10,  cy + 6), 6.5, col)
-			c.draw_circle(Vector2(cx + 6,  cy + 2), 6.5, col)
-			c.draw_line(Vector2(cx - 8, cy - 14), Vector2(cx + 8, cy - 18), col, 4.0, true)
-		3: # Gamepad
-			c.draw_arc(Vector2(cx, cy), 16, 0, TAU, 32, col, 4.0, true)
-			c.draw_line(Vector2(cx - 10, cy), Vector2(cx - 4, cy), col, 3.5, true)
-			c.draw_line(Vector2(cx + 4, cy), Vector2(cx + 10, cy), col, 3.5, true)
-			c.draw_line(Vector2(cx, cy - 10), Vector2(cx, cy - 4), col, 3.5, true)
-			c.draw_line(Vector2(cx, cy + 4), Vector2(cx, cy + 10), col, 3.5, true)
-			c.draw_circle(Vector2(cx + 7, cy - 3), 3.5, col)
-			c.draw_circle(Vector2(cx + 7, cy + 3), 3.5, col)
-		4: # Bars
-			var bar_w := 8.0
-			var bars := [14.0, 22.0, 11.0, 19.0]
-			var base_y := cy + 14.0
-			for i in bars.size():
-				var x := cx - 18.0 + i * 12.0
-				c.draw_rect(Rect2(x, base_y - bars[i], bar_w, bars[i]), col)
-		5: # Person
-			c.draw_circle(Vector2(cx, cy - 8), 8.5, col)
-			c.draw_arc(Vector2(cx, cy + 14), 14, PI, TAU, 24, col, 4.0, true)
-
+		0: tex_name = "menu"
+		1: tex_name = "course"
+		2: tex_name = "songs"
+		3: tex_name = "game"
+		4: tex_name = "progress"
+		5: tex_name = "account"
+		6: tex_name = "room"
+	
+	var texture : Texture2D = null
+	if _sidebar_icons_cache.has(t):
+		texture = _sidebar_icons_cache[t]
+	elif tex_name != "":
+		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
+		_sidebar_icons_cache[t] = texture
+	
+	if texture:
+		var icon_sz := Vector2(36, 36)
+		if t == 0:
+			icon_sz = Vector2(28, 28)
+		var rect := Rect2(Vector2(cx - icon_sz.x/2, cy - icon_sz.y/2), icon_sz)
+		c.draw_texture_rect(texture, rect, false, col)
+	
 	if is_locked:
-		var lx := cx + 12.0
-		var ly := cy + 10.0
-		# draw small lock
-		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_GOLD, true) # golden lock body
-		c.draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_BG_DARK, false, 1.0)
-		c.draw_arc(Vector2(lx, ly - 2), 3.5, PI, TAU, 8, C_GOLD, 1.5, true)
+		var lock_tex : Texture2D = null
+		if _sidebar_icons_cache.has("lock"):
+			lock_tex = _sidebar_icons_cache["lock"]
+		else:
+			lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
+			_sidebar_icons_cache["lock"] = lock_tex
+			
+		if lock_tex:
+			var lx := cx + 10.0
+			var ly := cy + 8.0
+			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, C_GOLD)
 
 func _flat_sidebar(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -312,6 +310,66 @@ func _flat_sidebar(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	s.corner_radius_top_left     = radius; s.corner_radius_top_right    = radius
 	s.corner_radius_bottom_left  = radius; s.corner_radius_bottom_right = radius
 	return s
+
+func _build_bottom_bar() -> void:
+	var bottom_s := _flat_sidebar(C_RED_SON_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
+	bottom_s.border_width_top = 2
+	bottom_s.shadow_size = 12
+	bottom_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	bottom_s.shadow_offset = Vector2(0, -4)
+	bottom_bar.add_theme_stylebox_override("panel", bottom_s)
+
+	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
+
+	_style_bottom_icon_btn(btn_courses_mob, true)
+	_style_bottom_icon_btn(btn_room_mob,    false)
+	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
+	_style_bottom_icon_btn(btn_account_mob, false)
+
+	_attach_bottom_icon_draw(btn_courses_mob, 1)
+	_attach_bottom_icon_draw(btn_room_mob,    6)
+	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
+	_attach_bottom_icon_draw(btn_account_mob, 5)
+
+func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
+	var bg_n := _flat_sidebar(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
+	var bg_h := _flat_sidebar(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	var bg_p := _flat_sidebar(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+
+	bg_n.content_margin_top = 42
+	bg_n.content_margin_bottom = 6
+	bg_h.content_margin_top = 42
+	bg_h.content_margin_bottom = 6
+	bg_p.content_margin_top = 42
+	bg_p.content_margin_bottom = 6
+
+	if is_active:
+		bg_n.border_width_top = 4
+		bg_n.border_width_left = 0; bg_n.border_width_right = 0; bg_n.border_width_bottom = 0
+		bg_n.border_color = C_GOLD
+
+	btn.add_theme_stylebox_override("normal",  bg_n)
+	btn.add_theme_stylebox_override("hover",   bg_h)
+	btn.add_theme_stylebox_override("pressed", bg_p)
+	btn.add_theme_stylebox_override("focus",   _flat_sidebar(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
+	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
+	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	btn.add_theme_font_size_override("font_size", 14)
+
+func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
+	var ic := Control.new()
+	ic.name = "IconDraw"
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ic.layout_mode = 1
+	ic.anchors_preset = Control.PRESET_CENTER_TOP
+	ic.anchor_left = 0.5; ic.anchor_right = 0.5
+	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
+	ic.offset_left = -20; ic.offset_right = 20
+	ic.offset_top = 6;    ic.offset_bottom = 38
+	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
+	btn.add_child(ic)
 
 func _setup_nodes() -> void:
 	# Clear out any previous setups and set pivots for bouncy cartoon animations
@@ -337,23 +395,23 @@ func _setup_nodes() -> void:
 		var n_lbl := node.get_node(name_node.replace("Node","N") + "V/Title") as Label
 		
 		# Upgrade to gorgeous 3D cartoon stylebox
-		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(0.13, 0.08, 0.05, 0.15), 90, true, 5))
-		n_icon.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.15), Color(0,0,0,0), 22, false, 2))
+		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
+		n_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
 		_setup_icon_pill(n_icon, 2) # LOCK vector icon
-		n_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.45))
+		n_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
 
 	if not video_completed:
 		# Node 1 is active (3D bubble cream circle, gold border)
-		n1.add_theme_stylebox_override("panel", _flat(C_CREAM, C_GOLD, 90, true, 6))
+		n1.add_theme_stylebox_override("panel", _flat(C_CREAM, C_GOLD_LIGHT, 90, true, 6))
 		n1_icon.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 22, false, 2))
 		_setup_icon_pill(n1_icon, 0) # PLAY vector icon
 		n1_lbl.add_theme_color_override("font_color", C_RED_SON)
 
 		# Node 2 is locked (3D bubble dark circle)
-		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(0.13, 0.08, 0.05, 0.15), 90, true, 5))
-		n2_icon.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.15), Color(0,0,0,0), 22, false, 2))
+		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
+		n2_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
 		_setup_icon_pill(n2_icon, 2) # LOCK vector icon
-		n2_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.45))
+		n2_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
 
 		# Hide Node 2's "NEXT" tooltip
 		n2_tooltip.visible = false
@@ -430,9 +488,6 @@ func _animate_bob(node: Control) -> void:
 	t.tween_property(node, "position:y", oy,        0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 func _connect_buttons() -> void:
-	change_btn.pressed.connect(_go_change_course)
-	_make_button_bouncy(change_btn)
-	
 	# Connect hamburger menu button back to main menu!
 	if btn_menu:
 		btn_menu.pressed.connect(func() -> void:
@@ -442,6 +497,15 @@ func _connect_buttons() -> void:
 		)
 		_make_button_bouncy(btn_menu)
 
+	# Connect btn_room to virtual room
+	if btn_room:
+		btn_room.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
+		)
+		_make_button_bouncy(btn_room)
+
 	# Connect btn_songs with Premium Check
 	if btn_songs:
 		btn_songs.pressed.connect(func() -> void:
@@ -449,7 +513,7 @@ func _connect_buttons() -> void:
 			if is_prem:
 				var t := create_tween()
 				t.tween_property(self, "modulate:a", 0.0, 0.22)
-				t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+				t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/SongScreen.tscn"))
 			else:
 				VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
 		)
@@ -466,6 +530,33 @@ func _connect_buttons() -> void:
 
 	if btn_courses:
 		_make_button_bouncy(btn_courses)
+
+	# Mobile tabs events
+	btn_courses_mob.pressed.connect(func() -> void:
+		pass
+	)
+	btn_room_mob.pressed.connect(func() -> void:
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
+	)
+	btn_songs_mob.pressed.connect(func() -> void:
+		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
+		if is_prem:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/SongScreen.tscn"))
+		else:
+			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
+	)
+	btn_account_mob.pressed.connect(func() -> void:
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
+	)
+
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
+		_make_button_bouncy(btn)
 
 	var n1 := map_hbox.get_node("Node1") as PanelContainer
 	n1.gui_input.connect(func(e: InputEvent) -> void:
@@ -525,15 +616,16 @@ func _go_video_lesson() -> void:
 
 func _go_practice_room() -> void:
 	var inst := InstrumentSelect.selected_instrument
-	var path := "res://scenes/PracticeRoom.tscn" if inst == "dan_tranh" else "res://scenes/PracticeSaoTruc.tscn"
+	var path := "res://scenes/PracticeRoom.tscn"
+	if inst == "dan_tranh":
+		path = "res://scenes/PracticeRoom.tscn"
+	elif inst == "dan_bau":
+		path = "res://scenes/PracticeDanBau.tscn"
+	else:
+		path = "res://scenes/PracticeSaoTruc.tscn"
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
-
-func _go_change_course() -> void:
-	var t := create_tween()
-	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
 
 func _animate_in() -> void:
 	var delay := 0.15
@@ -580,3 +672,76 @@ func _make_button_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _on_viewport_size_changed() -> void:
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	
+	# Root container vertical orientation
+	var root_hbox := $RootHBox as BoxContainer
+	root_hbox.vertical = is_mobile
+	
+	# Left sidebar visibility
+	$RootHBox/LeftSidebar.visible = not is_mobile
+	bottom_bar.visible = is_mobile
+	
+	# Map margins and separation overrides
+	var scroll_m := $RootHBox/RightContent/MapScroll/ScrollM as MarginContainer
+	if is_mobile:
+		scroll_m.add_theme_constant_override("margin_top", 100)
+		scroll_m.add_theme_constant_override("margin_bottom", 100)
+		scroll_m.add_theme_constant_override("margin_left", 36)
+		scroll_m.add_theme_constant_override("margin_right", 36)
+		map_hbox.add_theme_constant_override("separation", 64)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_left", 16)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_right", 16)
+		course_title.add_theme_font_size_override("font_size", 18)
+	else:
+		scroll_m.add_theme_constant_override("margin_top", 170)
+		scroll_m.add_theme_constant_override("margin_bottom", 170)
+		scroll_m.add_theme_constant_override("margin_left", 80)
+		scroll_m.add_theme_constant_override("margin_right", 80)
+		map_hbox.add_theme_constant_override("separation", 96)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_left", 32)
+		$RootHBox/RightContent/TopBar/TopM.add_theme_constant_override("margin_right", 32)
+		course_title.add_theme_font_size_override("font_size", 28)
+		
+	# Scale circular map nodes dynamically
+	var node_size := Vector2(130, 130) if is_mobile else Vector2(180, 180)
+	var title_font_size := 14 if is_mobile else 20
+	var icon_pill_offset := -22.0 if is_mobile else -32.0
+	var icon_pill_size := Vector2(36, 36) if is_mobile else Vector2(44, 44)
+	var icon_pill_offset_xy := 8.0 if is_mobile else 12.0
+	
+	for c in map_hbox.get_children():
+		var node := c as PanelContainer
+		node.custom_minimum_size = node_size
+		node.pivot_offset = node_size / 2.0
+		
+		# Update title font size
+		var v_box = node.get_child(0) as VBoxContainer
+		if v_box:
+			var label = v_box.get_node_or_null("Title") as Label
+			if label:
+				label.add_theme_font_size_override("font_size", title_font_size)
+				
+		# Update icon pill anchor and offsets
+		var anchor = node.get_node_or_null("IconAnchor") as Control
+		if anchor:
+			var pill = anchor.get_node_or_null("IconPill") as PanelContainer
+			if pill:
+				pill.custom_minimum_size = icon_pill_size
+				pill.offset_left = icon_pill_offset
+				pill.offset_top = icon_pill_offset
+				pill.offset_right = icon_pill_offset_xy
+				pill.offset_bottom = icon_pill_offset_xy
+				
+		# Update tooltip anchors
+		var tooltip_anchor = node.get_node_or_null("TooltipAnchor") as Control
+		if tooltip_anchor:
+			var tooltip = tooltip_anchor.get_node_or_null("Tooltip") as PanelContainer
+			if tooltip:
+				if is_mobile:
+					tooltip.offset_top = -54
+				else:
+					tooltip.offset_top = -68
