@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://progress_screen_001"]
 
 [ext_resource type="Script"    path="res://scripts/ProgressScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="2_char"]
+[ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="2_char"]
 
 [node name="ProgressScreen" type="Control"]
 layout_mode = 3

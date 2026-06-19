@@ -1,4 +1,5 @@
 extends Control
+class_name PracticeRoom
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
@@ -43,6 +44,7 @@ var _float_tween : Tween
 var _note_idx    := 2
 var _string_streams: Array[AudioStreamWAV] = []
 var _rec_tween   : Tween
+var _eval_cooldown := 0.0
 
 const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
 static var current_song_title := ""
@@ -133,10 +135,14 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _recording:
-		_sim_timer += delta
-		if _sim_timer >= 1.2:
-			_sim_timer = 0.0
-			_simulate_tick()
+		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+		if visualizer and visualizer.visible:
+			_process_real_audio(delta)
+		else:
+			_sim_timer += delta
+			if _sim_timer >= 1.2:
+				_sim_timer = 0.0
+				_simulate_tick()
 
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
@@ -505,6 +511,103 @@ func _simulate_tick() -> void:
 	_update_rhythm()
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
+func _process_real_audio(delta: float) -> void:
+	if _eval_cooldown > 0.0:
+		_eval_cooldown -= delta
+		return
+		
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if not visualizer: return
+	
+	var db = visualizer.current_amplitude_db
+	var pitch = visualizer.current_pitch
+	
+	if db > -45.0 and pitch > 50.0:
+		var target_note = sheet_notes[_note_idx]
+		
+		# Find the closest frequency matching the target note in all 16 strings
+		var closest_target_freq := 0.0
+		var min_diff := 999999.0
+		for i in range(16):
+			var note_name = NOTES_VN[i % 7]
+			if note_name == target_note:
+				var string_freq = _get_string_frequency(i)
+				var diff = abs(pitch - string_freq)
+				if diff < min_diff:
+					min_diff = diff
+					closest_target_freq = string_freq
+					
+		if closest_target_freq > 0.0:
+			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
+			if abs(cents) < 50.0:
+				pitch_note.text = target_note
+				if abs(cents) < 12.0:
+					pitch_status.text = "Đúng cao độ"
+					pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+					pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+				else:
+					pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
+					pitch_status.add_theme_color_override("font_color", C_WARN)
+					pitch_note.add_theme_color_override("font_color", C_WARN)
+					
+				# Advance note
+				_note_idx = (_note_idx + 1) % sheet_notes.size()
+				_build_notation()
+				_update_target_indicator()
+				_score = clamp(_score + 5.0, 0, 100)
+				_refresh_score()
+				_update_rhythm_real()
+				
+				# Pluck visual effect on board
+				var target_string_idx := NOTES_VN.find(target_note)
+				if target_string_idx != -1 and _board:
+					_board.pluck(target_string_idx)
+					
+				_va_say("Tuyệt vời! Gảy đúng nốt rồi.")
+				_eval_cooldown = 1.0
+				return
+				
+		var detected_note := ""
+		var closest_detected_freq := 0.0
+		var min_detected_diff := 999999.0
+		for i in range(16):
+			var string_freq = _get_string_frequency(i)
+			var diff = abs(pitch - string_freq)
+			if diff < min_detected_diff:
+				min_detected_diff = diff
+				closest_detected_freq = string_freq
+				detected_note = NOTES_VN[i % 7]
+				
+		if detected_note != "" and min_detected_diff < 30.0:
+			pitch_note.text = detected_note
+			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
+			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			_score = clamp(_score - 0.5 * delta, 0, 100)
+			_refresh_score()
+	else:
+		pitch_note.text = "—"
+		pitch_status.text = "Đang nghe..."
+		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+		pitch_note.add_theme_color_override("font_color", C_RED_SON)
+
+func _update_rhythm_real() -> void:
+	var bars := rhythm_bars.get_children()
+	var ok := 0
+	for bar in bars:
+		var cr := bar as ColorRect
+		if randf() > 0.1:
+			ok += 1
+			var h := randf_range(16.0, 56.0)
+			var t := create_tween().set_parallel(true)
+			t.tween_property(cr, "custom_minimum_size:y", h, 0.08)
+			t.tween_property(cr, "color", C_JADE if randf() > 0.2 else C_GOLD, 0.07)
+			t.chain().parallel().tween_property(cr, "custom_minimum_size:y", 10.0, 0.36)
+			t.parallel().tween_property(cr, "color", Color(0.85, 0.82, 0.75, 1.0), 0.36)
+	var pct := int(float(ok) / float(bars.size()) * 100.0)
+	rhythm_acc.text = "Độ chính xác: %d%%" % pct
+	rhythm_acc.add_theme_color_override("font_color", C_GREEN_OK)
+
 func _refresh_score() -> void:
 	score_num.text = str(int(_score))
 	if _score >= 85.0:   score_num.add_theme_color_override("font_color", C_GREEN_OK)
@@ -545,6 +648,7 @@ func _update_target_indicator() -> void:
 
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 2
+	_eval_cooldown = 0.0
 	_build_notation()
 	record_btn.text   = "Bắt Đầu Luyện Tập"
 	_update_rec_pulse(false)
@@ -567,11 +671,26 @@ func _show_custom_hint() -> void:
 		popup.setup_hint("Gợi ý kỹ thuật", text)
 
 func _show_custom_result() -> void:
+	var inst := InstrumentSelect.selected_instrument
+	var stars := 1
+	if _score >= 85.0: stars = 3
+	elif _score >= 75.0: stars = 2
+	
+	if _score >= 70.0:
+		SecureDataManager.complete_lesson(inst, CourseMap.active_lesson_id, stars)
+		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
-		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa Bài 5")
+		
+		var next_lesson_name := "Khóa Học Tiếp"
+		if CourseMap.active_lesson_id == "Node2":
+			next_lesson_name = "Nhấn & Rung"
+		elif CourseMap.active_lesson_id == "Node3":
+			next_lesson_name = "Song Thanh"
+			
+		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
 
 func _go_back() -> void:
 	var t := create_tween()

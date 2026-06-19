@@ -16,6 +16,7 @@ const MAX_SAMPLES := 180
 var current_pitch := 0.0
 var current_amplitude_db := -80.0
 var _analyzer: RefCounted = null
+var _mic_player: AudioStreamPlayer = null
 
 func _ready() -> void:
 	# Try to instantiate the C++ AudioAnalyzer class from GDExtension
@@ -52,7 +53,21 @@ func _setup_audio_bus() -> void:
 	else:
 		_effect = AudioServer.get_bus_effect(_bus_index, effect_index) as AudioEffectCapture
 
+	# Setup microphone input player dynamically
+	_mic_player = AudioStreamPlayer.new()
+	_mic_player.stream = AudioStreamMicrophone.new()
+	_mic_player.bus = "Record"
+	add_child(_mic_player)
+
 func _process(_delta: float) -> void:
+	if not visible:
+		if _mic_player and _mic_player.playing:
+			_mic_player.stop()
+		return
+		
+	if _mic_player and not _mic_player.playing:
+		_mic_player.play()
+		
 	if not _effect: return
 	
 	var samples_available = _effect.get_frames_available()
@@ -90,8 +105,11 @@ func _process(_delta: float) -> void:
 					current_amplitude_db = -80.0
 					
 				if current_amplitude_db > -45.0:
-					var sim_freq = 440.0 + sin(Time.get_ticks_msec() * 0.005) * 50.0
-					current_pitch = lerp(current_pitch, sim_freq, 0.15)
+					var detected_pitch = _detect_pitch_acf(mono_samples, AudioServer.get_mix_rate())
+					if detected_pitch > 0.0:
+						current_pitch = lerp(current_pitch, detected_pitch, 0.15)
+					else:
+						current_pitch = lerp(current_pitch, 0.0, 0.2)
 				else:
 					current_pitch = lerp(current_pitch, 0.0, 0.2)
 				
@@ -137,3 +155,41 @@ func _draw() -> void:
 		# Draw glowing 2D oscilloscope wave
 		draw_polyline(points, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.25), 6.0, true)
 		draw_polyline(points, C_JADE, 2.0, true)
+
+# Autocorrelation-based pitch detection fallback in pure GDScript
+func _detect_pitch_acf(samples: PackedFloat32Array, sample_rate: float) -> float:
+	var size = samples.size()
+	if size < 512: return 0.0
+	
+	# Limit size for GDScript performance
+	if size > 512:
+		size = 512
+		
+	var min_period = int(sample_rate / 1000.0) # ~44 samples (1000Hz)
+	var max_period = int(sample_rate / 80.0)   # ~551 samples (80Hz)
+	
+	var best_period = -1
+	var best_corr = -1.0
+	
+	for lag in range(min_period, max_period):
+		var corr = 0.0
+		var norm1 = 0.0
+		var norm2 = 0.0
+		# Stride by 2 for speed
+		for i in range(0, size - lag, 2):
+			var s1 = samples[i]
+			var s2 = samples[i + lag]
+			corr += s1 * s2
+			norm1 += s1 * s1
+			norm2 += s2 * s2
+			
+		if norm1 > 0.0 and norm2 > 0.0:
+			corr /= sqrt(norm1 * norm2)
+			if corr > best_corr:
+				best_corr = corr
+				best_period = lag
+				
+	if best_corr > 0.65 and best_period > 0:
+		return sample_rate / float(best_period)
+		
+	return 0.0

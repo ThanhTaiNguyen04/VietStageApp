@@ -12,6 +12,8 @@ const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TEXT_MUTED  := Color(0.43, 0.38, 0.33, 1.0)
 const C_JADE        := Color(0.12, 0.37, 0.23, 1.0) # bamboo jade green
 
+const FORCE_PROCEDURAL_PLAYER : bool = true
+
 # ─── @onready references ───────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BGCanvas
 @onready var room_content  : Control        = $RoomContent
@@ -63,6 +65,40 @@ var _tex_sao : Texture2D
 var _tex_bau : Texture2D
 var _tex_trong : Texture2D
 var _tex_linh : Texture2D
+var _tex_player : Texture2D
+var _idle_breath_time : float = 0.0
+var _blink_timer : float = 2.0
+var _is_blinking : bool = false
+var _blink_duration : float = 0.15
+var _typewriter_text : String = ""
+var _typewriter_progress : float = 0.0
+var _typewriter_timer : float = 0.0
+var _card_particles : Array[Dictionary] = []
+var _card_particle_timer : float = 0.0
+var _prompt_is_showing : bool = false
+var _prompt_tween : Tween = null
+var _player_expression : String = "normal"
+var _player_dir : Vector2 = Vector2.DOWN
+var _idle_time : float = 0.0
+
+# Player state variables
+var _player_pos : Vector2 = Vector2(600, 480)
+var _target_position : Vector2 = Vector2(600, 480)
+var _is_moving_to_target : bool = false
+var _player_is_moving : bool = false
+var _player_walk_time : float = 0.0
+var _player_facing_right : bool = true
+var _interact_target_station : String = ""
+var _interact_target_linh : bool = false
+var _interact_range : float = 120.0
+var _player_speed : float = 280.0
+var _walk_particles : Array[Dictionary] = []
+var _walk_particle_timer : float = 0.0
+
+var char_player : Control
+var dialogue_box : PanelContainer
+var dialogue_lbl : Label
+var btn_dialogue_close : Button
 
 var _font_title : Font
 var _font_body : Font
@@ -85,11 +121,25 @@ func _ready() -> void:
 	room_content.size = Vector2(1200, 800)
 
 	SecureDataManager.load_data()
-	_tex_tranh = load("res://image/dan_tranh.jpg") as Texture2D
-	_tex_sao = load("res://image/sao_truc.jpg") as Texture2D
-	_tex_bau = load("res://image/dan_bau.jpg") as Texture2D
-	_tex_trong = load("res://image/trong.jpg") as Texture2D
+	_tex_tranh = load("res://assets/textures/dan_tranh_asset.png") as Texture2D
+	_tex_sao = load("res://assets/textures/sao_truc_asset.png") as Texture2D
+	_tex_bau = load("res://assets/textures/dan_bau_asset.png") as Texture2D
+	_tex_trong = load("res://assets/textures/trong_chau_asset.png") as Texture2D
 	_tex_linh = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
+	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
+	
+	# Initialize Player Character
+	char_player = Control.new()
+	char_player.name = "CharPlayer"
+	char_player.size = Vector2(160, 160)
+	char_player.pivot_offset = Vector2(80, 80)
+	char_player.position = _player_pos - Vector2(80, 150)
+	room_content.add_child(char_player)
+	char_player.draw.connect(_draw_player.bind(char_player))
+	
+	# FloorCanvas click handling
+	floor_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
+	floor_canvas.gui_input.connect(_on_floor_gui_input)
 	
 	# Load premium fonts
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -171,7 +221,7 @@ func _ready() -> void:
 	_style_popup_button(btn_back, true)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
-		_fade_to("res://scenes/LoginScreen.tscn")
+		_fade_to("res://scenes/MainMenu.tscn")
 	)
 	
 	# Transition fade in
@@ -185,8 +235,36 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	bg_canvas.queue_redraw()
-	floor_canvas.queue_redraw()
 	char_linh.queue_redraw()
+	floor_canvas.queue_redraw()
+	
+	# Update idle breathing cycle when not moving
+	if not _player_is_moving:
+		_idle_breath_time += delta * 2.2
+		_idle_time += delta
+		if _idle_time > 6.0 and _player_expression == "normal":
+			_player_expression = "sleepy"
+	else:
+		_idle_breath_time = 0.0
+		_idle_time = 0.0
+		if _player_expression == "sleepy":
+			_player_expression = "normal"
+		
+	# Update random eye blinking cycle
+	_blink_timer -= delta
+	if _blink_timer <= 0.0:
+		_is_blinking = true
+		_blink_timer = randf_range(2.5, 5.5)
+	if _is_blinking:
+		_blink_duration -= delta
+		if _blink_duration <= 0.0:
+			_is_blinking = false
+			_blink_duration = 0.15
+			
+	# Update typewriter text progress for NPC dialogue box
+	if dialogue_box != null and dialogue_box.visible and _typewriter_progress < _typewriter_text.length():
+		_typewriter_progress += delta * 35.0
+		dialogue_lbl.text = _typewriter_text.left(int(_typewriter_progress))
 	
 	# Update particles drift across visible widescreen boundaries
 	var rx := room_content.position.x
@@ -207,18 +285,215 @@ func _process(delta: float) -> void:
 			p.speed.y = randf_range(50, 110)
 			p.speed.x = randf_range(-30, 30)
 
+	# Update card hover particles
+	var temp_card_particles : Array[Dictionary] = []
+	for p in _card_particles:
+		p.life -= delta
+		p.pos += p.vel * delta
+		if p.life > 0.0:
+			temp_card_particles.append(p)
+	_card_particles = temp_card_particles
+
+	# Spawn card hover particles if hovering an instrument
+	if _hovered_station != "":
+		_card_particle_timer += delta
+		if _card_particle_timer > 0.04:
+			_card_particle_timer = 0.0
+			var rect := Rect2()
+			match _hovered_station:
+				"tranh": rect = Rect2(80, 370, 320, 180)
+				"sao": rect = Rect2(800, 370, 320, 180)
+				"bau": rect = Rect2(240, 560, 320, 180)
+				"trong": rect = Rect2(640, 560, 320, 180)
+			
+			if rect != Rect2():
+				var spawn_pos := Vector2(
+					randf_range(rect.position.x - 10, rect.position.x + rect.size.x + 10),
+					randf_range(rect.position.y + rect.size.y - 20, rect.position.y + rect.size.y + 10)
+				)
+				_card_particles.append({
+					"pos": spawn_pos,
+					"vel": Vector2(randf_range(-30, 30), randf_range(-65, -120)),
+					"life": randf_range(0.6, 1.0),
+					"max_life": 1.0,
+					"initial_size": randf_range(2.0, 4.2),
+					"color": Color(1.0, 0.85, 0.35, 0.8) # gold sparkle
+				})
+
 	# Bob Linh up and down
 	char_linh.position.y = _linh_base_y + sin(_time * 2.5) * 7.0
 	
-	if _linh_is_moving:
+	# Proximity check and prompt update
+	var closest_station := _get_closest_station()
+	var is_near_linh := _get_player_feet().distance_to(Vector2(600, 370)) < _interact_range
+	var is_ui_focused := popup.visible or (dialogue_box != null and dialogue_box.visible)
+
+	# Movement logic
+	if not is_ui_focused:
+		var move_dir := Vector2.ZERO
+		if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
+			move_dir.x -= 1
+		if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
+			move_dir.x += 1
+		if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
+			move_dir.y -= 1
+		if Input.is_action_pressed("ui_down") or Input.is_key_pressed(KEY_S):
+			move_dir.y += 1
+		
+		if move_dir != Vector2.ZERO:
+			# Cancel mouse travel on key press
+			_is_moving_to_target = false
+			_interact_target_station = ""
+			_interact_target_linh = false
+			_close_dialogue()
+			
+			move_dir = move_dir.normalized()
+			_player_dir = move_dir
+			char_player.position += move_dir * _player_speed * delta
+			# Clamp to walkable area
+			var feet_x := char_player.position.x + 80.0
+			var feet_y := char_player.position.y + 150.0
+			feet_x = clampf(feet_x, 60.0, 1140.0)
+			feet_y = clampf(feet_y, 330.0, 760.0)
+			char_player.position = Vector2(feet_x - 80.0, feet_y - 150.0)
+			
+			_player_is_moving = true
+			if move_dir.x < 0:
+				_player_facing_right = false
+			elif move_dir.x > 0:
+				_player_facing_right = true
+		elif _is_moving_to_target:
+			var current_feet := _get_player_feet()
+			var dist := current_feet.distance_to(_target_position)
+			if dist < 5.0:
+				char_player.position = Vector2(_target_position.x - 80.0, _target_position.y - 150.0)
+				_is_moving_to_target = false
+				_player_is_moving = false
+				
+				# Trigger interaction if arriving at a station or Linh
+				if _interact_target_station != "":
+					_open_focus_mode_popup(_interact_target_station)
+					_interact_target_station = ""
+				elif _interact_target_linh:
+					_show_dialogue(LINH_TIPS.pick_random())
+					_interact_target_linh = false
+			else:
+				var dir := (_target_position - current_feet).normalized()
+				_player_dir = dir
+				char_player.position += dir * _player_speed * delta
+				_player_is_moving = true
+				if dir.x < 0:
+					_player_facing_right = false
+				elif dir.x > 0:
+					_player_facing_right = true
+		else:
+			_player_is_moving = false
+	else:
+		_player_is_moving = false
+		_is_moving_to_target = false
+		_interact_target_station = ""
+		_interact_target_linh = false
+
+	# Update walk cycle timer and trigger redraw
+	if _player_is_moving:
+		_player_walk_time += delta * 12.0
+		char_player.queue_redraw()
+		
+		# Spawn walk particles
+		_walk_particle_timer += delta
+		if _walk_particle_timer > 0.08:
+			_walk_particle_timer = 0.0
+			_walk_particles.append({
+				"pos": _get_player_feet(),
+				"vel": Vector2(randf_range(-20, 20), randf_range(-10, -30)),
+				"life": 0.6,
+				"max_life": 0.6,
+				"initial_size": randf_range(3.0, 6.5),
+				"color": Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.7)
+			})
+	else:
+		char_player.queue_redraw()
+		
+	# Update walk particles
+	var temp_walk_particles : Array[Dictionary] = []
+	for p in _walk_particles:
+		p.life -= delta
+		p.pos += p.vel * delta
+		p.size = p.initial_size * (p.life / p.max_life)
+		p.color.a = 0.7 * (p.life / p.max_life)
+		if p.life > 0.0:
+			temp_walk_particles.append(p)
+	_walk_particles = temp_walk_particles
+
+	# Proximity prompt update with smooth slide & fade Tween transition
+	var want_prompt := false
+	var prompt_text := ""
+	var prompt_action_station := ""
+	var prompt_action_linh := false
+	
+	if closest_station != "" and not is_ui_focused:
+		want_prompt = true
+		var station_name := ""
+		match closest_station:
+			"tranh": station_name = "Đàn Tranh"
+			"sao": station_name = "Sáo Trúc"
+			"bau": station_name = "Đàn Bầu"
+			"trong": station_name = "Trống Chầu"
+		prompt_text = "Ấn [E] để tương tác với " + station_name
+		prompt_action_station = closest_station
+	elif is_near_linh and not is_ui_focused:
+		want_prompt = true
+		prompt_text = "Ấn [E] để trò chuyện với cô Mai"
+		prompt_action_linh = true
+
+	if want_prompt:
+		prompt_lbl.text = prompt_text
+		
+		# Center above player head
+		var target_x := char_player.position.x + (char_player.size.x - interact_prompt.size.x) / 2.0
+		var target_y := char_player.position.y - 10.0
+		
+		if not _prompt_is_showing:
+			_prompt_is_showing = true
+			interact_prompt.visible = true
+			interact_prompt.position = Vector2(target_x, target_y + 15.0) # start slightly lower
+			interact_prompt.modulate.a = 0.0
+			
+			if _prompt_tween:
+				_prompt_tween.kill()
+			_prompt_tween = create_tween().set_parallel(true)
+			_prompt_tween.tween_property(interact_prompt, "position", Vector2(target_x, target_y), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			_prompt_tween.tween_property(interact_prompt, "modulate:a", 1.0, 0.25)
+		else:
+			# Update position continuously
+			interact_prompt.position = Vector2(target_x, target_y)
+			
+		if Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_E):
+			if prompt_action_station != "":
+				_open_focus_mode_popup(prompt_action_station)
+			elif prompt_action_linh:
+				_show_dialogue(LINH_TIPS.pick_random())
+	else:
+		if _prompt_is_showing:
+			_prompt_is_showing = false
+			if _prompt_tween:
+				_prompt_tween.kill()
+			_prompt_tween = create_tween().set_parallel(true)
+			var target_y := char_player.position.y - 10.0
+			var target_x := char_player.position.x + (char_player.size.x - interact_prompt.size.x) / 2.0
+			_prompt_tween.tween_property(interact_prompt, "position", Vector2(target_x, target_y + 15.0), 0.2).set_ease(Tween.EASE_IN)
+			_prompt_tween.tween_property(interact_prompt, "modulate:a", 0.0, 0.2)
+			_prompt_tween.chain().tween_callback(func() -> void: interact_prompt.visible = false)
+
+	if _linh_is_moving or _player_is_moving:
 		_sort_room_elements()
 	
 	# Occasional random talk from Linh if idle
 	_speech_timer += delta
 	if _speech_timer > 15.0:
 		_speech_timer = 0.0
-		if _hovered_station == "":
-			_linh_talk(LINH_TIPS.pick_random())
+		if _hovered_station == "" and not is_ui_focused:
+			_show_dialogue(LINH_TIPS.pick_random())
 
 # ─── Tooltip & Affordance Interactive Stations ─────────────────────────────────
 func _setup_station_button(btn: Button, code_name: String, displayName: String, draw_func: Callable) -> void:
@@ -309,8 +584,62 @@ func _on_station_pressed(btn: Button, code_name: String) -> void:
 	pt.tween_property(btn, "scale", Vector2(0.92, 0.92), 0.08)
 	pt.tween_property(btn, "scale", Vector2(1.08, 1.08) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK)
 	
-	# Move Linh to the station, which opens the focus mode popup on arrival
-	_move_linh_to_station(code_name)
+	# Move player to the station
+	_move_player_to_station(code_name)
+
+func _move_player_to_station(code_name: String) -> void:
+	var target_feet := _get_station_interact_spot(code_name)
+	var player_feet := _get_player_feet()
+	if player_feet.distance_to(target_feet) < _interact_range:
+		_open_focus_mode_popup(code_name)
+	else:
+		_target_position = target_feet
+		_is_moving_to_target = true
+		_interact_target_station = code_name
+		_interact_target_linh = false
+		_close_dialogue()
+
+func _get_player_feet() -> Vector2:
+	if not char_player:
+		return _player_pos
+	return char_player.position + Vector2(80.0, 150.0)
+
+func _get_station_interact_spot(code_name: String) -> Vector2:
+	match code_name:
+		"tranh": return Vector2(240, 590)
+		"sao": return Vector2(960, 590)
+		"bau": return Vector2(400, 750)
+		"trong": return Vector2(800, 750)
+	return Vector2(600, 480)
+
+func _get_closest_station() -> String:
+	var player_feet := _get_player_feet()
+	var stations := {
+		"tranh": Vector2(240, 535),
+		"sao": Vector2(960, 535),
+		"bau": Vector2(400, 715),
+		"trong": Vector2(800, 715)
+	}
+	var closest := ""
+	var min_dist := _interact_range
+	for code in stations:
+		var dist := player_feet.distance_to(stations[code])
+		if dist < min_dist:
+			closest = code
+			min_dist = dist
+	return closest
+
+func _on_floor_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_event := event as InputEventMouseButton
+		var click_pos := mouse_event.position
+		click_pos.x = clampf(click_pos.x, 60.0, 1140.0)
+		click_pos.y = clampf(click_pos.y, 330.0, 760.0)
+		_target_position = click_pos
+		_is_moving_to_target = true
+		_interact_target_station = ""
+		_interact_target_linh = false
+		_close_dialogue()
 
 func _move_linh_to_station(station_code: String) -> void:
 	_linh_is_moving = true
@@ -344,8 +673,17 @@ func _linh_talk(_txt: String) -> void:
 	pass
 
 func _on_char_linh_gui_input(e: InputEvent) -> void:
-	if e is InputEventMouseButton and e.pressed:
-		_linh_talk(LINH_TIPS.pick_random())
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+		var target_feet := Vector2(600, 430)
+		var player_feet := _get_player_feet()
+		if player_feet.distance_to(Vector2(600, 370)) < _interact_range:
+			_show_dialogue(LINH_TIPS.pick_random())
+		else:
+			_target_position = target_feet
+			_is_moving_to_target = true
+			_interact_target_station = ""
+			_interact_target_linh = true
+			_close_dialogue()
 
 
 
@@ -364,6 +702,7 @@ func _setup_focus_popup_controls() -> void:
 	)
 	
 	btn_popup_close.pressed.connect(func() -> void:
+		_player_expression = "normal"
 		var t := create_tween()
 		t.tween_property(popup, "modulate:a", 0.0, 0.2)
 		t.tween_callback(func() -> void: popup.visible = false)
@@ -394,6 +733,7 @@ func _setup_focus_popup_controls() -> void:
 
 func _open_focus_mode_popup(inst: String) -> void:
 	_current_popup_instrument = inst
+	_player_expression = "focused"
 	_toggle_popup_tab(true)
 	
 	# Configure labels and details based on instrument
@@ -640,6 +980,14 @@ func _draw_floor_canvas() -> void:
 		floor_canvas.draw_arc(pos, 82.0, 0, TAU, 32, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 6.0)
 		floor_canvas.draw_arc(pos, 70.0, 0, TAU, 32, Color(1.0, 0.95, 0.80, halo_a * 0.6), 2.0)
 	
+	# 3. Dynamic spotlight under player's feet
+	var player_feet := _get_player_feet()
+	var spotlight_color := Color(1.0, 0.91, 0.68) # Warm gold spotlight
+	for layer in range(5):
+		var radius := 115.0 - layer * 18.0
+		var alpha := (0.13 - layer * 0.022) * (1.0 + 0.16 * sin(_time * 3.2))
+		floor_canvas.draw_circle(player_feet, radius, Color(spotlight_color.r, spotlight_color.g, spotlight_color.b, alpha))
+	
 	# 4. Pulsing yellow glow circle when hovering
 	if _hovered_station != "":
 		var base_pos := Vector2.ZERO
@@ -661,21 +1009,33 @@ func _draw_floor_canvas() -> void:
 			# Inner bright ring
 			floor_canvas.draw_arc(base_pos, 74.0, 0, TAU, 32,
 				Color(1.0, 0.97, 0.90, 0.85), 2.5, true)
+				
+	# 5. Draw walking particles
+	for p in _walk_particles:
+		floor_canvas.draw_circle(p.pos, p.size, p.color)
+
+	# 6. Draw card hover particles
+	for p in _card_particles:
+		floor_canvas.draw_circle(p.pos, p.initial_size * (p.life / p.max_life), Color(p.color.r, p.color.g, p.color.b, p.color.a * (p.life / p.max_life)))
+		var c_alpha : float = p.color.a * (p.life / p.max_life)
+		var cross_color := Color(1.0, 0.95, 0.70, c_alpha * 0.45)
+		var cross_size : float = p.initial_size * 1.5 * (p.life / p.max_life)
+		floor_canvas.draw_line(p.pos - Vector2(cross_size, 0), p.pos + Vector2(cross_size, 0), cross_color, 1.0)
+		floor_canvas.draw_line(p.pos - Vector2(0, cross_size), p.pos + Vector2(0, cross_size), cross_color, 1.0)
 
 func _get_sort_y(node: Control) -> float:
 	return node.position.y + node.size.y
 
 func _sort_room_elements() -> void:
-	var items := [s_tranh, s_sao, s_bau, s_trong]
+	if not char_player:
+		return
+	var items := [s_tranh, s_sao, s_bau, s_trong, char_linh, char_player]
 	items.sort_custom(func(a, b):
 		return _get_sort_y(a) < _get_sort_y(b)
 	)
 	# FloorCanvas is at index 0, so move other children starting from index 1
 	for i in range(items.size()):
 		room_content.move_child(items[i], i + 1)
-	
-	# Keep teacher (char_linh) always drawn on top of the stations/items
-	room_content.move_child(char_linh, items.size() + 1)
 	
 func _draw_tranh(c: Button) -> void:
 	var sz := c.size
@@ -1019,6 +1379,538 @@ func _draw_linh(c: Control) -> void:
 		c.draw_arc(head_c + Vector2(-10, -2), 3.5, PI, TAU, 8, Color.BLACK, 2.0)
 		c.draw_arc(head_c + Vector2(10, -2), 3.5, PI, TAU, 8, Color.BLACK, 2.0)
 		c.draw_arc(head_c + Vector2(0, 5), 4.5, 0, PI, 8, C_RED_SON, 2.0)
+
+func _draw_capsule(c: Control, p1: Vector2, p2: Vector2, color: Color, width: float) -> void:
+	c.draw_line(p1, p2, color, width)
+	c.draw_circle(p1, width * 0.5, color)
+	c.draw_circle(p2, width * 0.5, color)
+
+func _draw_player(c: Control) -> void:
+	var sz := c.size
+	var cx := sz.x * 0.5
+	var cy := sz.y * 0.5
+	
+	# Feet shadow (ellipse on the floor)
+	c.draw_arc(Vector2(cx, cy + 74), 28.0, 0, TAU, 16, Color(0, 0, 0, 0.22), 6.0)
+	
+	# Compute walking bob, tilt, scale flip
+	var scale_h := 1.0 if _player_facing_right else -1.0
+	var tilt := cos(_player_walk_time) * 0.08 if _player_is_moving else 0.0
+	var bob := sin(_player_walk_time) * 6.0 if _player_is_moving else 0.0
+	
+	c.draw_set_transform(Vector2(cx, cy + bob), tilt, Vector2(scale_h, 1.0))
+	
+	if not FORCE_PROCEDURAL_PLAYER and _tex_player:
+		# Draw the 2D pixel art student sprite!
+		var img_w := sz.x
+		var img_h := sz.y
+		var tex_ratio := _tex_player.get_width() / float(_tex_player.get_height())
+		if tex_ratio > 1.0:
+			img_h = sz.x / tex_ratio
+		else:
+			img_w = sz.y * tex_ratio
+			
+		# Position sprite sitting on the shadow (bottom of sprite at y=74)
+		var img_rect := Rect2(-img_w * 0.5, 74.0 - img_h, img_w, img_h)
+		c.draw_texture_rect(_tex_player, img_rect, false)
+	else:
+		# Procedural High-Fidelity Fallback with 4-directional poses, expressions & playing poses
+		var breath_bob := sin(_idle_breath_time) * 1.5 if not _player_is_moving else 0.0
+		
+		var is_playing : bool = popup.visible
+		var inst : String = _current_popup_instrument
+		
+		var is_sitting : bool = is_playing and (inst == "tranh" or inst == "bau")
+		var is_blowing_flute : bool = is_playing and (inst == "sao")
+		var is_drumming : bool = is_playing and (inst == "trong")
+		
+		var is_walking_up : bool = not is_playing and _player_is_moving and _player_dir.y < -0.5
+		
+		# If sitting, lower the height center
+		var body_cy : float = cy
+		if is_sitting:
+			body_cy += 12.0
+		
+		# 1. Legs and Feet (Detailed Trousers and Shoes)
+		if is_sitting:
+			# Draw folded knees (white traditional trousers style)
+			_draw_capsule(c, Vector2(-10, 50 + breath_bob * 0.5), Vector2(-42, 60), Color(0.92, 0.92, 0.90), 22.0)
+			_draw_capsule(c, Vector2(10, 50 + breath_bob * 0.5), Vector2(42, 60), Color(0.92, 0.92, 0.90), 22.0)
+			
+			# Draw shoes peeking out from the sides of the knees
+			c.draw_circle(Vector2(-42, 64), 7.5, Color(0.12, 0.12, 0.12))
+			c.draw_circle(Vector2(42, 64), 7.5, Color(0.12, 0.12, 0.12))
+		else:
+			var phase := _player_walk_time
+			var leg_swing := sin(phase) if _player_is_moving else 0.0
+			var foot_lift_l := maxf(0.0, cos(phase)) * 9.0 if _player_is_moving else 0.0
+			var foot_lift_r := maxf(0.0, -cos(phase)) * 9.0 if _player_is_moving else 0.0
+			
+			var hip_l := Vector2(-15, 50 + breath_bob * 0.5)
+			var hip_r := Vector2(15, 50 + breath_bob * 0.5)
+			
+			var foot_l := Vector2(-15 + leg_swing * 22.0, 78.0 - foot_lift_l)
+			var foot_r := Vector2(15 - leg_swing * 22.0, 78.0 - foot_lift_r)
+			
+			# Draw Trousers (White traditional silk pants)
+			c.draw_line(hip_l, foot_l, Color(0.92, 0.92, 0.90), 14.0)
+			c.draw_line(hip_r, foot_r, Color(0.92, 0.92, 0.90), 14.0)
+			
+			# Draw Shoes (Detailed black shoes with white soles)
+			for foot_pos in [foot_l, foot_r]:
+				c.draw_circle(foot_pos, 8.5, Color(0.12, 0.12, 0.12)) # shoe body
+				c.draw_line(foot_pos + Vector2(-8, 5), foot_pos + Vector2(8, 5), Color(0.95, 0.95, 0.92), 2.5) # sole
+				
+		# 2. Back flap of Ao Dai
+		var wind_offset := -15.0 if (_player_is_moving and not is_sitting) else 0.0
+		var back_flap_color := Color(0.06, 0.22, 0.52)
+		if is_sitting:
+			# Flap draped behind the seat
+			var back_flap := PackedVector2Array([
+				Vector2(-22, 50 + breath_bob * 0.5),
+				Vector2(22, 50 + breath_bob * 0.5),
+				Vector2(32, 68),
+				Vector2(-32, 68)
+			])
+			c.draw_colored_polygon(back_flap, back_flap_color)
+			c.draw_polyline(back_flap, C_GOLD, 1.5, true)
+		else:
+			var back_flap := PackedVector2Array([
+				Vector2(-18, 50 + breath_bob * 0.5),
+				Vector2(18, 50 + breath_bob * 0.5),
+				Vector2(16 + wind_offset, 76),
+				Vector2(-16 + wind_offset, 76)
+			])
+			c.draw_colored_polygon(back_flap, back_flap_color)
+			c.draw_polyline(back_flap, C_GOLD, 1.5, true)
+			
+		# 3. Torso (Main Ao Dai robe body)
+		var body_pts := PackedVector2Array([
+			Vector2(-24, 18 + breath_bob),
+			Vector2(24, 18 + breath_bob),
+			Vector2(18, 52 + breath_bob * 0.5),
+			Vector2(-18, 52 + breath_bob * 0.5)
+		])
+		c.draw_colored_polygon(body_pts, Color(0.08, 0.26, 0.62))
+		c.draw_polyline(body_pts, C_GOLD, 2.0, true)
+		c.draw_line(Vector2(-8, 18 + breath_bob), Vector2(8, 18 + breath_bob), C_GOLD, 3.0) # collar ring
+		
+		# 4. Gold lotus embroidery emblem on the chest (Only front view)
+		if not is_walking_up:
+			var chest_c := Vector2(0, 32 + breath_bob * 0.8)
+			c.draw_circle(chest_c, 5.0, C_GOLD)
+			c.draw_circle(chest_c, 3.5, C_GOLD_LIGHT)
+			c.draw_arc(chest_c + Vector2(-6, 0), 4.0, -PI/2, PI/2, 8, C_GOLD, 1.2)
+			c.draw_arc(chest_c + Vector2(6, 0), 4.0, PI/2, 3*PI/2, 8, C_GOLD, 1.2)
+			c.draw_line(chest_c, chest_c + Vector2(0, -8), C_GOLD, 1.5)
+		
+		# 5. Front flap of Ao Dai (flows over the trousers) (Only front view)
+		if not is_walking_up:
+			if is_sitting:
+				var front_flap := PackedVector2Array([
+					Vector2(-18, 52 + breath_bob * 0.5),
+					Vector2(18, 52 + breath_bob * 0.5),
+					Vector2(24, 62),
+					Vector2(-24, 62)
+				])
+				c.draw_colored_polygon(front_flap, Color(0.08, 0.26, 0.62))
+				c.draw_polyline(front_flap, C_GOLD, 2.0, true)
+			else:
+				var front_flap := PackedVector2Array([
+					Vector2(-16, 52 + breath_bob * 0.5),
+					Vector2(16, 52 + breath_bob * 0.5),
+					Vector2(14 + wind_offset, 74),
+					Vector2(-14 + wind_offset, 74)
+				])
+				c.draw_colored_polygon(front_flap, Color(0.08, 0.26, 0.62))
+				c.draw_polyline(front_flap, C_GOLD, 2.0, true)
+		
+		# 6. Khánh ngọc/Tua rua vàng đeo bên hông (Only front view)
+		if not is_walking_up:
+			var tassel_y := 48.0 + breath_bob * 0.6
+			var tassel_base := Vector2(14, tassel_y)
+			var tassel_sway := sin(_player_walk_time * 1.5) * 8.0 if (_player_is_moving and not is_sitting) else sin(_time * 2.0) * 2.0
+			c.draw_circle(tassel_base, 3.8, C_GOLD)
+			c.draw_circle(tassel_base, 2.0, C_JADE)
+			c.draw_line(tassel_base, tassel_base + Vector2(tassel_sway, 18.0), C_RED_SON, 2.0)
+			c.draw_circle(tassel_base + Vector2(tassel_sway, 18.0), 1.5, C_GOLD)
+			
+		# 7. Arms and Hands (Alternating swinging, playing, or holding scroll)
+		var shoulder_l := Vector2(-22, 20 + breath_bob)
+		var shoulder_r := Vector2(22, 20 + breath_bob)
+		
+		if is_sitting:
+			# Sitting pose playing zither/monochord - hands hover and strum
+			var hand_l := Vector2(-26, 46 + sin(_time * 5.0) * 3.0)
+			var hand_r := Vector2(26, 46 + cos(_time * 5.0) * 3.0)
+			
+			var elbow_l := shoulder_l.lerp(hand_l, 0.5) + Vector2(-6.0, 3.0)
+			var elbow_r := shoulder_r.lerp(hand_r, 0.5) + Vector2(6.0, 3.0)
+			
+			_draw_capsule(c, shoulder_l, elbow_l, Color(0.08, 0.26, 0.62), 14.0)
+			_draw_capsule(c, elbow_l, hand_l, Color(0.08, 0.26, 0.62), 14.0)
+			c.draw_line(hand_l - (hand_l - elbow_l).normalized() * 3.0, hand_l, C_GOLD, 15.0)
+			c.draw_circle(hand_l, 5.5, C_CREAM)
+			
+			_draw_capsule(c, shoulder_r, elbow_r, Color(0.08, 0.26, 0.62), 14.0)
+			_draw_capsule(c, elbow_r, hand_r, Color(0.08, 0.26, 0.62), 14.0)
+			c.draw_line(hand_r - (hand_r - elbow_r).normalized() * 3.0, hand_r, C_GOLD, 15.0)
+			c.draw_circle(hand_r, 5.5, C_CREAM)
+		elif is_blowing_flute:
+			# Standing/sitting blowing bamboo flute - flute drawn slanted near mouth
+			var flute_p1 := Vector2(-28, 5)
+			var flute_p2 := Vector2(30, -5)
+			# Draw the flute
+			c.draw_line(flute_p1, flute_p2, Color(0.85, 0.65, 0.28), 7.0, true)
+			c.draw_line(flute_p1, flute_p2, C_GOLD, 1.0)
+			# Red thread bands
+			c.draw_line(flute_p1, flute_p1 + (flute_p2 - flute_p1).normalized() * 4.0, C_RED_SON, 7.2)
+			c.draw_line(flute_p2 - (flute_p2 - flute_p1).normalized() * 4.0, flute_p2, C_RED_SON, 7.2)
+			
+			# Hands raised to touch the flute
+			var hand_l := Vector2(-12, 3)
+			var hand_r := Vector2(10, 0)
+			
+			var elbow_l := shoulder_l.lerp(hand_l, 0.5) + Vector2(-8.0, 5.0)
+			var elbow_r := shoulder_r.lerp(hand_r, 0.5) + Vector2(8.0, 5.0)
+			
+			_draw_capsule(c, shoulder_l, elbow_l, Color(0.08, 0.26, 0.62), 14.0)
+			_draw_capsule(c, elbow_l, hand_l, Color(0.08, 0.26, 0.62), 14.0)
+			c.draw_circle(hand_l, 5.5, C_CREAM)
+			
+			_draw_capsule(c, shoulder_r, elbow_r, Color(0.08, 0.26, 0.62), 14.0)
+			_draw_capsule(c, elbow_r, hand_r, Color(0.08, 0.26, 0.62), 14.0)
+			c.draw_circle(hand_r, 5.5, C_CREAM)
+		elif is_drumming:
+			# Drumming pose holding drumsticks pointing downwards
+			var hand_l := Vector2(-18, 46 + sin(_time * 6.0) * 4.0)
+			var hand_r := Vector2(18, 46 + cos(_time * 6.0) * 4.0)
+			
+			var elbow_l := shoulder_l.lerp(hand_l, 0.5) + Vector2(-6.0, 3.0)
+			var elbow_r := shoulder_r.lerp(hand_r, 0.5) + Vector2(6.0, 3.0)
+			
+			_draw_capsule(c, shoulder_l, elbow_l, Color(0.08, 0.26, 0.62), 14.0)
+			_draw_capsule(c, elbow_l, hand_l, Color(0.08, 0.26, 0.62), 14.0)
+			c.draw_circle(hand_l, 5.5, C_CREAM)
+			
+			_draw_capsule(c, shoulder_r, elbow_r, Color(0.08, 0.26, 0.62), 14.0)
+			_draw_capsule(c, elbow_r, hand_r, Color(0.08, 0.26, 0.62), 14.0)
+			c.draw_circle(hand_r, 5.5, C_CREAM)
+			
+			# Drumsticks (wood color)
+			c.draw_line(hand_l, hand_l + Vector2(8, 12), Color(0.92, 0.84, 0.72), 3.0, true)
+			c.draw_line(hand_r, hand_r + Vector2(-8, 12), Color(0.92, 0.84, 0.72), 3.0, true)
+		elif is_walking_up:
+			# Back walk swing
+			var phase := _player_walk_time
+			var arm_swing := sin(phase)
+			var hand_l := Vector2(-26 + arm_swing * 10.0, 42.0 + cos(phase) * 3.0)
+			var hand_r := Vector2(26 - arm_swing * 10.0, 42.0 - cos(phase) * 3.0)
+			
+			var elbow_l := shoulder_l.lerp(hand_l, 0.5) + Vector2(-4.0, 2.0)
+			var elbow_r := shoulder_r.lerp(hand_r, 0.5) + Vector2(4.0, 2.0)
+			
+			_draw_capsule(c, shoulder_l, elbow_l, Color(0.08, 0.26, 0.62), 13.0)
+			_draw_capsule(c, elbow_l, hand_l, Color(0.08, 0.26, 0.62), 13.0)
+			c.draw_circle(hand_l, 5.0, C_CREAM)
+			
+			_draw_capsule(c, shoulder_r, elbow_r, Color(0.08, 0.26, 0.62), 13.0)
+			_draw_capsule(c, elbow_r, hand_r, Color(0.08, 0.26, 0.62), 13.0)
+			c.draw_circle(hand_r, 5.0, C_CREAM)
+		else:
+			# Front view standard: swing arms when walking, otherwise hold rolled scroll
+			if _player_is_moving:
+				var phase := _player_walk_time
+				var arm_swing := sin(phase)
+				var hand_l := Vector2(-36 + arm_swing * 12.0, 42.0 + cos(phase) * 3.0)
+				var hand_r := Vector2(36 - arm_swing * 12.0, 42.0 - cos(phase) * 3.0)
+				
+				var elbow_l := shoulder_l.lerp(hand_l, 0.5) + Vector2(-6.0, 3.0)
+				var elbow_r := shoulder_r.lerp(hand_r, 0.5) + Vector2(6.0, 3.0)
+				
+				_draw_capsule(c, shoulder_l, elbow_l, Color(0.08, 0.26, 0.62), 14.0)
+				_draw_capsule(c, elbow_l, hand_l, Color(0.08, 0.26, 0.62), 14.0)
+				c.draw_line(hand_l - (hand_l - elbow_l).normalized() * 3.0, hand_l, C_GOLD, 15.0)
+				c.draw_circle(hand_l, 5.5, C_CREAM)
+				
+				_draw_capsule(c, shoulder_r, elbow_r, Color(0.08, 0.26, 0.62), 14.0)
+				_draw_capsule(c, elbow_r, hand_r, Color(0.08, 0.26, 0.62), 14.0)
+				c.draw_line(hand_r - (hand_r - elbow_r).normalized() * 3.0, hand_r, C_GOLD, 15.0)
+				c.draw_circle(hand_r, 5.5, C_CREAM)
+			else:
+				var hand_l := Vector2(-15, 38 + breath_bob)
+				var hand_r := Vector2(15, 38 + breath_bob)
+				
+				var elbow_l := shoulder_l.lerp(hand_l, 0.5) + Vector2(-5.0, 2.0)
+				var elbow_r := shoulder_r.lerp(hand_r, 0.5) + Vector2(5.0, 2.0)
+				
+				_draw_capsule(c, shoulder_l, elbow_l, Color(0.08, 0.26, 0.62), 14.0)
+				_draw_capsule(c, elbow_l, hand_l, Color(0.08, 0.26, 0.62), 14.0)
+				
+				_draw_capsule(c, shoulder_r, elbow_r, Color(0.08, 0.26, 0.62), 14.0)
+				_draw_capsule(c, elbow_r, hand_r, Color(0.08, 0.26, 0.62), 14.0)
+				
+				c.draw_circle(hand_l, 5.5, C_CREAM)
+				c.draw_circle(hand_r, 5.5, C_CREAM)
+				
+				# Draw Rolled Scroll (Sách nhạc / Cuộn thư cổ)
+				var scroll_p1 := Vector2(-24, 40 + breath_bob)
+				var scroll_p2 := Vector2(24, 34 + breath_bob)
+				c.draw_line(scroll_p1, scroll_p2, C_CREAM, 11.0, true) # roll body
+				c.draw_line(scroll_p1, scroll_p2, C_GOLD, 1.2) # borders
+				c.draw_circle(Vector2(0, 37 + breath_bob), 5.5, C_RED_SON)
+				c.draw_line(Vector2(0, 37 + breath_bob), Vector2(-4, 50 + breath_bob), C_RED_SON, 2.0)
+				
+		# 8. Head & Turban
+		var head_c := Vector2(0, -12 + breath_bob * 1.2)
+		var turban_y := head_c.y - 14.0
+		var turban_color := Color(0.06, 0.18, 0.45)
+		
+		if is_walking_up:
+			# Draw back of Turban and Neck hair
+			c.draw_circle(head_c + Vector2(0, -6), 25.0, turban_color)
+			c.draw_circle(head_c + Vector2(0, -12), 20.0, turban_color.darkened(0.15))
+			c.draw_arc(head_c + Vector2(0, -6), 25.0, 0, TAU, 32, C_GOLD, 1.5)
+			
+			var hair_pts := PackedVector2Array([
+				head_c + Vector2(-23, 2),
+				head_c + Vector2(-18, 16),
+				head_c + Vector2(0, 20),
+				head_c + Vector2(18, 16),
+				head_c + Vector2(23, 2),
+				head_c + Vector2(12, 10),
+				head_c + Vector2(-12, 10)
+			])
+			c.draw_colored_polygon(hair_pts, Color.BLACK)
+			c.draw_polyline(hair_pts, Color(0.12, 0.12, 0.12), 1.0)
+		else:
+			# Front Head
+			c.draw_circle(head_c, 24.0, C_CREAM)
+			c.draw_arc(head_c, 24.0, 0, TAU, 32, C_GOLD, 2.0, true)
+			
+			# Khăn Đóng (Cross-wrapped turban)
+			var wrap1 := PackedVector2Array([
+				Vector2(-22, turban_y - 8),
+				Vector2(4, turban_y - 2),
+				Vector2(4, turban_y - 8),
+				Vector2(-22, turban_y - 14)
+			])
+			c.draw_colored_polygon(wrap1, turban_color)
+			c.draw_polyline(wrap1, C_GOLD, 1.0, true)
+			
+			var wrap2 := PackedVector2Array([
+				Vector2(-4, turban_y - 2),
+				Vector2(22, turban_y - 8),
+				Vector2(22, turban_y - 14),
+				Vector2(-4, turban_y - 8)
+			])
+			c.draw_colored_polygon(wrap2, turban_color.lightened(0.08))
+			c.draw_polyline(wrap2, C_GOLD, 1.0, true)
+			
+			var crown := PackedVector2Array([
+				Vector2(-18, turban_y - 14),
+				Vector2(18, turban_y - 14),
+				Vector2(14, turban_y - 22),
+				Vector2(-14, turban_y - 22)
+			])
+			c.draw_colored_polygon(crown, turban_color.darkened(0.12))
+			c.draw_polyline(crown, C_GOLD, 1.2, true)
+			
+			# Styled Hair (Bangs & sideburns)
+			var bang_l := PackedVector2Array([
+				head_c + Vector2(-20, -14),
+				head_c + Vector2(-10, -14),
+				head_c + Vector2(-15, -6)
+			])
+			c.draw_colored_polygon(bang_l, Color.BLACK)
+			
+			var bang_r := PackedVector2Array([
+				head_c + Vector2(10, -14),
+				head_c + Vector2(20, -14),
+				head_c + Vector2(15, -6)
+			])
+			c.draw_colored_polygon(bang_r, Color.BLACK)
+			
+			c.draw_line(head_c + Vector2(-22, -6), head_c + Vector2(-23, 8), Color.BLACK, 3.0)
+			c.draw_line(head_c + Vector2(22, -6), head_c + Vector2(23, 8), Color.BLACK, 3.0)
+			
+			# Blush cheeks
+			c.draw_circle(head_c + Vector2(-12, 4), 3.0, Color(1.0, 0.5, 0.5, 0.45))
+			c.draw_circle(head_c + Vector2(12, 4), 3.0, Color(1.0, 0.5, 0.5, 0.45))
+			
+			# Expressive Eyes based on _player_expression & random blinking
+			var eye_l := head_c + Vector2(-9, -2)
+			var eye_r := head_c + Vector2(9, -2)
+			
+			var is_blinking_now := _is_blinking and _player_expression != "sleepy" and _player_expression != "happy"
+			
+			if is_blinking_now:
+				c.draw_arc(eye_l, 4.0, 0, PI, 8, Color(0.1, 0.1, 0.1), 2.0)
+				c.draw_arc(eye_r, 4.0, 0, PI, 8, Color(0.1, 0.1, 0.1), 2.0)
+			elif _player_expression == "sleepy":
+				c.draw_arc(eye_l + Vector2(0, -1), 3.5, 0, PI, 8, Color(0.1, 0.1, 0.1), 2.2)
+				c.draw_arc(eye_r + Vector2(0, -1), 3.5, 0, PI, 8, Color(0.1, 0.1, 0.1), 2.2)
+				c.draw_line(eye_l + Vector2(-5, -6), eye_l + Vector2(4, -6), Color.BLACK, 1.2)
+				c.draw_line(eye_r + Vector2(-4, -6), eye_r + Vector2(5, -6), Color.BLACK, 1.2)
+				# yawning mouth
+				c.draw_line(head_c + Vector2(0, 4), head_c + Vector2(0, 9), C_RED_SON, 5.0, true)
+				c.draw_line(head_c + Vector2(0, 5), head_c + Vector2(0, 8), Color(0.2, 0.05, 0.05), 3.0, true)
+			elif _player_expression == "focused":
+				c.draw_circle(eye_l, 3.5, Color.BLACK)
+				c.draw_circle(eye_l + Vector2(-0.8, -0.8), 0.8, Color.WHITE)
+				c.draw_circle(eye_r, 3.5, Color.BLACK)
+				c.draw_circle(eye_r + Vector2(-0.8, -0.8), 0.8, Color.WHITE)
+				c.draw_line(eye_l + Vector2(-5, -6), eye_l + Vector2(5, -4), Color.BLACK, 1.8)
+				c.draw_line(eye_r + Vector2(-5, -4), eye_r + Vector2(5, -6), Color.BLACK, 1.8)
+				c.draw_line(head_c + Vector2(-4, 5), head_c + Vector2(4, 5), Color.BLACK, 1.5)
+			elif _player_expression == "happy":
+				c.draw_arc(eye_l + Vector2(0, 1), 3.5, PI, 2*PI, 8, Color(0.1, 0.1, 0.1), 2.5)
+				c.draw_arc(eye_r + Vector2(0, 1), 3.5, PI, 2*PI, 8, Color(0.1, 0.1, 0.1), 2.5)
+				c.draw_arc(eye_l + Vector2(0, -4), 4.5, PI, 2*PI, 8, Color.BLACK, 1.2)
+				c.draw_arc(eye_r + Vector2(0, -4), 4.5, PI, 2*PI, 8, Color.BLACK, 1.2)
+				c.draw_arc(head_c + Vector2(0, 4), 5.5, 0, PI, 8, C_RED_SON, 2.2)
+			elif _player_expression == "confused":
+				c.draw_circle(eye_l, 4.0, Color.WHITE)
+				c.draw_circle(eye_l, 2.2, Color.BLACK)
+				c.draw_circle(eye_r, 2.5, Color.BLACK)
+				c.draw_line(eye_l + Vector2(-5, -8), eye_l + Vector2(5, -10), Color.BLACK, 1.5)
+				c.draw_line(eye_r + Vector2(-5, -4), eye_r + Vector2(5, -6), Color.BLACK, 1.5)
+				c.draw_line(head_c + Vector2(-5, 6), head_c + Vector2(-2, 4), Color.BLACK, 1.5)
+				c.draw_line(head_c + Vector2(-2, 4), head_c + Vector2(2, 7), Color.BLACK, 1.5)
+				c.draw_line(head_c + Vector2(2, 7), head_c + Vector2(5, 5), Color.BLACK, 1.5)
+			else:
+				c.draw_circle(eye_l, 4.0, Color.WHITE)
+				c.draw_circle(eye_l, 2.5, Color(0.1, 0.1, 0.1))
+				c.draw_circle(eye_l + Vector2(-1, -1), 1.0, Color.WHITE)
+				c.draw_arc(eye_l, 4.5, PI, 2*PI, 8, Color.BLACK, 1.5)
+				
+				c.draw_circle(eye_r, 4.0, Color.WHITE)
+				c.draw_circle(eye_r, 2.5, Color(0.1, 0.1, 0.1))
+				c.draw_circle(eye_r + Vector2(-1, -1), 1.0, Color.WHITE)
+				c.draw_arc(eye_r, 4.5, PI, 2*PI, 8, Color.BLACK, 1.5)
+				
+				c.draw_line(eye_l + Vector2(-5, -6), eye_l + Vector2(4, -7), Color.BLACK, 1.2)
+				c.draw_line(eye_r + Vector2(-4, -7), eye_r + Vector2(5, -6), Color.BLACK, 1.2)
+				
+				c.draw_line(head_c + Vector2(0, -2), head_c + Vector2(-1, 3), Color(0.85, 0.76, 0.66), 1.5)
+				c.draw_arc(head_c + Vector2(0, 5), 4.5, 0, PI, 8, C_RED_SON, 2.0)
+
+
+func _setup_dialogue_box() -> void:
+	dialogue_box = PanelContainer.new()
+	dialogue_box.name = "DialogueBox"
+	dialogue_box.visible = false
+	$HUD.add_child(dialogue_box)
+	
+	dialogue_box.custom_minimum_size = Vector2(800, 160)
+	dialogue_box.size = Vector2(800, 160)
+	dialogue_box.anchors_preset = Control.PRESET_CENTER_BOTTOM
+	dialogue_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	dialogue_box.offset_bottom = -32
+	dialogue_box.offset_top = -192
+	dialogue_box.offset_left = -400
+	dialogue_box.offset_right = 400
+	
+	# Translucent glassmorphic lacquer red stylebox
+	var glass_panel := _flat_sb(Color(0.35, 0.05, 0.04, 0.88), C_GOLD, 16, true, 3)
+	dialogue_box.add_theme_stylebox_override("panel", glass_panel)
+	
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	dialogue_box.add_child(margin)
+	
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 24)
+	margin.add_child(hbox)
+	
+	var avatar_control := Control.new()
+	avatar_control.custom_minimum_size = Vector2(100, 100)
+	avatar_control.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(avatar_control)
+	
+	avatar_control.draw.connect(func() -> void:
+		var center := Vector2(50, 50)
+		avatar_control.draw_circle(center, 46.0, C_GOLD)
+		avatar_control.draw_circle(center, 44.0, C_CREAM)
+		if _tex_linh:
+			var rect := Rect2(center - Vector2(36, 36), Vector2(72, 72))
+			avatar_control.draw_texture_rect_region(_tex_linh, rect, Rect2(380, 50, 260, 260))
+	)
+	
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 8)
+	hbox.add_child(vbox)
+	
+	var name_lbl := Label.new()
+	name_lbl.text = "Cô Mai"
+	if _font_body_bold:
+		name_lbl.add_theme_font_override("font", _font_body_bold)
+	name_lbl.add_theme_font_size_override("font_size", 18)
+	name_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	vbox.add_child(name_lbl)
+	
+	dialogue_lbl = Label.new()
+	dialogue_lbl.text = "Xin chào học viên!"
+	if _font_body:
+		dialogue_lbl.add_theme_font_override("font", _font_body)
+	dialogue_lbl.add_theme_font_size_override("font_size", 15)
+	dialogue_lbl.add_theme_color_override("font_color", C_CREAM)
+	dialogue_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	dialogue_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(dialogue_lbl)
+	
+	btn_dialogue_close = Button.new()
+	btn_dialogue_close.text = "TIẾP TỤC"
+	btn_dialogue_close.custom_minimum_size = Vector2(120, 36)
+	btn_dialogue_close.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_style_popup_button(btn_dialogue_close, true)
+	_make_btn_bouncy(btn_dialogue_close)
+	vbox.add_child(btn_dialogue_close)
+	
+	btn_dialogue_close.pressed.connect(func() -> void:
+		if _typewriter_progress < _typewriter_text.length():
+			_typewriter_progress = _typewriter_text.length()
+			dialogue_lbl.text = _typewriter_text
+		else:
+			_close_dialogue()
+	)
+
+func _show_dialogue(text: String) -> void:
+	if not dialogue_box:
+		_setup_dialogue_box()
+	_player_expression = "focused"
+	_typewriter_text = text
+	_typewriter_progress = 0.0
+	dialogue_lbl.text = ""
+	dialogue_box.visible = true
+	dialogue_box.modulate.a = 0.0
+	dialogue_box.offset_bottom = 0
+	dialogue_box.offset_top = -160
+	
+	var t := create_tween().set_parallel(true)
+	t.tween_property(dialogue_box, "modulate:a", 1.0, 0.25)
+	t.tween_property(dialogue_box, "offset_bottom", -32, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(dialogue_box, "offset_top", -192, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _close_dialogue() -> void:
+	if not dialogue_box or not dialogue_box.visible:
+		return
+	_player_expression = "happy"
+	var t_expr := create_tween()
+	t_expr.tween_interval(1.0)
+	t_expr.tween_callback(func() -> void:
+		if _player_expression == "happy":
+			_player_expression = "normal"
+	)
+	var t := create_tween().set_parallel(true)
+	t.tween_property(dialogue_box, "modulate:a", 0.0, 0.2)
+	t.tween_property(dialogue_box, "offset_bottom", 0, 0.2)
+	t.tween_property(dialogue_box, "offset_top", -160, 0.2)
+	t.chain().tween_callback(func() -> void: dialogue_box.visible = false)
 
 # ─── Focus Mode Vector Custom Diagrams ─────────────────────────────────────────
 func _draw_popup_scroll(c: Control) -> void:

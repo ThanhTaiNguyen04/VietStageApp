@@ -30,21 +30,21 @@ var _time        := 0.0
 const DURATION   := 10.0
 
 const SUBTITLES_DAN_TRANH := [
-	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là Linh, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
 	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
 	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
 	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
 ]
 
 const SUBTITLES_SAO_TRUC := [
-	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là Linh, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
 	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cầm sáo, cách đặt môi và thổi nốt nhạc đầu tiên."},
 	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ thẳng lưng, lấy hơi sâu bằng bụng và lắng nghe âm vang trong trẻo của tiếng sáo nhé."},
 	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
 ]
 
 const SUBTITLES_DAN_BAU := [
-	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là Linh, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
 	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách gẩy và tạo tiếng bồi âm đầu tiên."},
 	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ lưng thẳng, tay cầm que gảy nhẹ nhàng và lắng nghe âm vang độc đáo từ một dây đàn nhé."},
 	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}

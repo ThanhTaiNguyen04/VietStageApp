@@ -13,9 +13,9 @@ const C_WHITE     := Color(1.00, 1.00, 1.00, 1.0)
 const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.50)
 const C_DIM       := Color(1.00, 1.00, 1.00, 0.24)
 
-const IMG_DAN_TRANH := "res://assets/textures/dan_tranh.jpg"
-const IMG_SAO_TRUC  := "res://assets/textures/sao_truc.jpg"
-const IMG_DAN_BAU   := "res://assets/textures/dan_bau.jpg"
+const IMG_DAN_TRANH := "res://assets/textures/dan_tranh_asset.png"
+const IMG_SAO_TRUC  := "res://assets/textures/sao_truc_asset.png"
+const IMG_DAN_BAU   := "res://assets/textures/dan_bau_asset.png"
 
 func _ready() -> void:
 	_build_theme()
@@ -417,8 +417,8 @@ func _build_theme() -> void:
 	_style_card(
 		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau,
 		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
-		Color(1.0, 1.0, 1.0, 0.95), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25),
-		C_RED_SON, C_RED_SON, "DBBar", "DBBtn", "DBPct")
+		Color(1.0, 1.0, 1.0, 0.95), Color(0.70, 0.12, 0.08, 0.25),
+		Color(0.70, 0.12, 0.08, 1.0), Color(0.70, 0.12, 0.08, 1.0), "DBBar", "DBBtn", "DBPct")
 
 	# Custom scrollbar styling
 	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
