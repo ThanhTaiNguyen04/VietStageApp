@@ -2,8 +2,9 @@ extends Control
 
 # Colors
 const C_BG_DARK     := Color(0.98, 0.97, 0.93, 1.0)
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0)
-const C_RED_SON_DK  := Color(0.50, 0.08, 0.05, 1.0)
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_SON_DK  := Color(0.05, 0.16, 0.11, 0.96)
+const C_RED_ERR     := Color(0.70, 0.12, 0.08, 1.0)
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0)
 const C_JADE        := Color(0.12, 0.37, 0.23, 1.0)
@@ -18,15 +19,15 @@ const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
 const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
 # Notes mapping to frequencies
-const NOTES = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
+const NOTES = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 const FREQS = {
-	"Hò": 261.63,     # C4
-	"Xự": 293.66,     # D4
-	"Xang": 349.23,   # F4
-	"Xê": 392.00,     # G4
-	"Công": 440.00,   # A4
-	"Liu": 523.25,    # C5
-	"Ú": 587.33       # D5
+	"Đô": 261.63,     # C4
+	"Rê": 293.66,     # D4
+	"Mi": 329.63,     # E4
+	"Fa": 349.23,     # F4
+	"Sol": 392.00,    # G4
+	"La": 440.00,     # A4
+	"Si": 493.88      # B4
 }
 
 # State
@@ -234,7 +235,7 @@ func _submit_answer(ans: String, btn: Button) -> void:
 		t.tween_property(btn, "position:x", ox + 10.0, 0.05)
 		t.tween_property(btn, "position:x", ox,        0.05)
 		
-		btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, Color(1,1,1,0.2), 20, true, 3))
+		btn.add_theme_stylebox_override("normal", _flat(C_RED_ERR, Color(1,1,1,0.2), 20, true, 3))
 		btn.add_theme_color_override("font_color", Color(1,1,1,1))
 		
 		# Highlight the correct one
@@ -245,7 +246,7 @@ func _submit_answer(ans: String, btn: Button) -> void:
 				opt_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 				
 		result_lbl.text = "Tiếc quá! Hãy gập lại hơi và lắng nghe nốt."
-		feedback_pan.add_theme_stylebox_override("panel", _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25), 16))
+		feedback_pan.add_theme_stylebox_override("panel", _flat(C_BG_BAR, Color(C_RED_ERR.r, C_RED_ERR.g, C_RED_ERR.b, 0.25), 16))
 		
 	feedback_pan.visible = true
 	

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script"    path="res://scripts/PracticeDanBau.gd"                      id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dh73yas1kofe0" path="res://assets/textures/bg_practice_room.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg"   id="3_char"]
+[ext_resource type="Texture2D" uid="uid://d3ewwh4ccte6v" path="res://assets/textures/virtual_artist_mai.png" id="3_char"]
 [ext_resource type="Script"    path="res://scripts/DanBauBoard.gd"                         id="4_board"]
 
 [node name="PracticeDanBau" type="Control"]
@@ -158,9 +158,17 @@ size_flags_vertical = 3
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="CharLinh" type="TextureRect" parent="Root/MiddleRow/LinhPanel/LinhVBox"]
+[node name="CharLinhWrapper" type="Control" parent="Root/MiddleRow/LinhPanel/LinhVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="CharLinh" type="TextureRect" parent="Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 texture = ExtResource("3_char")
 expand_mode = 1
 stretch_mode = 5

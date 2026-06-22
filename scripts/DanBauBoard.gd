@@ -4,12 +4,12 @@ signal string_plucked(idx: int, note_name: String)
 signal pitch_bent(cents_offset: float)
 
 const NODE_COUNT := 7
-const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Cống", "Liu", "Ú"]
+const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
 const C_BG_WOOD    := Color(0.16, 0.08, 0.03, 1.0)
 const C_ROSEWOOD   := Color(0.24, 0.12, 0.04, 1.0)
 
@@ -71,7 +71,7 @@ func pluck(idx: int) -> void:
 	_glow_alpha[idx] = 1.0
 	
 	# Emit signal
-	string_plucked.emit(idx, NOTES_VN[idx])
+	string_plucked.emit(idx, _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx])
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -475,7 +475,7 @@ func _draw_ivory_node(pos: Vector2, idx: int, is_target: bool, is_hovered: bool,
 	
 	if font != null:
 		var label_y := pos.y - 18.0
-		var text := NOTES_VN[idx]
+		var text := _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx]
 		var text_color := Color(1.0, 0.92, 0.70) if is_target else (Color(1.0, 1.0, 1.0) if is_hovered else Color(0.85, 0.80, 0.72, 0.85))
 		var font_size := 13 if (is_target or is_hovered) else 11
 		

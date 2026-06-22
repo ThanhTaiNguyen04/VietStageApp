@@ -5,7 +5,7 @@ class_name PracticeSaoTruc
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
 const C_GREEN_OK   := Color(0.12, 0.37, 0.23, 1.0)
@@ -18,7 +18,8 @@ const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
 const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
-@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinh
+@onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
+@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
 @onready var lesson_bar   : ProgressBar   = $Root/TopBar/TopM/TopH/ProgressVBox/LessonBar
 @onready var pitch_note   : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote
@@ -48,6 +49,9 @@ var _active_player : AudioStreamPlayer = null
 var _breath_pressure := 0.0
 var _rec_tween   : Tween
 var _eval_cooldown := 0.0
+var _linh_collapsed := true
+var linh_mini_btn : Button
+var _collapse_timer : SceneTreeTimer = null
 
 const FREQS := {
 	"Đô": 261.63, # C4
@@ -94,6 +98,7 @@ func _ready() -> void:
 	_build_rhythm_bars()
 	_start_float()
 	_connect_buttons()
+	_setup_collapsible_linh()
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -775,6 +780,86 @@ func _va_say(text: String) -> void:
 	var t := create_tween()
 	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
 	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
+
+	if _linh_collapsed:
+		_linh_collapsed = false
+		_update_linh_visibility()
+		
+	var active_timer = get_tree().create_timer(6.0)
+	_collapse_timer = active_timer
+	active_timer.timeout.connect(func():
+		if _collapse_timer == active_timer and not _linh_collapsed:
+			_linh_collapsed = true
+			_update_linh_visibility()
+	)
+
+func _setup_collapsible_linh() -> void:
+	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
+	if linh_vbox:
+		var collapse_btn := Button.new()
+		collapse_btn.text = "Thu nhỏ ◀"
+		collapse_btn.flat = true
+		collapse_btn.custom_minimum_size = Vector2(0, 36)
+		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		collapse_btn.pressed.connect(func():
+			_linh_collapsed = true
+			_update_linh_visibility()
+		)
+		linh_vbox.add_child(collapse_btn)
+		linh_vbox.move_child(collapse_btn, 0)
+		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
+		_make_button_bouncy(collapse_btn)
+		
+		# Add spacer to prevent floating avatar from overlapping the button text
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(0, 24)
+		linh_vbox.add_child(spacer)
+		linh_vbox.move_child(spacer, 1)
+
+	linh_mini_btn = Button.new()
+	linh_mini_btn.name = "LinhMiniBtn"
+	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
+	add_child(linh_mini_btn)
+	
+	linh_mini_btn.layout_mode = 1
+	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	linh_mini_btn.position.x += 24
+	linh_mini_btn.position.y -= 140
+	
+	var btn_s := StyleBoxFlat.new()
+	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
+	btn_s.border_color = C_GOLD
+	btn_s.border_width_left = 2; btn_s.border_width_right = 2
+	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
+	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
+	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
+	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	
+	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
+	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
+	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
+	
+	var mini_tex := TextureRect.new()
+	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
+	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mini_tex.size = Vector2(44, 44)
+	mini_tex.position = Vector2(10, 10)
+	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	linh_mini_btn.add_child(mini_tex)
+	
+	linh_mini_btn.pressed.connect(func():
+		_linh_collapsed = false
+		_update_linh_visibility()
+	)
+	_make_button_bouncy(linh_mini_btn)
+	_update_linh_visibility()
+
+func _update_linh_visibility() -> void:
+	if linh_panel:
+		linh_panel.visible = not _linh_collapsed
+	if linh_mini_btn:
+		linh_mini_btn.visible = _linh_collapsed
 
 func _show_custom_hint() -> void:
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene

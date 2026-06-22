@@ -98,5 +98,21 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
-		
-	save_data()
+		save_data()
+
+static func get_course_progress(instrument: String) -> float:
+	var completed := 0
+	var core_nodes := ["Node1", "Node2", "Node3", "Node4", "Node5"]
+	for node in core_nodes:
+		if is_lesson_completed(instrument, node):
+			completed += 1
+	return float(completed) / float(core_nodes.size()) * 100.0
+
+static func is_instrument_unlocked(instrument: String) -> bool:
+	if instrument == "dan_tranh":
+		return true
+	elif instrument == "sao_truc":
+		return is_lesson_completed("dan_tranh", "Node5")
+	elif instrument == "dan_bau":
+		return is_lesson_completed("sao_truc", "Node5")
+	return false

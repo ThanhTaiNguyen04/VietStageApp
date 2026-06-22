@@ -10,11 +10,11 @@ const C_ERR         := Color(0.98, 0.32, 0.22, 1.0)
 const C_GREEN_OK    := Color(0.25, 0.88, 0.55, 1.0)
 # Google brand
 const C_G_BLUE      := Color(0.26, 0.52, 0.96, 1.0)
-# Màu hạt hoạt hình
-const C_EMBER_1     := Color(0.98, 0.78, 0.22)   # vàng ánh lửa
-const C_EMBER_2     := Color(0.95, 0.45, 0.10)   # cam đỏ
-const C_PETAL_1     := Color(0.85, 0.20, 0.12)   # đỏ sẫm cổ
-const C_PETAL_2     := Color(0.70, 0.12, 0.08)   # đỏ thẫm
+# Màu hạt hoạt hình (Lá trúc & Đom đóm vàng)
+const C_EMBER_1     := Color(0.98, 0.78, 0.22)   # vàng ánh sáng
+const C_EMBER_2     := Color(0.22, 0.72, 0.45)   # xanh mint
+const C_PETAL_1     := Color(0.12, 0.42, 0.28)   # xanh lá trúc cổ
+const C_PETAL_2     := Color(0.09, 0.27, 0.18)   # xanh lục bảo đậm
 
 const FP := "Center/Card/CardMargin/ContentVBox/"
 

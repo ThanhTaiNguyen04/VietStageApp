@@ -1,10 +1,10 @@
 extends Control
 
-# ─── Color Palette (Traditional Vietnamese Lacquer Red & Gold Theme) ───────────
+# ─── Color Palette (Traditional Vietnamese Jade Green & Gold Theme) ───────────
 const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige for sidebar
 const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0) # vermilion lacquer red
-const C_RED_DK      := Color(0.38, 0.06, 0.04, 0.96) # deep red
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green (instead of vermilion lacquer red)
+const C_RED_DK      := Color(0.05, 0.16, 0.11, 0.96) # Deep dark jade green (instead of deep red)
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # golden yellow
 const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0) # bright gold
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
@@ -168,7 +168,7 @@ func _ready() -> void:
 			"rot": randf_range(0, TAU),
 			"rot_speed": randf_range(-2.0, 2.0),
 			"scale": randf_range(0.6, 1.4),
-			"color": Color(0.77, 0.58, 0.15, randf_range(0.25, 0.65)) if randf() > 0.4 else Color(0.70, 0.12, 0.08, randf_range(0.25, 0.65))
+			"color": Color(0.77, 0.58, 0.15, randf_range(0.25, 0.65)) if randf() > 0.4 else Color(0.09, 0.27, 0.18, randf_range(0.25, 0.65))
 		})
 
 	# Drawing connections
@@ -500,6 +500,14 @@ func _setup_station_button(btn: Button, code_name: String, displayName: String, 
 	btn.pivot_offset = btn.size / 2.0
 	btn.draw.connect(_on_station_draw.bind(btn, displayName, draw_func))
 	
+	# Override button styles to flat/empty to remove ugly Godot grey boxes
+	var empty_sb := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_sb)
+	btn.add_theme_stylebox_override("hover", empty_sb)
+	btn.add_theme_stylebox_override("pressed", empty_sb)
+	btn.add_theme_stylebox_override("focus", empty_sb)
+	btn.flat = true
+	
 	btn.mouse_entered.connect(_on_station_mouse_entered.bind(btn, code_name, displayName))
 	btn.mouse_exited.connect(_on_station_mouse_exited.bind(btn, code_name))
 	btn.pressed.connect(_on_station_pressed.bind(btn, code_name))
@@ -508,24 +516,7 @@ func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> 
 	var sz := btn.size
 	var is_hov := btn.is_hovered()
 	
-	# Always-on soft background halo (makes instrument visible against dark floor)
-	var bg_a := 0.08 + 0.03 * sin(_time * 1.5)
-	btn.draw_rect(Rect2(-8, -8, sz.x + 16, sz.y + 16),
-		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, bg_a), true)
-	
-	# Hover: add a strong golden glow frame
-	if is_hov:
-		var pulse := 0.5 + 0.5 * sin(_time * 8.0)
-		# Outer glow layers
-		for layer in range(3):
-			var expand := (3 - layer) * 5.0
-			var a := (0.15 + 0.12 * pulse) * (layer + 1) / 3.0
-			btn.draw_rect(Rect2(-expand, -expand, sz.x + expand * 2, sz.y + expand * 2),
-				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, a), false, 2.0)
-		# Bright inner gold border
-		btn.draw_rect(Rect2(0, 0, sz.x, sz.y),
-			Color(1.0, 0.92, 0.50, 0.9), false, 3.0)
-	
+	# Draw the custom instrument vectors
 	draw_func.call(btn)
 	
 	# Draw instrument name label at the bottom of the card using _font_body_bold
@@ -739,7 +730,7 @@ func _open_focus_mode_popup(inst: String) -> void:
 	# Configure labels and details based on instrument
 	if inst == "tranh":
 		popup_title.text = "Giới Thiệu Đàn Tranh"
-		text_theory.text = "Hệ ngũ âm truyền thống của Đàn Tranh Việt Nam sử dụng các nốt: Hò - Xự - Xang - Xê - Cống (tương đương với thang âm C4 - D4 - F4 - G4 - A4). Nhấn vào dây đàn bên phải nhạn để gảy âm."
+		text_theory.text = "Đàn Tranh sử dụng thang âm chuẩn với các nốt nhạc: Đô - Rê - Mi - Fa - Sol - La - Si (tương đương với các tần số C3 - D3 - E3 - F3 - G3 - A3 - B3). Nhấn vào dây đàn bên phải nhạn để gảy âm."
 		text_fingering.text = "Kỹ thuật tay phải: Sử dụng ngón cái (1), ngón trỏ (2) và ngón giữa (3) đeo móng gảy để gảy dây đàn hướng vào lòng.\nKỹ thuật tay trái: Nhấn và rung dây ở phía bên trái nhạn đàn để tạo âm rung cảm xúc."
 		btn_popup_play.visible = true
 		btn_popup_play.text = "VÀO HỌC"
@@ -826,19 +817,19 @@ func _draw_room_background() -> void:
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
 	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
 	
-	# ── 2. Wall: aged vermilion lacquer plaster (Stretched!) ──────────────────────
-	var wall_base := Color(0.42, 0.08, 0.05)  # deep cinnabar red
+	# ── 2. Wall: aged cream plaster (Stretched!) ──────────────────────
+	var wall_base := Color(0.95, 0.93, 0.89)  # warm cream-beige (#F3EFE3)
 	bg_canvas.draw_rect(Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound), wall_base)
 	
 	# Subtle aged plaster texture — horizontal streaks stretching across bounds
 	for i in range(int(top_bound), int(wall_h), 8):
-		var streak_a := 0.06 * sin(float(i) * 0.3 + _time * 0.1)
-		var streak_col := Color(0.45 + streak_a, 0.10, 0.06, 0.35)
+		var streak_a := 0.04 * sin(float(i) * 0.3 + _time * 0.1)
+		var streak_col := Color(0.92 + streak_a, 0.88, 0.80, 0.25)
 		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
 	
 	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
 	var cornice_y := wall_h - 36.0
-	bg_canvas.draw_rect(Rect2(left_bound, cornice_y, right_bound - left_bound, 36), Color(0.22, 0.12, 0.05))
+	bg_canvas.draw_rect(Rect2(left_bound, cornice_y, right_bound - left_bound, 36), C_RED_SON) # Deep jade green cornice
 	# Gold leaf trim lines
 	bg_canvas.draw_line(Vector2(left_bound, cornice_y), Vector2(right_bound, cornice_y), C_GOLD, 3.0)
 	bg_canvas.draw_line(Vector2(left_bound, cornice_y + 6), Vector2(right_bound, cornice_y + 6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 1.0)
@@ -891,34 +882,34 @@ func _draw_room_background() -> void:
 	bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
 	bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
-	# ── 5. Side column pillars (lacquered red wooden columns - Remains Framed!) ──
+	# ── 5. Side column pillars (deep jade green wood - Remains Framed!) ──
 	for col_x in [60.0, sz.x - 80.0]:
 		# Column base shadow
 		bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.25))
 		# Column body
-		bg_canvas.draw_rect(Rect2(col_x, 0, 20, wall_h), Color(0.28, 0.06, 0.03))
+		bg_canvas.draw_rect(Rect2(col_x, 0, 20, wall_h), C_RED_SON) # Premium deep jade green body
 		# Gold gilded edge
 		bg_canvas.draw_line(Vector2(col_x, 0), Vector2(col_x, wall_h), C_GOLD, 2.0)
 		bg_canvas.draw_line(Vector2(col_x + 20, 0), Vector2(col_x + 20, wall_h), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 1.0)
 		# Capital ornament at top
-		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), Color(0.22, 0.12, 0.05))
+		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_RED_SON)
 		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_GOLD, false, 1.5)
 		
-	# ── 6. Hanging lanterns (two red silk lanterns either side) ──────────────────
+	# ── 6. Hanging lanterns (two golden silk lanterns either side) ──────────────────
 	var pulse := 0.08 * sin(_time * 1.8)
 	for lan_x in [180.0, sz.x - 200.0]:
 		var lan_y := 20.0
 		# Lantern string from ceiling
 		bg_canvas.draw_line(Vector2(lan_x, 0), Vector2(lan_x, lan_y + 12), Color(0.50, 0.35, 0.15), 2.0)
-		# Lantern body (oval)
-		var lan_col := Color(0.70 + pulse, 0.12, 0.08)
+		# Lantern body (oval) - soft warm gold/orange instead of red
+		var lan_col := Color(0.92 + pulse, 0.76, 0.30)
 		var lh := 60.0
 		var lw := 28.0
 		for layer in range(20):
 			var t_fac := float(layer) / 20.0
 			var layer_w := sin(t_fac * PI) * lw
 			var layer_y := lan_y + t_fac * lh
-			var stripe_col := Color(0.68 + pulse, 0.10, 0.06) if layer % 4 < 2 else lan_col
+			var stripe_col := Color(0.77 + pulse, 0.58, 0.15) if layer % 4 < 2 else lan_col # C_GOLD stripes
 			bg_canvas.draw_line(Vector2(lan_x - layer_w, layer_y), Vector2(lan_x + layer_w, layer_y), stripe_col, lh / 20.0 + 0.5)
 		# Top & bottom caps (gold)
 		bg_canvas.draw_rect(Rect2(lan_x - lw * 0.4, lan_y, lw * 0.8, 8), C_GOLD)
@@ -928,24 +919,24 @@ func _draw_room_background() -> void:
 			var flen := 18.0 + sin(fi * 1.2 + _time * 2.0) * 4.0
 			bg_canvas.draw_line(Vector2(lan_x + fi * 4, lan_y + lh + 4), Vector2(lan_x + fi * 4 + sin(_time + fi) * 2, lan_y + lh + 4 + flen), Color(0.90, 0.65, 0.15, 0.85), 1.5)
 	
-	# ── 7. Dark lacquered hardwood floor (Stretched!) ─────────────────────────────
+	# ── 7. Muted dark teak hardwood floor (Stretched!) ─────────────────────────────
 	var floor_pts := PackedVector2Array([
 		Vector2(left_bound, wall_h), Vector2(right_bound, wall_h),
 		Vector2(right_bound, bottom_bound), Vector2(left_bound, bottom_bound)
 	])
-	bg_canvas.draw_colored_polygon(floor_pts, Color(0.22, 0.14, 0.07))  # dark teak wood
+	bg_canvas.draw_colored_polygon(floor_pts, Color(0.16, 0.12, 0.09))  # muted dark teak wood
 	
 	# Horizontal plank grain lines stretching across bounds
 	var plank_h := 26.0
 	for y_floor in range(int(wall_h), int(bottom_bound), int(plank_h)):
-		bg_canvas.draw_line(Vector2(left_bound, y_floor), Vector2(right_bound, y_floor), Color(0.15, 0.09, 0.04, 0.7), 1.2)
+		bg_canvas.draw_line(Vector2(left_bound, y_floor), Vector2(right_bound, y_floor), Color(0.11, 0.08, 0.05, 0.6), 1.2)
 		# Staggered joint
 		var joint_off := int(y_floor / plank_h) % 2 * 300
 		var start_joint : float = floor((left_bound - joint_off) / 500.0) * 500.0 + joint_off
 		for x_j in range(start_joint, right_bound, 500.0):
-			bg_canvas.draw_line(Vector2(x_j, y_floor), Vector2(x_j, y_floor + plank_h), Color(0.15, 0.09, 0.04, 0.55), 1.0)
+			bg_canvas.draw_line(Vector2(x_j, y_floor), Vector2(x_j, y_floor + plank_h), Color(0.11, 0.08, 0.05, 0.55), 1.0)
 		# Subtle lacquer sheen highlights
-		bg_canvas.draw_line(Vector2(left_bound, y_floor + 3), Vector2(right_bound, y_floor + 3), Color(0.38, 0.25, 0.12, 0.12), 1.5)
+		bg_canvas.draw_line(Vector2(left_bound, y_floor + 3), Vector2(right_bound, y_floor + 3), Color(0.25, 0.20, 0.15, 0.1), 1.5)
 	
 	# Deep shadow at the base of the wall (Stretched!)
 	for j in range(30):
@@ -953,9 +944,9 @@ func _draw_room_background() -> void:
 		var alpha := (1.0 - float(j) / 30.0) * 0.75
 		bg_canvas.draw_line(Vector2(left_bound, y_pos), Vector2(right_bound, y_pos), Color(0.04, 0.02, 0.01, alpha), 5.0)
 	
-	# ── 8. Drifting golden dust motes (incense smoke atmosphere) ─────────────────
+	# ── 8. Drifting golden dust motes (incense smoke atmosphere - Softened!) ─────────────────
 	for p in _particles:
-		bg_canvas.draw_circle(p.pos, 2.5 * p.scale, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, p.color.a * 0.35))
+		bg_canvas.draw_circle(p.pos, 2.5 * p.scale, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, p.color.a * 0.15))
 
 func _draw_floor_canvas() -> void:
 	var shadow_col := Color(0.06, 0.03, 0.01, 0.55)
@@ -974,21 +965,21 @@ func _draw_floor_canvas() -> void:
 		# 1. Floor drop shadow (ellipse)
 		floor_canvas.draw_arc(pos, 80.0, 0, TAU, 32, shadow_col, 14.0)
 		
-		# 2. Permanent warm spotlight glow halos on floor
-		var halo_a := 0.10 + 0.04 * sin(_time * 1.2)
+		# 2. Permanent warm spotlight glow halos on floor (Soften by 60%)
+		var halo_a := 0.04 + 0.02 * sin(_time * 1.2)
 		floor_canvas.draw_arc(pos, 96.0, 0, TAU, 32, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a * 0.5), 18.0)
 		floor_canvas.draw_arc(pos, 82.0, 0, TAU, 32, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 6.0)
 		floor_canvas.draw_arc(pos, 70.0, 0, TAU, 32, Color(1.0, 0.95, 0.80, halo_a * 0.6), 2.0)
 	
-	# 3. Dynamic spotlight under player's feet
+	# 3. Dynamic spotlight under player's feet (Soften by 50%)
 	var player_feet := _get_player_feet()
 	var spotlight_color := Color(1.0, 0.91, 0.68) # Warm gold spotlight
 	for layer in range(5):
 		var radius := 115.0 - layer * 18.0
-		var alpha := (0.13 - layer * 0.022) * (1.0 + 0.16 * sin(_time * 3.2))
+		var alpha := (0.06 - layer * 0.01) * (1.0 + 0.16 * sin(_time * 3.2))
 		floor_canvas.draw_circle(player_feet, radius, Color(spotlight_color.r, spotlight_color.g, spotlight_color.b, alpha))
 	
-	# 4. Pulsing yellow glow circle when hovering
+	# 4. Pulsing yellow glow circle when hovering (Soften by 50%)
 	if _hovered_station != "":
 		var base_pos := Vector2.ZERO
 		
@@ -1002,13 +993,13 @@ func _draw_floor_canvas() -> void:
 			var pulse := sin(_time * 7.0)
 			# Outer soft ring
 			floor_canvas.draw_arc(base_pos, 108.0 + pulse * 5.0, 0, TAU, 32,
-				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.18 + 0.08 * pulse), 14.0, true)
+				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.08 + 0.04 * pulse), 14.0, true)
 			# Middle ring
 			floor_canvas.draw_arc(base_pos, 86.0, 0, TAU, 32,
-				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.55 + 0.15 * pulse), 8.0, true)
+				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.28 + 0.08 * pulse), 8.0, true)
 			# Inner bright ring
 			floor_canvas.draw_arc(base_pos, 74.0, 0, TAU, 32,
-				Color(1.0, 0.97, 0.90, 0.85), 2.5, true)
+				Color(1.0, 0.97, 0.90, 0.45), 2.5, true)
 				
 	# 5. Draw walking particles
 	for p in _walk_particles:
@@ -1953,8 +1944,8 @@ func _draw_diagram_theory(c: Control) -> void:
 		c.draw_rect(Rect2(40, cy - 20, sz.x - 80, 40), C_GOLD, false, 1.5)
 		
 		# Draw strings + notes labels
-		var notes := ["Hò", "Xự", "Xang", "Xê", "Cống", "Liu", "Ú"]
-		var notes_lat := ["C4", "D4", "F4", "G4", "A4", "C5", "D5"]
+		var notes := ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+		var notes_lat := ["C3", "D3", "E3", "F3", "G3", "A3", "B3"]
 		var start_x := 80.0
 		var spacing := (sz.x - 160.0) / 6.0
 		

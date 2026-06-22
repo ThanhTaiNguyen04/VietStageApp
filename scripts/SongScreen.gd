@@ -4,8 +4,8 @@ extends Control
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_GOLD_DARK  := Color(0.06, 0.02, 0.00, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
-const C_RED_DK     := Color(0.50, 0.08, 0.05, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_DK     := Color(0.05, 0.16, 0.11, 0.96)
 const C_BG_DARK    := Color(0.98, 0.97, 0.94, 1.0)
 const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
@@ -27,7 +27,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 100,
-		"sheet": ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
+		"sheet": ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
 	},
 	{
 		"id": "song_002",
@@ -36,11 +36,11 @@ const SONGS_DATA := [
 		"instrument": "dan_tranh",
 		"instrument_label": "Đàn Tranh",
 		"difficulty": "Khó",
-		"difficulty_color": Color(0.70, 0.12, 0.08, 1.0), # Red
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0), # Jade green
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 250,
-		"sheet": ["Liu","Liu","Ú","Liu","Xang","Xê","Công","Xự","Xang","Liu","Hò"]
+		"sheet": ["La","La","Si","La","Mi","Fa","Sol","Rê","Mi","La","Đô"]
 	},
 	{
 		"id": "song_003",
@@ -53,7 +53,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 180,
-		"sheet": ["Xang","Xự","Hò","Xự","Xang","Xê","Liu","Công","Xê","Xang","Hò"]
+		"sheet": ["Mi","Rê","Đô","Rê","Mi","Fa","La","Sol","Fa","Mi","Đô"]
 	},
 	{
 		"id": "song_004",
@@ -66,7 +66,7 @@ const SONGS_DATA := [
 		"genre": "tru_tinh",
 		"genre_label": "Trữ tình",
 		"xp": 200,
-		"sheet": ["Hò","Xang","Xê","Liu","Công","Liu","Xê","Xang","Xự","Hò","Hò"]
+		"sheet": ["Đô","Mi","Fa","La","Sol","La","Fa","Mi","Rê","Đô","Đô"]
 	},
 	{
 		"id": "song_005",
@@ -101,7 +101,7 @@ const SONGS_DATA := [
 		"instrument": "sao_truc",
 		"instrument_label": "Sáo Trúc",
 		"difficulty": "Khó",
-		"difficulty_color": Color(0.70, 0.12, 0.08, 1.0), # Red
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0), # Jade green
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 220,
@@ -131,7 +131,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 120,
-		"sheet": ["Hò","Xang","Xê","Liu","Ú","Liu","Xê","Xang","Xự","Hò"]
+		"sheet": ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô"]
 	},
 	{
 		"id": "song_010",
@@ -144,7 +144,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 160,
-		"sheet": ["Hò","Xang","Xê","Liu","Ú","Liu","Xê","Xang","Xự","Hò","Liu"]
+		"sheet": ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô","La"]
 	}
 ]
 

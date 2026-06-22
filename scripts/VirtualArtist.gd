@@ -6,7 +6,7 @@ const C_WHITE_DIM := Color(0.13, 0.08, 0.05, 1.0)
 const C_BUBBLE_BG := Color(1.00, 1.00, 1.00, 0.98)
 const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 
-const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "MainMenu", "CourseMap", "VirtualMusicRoom"]
+const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "MainMenu", "CourseMap", "VirtualMusicRoom", "PracticeRoom", "PracticeSaoTruc", "PracticeDanBau"]
 
 const TIPS : Array[String] = [
 	"Thư giãn cổ tay khi gảy đàn nhé!",
@@ -142,9 +142,17 @@ func greet(scene_name: String) -> void:
 		"PracticeRoom":    "Thư giãn và cảm nhận từng nốt đàn tranh!",
 		"PracticeSaoTruc": "Hít thở đều và thổi nhẹ vào miệng sáo nhé!",
 		"MiniGame":        "Lắng nghe kỹ âm thanh rồi hãy chọn nhé!",
-		"VideoPlayer":     "Chú ý kỹ thuật bấm dây của tôi nhé!",
+		"VideoPlayer":     _get_video_player_greet(),
 	}
 	show_tip(msgs.get(scene_name, TIPS[randi() % TIPS.size()]), 6.0)
+
+func _get_video_player_greet() -> String:
+	var inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	if inst == "sao_truc":
+		return "Chú ý kỹ thuật đặt môi thổi sáo của tôi nhé!"
+	elif inst == "dan_bau":
+		return "Chú ý kỹ thuật uốn cần đàn bầu của tôi nhé!"
+	return "Chú ý kỹ thuật gảy dây đàn tranh của tôi nhé!"
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

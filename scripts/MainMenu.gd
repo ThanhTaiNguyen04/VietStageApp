@@ -5,15 +5,15 @@ const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige
 const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
 const C_WAVE_COLOR  := Color(0.92, 0.88, 0.80, 0.45) # soft warm gray wave
 const C_WAVE_COLOR2 := Color(0.95, 0.85, 0.60, 0.22) # soft warm gold wave
-const C_CARD_BG     := Color(0.70, 0.12, 0.08, 1.0) # C_RED_SON - vermilion lacquer red
+const C_CARD_BG     := Color(0.09, 0.27, 0.18, 1.0) # C_RED_SON - premium deep jade green
 const C_CARD_BG_DK  := Color(0.28, 0.16, 0.10, 1.0) # deep warm brown wood
 const C_CARD_LOCKED := Color(0.92, 0.90, 0.86, 0.70) # light warm gray-cream
 const C_GOLD_GLOW   := Color(0.77, 0.58, 0.15, 1.0) # C_GOLD - glowing gold progress ring
 const C_PATH_LINE   := Color(0.77, 0.58, 0.15, 0.80) # gold path line
 const C_PATH_SHADOW := Color(0.90, 0.86, 0.78, 0.40) # soft gold/beige shadow
 
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0)
-const C_RED_DK      := Color(0.38, 0.06, 0.04, 0.96)
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_DK      := Color(0.05, 0.16, 0.11, 0.96)
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
 const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
@@ -492,8 +492,8 @@ func _build_roadmap_cards() -> void:
 		path_chords_title.add_theme_font_override("font", font_title)
 		
 	roadmap_guide.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	path_soloist_title.add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0))
-	path_chords_title.add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0))
+	path_soloist_title.add_theme_color_override("font_color", C_RED_SON)
+	path_chords_title.add_theme_color_override("font_color", C_RED_SON)
 	
 	# Cards references
 	var basic_title := card_basic.get_node("Margin/Row/TextV/Title") as Label

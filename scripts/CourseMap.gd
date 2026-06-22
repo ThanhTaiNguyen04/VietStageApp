@@ -4,7 +4,7 @@ class_name CourseMap
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
 const C_BG_DARK     := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0) # lacquer red
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0) # premium deep jade green
 const C_RED_SON_DK  := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream for panels/sidebar
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # gold
 const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
@@ -606,6 +606,7 @@ func _connect_buttons() -> void:
 				if SecureDataManager.is_lesson_unlocked(inst_type, node_id):
 					_pluck_node(node)
 					if i == 5:
+						SecureDataManager.complete_lesson(inst_type, "Node5", 3)
 						_show_course_completed_dialog()
 					else:
 						CourseMap.active_lesson_id = node_id
@@ -650,24 +651,24 @@ func _go_practice_room_for_node(node_index: int) -> void:
 	# Configure target song title and sheet notes for the selected lesson!
 	if inst == "dan_tranh":
 		if node_index == 2:
-			PracticeRoom.current_song_title = "3 Nốt Đầu (Hò - Xự - Xang)"
-			PracticeRoom.current_song_sheet = ["Hò", "Xự", "Xang", "Xự", "Hò", "Xự", "Xang", "Hò"]
+			PracticeRoom.current_song_title = "3 Nốt Đầu (Đô - Rê - Mi)"
+			PracticeRoom.current_song_sheet = ["Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Đô"]
 		elif node_index == 3:
 			PracticeRoom.current_song_title = "Kỹ Thuật Nhấn Dây & Rung Âm"
-			PracticeRoom.current_song_sheet = ["Hò", "Hò", "Xự", "Xang", "Xang", "Xê", "Công", "Xê", "Xang", "Xự", "Hò"]
+			PracticeRoom.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
 		elif node_index == 4:
 			PracticeRoom.current_song_title = "Kỹ Thuật Song Thanh"
-			PracticeRoom.current_song_sheet = ["Hò", "Liu", "Xê", "Ú", "Liu", "Xang", "Cống", "Liu"]
+			PracticeRoom.current_song_sheet = ["Đô", "La", "Fa", "Si", "La", "Mi", "Sol", "La"]
 	elif inst == "dan_bau":
 		if node_index == 2:
 			PracticeDanBau.current_song_title = "Hài Âm Cơ Bản"
-			PracticeDanBau.current_song_sheet = ["Hò", "Xự", "Xang", "Xê", "Cống", "Liu", "Ú"]
+			PracticeDanBau.current_song_sheet = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 		elif node_index == 3:
 			PracticeDanBau.current_song_title = "Uốn Vòi Đàn"
-			PracticeDanBau.current_song_sheet = ["Hò", "Xang", "Xê", "Liu", "Ú", "Liu", "Xê", "Xang", "Xự", "Hò"]
+			PracticeDanBau.current_song_sheet = ["Đô", "Mi", "Fa", "La", "Si", "La", "Fa", "Mi", "Rê", "Đô"]
 		elif node_index == 4:
 			PracticeDanBau.current_song_title = "Luyến Láy Đàn Bầu"
-			PracticeDanBau.current_song_sheet = ["Hò", "Xê", "Liu", "Ú", "Liu", "Xê", "Hò"]
+			PracticeDanBau.current_song_sheet = ["Đô", "Fa", "La", "Si", "La", "Fa", "Đô"]
 	else: # sao_truc
 		if node_index == 2:
 			PracticeSaoTruc.current_song_title = "Hơi thở & Che lỗ cơ bản"
@@ -696,8 +697,33 @@ func _show_course_completed_dialog() -> void:
 	if popup_scene:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
-		var text := "[b]🎉 CHÚC MỪNG HOÀN THÀNH KHÓA HỌC![/b]\n\nBạn đã xuất sắc vượt qua toàn bộ lộ trình học đàn tranh cơ bản:\n• Giới thiệu nhạc cụ\n• Kỹ thuật 3 Nốt Đầu\n• Kỹ thuật Nhấn Dây & Rung Âm\n• Kỹ thuật Song Thanh\n\n[b]💡 LỜI KHUYÊN TIẾP THEO:[/b]\n• Tiếp tục luyện tập hàng ngày trong phòng nhạc ảo.\n• Thử sức với phần bài hát truyền thống để rèn luyện sự uyển chuyển.\n• Đón chờ các khóa học nâng cao sắp ra mắt!"
+		
+		var inst := InstrumentSelect.selected_instrument
+		var inst_name := ""
+		var lessons_list := ""
+		var next_inst_msg := ""
+		
+		if inst == "dan_tranh":
+			inst_name = "Đàn Tranh"
+			lessons_list = "• Giới thiệu nhạc cụ\n• Kỹ thuật 3 Nốt Đầu\n• Kỹ thuật Nhấn Dây & Rung Âm\n• Kỹ thuật Song Thanh"
+			next_inst_msg = "• Đã mở khóa khóa học tiếp theo: [b]Sáo Trúc[/b]!"
+		elif inst == "sao_truc":
+			inst_name = "Sáo Trúc"
+			lessons_list = "• Giới thiệu nhạc cụ\n• Kỹ thuật Hơi & Che Lỗ\n• Kỹ thuật Luyện Ngón\n• Kỹ thuật Nhấp Ngón"
+			next_inst_msg = "• Đã mở khóa khóa học tiếp theo: [b]Đàn Bầu[/b]!"
+		else:
+			inst_name = "Đàn Bầu"
+			lessons_list = "• Giới thiệu nhạc cụ\n• Kỹ thuật Hài Âm Cơ Bản\n• Kỹ thuật Uốn Vòi Đàn\n• Kỹ thuật Luyến Láy"
+			next_inst_msg = "• Bạn đã hoàn thành toàn bộ các khóa học cơ bản!"
+
+		var text := "[b]🎉 CHÚC MỪNG HOÀN THÀNH KHÓA HỌC![/b]\n\nBạn đã xuất sắc vượt qua toàn bộ lộ trình học %s cơ bản:\n%s\n\n[b]💡 LỜI KHUYÊN TIẾP THEO:[/b]\n%s\n• Tiếp tục luyện tập hàng ngày trong phòng nhạc ảo.\n• Thử sức với phần bài hát truyền thống để rèn luyện sự uyển chuyển." % [inst_name, lessons_list, next_inst_msg]
+		
 		popup.setup_hint("Chúc mừng hoàn thành", text)
+		popup.closed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+		)
 
 func _animate_in() -> void:
 	var delay := 0.15
