@@ -39,10 +39,19 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 @onready var breath_status   : Label       = $Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathStatus
 
 var _recording   := false
+var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
+
+# AI Analysis tracking variables
+var _practice_time := 0.0
+var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
+var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
+var _pitch_scores : Array[float] = []
+var _breath_scores : Array[float] = []
+
 var _covered_states : Array[bool] = [true, true, true, true, true, true]
 var _flute_streams : Dictionary = {}
 var _active_player : AudioStreamPlayer = null
@@ -123,6 +132,27 @@ func _ready() -> void:
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
+		
+		# Programmatic Mode Toggle Button
+		var mode_btn := Button.new()
+		mode_btn.name = "ModeToggleBtn"
+		mode_btn.text = "Chế độ: Micro 🎙️"
+		mode_btn.custom_minimum_size = Vector2(170, 44)
+		mode_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		record_hbox.add_child(mode_btn)
+		record_hbox.move_child(mode_btn, 0)
+		_style_outlined_btn(mode_btn)
+		_make_button_bouncy(mode_btn)
+		
+		mode_btn.pressed.connect(func() -> void:
+			_mic_mode = not _mic_mode
+			if _mic_mode:
+				mode_btn.text = "Chế độ: Micro 🎙️"
+				_va_say("Đã chuyển sang Chế độ luyện tập qua Micro.")
+			else:
+				mode_btn.text = "Chế độ: Chạm 📱"
+				_va_say("Đã chuyển sang Chế độ tự học qua màn hình chạm.")
+		)
 
 		# Programmatically add pulsing "REC" recording indicator next to record button
 		var rec_indicator := HBoxContainer.new()
@@ -163,8 +193,8 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _recording:
-		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
-		if visualizer and visualizer.visible:
+		_practice_time += delta
+		if _mic_mode:
 			_process_real_audio(delta)
 		else:
 			_sim_timer += delta
@@ -176,8 +206,25 @@ func _process(delta: float) -> void:
 
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
-	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "SÁO TRÚC  ·  BÀI 1" if current_song_title == "" else "SÁO TRÚC  ·  BÀI HÁT"
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Hơi thở & che lỗ cơ bản" if current_song_title == "" else current_song_title
+	
+	var diff := "Cơ bản"
+	if CourseMap.active_lesson_id == "Node3":
+		diff = "Trung bình"
+	elif CourseMap.active_lesson_id == "Node4":
+		diff = "Nâng cao"
+		
+	var title_lbl := "Hơi thở & che lỗ cơ bản"
+	if current_song_title != "":
+		title_lbl = current_song_title
+		diff = "Bài hát"
+	else:
+		if CourseMap.active_lesson_id == "Node3":
+			title_lbl = "Luyện Ngón Sáo Trúc"
+		elif CourseMap.active_lesson_id == "Node4":
+			title_lbl = "Nhấp Ngón Kỹ Thuật"
+
+	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "SÁO TRÚC  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "20%" if current_song_title == "" else "100%"
 	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
@@ -600,10 +647,21 @@ func _toggle_record() -> void:
 		record_btn.text = "Dừng luyện tập"
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
-		if visualizer: visualizer.visible = true
+		if visualizer and _mic_mode: visualizer.visible = true
 		_play_flute_sound(_get_current_note())
+		
+		# Reset AI tracking
+		_practice_time = 0.0
+		_detected_onsets.clear()
+		_pitch_scores.clear()
+		_breath_scores.clear()
+		_reference_onsets = PackedFloat32Array()
+		for i in range(sheet_notes.size()):
+			_reference_onsets.append(1.0 + i * 1.5)
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
+		if visualizer:
+			visualizer.add_practice_score(_score)
 		_show_custom_result()
 		_stop_pitch_detection()
 		if visualizer: visualizer.visible = false
@@ -676,12 +734,18 @@ func _process_real_audio(delta: float) -> void:
 	if db > -45.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
 		var target_freq = FREQS.get(target_note, 261.63)
+		var is_overblowing := _breath_pressure > 82.0
+		var scale_mult := 2.0 if is_overblowing else 1.0
+		var effective_target_freq : float = target_freq * scale_mult
 		
-		var cents = 1200.0 * log(pitch / target_freq) / log(2.0)
+		var cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
 		if abs(cents) < 50.0:
-			pitch_note.text = target_note
-			if abs(cents) < 12.0:
-				pitch_status.text = "Đúng cao độ"
+			pitch_note.text = target_note + ("²" if is_overblowing else "")
+			
+			# Scaled tolerance based on difficulty scale
+			var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
+			if abs(cents) < tolerance_cents:
+				pitch_status.text = "Đúng cao độ" + (" (Quãng 2)" if is_overblowing else "")
 				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 				pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
 			else:
@@ -689,13 +753,26 @@ func _process_real_audio(delta: float) -> void:
 				pitch_status.add_theme_color_override("font_color", C_WARN)
 				pitch_note.add_theme_color_override("font_color", C_WARN)
 				
+			# Record AI performance metrics
+			_detected_onsets.append(_practice_time)
+			var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
+			_pitch_scores.append(pitch_err)
+			_breath_scores.append(visualizer.current_breath_purity)
+			
 			# Advance note
 			_note_idx = (_note_idx + 1) % sheet_notes.size()
 			_build_notation()
 			_update_target_indicator()
-			_score = clamp(_score + 5.0, 0, 100)
+			
+			# Dynamic AI scoring
+			var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+			var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
+			var avg_breath_score = _get_average_score(_breath_scores, 80.0)
+			
+			_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, 100.0, avg_breath_score)
 			_refresh_score()
 			_update_rhythm_real()
+			rhythm_acc.text = "Nhịp điệu: %d%% | Cột hơi: %d%%" % [int(rhythm_score), int(avg_breath_score)]
 			
 			# Flute sound effect play
 			_play_flute_sound(target_note)
@@ -714,16 +791,16 @@ func _process_real_audio(delta: float) -> void:
 		var closest_note := ""
 		var min_diff := 999999.0
 		for note in FREQS.keys():
-			var note_freq = FREQS[note]
+			var note_freq = FREQS[note] * scale_mult
 			var diff = abs(pitch - note_freq)
 			if diff < min_diff:
 				min_diff = diff
 				closest_note = note
 				
 		if closest_note != "" and min_diff < 30.0:
-			detected_note = closest_note
+			detected_note = closest_note + ("²" if is_overblowing else "")
 			pitch_note.text = detected_note
-			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
+			pitch_status.text = "Lệch cao độ (Cần: %s%s)" % [target_note, "²" if is_overblowing else ""]
 			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
 			_score = clamp(_score - 0.5 * delta, 0, 100)
@@ -993,7 +1070,7 @@ func _update_breath_physics(delta: float) -> void:
 	var target_breath := 0.0
 	
 	if _recording:
-		if visualizer and visualizer.current_amplitude_db > -60.0:
+		if _mic_mode and visualizer and visualizer.current_amplitude_db > -60.0:
 			# Microphone volume-driven breath pressure
 			var db = visualizer.current_amplitude_db
 			target_breath = clamp((db + 60.0) / 45.0, 0.0, 1.0) * 100.0
@@ -1006,6 +1083,13 @@ func _update_breath_physics(delta: float) -> void:
 		
 	_breath_pressure = lerp(_breath_pressure, target_breath, 0.15)
 	breath_progress.value = _breath_pressure
+	
+	var flute_body := $Root/FluteBoard/BoardM/BoardVBox/FluteFrame/FluteM/FluteStack/FluteBody as Control
+	if flute_body:
+		var overblown := _breath_pressure > 82.0
+		if flute_body.get("is_overblowing") != overblown:
+			flute_body.set("is_overblowing", overblown)
+			flute_body.queue_redraw()
 	
 	var fill_style = breath_progress.get_theme_stylebox("fill") as StyleBoxFlat
 	if not fill_style:
@@ -1061,4 +1145,13 @@ func _update_rec_pulse(active: bool) -> void:
 		_rec_tween.tween_property(rec_indicator, "scale", Vector2(1.08, 1.08), 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_rec_tween.chain().parallel()
 		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_rec_tween.tween_property(rec_indicator, "scale", Vector2(1.0, 1.0), 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _get_average_score(scores: Array, default_val: float) -> float:
+	if scores.size() == 0:
+		return default_val
+	var sum := 0.0
+	for s in scores:
+		sum += s
+	return sum / scores.size()
+

@@ -36,9 +36,32 @@ static var active_lesson_id := "Node2"
 var _active_side_btn : Button = null
 var _pulse_time := 0.0
 var _sidebar_icons_cache := {}
+var btn_minigame : Button
+var btn_minigame_mob : Button
+
 
 func _ready() -> void:
 	SecureDataManager.load_data()
+	
+	# Programmatic instantiation of MiniGame button
+	var side_v := $RootHBox/LeftSidebar/SideM/SideV as VBoxContainer
+	btn_minigame = Button.new()
+	btn_minigame.name = "BtnMiniGame"
+	btn_minigame.text = "Mini-game"
+	btn_minigame.flat = true
+	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	side_v.add_child(btn_minigame)
+	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+
+	var bottom_h := $RootHBox/RightContent/BottomBar/BottomM/BottomH as HBoxContainer
+	btn_minigame_mob = Button.new()
+	btn_minigame_mob.name = "BtnMiniGameMobile"
+	btn_minigame_mob.text = "Mini-game"
+	btn_minigame_mob.flat = true
+	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_h.add_child(btn_minigame_mob)
+	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
+
 	# Sync video_completed progress with SecureDataManager
 	if CourseMap.video_completed:
 		var inst := InstrumentSelect.selected_instrument
@@ -94,9 +117,6 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-	
-	btn_room.hide()
-	btn_room_mob.hide()
 
 func _process(delta: float) -> void:
 	# Gentle breathing scale animation on active lesson node
@@ -156,21 +176,21 @@ func _set_labels() -> void:
 	var inst := InstrumentSelect.selected_instrument
 	if inst == "dan_tranh":
 		course_title.text = "Khóa Học Đàn Tranh Cơ Bản"
-		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "3 Nốt Đầu"
-		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Nhấn & Rung"
-		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Song Thanh"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "3 Nốt Đầu\n(Cơ bản)"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Nhấn & Rung\n(Trung bình)"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Song Thanh\n(Nâng cao)"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 	elif inst == "dan_bau":
 		course_title.text = "Khóa Học Đàn Bầu Cơ Bản"
-		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hài Âm Cơ Bản"
-		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Uốn Vòi Đàn"
-		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Luyến Láy"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hài Âm Cơ Bản\n(Cơ bản)"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Uốn Vòi Đàn\n(Trung bình)"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Luyến Láy\n(Nâng cao)"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 	else:
 		course_title.text = "Khóa Học Sáo Trúc Cơ Bản"
-		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hơi & Che Lỗ"
-		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Luyện Ngón"
-		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hơi & Che Lỗ\n(Cơ bản)"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Luyện Ngón\n(Trung bình)"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón\n(Nâng cao)"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
  
 	btn_courses.text = "Khóa học"
@@ -194,6 +214,7 @@ func _build_theme() -> void:
 	_style_side_icon_btn(btn_courses,  true)
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false, not is_prem)
+	_style_side_icon_btn(btn_minigame, false)
 	_style_side_icon_btn(btn_account, false)
 
 	# Clean up any existing IconDraw instances
@@ -205,6 +226,8 @@ func _build_theme() -> void:
 		if child.name == "IconDraw": child.queue_free()
 	for child in btn_songs.get_children():
 		if child.name == "IconDraw": child.queue_free()
+	for child in btn_minigame.get_children():
+		if child.name == "IconDraw": child.queue_free()
 	for child in btn_account.get_children():
 		if child.name == "IconDraw": child.queue_free()
 
@@ -212,6 +235,7 @@ func _build_theme() -> void:
 	_attach_icon_draw(btn_courses,  1)
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2, not is_prem)
+	_attach_icon_draw(btn_minigame, 3)
 	_attach_icon_draw(btn_account,  5)
 
 	_active_side_btn = btn_courses
@@ -337,11 +361,13 @@ func _build_bottom_bar() -> void:
 	_style_bottom_icon_btn(btn_courses_mob, true)
 	_style_bottom_icon_btn(btn_room_mob,    false)
 	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
+	_style_bottom_icon_btn(btn_minigame_mob, false)
 	_style_bottom_icon_btn(btn_account_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
 	_attach_bottom_icon_draw(btn_room_mob,    6)
 	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
+	_attach_bottom_icon_draw(btn_minigame_mob, 3)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
@@ -552,6 +578,14 @@ func _connect_buttons() -> void:
 		)
 		_make_button_bouncy(btn_account)
 
+	if btn_minigame:
+		btn_minigame.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file(_get_minigame_scene()))
+		)
+		_make_button_bouncy(btn_minigame)
+
 	if btn_courses:
 		_make_button_bouncy(btn_courses)
 
@@ -579,7 +613,15 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
 	)
 
-	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
+	if btn_minigame_mob:
+		btn_minigame_mob.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file(_get_minigame_scene()))
+		)
+		_make_button_bouncy(btn_minigame_mob)
+
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]:
 		_make_button_bouncy(btn)
 
 	var inst_type := InstrumentSelect.selected_instrument
@@ -639,6 +681,17 @@ func _make_node_hover_bouncy(node: Control) -> void:
 		t.tween_property(node, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		t.tween_property(node, "rotation_degrees", 0.0, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	)
+
+func _get_minigame_scene() -> String:
+	match InstrumentSelect.selected_instrument:
+		"dan_tranh":
+			return "res://scenes/MiniGameDanTranh.tscn"
+		"sao_truc":
+			return "res://scenes/MiniGameSaoTruc.tscn"
+		"dan_bau":
+			return "res://scenes/MiniGameDanBau.tscn"
+		_:
+			return "res://scenes/MiniGameDanTranh.tscn"
 
 func _go_video_lesson() -> void:
 	var t := create_tween()
@@ -822,6 +875,8 @@ func _on_viewport_size_changed() -> void:
 			var label = v_box.get_node_or_null("Title") as Label
 			if label:
 				label.add_theme_font_size_override("font_size", title_font_size)
+				label.autowrap_mode = TextServer.AUTOWRAP_WORD
+				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				
 		# Update icon pill anchor and offsets
 		var anchor = node.get_node_or_null("IconAnchor") as Control

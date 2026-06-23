@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0xvxh73ccun8"
-valid=false
+uid="uid://68sumqv2vrkl"
+path="res://.godot/imported/trong_chau_asset.png-92439300e59e73e0c233f57256a2f1c4.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/textures/trong_chau_asset.png"
+dest_files=["res://.godot/imported/trong_chau_asset.png-92439300e59e73e0c233f57256a2f1c4.ctex"]
 
 [params]
 

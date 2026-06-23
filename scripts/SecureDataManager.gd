@@ -26,7 +26,9 @@ static var data := {
 	},
 	"daily_streak": 1,
 	"last_practice_date": "",
-	"practice_time_seconds": 0
+	"practice_time_seconds": 0,
+	"unlocked_decorations": [],
+	"active_decorations": []
 }
 
 static func save_data() -> void:
@@ -116,3 +118,44 @@ static func is_instrument_unlocked(instrument: String) -> bool:
 	elif instrument == "dan_bau":
 		return is_lesson_completed("sao_truc", "Node5")
 	return false
+
+static func get_total_stars() -> int:
+	var total := 0
+	if data.has("stars"):
+		for inst in data.stars.keys():
+			for lesson_id in data.stars[inst].keys():
+				total += int(data.stars[inst][lesson_id])
+	return total
+
+static func unlock_decoration(decor_id: String, cost: int) -> bool:
+	if not data.has("unlocked_decorations"):
+		data["unlocked_decorations"] = []
+	if not data.has("active_decorations"):
+		data["active_decorations"] = []
+		
+	if data["unlocked_decorations"].has(decor_id):
+		return true
+		
+	var stars = get_total_stars()
+	if stars >= cost:
+		data["unlocked_decorations"].append(decor_id)
+		if not data["active_decorations"].has(decor_id):
+			data["active_decorations"].append(decor_id)
+		save_data()
+		return true
+	return false
+
+static func toggle_decoration(decor_id: String) -> void:
+	if not data.has("unlocked_decorations"):
+		data["unlocked_decorations"] = []
+	if not data.has("active_decorations"):
+		data["active_decorations"] = []
+		
+	if not data["unlocked_decorations"].has(decor_id):
+		return
+		
+	if data["active_decorations"].has(decor_id):
+		data["active_decorations"].erase(decor_id)
+	else:
+		data["active_decorations"].append(decor_id)
+	save_data()

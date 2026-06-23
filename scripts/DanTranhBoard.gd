@@ -80,6 +80,9 @@ func _process(delta: float) -> void:
 		if _is_target[i]:
 			_pulse_phase[i] += delta * 3.5
 			need             = true
+		if _is_pressed[i]:
+			_update_press(i)
+			need             = true
 	if need:
 		queue_redraw()
 
@@ -172,7 +175,10 @@ func _draw() -> void:
 		var pts := PackedVector2Array()
 		pts.append(Vector2(str_l, cy))
 		if _is_pressed[i] and _press_x[i] > str_l and _press_x[i] < bridge_x:
-			pts.append(Vector2(_press_x[i], _press_y[i]))
+			var max_b := _row_h() * 0.48
+			var bend  := clampf((_press_y[i] - cy) / max_b, 0.0, 1.0)
+			var visual_vibrato := sin(Time.get_ticks_msec() * 0.041) * 3.5 * bend
+			pts.append(Vector2(_press_x[i], _press_y[i] + visual_vibrato))
 		pts.append(Vector2(bridge_x, cy))
 		
 		# Vibration oscillation
@@ -236,8 +242,12 @@ func _draw() -> void:
 
 		# Press touch marker
 		if _is_pressed[i]:
-			draw_circle(Vector2(_press_x[i], _press_y[i]), 6.0, Color(0.95, 0.22, 0.08, 0.85))
-			draw_circle(Vector2(_press_x[i], _press_y[i]), 3.0, Color(1.00, 0.75, 0.35, 0.95))
+			var max_b := _row_h() * 0.48
+			var bend  := clampf((_press_y[i] - cy) / max_b, 0.0, 1.0)
+			var visual_vibrato := sin(Time.get_ticks_msec() * 0.041) * 3.5 * bend
+			var marker_y = _press_y[i] + visual_vibrato
+			draw_circle(Vector2(_press_x[i], marker_y), 6.0, Color(0.95, 0.22, 0.08, 0.85))
+			draw_circle(Vector2(_press_x[i], marker_y), 3.0, Color(1.00, 0.75, 0.35, 0.95))
 
 	# Traditional gold corner rivet plates
 	var plate_size := 22.0
@@ -439,7 +449,12 @@ func _get_pitch_scale(idx: int) -> float:
 	var cy    := _row_cy(idx)
 	var max_b := _row_h() * 0.48
 	var bend  := clampf((_press_y[idx] - cy) / max_b, 0.0, 1.0)
-	return 1.0 + bend * 0.12246
+	
+	var vibrato := 0.0
+	if bend > 0.05:
+		vibrato = sin(Time.get_ticks_msec() * 0.041) * 0.015 * bend
+		
+	return 1.0 + bend * 0.12246 + vibrato
 
 func _update_press(idx: int) -> void:
 	var scale := _get_pitch_scale(idx)
@@ -447,5 +462,5 @@ func _update_press(idx: int) -> void:
 	if p_ref != null and is_instance_valid(p_ref):
 		var player := p_ref as AudioStreamPlayer
 		if player.playing:
-			create_tween().tween_property(p_ref, "pitch_scale", scale, 0.04)
+			player.pitch_scale = scale
 	string_pressed.emit(idx, (scale - 1.0) * 1630.0)

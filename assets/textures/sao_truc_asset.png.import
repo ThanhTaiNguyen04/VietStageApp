@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dobs44l526ita"
-valid=false
+uid="uid://r63ie8q0up7h"
+path="res://.godot/imported/sao_truc_asset.png-8b811e5e5a69eba9d4250f931ade1d4f.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/textures/sao_truc_asset.png"
+dest_files=["res://.godot/imported/sao_truc_asset.png-8b811e5e5a69eba9d4250f931ade1d4f.ctex"]
 
 [params]
 

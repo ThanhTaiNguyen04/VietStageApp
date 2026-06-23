@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d3logo"
-valid=false
+uid="uid://cvjsxoool0dsw"
+path="res://.godot/imported/ui_logo.png-99157ef1f10714519e5814c4ce54ddb9.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/textures/ui_logo.png"
+dest_files=["res://.godot/imported/ui_logo.png-99157ef1f10714519e5814c4ce54ddb9.ctex"]
 
 [params]
 

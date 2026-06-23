@@ -82,8 +82,8 @@ var _player_dir : Vector2 = Vector2.DOWN
 var _idle_time : float = 0.0
 
 # Player state variables
-var _player_pos : Vector2 = Vector2(600, 480)
-var _target_position : Vector2 = Vector2(600, 480)
+var _player_pos : Vector2 = Vector2(600, 560)
+var _target_position : Vector2 = Vector2(600, 560)
 var _is_moving_to_target : bool = false
 var _player_is_moving : bool = false
 var _player_walk_time : float = 0.0
@@ -99,6 +99,8 @@ var char_player : Control
 var dialogue_box : PanelContainer
 var dialogue_lbl : Label
 var btn_dialogue_close : Button
+
+var shop_popup : Control = null
 
 var _font_title : Font
 var _font_body : Font
@@ -119,12 +121,17 @@ func _ready() -> void:
 	room_content.anchor_right = 0.0
 	room_content.anchor_bottom = 0.0
 	room_content.size = Vector2(1200, 800)
+	var focus_scroll = popup.get_node_or_null("ScrollPanel")
+	if focus_scroll:
+		focus_scroll.custom_minimum_size = Vector2(920, 580)
 
 	SecureDataManager.load_data()
-	_tex_tranh = load("res://assets/textures/dan_tranh_asset.png") as Texture2D
-	_tex_sao = load("res://assets/textures/sao_truc_asset.png") as Texture2D
-	_tex_bau = load("res://assets/textures/dan_bau_asset.png") as Texture2D
-	_tex_trong = load("res://assets/textures/trong_chau_asset.png") as Texture2D
+	_spawn_decorations()
+	_setup_hud_shop_button()
+	_tex_tranh = _make_texture_transparent(load("res://assets/textures/dan_tranh_asset.png") as Texture2D)
+	_tex_sao = _make_texture_transparent(load("res://assets/textures/sao_truc_asset.png") as Texture2D)
+	_tex_bau = _make_texture_transparent(load("res://assets/textures/dan_bau_asset.png") as Texture2D)
+	_tex_trong = _make_texture_transparent(load("res://assets/textures/trong_chau_asset.png") as Texture2D)
 	_tex_linh = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
 	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
 	
@@ -270,7 +277,7 @@ func _process(delta: float) -> void:
 	var rx := room_content.position.x
 	var ry := room_content.position.y
 	var scale := room_content.scale.x
-	var viewport_size : Vector2 = self.size
+	var viewport_size : Vector2 = get_viewport().size
 	var left_bound : float = -rx / scale if scale > 0.0 else 0.0
 	var right_bound : float = (viewport_size.x - rx) / scale if scale > 0.0 else 1200.0
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
@@ -326,7 +333,7 @@ func _process(delta: float) -> void:
 	# Proximity check and prompt update
 	var closest_station := _get_closest_station()
 	var is_near_linh := _get_player_feet().distance_to(Vector2(600, 370)) < _interact_range
-	var is_ui_focused := popup.visible or (dialogue_box != null and dialogue_box.visible)
+	var is_ui_focused := popup.visible or (dialogue_box != null and dialogue_box.visible) or (shop_popup != null and shop_popup.visible)
 
 	# Movement logic
 	if not is_ui_focused:
@@ -704,17 +711,17 @@ func _setup_focus_popup_controls() -> void:
 			InstrumentSelect.selected_instrument = "dan_tranh"
 			SecureDataManager.data["selected_instrument"] = "dan_tranh"
 			SecureDataManager.save_data()
-			_fade_to("res://scenes/MainMenu.tscn")
+			_fade_to("res://scenes/CourseMap.tscn")
 		elif _current_popup_instrument == "sao":
 			InstrumentSelect.selected_instrument = "sao_truc"
 			SecureDataManager.data["selected_instrument"] = "sao_truc"
 			SecureDataManager.save_data()
-			_fade_to("res://scenes/MainMenu.tscn")
+			_fade_to("res://scenes/CourseMap.tscn")
 		elif _current_popup_instrument == "bau":
 			InstrumentSelect.selected_instrument = "dan_bau"
 			SecureDataManager.data["selected_instrument"] = "dan_bau"
 			SecureDataManager.save_data()
-			_fade_to("res://scenes/MainMenu.tscn")
+			_fade_to("res://scenes/CourseMap.tscn")
 	)
 	
 	_make_btn_bouncy(btn_tab_theory)
@@ -796,10 +803,12 @@ func _style_popup_button(btn: Button, primary: bool) -> void:
 	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color", fg)
 	btn.add_theme_color_override("font_hover_color", fg)
+	btn.remove_theme_stylebox_override("disabled")
+	btn.remove_theme_color_override("font_disabled_color")
 
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
-	var viewport_size : Vector2 = self.size
+	var viewport_size : Vector2 = get_viewport().size
 	# 1. Deep background — aged indigo/midnight tone
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.07, 0.05, 0.04))
 	
@@ -1020,7 +1029,11 @@ func _get_sort_y(node: Control) -> float:
 func _sort_room_elements() -> void:
 	if not char_player:
 		return
-	var items := [s_tranh, s_sao, s_bau, s_trong, char_linh, char_player]
+	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh, char_player]
+	for c in room_content.get_children():
+		if c.name.begins_with("Decor_"):
+			items.append(c)
+			
 	items.sort_custom(func(a, b):
 		return _get_sort_y(a) < _get_sort_y(b)
 	)
@@ -1045,14 +1058,21 @@ func _draw_tranh(c: Button) -> void:
 		var img_h := 90.0
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
 		
-		# Draw ambient shadow under the instrument image card
-		c.draw_rect(Rect2(img_rect.position + Vector2(4, 4), img_rect.size), Color(0.0, 0.0, 0.0, 0.3), true)
+		# Draw a premium dark glassmorphism card background with gold border
+		var r_sb := StyleBoxFlat.new()
+		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
+		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
+		r_sb.border_width_left = 2; r_sb.border_width_right = 2
+		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
+		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
+		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
+		r_sb.shadow_size = 8
+		r_sb.shadow_color = Color(0, 0, 0, 0.3)
+		r_sb.shadow_offset = Vector2(0, 4)
+		c.draw_style_box(r_sb, img_rect)
 		
-		# Draw the loaded Dan Tranh image texture
+		# Draw the loaded Dan Tranh image texture on top of the glass card
 		c.draw_texture_rect(_tex_tranh, img_rect, false)
-		
-		# Draw a premium border matching the traditional theme (gold when normal, lighter gold when hovered)
-		c.draw_rect(img_rect, C_GOLD if not is_hov else C_GOLD_LIGHT, false, 2.5)
 	else:
 		# Fallback if texture fails to load (original procedural rendering)
 		var zb_pts := PackedVector2Array([
@@ -1125,14 +1145,21 @@ func _draw_sao(c: Button) -> void:
 		var img_h := 90.0
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
 		
-		# Draw ambient shadow under the instrument image card
-		c.draw_rect(Rect2(img_rect.position + Vector2(4, 4), img_rect.size), Color(0.0, 0.0, 0.0, 0.3), true)
+		# Draw a premium dark glassmorphism card background with gold border
+		var r_sb := StyleBoxFlat.new()
+		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
+		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
+		r_sb.border_width_left = 2; r_sb.border_width_right = 2
+		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
+		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
+		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
+		r_sb.shadow_size = 8
+		r_sb.shadow_color = Color(0, 0, 0, 0.3)
+		r_sb.shadow_offset = Vector2(0, 4)
+		c.draw_style_box(r_sb, img_rect)
 		
-		# Draw the loaded Sao Truc image texture
+		# Draw the loaded Sao Truc image texture on top of the glass card
 		c.draw_texture_rect(_tex_sao, img_rect, false)
-		
-		# Draw a premium border matching the traditional theme
-		c.draw_rect(img_rect, C_GOLD if not is_hov else C_GOLD_LIGHT, false, 2.5)
 	else:
 		# Slanted Bamboo Flute body - Warm Golden Bamboo color (realistic)
 		var f_start := Vector2(cx - 90, cy + 10)
@@ -1191,14 +1218,21 @@ func _draw_bau(c: Button) -> void:
 		var img_h := 90.0
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
 		
-		# Draw ambient shadow under the instrument image card
-		c.draw_rect(Rect2(img_rect.position + Vector2(4, 4), img_rect.size), Color(0.0, 0.0, 0.0, 0.3), true)
+		# Draw a premium dark glassmorphism card background with gold border
+		var r_sb := StyleBoxFlat.new()
+		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
+		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
+		r_sb.border_width_left = 2; r_sb.border_width_right = 2
+		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
+		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
+		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
+		r_sb.shadow_size = 8
+		r_sb.shadow_color = Color(0, 0, 0, 0.3)
+		r_sb.shadow_offset = Vector2(0, 4)
+		c.draw_style_box(r_sb, img_rect)
 		
-		# Draw the loaded Dan Bau image texture
+		# Draw the loaded Dan Bau image texture on top of the glass card
 		c.draw_texture_rect(_tex_bau, img_rect, false)
-		
-		# Draw a premium border matching the traditional theme
-		c.draw_rect(img_rect, C_GOLD if not is_hov else C_GOLD_LIGHT, false, 2.5)
 	else:
 		# Monochord Zither Body with tapered profile (tapered mahogany wood)
 		# Left end is narrower (where the gourd is), right end is wider
@@ -1256,14 +1290,21 @@ func _draw_trong(c: Button) -> void:
 		var img_h := 110.0
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
 		
-		# Draw ambient shadow under the drum image card
-		c.draw_rect(Rect2(img_rect.position + Vector2(4, 4), img_rect.size), Color(0.0, 0.0, 0.0, 0.3), true)
+		# Draw a premium dark glassmorphism card background with gold border
+		var r_sb := StyleBoxFlat.new()
+		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
+		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
+		r_sb.border_width_left = 2; r_sb.border_width_right = 2
+		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
+		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
+		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
+		r_sb.shadow_size = 8
+		r_sb.shadow_color = Color(0, 0, 0, 0.3)
+		r_sb.shadow_offset = Vector2(0, 4)
+		c.draw_style_box(r_sb, img_rect)
 		
-		# Draw the loaded Trong image texture
+		# Draw the loaded Trong image texture on top of the glass card
 		c.draw_texture_rect(_tex_trong, img_rect, false)
-		
-		# Draw a premium border matching the traditional theme
-		c.draw_rect(img_rect, C_GOLD if not is_hov else C_GOLD_LIGHT, false, 2.5)
 	else:
 		# Drum body (Realistic curved barrel staves)
 		var dc := Vector2(cx, cy - 4)
@@ -2012,7 +2053,7 @@ func _fade_to(path: String) -> void:
 
 # ─── Responsive Layout ────────────────────────────────────────────────────────
 func _on_viewport_size_changed() -> void:
-	var size : Vector2 = self.size
+	var size : Vector2 = get_viewport().size
 	var is_mobile := size.x < size.y or size.x < 768
 	
 	# Scale the 2.5D Room content container to fit inside screen boundaries
@@ -2033,6 +2074,19 @@ func _on_viewport_size_changed() -> void:
 		margin_l + (room_w - 1200.0 * scale_factor) / 2.0,
 		(room_h - 800.0 * scale_factor) / 2.0
 	)
+	
+	# Update popups to match the actual window size
+	if popup and is_instance_valid(popup):
+		popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var scroll_panel = popup.get_node_or_null("ScrollPanel")
+		if scroll_panel:
+			scroll_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+			
+	if shop_popup and is_instance_valid(shop_popup):
+		shop_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var scroll_panel = shop_popup.get_node_or_null("ScrollPanel")
+		if scroll_panel:
+			scroll_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2066,6 +2120,504 @@ func _make_btn_bouncy(btn: Button) -> void:
 		t.tween_property(btn, "scale", Vector2(0.95, 0.95), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	)
 	btn.button_up.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		btn.scale = Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE
 	)
+
+# ─── Decoration Shop & Reward Helpers ──────────────────────────────────────────
+
+func _setup_hud_shop_button() -> void:
+	# Create a clean, non-overlapping HBoxContainer for top-right HUD controls
+	var hud_hbox := HBoxContainer.new()
+	hud_hbox.name = "HUDHBox"
+	$HUD.add_child(hud_hbox)
+	hud_hbox.layout_mode = 1
+	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	hud_hbox.offset_left = -380
+	hud_hbox.offset_top = 32
+	hud_hbox.offset_right = -32
+	hud_hbox.offset_bottom = 32 + 48
+	hud_hbox.alignment = BoxContainer.ALIGNMENT_END
+	hud_hbox.add_theme_constant_override("separation", 16)
+	
+	# Create Star Badge
+	var star_badge := PanelContainer.new()
+	star_badge.name = "StarBadge"
+	star_badge.custom_minimum_size = Vector2(140, 48)
+	hud_hbox.add_child(star_badge)
+	
+	var badge_s := StyleBoxFlat.new()
+	badge_s.bg_color = Color(0.08, 0.05, 0.03, 0.8) # Dark premium brown
+	badge_s.border_color = C_GOLD
+	badge_s.border_width_left = 2; badge_s.border_width_right = 2
+	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
+	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
+	badge_s.corner_radius_bottom_left = 24; badge_s.corner_radius_bottom_right = 24
+	star_badge.add_theme_stylebox_override("panel", badge_s)
+	
+	var badge_margin := MarginContainer.new()
+	badge_margin.name = "Margin"
+	badge_margin.add_theme_constant_override("margin_left", 12)
+	badge_margin.add_theme_constant_override("margin_right", 12)
+	star_badge.add_child(badge_margin)
+	
+	var badge_label := Label.new()
+	badge_label.name = "Label"
+	badge_label.text = "⭐ %d SAO" % SecureDataManager.get_total_stars()
+	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge_label.add_theme_font_size_override("font_size", 15)
+	badge_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	if _font_body_bold:
+		badge_label.add_theme_font_override("font", _font_body_bold)
+	badge_margin.add_child(badge_label)
+
+	# Create Shop Button
+	var btn_shop := Button.new()
+	btn_shop.name = "BtnShop"
+	btn_shop.text = "🎨 TRANG TRÍ"
+	btn_shop.custom_minimum_size = Vector2(160, 48)
+	hud_hbox.add_child(btn_shop)
+	_style_popup_button(btn_shop, true)
+	_make_btn_bouncy(btn_shop)
+	btn_shop.pressed.connect(_open_shop_popup)
+
+func _update_star_badge() -> void:
+	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
+	if label:
+		label.text = "⭐ %d SAO" % SecureDataManager.get_total_stars()
+
+func _spawn_decorations() -> void:
+	# Clear old decorations first
+	for c in room_content.get_children():
+		if c.name.begins_with("Decor_"):
+			c.queue_free()
+			
+	var active_decor = SecureDataManager.data.get("active_decorations", [])
+	for item_id in active_decor:
+		var ctrl := Control.new()
+		ctrl.name = "Decor_" + item_id
+		
+		# Define sizes and positions for room layout
+		match item_id:
+			"painting":
+				ctrl.position = Vector2(170, 75)
+				ctrl.size = Vector2(100, 70)
+			"vase":
+				ctrl.position = Vector2(400, 420)
+				ctrl.size = Vector2(50, 90)
+			"bamboo":
+				ctrl.position = Vector2(60, 240)
+				ctrl.size = Vector2(60, 110)
+			"bronze_drum":
+				ctrl.position = Vector2(620, 680)
+				ctrl.size = Vector2(70, 50)
+				
+		room_content.add_child(ctrl)
+		ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id))
+	
+	_sort_room_elements()
+
+func _draw_decor_node(c: Control, item_id: String) -> void:
+	_draw_decor_item(c, item_id, 1.0)
+
+func _draw_ellipse_poly(c: Control, center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:
+	var pts := PackedVector2Array()
+	var steps := 24
+	for i in range(steps):
+		var angle = float(i) * TAU / steps
+		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
+	c.draw_colored_polygon(pts, color)
+
+func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: float, color: Color, width: float = 1.0) -> void:
+	var pts := PackedVector2Array()
+	var steps := 24
+	for i in range(steps + 1):
+		var angle = float(i) * TAU / steps
+		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
+	c.draw_polyline(pts, color, width, true)
+
+func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
+	var sz := c.size
+	var cx := sz.x * 0.5
+	var cy := sz.y * 0.5
+	
+	match item_id:
+		"painting":
+			var rect_w := 90.0 * size_scale
+			var rect_h := 60.0 * size_scale
+			var rect := Rect2(cx - rect_w/2, cy - rect_h/2, rect_w, rect_h)
+			c.draw_rect(rect, Color(0.24, 0.12, 0.04), true)
+			c.draw_rect(rect, C_GOLD, false, 1.5)
+			var canvas := Rect2(cx - rect_w/2 + 4, cy - rect_h/2 + 4, rect_w - 8, rect_h - 8)
+			c.draw_rect(canvas, Color(0.1, 0.02, 0.02), true)
+			c.draw_circle(canvas.position + Vector2(rect_w * 0.3, rect_h * 0.35), 8.0 * size_scale, Color(0.68, 0.15, 0.15))
+			var pts := PackedVector2Array([
+				canvas.position + Vector2(4, rect_h - 12),
+				canvas.position + Vector2(rect_w * 0.3, rect_h * 0.5),
+				canvas.position + Vector2(rect_w * 0.5, rect_h - 12)
+			])
+			c.draw_colored_polygon(pts, Color(0.85, 0.68, 0.22, 0.75))
+			var pts2 := PackedVector2Array([
+				canvas.position + Vector2(rect_w * 0.4, rect_h - 12),
+				canvas.position + Vector2(rect_w * 0.75, rect_h * 0.4),
+				canvas.position + Vector2(rect_w - 12, rect_h - 12)
+			])
+			c.draw_colored_polygon(pts2, Color(0.77, 0.58, 0.15, 0.9))
+			
+		"vase":
+			var vh := 80.0 * size_scale
+			var vw := 32.0 * size_scale
+			c.draw_rect(Rect2(cx - vw * 0.6, cy + vh * 0.4, vw * 1.2, 8.0 * size_scale), Color(0.18, 0.09, 0.05), true)
+			
+			var body_pts := PackedVector2Array()
+			var steps := 20
+			for i in range(steps + 1):
+				var t := float(i) / steps
+				var r := vw * 0.3
+				if t < 0.25:
+					r = lerpf(vw * 0.35, vw * 0.22, t / 0.25)
+				elif t < 0.65:
+					r = lerpf(vw * 0.22, vw * 0.55, (t - 0.25) / 0.4)
+				else:
+					r = lerpf(vw * 0.55, vw * 0.35, (t - 0.65) / 0.35)
+				var py := cy - vh*0.4 + t * vh
+				body_pts.append(Vector2(cx - r, py))
+			for i in range(steps, -1, -1):
+				var t := float(i) / steps
+				var r := vw * 0.3
+				if t < 0.25:
+					r = lerpf(vw * 0.35, vw * 0.22, t / 0.25)
+				elif t < 0.65:
+					r = lerpf(vw * 0.22, vw * 0.55, (t - 0.25) / 0.4)
+				else:
+					r = lerpf(vw * 0.55, vw * 0.35, (t - 0.65) / 0.35)
+				var py := cy - vh*0.4 + t * vh
+				body_pts.append(Vector2(cx + r, py))
+				
+			c.draw_colored_polygon(body_pts, Color(0.97, 0.96, 0.93))
+			c.draw_polyline(body_pts, Color(0.85, 0.82, 0.76), 1.5, true)
+			
+			c.draw_circle(Vector2(cx, cy + vh * 0.1), vw * 0.4, Color(0.12, 0.32, 0.58, 0.6))
+			c.draw_circle(Vector2(cx, cy + vh * 0.1), vw * 0.28, Color.WHITE)
+			c.draw_line(Vector2(cx - vw*0.22, cy - vh*0.2), Vector2(cx + vw*0.22, cy - vh*0.2), Color(0.12, 0.32, 0.58, 0.85), 2.0)
+			c.draw_line(Vector2(cx - vw*0.35, cy + vh*0.3), Vector2(cx + vw*0.35, cy + vh*0.3), Color(0.12, 0.32, 0.58, 0.85), 2.0)
+
+		"bamboo":
+			var ph := 24.0 * size_scale
+			var pw := 50.0 * size_scale
+			c.draw_rect(Rect2(cx - pw/2, cy + 10, pw, ph), Color(0.15, 0.18, 0.16), true)
+			c.draw_rect(Rect2(cx - pw/2, cy + 10, pw, ph), C_GOLD, false, 1.2)
+			
+			var b_col := Color(0.18, 0.48, 0.28)
+			var offsets := [-14.0 * size_scale, 0.0, 12.0 * size_scale]
+			var heights := [80.0 * size_scale, 95.0 * size_scale, 75.0 * size_scale]
+			for idx in range(3):
+				var ox : float = offsets[idx]
+				var oh : float = heights[idx]
+				var sx := cx + ox
+				var sy_start := cy + 10
+				var sy_end := cy + 10 - oh
+				var segments := 5
+				var prev_pt := Vector2(sx, sy_start)
+				for seg in range(1, segments + 1):
+					var t := float(seg) / segments
+					var cur_x := sx + sin(t * 3.0 + idx) * 3.0 * size_scale
+					var cur_y := lerpf(sy_start, sy_end, t)
+					var cur_pt := Vector2(cur_x, cur_y)
+					c.draw_line(prev_pt, cur_pt, b_col, 3.5 * size_scale, true)
+					c.draw_circle(cur_pt, 2.5 * size_scale, Color(0.38, 0.65, 0.42))
+					if seg > 1:
+						var leaf_dir := Vector2(-8, -4).rotated(sin(float(seg) + idx) * 0.5) * size_scale
+						c.draw_line(cur_pt, cur_pt + leaf_dir, Color(0.24, 0.58, 0.35), 2.0 * size_scale, true)
+						var leaf_dir2 := Vector2(8, -4).rotated(cos(float(seg) + idx) * 0.5) * size_scale
+						c.draw_line(cur_pt, cur_pt + leaf_dir2, Color(0.24, 0.58, 0.35), 2.0 * size_scale, true)
+					prev_pt = cur_pt
+
+		"bronze_drum":
+			var dr_r := 34.0 * size_scale
+			var dr_h := 36.0 * size_scale
+			var drum_base_y := cy + 15
+			c.draw_rect(Rect2(cx - dr_r * 1.1, drum_base_y, dr_r * 2.2, 10.0 * size_scale), Color(0.14, 0.07, 0.03), true)
+			
+			var drum_pts := PackedVector2Array()
+			var steps := 16
+			for i in range(steps + 1):
+				var t := float(i) / steps
+				var py = drum_base_y - t * dr_h
+				var w_fac = 1.0
+				if t > 0.2 and t < 0.8:
+					w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
+				drum_pts.append(Vector2(cx - dr_r * w_fac, py))
+			for i in range(steps, -1, -1):
+				var t := float(i) / steps
+				var py = drum_base_y - t * dr_h
+				var w_fac = 1.0
+				if t > 0.2 and t < 0.8:
+					w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
+				drum_pts.append(Vector2(cx + dr_r * w_fac, py))
+				
+			c.draw_colored_polygon(drum_pts, Color(0.48, 0.36, 0.22))
+			c.draw_polyline(drum_pts, Color(0.36, 0.26, 0.15), 1.2, true)
+			c.draw_line(Vector2(cx - dr_r * 0.85, drum_base_y - dr_h * 0.3), Vector2(cx + dr_r * 0.85, drum_base_y - dr_h * 0.3), Color(0.68, 0.55, 0.35, 0.45), 1.5)
+			c.draw_line(Vector2(cx - dr_r * 0.85, drum_base_y - dr_h * 0.7), Vector2(cx + dr_r * 0.85, drum_base_y - dr_h * 0.7), Color(0.68, 0.55, 0.35, 0.45), 1.5)
+			
+			_draw_ellipse_poly(c, Vector2(cx, drum_base_y - dr_h), dr_r, 4.0 * size_scale, Color(0.55, 0.42, 0.25))
+			_draw_ellipse_line(c, Vector2(cx, drum_base_y - dr_h), dr_r, 4.0 * size_scale, C_GOLD, 1.2)
+			c.draw_circle(Vector2(cx, drum_base_y - dr_h), 3.0 * size_scale, C_GOLD_LIGHT)
+
+func _open_shop_popup() -> void:
+	if not shop_popup:
+		_setup_shop_popup()
+	_update_shop_items()
+	_player_expression = "focused"
+	shop_popup.visible = true
+	shop_popup.modulate.a = 0.0
+	var t := create_tween()
+	t.tween_property(shop_popup, "modulate:a", 1.0, 0.22)
+
+func _setup_shop_popup() -> void:
+	shop_popup = Control.new()
+	shop_popup.name = "ShopPopup"
+	$HUD.add_child(shop_popup)
+	shop_popup.layout_mode = 1
+	shop_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	var overlay := ColorRect.new()
+	overlay.name = "OverlayBG"
+	overlay.color = Color(0.06, 0.04, 0.02, 0.75)
+	shop_popup.add_child(overlay)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	var scroll_panel := Control.new()
+	scroll_panel.name = "ScrollPanel"
+	scroll_panel.custom_minimum_size = Vector2(920, 580)
+	scroll_panel.size = Vector2(920, 580)
+	shop_popup.add_child(scroll_panel)
+	scroll_panel.layout_mode = 1
+	scroll_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	scroll_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	scroll_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	
+	var scroll_draw := Control.new()
+	scroll_draw.name = "ScrollDraw"
+	scroll_panel.add_child(scroll_draw)
+	scroll_draw.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll_draw.draw.connect(_draw_popup_scroll.bind(scroll_draw))
+	
+	var scroll_content := VBoxContainer.new()
+	scroll_content.name = "ScrollContent"
+	scroll_panel.add_child(scroll_content)
+	scroll_content.layout_mode = 1
+	scroll_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll_content.offset_left = 80
+	scroll_content.offset_top = 54
+	scroll_content.offset_right = -80
+	scroll_content.offset_bottom = -54
+	scroll_content.add_theme_constant_override("separation", 14)
+	
+	var title := Label.new()
+	title.text = "🎨 CỬA HÀNG TRANG TRÍ"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", C_RED_SON)
+	if _font_title:
+		title.add_theme_font_override("font", _font_title)
+	scroll_content.add_child(title)
+	
+	var stars_label := Label.new()
+	stars_label.name = "StarsLabel"
+	stars_label.text = "Bạn có: ⭐ %d Sao" % SecureDataManager.get_total_stars()
+	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars_label.add_theme_font_size_override("font_size", 14)
+	stars_label.add_theme_color_override("font_color", C_GOLD)
+	if _font_body_bold:
+		stars_label.add_theme_font_override("font", _font_body_bold)
+	scroll_content.add_child(stars_label)
+	
+	var grid := GridContainer.new()
+	grid.name = "Grid"
+	grid.columns = 2
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 24)
+	grid.add_theme_constant_override("v_separation", 16)
+	scroll_content.add_child(grid)
+	
+	var items = [
+		{"id": "painting", "name": "Tranh Sơn Mài Cổ", "cost": 3, "desc": "Tranh phong cảnh sơn dầu dát vàng truyền thống."},
+		{"id": "vase", "name": "Lộc Bình Bát Tràng", "cost": 5, "desc": "Bình gốm hoa lam men rạn Bát Tràng cao cấp."},
+		{"id": "bamboo", "name": "Trúc Quân Tử", "cost": 8, "desc": "Chậu trúc xanh mang ý nghĩa phong thủy tốt lành."},
+		{"id": "bronze_drum", "name": "Trống Đồng Đông Sơn", "cost": 12, "desc": "Trống đồng Đông Sơn mini trang trí tinh xảo."}
+	]
+	
+	for item in items:
+		var card := PanelContainer.new()
+		card.name = "Card_" + item.id
+		card.custom_minimum_size = Vector2(360, 150)
+		var sb := _flat_sb(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, true, 1.5)
+		card.add_theme_stylebox_override("panel", sb)
+		grid.add_child(card)
+		
+		var margin := MarginContainer.new()
+		margin.name = "Margin"
+		margin.add_theme_constant_override("margin_left", 12)
+		margin.add_theme_constant_override("margin_right", 12)
+		margin.add_theme_constant_override("margin_top", 10)
+		margin.add_theme_constant_override("margin_bottom", 10)
+		card.add_child(margin)
+		
+		var hbox := HBoxContainer.new()
+		hbox.name = "HBox"
+		hbox.add_theme_constant_override("separation", 16)
+		margin.add_child(hbox)
+		
+		var preview := Control.new()
+		preview.name = "Preview"
+		preview.custom_minimum_size = Vector2(90, 110)
+		preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hbox.add_child(preview)
+		preview.draw.connect(_draw_decor_node.bind(preview, item.id))
+		
+		var vbox := VBoxContainer.new()
+		vbox.name = "VBox"
+		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vbox.add_theme_constant_override("separation", 6)
+		hbox.add_child(vbox)
+		
+		var name_lbl := Label.new()
+		name_lbl.text = item.name
+		name_lbl.add_theme_font_size_override("font_size", 16)
+		name_lbl.add_theme_color_override("font_color", C_RED_DK)
+		if _font_body_bold:
+			name_lbl.add_theme_font_override("font", _font_body_bold)
+		vbox.add_child(name_lbl)
+		
+		var cost_lbl := Label.new()
+		cost_lbl.name = "CostLabel"
+		cost_lbl.text = "Yêu cầu: ⭐ %d Sao" % item.cost
+		cost_lbl.add_theme_font_size_override("font_size", 13)
+		cost_lbl.add_theme_color_override("font_color", C_GOLD)
+		if _font_body_bold:
+			cost_lbl.add_theme_font_override("font", _font_body_bold)
+		vbox.add_child(cost_lbl)
+		
+		var desc_lbl := Label.new()
+		desc_lbl.text = item.desc
+		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+		desc_lbl.add_theme_font_size_override("font_size", 12)
+		desc_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+		if _font_body:
+			desc_lbl.add_theme_font_override("font", _font_body)
+		vbox.add_child(desc_lbl)
+		
+		var btn := Button.new()
+		btn.name = "BtnAction"
+		btn.custom_minimum_size = Vector2(0, 36)
+		vbox.add_child(btn)
+		_style_popup_button(btn, true)
+		_make_btn_bouncy(btn)
+		
+		btn.pressed.connect(_on_shop_action_pressed.bind(item.id, item.cost))
+		
+	var btn_close := Button.new()
+	btn_close.text = "ĐÓNG"
+	btn_close.custom_minimum_size = Vector2(180, 46)
+	btn_close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_style_popup_button(btn_close, false)
+	_make_btn_bouncy(btn_close)
+	scroll_content.add_child(btn_close)
+	
+	btn_close.pressed.connect(func() -> void:
+		_player_expression = "normal"
+		var t := create_tween()
+		t.tween_property(shop_popup, "modulate:a", 0.0, 0.2)
+		t.tween_callback(func() -> void: shop_popup.visible = false)
+	)
+
+func _on_shop_action_pressed(item_id: String, cost: int) -> void:
+	var unlocked = SecureDataManager.data.unlocked_decorations.has(item_id)
+	if not unlocked:
+		var success = SecureDataManager.unlock_decoration(item_id, cost)
+		if success:
+			_card_particle_timer = 999.0
+			_update_shop_items()
+			_update_star_badge()
+			_spawn_decorations()
+			_player_expression = "happy"
+			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
+	else:
+		SecureDataManager.toggle_decoration(item_id)
+		_update_shop_items()
+		_spawn_decorations()
+
+func _update_shop_items() -> void:
+	var stars = SecureDataManager.get_total_stars()
+	var stars_label = shop_popup.get_node("ScrollPanel/ScrollContent/StarsLabel") as Label
+	if stars_label:
+		stars_label.text = "Bạn có: ⭐ %d Sao" % stars
+		
+	var items = ["painting", "vase", "bamboo", "bronze_drum"]
+	for item_id in items:
+		var card = shop_popup.get_node("ScrollPanel/ScrollContent/Grid/Card_" + item_id)
+		if not card: continue
+		
+		var btn = card.get_node("Margin/HBox/VBox/BtnAction") as Button
+		var unlocked = SecureDataManager.data.unlocked_decorations.has(item_id)
+		var active = SecureDataManager.data.active_decorations.has(item_id)
+		
+		if not unlocked:
+			btn.text = "MỞ KHÓA"
+			var cost = 3
+			match item_id:
+				"painting": cost = 3
+				"vase": cost = 5
+				"bamboo": cost = 8
+				"bronze_drum": cost = 12
+				
+			if stars >= cost:
+				_style_popup_button(btn, true)
+				btn.disabled = false
+			else:
+				_style_disabled_button(btn)
+				btn.disabled = true
+		else:
+			btn.disabled = false
+			if active:
+				btn.text = "CẤT ĐI 📦"
+				_style_popup_button(btn, false)
+			else:
+				btn.text = "TRƯNG BÀY ✨"
+				_style_popup_button(btn, true)
+
+func _style_disabled_button(btn: Button) -> void:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.16, 0.14, 0.12, 0.7) # Dark warm grey/brown
+	s.border_color = Color(0.30, 0.26, 0.22, 0.4) # Subtle dark brown border
+	s.border_width_left = 2; s.border_width_right = 2
+	s.border_width_top = 2; s.border_width_bottom = 2
+	s.corner_radius_top_left = 20; s.corner_radius_top_right = 20
+	s.corner_radius_bottom_left = 20; s.corner_radius_bottom_right = 20
+	btn.add_theme_stylebox_override("disabled", s)
+	btn.add_theme_color_override("font_disabled_color", Color(0.43, 0.38, 0.33, 0.8)) # Grey text
+
+func _make_texture_transparent(tex: Texture2D) -> Texture2D:
+	if not tex: return null
+	var img := tex.get_image()
+	if not img: return tex
+	
+	if img.is_compressed():
+		var err = img.decompress()
+		if err != OK:
+			return tex
+			
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
+		
+	# Loop over all pixels
+	for y in range(img.get_height()):
+		for x in range(img.get_width()):
+			var c := img.get_pixel(x, y)
+			# Key out near-white background
+			if c.r > 0.90 and c.g > 0.90 and c.b > 0.90:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+				
+	return ImageTexture.create_from_image(img)

@@ -189,8 +189,6 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-	
-	btn_room_mob.hide()
 
 # ─── Theme & Layout Customization ─────────────────────────────────────────────
 func _build_theme() -> void:

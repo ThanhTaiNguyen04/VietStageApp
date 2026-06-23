@@ -9,6 +9,7 @@ const C_THREAD_GOLD   := Color(0.85, 0.68, 0.20, 1.0)
 
 # Dummy color property to satisfy parent scene bindings if any
 var color := Color.WHITE
+var is_overblowing := false
 
 func _ready() -> void:
 	queue_redraw()
@@ -70,6 +71,11 @@ func _draw() -> void:
 	draw_ellipse_angle(Vector2(blow_hole_x, cy), Vector2(12.0, 8.0), Color(0.12, 0.06, 0.02))
 	# Inner shadow
 	draw_ellipse_angle(Vector2(blow_hole_x + 1.0, cy + 1.0), Vector2(9.5, 6.0), Color(0.02, 0.02, 0.02))
+	
+	if is_overblowing:
+		var pulse := (sin(Time.get_ticks_msec() * 0.015) + 1.0) * 0.5
+		var glow_color := Color(0.95, 0.22, 0.08, 0.4 + pulse * 0.3)
+		draw_arc(Vector2(blow_hole_x, cy), 16.0 + pulse * 3.0, 0.0, TAU, 24, glow_color, 2.0)
 
 func draw_ellipse_angle(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points = PackedVector2Array()

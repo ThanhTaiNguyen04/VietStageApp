@@ -15,8 +15,16 @@ const MAX_SAMPLES := 180
 
 var current_pitch := 0.0
 var current_amplitude_db := -80.0
+var current_tone_quality := 100.0
+var current_breath_purity := 100.0
+var current_composite_score := 100.0
+var recent_scores_history : Array[float] = []
+var difficulty_tolerance_scale := 1.0
+
 var _analyzer: RefCounted = null
 var _mic_player: AudioStreamPlayer = null
+var _time_since_last_pitch := 0.0
+var _analysis_buffer := PackedFloat32Array()
 
 func _ready() -> void:
 	# Try to instantiate the C++ AudioAnalyzer class from GDExtension
@@ -59,7 +67,7 @@ func _setup_audio_bus() -> void:
 	_mic_player.bus = "Record"
 	add_child(_mic_player)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not visible:
 		if _mic_player and _mic_player.playing:
 			_mic_player.stop()
@@ -69,6 +77,8 @@ func _process(_delta: float) -> void:
 		_mic_player.play()
 		
 	if not _effect: return
+	
+	_time_since_last_pitch += delta
 	
 	var samples_available = _effect.get_frames_available()
 	if samples_available > 0:
@@ -80,38 +90,59 @@ func _process(_delta: float) -> void:
 			for i in range(frames.size()):
 				mono_samples[i] = (frames[i].x + frames[i].y) * 0.5
 				
+			# Append to rolling analysis buffer
+			for val in mono_samples:
+				_analysis_buffer.append(val)
+			if _analysis_buffer.size() > 1024:
+				var excess = _analysis_buffer.size() - 1024
+				_analysis_buffer = _analysis_buffer.slice(excess)
+				
 			if _analyzer:
 				# Use high-performance GDExtension C++ module for analysis
-				current_amplitude_db = _analyzer.calculate_peak_db(mono_samples)
+				var current_filtered = _analyzer.filter_background_noise(mono_samples, 0.015)
+				current_amplitude_db = _analyzer.calculate_peak_db(current_filtered)
+				
 				if current_amplitude_db > -45.0:
-					var detected_pitch = _analyzer.analyze_pitch(mono_samples, AudioServer.get_mix_rate())
-					if detected_pitch > 0.0:
-						current_pitch = lerp(current_pitch, detected_pitch, 0.15)
-					else:
-						current_pitch = lerp(current_pitch, 0.0, 0.2)
-				else:
-					current_pitch = lerp(current_pitch, 0.0, 0.2)
-			else:
-				# Fallback to pure GDScript analysis & simulation if C++ binary is not compiled yet
-				var peak := 0.0
-				for val in mono_samples:
-					var abs_val = abs(val)
-					if abs_val > peak:
-						peak = abs_val
-						
-				if peak > 0.0001:
-					current_amplitude_db = 20.0 * log(peak) / log(10)
-				else:
-					current_amplitude_db = -80.0
+					# Filter the rolling history buffer for pitch detection
+					var filtered_analysis = _analyzer.filter_background_noise(_analysis_buffer, 0.015)
 					
-				if current_amplitude_db > -45.0:
-					var detected_pitch = _detect_pitch_acf(mono_samples, AudioServer.get_mix_rate())
+					var detected_pitch = _analyzer.analyze_pitch_yin(filtered_analysis, AudioServer.get_mix_rate(), 0.15)
 					if detected_pitch > 0.0:
 						current_pitch = lerp(current_pitch, detected_pitch, 0.15)
 					else:
 						current_pitch = lerp(current_pitch, 0.0, 0.2)
+					
+					current_tone_quality = _analyzer.evaluate_tone_quality(filtered_analysis)
+					current_breath_purity = _analyzer.analyze_breath_pattern(filtered_analysis)
 				else:
 					current_pitch = lerp(current_pitch, 0.0, 0.2)
+					current_tone_quality = lerp(current_tone_quality, 100.0, 0.2)
+					current_breath_purity = lerp(current_breath_purity, 100.0, 0.2)
+			else:
+				# Fallback to pure GDScript analysis
+				var current_filtered = _filter_background_noise_gdscript(mono_samples, 0.015)
+				current_amplitude_db = _calculate_peak_db_gdscript(current_filtered)
+				
+				if current_amplitude_db > -45.0:
+					# Only run the expensive analysis 10 times a second for GDScript performance
+					if _time_since_last_pitch >= 0.1:
+						_time_since_last_pitch = 0.0
+						if _analysis_buffer.size() >= 512:
+							var filtered_analysis = _filter_background_noise_gdscript(_analysis_buffer, 0.015)
+							var detected_pitch = _detect_pitch_yin_gdscript(filtered_analysis, AudioServer.get_mix_rate(), 0.15)
+							if detected_pitch > 0.0:
+								current_pitch = lerp(current_pitch, detected_pitch, 0.30)
+							else:
+								current_pitch = lerp(current_pitch, 0.0, 0.30)
+							
+							current_tone_quality = _evaluate_tone_quality_gdscript(filtered_analysis)
+							current_breath_purity = _analyze_breath_pattern_gdscript(filtered_analysis)
+						else:
+							current_pitch = lerp(current_pitch, 0.0, 0.30)
+				else:
+					current_pitch = lerp(current_pitch, 0.0, 0.2)
+					current_tone_quality = lerp(current_tone_quality, 100.0, 0.2)
+					current_breath_purity = lerp(current_breath_purity, 100.0, 0.2)
 				
 			# Add samples to history for visualization
 			var step = max(1, mono_samples.size() / 10)
@@ -156,40 +187,238 @@ func _draw() -> void:
 		draw_polyline(points, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.25), 6.0, true)
 		draw_polyline(points, C_JADE, 2.0, true)
 
-# Autocorrelation-based pitch detection fallback in pure GDScript
-func _detect_pitch_acf(samples: PackedFloat32Array, sample_rate: float) -> float:
-	var size = samples.size()
-	if size < 512: return 0.0
+# ─── GDScript Advanced AI Fallbacks ───────────────────────────────────────────
+
+func evaluate_rhythm(detected_onsets: PackedFloat32Array, reference_onsets: PackedFloat32Array, tolerance: float) -> float:
+	if _analyzer:
+		return _analyzer.evaluate_rhythm(detected_onsets, reference_onsets, tolerance)
 	
-	# Limit size for GDScript performance
-	if size > 512:
-		size = 512
+	if detected_onsets.size() == 0 or reference_onsets.size() == 0:
+		return 0.0
 		
-	var min_period = int(sample_rate / 1000.0) # ~44 samples (1000Hz)
-	var max_period = int(sample_rate / 80.0)   # ~551 samples (80Hz)
+	var total_score := 0.0
+	var matches := 0
 	
-	var best_period = -1
-	var best_corr = -1.0
-	
-	for lag in range(min_period, max_period):
-		var corr = 0.0
-		var norm1 = 0.0
-		var norm2 = 0.0
-		# Stride by 2 for speed
-		for i in range(0, size - lag, 2):
-			var s1 = samples[i]
-			var s2 = samples[i + lag]
-			corr += s1 * s2
-			norm1 += s1 * s1
-			norm2 += s2 * s2
+	for det in detected_onsets:
+		var min_diff := 1e10
+		for ref in reference_onsets:
+			var diff = abs(det - ref)
+			if diff < min_diff:
+				min_diff = diff
+		
+		if min_diff < tolerance * 2.0:
+			var score = max(0.0, 100.0 * (1.0 - min_diff / tolerance))
+			total_score += score
+			matches += 1
 			
-		if norm1 > 0.0 and norm2 > 0.0:
-			corr /= sqrt(norm1 * norm2)
-			if corr > best_corr:
-				best_corr = corr
-				best_period = lag
-				
-	if best_corr > 0.65 and best_period > 0:
-		return sample_rate / float(best_period)
-		
+	if matches > 0:
+		var avg = total_score / float(max(detected_onsets.size(), reference_onsets.size()))
+		return clamp(avg, 0.0, 100.0)
 	return 0.0
+
+func calculate_composite_score(pitch_score: float, rhythm_score: float, tone_score: float, breath_score: float) -> float:
+	if _analyzer:
+		return _analyzer.calculate_composite_score(pitch_score, rhythm_score, tone_score, breath_score)
+	return clamp(0.35 * pitch_score + 0.35 * rhythm_score + 0.15 * tone_score + 0.15 * breath_score, 0.0, 100.0)
+
+func add_practice_score(score: float) -> void:
+	recent_scores_history.append(score)
+	if recent_scores_history.size() > 10:
+		recent_scores_history.remove_at(0)
+		
+	if _analyzer:
+		var float_scores := PackedFloat32Array()
+		for s in recent_scores_history:
+			float_scores.append(s)
+		difficulty_tolerance_scale = _analyzer.adjust_difficulty(float_scores)
+	else:
+		difficulty_tolerance_scale = _adjust_difficulty_gdscript(recent_scores_history)
+
+func _adjust_difficulty_gdscript(scores: Array[float]) -> float:
+	if scores.size() < 3:
+		return 1.0
+	var sum := 0.0
+	for s in scores:
+		sum += s
+	var avg = sum / scores.size()
+	
+	if avg > 88.0:
+		return 1.25 # Stricter tolerance
+	elif avg < 60.0:
+		return 0.75 # Looser tolerance
+	return 1.0
+
+func _calculate_peak_db_gdscript(samples: PackedFloat32Array) -> float:
+	var peak := 0.0
+	for val in samples:
+		var abs_val = abs(val)
+		if abs_val > peak:
+			peak = abs_val
+	if peak > 0.0001:
+		return 20.0 * log(peak) / log(10)
+	return -80.0
+
+func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_threshold: float) -> PackedFloat32Array:
+	var size = samples.size()
+	var filtered := PackedFloat32Array()
+	filtered.resize(size)
+	
+	var peak := 0.0
+	for val in samples:
+		peak = max(peak, abs(val))
+	if peak < noise_threshold:
+		# Quiet signal: noise gate closed
+		for i in range(size):
+			filtered[i] = 0.0
+		return filtered
+		
+	# Bandpass filter
+	var x1 := 0.0
+	var x2 := 0.0
+	var y1 := 0.0
+	var y2 := 0.0
+	for i in range(size):
+		var x0 = samples[i]
+		var y0 = 0.88 * (x0 - x2) + 0.75 * y1 - 0.25 * y2
+		filtered[i] = clamp(y0, -1.0, 1.0)
+		x2 = x1
+		x1 = x0
+		y2 = y1
+		y1 = y0
+	return filtered
+
+func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float, threshold: float) -> float:
+	var size = samples.size()
+	var W = size / 2
+	if W < 128: return 0.0
+	
+	var min_period = int(sample_rate / 1000.0) # ~44 samples (1000Hz)
+	var max_period = min(W - 2, int(sample_rate / 60.0))   # ~735 samples (60Hz)
+	
+	if min_period >= max_period:
+		return 0.0
+		
+	var d := PackedFloat32Array()
+	d.resize(max_period + 1)
+	
+	# Step 1: Difference
+	# Using stride=2 inside difference loop for 60fps GDScript optimization
+	for tau in range(min_period, max_period + 1):
+		var diff_sum := 0.0
+		for t in range(0, W, 2):
+			var diff = samples[t] - samples[t + tau]
+			diff_sum += diff * diff
+		d[tau] = diff_sum * 2.0
+		
+	# Step 2: Cumulative mean normalized difference
+	var d_prime := PackedFloat32Array()
+	d_prime.resize(max_period + 1)
+	d_prime[0] = 1.0
+	var running_sum := 0.0
+	for tau in range(1, max_period + 1):
+		running_sum += d[tau]
+		if running_sum > 0.0:
+			d_prime[tau] = d[tau] / ((1.0 / float(tau)) * running_sum)
+		else:
+			d_prime[tau] = 1.0
+			
+	# Step 3: Absolute threshold
+	var best_tau := -1
+	var min_val := 1e10
+	var global_min_tau := -1
+	
+	for tau in range(min_period, max_period + 1):
+		if d_prime[tau] < threshold:
+			best_tau = tau
+			break
+		if d_prime[tau] < min_val:
+			min_val = d_prime[tau]
+			global_min_tau = tau
+			
+	if best_tau == -1:
+		best_tau = global_min_tau
+		
+	if best_tau <= 0 or best_tau >= max_period:
+		return 0.0
+		
+	# Step 4: Parabolic interpolation
+	var precise_tau = float(best_tau)
+	var alpha = d_prime[best_tau - 1]
+	var beta = d_prime[best_tau]
+	var gamma = d_prime[best_tau + 1]
+	var denom = alpha - 2.0 * beta + gamma
+	if abs(denom) > 0.0001:
+		precise_tau = float(best_tau) + 0.5 * (alpha - gamma) / denom
+		
+	if precise_tau > 0.0:
+		return sample_rate / precise_tau
+	return 0.0
+
+func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
+	var size = samples.size()
+	if size < 128: return 0.0
+	
+	var sum_sq := 0.0
+	for val in samples:
+		sum_sq += val * val
+	if sum_sq < 0.001: return 0.0
+	
+	var max_corr := 0.0
+	var min_lag := 40
+	var max_lag = min(size / 2, 300)
+	
+	# Stride lag for speed
+	for lag in range(min_lag, max_lag, 3):
+		var corr := 0.0
+		var sum_sq_shifted := 0.0
+		for i in range(0, size - lag, 2):
+			corr += samples[i] * samples[i + lag]
+			sum_sq_shifted += samples[i + lag] * samples[i + lag]
+		
+		if sum_sq_shifted > 0.0:
+			var norm_corr = corr / sqrt(sum_sq * sum_sq_shifted)
+			if norm_corr > max_corr:
+				max_corr = norm_corr
+				
+	return clamp(max_corr * 100.0, 0.0, 100.0)
+
+func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
+	var size = samples.size()
+	if size < 256: return 0.0
+	
+	var envelopes: Array[float] = []
+	var amplitude_sum := 0.0
+	var block_size := 64
+	
+	for i in range(0, size, block_size):
+		var block_peak := 0.0
+		var limit = min(size, i + block_size)
+		for j in range(i, limit):
+			block_peak = max(block_peak, abs(samples[j]))
+		envelopes.append(block_peak)
+		amplitude_sum += block_peak
+		
+	var avg_amp = amplitude_sum / envelopes.size()
+	if avg_amp < 0.005: return 0.0
+	
+	var sq_diff_sum := 0.0
+	for env in envelopes:
+		var diff = env - avg_amp
+		sq_diff_sum += diff * diff
+	var variance = sq_diff_sum / envelopes.size()
+	var stability_factor = max(0.0, 1.0 - (variance / (avg_amp * avg_amp + 0.0001)))
+	
+	var residual_energy := 0.0
+	var total_energy := 0.0
+	var period := 80
+	for i in range(size - period):
+		var periodic_diff = samples[i] - samples[i + period]
+		residual_energy += periodic_diff * periodic_diff
+		total_energy += samples[i] * samples[i]
+		
+	var purity_factor := 1.0
+	if total_energy > 0.0:
+		purity_factor = max(0.0, 1.0 - (residual_energy / total_energy))
+		
+	return clamp((0.7 * purity_factor + 0.3 * stability_factor) * 100.0, 0.0, 100.0)
+

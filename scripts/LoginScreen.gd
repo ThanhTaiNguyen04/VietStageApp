@@ -374,7 +374,9 @@ func _go_main() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.40).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
+		SecureDataManager.load_data()
+		get_tree().change_scene_to_file("res://scenes/CourseMap.tscn")
+	)
 
 # ── Hiệu ứng lắc khi nhập sai ────────────────────────────────────────────────
 func _shake(node: Control) -> void:

@@ -611,19 +611,19 @@ func _go_practice_tranh() -> void:
 	selected_instrument = "dan_tranh"
 	SecureDataManager.data["selected_instrument"] = "dan_tranh"
 	SecureDataManager.save_data()
-	_fade_to("res://scenes/MainMenu.tscn")
+	_fade_to("res://scenes/CourseMap.tscn")
 
 func _go_practice_sao() -> void:
 	selected_instrument = "sao_truc"
 	SecureDataManager.data["selected_instrument"] = "sao_truc"
 	SecureDataManager.save_data()
-	_fade_to("res://scenes/MainMenu.tscn")
+	_fade_to("res://scenes/CourseMap.tscn")
 
 func _go_practice_bau() -> void:
 	selected_instrument = "dan_bau"
 	SecureDataManager.data["selected_instrument"] = "dan_bau"
 	SecureDataManager.save_data()
-	_fade_to("res://scenes/MainMenu.tscn")
+	_fade_to("res://scenes/CourseMap.tscn")
 
 func _go_back() -> void:
 	_fade_to("res://scenes/LoginScreen.tscn")

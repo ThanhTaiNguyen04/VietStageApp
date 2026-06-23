@@ -23,6 +23,8 @@ const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 var _active_side_btn : Button = null
 var _time : float = 0.0
 var _sidebar_icons_cache := {}
+var btn_minigame : Button
+var btn_minigame_mob : Button
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -69,6 +71,26 @@ var _sidebar_icons_cache := {}
 func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	
+	# Programmatic instantiation of MiniGame button
+	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
+	btn_minigame = Button.new()
+	btn_minigame.name = "BtnMiniGame"
+	btn_minigame.text = "Mini-game"
+	btn_minigame.flat = true
+	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	side_v.add_child(btn_minigame)
+	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+
+	var bottom_h := $Root/RightContent/BottomBar/BottomM/BottomH as HBoxContainer
+	btn_minigame_mob = Button.new()
+	btn_minigame_mob.name = "BtnMiniGameMobile"
+	btn_minigame_mob.text = "Mini-game"
+	btn_minigame_mob.flat = true
+	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_h.add_child(btn_minigame_mob)
+	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
+	
 	_build_sidebar()
 	_build_bottom_bar()
 	_build_top_bar()
@@ -83,8 +105,6 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
 
-	btn_room.hide()
-	btn_room_mob.hide()
 	avatar_circle.hide()
 
 func _process(delta: float) -> void:
@@ -293,11 +313,13 @@ func _build_bottom_bar() -> void:
 	_style_bottom_icon_btn(btn_room_mob,    false)
 	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
 	_style_bottom_icon_btn(btn_account_mob, false)
+	_style_bottom_icon_btn(btn_minigame_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
 	_attach_bottom_icon_draw(btn_room_mob,    6)
 	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
+	_attach_bottom_icon_draw(btn_minigame_mob, 3)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
@@ -340,16 +362,18 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 
 	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
 
-	_style_side_icon_btn(btn_menu, false)
+	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false, not is_prem)
-	_style_side_icon_btn(btn_account, false)
+	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
 	_attach_icon_draw(btn_courses,  1)
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2, not is_prem)
+	_attach_icon_draw(btn_minigame, 3)
 	_attach_icon_draw(btn_account,  5)
 
 	_active_side_btn = btn_courses
@@ -713,8 +737,9 @@ func _connect_buttons() -> void:
 			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
 	)
 	btn_account.pressed.connect(_go_account)
-
-	for btn in [btn_courses, btn_room, btn_songs, btn_account]:
+	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+ 
+	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
@@ -771,8 +796,9 @@ func _connect_buttons() -> void:
 			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
 	)
 	btn_account_mob.pressed.connect(_go_account)
-
-	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
+	btn_minigame_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+ 
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
@@ -781,11 +807,12 @@ func _set_active_tab(active: Button) -> void:
 	if (active == btn_songs or active == btn_songs_mob) and not is_prem:
 		return
 		
-	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_account]
+	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]
 	var active_desktop : Button = null
 	if active == btn_courses or active == btn_courses_mob: active_desktop = btn_courses
 	elif active == btn_room or active == btn_room_mob: active_desktop = btn_room
 	elif active == btn_songs or active == btn_songs_mob: active_desktop = btn_songs
+	elif active == btn_minigame or active == btn_minigame_mob: active_desktop = btn_minigame
 	elif active == btn_account or active == btn_account_mob: active_desktop = btn_account
 	
 	for b : Button in all:
@@ -795,11 +822,12 @@ func _set_active_tab(active: Button) -> void:
 		if ic: ic.queue_redraw()
 	_active_side_btn = active_desktop
 	
-	var all_mob : Array[Button] = [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]
+	var all_mob : Array[Button] = [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]
 	var active_mobile : Button = null
 	if active == btn_courses or active == btn_courses_mob: active_mobile = btn_courses_mob
 	elif active == btn_room or active == btn_room_mob: active_mobile = btn_room_mob
 	elif active == btn_songs or active == btn_songs_mob: active_mobile = btn_songs_mob
+	elif active == btn_minigame or active == btn_minigame_mob: active_mobile = btn_minigame_mob
 	elif active == btn_account or active == btn_account_mob: active_mobile = btn_account_mob
 	
 	for b : Button in all_mob:

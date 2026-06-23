@@ -28,6 +28,7 @@ var _is_target   : PackedByteArray    = PackedByteArray()
 var _is_bending    := false
 var _bend_offset   := 0.0  # Current visual bend X offset (pixels)
 var _bend_cents    := 0.0  # Pitch bend in cents (-400 to +400)
+var _bend_velocity := 0.0  # Velocity for physical spring-damper modeling
 var _active_player : AudioStreamPlayer = null
 var _last_plucked_idx := -1
 
@@ -90,6 +91,30 @@ func _process(delta: float) -> void:
 	_pulse_phase += delta * 3.5
 	need_redraw = true
 	
+	if not _is_bending and (_bend_offset != 0.0 or _bend_velocity != 0.0):
+		var W := size.x
+		var max_drag := W * 0.08 if W > 0 else 100.0
+		
+		# Physical spring-damper physics constants
+		var k := 400.0 # stiffness
+		var c := 14.0  # damping
+		
+		var accel = -k * _bend_offset - c * _bend_velocity
+		_bend_velocity += accel * delta
+		_bend_offset += _bend_velocity * delta
+		
+		if abs(_bend_offset) < 0.05 and abs(_bend_velocity) < 0.05:
+			_bend_offset = 0.0
+			_bend_velocity = 0.0
+			_bend_cents = 0.0
+			pitch_bent.emit(0.0)
+		else:
+			var factor := _bend_offset / max_drag
+			_bend_cents = -factor * 350.0
+			pitch_bent.emit(_bend_cents)
+			
+		need_redraw = true
+		
 	if need_redraw:
 		queue_redraw()
 
@@ -542,13 +567,7 @@ func _handle_touch_move(pos: Vector2) -> void:
 func _handle_touch_end() -> void:
 	if _is_bending:
 		_is_bending = false
-		var tween := create_tween().set_parallel(true)
-		tween.tween_property(self, "_bend_offset", 0.0, 0.12).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		tween.tween_property(self, "_bend_cents", 0.0, 0.12).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		tween.tween_callback(func() -> void: 
-			pitch_bent.emit(0.0)
-			queue_redraw()
-		).set_delay(0.12)
+		# Release and let the physical spring-damper model oscillate the rod
 	_hovered_node_idx = -1
 	queue_redraw()
 
@@ -579,6 +598,7 @@ func _update_bend(touch_x: float) -> void:
 	
 	var drag_diff := touch_x - x_left
 	_bend_offset = clampf(drag_diff, -max_drag, max_drag)
+	_bend_velocity = 0.0 # Clear velocity while manual touch is active
 	
 	var factor := _bend_offset / max_drag
 	_bend_cents = -factor * 350.0
