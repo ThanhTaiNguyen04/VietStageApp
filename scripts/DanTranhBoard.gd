@@ -18,6 +18,7 @@ var _is_pressed  : PackedByteArray    = PackedByteArray()
 var _press_x     : PackedFloat32Array = PackedFloat32Array()
 var _press_y     : PackedFloat32Array = PackedFloat32Array()
 var _audio_players : Array            = []
+var audio_enabled := true
 var _hovered_idx : int                = -1
 var _active_touches : Dictionary      = {}
 
@@ -58,7 +59,8 @@ func pluck(idx: int) -> void:
 	_pluck_time[idx] = 0.0
 	_pluck_amp[idx]  = 1.0
 	_glow_alpha[idx] = 1.0
-	_play_audio(idx, 1.0)
+	if audio_enabled:
+		_play_audio(idx, 1.0)
 	var name_idx := idx % _note_names.size()
 	string_plucked.emit(idx, _note_names[name_idx])
 	queue_redraw()

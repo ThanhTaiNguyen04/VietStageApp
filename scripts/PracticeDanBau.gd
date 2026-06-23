@@ -37,11 +37,15 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 var _recording   := false
 var _score       := 75.0
 var _sim_timer   := 0.0
+var _correct_pitch_hold_time := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
 var _string_streams: Array[AudioStreamWAV] = []
 var _active_player : AudioStreamPlayer = null
 var _rec_tween   : Tween
+var _detected_notes_history: Array[String] = []
+const HISTORY_SIZE := 8
+var _teacher_tip_timer := 0.0
 var _current_bend_cents := 0.0
 
 const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Cống", "Liu", "Ú"]
@@ -89,6 +93,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		visualizer.min_frequency = 150.0
+		visualizer.max_frequency = 800.0
+		visualizer.volume_threshold_db = -32.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1)
@@ -125,14 +132,124 @@ func _ready() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
+	# Setup interactive teacher to open AI chat
+	char_linh.mouse_filter = Control.MOUSE_FILTER_STOP
+	char_linh.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			var chat = AIChatPopup.new()
+			add_child(chat)
+			chat.open_chat("dan_bau")
+	)
+
+
 
 
 func _process(delta: float) -> void:
 	if _recording:
-		_sim_timer += delta
-		if _sim_timer >= 1.2:
-			_sim_timer = 0.0
-			_simulate_tick()
+		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+		if visualizer and is_instance_valid(visualizer):
+			var amplitude_db = visualizer.current_amplitude_db
+			var pitch = visualizer.current_pitch
+			
+			if amplitude_db > visualizer.volume_threshold_db and pitch > 0.0:
+				# 1. Convert pitch to MIDI note index
+				var midi = 12.0 * log(pitch / 440.0) / log(2.0) + 69.0
+				var rounded_midi = int(round(midi))
+				var cents = (midi - rounded_midi) * 100.0
+				var note_in_octave = rounded_midi % 12
+				
+				# Find closest physical node/string
+				var closest_idx = _find_closest_node_index(pitch)
+				var target_note = sheet_notes[_note_idx]
+				var closest_note = ""
+				
+				match note_in_octave:
+					0: closest_note = "Liu" if target_note == "Liu" else "Hò"
+					1: closest_note = "Hò#"
+					2: closest_note = "Ú" if target_note == "Ú" else "Xự"
+					3: closest_note = "Xự#"
+					4: closest_note = "Mi"
+					5: closest_note = "Xang"
+					6: closest_note = "Xang#"
+					7: closest_note = "Xê"
+					8: closest_note = "Xê#"
+					9: closest_note = "Cống"
+					10: closest_note = "Cống#"
+					11: closest_note = "Si"
+				
+				# Stabilization filter
+				var stable_note = _get_stabilized_note(closest_note)
+				
+				if not stable_note.is_empty():
+					# 2. Update UI
+					pitch_note.text = stable_note
+					
+					# 3. Cents deviation relative to closest node
+					if closest_idx != -1:
+						var target_freq = _get_node_frequency(closest_idx)
+						cents = 1200.0 * log(pitch / target_freq) / log(2.0)
+					
+					var ac = absf(cents)
+					if ac < 15.0:
+						pitch_status.text = "Đúng cao độ"
+						pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+						pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
+					elif ac < 35.0:
+						pitch_status.text = ("Hơi thấp" if cents < 0 else "Hơi cao")
+						pitch_status.add_theme_color_override("font_color", C_WARN)
+						pitch_note.add_theme_color_override("font_color",   C_WARN)
+					else:
+						pitch_status.text = "Lệch cao độ"
+						pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+						pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
+						
+					# 4. Check against target note in sheet
+					if stable_note == target_note and ac < 45.0:
+						_correct_pitch_hold_time += delta
+						if _correct_pitch_hold_time >= 0.6:
+							_correct_pitch_hold_time = 0.0
+							# Pluck the string on board as feedback
+							if _board and closest_idx != -1:
+								_board.pluck(closest_idx)
+							# Advance note
+							_note_idx = (_note_idx + 1) % sheet_notes.size()
+							_build_notation()
+							_update_target_indicator()
+							# Score bonus
+							_score = clamp(_score + randf_range(2.0, 5.0), 0, 100)
+							_refresh_score()
+							_update_rhythm()
+							if randi() % 3 == 0:
+								_va_say(SPEECHES[randi() % SPEECHES.size()])
+					else:
+						_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta * 0.5)
+						
+					# Check and give teacher tips (rate limited to once every 2 seconds)
+					_teacher_tip_timer += delta
+					if _teacher_tip_timer >= 2.0:
+						_teacher_tip_timer = 0.0
+						_check_teacher_advice(stable_note, ac)
+				else:
+					# Filter stage
+					pitch_note.text = "---"
+					pitch_status.text = "Đang phân tích..."
+					pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+					pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+					_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
+			else:
+				# Silence
+				_get_stabilized_note("")
+				pitch_note.text = "---"
+				pitch_status.text = "Chờ âm thanh..."
+				pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+				pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+				_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
+		else:
+			# Fallback to simulation
+			_sim_timer += delta
+			if _sim_timer >= 1.2:
+				_sim_timer = 0.0
+				_simulate_tick()
 
 # ─── Labels & Details ─────────────────────────────────────────────────────────
 func _set_labels() -> void:
@@ -385,7 +502,8 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
 	# Play synthesised sound at current pitch bend factor
-	_play_audio(idx)
+	if not _recording:
+		_play_audio(idx)
 
 	if note_name == sheet_notes[_note_idx]:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
@@ -694,3 +812,53 @@ func _update_rec_pulse(active: bool) -> void:
 		_rec_tween.chain().parallel()
 		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _find_closest_node_index(freq: float) -> int:
+	var closest_idx = -1
+	var min_diff = 1e9
+	for i in range(NOTES_VN.size()):
+		var note_freq = _get_node_frequency(i)
+		var diff = abs(freq - note_freq)
+		if diff < min_diff:
+			min_diff = diff
+			closest_idx = i
+	return closest_idx
+
+func _get_stabilized_note(new_note: String) -> String:
+	_detected_notes_history.append(new_note)
+	if _detected_notes_history.size() > HISTORY_SIZE:
+		_detected_notes_history.remove_at(0)
+		
+	var counts := {}
+	for note in _detected_notes_history:
+		if note == "": continue
+		if not counts.has(note):
+			counts[note] = 0
+		counts[note] += 1
+		
+	var max_count := 0
+	var stable_note := ""
+	for note in counts:
+		if counts[note] > max_count:
+			max_count = counts[note]
+			stable_note = note
+			
+	if max_count >= 5:
+		return stable_note
+	return ""
+
+func _check_teacher_advice(closest_note: String, cents_dev: float) -> void:
+	if not _recording: return
+	
+	var target_note = sheet_notes[_note_idx]
+	if closest_note == "":
+		return
+		
+	if closest_note == target_note:
+		if cents_dev > 15.0:
+			_va_say("Đúng nốt %s rồi! Nhưng cao độ lệch nhẹ. Con hãy uốn nhẹ cần đàn (bend) để khớp chuẩn nhé." % target_note)
+		else:
+			if randf() > 0.6:
+				_va_say("Âm hài âm chuẩn xác! Kỹ thuật uốn cần nốt %s của con rất điệu nghệ." % target_note)
+	else:
+		_va_say("Nghe như nốt %s. Nốt mục tiêu là %s đấy. Con hãy chỉnh lại vị trí gảy hài âm hoặc góc uốn cần nhé!" % [closest_note, target_note])

@@ -68,6 +68,7 @@ var _font_title : Font
 var _font_body : Font
 var _font_body_bold : Font
 
+
 const LINH_TIPS := [
 	"Bạn có biết: Đàn Tranh có nguồn gốc từ đàn Tranh cổ tự, nhưng được các nghệ nhân cải tiến với âm sắc thanh tao đặc trưng Việt Nam.",
 	"Luyện tập hàng ngày giúp tai nghe nhạy bén và ngón tay linh hoạt hơn đó!",
@@ -75,6 +76,7 @@ const LINH_TIPS := [
 	"Sáo Trúc làm từ các ống tre, trúc già tự nhiên, mang hơi thở của sông núi làng quê Việt Nam.",
 	"Các nhạc cụ Đàn Bầu và Trống đang được các nghệ nhân chế tác tỉ mỉ, sẽ sớm ra mắt!"
 ]
+
 
 func _ready() -> void:
 	# Reset anchors to Top-Left to allow manual absolute positioning in _on_viewport_size_changed()
@@ -181,6 +183,8 @@ func _ready() -> void:
 	# Responsive connection
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
+
+
 
 func _process(delta: float) -> void:
 	_time += delta
@@ -345,7 +349,11 @@ func _linh_talk(_txt: String) -> void:
 
 func _on_char_linh_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed:
-		_linh_talk(LINH_TIPS.pick_random())
+		var chat = AIChatPopup.new()
+		$HUD.add_child(chat)
+		chat.open_chat("general")
+
+
 
 
 
@@ -1186,3 +1194,4 @@ func _make_btn_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+

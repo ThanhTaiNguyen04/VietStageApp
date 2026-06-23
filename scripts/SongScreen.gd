@@ -27,7 +27,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 100,
-		"sheet": ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
+		"sheet": ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"]
 	},
 	{
 		"id": "song_002",
@@ -40,7 +40,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 250,
-		"sheet": ["Liu","Liu","Ú","Liu","Xang","Xê","Công","Xự","Xang","Liu","Hò"]
+		"sheet": ["Đô2","Đô2","Rê2","Đô2","Fa","Sol","La","Rê","Fa","Đô2","Đô"]
 	},
 	{
 		"id": "song_003",
@@ -53,7 +53,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 180,
-		"sheet": ["Xang","Xự","Hò","Xự","Xang","Xê","Liu","Công","Xê","Xang","Hò"]
+		"sheet": ["Fa","Rê","Đô","Rê","Fa","Sol","Đô2","La","Sol","Fa","Đô"]
 	},
 	{
 		"id": "song_004",
@@ -66,7 +66,7 @@ const SONGS_DATA := [
 		"genre": "tru_tinh",
 		"genre_label": "Trữ tình",
 		"xp": 200,
-		"sheet": ["Hò","Xang","Xê","Liu","Công","Liu","Xê","Xang","Xự","Hò","Hò"]
+		"sheet": ["Đô","Fa","Sol","Đô2","La","Đô2","Sol","Fa","Rê","Đô","Đô"]
 	},
 	{
 		"id": "song_005",
@@ -626,23 +626,26 @@ func _on_play_song(song: Dictionary) -> void:
 	SecureDataManager.save_data()
 	
 	# Transition dynamic values to practice room
+	var sheet_typed: Array[String] = []
+	sheet_typed.assign(song.sheet)
+
 	if song.instrument == "dan_tranh":
 		var pr_script = load("res://scripts/PracticeRoom.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = song.sheet
+			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeRoom.tscn")
 	elif song.instrument == "dan_bau":
 		var pr_script = load("res://scripts/PracticeDanBau.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = song.sheet
+			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		var pr_script = load("res://scripts/PracticeSaoTruc.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = song.sheet
+			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
 func _go_back() -> void:

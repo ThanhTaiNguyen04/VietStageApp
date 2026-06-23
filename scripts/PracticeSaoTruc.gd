@@ -39,6 +39,7 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 var _recording   := false
 var _score       := 75.0
 var _sim_timer   := 0.0
+var _correct_pitch_hold_time := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
 var _covered_states : Array[bool] = [true, true, true, true, true, true]
@@ -46,6 +47,10 @@ var _flute_streams : Dictionary = {}
 var _active_player : AudioStreamPlayer = null
 var _breath_pressure := 0.0
 var _rec_tween   : Tween
+var _detected_notes_history: Array[String] = []
+const HISTORY_SIZE := 8
+var _teacher_tip_timer := 0.0
+var _auto_blow := false
 
 const FREQS := {
 	"Đô": 261.63, # C4
@@ -113,6 +118,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		visualizer.min_frequency = 250.0
+		visualizer.max_frequency = 1200.0
+		visualizer.volume_threshold_db = -32.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -151,17 +159,165 @@ func _ready() -> void:
 		# Position next to record button
 		record_hbox.move_child(rec_indicator, 2)
 		
+		# Dynamically add the Auto-Blow toggle button!
+		var auto_blow_btn := Button.new()
+		auto_blow_btn.name = "AutoBlowBtn"
+		auto_blow_btn.text = "Hơi tự động: Tắt"
+		auto_blow_btn.toggle_mode = true
+		auto_blow_btn.button_pressed = false
+		auto_blow_btn.custom_minimum_size = Vector2(140, 44)
+		auto_blow_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		var bn := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 14)
+		var bh := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85), 14)
+		bh.shadow_size = 5; bh.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+		var bp := _flat(C_GOLD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85), 14)
+		
+		auto_blow_btn.add_theme_stylebox_override("normal",  bn)
+		auto_blow_btn.add_theme_stylebox_override("hover",   bh)
+		auto_blow_btn.add_theme_stylebox_override("pressed", bp)
+		auto_blow_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+		auto_blow_btn.add_theme_color_override("font_color",         C_TEXT)
+		auto_blow_btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+		auto_blow_btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+		auto_blow_btn.add_theme_font_size_override("font_size", 14)
+		
+		auto_blow_btn.toggled.connect(func(pressed: bool) -> void:
+			_auto_blow = pressed
+			if pressed:
+				auto_blow_btn.text = "Hơi tự động: Bật"
+				_va_say("Đã bật hơi thở tự động. Con chỉ cần tập trung bấm đúng các nốt nhạc nhé!")
+			else:
+				auto_blow_btn.text = "Hơi tự động: Tắt"
+				_va_say("Đã tắt hơi tự động. Bây giờ hệ thống sẽ thu âm hơi thở thật từ microphone.")
+		)
+		
+		record_hbox.add_child(auto_blow_btn)
+		record_hbox.move_child(auto_blow_btn, 3)
+		_make_button_bouncy(auto_blow_btn)
+		
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
+	# Setup interactive teacher to open AI chat
+	char_linh.mouse_filter = Control.MOUSE_FILTER_STOP
+	char_linh.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			var chat = AIChatPopup.new()
+			add_child(chat)
+			chat.open_chat("sao_truc")
+	)
+
+
 func _process(delta: float) -> void:
-	if _recording:
-		_sim_timer += delta
-		if _sim_timer >= 1.2:
-			_sim_timer = 0.0
-			_simulate_tick()
-			
+	# 1. Update breath pressure first
 	_update_breath_physics(delta)
+	
+	if _recording:
+		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+		if visualizer and is_instance_valid(visualizer):
+			var amplitude_db = visualizer.current_amplitude_db
+			var pitch = visualizer.current_pitch
+			
+			if amplitude_db > visualizer.volume_threshold_db and pitch > 0.0:
+				# Convert pitch to MIDI note index
+				var midi = 12.0 * log(pitch / 440.0) / log(2.0) + 69.0
+				var rounded_midi = int(round(midi))
+				var cents = (midi - rounded_midi) * 100.0
+				var note_in_octave = rounded_midi % 12
+				
+				var note_names = {
+					0: "Đô",
+					1: "Đô#",
+					2: "Rê",
+					3: "Rê#",
+					4: "Mi",
+					5: "Fa",
+					6: "Fa#",
+					7: "Sol",
+					8: "Sol#",
+					9: "La",
+					10: "La#",
+					11: "Si"
+				}
+				var closest_note = note_names.get(note_in_octave, "")
+				
+				# Stabilization filter
+				var stable_note = _get_stabilized_note(closest_note)
+				
+				if not stable_note.is_empty():
+					# Update UI with stabilized note
+					pitch_note.text = stable_note
+					
+					# Mirror the fingering of the detected note on the screen!
+					_update_virtual_holes(stable_note)
+					
+					# Calculate cents deviation status
+					var ac = absf(cents)
+					if ac < 15.0:
+						pitch_status.text = "Đúng cao độ"
+						pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+						pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
+					elif ac < 35.0:
+						pitch_status.text = ("Hơi thấp" if cents < 0 else "Hơi cao")
+						pitch_status.add_theme_color_override("font_color", C_WARN)
+						pitch_note.add_theme_color_override("font_color",   C_WARN)
+					else:
+						pitch_status.text = "Lệch cao độ"
+						pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+						pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
+					
+					# Enforce breath pressure check for note advancement [28.0, 85.0] (easier for beginners)
+					var target_note = sheet_notes[_note_idx]
+					var is_breath_ok = _breath_pressure >= 28.0 and _breath_pressure <= 85.0
+					
+					if stable_note == target_note and ac < 45.0:
+						if is_breath_ok:
+							_correct_pitch_hold_time += delta
+							if _correct_pitch_hold_time >= 0.6:
+								_correct_pitch_hold_time = 0.0
+								_note_idx = (_note_idx + 1) % sheet_notes.size()
+								_build_notation()
+								_update_target_indicator()
+								_score = clamp(_score + randf_range(2.0, 5.0), 0, 100)
+								_refresh_score()
+								_update_rhythm()
+								if randi() % 3 == 0:
+									_va_say(SPEECHES[randi() % SPEECHES.size()])
+						else:
+							# Correct note but wrong breath pressure
+							_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta * 0.5)
+					else:
+						_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta * 0.5)
+					
+					# Check and give teacher tips (rate limited to once every 2 seconds)
+					_teacher_tip_timer += delta
+					if _teacher_tip_timer >= 2.0:
+						_teacher_tip_timer = 0.0
+						_check_teacher_advice(stable_note, is_breath_ok)
+				else:
+					# Filter stage
+					pitch_note.text = "---"
+					pitch_status.text = "Đang phân tích..."
+					pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+					pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+					_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
+					_update_virtual_holes_to_clicked_states()
+			else:
+				# Quiet / Silence
+				_get_stabilized_note("")
+				pitch_note.text = "---"
+				pitch_status.text = "Chờ hơi thổi..."
+				pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+				pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+				_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
+				_update_virtual_holes_to_clicked_states()
+		else:
+			# Fallback to simulation if visualizer doesn't exist
+			_sim_timer += delta
+			if _sim_timer >= 1.2:
+				_sim_timer = 0.0
+				_simulate_tick()
 
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
@@ -437,11 +593,12 @@ func _play_flute_sound(note: String) -> void:
 		
 	_active_player = AudioStreamPlayer.new()
 	_active_player.stream = _flute_streams[note]
-	_active_player.volume_db = -3.0
+	_active_player.volume_db = -80.0 if _recording else -3.0
 	add_child(_active_player)
 	_active_player.play()
 
 func _play_preview_or_sound() -> void:
+	if _recording: return
 	var current_note = _get_current_note()
 	_play_flute_sound(current_note)
 	if not _recording:
@@ -590,7 +747,6 @@ func _toggle_record() -> void:
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
 		if visualizer: visualizer.visible = true
-		_play_flute_sound(_get_current_note())
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
 		_show_custom_result()
@@ -797,15 +953,18 @@ func _update_breath_physics(delta: float) -> void:
 	var target_breath := 0.0
 	
 	if _recording:
-		if visualizer and visualizer.current_amplitude_db > -60.0:
-			# Microphone volume-driven breath pressure
-			var db = visualizer.current_amplitude_db
-			target_breath = clamp((db + 60.0) / 45.0, 0.0, 1.0) * 100.0
+		if _auto_blow:
+			target_breath = 65.0 + sin(Time.get_ticks_msec() * 0.005) * 2.5
+		elif visualizer and ProjectSettings.get_setting("audio/driver/enable_input"):
+			if visualizer.current_amplitude_db > visualizer.volume_threshold_db:
+				var db = visualizer.current_amplitude_db
+				var range_db = abs(visualizer.volume_threshold_db)
+				target_breath = clamp((db - visualizer.volume_threshold_db) / max(10.0, range_db - 5.0), 0.0, 1.0) * 100.0
+			else:
+				target_breath = 0.0
 		else:
-			# Automatically simulate natural breath with slight organic lung pressure wobbling
 			target_breath = 65.0 + sin(Time.get_ticks_msec() * 0.005) * 2.5
 	else:
-		# Decay breath pressure to 0 when not blowing
 		target_breath = 0.0
 		
 	_breath_pressure = lerp(_breath_pressure, target_breath, 0.15)
@@ -866,3 +1025,80 @@ func _update_rec_pulse(active: bool) -> void:
 		_rec_tween.chain().parallel()
 		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _get_stabilized_note(new_note: String) -> String:
+	_detected_notes_history.append(new_note)
+	if _detected_notes_history.size() > HISTORY_SIZE:
+		_detected_notes_history.remove_at(0)
+		
+	var counts := {}
+	for note in _detected_notes_history:
+		if note == "": continue
+		if not counts.has(note):
+			counts[note] = 0
+		counts[note] += 1
+		
+	var max_count := 0
+	var stable_note := ""
+	for note in counts:
+		if counts[note] > max_count:
+			max_count = counts[note]
+			stable_note = note
+			
+	if max_count >= 5:
+		return stable_note
+	return ""
+
+func _check_teacher_advice(closest_note: String, is_breath_ok: bool) -> void:
+	if not _recording: return
+	
+	var target_note = sheet_notes[_note_idx]
+	if closest_note == "":
+		return
+		
+	if closest_note == target_note:
+		if _breath_pressure < 40.0:
+			_va_say("Đúng nốt %s rồi! Nhưng hãy thổi mạnh hơi lên một chút để âm vang chuẩn nhé." % target_note)
+		elif _breath_pressure > 82.0:
+			_va_say("Hơi mạnh quá rồi! Hãy thổi nhẹ hơi lại để tránh bị overblow nốt %s." % target_note)
+		else:
+			if randf() > 0.6:
+				_va_say("Rất tốt! Luồng hơi của con cực kỳ ổn định đấy.")
+	else:
+		if _breath_pressure < 40.0:
+			_va_say("Hơi đang yếu và bấm sai nốt nữa. Hãy che lỗ nốt %s và thổi mạnh lên tí nhé." % target_note)
+		elif _breath_pressure > 82.0:
+			_va_say("Thổi quá mạnh làm âm bị chói và sai nốt. Thổi nhẹ lại và bấm nốt %s." % target_note)
+		else:
+			_va_say("Bị sai nốt rồi. Con hãy quan sát kỹ gợi ý thế bấm nốt %s ở bên dưới nhé!" % target_note)
+
+func _update_virtual_holes(note_name: String) -> void:
+	var fingering = FINGERINGS.get(note_name, [])
+	if fingering.size() != HOLES: return
+	
+	for i in range(HOLES):
+		var hole = holes_hbox.get_child(i) as PanelContainer
+		if hole:
+			var hs = hole.get_theme_stylebox("panel") as StyleBoxFlat
+			if hs:
+				var is_covered = fingering[i]
+				if is_covered:
+					hs.bg_color = C_GOLD
+					hs.border_color = C_GOLD_LIGHT
+				else:
+					hs.bg_color = Color(0.04, 0.02, 0.01)
+					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+
+func _update_virtual_holes_to_clicked_states() -> void:
+	for i in range(HOLES):
+		var hole = holes_hbox.get_child(i) as PanelContainer
+		if hole:
+			var hs = hole.get_theme_stylebox("panel") as StyleBoxFlat
+			if hs:
+				var is_covered = _covered_states[i]
+				if is_covered:
+					hs.bg_color = C_GOLD
+					hs.border_color = C_GOLD_LIGHT
+				else:
+					hs.bg_color = Color(0.04, 0.02, 0.01)
+					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
