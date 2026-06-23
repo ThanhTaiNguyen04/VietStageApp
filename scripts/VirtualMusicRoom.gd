@@ -711,17 +711,17 @@ func _setup_focus_popup_controls() -> void:
 			InstrumentSelect.selected_instrument = "dan_tranh"
 			SecureDataManager.data["selected_instrument"] = "dan_tranh"
 			SecureDataManager.save_data()
-			_fade_to("res://scenes/CourseMap.tscn")
+			_fade_to("res://scenes/MainMenu.tscn")
 		elif _current_popup_instrument == "sao":
 			InstrumentSelect.selected_instrument = "sao_truc"
 			SecureDataManager.data["selected_instrument"] = "sao_truc"
 			SecureDataManager.save_data()
-			_fade_to("res://scenes/CourseMap.tscn")
+			_fade_to("res://scenes/MainMenu.tscn")
 		elif _current_popup_instrument == "bau":
 			InstrumentSelect.selected_instrument = "dan_bau"
 			SecureDataManager.data["selected_instrument"] = "dan_bau"
 			SecureDataManager.save_data()
-			_fade_to("res://scenes/CourseMap.tscn")
+			_fade_to("res://scenes/MainMenu.tscn")
 	)
 	
 	_make_btn_bouncy(btn_tab_theory)

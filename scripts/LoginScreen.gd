@@ -375,7 +375,7 @@ func _go_main() -> void:
 	t.tween_property(self, "modulate:a", 0.0, 0.40).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:
 		SecureDataManager.load_data()
-		get_tree().change_scene_to_file("res://scenes/CourseMap.tscn")
+		get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn")
 	)
 
 # ── Hiệu ứng lắc khi nhập sai ────────────────────────────────────────────────
