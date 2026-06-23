@@ -52,6 +52,15 @@ const HISTORY_SIZE := 8
 var _teacher_tip_timer := 0.0
 var _auto_blow := false
 
+# Zither backing track variables
+var _lesson_mode := 0 # 0: Học nốt, 1: Nhạc nền
+var _backing_playing := false
+var _backing_beat_idx := 0
+var _backing_timer := 0.0
+const BEAT_DURATION := 0.8
+var _lesson_beats : Array = []
+var _zither_streams : Dictionary = {}
+
 const FREQS := {
 	"Đô": 261.63, # C4
 	"Rê": 293.66, # D4
@@ -196,6 +205,43 @@ func _ready() -> void:
 		record_hbox.move_child(auto_blow_btn, 3)
 		_make_button_bouncy(auto_blow_btn)
 		
+		# Dynamically add the Lesson Mode toggle button!
+		var lesson_mode_btn := Button.new()
+		lesson_mode_btn.name = "LessonModeBtn"
+		lesson_mode_btn.text = "Bài học: Học nốt"
+		lesson_mode_btn.toggle_mode = true
+		lesson_mode_btn.button_pressed = false
+		lesson_mode_btn.custom_minimum_size = Vector2(160, 44)
+		lesson_mode_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		lesson_mode_btn.add_theme_stylebox_override("normal",  bn)
+		lesson_mode_btn.add_theme_stylebox_override("hover",   bh)
+		lesson_mode_btn.add_theme_stylebox_override("pressed", bp)
+		lesson_mode_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+		lesson_mode_btn.add_theme_color_override("font_color",         C_TEXT)
+		lesson_mode_btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+		lesson_mode_btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+		lesson_mode_btn.add_theme_font_size_override("font_size", 14)
+		
+		lesson_mode_btn.toggled.connect(func(pressed: bool) -> void:
+			if _recording:
+				lesson_mode_btn.set_pressed_no_signal(not pressed)
+				_va_say("Con hãy dừng ghi âm trước khi chuyển bài học nhé!")
+				return
+			
+			_lesson_mode = 1 if pressed else 0
+			if pressed:
+				lesson_mode_btn.text = "Bài học: Nhạc nền"
+				_va_say("Đã chuyển sang Bài 2: Luyện tập với nhạc nền zither. Hãy chuẩn bị ghi âm nhé!")
+			else:
+				lesson_mode_btn.text = "Bài học: Học nốt"
+				_va_say("Đã chuyển sang Bài 1: Học từng nốt. Cô giáo sẽ thổi mẫu từng nốt để con làm theo.")
+		)
+		
+		record_hbox.add_child(lesson_mode_btn)
+		record_hbox.move_child(lesson_mode_btn, 4)
+		_make_button_bouncy(lesson_mode_btn)
+		
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
@@ -213,6 +259,10 @@ func _process(delta: float) -> void:
 	# 1. Update breath pressure first
 	_update_breath_physics(delta)
 	
+	# 2. Update zither backing track if recording and in Lesson 2
+	if _recording and _lesson_mode == 1:
+		_update_backing_track(delta)
+		
 	if _recording:
 		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 		if visualizer and is_instance_valid(visualizer):
@@ -276,14 +326,29 @@ func _process(delta: float) -> void:
 							_correct_pitch_hold_time += delta
 							if _correct_pitch_hold_time >= 0.6:
 								_correct_pitch_hold_time = 0.0
-								_note_idx = (_note_idx + 1) % sheet_notes.size()
-								_build_notation()
-								_update_target_indicator()
 								_score = clamp(_score + randf_range(2.0, 5.0), 0, 100)
 								_refresh_score()
 								_update_rhythm()
-								if randi() % 3 == 0:
-									_va_say(SPEECHES[randi() % SPEECHES.size()])
+								
+								if _lesson_mode == 0:
+									# Lesson 1: step-by-step note study
+									_note_idx = (_note_idx + 1) % sheet_notes.size()
+									_build_notation()
+									_update_target_indicator()
+									
+									# Play guide for the next note!
+									var next_note = sheet_notes[_note_idx]
+									_play_zither_backing(next_note)
+									_va_say("Đúng rồi! Hãy tiếp tục thổi nốt mẫu %s nhé." % next_note)
+								else:
+									# Lesson 2: backing track practice
+									# Play zither pluck feedback
+									_play_zither_backing(target_note)
+									_va_say("Chuẩn nốt! Nhạc nền tiếp tục...")
+									
+									# Resume backing track!
+									_backing_playing = true
+									_backing_timer = BEAT_DURATION
 						else:
 							# Correct note but wrong breath pressure
 							_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta * 0.5)
@@ -302,7 +367,7 @@ func _process(delta: float) -> void:
 					pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
 					pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
 					_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
-					_update_virtual_holes_to_clicked_states()
+					_update_virtual_holes(sheet_notes[_note_idx])
 			else:
 				# Quiet / Silence
 				_get_stabilized_note("")
@@ -311,7 +376,7 @@ func _process(delta: float) -> void:
 				pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
 				pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
 				_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
-				_update_virtual_holes_to_clicked_states()
+				_update_virtual_holes(sheet_notes[_note_idx])
 		else:
 			# Fallback to simulation if visualizer doesn't exist
 			_sim_timer += delta
@@ -530,6 +595,7 @@ func _generate_streams() -> void:
 	for note in NOTES_VN:
 		var freq = FREQS[note]
 		_flute_streams[note] = _generate_flute_stream(freq)
+	_generate_zither_streams()
 
 func _generate_flute_stream(freq: float) -> AudioStreamWAV:
 	var stream := AudioStreamWAV.new()
@@ -882,11 +948,25 @@ func _go_back() -> void:
 
 ## Pitch-detection stubs — to be replaced with real audio analysis
 func _start_pitch_detection() -> void:
-	# Placeholder: in future integrate microphone input + FFT/pitch detection
 	_sim_timer = 0.0
+	_note_idx = 0
+	_correct_pitch_hold_time = 0.0
+	_build_lesson_beats()
+	
+	if _lesson_mode == 0:
+		_backing_playing = false
+		var first_note = sheet_notes[0] if sheet_notes.size() > 0 else "Đô"
+		_play_zither_backing(first_note)
+		_va_say("Bài 1: Hãy thổi nốt mẫu %s theo hướng dẫn bấm ngón nhé!" % first_note)
+	else:
+		_backing_playing = true
+		_backing_beat_idx = -1
+		_backing_timer = BEAT_DURATION
+		_va_say("Bài 2: Nhạc nền đang chạy... Hãy chú ý lắng nghe và thổi đúng lúc nhé!")
 
 func _stop_pitch_detection() -> void:
 	_sim_timer = 0.0
+	_backing_playing = false
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -1102,3 +1182,160 @@ func _update_virtual_holes_to_clicked_states() -> void:
 				else:
 					hs.bg_color = Color(0.04, 0.02, 0.01)
 					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+
+# ─── Zither Accompaniment Backing Track ───────────────────────────────────────
+func _get_zither_frequency(note_name: String) -> float:
+	var base_freqs = {
+		"Đô": 130.81, "Rê": 146.83, "Mi": 164.81, "Fa": 174.61, "Sol": 196.00, "La": 220.00, "Si": 246.94,
+		"Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63, "Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88,
+		"Đô3": 523.25, "Rê3": 587.33
+	}
+	if base_freqs.has(note_name):
+		return base_freqs[note_name]
+	var clean = note_name.replace("#", "")
+	if base_freqs.has(clean):
+		return base_freqs[clean]
+	return 261.63
+
+func _generate_zither_streams() -> void:
+	var notes_to_gen = [
+		"Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si",
+		"Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2",
+		"Đô3", "Rê3"
+	]
+	for note in notes_to_gen:
+		var freq = _get_zither_frequency(note)
+		_zither_streams[note] = _generate_zither_pluck_stream(freq)
+
+func _generate_zither_pluck_stream(freq: float) -> AudioStreamWAV:
+	const SAMPLE_RATE: int = 44100
+	const DURATION: float  = 2.0
+	var sample_count: int  = int(SAMPLE_RATE * DURATION)
+
+	var delay_len: int = int(float(SAMPLE_RATE) / freq)
+	if delay_len < 2:
+		delay_len = 2
+
+	var delay_buf := PackedFloat32Array()
+	delay_buf.resize(delay_len)
+	for k in delay_len:
+		delay_buf[k] = randf_range(-1.0, 1.0)
+
+	var decay: float = clamp(0.996 - freq / 20000.0, 0.980, 0.9995)
+
+	var samples := PackedFloat32Array()
+	samples.resize(sample_count)
+	var buf_pos: int = 0
+
+	for i in sample_count:
+		var next_pos: int = (buf_pos + 1) % delay_len
+		var new_sample: float = decay * 0.5 * (delay_buf[buf_pos] + delay_buf[next_pos])
+		samples[i] = new_sample
+		delay_buf[buf_pos] = new_sample
+		buf_pos = (buf_pos + 1) % delay_len
+
+	var max_amp: float = 0.0
+	for s in samples:
+		var abs_s: float = absf(s)
+		if abs_s > max_amp:
+			max_amp = abs_s
+	if max_amp < 0.0001:
+		max_amp = 1.0
+	var norm_factor: float = 0.92 / max_amp
+
+	var data := PackedByteArray()
+	data.resize(sample_count * 2)
+
+	for i in sample_count:
+		var val: float = clamp(samples[i] * norm_factor, -1.0, 1.0)
+		var val_i16: int = int(val * 32767.0)
+		var u16: int = val_i16 & 0xFFFF
+		data[i * 2]     = u16 & 0xFF
+		data[i * 2 + 1] = (u16 >> 8) & 0xFF
+
+	var stream := AudioStreamWAV.new()
+	stream.format   = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = SAMPLE_RATE
+	stream.stereo   = false
+	stream.data     = data
+	return stream
+
+func _play_zither_backing(note: String) -> void:
+	var clean_note = note
+	if not _zither_streams.has(clean_note):
+		clean_note = clean_note.replace("#", "")
+	if not _zither_streams.has(clean_note): return
+	
+	var pl := AudioStreamPlayer.new()
+	pl.stream = _zither_streams[clean_note]
+	pl.volume_db = -8.0 # softer zither backing track
+	pl.bus = "Master"
+	add_child(pl)
+	pl.play()
+	get_tree().create_timer(2.5).timeout.connect(pl.queue_free)
+
+func _build_lesson_beats() -> void:
+	_lesson_beats.clear()
+	var first_note = sheet_notes[0] if sheet_notes.size() > 0 else "Đô"
+	var helper_note = "Sol"
+	if first_note == "Sol" or first_note == "La":
+		helper_note = "Đô"
+	
+	# Intro (4 beats)
+	_lesson_beats.append({"action": "play_zither", "note": first_note})
+	_lesson_beats.append({"action": "play_zither", "note": helper_note})
+	_lesson_beats.append({"action": "play_zither", "note": first_note})
+	_lesson_beats.append({"action": "play_zither", "note": helper_note})
+	
+	# Play melody & pause for user
+	for note in sheet_notes:
+		_lesson_beats.append({"action": "target_flute", "note": note})
+		var acc_note = "Sol" if note != "Sol" else "Đô"
+		_lesson_beats.append({"action": "play_zither", "note": acc_note})
+	
+	# Outro
+	_lesson_beats.append({"action": "play_zither", "note": "Đô2"})
+	_lesson_beats.append({"action": "play_zither", "note": "Mi2"})
+	_lesson_beats.append({"action": "play_zither", "note": "Sol2"})
+	_lesson_beats.append({"action": "play_zither", "note": "Đô3"})
+	_lesson_beats.append({"action": "finish"})
+
+func _update_backing_track(delta: float) -> void:
+	if not _backing_playing: return
+	
+	_backing_timer += delta
+	if _backing_timer >= BEAT_DURATION:
+		_backing_timer = 0.0
+		_backing_beat_idx += 1
+		
+		if _backing_beat_idx >= _lesson_beats.size():
+			_backing_playing = false
+			_toggle_record()
+			_show_custom_result()
+			_va_say("Tuyệt vời! Con đã hoàn thành luyện tập với nhạc nền xuất sắc!")
+			return
+			
+		var beat = _lesson_beats[_backing_beat_idx]
+		match beat.action:
+			"play_zither":
+				_play_zither_backing(beat.note)
+			"target_flute":
+				_backing_playing = false
+				var match_idx = -1
+				for k in range(_note_idx, sheet_notes.size()):
+					if sheet_notes[k] == beat.note:
+						match_idx = k
+						break
+				if match_idx != -1:
+					_note_idx = match_idx
+				else:
+					match_idx = sheet_notes.find(beat.note)
+					if match_idx != -1:
+						_note_idx = match_idx
+						
+				_build_notation()
+				_update_target_indicator()
+				
+				# Guide sound & prompt
+				_play_zither_backing(beat.note)
+				_va_say("Nghe nhạc mẫu. Hãy thổi nốt %s!" % beat.note)
