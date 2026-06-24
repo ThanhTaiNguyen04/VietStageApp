@@ -2088,10 +2088,10 @@ func _on_viewport_size_changed() -> void:
 	_right_bound = (size.x - rx) / scale_factor if scale_factor > 0.0 else 1200.0
 	var center_x := 600.0
 
-	s_tranh.position = Vector2(_left_bound + 60.0, 520.0)
-	s_sao.position = Vector2(_right_bound - 300.0, 520.0)
-	s_bau.position = Vector2(center_x - 380.0, 360.0)
-	s_trong.position = Vector2(center_x + 140.0, 360.0)
+	s_tranh.position = Vector2(lerpf(center_x - 480.0, _left_bound + 120.0, 0.4), 520.0)
+	s_sao.position = Vector2(lerpf(center_x + 240.0, _right_bound - 360.0, 0.4), 520.0)
+	s_bau.position = Vector2(lerpf(center_x - 320.0, _left_bound + 280.0, 0.3), 360.0)
+	s_trong.position = Vector2(lerpf(center_x + 80.0, _right_bound - 520.0, 0.3), 360.0)
 	
 	# Update popups to match the actual window size
 	if popup and is_instance_valid(popup):
