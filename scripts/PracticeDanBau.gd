@@ -632,8 +632,8 @@ func _process_real_audio(delta: float) -> void:
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if not visualizer: return
 	
-	var db = visualizer.current_amplitude_db
-	var pitch = visualizer.current_pitch
+	var db: float = visualizer.current_amplitude_db
+	var pitch: float = visualizer.current_pitch
 	
 	if db > -45.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
@@ -651,13 +651,13 @@ func _process_real_audio(delta: float) -> void:
 				var min_diff := 99999.0
 				for i in range(NOTES_VN.size()):
 					var f := _get_node_frequency(i)
-					var diff := abs(pitch - f)
+					var diff : float = abs(pitch - f)
 					if diff < min_diff:
 						min_diff = diff
 						closest_base_idx = i
 				
 				var closest_base_freq := _get_node_frequency(closest_base_idx)
-				var est_bend := 1200.0 * log(pitch / closest_base_freq) / log(2.0)
+				var est_bend : float = 1200.0 * log(pitch / closest_base_freq) / log(2.0)
 				est_bend = clamp(est_bend, -400.0, 400.0)
 				
 				_board._bend_cents = est_bend
@@ -667,11 +667,11 @@ func _process_real_audio(delta: float) -> void:
 				_board._is_bending = true
 				_board.queue_redraw()
 				
-			var acceptable_cents := 50.0 * visualizer.difficulty_tolerance_scale
+			var acceptable_cents : float = 50.0 * visualizer.difficulty_tolerance_scale
 			if abs(cents) < acceptable_cents:
 				pitch_note.text = target_note
 				
-				var tolerance_cents := 12.0 / visualizer.difficulty_tolerance_scale
+				var tolerance_cents : float = 12.0 / visualizer.difficulty_tolerance_scale
 				if abs(cents) < tolerance_cents:
 					pitch_status.text = "Đúng cao độ"
 					pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
@@ -821,7 +821,7 @@ func _setup_collapsible_linh() -> void:
 	linh_mini_btn.layout_mode = 1
 	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	linh_mini_btn.position.x += 24
-	linh_mini_btn.position.y -= 140
+	linh_mini_btn.position.y -= 70
 	
 	var btn_s := StyleBoxFlat.new()
 	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)

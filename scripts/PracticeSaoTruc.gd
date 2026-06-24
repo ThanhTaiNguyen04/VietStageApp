@@ -901,7 +901,7 @@ func _setup_collapsible_linh() -> void:
 	linh_mini_btn.layout_mode = 1
 	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	linh_mini_btn.position.x += 24
-	linh_mini_btn.position.y -= 140
+	linh_mini_btn.position.y -= 70
 	
 	var btn_s := StyleBoxFlat.new()
 	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)

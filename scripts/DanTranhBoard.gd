@@ -231,13 +231,23 @@ func _draw() -> void:
 		# ── Note Label and String Numbers ──
 		if font != null:
 			var num_alpha := 0.50 + _glow_alpha[i] * 0.50
-			draw_string(font, Vector2(lbl_x, cy + 5.0),
-				str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+			var f_size := 11
+			var name_f_size := 12
+			
+			if rh < 18.0:
+				f_size = clamp(int(rh * 0.7), 8, 10)
+				name_f_size = clamp(int(rh * 0.75), 9, 11)
+				
+			var baseline_offset := f_size * 0.35
+			var name_baseline_offset := name_f_size * 0.35
+			
+			draw_string(font, Vector2(lbl_x, cy + baseline_offset),
+				str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, f_size,
 				Color(0.95, 0.72, 0.18, num_alpha))
 			var name_col := Color(0.98, 0.82, 0.20) if _is_target[i] else Color(0.95, 0.72, 0.18)
-			draw_string(font, Vector2(str_r + 8.0, cy + 5.0),
+			draw_string(font, Vector2(str_r + 8.0, cy + name_baseline_offset),
 				_note_names[i % _note_names.size()],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 12,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, name_f_size,
 				Color(name_col.r, name_col.g, name_col.b, 0.90))
 
 		# Press touch marker

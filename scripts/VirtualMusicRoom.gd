@@ -78,6 +78,8 @@ var _card_particle_timer : float = 0.0
 var _prompt_is_showing : bool = false
 var _prompt_tween : Tween = null
 var _player_expression : String = "normal"
+var _left_bound : float = 0.0
+var _right_bound : float = 1200.0
 var _player_dir : Vector2 = Vector2.DOWN
 var _idle_time : float = 0.0
 
@@ -196,17 +198,10 @@ func _ready() -> void:
 	tooltip_lbl.add_theme_color_override("font_color", C_RED_DK)
 	
 	# Setup Interactive Stations
-	s_tranh.position = Vector2(80, 370)
-	s_tranh.size = Vector2(320, 180)
-	
-	s_sao.position = Vector2(800, 370)
-	s_sao.size = Vector2(320, 180)
-	
-	s_bau.position = Vector2(240, 560)
-	s_bau.size = Vector2(320, 180)
-	
-	s_trong.position = Vector2(640, 560)
-	s_trong.size = Vector2(320, 180)
+	s_tranh.size = Vector2(240, 140)
+	s_sao.size = Vector2(240, 140)
+	s_bau.size = Vector2(240, 140)
+	s_trong.size = Vector2(240, 140)
 	
 	_setup_station_button(s_tranh, "tranh", "Đàn Tranh", _draw_tranh)
 	_setup_station_button(s_sao, "sao", "Sáo Trúc", _draw_sao)
@@ -236,7 +231,7 @@ func _ready() -> void:
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
 	# Responsive connection
-	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	get_viewport().size_changed.connect(func() -> void: _on_viewport_size_changed.call_deferred())
 	_on_viewport_size_changed()
 
 func _process(delta: float) -> void:
@@ -277,7 +272,7 @@ func _process(delta: float) -> void:
 	var rx := room_content.position.x
 	var ry := room_content.position.y
 	var scale := room_content.scale.x
-	var viewport_size : Vector2 = get_viewport().size
+	var viewport_size : Vector2 = get_viewport().get_visible_rect().size
 	var left_bound : float = -rx / scale if scale > 0.0 else 0.0
 	var right_bound : float = (viewport_size.x - rx) / scale if scale > 0.0 else 1200.0
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
@@ -308,10 +303,10 @@ func _process(delta: float) -> void:
 			_card_particle_timer = 0.0
 			var rect := Rect2()
 			match _hovered_station:
-				"tranh": rect = Rect2(80, 370, 320, 180)
-				"sao": rect = Rect2(800, 370, 320, 180)
-				"bau": rect = Rect2(240, 560, 320, 180)
-				"trong": rect = Rect2(640, 560, 320, 180)
+				"tranh": rect = Rect2(s_tranh.position.x, s_tranh.position.y, s_tranh.size.x, s_tranh.size.y)
+				"sao": rect = Rect2(s_sao.position.x, s_sao.position.y, s_sao.size.x, s_sao.size.y)
+				"bau": rect = Rect2(s_bau.position.x, s_bau.position.y, s_bau.size.x, s_bau.size.y)
+				"trong": rect = Rect2(s_trong.position.x, s_trong.position.y, s_trong.size.x, s_trong.size.y)
 			
 			if rect != Rect2():
 				var spawn_pos := Vector2(
@@ -360,7 +355,7 @@ func _process(delta: float) -> void:
 			# Clamp to walkable area
 			var feet_x := char_player.position.x + 80.0
 			var feet_y := char_player.position.y + 150.0
-			feet_x = clampf(feet_x, 60.0, 1140.0)
+			feet_x = clampf(feet_x, _left_bound + 60.0, _right_bound - 60.0)
 			feet_y = clampf(feet_y, 330.0, 760.0)
 			char_player.position = Vector2(feet_x - 80.0, feet_y - 150.0)
 			
@@ -533,8 +528,17 @@ func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> 
 		if displayName.contains(" (Sắp ra mắt)"):
 			name_str = displayName.replace(" (Sắp ra mắt)", "")
 			
+		var cy := sz.y * 0.5
 		var lbl_x := 0.0
+		var has_tex := false
+		if btn.name == "StationTranh" and _tex_tranh: has_tex = true
+		elif btn.name == "StationSao" and _tex_sao: has_tex = true
+		elif btn.name == "StationBau" and _tex_bau: has_tex = true
+		elif btn.name == "StationTrong" and _tex_trong: has_tex = true
+		
 		var lbl_y := sz.y - 12.0
+		if has_tex:
+			lbl_y = cy + 25.0
 		
 		# Shadow
 		btn.draw_string(font, Vector2(lbl_x + 1, lbl_y + 1), name_str,
@@ -604,19 +608,19 @@ func _get_player_feet() -> Vector2:
 
 func _get_station_interact_spot(code_name: String) -> Vector2:
 	match code_name:
-		"tranh": return Vector2(240, 590)
-		"sao": return Vector2(960, 590)
-		"bau": return Vector2(400, 750)
-		"trong": return Vector2(800, 750)
+		"tranh": return Vector2(s_tranh.position.x + 120.0, 700.0)
+		"sao": return Vector2(s_sao.position.x + 120.0, 700.0)
+		"bau": return Vector2(s_bau.position.x + 120.0, 540.0)
+		"trong": return Vector2(s_trong.position.x + 120.0, 540.0)
 	return Vector2(600, 480)
 
 func _get_closest_station() -> String:
 	var player_feet := _get_player_feet()
 	var stations := {
-		"tranh": Vector2(240, 535),
-		"sao": Vector2(960, 535),
-		"bau": Vector2(400, 715),
-		"trong": Vector2(800, 715)
+		"tranh": Vector2(s_tranh.position.x + 120.0, 655.0),
+		"sao": Vector2(s_sao.position.x + 120.0, 655.0),
+		"bau": Vector2(s_bau.position.x + 120.0, 495.0),
+		"trong": Vector2(s_trong.position.x + 120.0, 495.0)
 	}
 	var closest := ""
 	var min_dist := _interact_range
@@ -631,7 +635,7 @@ func _on_floor_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var mouse_event := event as InputEventMouseButton
 		var click_pos := mouse_event.position
-		click_pos.x = clampf(click_pos.x, 60.0, 1140.0)
+		click_pos.x = clampf(click_pos.x, _left_bound + 60.0, _right_bound - 60.0)
 		click_pos.y = clampf(click_pos.y, 330.0, 760.0)
 		_target_position = click_pos
 		_is_moving_to_target = true
@@ -647,10 +651,10 @@ func _move_linh_to_station(station_code: String) -> void:
 	var target_feet := Vector2(600, 370) # default starting feet position
 	
 	match station_code:
-		"tranh":       target_feet = Vector2(240, 535)
-		"sao":         target_feet = Vector2(960, 535)
-		"bau":         target_feet = Vector2(400, 715)
-		"trong":       target_feet = Vector2(800, 715)
+		"tranh":       target_feet = Vector2(s_tranh.position.x + 120.0, 655.0)
+		"sao":         target_feet = Vector2(s_sao.position.x + 120.0, 655.0)
+		"bau":         target_feet = Vector2(s_bau.position.x + 120.0, 495.0)
+		"trong":       target_feet = Vector2(s_trong.position.x + 120.0, 495.0)
 	
 	var target_x := target_feet.x - 80.0
 	var target_y := target_feet.y - 150.0
@@ -808,7 +812,7 @@ func _style_popup_button(btn: Button, primary: bool) -> void:
 
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
-	var viewport_size : Vector2 = get_viewport().size
+	var viewport_size : Vector2 = get_viewport().get_visible_rect().size
 	# 1. Deep background — aged indigo/midnight tone
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.07, 0.05, 0.04))
 	
@@ -891,8 +895,8 @@ func _draw_room_background() -> void:
 	bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
 	bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
-	# ── 5. Side column pillars (deep jade green wood - Remains Framed!) ──
-	for col_x in [60.0, sz.x - 80.0]:
+	# ── 5. Side column pillars (deep jade green wood - Framed to Screen!) ──
+	for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
 		# Column base shadow
 		bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.25))
 		# Column body
@@ -906,7 +910,7 @@ func _draw_room_background() -> void:
 		
 	# ── 6. Hanging lanterns (two golden silk lanterns either side) ──────────────────
 	var pulse := 0.08 * sin(_time * 1.8)
-	for lan_x in [180.0, sz.x - 200.0]:
+	for lan_x in [_left_bound + 180.0, _right_bound - 200.0]:
 		var lan_y := 20.0
 		# Lantern string from ceiling
 		bg_canvas.draw_line(Vector2(lan_x, 0), Vector2(lan_x, lan_y + 12), Color(0.50, 0.35, 0.15), 2.0)
@@ -962,10 +966,10 @@ func _draw_floor_canvas() -> void:
 	
 	# Station data: [center_pos, name]
 	var stations := [
-		[Vector2(240, 535), "Đàn Tranh"],
-		[Vector2(960, 535), "Sáo Trúc"],
-		[Vector2(400, 715), "Đàn Bầu"],
-		[Vector2(800, 715), "Trống Chầu"],
+		[Vector2(s_tranh.position.x + 120.0, 655.0), "Đàn Tranh"],
+		[Vector2(s_sao.position.x + 120.0, 655.0), "Sáo Trúc"],
+		[Vector2(s_bau.position.x + 120.0, 495.0), "Đàn Bầu"],
+		[Vector2(s_trong.position.x + 120.0, 495.0), "Trống Chầu"],
 	]
 	
 	for st in stations:
@@ -993,10 +997,10 @@ func _draw_floor_canvas() -> void:
 		var base_pos := Vector2.ZERO
 		
 		match _hovered_station:
-			"tranh":  base_pos = Vector2(240, 535)
-			"sao":    base_pos = Vector2(960, 535)
-			"bau":    base_pos = Vector2(400, 715)
-			"trong":  base_pos = Vector2(800, 715)
+			"tranh":  base_pos = Vector2(s_tranh.position.x + 120.0, 655.0)
+			"sao":    base_pos = Vector2(s_sao.position.x + 120.0, 655.0)
+			"bau":    base_pos = Vector2(s_bau.position.x + 120.0, 495.0)
+			"trong":  base_pos = Vector2(s_trong.position.x + 120.0, 495.0)
 		
 		if base_pos != Vector2.ZERO:
 			var pulse := sin(_time * 7.0)
@@ -1048,15 +1052,16 @@ func _draw_tranh(c: Button) -> void:
 	var is_hov := c.is_hovered()
 	
 	# Draw table stand with wooden joint detail & shadow
-	c.draw_line(Vector2(cx - 90, cy + 20), Vector2(cx - 96, cy + 75), Color(0.12, 0.06, 0.03), 8.0)
-	c.draw_line(Vector2(cx + 90, cy + 20), Vector2(cx + 96, cy + 75), Color(0.12, 0.06, 0.03), 8.0)
-	c.draw_line(Vector2(cx - 96, cy + 70), Vector2(cx + 96, cy + 70), Color(0.10, 0.05, 0.02), 4.5)
+	c.draw_line(Vector2(cx - 70, cy + 15), Vector2(cx - 75, cy + 65), Color(0.12, 0.06, 0.03), 6.0)
+	c.draw_line(Vector2(cx + 70, cy + 15), Vector2(cx + 75, cy + 65), Color(0.12, 0.06, 0.03), 6.0)
+	c.draw_line(Vector2(cx - 75, cy + 60), Vector2(cx + 75, cy + 60), Color(0.10, 0.05, 0.02), 3.5)
 	
 	if _tex_tranh:
-		# Dimensions of the instrument image card (Larger!)
-		var img_w := 280.0
-		var img_h := 90.0
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
+		# Dimensions of the instrument image card
+		var img_w := 200.0
+		var img_h := 70.0
+		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
+		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
 		var r_sb := StyleBoxFlat.new()
@@ -1069,7 +1074,7 @@ func _draw_tranh(c: Button) -> void:
 		r_sb.shadow_size = 8
 		r_sb.shadow_color = Color(0, 0, 0, 0.3)
 		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, img_rect)
+		c.draw_style_box(r_sb, card_rect)
 		
 		# Draw the loaded Dan Tranh image texture on top of the glass card
 		c.draw_texture_rect(_tex_tranh, img_rect, false)
@@ -1133,17 +1138,18 @@ func _draw_sao(c: Button) -> void:
 	var is_hov := c.is_hovered()
 	
 	# Stand base shadow & wood stand
-	c.draw_line(Vector2(cx - 40, cy + 30), Vector2(cx + 40, cy + 30), Color(0.18, 0.10, 0.05), 7.0)
-	c.draw_line(Vector2(cx - 25, cy + 30), Vector2(cx - 25, cy + 75), Color(0.18, 0.10, 0.05), 4.5)
-	c.draw_line(Vector2(cx + 25, cy + 30), Vector2(cx + 25, cy + 75), Color(0.18, 0.10, 0.05), 4.5)
-	c.draw_circle(Vector2(cx - 25, cy + 30), 4.5, C_GOLD)
-	c.draw_circle(Vector2(cx + 25, cy + 30), 4.5, C_GOLD)
+	c.draw_line(Vector2(cx - 30, cy + 25), Vector2(cx + 30, cy + 25), Color(0.18, 0.10, 0.05), 5.5)
+	c.draw_line(Vector2(cx - 20, cy + 25), Vector2(cx - 20, cy + 65), Color(0.18, 0.10, 0.05), 3.5)
+	c.draw_line(Vector2(cx + 20, cy + 25), Vector2(cx + 20, cy + 65), Color(0.18, 0.10, 0.05), 3.5)
+	c.draw_circle(Vector2(cx - 20, cy + 25), 3.5, C_GOLD)
+	c.draw_circle(Vector2(cx + 20, cy + 25), 3.5, C_GOLD)
 	
 	if _tex_sao:
-		# Dimensions of the instrument image card (Larger!)
-		var img_w := 280.0
-		var img_h := 90.0
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
+		# Dimensions of the instrument image card
+		var img_w := 200.0
+		var img_h := 70.0
+		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
+		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
 		var r_sb := StyleBoxFlat.new()
@@ -1156,7 +1162,7 @@ func _draw_sao(c: Button) -> void:
 		r_sb.shadow_size = 8
 		r_sb.shadow_color = Color(0, 0, 0, 0.3)
 		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, img_rect)
+		c.draw_style_box(r_sb, card_rect)
 		
 		# Draw the loaded Sao Truc image texture on top of the glass card
 		c.draw_texture_rect(_tex_sao, img_rect, false)
@@ -1209,14 +1215,15 @@ func _draw_bau(c: Button) -> void:
 	var is_hov := c.is_hovered()
 	
 	# Zither Base Stand
-	c.draw_line(Vector2(cx - 85, cy + 25), Vector2(cx - 90, cy + 65), Color(0.14, 0.08, 0.04), 7.0)
-	c.draw_line(Vector2(cx + 85, cy + 25), Vector2(cx + 90, cy + 65), Color(0.14, 0.08, 0.04), 7.0)
+	c.draw_line(Vector2(cx - 65, cy + 20), Vector2(cx - 70, cy + 65), Color(0.14, 0.08, 0.04), 5.5)
+	c.draw_line(Vector2(cx + 65, cy + 20), Vector2(cx + 70, cy + 65), Color(0.14, 0.08, 0.04), 5.5)
 	
 	if _tex_bau:
-		# Dimensions of the instrument image card (Larger!)
-		var img_w := 280.0
-		var img_h := 90.0
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
+		# Dimensions of the instrument image card
+		var img_w := 200.0
+		var img_h := 70.0
+		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
+		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
 		var r_sb := StyleBoxFlat.new()
@@ -1229,7 +1236,7 @@ func _draw_bau(c: Button) -> void:
 		r_sb.shadow_size = 8
 		r_sb.shadow_color = Color(0, 0, 0, 0.3)
 		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, img_rect)
+		c.draw_style_box(r_sb, card_rect)
 		
 		# Draw the loaded Dan Bau image texture on top of the glass card
 		c.draw_texture_rect(_tex_bau, img_rect, false)
@@ -1280,15 +1287,16 @@ func _draw_trong(c: Button) -> void:
 	var is_hov := c.is_hovered()
 	
 	# Wooden Stand
-	c.draw_line(Vector2(cx - 46, cy + 15), Vector2(cx - 66, cy + 65), Color(0.20, 0.12, 0.06), 8.0)
-	c.draw_line(Vector2(cx + 46, cy + 15), Vector2(cx + 66, cy + 65), Color(0.20, 0.12, 0.06), 8.0)
-	c.draw_line(Vector2(cx - 56, cy + 45), Vector2(cx + 56, cy + 45), Color(0.20, 0.12, 0.06), 6.5)
+	c.draw_line(Vector2(cx - 36, cy + 15), Vector2(cx - 56, cy + 65), Color(0.20, 0.12, 0.06), 6.0)
+	c.draw_line(Vector2(cx + 36, cy + 15), Vector2(cx + 56, cy + 65), Color(0.20, 0.12, 0.06), 6.0)
+	c.draw_line(Vector2(cx - 46, cy + 45), Vector2(cx + 46, cy + 45), Color(0.20, 0.12, 0.06), 4.5)
 	
 	if _tex_trong:
-		# Dimensions of the drum image card (Larger!)
-		var img_w := 220.0
-		var img_h := 110.0
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 25.0, img_w, img_h)
+		# Dimensions of the drum image card
+		var img_w := 200.0
+		var img_h := 70.0
+		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
+		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
 		var r_sb := StyleBoxFlat.new()
@@ -1301,7 +1309,7 @@ func _draw_trong(c: Button) -> void:
 		r_sb.shadow_size = 8
 		r_sb.shadow_color = Color(0, 0, 0, 0.3)
 		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, img_rect)
+		c.draw_style_box(r_sb, card_rect)
 		
 		# Draw the loaded Trong image texture on top of the glass card
 		c.draw_texture_rect(_tex_trong, img_rect, false)
@@ -2053,7 +2061,7 @@ func _fade_to(path: String) -> void:
 
 # ─── Responsive Layout ────────────────────────────────────────────────────────
 func _on_viewport_size_changed() -> void:
-	var size : Vector2 = get_viewport().size
+	var size : Vector2 = get_viewport().get_visible_rect().size
 	var is_mobile := size.x < size.y or size.x < 768
 	
 	# Scale the 2.5D Room content container to fit inside screen boundaries
@@ -2074,6 +2082,16 @@ func _on_viewport_size_changed() -> void:
 		margin_l + (room_w - 1200.0 * scale_factor) / 2.0,
 		(room_h - 800.0 * scale_factor) / 2.0
 	)
+	
+	var rx := room_content.position.x
+	_left_bound = -rx / scale_factor if scale_factor > 0.0 else 0.0
+	_right_bound = (size.x - rx) / scale_factor if scale_factor > 0.0 else 1200.0
+	var center_x := 600.0
+
+	s_tranh.position = Vector2(_left_bound + 60.0, 520.0)
+	s_sao.position = Vector2(_right_bound - 300.0, 520.0)
+	s_bau.position = Vector2(center_x - 380.0, 360.0)
+	s_trong.position = Vector2(center_x + 140.0, 360.0)
 	
 	# Update popups to match the actual window size
 	if popup and is_instance_valid(popup):
