@@ -54,6 +54,14 @@ var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _breath_scores : Array[float] = []
 
+var _is_wait_mode := true
+var _is_demo_mode := false
+var _total_mistakes := 0
+var _song_bpm := 100.0
+var _current_note_elapsed := 0.0
+var _current_note_correct_frames := 0
+var _current_note_total_frames := 0
+
 var _covered_states : Array[bool] = [true, true, true, true, true, true]
 var _flute_streams : Dictionary = {}
 var _active_player : AudioStreamPlayer = null
@@ -379,8 +387,8 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "20%" if current_song_title == "" else "100%"
 	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
-	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
-	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
+	_update_wait_mode_ui()
+	_update_demo_mode_ui()
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Thổi theo dòng nốt"
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần thổi: La" if current_song_title == "" else "Nốt cần thổi: " + sheet_notes[0]
@@ -801,8 +809,8 @@ func _connect_buttons() -> void:
 
 	back_btn.pressed.connect(_go_back)
 	hint_btn.pressed.connect(_show_custom_hint)
-	demo_btn.pressed.connect(_demo)
-	slow_btn.pressed.connect(func() -> void: _va_say("Xem chậm x0.5 – dễ học từng bước."))
+	demo_btn.pressed.connect(_toggle_demo_mode)
+	slow_btn.pressed.connect(_toggle_wait_mode)
 	record_btn.pressed.connect(_toggle_record)
 	reset_btn.pressed.connect(_reset)
 
@@ -914,11 +922,125 @@ func _process_real_audio(delta: float) -> void:
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	if not visualizer: return
 	
+	var target_note = sheet_notes[_note_idx]
+	var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
+	
+	# A. Demo Mode
+	if _is_demo_mode:
+		_current_note_elapsed += delta
+		
+		# Play audio if not playing or switched note
+		if not _active_player or not is_instance_valid(_active_player) or _active_player.get_meta("note_played", "") != target_note:
+			_play_flute_sound(target_note)
+			if _active_player:
+				_active_player.set_meta("note_played", target_note)
+				_active_player.volume_db = -3.0 # Make audible
+			
+		# Update visual covered state/fingering
+		var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+		_covered_states = target_fingering.duplicate()
+		_build_flute()
+		
+		pitch_note.text = target_note
+		pitch_status.text = "Đang nghe mẫu..."
+		pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+		
+		if _current_note_elapsed >= target_duration:
+			_current_note_elapsed = 0.0
+			_note_idx = (_note_idx + 1) % sheet_notes.size()
+			_build_notation()
+			_update_target_indicator()
+		return
+		
+	# B. Auto Scroll Mode
+	if not _is_wait_mode:
+		_current_note_elapsed += delta
+		_current_note_total_frames += 1
+		
+		var db = visualizer.current_amplitude_db
+		var pitch = visualizer.current_pitch
+		var target_freq = FREQS.get(target_note, 261.63)
+		var is_overblowing := _breath_pressure > 82.0
+		var scale_mult := 2.0 if is_overblowing else 1.0
+		var effective_target_freq : float = target_freq * scale_mult
+		
+		var cents := 999.0
+		if pitch > 0.0:
+			cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
+			
+		var is_pitch_ok = db > -45.0 and pitch > 50.0 and abs(cents) < 50.0
+		var is_correct_note = false
+		if is_pitch_ok:
+			var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
+			if abs(cents) < tolerance_cents:
+				is_correct_note = true
+				
+		var is_breath_ok = _breath_pressure >= 12.0 and _breath_pressure <= 85.0
+		
+		if is_correct_note and is_breath_ok:
+			_current_note_correct_frames += 1
+			pitch_note.text = target_note + ("²" if is_overblowing else "")
+			pitch_status.text = "Rất chuẩn!"
+			pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+			pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+			
+			# Auto update covered states fingerings for visual help
+			var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+			_covered_states = target_fingering.duplicate()
+			_build_flute()
+		elif is_pitch_ok:
+			pitch_note.text = target_note + ("²" if is_overblowing else "")
+			pitch_status.text = "Hơi yếu/mạnh"
+			pitch_status.add_theme_color_override("font_color", C_WARN)
+			pitch_note.add_theme_color_override("font_color", C_WARN)
+		else:
+			pitch_note.text = "—"
+			pitch_status.text = "Chưa đúng nốt"
+			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			
+		if _current_note_elapsed >= target_duration:
+			var accuracy := 0.0
+			if _current_note_total_frames > 0:
+				accuracy = float(_current_note_correct_frames) / _current_note_total_frames
+				
+			if accuracy >= 0.4:
+				_score = clamp(_score + 5.0, 0, 100)
+				_refresh_score()
+				_update_rhythm_real()
+				_va_say("Tuyệt vời!")
+				
+				# Record AI performance metrics
+				_detected_onsets.append(_practice_time)
+				_pitch_scores.append(100.0)
+				_breath_scores.append(100.0)
+			else:
+				_score = clamp(_score - 4.0, 0, 100)
+				_refresh_score()
+				_total_mistakes += 1
+				rhythm_acc.text = "Lỗi: %d/2" % _total_mistakes
+				rhythm_acc.add_theme_color_override("font_color", C_RED_ERR)
+				
+				if _total_mistakes > 2:
+					_trigger_rewind()
+					return
+					
+			_current_note_elapsed = 0.0
+			_current_note_correct_frames = 0
+			_current_note_total_frames = 0
+			
+			_note_idx = (_note_idx + 1) % sheet_notes.size()
+			_build_notation()
+			_update_target_indicator()
+			_play_flute_sound(target_note) # Play sound feedback
+		return
+		
+	# C. Wait Mode
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
 	
 	if db > -45.0 and pitch > 50.0:
-		var target_note = sheet_notes[_note_idx]
 		var target_freq = FREQS.get(target_note, 261.63)
 		var is_overblowing := _breath_pressure > 82.0
 		var scale_mult := 2.0 if is_overblowing else 1.0
@@ -934,57 +1056,40 @@ func _process_real_audio(delta: float) -> void:
 				pitch_status.text = "Đúng cao độ" + (" (Quãng 2)" if is_overblowing else "")
 				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 				pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+				
+				# Record AI performance metrics
+				_detected_onsets.append(_practice_time)
+				var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
+				_pitch_scores.append(pitch_err)
+				_breath_scores.append(visualizer.current_breath_purity)
+				
+				_correct_pitch_hold_time += delta
+				if _correct_pitch_hold_time >= 0.15:
+					_correct_pitch_hold_time = 0.0
+					_advance_note_in_practice()
+					
+					# Dynamic AI scoring
+					var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+					var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
+					var avg_breath_score = _get_average_score(_breath_scores, 80.0)
+					
+					_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, 100.0, avg_breath_score)
+					_refresh_score()
+					_update_rhythm_real()
+					rhythm_acc.text = "Nhịp điệu: %d%% | Cột hơi: %d%%" % [int(rhythm_score), int(avg_breath_score)]
+					
+					# Auto update covered states fingerings for visual help
+					var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+					_covered_states = target_fingering.duplicate()
+					_build_flute()
+					
+					_eval_cooldown = 1.0
+					return
 			else:
 				pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
 				pitch_status.add_theme_color_override("font_color", C_WARN)
 				pitch_note.add_theme_color_override("font_color", C_WARN)
 				
-			# Record AI performance metrics
-			_detected_onsets.append(_practice_time)
-			var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
-			_pitch_scores.append(pitch_err)
-			_breath_scores.append(visualizer.current_breath_purity)
-			
-			# Advance note / sequencer
-			if _lesson_mode == 0:
-				_note_idx = (_note_idx + 1) % sheet_notes.size()
-				_build_notation()
-				_update_target_indicator()
-				
-				# Guide sound & prompt
-				var next_note = sheet_notes[_note_idx]
-				_play_flute_sound_guide(next_note)
-				_va_say("Đúng rồi! Hãy tiếp tục thổi nốt mẫu %s nhé." % next_note)
-			else:
-				# Play zither backing pluck
-				_play_zither_backing(target_note)
-				_va_say("Chuẩn nốt! Nhạc nền tiếp tục...")
-				
-				# Resume backing track!
-				_backing_playing = true
-				_backing_timer = BEAT_DURATION
-			
-			# Dynamic AI scoring
-			var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
-			var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
-			var avg_breath_score = _get_average_score(_breath_scores, 80.0)
-			
-			_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, 100.0, avg_breath_score)
-			_refresh_score()
-			_update_rhythm_real()
-			rhythm_acc.text = "Nhịp điệu: %d%% | Cột hơi: %d%%" % [int(rhythm_score), int(avg_breath_score)]
-			
-			# Flute sound effect play
-			_play_flute_sound(target_note)
-			
-			# Auto update covered states fingerings for visual help
-			var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
-			_covered_states = target_fingering.duplicate()
-			_build_flute()
-			
-			_eval_cooldown = 1.0
-			return
-			
 		# Check if it matches another note in the scale
 		var detected_note := ""
 		var closest_note := ""
@@ -1009,6 +1114,90 @@ func _process_real_audio(delta: float) -> void:
 		pitch_status.text = "Đang nghe..."
 		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
 		pitch_note.add_theme_color_override("font_color", C_RED_SON)
+
+func _update_wait_mode_ui() -> void:
+	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
+	if not slow_btn: return
+	if _is_wait_mode:
+		slow_btn.text = "Chờ nốt: Bật ⏳"
+		slow_btn.modulate = Color("#e5ba73") # Warm gold/yellow
+	else:
+		slow_btn.text = "Tự trôi: Bật 🌊"
+		slow_btn.modulate = Color("#76ba99") # Mint green
+
+func _update_demo_mode_ui() -> void:
+	var demo_btn := $Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button
+	if not demo_btn: return
+	if _is_demo_mode:
+		demo_btn.text = "Nghe mẫu: BẬT 🔊"
+		demo_btn.modulate = Color("#76ba99") # Mint green
+	else:
+		demo_btn.text = "Nghe mẫu: TẮT 🔇"
+		demo_btn.modulate = Color(1.0, 1.0, 1.0) # Reset to default
+
+func _toggle_demo_mode() -> void:
+	_is_demo_mode = not _is_demo_mode
+	if _is_demo_mode:
+		_is_wait_mode = false # Disable wait mode if demo is active
+		_update_wait_mode_ui()
+		_va_say("Đã bật Nghe mẫu. Hệ thống sẽ tự chơi giai điệu bài hát.")
+	else:
+		_is_wait_mode = true
+		_update_wait_mode_ui()
+		_va_say("Đã tắt Nghe mẫu. Con hãy tự mình luyện tập nhé!")
+	_update_demo_mode_ui()
+	
+	# Stop active sound first
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stop()
+		_active_player.queue_free()
+		_active_player = null
+
+func _toggle_wait_mode() -> void:
+	if _is_demo_mode:
+		_va_say("Đang chạy Nghe mẫu. Con không thể đổi chế độ lúc này.")
+		return
+	_is_wait_mode = not _is_wait_mode
+	if _is_wait_mode:
+		_va_say("Chế độ Luyện tập: Hệ thống sẽ chờ con thổi đúng nốt nhạc.")
+	else:
+		_va_say("Chế độ Tự trôi: Bản nhạc sẽ trôi tự động theo nhịp độ.")
+	_update_wait_mode_ui()
+
+func _advance_note_in_practice() -> void:
+	var target_note = sheet_notes[_note_idx]
+	if _lesson_mode == 0:
+		_note_idx = (_note_idx + 1) % sheet_notes.size()
+		_build_notation()
+		_update_target_indicator()
+		
+		# Guide sound & prompt
+		var next_note = sheet_notes[_note_idx]
+		_play_flute_sound_guide(next_note)
+		_va_say("Đúng rồi! Hãy tiếp tục thổi nốt mẫu %s nhé." % next_note)
+	else:
+		# Play zither backing pluck
+		_play_zither_backing(target_note)
+		_va_say("Chuẩn nốt! Nhạc nền tiếp tục...")
+		
+		# Resume backing track!
+		_backing_playing = true
+		_backing_timer = BEAT_DURATION
+
+func _trigger_rewind() -> void:
+	_total_mistakes = 0
+	_note_idx = max(0, _note_idx - 3)
+	_current_note_elapsed = 0.0
+	_current_note_correct_frames = 0
+	_current_note_total_frames = 0
+	_build_notation()
+	_update_target_indicator()
+	
+	# Reset rhythm display error counters
+	rhythm_acc.text = "Lỗi: 0/2"
+	rhythm_acc.add_theme_color_override("font_color", C_TEXT_MUTED)
+	
+	_va_say("THỔI SAI QUÁ 2 NỐT! Lùi lại 3 nốt...")
 
 func _update_rhythm_real() -> void:
 	var bars := rhythm_bars.get_children()
