@@ -56,6 +56,7 @@ var _breath_scores : Array[float] = []
 
 var _is_wait_mode := true
 var _is_demo_mode := false
+var _speed_scale := 1.0
 var _total_mistakes := 0
 var _song_bpm := 100.0
 var _current_note_elapsed := 0.0
@@ -438,6 +439,38 @@ func _ready() -> void:
 		song_sel.item_selected.connect(func(index: int) -> void:
 			_on_song_selected(index)
 		)
+		
+		# Dynamic Speed Selector OptionButton setup
+		var speed_sel := OptionButton.new()
+		speed_sel.name = "SpeedSelector"
+		speed_sel.custom_minimum_size = Vector2(165, 44)
+		speed_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		speed_sel.add_theme_stylebox_override("normal", sb_normal)
+		speed_sel.add_theme_stylebox_override("hover", sb_hover)
+		speed_sel.add_theme_stylebox_override("pressed", sb_pressed)
+		speed_sel.add_theme_color_override("font_color", C_TEXT)
+		speed_sel.add_theme_color_override("font_hover_color", C_TEXT)
+		speed_sel.add_theme_font_size_override("font_size", 16)
+		
+		speed_sel.add_item("Tốc độ: 100%", 0)
+		speed_sel.add_item("Tốc độ: 80%", 1)
+		speed_sel.add_item("Tốc độ: 60%", 2)
+		speed_sel.add_item("Tốc độ: 50%", 3)
+		speed_sel.selected = 0
+		
+		top_h.add_child(speed_sel)
+		# Place it immediately after the SongSelector (which is now at index 3)
+		top_h.move_child(speed_sel, 4)
+		
+		speed_sel.item_selected.connect(func(index: int) -> void:
+			match index:
+				0: _speed_scale = 1.0
+				1: _speed_scale = 0.8
+				2: _speed_scale = 0.6
+				3: _speed_scale = 0.5
+			_va_say("Đã chỉnh tốc độ nốt chạy thành %d%%." % int(_speed_scale * 100))
+		)
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -609,10 +642,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	var effective_delta = delta * _speed_scale
 	if _recording:
-		_practice_time += delta
+		_practice_time += effective_delta
 		if _current_note_elapsed < 0.0:
-			_current_note_elapsed += delta
+			_current_note_elapsed += effective_delta
 			
 			pitch_note.text = "—"
 			var prep_sec := int(ceil(abs(_current_note_elapsed)))
@@ -638,11 +672,11 @@ func _process(delta: float) -> void:
 					_play_flute_sound(sheet_notes[0])
 		else:
 			if _mic_mode:
-				_process_real_audio(delta)
+				_process_real_audio(effective_delta)
 			else:
 				# If we are in Touch Mode, we still want Auto Scroll / Demo Mode to work!
 				if not _is_wait_mode or _is_demo_mode:
-					_current_note_elapsed += delta
+					_current_note_elapsed += effective_delta
 					var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
 					
 					# Demo Mode: automatically play note sounds
@@ -672,7 +706,7 @@ func _process(delta: float) -> void:
 							_play_flute_sound(sheet_notes[_note_idx])
 				else:
 					# Normal Touch Mode simulation
-					_sim_timer += delta
+					_sim_timer += effective_delta
 					if _sim_timer >= 1.2:
 						_sim_timer = 0.0
 						_simulate_tick()
@@ -681,10 +715,10 @@ func _process(delta: float) -> void:
 	# 2. Update zither backing track if recording and in Lesson 2
 	if _recording and _lesson_mode == 1:
 		if _current_note_elapsed >= 0.0:
-			_update_backing_track(delta)
+			_update_backing_track(effective_delta)
 		
 	if _ignore_input_timer > 0.0:
-		_ignore_input_timer -= delta
+		_ignore_input_timer -= effective_delta
 		# Clear detected notes history to avoid carry-over pitch spikes
 		_detected_notes_history.clear()
 		return
