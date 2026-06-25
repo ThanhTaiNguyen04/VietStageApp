@@ -105,50 +105,50 @@ func _process(delta: float) -> void:
 				
 			if _analyzer:
 				# Use high-performance GDExtension C++ module for analysis
-				var current_filtered = _analyzer.filter_background_noise(mono_samples, 0.015)
+				var current_filtered = _analyzer.filter_background_noise(mono_samples, 0.005)
 				current_amplitude_db = _analyzer.calculate_peak_db(current_filtered)
 				
 				if current_amplitude_db > volume_threshold_db:
 					# Filter the rolling history buffer for pitch detection
-					var filtered_analysis = _analyzer.filter_background_noise(_analysis_buffer, 0.015)
+					var filtered_analysis = _analyzer.filter_background_noise(_analysis_buffer, 0.005)
 					
-					var detected_pitch = _analyzer.analyze_pitch_yin(filtered_analysis, AudioServer.get_mix_rate(), 0.15)
+					var detected_pitch = _analyzer.analyze_pitch_yin(filtered_analysis, AudioServer.get_mix_rate(), 0.15, min_frequency, max_frequency)
 					if detected_pitch > 0.0:
-						current_pitch = lerp(current_pitch, detected_pitch, 0.15)
+						current_pitch = lerp(current_pitch, detected_pitch, 0.70)
 					else:
-						current_pitch = lerp(current_pitch, 0.0, 0.2)
+						current_pitch = lerp(current_pitch, 0.0, 0.5)
 					
 					current_tone_quality = _analyzer.evaluate_tone_quality(filtered_analysis)
 					current_breath_purity = _analyzer.analyze_breath_pattern(filtered_analysis)
 				else:
-					current_pitch = lerp(current_pitch, 0.0, 0.2)
-					current_tone_quality = lerp(current_tone_quality, 100.0, 0.2)
-					current_breath_purity = lerp(current_breath_purity, 100.0, 0.2)
+					current_pitch = lerp(current_pitch, 0.0, 0.5)
+					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
+					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 			else:
 				# Fallback to pure GDScript analysis
-				var current_filtered = _filter_background_noise_gdscript(mono_samples, 0.015)
+				var current_filtered = _filter_background_noise_gdscript(mono_samples, 0.005)
 				current_amplitude_db = _calculate_peak_db_gdscript(current_filtered)
 				
 				if current_amplitude_db > volume_threshold_db:
-					# Only run the expensive analysis 10 times a second for GDScript performance
-					if _time_since_last_pitch >= 0.1:
+					# Run analysis 33 times a second (every 0.03s) for responsive real-time feedback
+					if _time_since_last_pitch >= 0.03:
 						_time_since_last_pitch = 0.0
 						if _analysis_buffer.size() >= 512:
-							var filtered_analysis = _filter_background_noise_gdscript(_analysis_buffer, 0.015)
+							var filtered_analysis = _filter_background_noise_gdscript(_analysis_buffer, 0.005)
 							var detected_pitch = _detect_pitch_yin_gdscript(filtered_analysis, AudioServer.get_mix_rate(), 0.15)
 							if detected_pitch > 0.0:
-								current_pitch = lerp(current_pitch, detected_pitch, 0.30)
+								current_pitch = lerp(current_pitch, detected_pitch, 0.70)
 							else:
-								current_pitch = lerp(current_pitch, 0.0, 0.30)
+								current_pitch = lerp(current_pitch, 0.0, 0.5)
 							
 							current_tone_quality = _evaluate_tone_quality_gdscript(filtered_analysis)
 							current_breath_purity = _analyze_breath_pattern_gdscript(filtered_analysis)
 						else:
-							current_pitch = lerp(current_pitch, 0.0, 0.30)
+							current_pitch = lerp(current_pitch, 0.0, 0.70)
 				else:
-					current_pitch = lerp(current_pitch, 0.0, 0.2)
-					current_tone_quality = lerp(current_tone_quality, 100.0, 0.2)
-					current_breath_purity = lerp(current_breath_purity, 100.0, 0.2)
+					current_pitch = lerp(current_pitch, 0.0, 0.5)
+					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
+					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 				
 			# Add samples to history for visualization
 			var step = max(1, mono_samples.size() / 10)
@@ -371,8 +371,9 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 	d.resize(max_period + 1)
 	
 	# Step 1: Difference
+	# Populate d completely from 1 to max_period to ensure mathematically correct cumulative mean normalized difference
 	# Using stride=2 inside difference loop for 60fps GDScript optimization
-	for tau in range(min_period, max_period + 1):
+	for tau in range(1, max_period + 1):
 		var diff_sum := 0.0
 		for t in range(0, W, 2):
 			var diff = samples[t] - samples[t + tau]
@@ -405,7 +406,10 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 			global_min_tau = tau
 			
 	if best_tau == -1:
-		best_tau = global_min_tau
+		if min_val < 0.25:
+			best_tau = global_min_tau
+		else:
+			best_tau = -1
 		
 	if best_tau <= 0 or best_tau >= max_period:
 		return 0.0

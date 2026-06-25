@@ -81,27 +81,33 @@ const BEAT_DURATION := 0.8
 var _lesson_beats : Array = []
 var _zither_streams : Dictionary = {}
 
+var note_statuses : Array[String] = []
+var note_visuals : Dictionary = {}
+var _active_note_is_correct := false
+var _active_note_is_heard := false
+const LANES := ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si", "Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"]
+
 var _eval_cooldown := 0.0
 var _linh_collapsed := true
 var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const FREQS := {
-	"Đô": 261.63, # C4
-	"Rê": 293.66, # D4
-	"Mi": 329.63, # E4
-	"Fa": 349.23, # F4
-	"Sol": 392.00, # G4
-	"La": 440.00, # A4
-	"Si": 493.88,  # B4
-	"Đô2": 523.25, # C5
-	"Rê2": 587.33, # D5
-	"Mi2": 659.25, # E5
-	"Fa2": 698.46, # F5
-	"Sol2": 783.99, # G5
-	"La2": 880.00, # A5
-	"Si2": 987.77,  # B5
-	"Đô3": 1046.50 # C6
+	"Đô": 523.25, # C5 (Vietnamese Sáo C5 Đô lowest note)
+	"Rê": 587.33, # D5
+	"Mi": 659.25, # E5
+	"Fa": 698.46, # F5
+	"Sol": 783.99, # G5
+	"La": 880.00, # A5
+	"Si": 987.77,  # B5
+	"Đô2": 1046.50, # C6
+	"Rê2": 1174.66, # D6
+	"Mi2": 1318.51, # E6
+	"Fa2": 1396.91, # F6
+	"Sol2": 1567.98, # G6
+	"La2": 1760.00, # A6
+	"Si2": 1975.53,  # B6
+	"Đô3": 2093.00 # C7
 }
 
 const FINGERINGS := {
@@ -142,6 +148,44 @@ var sheet_durations : Array[float] = [
 	0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.5,
 	0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 2.0
 ]
+
+var songs_list : Array[Dictionary] = [
+	{
+		"title": "Futari no Kimochi",
+		"bpm": 88.0,
+		"sheet": [
+			"La", "La", "Đô2", "Rê2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2",
+			"Mi2", "Rê2", "Đô2", "La", "Sol", "La", "Đô2",
+			"La", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Mi2",
+			"Mi2", "Rê2", "Đô2", "La", "Sol", "La", "Rê2", "Đô2", "La"
+		],
+		"durations": [
+			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.5,
+			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 2.0,
+			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.5,
+			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 2.0
+		]
+	},
+	{
+		"title": "Lý Hoài Nam",
+		"bpm": 80.0,
+		"sheet": ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"],
+		"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+	},
+	{
+		"title": "Lòng Mẹ",
+		"bpm": 76.0,
+		"sheet": ["Đô", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Mi", "Rê", "Đô", "Đô"],
+		"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+	},
+	{
+		"title": "Trống Cơm",
+		"bpm": 100.0,
+		"sheet": ["Sol", "La", "Si", "Sol", "La", "Sol", "Fa", "Mi", "Rê", "Mi", "Đô"],
+		"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+	}
+]
+
 const HOLES    := 6
 const SPEECHES : Array[String] = [
 	"Thở đều, môi khép nhẹ.",
@@ -152,7 +196,7 @@ const SPEECHES : Array[String] = [
 
 func _ready() -> void:
 	if current_song_title != "":
-		sheet_notes = current_song_sheet
+		sheet_notes.assign(current_song_sheet)
 		sheet_durations.clear()
 		for note in sheet_notes:
 			sheet_durations.append(1.0)
@@ -164,6 +208,177 @@ func _ready() -> void:
 	_generate_streams()
 	_set_labels()
 	_build_theme()
+	
+	# Hide default NotesScroll ScrollContainer
+	var scroll_container := notes_hbox.get_parent() as ScrollContainer
+	if scroll_container:
+		scroll_container.visible = false
+		
+	# Shrink other sections to give maximum space to the note visualizer
+	var stats_row := $Root/MiddleRow/MainContent/StatsRow as HBoxContainer
+	if stats_row:
+		stats_row.custom_minimum_size.y = 70.0
+		
+		# Shrink margins and spaces of the stats container to fit the smaller size
+		var pitch_m := stats_row.get_node_or_null("PitchPanel/PitchM") as MarginContainer
+		if pitch_m:
+			pitch_m.add_theme_constant_override("margin_top", 4)
+			pitch_m.add_theme_constant_override("margin_bottom", 4)
+		var rhythm_m := stats_row.get_node_or_null("RhythmPanel/RhythmM") as MarginContainer
+		if rhythm_m:
+			rhythm_m.add_theme_constant_override("margin_top", 4)
+			rhythm_m.add_theme_constant_override("margin_bottom", 4)
+		var score_m := stats_row.get_node_or_null("ScorePanel/ScoreM") as MarginContainer
+		if score_m:
+			score_m.add_theme_constant_override("margin_top", 4)
+			score_m.add_theme_constant_override("margin_bottom", 4)
+			
+		var pitch_v := stats_row.get_node_or_null("PitchPanel/PitchM/PitchV") as VBoxContainer
+		if pitch_v:
+			pitch_v.add_theme_constant_override("separation", 2)
+		var rhythm_v := stats_row.get_node_or_null("RhythmPanel/RhythmM/RhythmV") as VBoxContainer
+		if rhythm_v:
+			rhythm_v.add_theme_constant_override("separation", 2)
+		var score_v := stats_row.get_node_or_null("ScorePanel/ScoreM/ScoreV") as VBoxContainer
+		if score_v:
+			score_v.add_theme_constant_override("separation", 2)
+			
+		if rhythm_bars:
+			rhythm_bars.custom_minimum_size.y = 20.0
+			
+		if pitch_note: pitch_note.add_theme_font_size_override("font_size", 28)
+		if score_num: score_num.add_theme_font_size_override("font_size", 28)
+		
+		var pitch_title := stats_row.get_node_or_null("PitchPanel/PitchM/PitchV/PitchTitle") as Label
+		if pitch_title: pitch_title.add_theme_font_size_override("font_size", 12)
+		var rhythm_title := stats_row.get_node_or_null("RhythmPanel/RhythmM/RhythmV/RhythmTitle") as Label
+		if rhythm_title: rhythm_title.add_theme_font_size_override("font_size", 12)
+		var score_title := stats_row.get_node_or_null("ScorePanel/ScoreM/ScoreV/ScoreTitle") as Label
+		if score_title: score_title.add_theme_font_size_override("font_size", 12)
+		
+	var flute_board := $Root/FluteBoard as PanelContainer
+	if flute_board:
+		flute_board.custom_minimum_size.y = 140.0
+		
+		# Shrink margins and spaces of the flute board to fit
+		var board_m := flute_board.get_node_or_null("BoardM") as MarginContainer
+		if board_m:
+			board_m.add_theme_constant_override("margin_top", 4)
+			board_m.add_theme_constant_override("margin_bottom", 4)
+			board_m.add_theme_constant_override("margin_left", 24)
+			board_m.add_theme_constant_override("margin_right", 24)
+			
+		var board_vbox := flute_board.get_node_or_null("BoardM/BoardVBox") as VBoxContainer
+		if board_vbox:
+			board_vbox.add_theme_constant_override("separation", 2)
+			
+		var flute_m := flute_board.get_node_or_null("BoardM/BoardVBox/FluteFrame/FluteM") as MarginContainer
+		if flute_m:
+			flute_m.add_theme_constant_override("margin_top", 4)
+			flute_m.add_theme_constant_override("margin_bottom", 4)
+			
+		var board_label := flute_board.get_node_or_null("BoardM/BoardVBox/BoardLabel") as Label
+		if board_label: board_label.add_theme_font_size_override("font_size", 13)
+		if target_label: target_label.add_theme_font_size_override("font_size", 12)
+		var guidance_label := flute_board.get_node_or_null("BoardM/BoardVBox/GuidanceLabel") as Label
+		if guidance_label: guidance_label.add_theme_font_size_override("font_size", 11)
+		
+		var breath_label := flute_board.get_node_or_null("BoardM/BoardVBox/BreathHBox/BreathLabel") as Label
+		if breath_label: breath_label.add_theme_font_size_override("font_size", 11)
+		if breath_status: breath_status.add_theme_font_size_override("font_size", 11)
+		if breath_progress: breath_progress.custom_minimum_size.y = 8
+		
+	# Create and style the NoteTrackPanel
+	var track_panel := Panel.new()
+	track_panel.name = "NoteTrackPanel"
+	track_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	track_panel.custom_minimum_size.y = 450.0
+	
+	# Apply premium dark wood and gold stylebox
+	var style_box := StyleBoxFlat.new()
+	style_box.bg_color = Color(0.08, 0.08, 0.1, 0.95)
+	style_box.border_color = C_GOLD
+	style_box.border_width_top = 2; style_box.border_width_bottom = 2
+	style_box.corner_radius_top_left = 12; style_box.corner_radius_top_right = 12
+	style_box.corner_radius_bottom_left = 12; style_box.corner_radius_bottom_right = 12
+	track_panel.add_theme_stylebox_override("panel", style_box)
+	
+	# Note container with clip contents
+	var note_container := Control.new()
+	note_container.name = "NoteContainer"
+	note_container.clip_contents = true
+	note_container.anchors_preset = Control.PRESET_FULL_RECT
+	note_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Draw lanes lines and note names dynamically!
+	var theme_font := get_theme_font("font")
+	note_container.draw.connect(func() -> void:
+		var w = note_container.size.x
+		var h = note_container.size.y
+		var count = LANES.size()
+		var step = h / count
+		for i in range(count):
+			var y = h - i * step
+			note_container.draw_line(Vector2(0, y), Vector2(w, y), Color(1.0, 1.0, 1.0, 0.05), 1.0)
+			note_container.draw_string(theme_font, Vector2(10, y - 4), LANES[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1.0, 1.0, 1.0, 0.25))
+	)
+	track_panel.add_child(note_container)
+	
+	# Target Line (Glowing vertical bar to indicate evaluation hit point)
+	var target_line := ColorRect.new()
+	target_line.name = "TargetLine"
+	target_line.color = Color(1.0, 0.6, 0.1, 0.25) # Soft orange glow
+	target_line.anchor_left = 0.0
+	target_line.anchor_right = 0.0
+	target_line.anchor_top = 0.0
+	target_line.anchor_bottom = 1.0
+	target_line.offset_left = 196.0
+	target_line.offset_right = 204.0 # 8px total width
+	target_line.offset_top = 0.0
+	target_line.offset_bottom = 0.0
+	track_panel.add_child(target_line)
+	
+	# Solid golden core line in the center of the target bar
+	var core_line := ColorRect.new()
+	core_line.name = "CoreLine"
+	core_line.color = Color(1.0, 0.82, 0.2, 0.95) # Gold core
+	core_line.anchor_left = 0.5
+	core_line.anchor_right = 0.5
+	core_line.anchor_top = 0.0
+	core_line.anchor_bottom = 1.0
+	core_line.offset_left = -1.0
+	core_line.offset_right = 1.0
+	core_line.offset_top = 0.0
+	core_line.offset_bottom = 0.0
+	target_line.add_child(core_line)
+	
+	# Label indicator text for the target line
+	var target_lbl := Label.new()
+	target_lbl.name = "TargetLabelIndicator"
+	target_lbl.text = "VẠCH THỔI"
+	target_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	target_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+	target_lbl.add_theme_font_size_override("font_size", 10)
+	target_lbl.anchor_left = 0.5
+	target_lbl.anchor_right = 0.5
+	target_lbl.anchor_top = 0.0
+	target_lbl.anchor_bottom = 0.0
+	target_lbl.offset_top = 8.0
+	target_lbl.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	target_line.add_child(target_lbl)
+	
+	# Feedback Needle
+	var needle := ColorRect.new()
+	needle.name = "FeedbackNeedle"
+	needle.custom_minimum_size = Vector2(25, 6)
+	needle.color = Color("#76ba99")
+	needle.visible = false
+	track_panel.add_child(needle)
+	
+	var notation_vbox := $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox
+	if notation_vbox:
+		notation_vbox.add_child(track_panel)
+		notation_vbox.move_child(track_panel, notation_vbox.get_child_count() - 1)
+
 	_build_notation()
 	_build_flute()
 	_build_dots()
@@ -171,6 +386,58 @@ func _ready() -> void:
 	_start_float()
 	_connect_buttons()
 	_setup_collapsible_linh()
+	
+	# Dynamic Song Selector OptionButton setup
+	var top_h := $Root/TopBar/TopM/TopH as HBoxContainer
+	if top_h:
+		var song_sel := OptionButton.new()
+		song_sel.name = "SongSelector"
+		song_sel.custom_minimum_size = Vector2(200, 44)
+		song_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		# Premium Styling matching the Vietnamese classical style
+		var sb_normal := _flat(C_BG_BAR, C_GOLD, 8)
+		var sb_hover := _flat(C_BG_BAR, C_GOLD_LIGHT, 8)
+		var sb_pressed := _flat(C_GOLD, C_GOLD_LIGHT, 8)
+		
+		song_sel.add_theme_stylebox_override("normal", sb_normal)
+		song_sel.add_theme_stylebox_override("hover", sb_hover)
+		song_sel.add_theme_stylebox_override("pressed", sb_pressed)
+		song_sel.add_theme_color_override("font_color", C_TEXT)
+		song_sel.add_theme_color_override("font_hover_color", C_TEXT)
+		song_sel.add_theme_font_size_override("font_size", 16)
+		
+		var default_idx := 0
+		if current_song_title != "":
+			var found := false
+			for i in range(songs_list.size()):
+				if songs_list[i]["title"] == current_song_title:
+					default_idx = i
+					found = true
+					break
+			if not found:
+				var new_song = {
+					"title": current_song_title,
+					"bpm": 90.0,
+					"sheet": current_song_sheet,
+					"durations": []
+				}
+				for note in current_song_sheet:
+					new_song["durations"].append(1.0)
+				songs_list.append(new_song)
+				default_idx = songs_list.size() - 1
+		
+		for i in range(songs_list.size()):
+			song_sel.add_item(songs_list[i]["title"], i)
+			
+		song_sel.selected = default_idx
+		top_h.add_child(song_sel)
+		# Place it immediately after the LessonTitle Label (which is at index 2)
+		top_h.move_child(song_sel, 3)
+		
+		song_sel.item_selected.connect(func(index: int) -> void:
+			_on_song_selected(index)
+		)
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -193,8 +460,8 @@ func _ready() -> void:
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
 		visualizer.min_frequency = 250.0
-		visualizer.max_frequency = 1200.0
-		visualizer.volume_threshold_db = -32.0
+		visualizer.max_frequency = 2200.0
+		visualizer.volume_threshold_db = -45.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -344,24 +611,180 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _recording:
 		_practice_time += delta
-		if _mic_mode:
-			_process_real_audio(delta)
+		if _current_note_elapsed < 0.0:
+			_current_note_elapsed += delta
+			
+			pitch_note.text = "—"
+			var prep_sec := int(ceil(abs(_current_note_elapsed)))
+			pitch_status.text = "Chuẩn bị: %d..." % prep_sec
+			pitch_status.add_theme_color_override("font_color", C_GOLD)
+			pitch_note.add_theme_color_override("font_color", C_GOLD)
+			
+			# Visual aid: show first note's fingering so the user can prepare
+			if sheet_notes.size() > 0:
+				var first_note = sheet_notes[0]
+				var target_fingering = FINGERINGS.get(first_note, [false, false, false, false, false, false])
+				_covered_states.assign(target_fingering)
+				_build_flute()
+				
+			# Transition check: countdown finished!
+			if _current_note_elapsed >= 0.0:
+				_current_note_elapsed = 0.0
+				pitch_status.text = "Thổi ngay!"
+				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+				
+				# Play the first note guide sound if not in demo mode
+				if not _is_demo_mode and sheet_notes.size() > 0:
+					_play_flute_sound(sheet_notes[0])
 		else:
-			_sim_timer += delta
-			if _sim_timer >= 1.2:
-				_sim_timer = 0.0
-				_simulate_tick()
+			if _mic_mode:
+				_process_real_audio(delta)
+			else:
+				# If we are in Touch Mode, we still want Auto Scroll / Demo Mode to work!
+				if not _is_wait_mode or _is_demo_mode:
+					_current_note_elapsed += delta
+					var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
+					
+					# Demo Mode: automatically play note sounds
+					if _is_demo_mode:
+						var target_note = sheet_notes[_note_idx]
+						if not _active_player or not is_instance_valid(_active_player) or _active_player.get_meta("note_played", "") != target_note:
+							_play_flute_sound(target_note)
+							if _active_player:
+								_active_player.set_meta("note_played", target_note)
+								_active_player.volume_db = -3.0
+								
+						var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+						_covered_states.assign(target_fingering)
+						_build_flute()
+						
+						pitch_note.text = target_note
+						pitch_status.text = "Đang nghe mẫu..."
+						pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+						pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+						
+					if _current_note_elapsed >= target_duration:
+						_current_note_elapsed = 0.0
+						_note_idx = (_note_idx + 1) % sheet_notes.size()
+						_build_notation()
+						_update_target_indicator()
+						if not _is_demo_mode:
+							_play_flute_sound(sheet_notes[_note_idx])
+				else:
+					# Normal Touch Mode simulation
+					_sim_timer += delta
+					if _sim_timer >= 1.2:
+						_sim_timer = 0.0
+						_simulate_tick()
 	_update_breath_physics(delta)
 	
 	# 2. Update zither backing track if recording and in Lesson 2
 	if _recording and _lesson_mode == 1:
-		_update_backing_track(delta)
+		if _current_note_elapsed >= 0.0:
+			_update_backing_track(delta)
 		
 	if _ignore_input_timer > 0.0:
 		_ignore_input_timer -= delta
 		# Clear detected notes history to avoid carry-over pitch spikes
 		_detected_notes_history.clear()
 		return
+		
+	# Update Note rolling blocks positions and feedback needle
+	var track_panel = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox.get_node_or_null("NoteTrackPanel")
+	if track_panel:
+		var note_container = track_panel.get_node_or_null("NoteContainer")
+		if note_container and sheet_notes.size() > 0:
+			var bps = _song_bpm / 60.0
+			var start_beat := 0.0
+			for j in range(_note_idx):
+				if j < sheet_durations.size():
+					start_beat += sheet_durations[j]
+			var current_time_beats = start_beat + (_current_note_elapsed * bps) if _recording else start_beat
+			
+			var PIXELS_PER_BEAT := 120.0
+			var TARGET_LINE_X := 200.0
+			var count = LANES.size()
+			var container_h = note_container.size.y if note_container.size.y > 0 else 450.0
+			var lane_h = container_h / count
+			
+			for i in range(sheet_notes.size()):
+				if not note_visuals.has(i): continue
+				var block = note_visuals[i] as ColorRect
+				if not is_instance_valid(block): continue
+				
+				var note_time = block.get_meta("note_time", 0.0) as float
+				var note_duration = block.get_meta("note_duration", 1.0) as float
+				var note_name = block.get_meta("note_name", "") as String
+				
+				var note_start_x = TARGET_LINE_X + (note_time - current_time_beats) * PIXELS_PER_BEAT
+				var note_width = note_duration * PIXELS_PER_BEAT
+				var note_y = _get_lane_y(note_name)
+				
+				block.position = Vector2(note_start_x, note_y)
+				block.size = Vector2(max(5.0, note_width - 15.0), lane_h - 6.0)
+				
+				if note_start_x + note_width < 0:
+					block.visible = false
+				else:
+					block.visible = true
+					
+				# Dynamic color updates
+				if i == _note_idx:
+					if not _recording:
+						block.color = Color("#e5ba73") # Yellow warning / waiting color
+					elif _is_demo_mode:
+						block.color = Color("#3e8e41") # Green
+					else:
+						if _active_note_is_correct:
+							block.color = Color("#3e8e41") # Green
+						elif _active_note_is_heard:
+							block.color = Color("#8d3b3b") # Red
+						else:
+							block.color = Color("#455a64") # Unplayed grey-blue
+				else:
+					var status = note_statuses[i] if i < note_statuses.size() else "unplayed"
+					if status == "correct":
+						block.color = Color("#76ba99") # Faded green
+					elif status == "missed":
+						block.color = Color("#8d3b3b") # Missed red
+					else:
+						block.color = Color("#455a64") # Unplayed grey-blue
+
+		# Position feedback needle
+		var needle = track_panel.get_node_or_null("FeedbackNeedle") as ColorRect
+		if needle:
+			var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+			var db = visualizer.current_amplitude_db if visualizer else -99.0
+			var pitch = visualizer.current_pitch if visualizer else 0.0
+			
+			if _recording and _mic_mode and not _is_demo_mode and db > -45.0 and pitch > 50.0:
+				needle.visible = true
+				
+				# Find closest note in FREQS
+				var closest_note := ""
+				var min_diff := 999999.0
+				var is_overblowing := _breath_pressure > 82.0
+				var scale_mult := 2.0 if is_overblowing else 1.0
+				
+				for note in FREQS.keys():
+					var note_freq = FREQS[note] * scale_mult
+					var diff = abs(pitch - note_freq)
+					if diff < min_diff:
+						min_diff = diff
+						closest_note = note
+				
+				if closest_note != "":
+					var target_y = _get_lane_y(closest_note) + (450.0 / LANES.size() / 2.0)
+					needle.position.y = lerp(needle.position.y, target_y - (needle.size.y / 2.0), 0.3)
+					needle.position.x = 200.0 - 10.0
+					
+					var target_note = sheet_notes[_note_idx]
+					if closest_note == target_note:
+						needle.color = Color("#76ba99")
+					else:
+						needle.color = Color("#e5ba73")
+			else:
+				needle.visible = false
 		
 
 
@@ -536,71 +959,7 @@ func _build_flute() -> void:
 	_update_target_indicator()
 
 func _build_notation() -> void:
-	for c in notes_hbox.get_children(): c.queue_free()
-	
-	# Set HBox spacing explicitly
-	notes_hbox.add_theme_constant_override("separation", 16)
-	
-	# Disable scrollbars on ScrollContainer
-	var scroll_container := notes_hbox.get_parent() as ScrollContainer
-	if scroll_container:
-		scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-		scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-
-	for i in sheet_notes.size():
-		var note     := sheet_notes[i]
-		var is_active := i == _note_idx
-		var is_done   := i < _note_idx
-
-		var duration := sheet_durations[i] if i < sheet_durations.size() else 1.0
-		var card_width := 70.0 + duration * 60.0
-
-		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(card_width, 70.0)
-		var cs := StyleBoxFlat.new()
-		cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
-		cs.corner_radius_top_left = 16; cs.corner_radius_top_right = 16
-		cs.corner_radius_bottom_left = 16; cs.corner_radius_bottom_right = 16
-		if is_active:
-			cs.bg_color     = C_GOLD
-			cs.border_color = Color(1.0, 0.9, 0.6, 1.0)
-			cs.shadow_size  = 12; cs.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-		elif is_done:
-			cs.bg_color     = C_JADE
-			cs.border_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.8)
-		else:
-			cs.bg_color     = Color(0.95, 0.93, 0.89, 1.0)
-			cs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.2)
-		card.add_theme_stylebox_override("panel", cs)
-
-		var lbl := Label.new()
-		lbl.text = note
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 20)
-		lbl.add_theme_color_override("font_color",
-			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
-		card.add_child(lbl)
-		notes_hbox.add_child(card)
-
-	# Scroll smoothly to center the active note
-	if scroll_container:
-		var separation := 16.0
-		var active_x := 0.0
-		var active_w := 70.0
-		for j in range(_note_idx):
-			var dur := sheet_durations[j] if j < sheet_durations.size() else 1.0
-			active_x += (70.0 + dur * 60.0) + separation
-		
-		if _note_idx < sheet_durations.size():
-			var dur := sheet_durations[_note_idx]
-			active_w = 70.0 + dur * 60.0
-			
-		var viewport_w : float = scroll_container.size.x if scroll_container.size.x > 0 else 800.0
-		var target_scroll : float = active_x + (active_w / 2.0) - (viewport_w / 2.0)
-		
-		var tween = create_tween()
-		tween.tween_property(scroll_container, "scroll_horizontal", int(max(0.0, target_scroll)), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_build_notation_track()
 
 func _build_dots() -> void:
 	var total := 5
@@ -842,7 +1201,7 @@ func _toggle_record() -> void:
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
 		if visualizer and _mic_mode: visualizer.visible = true
-		_play_flute_sound(_get_current_note())
+		_current_note_elapsed = -4.0
 		
 		# Reset AI tracking
 		_practice_time = 0.0
@@ -914,6 +1273,21 @@ func _simulate_tick() -> void:
 	_update_rhythm()
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
+func _detect_note_from_pitch(pitch: float, scale_mult: float) -> String:
+	if pitch <= 50.0:
+		return ""
+	var closest_note := ""
+	var min_cents_diff := 999999.0
+	for note in FREQS.keys():
+		var note_freq = FREQS[note] * scale_mult
+		var cents_diff = abs(1200.0 * log(pitch / note_freq) / log(2.0))
+		if cents_diff < min_cents_diff:
+			min_cents_diff = cents_diff
+			closest_note = note
+	if closest_note != "" and min_cents_diff < 75.0:
+		return closest_note
+	return ""
+
 func _process_real_audio(delta: float) -> void:
 	if _eval_cooldown > 0.0:
 		_eval_cooldown -= delta
@@ -925,8 +1299,13 @@ func _process_real_audio(delta: float) -> void:
 	var target_note = sheet_notes[_note_idx]
 	var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
 	
+	_active_note_is_correct = false
+	_active_note_is_heard = false
+	
 	# A. Demo Mode
 	if _is_demo_mode:
+		_active_note_is_correct = true
+		_active_note_is_heard = true
 		_current_note_elapsed += delta
 		
 		# Play audio if not playing or switched note
@@ -938,7 +1317,7 @@ func _process_real_audio(delta: float) -> void:
 			
 		# Update visual covered state/fingering
 		var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
-		_covered_states = target_fingering.duplicate()
+		_covered_states.assign(target_fingering)
 		_build_flute()
 		
 		pitch_note.text = target_note
@@ -947,6 +1326,8 @@ func _process_real_audio(delta: float) -> void:
 		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
 		
 		if _current_note_elapsed >= target_duration:
+			if _note_idx < note_statuses.size():
+				note_statuses[_note_idx] = "correct"
 			_current_note_elapsed = 0.0
 			_note_idx = (_note_idx + 1) % sheet_notes.size()
 			_build_notation()
@@ -969,14 +1350,17 @@ func _process_real_audio(delta: float) -> void:
 		if pitch > 0.0:
 			cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
 			
-		var is_pitch_ok = db > -45.0 and pitch > 50.0 and abs(cents) < 50.0
+		var is_pitch_ok = db > -45.0 and pitch > 50.0 and abs(cents) < 75.0
 		var is_correct_note = false
 		if is_pitch_ok:
-			var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
+			var tolerance_cents = 25.0 / visualizer.difficulty_tolerance_scale
 			if abs(cents) < tolerance_cents:
 				is_correct_note = true
 				
 		var is_breath_ok = _breath_pressure >= 12.0 and _breath_pressure <= 85.0
+		
+		_active_note_is_correct = is_correct_note and is_breath_ok
+		_active_note_is_heard = db > -45.0 and pitch > 50.0
 		
 		if is_correct_note and is_breath_ok:
 			_current_note_correct_frames += 1
@@ -987,7 +1371,7 @@ func _process_real_audio(delta: float) -> void:
 			
 			# Auto update covered states fingerings for visual help
 			var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
-			_covered_states = target_fingering.duplicate()
+			_covered_states.assign(target_fingering)
 			_build_flute()
 		elif is_pitch_ok:
 			pitch_note.text = target_note + ("²" if is_overblowing else "")
@@ -995,10 +1379,21 @@ func _process_real_audio(delta: float) -> void:
 			pitch_status.add_theme_color_override("font_color", C_WARN)
 			pitch_note.add_theme_color_override("font_color", C_WARN)
 		else:
-			pitch_note.text = "—"
-			pitch_status.text = "Chưa đúng nốt"
-			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			if db > -45.0 and pitch > 50.0:
+				var detected_note = _detect_note_from_pitch(pitch, scale_mult)
+				if detected_note != "":
+					pitch_note.text = detected_note + ("²" if is_overblowing else "")
+				else:
+					pitch_note.text = "—"
+				pitch_status.text = "Chưa đúng nốt"
+				pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+				pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			else:
+				# Silence
+				pitch_note.text = "—"
+				pitch_status.text = "Đang nghe..."
+				pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+				pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
 			
 		if _current_note_elapsed >= target_duration:
 			var accuracy := 0.0
@@ -1015,12 +1410,18 @@ func _process_real_audio(delta: float) -> void:
 				_detected_onsets.append(_practice_time)
 				_pitch_scores.append(100.0)
 				_breath_scores.append(100.0)
+				
+				if _note_idx < note_statuses.size():
+					note_statuses[_note_idx] = "correct"
 			else:
 				_score = clamp(_score - 4.0, 0, 100)
 				_refresh_score()
 				_total_mistakes += 1
 				rhythm_acc.text = "Lỗi: %d/2" % _total_mistakes
 				rhythm_acc.add_theme_color_override("font_color", C_RED_ERR)
+				
+				if _note_idx < note_statuses.size():
+					note_statuses[_note_idx] = "missed"
 				
 				if _total_mistakes > 2:
 					_trigger_rewind()
@@ -1040,6 +1441,8 @@ func _process_real_audio(delta: float) -> void:
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
 	
+	_active_note_is_heard = db > -45.0 and pitch > 50.0
+	
 	if db > -45.0 and pitch > 50.0:
 		var target_freq = FREQS.get(target_note, 261.63)
 		var is_overblowing := _breath_pressure > 82.0
@@ -1047,15 +1450,17 @@ func _process_real_audio(delta: float) -> void:
 		var effective_target_freq : float = target_freq * scale_mult
 		
 		var cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
-		if abs(cents) < 50.0:
+		var tolerance_cents = 25.0 / visualizer.difficulty_tolerance_scale
+		
+		if abs(cents) < 75.0:
 			pitch_note.text = target_note + ("²" if is_overblowing else "")
-			
-			# Scaled tolerance based on difficulty scale
-			var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
 			if abs(cents) < tolerance_cents:
 				pitch_status.text = "Đúng cao độ" + (" (Quãng 2)" if is_overblowing else "")
 				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 				pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+				
+				var is_breath_ok = _breath_pressure >= 12.0 and _breath_pressure <= 85.0
+				_active_note_is_correct = is_breath_ok
 				
 				# Record AI performance metrics
 				_detected_onsets.append(_practice_time)
@@ -1080,7 +1485,7 @@ func _process_real_audio(delta: float) -> void:
 					
 					# Auto update covered states fingerings for visual help
 					var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
-					_covered_states = target_fingering.duplicate()
+					_covered_states.assign(target_fingering)
 					_build_flute()
 					
 					_eval_cooldown = 1.0
@@ -1089,31 +1494,40 @@ func _process_real_audio(delta: float) -> void:
 				pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
 				pitch_status.add_theme_color_override("font_color", C_WARN)
 				pitch_note.add_theme_color_override("font_color", C_WARN)
-				
-		# Check if it matches another note in the scale
-		var detected_note := ""
-		var closest_note := ""
-		var min_diff := 999999.0
-		for note in FREQS.keys():
-			var note_freq = FREQS[note] * scale_mult
-			var diff = abs(pitch - note_freq)
-			if diff < min_diff:
-				min_diff = diff
-				closest_note = note
-				
-		if closest_note != "" and min_diff < 30.0:
-			detected_note = closest_note + ("²" if is_overblowing else "")
-			pitch_note.text = detected_note
-			pitch_status.text = "Lệch cao độ (Cần: %s%s)" % [target_note, "²" if is_overblowing else ""]
-			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
-			_score = clamp(_score - 0.5 * delta, 0, 100)
-			_refresh_score()
+		else:
+			# Check if it matches another note in the scale using cents
+			var detected_note := ""
+			var closest_note := ""
+			var min_cents_diff := 999999.0
+			for note in FREQS.keys():
+				var note_freq = FREQS[note] * scale_mult
+				var cents_diff = abs(1200.0 * log(pitch / note_freq) / log(2.0))
+				if cents_diff < min_cents_diff:
+					min_cents_diff = cents_diff
+					closest_note = note
+					
+			if closest_note != "" and min_cents_diff < 75.0:
+				detected_note = closest_note + ("²" if is_overblowing else "")
+				pitch_note.text = detected_note
+				pitch_status.text = "Lệch cao độ (Cần: %s%s)" % [target_note, "²" if is_overblowing else ""]
+				pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+				pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+				_score = clamp(_score - 0.5 * delta, 0, 100)
+				_refresh_score()
+			else:
+				pitch_note.text = "—"
+				pitch_status.text = "Lệch cao độ (Cần: %s%s)" % [target_note, "²" if is_overblowing else ""]
+				pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+				pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+				_score = clamp(_score - 0.5 * delta, 0, 100)
+				_refresh_score()
 	else:
 		pitch_note.text = "—"
 		pitch_status.text = "Đang nghe..."
 		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
-		pitch_note.add_theme_color_override("font_color", C_RED_SON)
+		pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+		_active_note_is_correct = false
+		_active_note_is_heard = false
 
 func _update_wait_mode_ui() -> void:
 	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
@@ -1165,6 +1579,9 @@ func _toggle_wait_mode() -> void:
 	_update_wait_mode_ui()
 
 func _advance_note_in_practice() -> void:
+	if _note_idx < note_statuses.size():
+		note_statuses[_note_idx] = "correct"
+		
 	var target_note = sheet_notes[_note_idx]
 	if _lesson_mode == 0:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
@@ -1190,6 +1607,12 @@ func _trigger_rewind() -> void:
 	_current_note_elapsed = 0.0
 	_current_note_correct_frames = 0
 	_current_note_total_frames = 0
+	
+	# Reset status array for rewound notes
+	for i in range(_note_idx, note_statuses.size()):
+		if i < note_statuses.size():
+			note_statuses[i] = "unplayed"
+			
 	_build_notation()
 	_update_target_indicator()
 	
@@ -1221,6 +1644,23 @@ func _refresh_score() -> void:
 	if _score >= 85.0:   score_num.add_theme_color_override("font_color", C_GREEN_OK)
 	elif _score >= 70.0: score_num.add_theme_color_override("font_color", C_GOLD)
 	else:                score_num.add_theme_color_override("font_color", C_RED_ERR)
+	
+	# Dynamically update ScoreSub to show real-time average accuracy!
+	var avg_pitch := 80.0
+	if _pitch_scores.size() > 0:
+		var sum := 0.0
+		for s in _pitch_scores: sum += s
+		avg_pitch = sum / _pitch_scores.size()
+		
+	var avg_breath := 80.0
+	if _breath_scores.size() > 0:
+		var sum := 0.0
+		for s in _breath_scores: sum += s
+		avg_breath = sum / _breath_scores.size()
+		
+	var score_sub_lbl := $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub as Label
+	if score_sub_lbl:
+		score_sub_lbl.text = "Cao độ %d%%  ·  Cột hơi %d%%" % [int(avg_pitch), int(avg_breath)]
 
 func _update_rhythm() -> void:
 	var bars := rhythm_bars.get_children()
@@ -1817,3 +2257,138 @@ func _get_average_score(scores: Array, default_val: float) -> float:
 	for s in scores:
 		sum += s
 	return sum / scores.size()
+
+func _get_scroll_target_for_note(idx: int) -> float:
+	var scroll_container := notes_hbox.get_parent() as ScrollContainer
+	if not scroll_container: return 0.0
+	
+	var separation := 16.0
+	var active_x := 0.0
+	var active_w := 70.0
+	for j in range(idx):
+		var dur := sheet_durations[j] if j < sheet_durations.size() else 1.0
+		active_x += (70.0 + dur * 60.0) + separation
+	
+	if idx < sheet_durations.size():
+		var dur := sheet_durations[idx]
+		active_w = 70.0 + dur * 60.0
+		
+	var viewport_w : float = scroll_container.size.x if scroll_container.size.x > 0 else 800.0
+	return active_x + (active_w / 2.0) - (viewport_w / 2.0)
+
+func _on_song_selected(index: int) -> void:
+	if index < 0 or index >= songs_list.size(): return
+	var song = songs_list[index]
+	
+	current_song_title = song["title"]
+	sheet_notes.assign(song["sheet"])
+	sheet_durations.assign(song["durations"])
+	_song_bpm = song["bpm"]
+	
+	if sheet_durations.size() != sheet_notes.size():
+		sheet_durations.clear()
+		for note in sheet_notes:
+			sheet_durations.append(1.0)
+			
+	# Stop active player if playing
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stop()
+		_active_player.queue_free()
+		_active_player = null
+		
+	# Reset states
+	_note_idx = 0
+	_current_note_elapsed = 0.0
+	_current_note_correct_frames = 0
+	_current_note_total_frames = 0
+	_total_mistakes = 0
+	_correct_pitch_hold_time = 0.0
+	_score = 75.0
+	_sim_timer = 0.0
+	_ignore_input_timer = 0.0
+	_backing_playing = false
+	
+	# Stop recording quietly if active
+	if _recording:
+		_recording = false
+		_update_rec_pulse(false)
+		record_btn.text = "Bắt đầu luyện tập"
+		_stop_pitch_detection()
+		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+		if visualizer: visualizer.visible = false
+		
+	_set_labels()
+	_build_notation()
+	_build_dots()
+	_build_rhythm_bars()
+	_build_lesson_beats()
+	_update_target_indicator()
+	_refresh_score()
+	
+	# Set fingering visualization helper to the first note
+	if sheet_notes.size() > 0:
+		var target_fingering = FINGERINGS.get(sheet_notes[0], [false, false, false, false, false, false])
+		_covered_states.assign(target_fingering)
+		_build_flute()
+	
+	_va_say("Đã chọn bài: " + current_song_title)
+
+func _get_lane_y(note_name: String) -> float:
+	var track_panel = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox.get_node_or_null("NoteTrackPanel")
+	if not track_panel: return 0.0
+	var note_container = track_panel.get_node_or_null("NoteContainer")
+	if not note_container: return 0.0
+	
+	var clean_note := note_name.replace("²", "") # strip overblow indicator
+	var lane_idx = LANES.find(clean_note)
+	if lane_idx == -1:
+		lane_idx = 0
+	var container_h = note_container.size.y if note_container.size.y > 0 else 450.0
+	var lane_height = container_h / LANES.size()
+	return container_h - (lane_idx + 1) * lane_height + 2.0
+
+func _build_notation_track() -> void:
+	var track_panel = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox.get_node_or_null("NoteTrackPanel")
+	if not track_panel: return
+	var note_container = track_panel.get_node_or_null("NoteContainer")
+	if not note_container: return
+	
+	# Clear old children
+	for child in note_container.get_children():
+		child.queue_free()
+	note_visuals.clear()
+	
+	# Reset status array
+	note_statuses.clear()
+	for note in sheet_notes:
+		note_statuses.append("unplayed")
+		
+	# Build note blocks
+	var time_beats = 0.0
+	for i in range(sheet_notes.size()):
+		var note_name = sheet_notes[i]
+		var duration = sheet_durations[i]
+		
+		var block := ColorRect.new()
+		block.name = "NoteBlock_%d" % i
+		block.color = Color("#455a64") # Grey-blue
+		
+		# Add label for note name
+		var lbl := Label.new()
+		lbl.text = note_name
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.anchors_preset = Control.PRESET_FULL_RECT
+		lbl.add_theme_color_override("font_color", Color.WHITE)
+		lbl.add_theme_font_size_override("font_size", 13)
+		block.add_child(lbl)
+		
+		# Save metadata on the block
+		block.set_meta("note_time", time_beats)
+		block.set_meta("note_duration", duration)
+		block.set_meta("note_name", note_name)
+		
+		note_container.add_child(block)
+		note_visuals[i] = block
+		
+		time_beats += duration
