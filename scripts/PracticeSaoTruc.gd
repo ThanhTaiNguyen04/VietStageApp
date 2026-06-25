@@ -2,21 +2,23 @@ extends Control
 class_name PracticeSaoTruc
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
-const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
-const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
-const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
-const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
-const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
-const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
-const C_GREEN_OK   := Color(0.12, 0.37, 0.23, 1.0)
-const C_WARN       := Color(0.77, 0.58, 0.15, 1.0)
-const C_RED_ERR    := Color(0.70, 0.12, 0.08, 1.0)
+const C_GOLD       := Color("#c99a3c") # Antique Gold (matching button in screenshot)
+const C_GOLD_LIGHT := Color("#fce8b3") # Light Golden highlight for dark overlays
+const C_GOLD_TEXT  := Color("#8c6613") # Dark Bronze Gold for light text/labels
+const C_JADE       := Color("#0e3d26") # Deep Forest Green (#0e3d26)
+const C_RED_SON    := Color("#0e3d26") # Deep Forest Green primary accent
+const C_CREAM      := Color("#faf6eb") # Warm Light Cream
+const C_CREAM_DIM  := Color("#ede7da") # Sidebar/Header Cream
+const C_GREEN_OK   := Color("#27ae60") # Rich Green for success states
+const C_WARN       := Color("#b5882b") # Warm Amber for warning states
+const C_RED_ERR    := Color("#a82b2b") # Ruby Red for error states
 
-const C_BG         := Color(0.98, 0.97, 0.93, 1.0)
-const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
-const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
-const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
-const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
+const C_BG         := Color("#faf6eb") # Main Background (Soft Cream)
+const C_BG_BAR     := Color("#ede7da") # Sidebar/Header/Footer (Darker Cream)
+const C_CARD       := Color("#f6f2e5") # Stats Panel Background (Warm Card Cream)
+const C_TEXT       := Color("#0e3d26") # Deep Forest Green text
+const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
+
 
 @onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
 @onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
@@ -407,6 +409,7 @@ func _ready() -> void:
 		song_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		
 		# Premium Styling matching the Vietnamese classical style
+		var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 		var sb_normal := _flat(C_BG_BAR, C_GOLD, 8)
 		var sb_hover := _flat(C_BG_BAR, C_GOLD_LIGHT, 8)
 		var sb_pressed := _flat(C_GOLD, C_GOLD_LIGHT, 8)
@@ -414,6 +417,7 @@ func _ready() -> void:
 		song_sel.add_theme_stylebox_override("normal", sb_normal)
 		song_sel.add_theme_stylebox_override("hover", sb_hover)
 		song_sel.add_theme_stylebox_override("pressed", sb_pressed)
+		if f_body: song_sel.add_theme_font_override("font", f_body)
 		song_sel.add_theme_color_override("font_color", C_TEXT)
 		song_sel.add_theme_color_override("font_hover_color", C_TEXT)
 		song_sel.add_theme_font_size_override("font_size", 16)
@@ -459,6 +463,7 @@ func _ready() -> void:
 		speed_sel.add_theme_stylebox_override("normal", sb_normal)
 		speed_sel.add_theme_stylebox_override("hover", sb_hover)
 		speed_sel.add_theme_stylebox_override("pressed", sb_pressed)
+		if f_body: speed_sel.add_theme_font_override("font", f_body)
 		speed_sel.add_theme_color_override("font_color", C_TEXT)
 		speed_sel.add_theme_color_override("font_hover_color", C_TEXT)
 		speed_sel.add_theme_font_size_override("font_size", 16)
@@ -573,6 +578,8 @@ func _ready() -> void:
 		auto_blow_btn.custom_minimum_size = Vector2(140, 44)
 		auto_blow_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		
+		var f_btn_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+		
 		var bn := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 14)
 		var bh := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85), 14)
 		bh.shadow_size = 5; bh.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
@@ -582,8 +589,9 @@ func _ready() -> void:
 		auto_blow_btn.add_theme_stylebox_override("hover",   bh)
 		auto_blow_btn.add_theme_stylebox_override("pressed", bp)
 		auto_blow_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+		if f_btn_bold: auto_blow_btn.add_theme_font_override("font", f_btn_bold)
 		auto_blow_btn.add_theme_color_override("font_color",         C_TEXT)
-		auto_blow_btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+		auto_blow_btn.add_theme_color_override("font_hover_color",   C_GOLD_LIGHT)
 		auto_blow_btn.add_theme_color_override("font_pressed_color", Color.WHITE)
 		auto_blow_btn.add_theme_font_size_override("font_size", 14)
 		
@@ -614,8 +622,9 @@ func _ready() -> void:
 		lesson_mode_btn.add_theme_stylebox_override("hover",   bh)
 		lesson_mode_btn.add_theme_stylebox_override("pressed", bp)
 		lesson_mode_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+		if f_btn_bold: lesson_mode_btn.add_theme_font_override("font", f_btn_bold)
 		lesson_mode_btn.add_theme_color_override("font_color",         C_TEXT)
-		lesson_mode_btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+		lesson_mode_btn.add_theme_color_override("font_hover_color",   C_GOLD_LIGHT)
 		lesson_mode_btn.add_theme_color_override("font_pressed_color", Color.WHITE)
 		lesson_mode_btn.add_theme_font_size_override("font_size", 14)
 		
@@ -756,7 +765,7 @@ func _process(delta: float) -> void:
 			
 			for i in range(sheet_notes.size()):
 				if not note_visuals.has(i): continue
-				var block = note_visuals[i] as ColorRect
+				var block = note_visuals[i] as Panel
 				if not is_instance_valid(block): continue
 				
 				var note_time = block.get_meta("note_time", 0.0) as float
@@ -778,24 +787,24 @@ func _process(delta: float) -> void:
 				# Dynamic color updates
 				if i == _note_idx:
 					if not _recording:
-						block.color = Color("#e5ba73") # Yellow warning / waiting color
+						_set_block_color(block, C_GOLD) # Golden waiting color
 					elif _is_demo_mode:
-						block.color = Color("#3e8e41") # Green
+						_set_block_color(block, C_GREEN_OK) # Emerald Green
 					else:
 						if _active_note_is_correct:
-							block.color = Color("#3e8e41") # Green
+							_set_block_color(block, C_GREEN_OK) # Emerald Green
 						elif _active_note_is_heard:
-							block.color = Color("#8d3b3b") # Red
+							_set_block_color(block, C_RED_ERR) # Crimson Red
 						else:
-							block.color = Color("#455a64") # Unplayed grey-blue
+							_set_block_color(block, Color("#5c8c72")) # Slate Jade Unplayed
 				else:
 					var status = note_statuses[i] if i < note_statuses.size() else "unplayed"
 					if status == "correct":
-						block.color = Color("#76ba99") # Faded green
+						_set_block_color(block, C_GREEN_OK) # Faded Green (Passed)
 					elif status == "missed":
-						block.color = Color("#8d3b3b") # Missed red
+						_set_block_color(block, C_RED_ERR) # Missed Dark Red
 					else:
-						block.color = Color("#455a64") # Unplayed grey-blue
+						_set_block_color(block, Color("#5c8c72")) # Slate Jade Unplayed
 
 		# Position feedback needle
 		var needle = track_panel.get_node_or_null("FeedbackNeedle") as ColorRect
@@ -882,62 +891,136 @@ func _build_theme() -> void:
 	if bg_over:
 		bg_over.color = C_BG
 
+	# Load premium fonts
+	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
+	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+
 	# Top bar
-	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	var top_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 0)
 	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
 
-	($Root/TopBar/TopM/TopH/LessonTag   as Label).add_theme_color_override("font_color", C_RED_SON)
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).add_theme_color_override("font_color", C_TEXT)
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	_style_progress_bar(lesson_bar, C_RED_SON, Color(0,0,0,0.08))
+	var lesson_tag = $Root/TopBar/TopM/TopH/LessonTag as Label
+	lesson_tag.add_theme_color_override("font_color", C_GOLD_TEXT)
+	if f_body_bold: lesson_tag.add_theme_font_override("font", f_body_bold)
+	lesson_tag.add_theme_font_size_override("font_size", 13)
+
+	var lesson_title = $Root/TopBar/TopM/TopH/LessonTitle as Label
+	lesson_title.add_theme_color_override("font_color", C_TEXT)
+	if f_title: lesson_title.add_theme_font_override("font", f_title)
+	lesson_title.add_theme_font_size_override("font_size", 18)
+
+	var pct_label = $Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label
+	pct_label.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body: pct_label.add_theme_font_override("font", f_body)
+	pct_label.add_theme_font_size_override("font_size", 12)
+
+	_style_progress_bar(lesson_bar, C_JADE, Color(0, 0, 0, 0.08))
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	_style_text_btn(back, C_RED_SON, C_RED_SON.lightened(0.15))
+	_style_text_btn(back, C_TEXT, C_GOLD)
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
 		_style_outlined_btn($Root/TopBar/TopM/TopH/CtrlBtns.get_node(bn) as Button)
 
 	# Linh panel
-	var linh_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
+	var linh_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 0)
 	linh_s.border_width_right = 2; linh_s.border_width_left = 0; linh_s.border_width_top = 0; linh_s.border_width_bottom = 0
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
 
-	var bubble_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 14)
+	var bubble_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 14)
 	($Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer).add_theme_stylebox_override("panel", bubble_s)
 	speech_label.add_theme_color_override("font_color", C_TEXT)
+	if f_body: speech_label.add_theme_font_override("font", f_body)
+	speech_label.add_theme_font_size_override("font_size", 13)
 
-	# Notation Area — light parchment card
-	var na_s := _flat(Color(0.99, 0.98, 0.95, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12)
+	# Notation Area — deep jade card background
+	var na_s := _flat(C_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12)
 	($Root/MiddleRow/MainContent/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
+	
+	var notation_label = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label
+	notation_label.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body_bold: notation_label.add_theme_font_override("font", f_body_bold)
+	notation_label.add_theme_font_size_override("font_size", 12)
 
-	# Stats panels
-	var stat_bg := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 12)
+	var target_note_lbl = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label
+	target_note_lbl.add_theme_color_override("font_color", C_TEXT)
+	if f_body_bold: target_note_lbl.add_theme_font_override("font", f_body_bold)
+	target_note_lbl.add_theme_font_size_override("font_size", 14)
+
+	# Stats panels (Bo góc 14px, đổ bóng 3D mượt)
+	var stat_bg := StyleBoxFlat.new()
+	stat_bg.bg_color = C_CARD
+	stat_bg.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+	stat_bg.border_width_left = 2; stat_bg.border_width_right = 2
+	stat_bg.border_width_top = 2; stat_bg.border_width_bottom = 2
+	stat_bg.corner_radius_top_left = 14; stat_bg.corner_radius_top_right = 14
+	stat_bg.corner_radius_bottom_left = 14; stat_bg.corner_radius_bottom_right = 14
+	stat_bg.shadow_size = 6; stat_bg.shadow_color = Color(0.2, 0.15, 0.1, 0.12)
+	
 	($Root/MiddleRow/MainContent/StatsRow/PitchPanel  as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
 	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel  as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
 
-	pitch_note.add_theme_color_override("font_color",   C_RED_SON)
+	var pitch_title = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle as Label
+	pitch_title.add_theme_color_override("font_color", C_GOLD_TEXT)
+	if f_body_bold: pitch_title.add_theme_font_override("font", f_body_bold)
+	pitch_title.add_theme_font_size_override("font_size", 13)
+
+	var rhythm_title = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label
+	rhythm_title.add_theme_color_override("font_color", C_GOLD_TEXT)
+	if f_body_bold: rhythm_title.add_theme_font_override("font", f_body_bold)
+	rhythm_title.add_theme_font_size_override("font_size", 13)
+
+	var score_title = $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle as Label
+	score_title.add_theme_color_override("font_color", C_GOLD_TEXT)
+	if f_body_bold: score_title.add_theme_font_override("font", f_body_bold)
+	score_title.add_theme_font_size_override("font_size", 13)
+
+	pitch_note.add_theme_color_override("font_color",   C_TEXT)
+	if f_title: pitch_note.add_theme_font_override("font", f_title)
+	pitch_note.add_theme_font_size_override("font_size", 34)
+
 	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body: pitch_status.add_theme_font_override("font", f_body)
+	pitch_status.add_theme_font_size_override("font_size", 13)
+
 	rhythm_acc.add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	score_num.add_theme_color_override("font_color", C_RED_SON)
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body: rhythm_acc.add_theme_font_override("font", f_body)
+	rhythm_acc.add_theme_font_size_override("font_size", 13)
+
+	score_num.add_theme_color_override("font_color", C_TEXT)
+	if f_title: score_num.add_theme_font_override("font", f_title)
+	score_num.add_theme_font_size_override("font_size", 34)
+
+	var score_sub = $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub as Label
+	score_sub.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body: score_sub.add_theme_font_override("font", f_body)
+	score_sub.add_theme_font_size_override("font_size", 12)
 
 	# Flute board
-	var sb_s := _flat(C_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 0)
+	var sb_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 0)
 	sb_s.border_width_top = 2; sb_s.border_width_bottom = 0; sb_s.border_width_left = 0; sb_s.border_width_right = 0
 	($Root/FluteBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
-	($Root/FluteBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/FluteBoard/BoardM/BoardVBox/TargetLabel as Label).add_theme_color_override("font_color", C_TEXT)
-	($Root/FluteBoard/BoardM/BoardVBox/GuidanceLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	
+	var board_lbl = $Root/FluteBoard/BoardM/BoardVBox/BoardLabel as Label
+	board_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body_bold: board_lbl.add_theme_font_override("font", f_body_bold)
+	board_lbl.add_theme_font_size_override("font_size", 12)
+
+	var target_lbl = $Root/FluteBoard/BoardM/BoardVBox/TargetLabel as Label
+	target_lbl.add_theme_color_override("font_color", C_GOLD_TEXT)
+	if f_body_bold: target_lbl.add_theme_font_override("font", f_body_bold)
+	target_lbl.add_theme_font_size_override("font_size", 13)
+
+	var guidance_lbl = $Root/FluteBoard/BoardM/BoardVBox/GuidanceLabel as Label
+	guidance_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body: guidance_lbl.add_theme_font_override("font", f_body)
+	guidance_lbl.add_theme_font_size_override("font_size", 11)
 
 	# Flute frame
 	var frame := $Root/FluteBoard/BoardM/BoardVBox/FluteFrame as PanelContainer
-	var frame_s := _flat(Color(0.24, 0.14, 0.06, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 10)
+	var frame_s := _flat(Color(0.18, 0.10, 0.04, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 10)
 	frame.add_theme_stylebox_override("panel", frame_s)
 
 	# Breath progress styling
@@ -951,21 +1034,34 @@ func _build_theme() -> void:
 	bb.corner_radius_bottom_left = 6; bb.corner_radius_bottom_right = 6
 	breath_progress.add_theme_stylebox_override("fill", bf)
 	breath_progress.add_theme_stylebox_override("background", bb)
-	($Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	
+	var breath_lbl = $Root/FluteBoard/BoardM/BoardVBox/BreathHBox/BreathLabel as Label
+	breath_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if f_body_bold: breath_lbl.add_theme_font_override("font", f_body_bold)
+	breath_lbl.add_theme_font_size_override("font_size", 11)
+	
+	if breath_status:
+		breath_status.add_theme_color_override("font_color", C_TEXT)
+		if f_body: breath_status.add_theme_font_override("font", f_body)
+		breath_status.add_theme_font_size_override("font_size", 11)
 
-	var rec_bar_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	# Record bar
+	var rec_bar_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 0)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
 	($Root/RecordBar as PanelContainer).add_theme_stylebox_override("panel", rec_bar_s)
 
-	var rn := _flat(C_RED_SON, Color(1.0, 0.4, 0.2, 0.4), 22)
-	rn.shadow_size = 10; rn.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25)
-	var rh := _flat(C_RED_SON.lightened(0.12), Color(1.0, 0.4, 0.2, 0.6), 22)
-	rh.shadow_size = 14; rh.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.35)
+	# Record button (Vibrant Jade green and glowing gold style)
+	var rn := _flat(Color("#0e3d26"), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 22)
+	rn.shadow_size = 8; rn.shadow_color = Color(0, 0, 0, 0.12)
+	var rh := _flat(Color("#175737"), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.8), 22)
+	rh.shadow_size = 12; rh.shadow_color = Color(0, 0, 0, 0.18)
 	record_btn.add_theme_stylebox_override("normal",  rn)
 	record_btn.add_theme_stylebox_override("hover",   rh)
-	record_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.15), Color(0,0,0,0.15), 22))
+	record_btn.add_theme_stylebox_override("pressed", _flat(Color("#092617"), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 22))
 	record_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	record_btn.add_theme_color_override("font_color", Color(1,1,1,1))
+	record_btn.add_theme_color_override("font_color", Color.WHITE)
+	if f_body_bold: record_btn.add_theme_font_override("font", f_body_bold)
+	record_btn.add_theme_font_size_override("font_size", 15)
 
 	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
 
@@ -1917,6 +2013,11 @@ func _style_progress_bar(pb: ProgressBar, fill: Color, bg: Color) -> void:
 	pb.add_theme_stylebox_override("background", pbg)
 
 func _style_text_btn(btn: Button, col: Color, hover: Color) -> void:
+	if not is_instance_valid(btn): return
+	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if f_body_bold: btn.add_theme_font_override("font", f_body_bold)
+	btn.add_theme_font_size_override("font_size", 14)
+	
 	btn.add_theme_color_override("font_color", col)
 	btn.add_theme_color_override("font_hover_color", hover)
 	btn.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 8))
@@ -1925,15 +2026,21 @@ func _style_text_btn(btn: Button, col: Color, hover: Color) -> void:
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 func _style_outlined_btn(btn: Button) -> void:
+	if not is_instance_valid(btn): return
+	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if f_body_bold: btn.add_theme_font_override("font", f_body_bold)
+	btn.add_theme_font_size_override("font_size", 13)
+	
 	var bn := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 14)
 	var bh := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85), 14)
 	bh.shadow_size = 5; bh.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+	
 	btn.add_theme_stylebox_override("normal",  bn)
 	btn.add_theme_stylebox_override("hover",   bh)
-	btn.add_theme_stylebox_override("pressed", _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 14))
+	btn.add_theme_stylebox_override("pressed", _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 14))
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color",         C_TEXT)
-	btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+	btn.add_theme_color_override("font_hover_color",   C_GOLD_TEXT)
 	btn.add_theme_color_override("font_pressed_color", C_TEXT)
 
 func _make_button_bouncy(btn: Button) -> void:
@@ -2418,9 +2525,17 @@ func _build_notation_track() -> void:
 		var note_name = sheet_notes[i]
 		var duration = sheet_durations[i]
 		
-		var block := ColorRect.new()
+		var block := Panel.new()
 		block.name = "NoteBlock_%d" % i
-		block.color = Color("#455a64") # Grey-blue
+		
+		var bs := StyleBoxFlat.new()
+		bs.bg_color = Color("#5c8c72") # Slate jade unplayed (soft sage/jade green)
+		bs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+		bs.border_width_left = 1; bs.border_width_right = 1
+		bs.border_width_top = 1; bs.border_width_bottom = 1
+		bs.corner_radius_top_left = 6; bs.corner_radius_top_right = 6
+		bs.corner_radius_bottom_left = 6; bs.corner_radius_bottom_right = 6
+		block.add_theme_stylebox_override("panel", bs)
 		
 		# Add label for note name
 		var lbl := Label.new()
@@ -2441,6 +2556,14 @@ func _build_notation_track() -> void:
 		note_visuals[i] = block
 		
 		time_beats += duration
+
+func _set_block_color(block: Panel, color: Color) -> void:
+	if not is_instance_valid(block): return
+	var sb = block.get_theme_stylebox("panel") as StyleBoxFlat
+	if sb:
+		var sb_dup = sb.duplicate() as StyleBoxFlat
+		sb_dup.bg_color = color
+		block.add_theme_stylebox_override("panel", sb_dup)
 
 func _show_introduction_overlay() -> void:
 	_current_intro_step = 0
@@ -2885,6 +3008,3 @@ func _update_cinematic_step(step_idx: int) -> void:
 				else:
 					note_lbl.visible = false
 					line.visible = false
-
-
-
