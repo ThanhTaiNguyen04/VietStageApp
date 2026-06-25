@@ -1,5 +1,5 @@
 extends Control
-class_name PracticeDanBau
+class_name PracticeDanBau # Monochord practice script
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
