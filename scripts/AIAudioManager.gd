@@ -244,8 +244,8 @@ func _play_next_sentence(index: int) -> void:
 		
 	var item = sentence_queue[index]
 	if item["downloaded"]:
+		current_playing_idx = index
 		if item["stream"] != null:
-			current_playing_idx = index
 			audio_player.stream = item["stream"]
 			audio_player.play()
 			tts_started.emit()
@@ -257,8 +257,27 @@ func _play_next_sentence(index: int) -> void:
 			if index + 1 < sentence_queue.size():
 				_download_sentence(index + 1)
 		else:
-			# Skip failed downloads
-			_play_next_sentence(index + 1)
+			# Native TTS fallback execution
+			var voices = DisplayServer.tts_get_voices_for_language("vi")
+			var voice_id = ""
+			if not voices.is_empty():
+				voice_id = voices[0]
+				
+			DisplayServer.tts_speak(item["text"], voice_id)
+			tts_started.emit()
+			
+			current_sentence_text = item["text"]
+			current_sentence_vowels = _parse_sentence_vowels(current_sentence_text)
+			
+			var duration = max(1.0, float(item["text"].length()) * 0.08)
+			get_tree().create_timer(duration).timeout.connect(func():
+				if current_playing_idx == index:
+					_on_audio_finished()
+			)
+			
+			# Prefetch next sentence
+			if index + 1 < sentence_queue.size():
+				_download_sentence(index + 1)
 	else:
 		current_playing_idx = index
 

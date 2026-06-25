@@ -739,7 +739,8 @@ func _play_audio(idx: int, pitch: float) -> void:
 	pl.stream      = _streams[idx]
 	pl.pitch_scale = pitch
 	pl.volume_db   = 0.0
-	pl.bus         = "Master"
+	# Use Zither bus (with reverb) if available, else fallback to Master
+	pl.bus = "Zither" if AudioServer.get_bus_index("Zither") != -1 else "Master"
 	get_tree().current_scene.add_child(pl)
 	pl.play()
 	_audio_players[idx] = pl
@@ -757,12 +758,23 @@ func _get_pitch_scale(idx: int) -> float:
 	var cy    := _row_cy(idx)
 	var max_b := _row_h() * 0.48
 	var bend  := clampf((_press_y[idx] - cy) / max_b, 0.0, 1.0)
-	
+
+	# ── Nhấn rung (vibrato) — authentic đàn tranh feel ───────────────────────
+	# Vibrato starts with a short delay then grows in depth (like a real player)
+	var t_ms := Time.get_ticks_msec()
 	var vibrato := 0.0
 	if bend > 0.05:
-		vibrato = sin(Time.get_ticks_msec() * 0.041) * 0.015 * bend
-		
+		# 5.5 Hz vibrato rate (typical for đàn tranh nhấn rung)
+		var rate_hz := 5.5
+		# Vibrato depth: max ~1.5 semitone swing (±0.022), scaled by bend
+		var max_depth := 0.022 * bend
+		# Vibrato onset: ramp up over first 200ms of press for natural feel
+		var press_time_sec := float(_pluck_time[idx]) if _pluck_time.size() > idx else 0.3
+		var onset := clampf(press_time_sec / 0.2, 0.0, 1.0)
+		vibrato = onset * max_depth * sin(t_ms * 0.001 * rate_hz * TAU)
+
 	return 1.0 + bend * 0.12246 + vibrato
+
 
 func _update_press(idx: int) -> void:
 	var scale := _get_pitch_scale(idx)

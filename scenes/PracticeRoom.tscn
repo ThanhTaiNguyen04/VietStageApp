@@ -38,81 +38,81 @@ anchor_bottom = 1.0
 theme_override_constants/separation = 0
 
 [node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 
 [node name="TopM" type="MarginContainer" parent="Root/TopBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_right = 40
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
 theme_override_constants/margin_top = 0
 theme_override_constants/margin_bottom = 0
 
 [node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 20
 
 [node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 text = "Back"
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 15
 
 [node name="LessonTag" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 13
 text = "DAN TRANH"
 
 [node name="LessonTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 16
 text = "Bai 4"
 
 [node name="DotsHBox" type="HBoxContainer" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_vertical = 4
 alignment = 1
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Dot1" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(14, 14)
 
 [node name="Dot2" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(14, 14)
 
 [node name="Dot3" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(14, 14)
 
 [node name="Dot4" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(14, 14)
 
 [node name="Dot5" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(14, 14)
 
 [node name="TopSpacer" type="Control" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(32, 0)
+custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 
 [node name="ProgressVBox" type="VBoxContainer" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(240, 0)
+custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="PctLabel" type="Label" parent="Root/TopBar/TopM/TopH/ProgressVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "60%"
 horizontal_alignment = 2
 
 [node name="LessonBar" type="ProgressBar" parent="Root/TopBar/TopM/TopH/ProgressVBox"]
-custom_minimum_size = Vector2(0, 12)
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 value = 60.0
 show_percentage = false
@@ -120,37 +120,37 @@ show_percentage = false
 [node name="CtrlBtns" type="HBoxContainer" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="HintBtn" type="Button" parent="Root/TopBar/TopM/TopH/CtrlBtns"]
-custom_minimum_size = Vector2(110, 56)
+custom_minimum_size = Vector2(110, 36)
 layout_mode = 2
 flat = true
 text = "Goi y"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
 
 [node name="DemoBtn" type="Button" parent="Root/TopBar/TopM/TopH/CtrlBtns"]
-custom_minimum_size = Vector2(110, 56)
+custom_minimum_size = Vector2(110, 36)
 layout_mode = 2
 flat = true
 text = "Demo"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
 
 [node name="SlowBtn" type="Button" parent="Root/TopBar/TopM/TopH/CtrlBtns"]
-custom_minimum_size = Vector2(110, 56)
+custom_minimum_size = Vector2(110, 36)
 layout_mode = 2
 flat = true
 text = "x0.5"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
 
 [node name="MiddleRow" type="HBoxContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 240)
+custom_minimum_size = Vector2(0, 390)
 layout_mode = 2
 size_flags_vertical = 1
 theme_override_constants/separation = 0
 
 [node name="LinhPanel" type="PanelContainer" parent="Root/MiddleRow"]
-custom_minimum_size = Vector2(260, 0)
+custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -178,14 +178,14 @@ layout_mode = 2
 
 [node name="SpeechM" type="MarginContainer" parent="Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble"]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="SpeechLabel" type="Label" parent="Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 13
 text = "Gay nhe!"
 autowrap_mode = 3
 horizontal_alignment = 1
@@ -202,23 +202,23 @@ size_flags_vertical = 3
 
 [node name="NotationM" type="MarginContainer" parent="Root/MiddleRow/MainContent/NotationArea"]
 layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="NotationVBox" type="VBoxContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="NotationLabel" type="Label" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "BAN NHAC"
 
 [node name="TargetNoteLabel" type="Label" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "Nốt cần gảy: Hò"
 
 [node name="NotesScroll" type="ScrollContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
@@ -230,7 +230,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="StatsRow" type="HBoxContainer" parent="Root/MiddleRow/MainContent"]
-custom_minimum_size = Vector2(0, 88)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 0
 
@@ -240,31 +240,31 @@ size_flags_horizontal = 3
 
 [node name="PitchM" type="MarginContainer" parent="Root/MiddleRow/MainContent/StatsRow/PitchPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_bottom = 2
 
 [node name="PitchV" type="VBoxContainer" parent="Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="PitchTitle" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 10
 text = "CAO DO"
 horizontal_alignment = 1
 
 [node name="PitchNote" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 34
+theme_override_font_sizes/font_size = 20
 text = "-"
 horizontal_alignment = 1
 
 [node name="PitchStatus" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 9
 text = "Dang nghe..."
 horizontal_alignment = 1
 
@@ -274,31 +274,31 @@ size_flags_horizontal = 3
 
 [node name="RhythmM" type="MarginContainer" parent="Root/MiddleRow/MainContent/StatsRow/RhythmPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_bottom = 2
 
 [node name="RhythmV" type="VBoxContainer" parent="Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="RhythmTitle" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 10
 text = "NHIP DIEU"
 horizontal_alignment = 1
 
 [node name="RhythmBars" type="HBoxContainer" parent="Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV"]
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 5
 
 [node name="RhythmAcc" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 9
 text = "Dang nghe..."
 horizontal_alignment = 1
 
@@ -308,31 +308,31 @@ size_flags_horizontal = 3
 
 [node name="ScoreM" type="MarginContainer" parent="Root/MiddleRow/MainContent/StatsRow/ScorePanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_bottom = 2
 
 [node name="ScoreV" type="VBoxContainer" parent="Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 alignment = 1
 
 [node name="ScoreTitle" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 10
 text = "DIEM SO"
 horizontal_alignment = 1
 
 [node name="ScoreNum" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 38
+theme_override_font_sizes/font_size = 22
 text = "75"
 horizontal_alignment = 1
 
 [node name="ScoreSub" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 9
 text = "Cao do 82%  Nhip 71%"
 horizontal_alignment = 1
 
@@ -344,22 +344,22 @@ size_flags_vertical = 3
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_right = 20
-theme_override_constants/margin_top = 6
+theme_override_constants/margin_top = 4
 theme_override_constants/margin_bottom = 4
 
 [node name="BoardVBox" type="VBoxContainer" parent="Root/StringsBoard/BoardM"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="BoardLabel" type="Label" parent="Root/StringsBoard/BoardM/BoardVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 11
 text = "ĐÀN TRANH 16 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để rung"
 horizontal_alignment = 1
 
 [node name="TargetLabel" type="Label" parent="Root/StringsBoard/BoardM/BoardVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 text = "Dây cần gảy: 2"
 horizontal_alignment = 1
 
@@ -371,7 +371,7 @@ script = ExtResource("4_board")
 
 
 [node name="RecordBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 76)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 
 [node name="RecordM" type="MarginContainer" parent="Root/RecordBar"]
@@ -383,23 +383,23 @@ theme_override_constants/margin_bottom = 0
 
 [node name="RecordH" type="HBoxContainer" parent="Root/RecordBar/RecordM"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="RecordBtn" type="Button" parent="Root/RecordBar/RecordM/RecordH"]
-custom_minimum_size = Vector2(500, 56)
+custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 16
 text = "Bat dau luyen tap"
 
 [node name="ResetBtn" type="Button" parent="Root/RecordBar/RecordM/RecordH"]
-custom_minimum_size = Vector2(150, 52)
+custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 text = "Lam lai"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 14
 
 [node name="HintDialog" type="AcceptDialog" parent="."]
 title = "Goi y ky thuat"

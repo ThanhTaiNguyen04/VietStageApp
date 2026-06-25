@@ -69,6 +69,19 @@ const SONGS_DATA := [
 		"sheet": ["Đô","Fa","Sol","Đô2","La","Đô2","Sol","Fa","Rê","Đô","Đô"]
 	},
 	{
+		"id": "song_004b",
+		"title": "Giấc Mơ Trưa",
+		"desc": "Tác phẩm trứ danh của nhạc sĩ Giáng Son - Giai điệu mộng mơ, thanh tao đặc trưng của Đàn Tranh.",
+		"instrument": "dan_tranh",
+		"instrument_label": "Đàn Tranh",
+		"difficulty": "Khó",
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0), # Jade green
+		"genre": "tru_tinh",
+		"genre_label": "Trữ tình",
+		"xp": 300,
+		"sheet": ["Rest", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Rê3", "Rê3", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Sol", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Rê2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Rê2", "Sol2", "Đô3", "Đô3", "Đô3", "Rest", "Mi2", "Rê2", "Sol2", "Rê2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Sol2", "Rest", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "Sol", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest"]
+	},
+	{
 		"id": "song_005",
 		"title": "Lý Hoài Nam",
 		"desc": "Làn điệu dân ca miền Trung, đặc biệt du dương khi thổi sáo trúc.",

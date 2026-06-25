@@ -51,8 +51,10 @@ func _setup_audio_bus() -> void:
 		_bus_index = AudioServer.bus_count
 		AudioServer.add_bus(_bus_index)
 		AudioServer.set_bus_name(_bus_index, "Record")
-		# Mute to prevent loud feedback loops!
-		AudioServer.set_bus_mute(_bus_index, true)
+	
+	# Set volume to silent (-80dB) and keep unmuted so Godot processes the capture effect!
+	AudioServer.set_bus_mute(_bus_index, false)
+	AudioServer.set_bus_volume_db(_bus_index, -80.0)
 	
 	# Add AudioEffectCapture if not already present
 	var effect_index := -1
