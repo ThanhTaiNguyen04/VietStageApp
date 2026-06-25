@@ -56,6 +56,7 @@ var _linh_base_y : float = 220.0
 var _speech_timer : float = 0.0
 
 var _current_popup_instrument : String = ""
+var _audio_manager : AIAudioManager = null
 
 var _linh_is_moving : bool = false
 var _linh_tween : Tween = null
@@ -225,6 +226,8 @@ func _ready() -> void:
 	_style_popup_button(btn_back, true)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
+		if _audio_manager:
+			_audio_manager.audio_player.stop()
 		_fade_to("res://scenes/MainMenu.tscn")
 	)
 	
@@ -235,6 +238,16 @@ func _ready() -> void:
 	# Responsive connection
 	get_viewport().size_changed.connect(func() -> void: _on_viewport_size_changed.call_deferred())
 	_on_viewport_size_changed()
+	
+	_audio_manager = AIAudioManager.new()
+	_audio_manager.name = "AIAudioManager"
+	add_child(_audio_manager)
+	
+	# Play welcome speech after transition
+	get_tree().create_timer(0.8).timeout.connect(func() -> void:
+		if is_instance_valid(_audio_manager):
+			_audio_manager.speak_vietnamese("Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì")
+	)
 
 
 
@@ -680,6 +693,8 @@ func _linh_talk(_txt: String) -> void:
 
 func _on_char_linh_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+		if _audio_manager:
+			_audio_manager.audio_player.stop()
 		var chat = AIChatPopup.new()
 		$HUD.add_child(chat)
 		chat.open_chat("general")
@@ -731,6 +746,8 @@ func _setup_focus_popup_controls() -> void:
 	_make_btn_bouncy(btn_popup_close)
 
 func _open_focus_mode_popup(inst: String) -> void:
+	if _audio_manager:
+		_audio_manager.audio_player.stop()
 	_current_popup_instrument = inst
 	_player_expression = "focused"
 	_toggle_popup_tab(true)

@@ -45,7 +45,8 @@ func speak_vietnamese(text: String) -> void:
 			"text": s,
 			"stream": null,
 			"downloading": false,
-			"downloaded": false
+			"downloaded": false,
+			"use_local_fallback": false
 		})
 		
 	# Start downloading first sentence
@@ -73,7 +74,8 @@ func append_vietnamese_speech(text: String) -> void:
 			"text": s,
 			"stream": null,
 			"downloading": false,
-			"downloaded": false
+			"downloaded": false,
+			"use_local_fallback": false
 		})
 		
 	if current_playing_idx == start_idx:
@@ -103,7 +105,7 @@ func _check_prefetch() -> void:
 			_download_sentence(next_idx)
 
 func _split_into_sentences(text: String) -> Array[String]:
-	var sentences: Array[String] = []
+	var raw_sentences: Array[String] = []
 	var delimiters = [".", "?", "!", ";", "\n"]
 	var current_sentence = ""
 	var length = text.length()
@@ -126,15 +128,38 @@ func _split_into_sentences(text: String) -> Array[String]:
 		if is_boundary:
 			var trimmed = current_sentence.strip_edges()
 			if trimmed.length() > 0:
-				sentences.append(trimmed)
+				raw_sentences.append(trimmed)
 			current_sentence = ""
 		idx += 1
 		
 	var trimmed = current_sentence.strip_edges()
 	if trimmed.length() > 0:
-		sentences.append(trimmed)
+		raw_sentences.append(trimmed)
 		
-	return sentences
+	# Safe chunking to fit the 160-character limit of the online Google TTS API
+	var final_sentences: Array[String] = []
+	for s in raw_sentences:
+		if s.length() <= 160:
+			final_sentences.append(s)
+		else:
+			var parts = s.split(",")
+			var current_chunk = ""
+			for p in parts:
+				var piece = p.strip_edges()
+				if piece == "":
+					continue
+				if current_chunk.length() + piece.length() + 2 <= 160:
+					if current_chunk != "":
+						current_chunk += ", "
+					current_chunk += piece
+				else:
+					if current_chunk != "":
+						final_sentences.append(current_chunk)
+					current_chunk = piece
+			if current_chunk != "":
+				final_sentences.append(current_chunk)
+				
+	return final_sentences
 
 func _download_sentence(index: int) -> void:
 	if index < 0 or index >= sentence_queue.size():
@@ -154,8 +179,13 @@ func _download_sentence(index: int) -> void:
 	)
 	
 	var encoded_text = item["text"].uri_encode()
-	var url = "http://127.0.0.1:5001/tts?text=" + encoded_text
-	var headers = ["User-Agent: Mozilla/5.0"]
+	var url := ""
+	if item.get("use_local_fallback", false):
+		url = "http://127.0.0.1:5001/tts?text=" + encoded_text
+	else:
+		url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=" + encoded_text
+		
+	var headers = ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"]
 	var err = http.request(url, headers, HTTPClient.METHOD_GET)
 	if err != OK:
 		push_error("Failed to start request for sentence " + str(index))
@@ -174,6 +204,14 @@ func _on_sentence_download_completed(index: int, http: HTTPRequest, result: int,
 	
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
 		push_error("TTS download failed for sentence " + str(index) + ". Code: " + str(response_code))
+		
+		# If online TTS failed, retry with local fallback
+		if not item.get("use_local_fallback", false):
+			print("Retrying with local TTS server fallback for sentence ", index)
+			item["use_local_fallback"] = true
+			_download_sentence(index)
+			return
+			
 		item["downloaded"] = true
 		_check_queue_playback()
 		return
