@@ -38,19 +38,19 @@ anchor_bottom = 1.0
 theme_override_constants/separation = 0
 
 [node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 112)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 
 [node name="TopM" type="MarginContainer" parent="Root/TopBar"]
 layout_mode = 2
 theme_override_constants/margin_left = 40
 theme_override_constants/margin_right = 40
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_bottom = 6
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 0
 
 [node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 24
 
 [node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
 custom_minimum_size = Vector2(150, 0)
@@ -117,40 +117,6 @@ layout_mode = 2
 value = 60.0
 show_percentage = false
 
-[node name="NotationArea" type="PanelContainer" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="NotationM" type="MarginContainer" parent="Root/TopBar/TopM/TopH/NotationArea"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_bottom = 4
-
-[node name="NotationVBox" type="VBoxContainer" parent="Root/TopBar/TopM/TopH/NotationArea/NotationM"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="NotationLabel" type="Label" parent="Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "BAN NHAC"
-
-[node name="TargetNoteLabel" type="Label" parent="Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Nốt cần gảy: Hò"
-
-[node name="NotesScroll" type="ScrollContainer" parent="Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox"]
-layout_mode = 2
-vertical_scroll_mode = 0
-
-[node name="NotesHBox" type="HBoxContainer" parent="Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotesScroll"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
 [node name="CtrlBtns" type="HBoxContainer" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_vertical = 4
@@ -178,7 +144,7 @@ text = "x0.5"
 theme_override_font_sizes/font_size = 18
 
 [node name="MiddleRow" type="HBoxContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 240)
 layout_mode = 2
 size_flags_vertical = 1
 theme_override_constants/separation = 0
@@ -229,6 +195,39 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 0
+
+[node name="NotationArea" type="PanelContainer" parent="Root/MiddleRow/MainContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NotationM" type="MarginContainer" parent="Root/MiddleRow/MainContent/NotationArea"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="NotationVBox" type="VBoxContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NotationLabel" type="Label" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "BAN NHAC"
+
+[node name="TargetNoteLabel" type="Label" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Nốt cần gảy: Hò"
+
+[node name="NotesScroll" type="ScrollContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
+layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="NotesHBox" type="HBoxContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll"]
+layout_mode = 2
+theme_override_constants/separation = 16
 
 [node name="StatsRow" type="HBoxContainer" parent="Root/MiddleRow/MainContent"]
 custom_minimum_size = Vector2(0, 88)
