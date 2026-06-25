@@ -510,9 +510,13 @@ func _process(delta: float) -> void:
 				var target_note = sheet_notes[_note_idx]
 				var target_idx = NOTES_VN.find(target_note)
 				if target_idx != -1:
+					# Play audio only once via _play_zither_sound (board audio disabled in demo)
 					_play_zither_sound(target_idx)
 					if _board:
+						# Visual only — disable audio on board to avoid double playback & distortion
+						_board.audio_enabled = false
 						_board.pluck(target_idx)
+						_board.audio_enabled = false
 						
 			if _current_note_elapsed >= target_duration:
 				_current_note_elapsed = 0.0
@@ -893,67 +897,57 @@ func _get_string_frequency(idx: int) -> float:
 	return base_freqs[note_in_octave] * pow(2, octave)
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
-	# ── Enhanced Karplus-Strong with Đàn Tranh timbre ────────────────────────
+	# ── Clean Karplus-Strong — Đàn Tranh tuned ───────────────────────────────
 	const SAMPLE_RATE: int = 44100
-	const DURATION: float  = 3.5   # longer sustain for natural ring-out
+	const DURATION: float  = 4.0   # 4 giây sustain tự nhiên
 	var sample_count: int  = int(SAMPLE_RATE * DURATION)
 
 	var delay_len: int = int(float(SAMPLE_RATE) / freq)
 	if delay_len < 2:
 		delay_len = 2
 
-	# ── Bright initial excitation: white noise + a sharp impulse ─────────────
+	# ── Khởi tạo delay line: white noise thuần ───────────────────────────────
 	var delay_buf := PackedFloat32Array()
 	delay_buf.resize(delay_len)
 	for k in delay_len:
-		# Bright mix: mostly noise for high initial sparkle
-		var noise = randf_range(-1.0, 1.0)
-		# High-frequency boost at start of buffer
-		var impulse = 1.0 if k < 3 else 0.0
-		delay_buf[k] = 0.82 * noise + 0.18 * impulse
+		delay_buf[k] = randf_range(-1.0, 1.0)
 
-	# ── Decay: frequency-dependent, slightly stretched for đàn tranh ─────────
-	# Lower strings ring longer (natural behaviour)
-	var freq_ratio = clampf(freq / 1000.0, 0.0, 1.0)
-	var decay: float = clampf(0.9992 - freq_ratio * 0.0018, 0.9974, 0.9994)
+	# ── Decay tự nhiên theo tần số ────────────────────────────────────────────
+	# Dây trầm rung lâu hơn dây cao (thực tế vật lý)
+	var freq_ratio := clampf(freq / 1000.0, 0.0, 1.0)
+	var decay: float = clampf(0.9993 - freq_ratio * 0.002, 0.9972, 0.9993)
 
-	# ── Generate samples with enhanced Karplus-Strong ─────────────────────────
+	# ── Sinh samples bằng Karplus-Strong chuẩn ───────────────────────────────
 	var samples := PackedFloat32Array()
 	samples.resize(sample_count)
 	var buf_pos: int = 0
 
 	for i in sample_count:
 		var next_pos: int = (buf_pos + 1) % delay_len
-		var prev_pos: int = (buf_pos + delay_len - 1) % delay_len
-		# Standard KS average filter
-		var ks = 0.5 * (delay_buf[buf_pos] + delay_buf[next_pos])
-		# Very slight all-pass blend for extra brightness
-		var blended = 0.95 * ks + 0.05 * delay_buf[prev_pos]
-		var new_sample: float = decay * blended
+		# Lowpass averaging filter (standard KS)
+		var new_sample: float = decay * 0.5 * (delay_buf[buf_pos] + delay_buf[next_pos])
 		samples[i] = new_sample
 		delay_buf[buf_pos] = new_sample
 		buf_pos = (buf_pos + 1) % delay_len
 
-	# ── Natural amplitude envelope ────────────────────────────────────────────
-	# Sharp attack (first 5ms), then natural decay
-	var attack_samps = int(SAMPLE_RATE * 0.005)
+	# ── Smooth attack: 10ms ramp lên từ 0 (tránh click) ─────────────────────
+	var attack_samps := int(SAMPLE_RATE * 0.01)
 	for i in attack_samps:
-		var env = float(i) / float(attack_samps)
-		samples[i] *= env
+		samples[i] *= (float(i) / float(attack_samps))
 
-	# ── Normalise and encode PCM 16-bit ──────────────────────────────────────
+	# ── Normalise và encode PCM 16-bit ────────────────────────────────────────
 	var max_amp: float = 0.0
 	for s in samples:
-		var abs_s: float = absf(s)
-		if abs_s > max_amp:
-			max_amp = abs_s
+		var a := absf(s)
+		if a > max_amp:
+			max_amp = a
 	if max_amp < 0.0001:
 		max_amp = 1.0
-	var norm_factor: float = 0.95 / max_amp
+	# Normalise tới 85% để tránh clipping khi reverb cộng thêm
+	var norm_factor: float = 0.85 / max_amp
 
 	var data := PackedByteArray()
 	data.resize(sample_count * 2)
-
 	for i in sample_count:
 		var val: float = clamp(samples[i] * norm_factor, -1.0, 1.0)
 		var val_i16: int = int(val * 32767.0)
@@ -1105,6 +1099,9 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = false # Disable wait mode if demo is active
 		_update_wait_mode_ui()
 		_va_say("Đã bật Nghe mẫu. Hệ thống sẽ tự chơi giai điệu bài hát.")
+		# Board visual only — audio handled by _play_zither_sound to avoid double-play
+		if _board:
+			_board.audio_enabled = false
 		# Automatically start playing if not already playing
 		if not _recording:
 			_toggle_record()
@@ -1112,6 +1109,9 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = true
 		_update_wait_mode_ui()
 		_va_say("Đã tắt Nghe mẫu. Con hãy tự mình luyện tập nhé!")
+		# Restore board audio for manual play
+		if _board:
+			_board.audio_enabled = true
 		if _recording:
 			_toggle_record()
 	_update_demo_mode_ui()
