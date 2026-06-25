@@ -5,7 +5,7 @@ static var selected_instrument := "dan_tranh"
 
 const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
 const C_GOLD_LT   := Color(1.00, 0.87, 0.45, 1.0)
-const C_RED_SON   := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON   := Color(0.09, 0.27, 0.18, 1.0)
 const C_JADE       := Color(0.12, 0.37, 0.23, 1.0) # Standard dark jade
 const C_JADE_LIGHT := Color(0.22, 0.86, 0.55, 1.0) # Standard light jade
 const C_JADE_LT    := Color(0.42, 0.95, 0.70, 1.0) # Sage/mint overlay
@@ -13,9 +13,9 @@ const C_WHITE     := Color(1.00, 1.00, 1.00, 1.0)
 const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.50)
 const C_DIM       := Color(1.00, 1.00, 1.00, 0.24)
 
-const IMG_DAN_TRANH := "res://assets/textures/dan_tranh.jpg"
-const IMG_SAO_TRUC  := "res://assets/textures/sao_truc.jpg"
-const IMG_DAN_BAU   := "res://assets/textures/dan_bau.jpg"
+const IMG_DAN_TRANH := "res://assets/textures/dan_tranh_asset.png"
+const IMG_SAO_TRUC  := "res://assets/textures/sao_truc_asset.png"
+const IMG_DAN_BAU   := "res://assets/textures/dan_bau_asset.png"
 
 func _ready() -> void:
 	_build_theme()
@@ -392,33 +392,38 @@ func _build_theme() -> void:
 	top_s.border_width_top    = 0; top_s.border_width_left  = 0
 	top_s.border_width_right  = 0; top_s.border_width_bottom = 1
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
-	($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0))
+	($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_color_override("font_color", C_RED_SON)
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
 	back.add_theme_color_override("font_color",       Color(0.13, 0.08, 0.05, 1.0))
-	back.add_theme_color_override("font_hover_color", Color(0.70, 0.12, 0.08, 1.0))
+	back.add_theme_color_override("font_hover_color", C_RED_SON)
 	back.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 10))
 	back.add_theme_stylebox_override("hover",   _flat(Color(0,0,0,0.06), Color(0,0,0,0), 10))
 	back.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.12), Color(0,0,0,0), 10))
 	back.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
-	_style_card(
-		$Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh,
-		$Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
-		Color(1.0, 1.0, 1.0, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25),
-		C_GOLD, Color(0.70, 0.12, 0.08, 1.0), "DTBar", "DTBtn", "DTPct")
+	SecureDataManager.load_data()
 
-	_style_card(
-		$Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc,
-		$Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
-		Color(1.0, 1.0, 1.0, 0.95), Color(C_JADE_LIGHT.r, C_JADE_LIGHT.g, C_JADE_LIGHT.b, 0.25),
-		C_JADE_LIGHT, C_JADE, "STBar", "STBtn", "STPct")
+	# Đàn Tranh
+	var dt_card := $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh
+	var dt_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox
+	var dt_progress := SecureDataManager.get_course_progress("dan_tranh")
+	var dt_unlocked := SecureDataManager.is_instrument_unlocked("dan_tranh")
+	_update_card_ui(dt_card, dt_vbox, dt_progress, dt_unlocked, C_GOLD, C_RED_SON, "DTBar", "DTBtn", "DTPct", "Học ngay")
 
-	_style_card(
-		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau,
-		$Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
-		Color(1.0, 1.0, 1.0, 0.95), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25),
-		C_RED_SON, C_RED_SON, "DBBar", "DBBtn", "DBPct")
+	# Sáo Trúc
+	var st_card := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc
+	var st_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox
+	var st_progress := SecureDataManager.get_course_progress("sao_truc")
+	var st_unlocked := SecureDataManager.is_instrument_unlocked("sao_truc")
+	_update_card_ui(st_card, st_vbox, st_progress, st_unlocked, C_JADE_LIGHT, C_JADE, "STBar", "STBtn", "STPct", "Bắt đầu")
+
+	# Đàn Bầu
+	var db_card := $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau
+	var db_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox
+	var db_progress := SecureDataManager.get_course_progress("dan_bau")
+	var db_unlocked := SecureDataManager.is_instrument_unlocked("dan_bau")
+	_update_card_ui(db_card, db_vbox, db_progress, db_unlocked, C_RED_SON, C_RED_SON, "DBBar", "DBBtn", "DBPct", "Bắt đầu")
 
 	# Custom scrollbar styling
 	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
@@ -479,7 +484,7 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 	btn.add_theme_color_override("font_hover_color",   C_WHITE)
 	btn.add_theme_color_override("font_pressed_color", C_WHITE)
 
-func _style_card_locked(card: PanelContainer, cvbox: VBoxContainer) -> void:
+func _style_card_locked(card: PanelContainer, cvbox: VBoxContainer, btn_name: String) -> void:
 	var cs := _flat(Color(0.95, 0.93, 0.89, 0.65), Color(0.13, 0.08, 0.05, 0.08), 24)
 	cs.shadow_size = 10; cs.shadow_color = Color(0.13, 0.08, 0.05, 0.05)
 	cs.border_width_top = 1; cs.border_width_left = 1
@@ -491,11 +496,61 @@ func _style_card_locked(card: PanelContainer, cvbox: VBoxContainer) -> void:
 		if child is Label:
 			(child as Label).add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.50))
 
-	var btn := cvbox.get_node("DBBtn") as Button
+	var btn := cvbox.get_node(btn_name) as Button
 	btn.add_theme_stylebox_override("normal",   _flat(Color(0,0,0,0.03), Color(0.13, 0.08, 0.05, 0.10), 28))
 	btn.add_theme_stylebox_override("disabled", _flat(Color(0,0,0,0.01), Color(0.13, 0.08, 0.05, 0.05), 28))
 	btn.add_theme_color_override("font_color",          Color(0.13, 0.08, 0.05, 0.35))
 	btn.add_theme_color_override("font_disabled_color", Color(0.13, 0.08, 0.05, 0.25))
+
+func _update_card_ui(card: PanelContainer, cvbox: VBoxContainer, progress: float, is_unlocked: bool, accent: Color, btn_col: Color, bar_name: String, btn_name: String, pct_name: String, default_btn_text: String) -> void:
+	var pb := cvbox.get_node(bar_name) as ProgressBar
+	pb.value = progress
+	
+	var pct_lbl := cvbox.get_node(pct_name) as Label
+	if progress == 0.0:
+		pct_lbl.text = "Chưa bắt đầu"
+	elif progress == 100.0:
+		pct_lbl.text = "Đã hoàn thành"
+	else:
+		pct_lbl.text = str(int(progress)) + "% hoàn thành"
+		
+	var btn := cvbox.get_node(btn_name) as Button
+	
+	var root := card.get_child(0) as VBoxContainer
+	var area_name := root.name.left(2) + "ImageArea"
+	var area := root.get_node_or_null(area_name) as Control
+	
+	if area:
+		var old_overlay := area.get_node_or_null("LockOverlay")
+		if old_overlay:
+			old_overlay.queue_free()
+			
+		if not is_unlocked:
+			var overlay := Control.new()
+			overlay.name = "LockOverlay"
+			overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			
+			overlay.draw.connect(func() -> void:
+				var lock_tex := load("res://assets/textures/icons8/lock.png") as Texture2D
+				if lock_tex:
+					var sz := overlay.size
+					var lock_sz := Vector2(48, 48)
+					var rect := Rect2(sz/2 - lock_sz/2, lock_sz)
+					overlay.draw_circle(sz/2, 36.0, Color(0, 0, 0, 0.45))
+					overlay.draw_texture_rect(lock_tex, rect, false, Color.WHITE)
+			)
+			area.add_child(overlay)
+			
+	if is_unlocked:
+		btn.disabled = false
+		btn.text = default_btn_text
+		card.modulate.a = 1.0
+		_style_card(card, cvbox, Color(1.0, 1.0, 1.0, 0.95), Color(accent.r, accent.g, accent.b, 0.25), accent, btn_col, bar_name, btn_name, pct_name)
+	else:
+		btn.disabled = true
+		btn.text = "Chưa mở khóa"
+		_style_card_locked(card, cvbox, btn_name)
 
 # ── Entrance animation ────────────────────────────────────────────────────────
 func _animate_in() -> void:

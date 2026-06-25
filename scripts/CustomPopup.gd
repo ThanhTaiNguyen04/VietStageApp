@@ -3,7 +3,8 @@ extends Control
 # ─── Color Palette ─────────────────────────────────────────────────────────────
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_ERR    := Color(0.70, 0.12, 0.08, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
 const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
@@ -202,7 +203,7 @@ func setup_result(score: float, pitch: float, rhythm: float, tech: float, reward
 	
 	# Score-based rating
 	var rating_text := ""
-	var rating_color := C_RED_SON
+	var rating_color := C_RED_ERR
 	if iscore >= 85:
 		rating_text = "Xuất sắc! 🎉"
 		rating_color = C_JADE
@@ -213,8 +214,8 @@ func setup_result(score: float, pitch: float, rhythm: float, tech: float, reward
 		score_val.add_theme_color_override("font_color", C_GOLD)
 	else:
 		rating_text = "Cần cố gắng! 💪"
-		rating_color = C_RED_SON
-		score_val.add_theme_color_override("font_color", C_RED_SON)
+		rating_color = C_RED_ERR
+		score_val.add_theme_color_override("font_color", C_RED_ERR)
 		
 	rating_lbl.text = rating_text
 	rating_lbl.add_theme_color_override("font_color", rating_color)

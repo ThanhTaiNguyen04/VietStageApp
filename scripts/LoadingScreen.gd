@@ -37,7 +37,7 @@ func _ready() -> void:
 		$Center.move_child(spinner, 4)
 
 func _build_style() -> void:
-	app_name.add_theme_color_override("font_color", Color(0.70, 0.12, 0.08, 1.0)) # lacquer red app name
+	app_name.add_theme_color_override("font_color", Color(0.09, 0.27, 0.18, 1.0)) # jade green app name
 	load_title.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.70)) # Espresso
 	tip_label.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0)) # Taupe
 	($BottomTag as Label).add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.30))
@@ -74,7 +74,7 @@ func _animate_bar() -> void:
 	t.tween_property(load_bar, "value", 22.0,  0.70).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void: load_title.text = "Đang tải nhạc cụ...")
 	t.tween_property(load_bar, "value", 51.0,  0.80).set_trans(Tween.TRANS_CUBIC)
-	t.tween_callback(func() -> void: load_title.text = "Đang tải nhân vật Linh...")
+	t.tween_callback(func() -> void: load_title.text = "Đang tải cô giáo Mai...")
 	t.tween_property(load_bar, "value", 78.0,  0.60).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void: load_title.text = "Đang tải bài học...")
 	t.tween_property(load_bar, "value", 100.0, 0.45).set_trans(Tween.TRANS_CUBIC)

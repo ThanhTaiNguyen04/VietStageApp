@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://video_player_001"]
 
 [ext_resource type="Script" path="res://scripts/VideoPlayer.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/character_linh.jpg" id="2_linh"]
+[ext_resource type="Texture2D" uid="uid://d3ewwh4ccte6v" path="res://assets/textures/virtual_artist_mai.png" id="2_linh"]
 [ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="4_font_title"]
 
 [node name="VideoPlayer" type="Control"]
@@ -145,7 +145,7 @@ theme_override_constants/margin_bottom = 8
 [node name="SubLabel" type="Label" parent="Center/PlayerCard/CardM/PlayerVBox/SubPanel/SubM"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Bấm Play để xem video hướng dẫn từ cô giáo Linh."
+text = "Bấm Play để xem video hướng dẫn từ cô giáo Mai."
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3

@@ -26,7 +26,9 @@ static var data := {
 	},
 	"daily_streak": 1,
 	"last_practice_date": "",
-	"practice_time_seconds": 0
+	"practice_time_seconds": 0,
+	"unlocked_decorations": [],
+	"active_decorations": []
 }
 
 static func save_data() -> void:
@@ -98,5 +100,62 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
+		save_data()
+
+static func get_course_progress(instrument: String) -> float:
+	var completed := 0
+	var core_nodes := ["Node1", "Node2", "Node3", "Node4", "Node5"]
+	for node in core_nodes:
+		if is_lesson_completed(instrument, node):
+			completed += 1
+	return float(completed) / float(core_nodes.size()) * 100.0
+
+static func is_instrument_unlocked(instrument: String) -> bool:
+	if instrument == "dan_tranh":
+		return true
+	elif instrument == "sao_truc":
+		return is_lesson_completed("dan_tranh", "Node5")
+	elif instrument == "dan_bau":
+		return is_lesson_completed("sao_truc", "Node5")
+	return false
+
+static func get_total_stars() -> int:
+	var total := 0
+	if data.has("stars"):
+		for inst in data.stars.keys():
+			for lesson_id in data.stars[inst].keys():
+				total += int(data.stars[inst][lesson_id])
+	return total
+
+static func unlock_decoration(decor_id: String, cost: int) -> bool:
+	if not data.has("unlocked_decorations"):
+		data["unlocked_decorations"] = []
+	if not data.has("active_decorations"):
+		data["active_decorations"] = []
 		
+	if data["unlocked_decorations"].has(decor_id):
+		return true
+		
+	var stars = get_total_stars()
+	if stars >= cost:
+		data["unlocked_decorations"].append(decor_id)
+		if not data["active_decorations"].has(decor_id):
+			data["active_decorations"].append(decor_id)
+		save_data()
+		return true
+	return false
+
+static func toggle_decoration(decor_id: String) -> void:
+	if not data.has("unlocked_decorations"):
+		data["unlocked_decorations"] = []
+	if not data.has("active_decorations"):
+		data["active_decorations"] = []
+		
+	if not data["unlocked_decorations"].has(decor_id):
+		return
+		
+	if data["active_decorations"].has(decor_id):
+		data["active_decorations"].erase(decor_id)
+	else:
+		data["active_decorations"].append(decor_id)
 	save_data()

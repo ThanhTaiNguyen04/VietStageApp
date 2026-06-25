@@ -4,8 +4,8 @@ extends Control
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_GOLD_DARK  := Color(0.06, 0.02, 0.00, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
-const C_RED_DK     := Color(0.50, 0.08, 0.05, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_DK     := Color(0.05, 0.16, 0.11, 0.96)
 const C_BG_DARK    := Color(0.98, 0.97, 0.94, 1.0)
 const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
@@ -27,7 +27,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 100,
-		"sheet": ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"]
+		"sheet": ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
 	},
 	{
 		"id": "song_002",
@@ -36,11 +36,11 @@ const SONGS_DATA := [
 		"instrument": "dan_tranh",
 		"instrument_label": "Đàn Tranh",
 		"difficulty": "Khó",
-		"difficulty_color": Color(0.70, 0.12, 0.08, 1.0), # Red
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0), # Jade green
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 250,
-		"sheet": ["Đô2","Đô2","Rê2","Đô2","Fa","Sol","La","Rê","Fa","Đô2","Đô"]
+		"sheet": ["La","La","Si","La","Mi","Fa","Sol","Rê","Mi","La","Đô"]
 	},
 	{
 		"id": "song_003",
@@ -53,7 +53,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 180,
-		"sheet": ["Fa","Rê","Đô","Rê","Fa","Sol","Đô2","La","Sol","Fa","Đô"]
+		"sheet": ["Mi","Rê","Đô","Rê","Mi","Fa","La","Sol","Fa","Mi","Đô"]
 	},
 	{
 		"id": "song_004",
@@ -66,7 +66,7 @@ const SONGS_DATA := [
 		"genre": "tru_tinh",
 		"genre_label": "Trữ tình",
 		"xp": 200,
-		"sheet": ["Đô","Fa","Sol","Đô2","La","Đô2","Sol","Fa","Rê","Đô","Đô"]
+		"sheet": ["Đô","Mi","Fa","La","Sol","La","Fa","Mi","Rê","Đô","Đô"]
 	},
 	{
 		"id": "song_005",
@@ -101,7 +101,7 @@ const SONGS_DATA := [
 		"instrument": "sao_truc",
 		"instrument_label": "Sáo Trúc",
 		"difficulty": "Khó",
-		"difficulty_color": Color(0.70, 0.12, 0.08, 1.0), # Red
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0), # Jade green
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 220,
@@ -131,7 +131,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 120,
-		"sheet": ["Hò","Xang","Xê","Liu","Ú","Liu","Xê","Xang","Xự","Hò"]
+		"sheet": ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô"]
 	},
 	{
 		"id": "song_010",
@@ -144,7 +144,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 160,
-		"sheet": ["Hò","Xang","Xê","Liu","Ú","Liu","Xê","Xang","Xự","Hò","Liu"]
+		"sheet": ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô","La"]
 	}
 ]
 
@@ -152,12 +152,20 @@ const SONGS_DATA := [
 @onready var bg_overlay      : ColorRect      = $BGOverlay
 @onready var back_btn        : Button         = $Root/TopBar/TopM/TopH/BackBtn
 @onready var page_title      : Label          = $Root/TopBar/TopM/TopH/PageTitle
-@onready var search_edit     : LineEdit       = $Root/Content/ContentMargin/MainVBox/SearchFilterHBox/SearchEdit
-@onready var btn_all         : Button         = $Root/Content/ContentMargin/MainVBox/FilterTabs/BtnAll
-@onready var btn_danca       : Button         = $Root/Content/ContentMargin/MainVBox/FilterTabs/BtnDanCa
-@onready var btn_trutinh     : Button         = $Root/Content/ContentMargin/MainVBox/FilterTabs/BtnTruTinh
-@onready var btn_cotruyen    : Button         = $Root/Content/ContentMargin/MainVBox/FilterTabs/BtnCoTruyen
-@onready var songs_grid      : GridContainer  = $Root/Content/ContentMargin/MainVBox/SongsScroll/SongsGrid
+@onready var search_edit     : LineEdit       = $Root/Content/ContentMargin/SplitHBox/ListVBox/SearchFilterHBox/SearchEdit
+@onready var btn_all         : Button         = $Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs/BtnAll
+@onready var btn_danca       : Button         = $Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs/BtnDanCa
+@onready var btn_trutinh     : Button         = $Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs/BtnTruTinh
+@onready var btn_cotruyen    : Button         = $Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs/BtnCoTruyen
+@onready var songs_grid      : GridContainer  = $Root/Content/ContentMargin/SplitHBox/ListVBox/SongsScroll/SongsGrid
+
+@onready var split_hbox      : HBoxContainer  = $Root/Content/ContentMargin/SplitHBox
+@onready var detail_panel    : PanelContainer = $Root/Content/ContentMargin/SplitHBox/DetailPanel
+@onready var detail_title    : Label          = $Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/DetailHeader/DetailTitle
+@onready var detail_tags     : HBoxContainer  = $Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/DetailHeader/DetailTags
+@onready var detail_desc     : Label          = $Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/DetailDesc
+@onready var notes_hbox      : HBoxContainer  = $Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/NotesScroll/NotesHBox
+@onready var btn_start_practice : Button      = $Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/BtnStartPractice
 
 @onready var bottom_bar      : PanelContainer = $Root/BottomBar
 @onready var btn_courses_mob : Button         = $Root/BottomBar/BottomM/BottomH/BtnCoursesMobile
@@ -169,6 +177,8 @@ const SONGS_DATA := [
 var current_filter := "all"
 var search_text := ""
 var _sidebar_icons_cache := {}
+var selected_song_data := {}
+var selected_card_node : PanelContainer = null
 
 func _ready() -> void:
 	SecureDataManager.load_data()
@@ -179,8 +189,6 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-	
-	btn_room_mob.hide()
 
 # ─── Theme & Layout Customization ─────────────────────────────────────────────
 func _build_theme() -> void:
@@ -254,6 +262,39 @@ func _build_theme() -> void:
 	_attach_bottom_icon_draw(btn_room_mob,    6, false)
 	_attach_bottom_icon_draw(btn_songs_mob,   2, false)
 	_attach_bottom_icon_draw(btn_account_mob, 5, false)
+
+	# DetailPanel style matching global design
+	var detail_s := _flat(C_CARD, Color(accent_color.r, accent_color.g, accent_color.b, 0.3), 24)
+	detail_s.shadow_size = 16
+	detail_s.shadow_color = Color(0, 0, 0, 0.08)
+	detail_s.shadow_offset = Vector2(0, 6)
+	detail_s.border_width_left = 1; detail_s.border_width_right = 1
+	detail_s.border_width_top = 4; detail_s.border_width_bottom = 1
+	detail_panel.add_theme_stylebox_override("panel", detail_s)
+
+	# Start practice button styling
+	var sp_n := _flat(theme_color, accent_color, 16)
+	sp_n.border_width_left = 1; sp_n.border_width_right = 1
+	sp_n.border_width_top = 1; sp_n.border_width_bottom = 1
+	sp_n.shadow_size = 8
+	sp_n.shadow_color = Color(theme_color.r, theme_color.g, theme_color.b, 0.25)
+	sp_n.shadow_offset = Vector2(0, 3)
+
+	var sp_h := _flat(theme_color.lightened(0.12), Color.WHITE, 16)
+	sp_h.border_width_left = 1; sp_h.border_width_right = 1
+	sp_h.border_width_top = 1; sp_h.border_width_bottom = 1
+	sp_h.shadow_size = 8
+	sp_h.shadow_color = Color(theme_color.r, theme_color.g, theme_color.b, 0.35)
+
+	var sp_p := _flat(theme_color.darkened(0.12), accent_color, 16)
+	
+	btn_start_practice.add_theme_stylebox_override("normal", sp_n)
+	btn_start_practice.add_theme_stylebox_override("hover", sp_h)
+	btn_start_practice.add_theme_stylebox_override("pressed", sp_p)
+	btn_start_practice.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn_start_practice.add_theme_color_override("font_color", Color.WHITE)
+	btn_start_practice.add_theme_color_override("font_hover_color", Color.WHITE)
+	btn_start_practice.add_theme_color_override("font_pressed_color", Color.WHITE)
 
 func _style_filter_btn(btn: Button, active: bool) -> void:
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
@@ -409,6 +450,12 @@ func _connect_events() -> void:
 	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
 		_make_btn_bouncy(btn)
 
+	btn_start_practice.pressed.connect(func() -> void:
+		if not selected_song_data.is_empty():
+			_on_play_song(selected_song_data)
+	)
+	_make_btn_bouncy(btn_start_practice)
+
 func _set_filter(filter_name: String) -> void:
 	current_filter = filter_name
 	_style_filter_btn(btn_all, current_filter == "all")
@@ -419,11 +466,17 @@ func _set_filter(filter_name: String) -> void:
 
 # ─── Populate Song Cards ──────────────────────────────────────────────────────
 func _populate_songs() -> void:
+	# Reset selected card reference
+	selected_card_node = null
+	
 	# Clear grid
 	for child in songs_grid.get_children():
 		child.queue_free()
 
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	
+	var first_card : PanelContainer = null
+	var first_song : Dictionary = {}
 
 	for song in SONGS_DATA:
 		# Filter by instrument selection
@@ -438,6 +491,19 @@ func _populate_songs() -> void:
 			
 		var card := _create_song_card(song)
 		songs_grid.add_child(card)
+		
+		if first_card == null:
+			first_card = card
+			first_song = song
+
+	# Auto-select first song on desktop if available
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
+	if not is_mobile and first_card != null:
+		# Wait for card to be ready in tree before modifying styles
+		_select_song(first_song, first_card)
+	elif not is_mobile:
+		_clear_details()
 
 func _create_song_card(song: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
@@ -464,6 +530,18 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	card.add_theme_stylebox_override("panel", card_style)
 	card.pivot_offset = Vector2(200, 75)
 	card.custom_minimum_size = Vector2(0, 130)
+
+	card.set_meta("song_data", song)
+	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	card.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			var size = get_viewport().size
+			var is_mobile = size.x < size.y or size.x < 768
+			if is_mobile:
+				_on_play_song(song)
+			else:
+				_select_song(song, card)
+	)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)
@@ -625,27 +703,28 @@ func _on_play_song(song: Dictionary) -> void:
 	SecureDataManager.data["selected_instrument"] = song.instrument
 	SecureDataManager.save_data()
 	
+	var typed_sheet : Array[String] = []
+	for note in song.sheet:
+		typed_sheet.append(str(note))
+	
 	# Transition dynamic values to practice room
-	var sheet_typed: Array[String] = []
-	sheet_typed.assign(song.sheet)
-
 	if song.instrument == "dan_tranh":
 		var pr_script = load("res://scripts/PracticeRoom.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = sheet_typed
+			pr_script.current_song_sheet = typed_sheet
 		_fade_to("res://scenes/PracticeRoom.tscn")
 	elif song.instrument == "dan_bau":
 		var pr_script = load("res://scripts/PracticeDanBau.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = sheet_typed
+			pr_script.current_song_sheet = typed_sheet
 		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		var pr_script = load("res://scripts/PracticeSaoTruc.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = sheet_typed
+			pr_script.current_song_sheet = typed_sheet
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
 func _go_back() -> void:
@@ -668,6 +747,9 @@ func _on_viewport_size_changed() -> void:
 	
 	bottom_bar.visible = is_mobile
 	songs_grid.columns = 1 if is_mobile else 2
+	
+	if detail_panel:
+		detail_panel.visible = not is_mobile
 	
 	# Adjust margin containers dynamically
 	var top_m := $Root/TopBar/TopM as MarginContainer
@@ -734,3 +816,139 @@ func _make_btn_bouncy(btn: Button) -> void:
 		var t := create_tween()
 		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+# ─── Song Preview & Detail Helpers ─────────────────────────────────────────────
+func _clear_details() -> void:
+	selected_song_data = {}
+	selected_card_node = null
+	detail_title.text = "Không có bài hát"
+	detail_desc.text = "Vui lòng điều chỉnh bộ lọc hoặc từ khóa tìm kiếm."
+	for child in detail_tags.get_children():
+		child.queue_free()
+	for child in notes_hbox.get_children():
+		child.queue_free()
+	btn_start_practice.disabled = true
+	btn_start_practice.text = "KHÔNG THỂ LUYỆN TẬP"
+
+func _select_song(song: Dictionary, card: PanelContainer) -> void:
+	selected_song_data = song
+	
+	# Update card highlight
+	if selected_card_node != null and is_instance_valid(selected_card_node):
+		# Reset previous card to normal style
+		var prev_song = selected_card_node.get_meta("song_data") as Dictionary
+		_style_card_border(selected_card_node, prev_song, false)
+		
+	selected_card_node = card
+	if selected_card_node != null and is_instance_valid(selected_card_node):
+		_style_card_border(selected_card_node, song, true)
+		
+	# Update Detail Panel info
+	detail_title.text = song.title
+	detail_desc.text = song.desc
+	btn_start_practice.disabled = false
+	btn_start_practice.text = "VÀO LUYỆN TẬP"
+	
+	# Update dynamic tags in details panel
+	for child in detail_tags.get_children():
+		child.queue_free()
+		
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	
+	if selected_inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = C_JADE_LIGHT
+	elif selected_inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0)
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+		
+	# Instrument Tag
+	var inst_pill := PanelContainer.new()
+	var inst_bg := C_GOLD
+	if song.instrument == "dan_tranh": inst_bg = C_GOLD
+	elif song.instrument == "sao_truc": inst_bg = C_JADE
+	elif song.instrument == "dan_bau": inst_bg = Color(0.55, 0.45, 0.80, 1.0)
+	inst_pill.add_theme_stylebox_override("panel", _flat(inst_bg, Color(0,0,0,0), 6))
+	var inst_lbl := Label.new()
+	inst_lbl.text = song.instrument_label
+	inst_lbl.add_theme_font_size_override("font_size", 11)
+	inst_lbl.add_theme_color_override("font_color", Color.WHITE)
+	inst_pill.add_child(inst_lbl)
+	detail_tags.add_child(inst_pill)
+	
+	# Difficulty Tag
+	var diff_pill := PanelContainer.new()
+	diff_pill.add_theme_stylebox_override("panel", _flat(song.difficulty_color, Color(0,0,0,0), 6))
+	var diff_lbl := Label.new()
+	diff_lbl.text = song.difficulty
+	diff_lbl.add_theme_font_size_override("font_size", 11)
+	diff_lbl.add_theme_color_override("font_color", Color.WHITE)
+	diff_pill.add_child(diff_lbl)
+	detail_tags.add_child(diff_pill)
+	
+	# XP Tag
+	var xp_pill := PanelContainer.new()
+	xp_pill.add_theme_stylebox_override("panel", _flat(Color(theme_color.r, theme_color.g, theme_color.b, 0.08), Color(0,0,0,0), 6))
+	var xp_lbl := Label.new()
+	xp_lbl.text = "+%d XP" % song.xp
+	xp_lbl.add_theme_font_size_override("font_size", 11)
+	xp_lbl.add_theme_color_override("font_color", theme_color)
+	xp_pill.add_child(xp_lbl)
+	detail_tags.add_child(xp_pill)
+	
+	# Update Sheet notes preview circles
+	for child in notes_hbox.get_children():
+		child.queue_free()
+		
+	for note in song.sheet:
+		var note_circle := PanelContainer.new()
+		note_circle.custom_minimum_size = Vector2(46, 46)
+		note_circle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		var circle_style := _flat(Color(1.0, 1.0, 1.0, 0.95), Color(accent_color.r, accent_color.g, accent_color.b, 0.4), 23)
+		circle_style.border_width_left = 2; circle_style.border_width_right = 2
+		circle_style.border_width_top = 2; circle_style.border_width_bottom = 2
+		note_circle.add_theme_stylebox_override("panel", circle_style)
+		
+		var note_lbl := Label.new()
+		note_lbl.text = str(note)
+		note_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		note_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		var font_bold = load("res://assets/fonts/Lora-Bold.ttf") as Font
+		if font_bold:
+			note_lbl.add_theme_font_override("font", font_bold)
+		note_lbl.add_theme_font_size_override("font_size", 14)
+		note_lbl.add_theme_color_override("font_color", C_TEXT)
+		note_circle.add_child(note_lbl)
+		
+		notes_hbox.add_child(note_circle)
+
+func _style_card_border(card: PanelContainer, song: Dictionary, is_selected: bool) -> void:
+	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	
+	if selected_inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = C_JADE_LIGHT
+	elif selected_inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0)
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+		
+	var border_color = theme_color if is_selected else Color(accent_color.r, accent_color.g, accent_color.b, 0.22)
+	var border_width = 3 if is_selected else 1
+	var shadow_size = 18 if is_selected else 12
+	var shadow_alpha = 0.12 if is_selected else 0.05
+	
+	var card_style := _flat(C_CARD, border_color, 20)
+	card_style.shadow_size = shadow_size
+	card_style.shadow_color = Color(0, 0, 0, shadow_alpha)
+	card_style.shadow_offset = Vector2(0, 5 if is_selected else 4)
+	card_style.border_width_left = border_width
+	card_style.border_width_right = border_width
+	card_style.border_width_top = 4 if is_selected else 3
+	card_style.border_width_bottom = border_width
+	
+	card.add_theme_stylebox_override("panel", card_style)
