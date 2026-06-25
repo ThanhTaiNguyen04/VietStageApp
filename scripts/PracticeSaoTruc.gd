@@ -85,6 +85,15 @@ var _zither_streams : Dictionary = {}
 var note_statuses : Array[String] = []
 var note_visuals : Dictionary = {}
 var _intro_audio_manager : AIAudioManager = null
+var _current_intro_step := 0
+var _intro_slides : Array = []
+var _intro_hole_cols : Array[VBoxContainer] = []
+var _intro_overlay : ColorRect = null
+var _intro_text_lbl : Label = null
+var _intro_flute_body : Control = null
+var _intro_next_btn : Button = null
+var _intro_listen_btn : Button = null
+var _intro_active_note_display_lbl : Label = null
 var _active_note_is_correct := false
 var _active_note_is_heard := false
 const LANES := ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si", "Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"]
@@ -2434,71 +2443,189 @@ func _build_notation_track() -> void:
 		time_beats += duration
 
 func _show_introduction_overlay() -> void:
-	# 1. Overlay container
-	var overlay := ColorRect.new()
-	overlay.name = "IntroOverlay"
-	overlay.color = Color("#0c150ffa") # Deep dark jade green background
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(overlay)
+	_current_intro_step = 0
+	_intro_hole_cols.clear()
+	
+	# Initialize slide data
+	_intro_slides = [
+		{
+			"text": "Chào mừng con đến với bài học hơi thở và che lỗ cơ bản của sáo trúc. Sáo trúc là một nhạc cụ thổi hơi vô cùng độc đáo của dân tộc ta.",
+			"voice": "Chào mừng con đến với bài học hơi thở và che lỗ cơ bản của sáo trúc. Sáo trúc là một nhạc cụ thổi hơi vô cùng độc đáo của dân tộc ta.",
+			"fingering": [true, true, true, true, true, true],
+			"active_hole": -1,
+			"note_to_play": ""
+		},
+		{
+			"text": "Sáo trúc của chúng ta có sáu lỗ bấm chính. Cây sáo C5 Đô này có thể thổi được 15 âm từ Đô 1 đến Đô 3. Khi bịt kín toàn bộ cả sáu lỗ, ta sẽ thổi được nốt Đô (C5) trầm nhất.",
+			"voice": "Sáo trúc của chúng ta có sáu lỗ bấm chính. Cây sáo Đô năm này có thể thổi được mười lăm âm từ Đô một đến Đô ba. Khi bịt kín toàn bộ cả sáu lỗ, ta sẽ thổi được nốt Đô trầm nhất.",
+			"fingering": [true, true, true, true, true, true],
+			"active_hole": -1,
+			"note_to_play": "Đô (C5)"
+		},
+		{
+			"text": "Mở lỗ số 6 (ngoài cùng bên phải), năm lỗ còn lại bịt kín, ta thổi được nốt Rê (D5).",
+			"voice": "Mở lỗ số sáu ngoài cùng bên phải, năm lỗ còn lại bịt kín, ta thổi được nốt Rê.",
+			"fingering": [true, true, true, true, true, false],
+			"active_hole": 5,
+			"note_to_play": "Rê (D5)"
+		},
+		{
+			"text": "Tiếp tục mở lỗ số 5, bốn lỗ bên trái bịt kín, ta thổi được nốt Mi (E5).",
+			"voice": "Tiếp tục mở lỗ số năm, bốn lỗ bên trái bịt kín, ta thổi được nốt Mi.",
+			"fingering": [true, true, true, true, false, false],
+			"active_hole": 4,
+			"note_to_play": "Mi (E5)"
+		},
+		{
+			"text": "Mở lỗ số 4, ba lỗ bên trái bịt kín, ta thổi được nốt Fa (F5).",
+			"voice": "Mở lỗ số bốn, ba lỗ bên trái bịt kín, ta thổi được nốt Fa.",
+			"fingering": [true, true, true, false, false, false],
+			"active_hole": 3,
+			"note_to_play": "Fa (F5)"
+		},
+		{
+			"text": "Mở lỗ số 3, hai lỗ bên trái bịt kín, ta thổi được nốt Sol (G5).",
+			"voice": "Mở lỗ số ba, hai lỗ bên trái bịt kín, ta thổi được nốt Sol.",
+			"fingering": [true, true, false, false, false, false],
+			"active_hole": 2,
+			"note_to_play": "Sol (G5)"
+		},
+		{
+			"text": "Mở lỗ số 2, chỉ bịt kín lỗ số 1 bên trái, ta thổi được nốt La (A5).",
+			"voice": "Mở lỗ số hai, chỉ bịt kín lỗ số một bên trái, ta thổi được nốt La.",
+			"fingering": [true, false, false, false, false, false],
+			"active_hole": 1,
+			"note_to_play": "La (A5)"
+		},
+		{
+			"text": "Cuối cùng, mở lỗ số 1 - tức là mở toàn bộ cả sáu lỗ sáo, ta sẽ thổi được nốt Si (B5).",
+			"voice": "Cuối cùng, mở lỗ số một, tức là mở toàn bộ cả sáu lỗ sáo, ta sẽ thổi được nốt Si.",
+			"fingering": [false, false, false, false, false, false],
+			"active_hole": 0,
+			"note_to_play": "Si (B5)"
+		},
+		{
+			"text": "Rất giỏi! Con đã nắm vững vị trí bấm của sáu nốt sáo cơ bản rồi đấy. Hãy bấm Bắt đầu luyện tập để thử sức nhé!",
+			"voice": "Rất giỏi! Con đã nắm vững vị trí bấm của sáu nốt sáo cơ bản rồi đấy. Hãy bấm Bắt đầu luyện tập để thử sức nhé!",
+			"fingering": [false, false, false, false, false, false],
+			"active_hole": -1,
+			"note_to_play": ""
+		}
+	]
+
+	# 1. Fullscreen dark jade background
+	_intro_overlay = ColorRect.new()
+	_intro_overlay.name = "IntroOverlay"
+	_intro_overlay.color = Color("#07120aef") # Very dark jade green
+	_intro_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_intro_overlay)
 	
 	# Load premium fonts
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
 	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	
-	# 2. Margin Container
+	# 2. Main Margin Container
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 60)
 	margin.add_theme_constant_override("margin_right", 60)
 	margin.add_theme_constant_override("margin_top", 40)
 	margin.add_theme_constant_override("margin_bottom", 40)
-	overlay.add_child(margin)
+	_intro_overlay.add_child(margin)
 	
-	# 3. Main VBox
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 24)
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	margin.add_child(vbox)
+	# 3. Main HBox to split Left (Mai) and Right (Flute + Navigation)
+	var main_hbox := HBoxContainer.new()
+	main_hbox.add_theme_constant_override("separation", 50)
+	main_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	margin.add_child(main_hbox)
 	
-	# 4. Title
+	# ─── LEFT PANEL: Teacher Mai & Speech Bubble ───
+	var left_vbox := VBoxContainer.new()
+	left_vbox.custom_minimum_size = Vector2(350, 0)
+	left_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	left_vbox.add_theme_constant_override("separation", 20)
+	main_hbox.add_child(left_vbox)
+	
+	# Teacher Portrait
+	var portrait := TextureRect.new()
+	portrait.texture = load("res://assets/textures/virtual_artist_mai.png")
+	portrait.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.custom_minimum_size = Vector2(240, 360)
+	left_vbox.add_child(portrait)
+	
+	# Speech Bubble Panel Container
+	var bubble := PanelContainer.new()
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = C_BG_BAR
+	bs.border_color = C_GOLD
+	bs.border_width_left = 2; bs.border_width_right = 2
+	bs.border_width_top = 2; bs.border_width_bottom = 2
+	bs.corner_radius_top_left = 16; bs.corner_radius_top_right = 16
+	bs.corner_radius_bottom_left = 16; bs.corner_radius_bottom_right = 16
+	bubble.add_theme_stylebox_override("panel", bs)
+	left_vbox.add_child(bubble)
+	
+	var bubble_margin := MarginContainer.new()
+	bubble_margin.add_theme_constant_override("margin_left", 16)
+	bubble_margin.add_theme_constant_override("margin_right", 16)
+	bubble_margin.add_theme_constant_override("margin_top", 16)
+	bubble_margin.add_theme_constant_override("margin_bottom", 16)
+	bubble.add_child(bubble_margin)
+	
+	_intro_text_lbl = Label.new()
+	_intro_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_intro_text_lbl.custom_minimum_size = Vector2(300, 100)
+	if f_body: _intro_text_lbl.add_theme_font_override("font", f_body)
+	_intro_text_lbl.add_theme_font_size_override("font_size", 14)
+	_intro_text_lbl.add_theme_color_override("font_color", C_TEXT)
+	bubble_margin.add_child(_intro_text_lbl)
+	
+	# ─── RIGHT PANEL: Flute & Navigation ───
+	var right_vbox := VBoxContainer.new()
+	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	right_vbox.add_theme_constant_override("separation", 36)
+	main_hbox.add_child(right_vbox)
+	
+	# Cinematic Title
 	var title := Label.new()
-	title.text = "HƯỚNG DẪN SỬ DỤNG SÁO TRÚC"
+	title.text = "BÀI HỌC CƠ BẢN: SÁO TRÚC 6 LỖ"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if f_title: title.add_theme_font_override("font", f_title)
-	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", C_GOLD)
-	vbox.add_child(title)
+	right_vbox.add_child(title)
+
+	# Active note highlight display
+	_intro_active_note_display_lbl = Label.new()
+	_intro_active_note_display_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if f_body_bold: _intro_active_note_display_lbl.add_theme_font_override("font", f_body_bold)
+	_intro_active_note_display_lbl.add_theme_font_size_override("font_size", 22)
+	_intro_active_note_display_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	right_vbox.add_child(_intro_active_note_display_lbl)
 	
-	# 5. Subtitle
-	var subtitle := Label.new()
-	subtitle.text = "Tìm hiểu vị trí các lỗ bấm và nốt nhạc trên sáo trúc trước khi bắt đầu bài học"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if f_body: subtitle.add_theme_font_override("font", f_body)
-	subtitle.add_theme_font_size_override("font_size", 15)
-	subtitle.add_theme_color_override("font_color", C_CREAM)
-	vbox.add_child(subtitle)
-	
-	# 6. Flute Display Container
+	# Flute Display Container
 	var flute_area := Control.new()
-	flute_area.custom_minimum_size = Vector2(800, 150)
+	flute_area.custom_minimum_size = Vector2(760, 160)
 	flute_area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vbox.add_child(flute_area)
+	right_vbox.add_child(flute_area)
 	
 	# Flute Body cylinder
-	var f_body_ctrl = Control.new()
-	f_body_ctrl.set_script(load("res://scripts/FluteBody.gd"))
-	f_body_ctrl.custom_minimum_size = Vector2(700, 36)
-	f_body_ctrl.size = Vector2(700, 36)
-	f_body_ctrl.position = Vector2(50, 90)
-	flute_area.add_child(f_body_ctrl)
+	_intro_flute_body = Control.new()
+	_intro_flute_body.set_script(load("res://scripts/FluteBody.gd"))
+	_intro_flute_body.custom_minimum_size = Vector2(680, 32)
+	_intro_flute_body.size = Vector2(680, 32)
+	_intro_flute_body.position = Vector2(40, 95)
+	flute_area.add_child(_intro_flute_body)
 	
 	# Hole columns row
 	var hole_row = HBoxContainer.new()
 	hole_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	hole_row.add_theme_constant_override("separation", 36)
-	hole_row.size = Vector2(500, 120)
-	hole_row.position = Vector2(150, 20)
+	hole_row.add_theme_constant_override("separation", 34)
+	hole_row.size = Vector2(480, 120)
+	hole_row.position = Vector2(140, 20)
 	flute_area.add_child(hole_row)
 	
 	var hole_notes = ["Si", "La", "Sol", "Fa", "Mi", "Rê"]
@@ -2507,30 +2634,33 @@ func _show_introduction_overlay() -> void:
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.add_theme_constant_override("separation", 6)
 		
+		# Note label
 		var note_lbl := Label.new()
 		note_lbl.text = hole_notes[i]
 		note_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		if f_body_bold: note_lbl.add_theme_font_override("font", f_body_bold)
-		note_lbl.add_theme_font_size_override("font_size", 16)
+		note_lbl.add_theme_font_size_override("font_size", 15)
 		note_lbl.add_theme_color_override("font_color", C_GOLD)
 		col.add_child(note_lbl)
 		
+		# Connector line
 		var line := ColorRect.new()
 		line.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
 		line.custom_minimum_size = Vector2(2, 48)
 		line.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.add_child(line)
 		
+		# Circular Hole PanelContainer
 		var hole := PanelContainer.new()
-		hole.custom_minimum_size = Vector2(36, 36)
+		hole.custom_minimum_size = Vector2(32, 32)
 		
 		var hs := StyleBoxFlat.new()
 		hs.bg_color = Color("#1e110b")
 		hs.border_color = C_GOLD
 		hs.border_width_left = 2; hs.border_width_right = 2
 		hs.border_width_top = 2; hs.border_width_bottom = 2
-		hs.corner_radius_top_left = 18; hs.corner_radius_top_right = 18
-		hs.corner_radius_bottom_left = 18; hs.corner_radius_bottom_right = 18
+		hs.corner_radius_top_left = 16; hs.corner_radius_top_right = 16
+		hs.corner_radius_bottom_left = 16; hs.corner_radius_bottom_right = 16
 		hole.add_theme_stylebox_override("panel", hs)
 		
 		var num_lbl := Label.new()
@@ -2538,83 +2668,223 @@ func _show_introduction_overlay() -> void:
 		num_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		num_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		if f_body: num_lbl.add_theme_font_override("font", f_body)
-		num_lbl.add_theme_font_size_override("font_size", 12)
+		num_lbl.add_theme_font_size_override("font_size", 11)
 		num_lbl.add_theme_color_override("font_color", C_CREAM)
 		hole.add_child(num_lbl)
 		col.add_child(hole)
 		
 		hole_row.add_child(col)
+		_intro_hole_cols.append(col)
 		
-	# 7. Tip Label
-	var tip_lbl := Label.new()
-	tip_lbl.text = "Mẹo: Bịt kín cả 6 lỗ sẽ tạo nốt Đô. Khi mở dần từng lỗ từ phải qua trái (từ lỗ 6 đến lỗ 1),\nta sẽ lần lượt thổi được các nốt cao dần: Rê, Mi, Fa, Sol, La, và Si."
-	tip_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if f_body: tip_lbl.add_theme_font_override("font", f_body)
-	tip_lbl.add_theme_font_size_override("font_size", 14)
-	tip_lbl.add_theme_color_override("font_color", Color("#d5ebd5"))
-	vbox.add_child(tip_lbl)
+	# Navigation HBox Container
+	var btn_hbox := HBoxContainer.new()
+	btn_hbox.add_theme_constant_override("separation", 20)
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	right_vbox.add_child(btn_hbox)
+
+	# Listen Button (Nghe Thử)
+	_intro_listen_btn = Button.new()
+	_intro_listen_btn.text = "🔊 NGHE THỬ"
+	_intro_listen_btn.custom_minimum_size = Vector2(180, 48)
+	if f_body_bold: _intro_listen_btn.add_theme_font_override("font", f_body_bold)
+	_intro_listen_btn.add_theme_font_size_override("font_size", 15)
+	_intro_listen_btn.add_theme_color_override("font_color", C_CREAM)
 	
-	# 8. Start Button
-	var btn_start := Button.new()
-	btn_start.text = "BẮT ĐẦU LUYỆN TẬP"
-	btn_start.custom_minimum_size = Vector2(250, 52)
-	btn_start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if f_body_bold: btn_start.add_theme_font_override("font", f_body_bold)
-	btn_start.add_theme_font_size_override("font_size", 16)
-	btn_start.add_theme_color_override("font_color", C_CREAM)
+	var sb_listen_normal := StyleBoxFlat.new()
+	sb_listen_normal.bg_color = Color("#091b10") # Dark jade green
+	sb_listen_normal.border_color = C_GOLD
+	sb_listen_normal.border_width_left = 2; sb_listen_normal.border_width_right = 2
+	sb_listen_normal.border_width_top = 2; sb_listen_normal.border_width_bottom = 2
+	sb_listen_normal.corner_radius_top_left = 10; sb_listen_normal.corner_radius_top_right = 10
+	sb_listen_normal.corner_radius_bottom_left = 10; sb_listen_normal.corner_radius_bottom_right = 10
 	
-	# Style the start button beautifully
+	var sb_listen_hover := StyleBoxFlat.new()
+	sb_listen_hover.bg_color = Color("#11301c") # Lighter jade
+	sb_listen_hover.border_color = C_GOLD_LIGHT
+	sb_listen_hover.border_width_left = 2; sb_listen_hover.border_width_right = 2
+	sb_listen_hover.border_width_top = 2; sb_listen_hover.border_width_bottom = 2
+	sb_listen_hover.corner_radius_top_left = 10; sb_listen_hover.corner_radius_top_right = 10
+	sb_listen_hover.corner_radius_bottom_left = 10; sb_listen_hover.corner_radius_bottom_right = 10
+	
+	_intro_listen_btn.add_theme_stylebox_override("normal", sb_listen_normal)
+	_intro_listen_btn.add_theme_stylebox_override("hover", sb_listen_hover)
+	_intro_listen_btn.add_theme_stylebox_override("pressed", sb_listen_normal)
+	_intro_listen_btn.pressed.connect(func() -> void:
+		if _current_intro_step < _intro_slides.size():
+			var slide = _intro_slides[_current_intro_step]
+			var note_to_play : String = slide.get("note_to_play", "")
+			if note_to_play != "":
+				var note_key = note_to_play.split(" ")[0]
+				_play_intro_flute_sound_briefly(note_key, -3.0)
+	)
+	btn_hbox.add_child(_intro_listen_btn)
+	_make_button_bouncy(_intro_listen_btn)
+
+	# Next / Understood Button
+	_intro_next_btn = Button.new()
+	_intro_next_btn.text = "ĐÃ HIỂU ➔"
+	_intro_next_btn.custom_minimum_size = Vector2(220, 48)
+	if f_body_bold: _intro_next_btn.add_theme_font_override("font", f_body_bold)
+	_intro_next_btn.add_theme_font_size_override("font_size", 15)
+	_intro_next_btn.add_theme_color_override("font_color", C_CREAM)
+	
 	var sb_normal := StyleBoxFlat.new()
 	sb_normal.bg_color = C_RED_SON
 	sb_normal.border_color = C_GOLD
 	sb_normal.border_width_left = 2; sb_normal.border_width_right = 2
 	sb_normal.border_width_top = 2; sb_normal.border_width_bottom = 2
-	sb_normal.corner_radius_top_left = 12; sb_normal.corner_radius_top_right = 12
-	sb_normal.corner_radius_bottom_left = 12; sb_normal.corner_radius_bottom_right = 12
+	sb_normal.corner_radius_top_left = 10; sb_normal.corner_radius_top_right = 10
+	sb_normal.corner_radius_bottom_left = 10; sb_normal.corner_radius_bottom_right = 10
 	
 	var sb_hover := StyleBoxFlat.new()
 	sb_hover.bg_color = C_RED_SON.lightened(0.12)
 	sb_hover.border_color = C_GOLD_LIGHT
 	sb_hover.border_width_left = 2; sb_hover.border_width_right = 2
 	sb_hover.border_width_top = 2; sb_hover.border_width_bottom = 2
-	sb_hover.corner_radius_top_left = 12; sb_hover.corner_radius_top_right = 12
-	sb_hover.corner_radius_bottom_left = 12; sb_hover.corner_radius_bottom_right = 12
+	sb_hover.corner_radius_top_left = 10; sb_hover.corner_radius_top_right = 10
+	sb_hover.corner_radius_bottom_left = 10; sb_hover.corner_radius_bottom_right = 10
 	
-	btn_start.add_theme_stylebox_override("normal", sb_normal)
-	btn_start.add_theme_stylebox_override("hover", sb_hover)
-	btn_start.add_theme_stylebox_override("pressed", sb_normal)
+	_intro_next_btn.add_theme_stylebox_override("normal", sb_normal)
+	_intro_next_btn.add_theme_stylebox_override("hover", sb_hover)
+	_intro_next_btn.add_theme_stylebox_override("pressed", sb_normal)
+	_intro_next_btn.pressed.connect(_on_intro_next_pressed)
+	btn_hbox.add_child(_intro_next_btn)
+	_make_button_bouncy(_intro_next_btn)
 	
-	btn_start.pressed.connect(func() -> void:
-		if _intro_audio_manager:
-			_intro_audio_manager.audio_player.stop()
-		
-		# Bounce effect
-		var bt := create_tween()
-		bt.tween_property(btn_start, "scale", Vector2(0.95, 0.95), 0.08)
-		bt.tween_property(btn_start, "scale", Vector2.ONE, 0.12)
-		bt.tween_callback(func() -> void:
-			var ot := create_tween()
-			ot.tween_property(overlay, "modulate:a", 0.0, 0.25)
-			ot.tween_callback(func() -> void:
-				overlay.queue_free()
-			)
-		)
-	)
-	vbox.add_child(btn_start)
-	
-	# 9. Voice Guidance
-	var guide_text = (
-		"Chào mừng bạn đến với bài học hơi thở và che lỗ cơ bản. " +
-		"Sáo trúc có sáu lỗ bấm chính. Khi bịt kín tất cả các lỗ, ta sẽ được nốt Đô. " +
-		"Mở dần từ phải qua trái để thổi các nốt Rê, Mi, Fa, Sol, La, và Si. " +
-		"Hãy quan sát hình vẽ và bấm Bắt đầu luyện tập để học thổi nhé!"
-	)
+	# Instantiate Voice Manager
 	_intro_audio_manager = AIAudioManager.new()
 	_intro_audio_manager.name = "IntroAudioManager"
 	add_child(_intro_audio_manager)
 	
-	# Play after overlay renders
-	get_tree().create_timer(0.5).timeout.connect(func() -> void:
-		if is_instance_valid(_intro_audio_manager):
-			_intro_audio_manager.speak_vietnamese(guide_text)
+	# Update the first step
+	_update_cinematic_step(0)
+
+func _on_intro_next_pressed() -> void:
+	if _current_intro_step < _intro_slides.size() - 1:
+		_update_cinematic_step(_current_intro_step + 1)
+	else:
+		if _intro_audio_manager:
+			_intro_audio_manager.audio_player.stop()
+			_intro_audio_manager.queue_free()
+			_intro_audio_manager = null
+		if _active_player and is_instance_valid(_active_player):
+			_active_player.stop()
+			_active_player.queue_free()
+			_active_player = null
+		var t := create_tween()
+		t.tween_property(_intro_overlay, "modulate:a", 0.0, 0.25)
+		t.tween_callback(func() -> void:
+			_intro_overlay.queue_free()
+			_intro_overlay = null
+		)
+
+func _play_intro_flute_sound_briefly(note: String, volume: float = -12.0) -> void:
+	if not _flute_streams.has(note): return
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stop()
+		_active_player.queue_free()
+		_active_player = null
+		
+	_active_player = AudioStreamPlayer.new()
+	_active_player.stream = _flute_streams[note]
+	_active_player.volume_db = volume
+	add_child(_active_player)
+	_active_player.play()
+	
+	var ft = create_tween()
+	ft.tween_interval(2.2)
+	ft.tween_property(_active_player, "volume_db", -80.0, 0.5)
+	ft.tween_callback(func() -> void:
+		if _active_player and is_instance_valid(_active_player):
+			_active_player.stop()
+			_active_player.queue_free()
+			_active_player = null
 	)
+
+func _update_cinematic_step(step_idx: int) -> void:
+	_current_intro_step = step_idx
+	var slide = _intro_slides[step_idx]
+	_intro_text_lbl.text = slide.text
+	
+	if _intro_audio_manager:
+		_intro_audio_manager.audio_player.stop()
+		_intro_audio_manager.speak_vietnamese(slide.voice)
+		
+	var note_to_play : String = slide.get("note_to_play", "")
+	if note_to_play != "":
+		_intro_listen_btn.visible = true
+		_intro_listen_btn.text = "🔊 NGHE THỬ NỐT " + note_to_play.split(" ")[0].to_upper()
+		_intro_active_note_display_lbl.visible = true
+		_intro_active_note_display_lbl.text = "Âm sắc: " + note_to_play
+		
+		# Auto-play a brief soft sound
+		var note_key = note_to_play.split(" ")[0]
+		_play_intro_flute_sound_briefly(note_key, -14.0)
+	else:
+		_intro_listen_btn.visible = false
+		_intro_active_note_display_lbl.visible = false
+		if _active_player and is_instance_valid(_active_player):
+			_active_player.stop()
+			_active_player.queue_free()
+			_active_player = null
+		
+	if step_idx < _intro_slides.size() - 1:
+		_intro_next_btn.text = "ĐÃ HIỂU ➔"
+	else:
+		_intro_next_btn.text = "BẮT ĐẦU LUYỆN TẬP"
+		
+	if step_idx == 0:
+		_intro_flute_body.modulate.a = 0.0
+		for col in _intro_hole_cols:
+			col.modulate.a = 0.0
+	else:
+		_intro_flute_body.modulate.a = 1.0
+		var fingering = slide.fingering
+		var active_hole = slide.active_hole
+		
+		for i in range(6):
+			var col = _intro_hole_cols[i]
+			col.modulate.a = 1.0
+			
+			var is_covered = fingering[i]
+			var hole = col.get_child(2) as PanelContainer
+			var note_lbl = col.get_child(0) as Label
+			var line = col.get_child(1) as ColorRect
+			
+			var hs = hole.get_theme_stylebox("panel") as StyleBoxFlat
+			if hs:
+				if is_covered:
+					hs.bg_color = C_GOLD
+					hs.border_color = C_GOLD_LIGHT
+				else:
+					hs.bg_color = Color(0.04, 0.02, 0.01)
+					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+					
+			if i == active_hole or (step_idx == 1 and active_hole == -1):
+				if step_idx == 1:
+					note_lbl.visible = false
+					line.visible = false
+				else:
+					note_lbl.visible = true
+					line.visible = true
+					line.color = C_GOLD_LIGHT
+					
+				if hs:
+					hs.border_color = C_GOLD_LIGHT
+					if i == active_hole:
+						hs.bg_color = C_GOLD_LIGHT
+				
+				var ht := create_tween()
+				ht.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.15)
+				ht.tween_property(hole, "scale", Vector2.ONE, 0.15)
+			else:
+				if step_idx == 8:
+					note_lbl.visible = true
+					line.visible = true
+					line.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
+				else:
+					note_lbl.visible = false
+					line.visible = false
+
+
+
