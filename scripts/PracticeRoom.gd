@@ -38,11 +38,9 @@ const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 @onready var dots_hbox    : HBoxContainer = $Root/TopBar/TopM/TopH/DotsHBox
 @onready var _board       : Control       = $Root/StringsBoard/BoardM/BoardVBox/DanTranhBoard
 
-# --- Audio enhancement exports ---
-@export var use_reverb: bool = true          # Hall‑style reverb toggle
-@export_range(0.0, 1.0) var reverb_mix: float = 0.6   # Wet/dry mix for reverb (0 = dry, 1 = fully wet)
-@export_range(-80.0, 0.0) var zither_volume_db: float = -3.0  # Base volume for Zither notes
-@export_range(-80.0, 0.0) var backing_volume_db: float = -8.0  # Volume for backing chords (slightly quieter)
+# --- Audio settings (simpler, no runtime bus creation) ---
+var zither_volume_db: float = -6.0   # Base volume for Zither notes
+var backing_volume_db: float = -28.0  # Volume for backing chords (much quieter)
 
 
 # ─── State ────────────────────────────────────────────────────────────────────
@@ -1060,7 +1058,7 @@ func _toggle_record() -> void:
 		if _board:
 			_board.audio_enabled = true
 
-func _play_zither_sound(string_idx: int, volume: float = -3.0) -> void:
+func _play_zither_sound(string_idx: int, volume: float = -6.0) -> void:
 	if string_idx < 0 or string_idx >= 16:
 		return
 	# Stop any previous player
@@ -1072,23 +1070,20 @@ func _play_zither_sound(string_idx: int, volume: float = -3.0) -> void:
 	var pl := AudioStreamPlayer.new()
 	pl.stream = _string_streams[string_idx]
 	pl.volume_db = volume
-	# Route to Zither bus for effects
-	if AudioServer.get_bus_index("Zither") != -1:
-		pl.bus = "Zither"
+	# Play through Master bus only — no custom bus to avoid saturation
+	pl.bus = "Master"
 	add_child(pl)
 	pl.play()
 	_active_player = pl
 
-	# Sustain then fade — capture `pl` locally so this tween only affects THIS note
-	# (prevents old callbacks from killing the current player when notes change)
+	# Natural fade-out — local capture prevents old tweens killing new player
 	var ft = create_tween()
-	ft.tween_interval(3.0)
-	ft.tween_property(pl, "volume_db", -80.0, 1.0)
+	ft.tween_interval(2.5)
+	ft.tween_property(pl, "volume_db", -80.0, 0.8)
 	ft.tween_callback(func() -> void:
 		if is_instance_valid(pl):
 			pl.stop()
 			pl.queue_free()
-		# Only clear _active_player if it still points to this same player
 		if _active_player == pl:
 			_active_player = null
 	)
@@ -1907,43 +1902,10 @@ func _update_cinematic_step(step_idx: int) -> void:
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 func _setup_audio_buses() -> void:
-	# Ensure Zither bus exists and configure volume
-	var zither_bus = AudioServer.get_bus_index("Zither")
-	if zither_bus == -1:
-		AudioServer.add_bus()
-		zither_bus = AudioServer.get_bus_count() - 1
-		AudioServer.set_bus_name(zither_bus, "Zither")
-	AudioServer.set_bus_volume_db(zither_bus, zither_volume_db)
-
-	# Ensure Backing bus exists and configure volume
-	var backing_bus = AudioServer.get_bus_index("Backing")
-	if backing_bus == -1:
-		AudioServer.add_bus()
-		backing_bus = AudioServer.get_bus_count() - 1
-		AudioServer.set_bus_name(backing_bus, "Backing")
-	AudioServer.set_bus_volume_db(backing_bus, backing_volume_db)
-
-	# Configure reverb effect if enabled
-	if use_reverb:
-		# Create a reverb effect
-		var reverb_effect = AudioEffectReverb.new()
-		# Set wet mix (0 = dry, 1 = fully wet)
-		reverb_effect.wet = reverb_mix
-		# Apply to Zither bus
-		# Clear existing effects on Zither bus
-		while AudioServer.get_bus_effect_count(zither_bus) > 0:
-			AudioServer.remove_bus_effect(zither_bus, 0)
-		AudioServer.add_bus_effect(zither_bus, reverb_effect, 0)
-		# Apply to Backing bus
-		while AudioServer.get_bus_effect_count(backing_bus) > 0:
-			AudioServer.remove_bus_effect(backing_bus, 0)
-		AudioServer.add_bus_effect(backing_bus, reverb_effect, 0)
-	else:
-		# Remove any reverb effects if present
-		while AudioServer.get_bus_effect_count(zither_bus) > 0:
-			AudioServer.remove_bus_effect(zither_bus, 0)
-		while AudioServer.get_bus_effect_count(backing_bus) > 0:
-			AudioServer.remove_bus_effect(backing_bus, 0)
+	# Audio buses are configured in the Godot editor (res://audio_bus_layout.tres)
+	# Runtime bus/reverb creation is disabled to prevent distortion from
+	# accumulated reverb tails across multiple simultaneous players.
+	pass
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg; s.border_color = border
@@ -2151,11 +2113,12 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 	if string_idx < 0 or string_idx >= 16: return
 	var bp := AudioStreamPlayer.new()
 	bp.stream = _string_streams[string_idx]
-	bp.volume_db = volume
+	bp.volume_db = backing_volume_db  # use the configured backing volume
+	bp.bus = "Master"
 	add_child(bp)
 	bp.play()
-	
+
 	var ft = create_tween()
-	ft.tween_interval(2.2)
-	ft.tween_property(bp, "volume_db", -80.0, 0.5)
+	ft.tween_interval(1.5)
+	ft.tween_property(bp, "volume_db", -80.0, 0.4)
 	ft.tween_callback(bp.queue_free)

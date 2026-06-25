@@ -738,9 +738,8 @@ func _play_audio(idx: int, pitch: float) -> void:
 	var pl := AudioStreamPlayer.new()
 	pl.stream      = _streams[idx]
 	pl.pitch_scale = pitch
-	pl.volume_db   = 0.0
-	# Use Zither bus (with reverb) if available, else fallback to Master
-	pl.bus = "Zither" if AudioServer.get_bus_index("Zither") != -1 else "Master"
+	pl.volume_db   = -3.0  # Slightly quieter to avoid clipping with multiple notes
+	pl.bus         = "Master"
 	get_tree().current_scene.add_child(pl)
 	pl.play()
 	_audio_players[idx] = pl
