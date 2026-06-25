@@ -349,6 +349,12 @@ func _build_theme() -> void:
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
 	for c in notes_hbox.get_children(): c.queue_free()
+	
+	var scroll_container := notes_hbox.get_parent() as ScrollContainer
+	if scroll_container:
+		scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+		scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+
 	for i in sheet_notes.size():
 		var note     := sheet_notes[i]
 		var is_active := i == _note_idx
@@ -381,6 +387,20 @@ func _build_notation() -> void:
 			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
 		card.add_child(lbl)
 		notes_hbox.add_child(card)
+
+	# Scroll smoothly to center the active note
+	if scroll_container:
+		var separation := 4.0 # default HBox container separation
+		var active_x := 0.0
+		var active_w := 60.0
+		for j in range(_note_idx):
+			active_x += 60.0 + separation
+			
+		var viewport_w : float = scroll_container.size.x if scroll_container.size.x > 0 else 800.0
+		var target_scroll : float = active_x + (active_w / 2.0) - (viewport_w / 2.0)
+		
+		var tween = create_tween()
+		tween.tween_property(scroll_container, "scroll_horizontal", int(max(0.0, target_scroll)), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _build_dots() -> void:
 	var total := 5

@@ -121,6 +121,24 @@ const SONGS_DATA := [
 		"sheet": ["Đô","Rê","Mi","Sol","Mi","Rê","Đô","Rê","Mi","Rê","Đô"]
 	},
 	{
+		"id": "song_011",
+		"title": "Futari no Kimochi",
+		"desc": "Bản nhạc chủ đề đầy cảm xúc trong phim hoạt hình InuYasha dành cho Sáo Trúc.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0), # Gold
+		"genre": "tru_tinh",
+		"genre_label": "Trữ tình",
+		"xp": 200,
+		"sheet": [
+			"Mi", "Sol", "La", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "Mi",
+			"Mi", "Sol", "La", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "La",
+			"Mi2", "Sol2", "La2", "Sol2", "La2", "Si2", "Sol2", "La2", "Sol2", "Rê2", "Mi2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Si2", "Sol2", "Mi2",
+			"Mi2", "Sol2", "La2", "Sol2", "La2", "Si2", "Sol2", "La2", "Sol2", "Rê2", "Mi2", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "La"
+		]
+	},
+	{
 		"id": "song_009",
 		"title": "Lý Kéo Chài",
 		"desc": "Làn điệu dân ca Nam Bộ mộc mạc rộn rã, phù hợp với tiếng đàn bầu ngân vang.",

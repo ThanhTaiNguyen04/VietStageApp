@@ -39,6 +39,7 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 var _recording   := false
 var _score       := 75.0
 var _sim_timer   := 0.0
+var _ignore_input_timer := 0.0
 var _correct_pitch_hold_time := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
@@ -68,7 +69,15 @@ const FREQS := {
 	"Fa": 349.23, # F4
 	"Sol": 392.00, # G4
 	"La": 440.00, # A4
-	"Si": 493.88  # B4
+	"Si": 493.88,  # B4
+	"Đô2": 523.25, # C5
+	"Rê2": 587.33, # D5
+	"Mi2": 659.25, # E5
+	"Fa2": 698.46, # F5
+	"Sol2": 783.99, # G5
+	"La2": 880.00, # A5
+	"Si2": 987.77,  # B5
+	"Đô3": 1046.50 # C6
 }
 
 const FINGERINGS := {
@@ -78,14 +87,37 @@ const FINGERINGS := {
 	"Fa": [true, true, true, false, false, false],
 	"Sol": [true, true, false, false, false, false],
 	"La": [true, false, false, false, false, false],
-	"Si": [false, false, false, false, false, false]
+	"Si": [false, false, false, false, false, false],
+	"Đô2": [true, true, true, true, true, true],
+	"Rê2": [true, true, true, true, true, false],
+	"Mi2": [true, true, true, true, false, false],
+	"Fa2": [true, true, true, false, false, false],
+	"Sol2": [true, true, false, false, false, false],
+	"La2": [true, false, false, false, false, false],
+	"Si2": [false, false, false, false, false, false],
+	"Đô3": [true, true, true, true, true, true]
 }
 
-const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+const NOTES_VN : Array[String] = [
+	"Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si",
+	"Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"
+]
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
 
-var sheet_notes : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
+var sheet_notes : Array[String] = [
+	"La", "La", "Đô2", "Rê2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2",
+	"Mi2", "Rê2", "Đô2", "La", "Sol", "La", "Đô2",
+	"La", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Mi2",
+	"Mi2", "Rê2", "Đô2", "La", "Sol", "La", "Rê2", "Đô2", "La"
+]
+
+var sheet_durations : Array[float] = [
+	0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.5,
+	0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 2.0,
+	0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.5,
+	0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 2.0
+]
 const HOLES    := 6
 const SPEECHES : Array[String] = [
 	"Thở đều, môi khép nhẹ.",
@@ -97,6 +129,14 @@ const SPEECHES : Array[String] = [
 func _ready() -> void:
 	if current_song_title != "":
 		sheet_notes = current_song_sheet
+		sheet_durations.clear()
+		for note in sheet_notes:
+			sheet_durations.append(1.0)
+	else:
+		if sheet_durations.size() != sheet_notes.size():
+			sheet_durations.clear()
+			for note in sheet_notes:
+				sheet_durations.append(1.0)
 	_generate_streams()
 	_set_labels()
 	_build_theme()
@@ -263,6 +303,12 @@ func _process(delta: float) -> void:
 	if _recording and _lesson_mode == 1:
 		_update_backing_track(delta)
 		
+	if _ignore_input_timer > 0.0:
+		_ignore_input_timer -= delta
+		# Clear detected notes history to avoid carry-over pitch spikes
+		_detected_notes_history.clear()
+		return
+		
 	if _recording:
 		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 		if visualizer and is_instance_valid(visualizer):
@@ -290,7 +336,13 @@ func _process(delta: float) -> void:
 					10: "La#",
 					11: "Si"
 				}
-				var closest_note = note_names.get(note_in_octave, "")
+				var base_note = note_names.get(note_in_octave, "")
+				var closest_note = base_note
+				if not base_note.is_empty():
+					if rounded_midi >= 84: # Octave 6 (C6 starts at MIDI 84)
+						closest_note = base_note + "3"
+					elif rounded_midi >= 72: # Octave 5 (C5 starts at MIDI 72)
+						closest_note = base_note + "2"
 				
 				# Stabilization filter
 				var stable_note = _get_stabilized_note(closest_note)
@@ -317,14 +369,14 @@ func _process(delta: float) -> void:
 						pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 						pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
 					
-					# Enforce breath pressure check for note advancement [28.0, 85.0] (easier for beginners)
+					# Enforce breath pressure check for note advancement [12.0, 85.0] (very easy for beginners)
 					var target_note = sheet_notes[_note_idx]
-					var is_breath_ok = _breath_pressure >= 28.0 and _breath_pressure <= 85.0
+					var is_breath_ok = _breath_pressure >= 12.0 and _breath_pressure <= 85.0
 					
 					if stable_note == target_note and ac < 45.0:
 						if is_breath_ok:
 							_correct_pitch_hold_time += delta
-							if _correct_pitch_hold_time >= 0.6:
+							if _correct_pitch_hold_time >= 0.15:
 								_correct_pitch_hold_time = 0.0
 								_score = clamp(_score + randf_range(2.0, 5.0), 0, 100)
 								_refresh_score()
@@ -338,7 +390,7 @@ func _process(delta: float) -> void:
 									
 									# Play guide for the next note!
 									var next_note = sheet_notes[_note_idx]
-									_play_zither_backing(next_note)
+									_play_flute_sound_guide(next_note)
 									_va_say("Đúng rồi! Hãy tiếp tục thổi nốt mẫu %s nhé." % next_note)
 								else:
 									# Lesson 2: backing track practice
@@ -387,14 +439,14 @@ func _process(delta: float) -> void:
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
 	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "SÁO TRÚC  ·  BÀI 1" if current_song_title == "" else "SÁO TRÚC  ·  BÀI HÁT"
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Hơi thở & che lỗ cơ bản" if current_song_title == "" else current_song_title
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Lý Hoài Nam (Dân ca)" if current_song_title == "" else current_song_title
 	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "20%" if current_song_title == "" else "100%"
 	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
 	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Thổi theo dòng nốt"
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần thổi: Đô"
+	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần thổi: La" if current_song_title == "" else "Nốt cần thổi: " + sheet_notes[0]
 	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
 	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
@@ -540,17 +592,30 @@ func _build_flute() -> void:
 
 func _build_notation() -> void:
 	for c in notes_hbox.get_children(): c.queue_free()
+	
+	# Set HBox spacing explicitly
+	notes_hbox.add_theme_constant_override("separation", 16)
+	
+	# Disable scrollbars on ScrollContainer
+	var scroll_container := notes_hbox.get_parent() as ScrollContainer
+	if scroll_container:
+		scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+		scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+
 	for i in sheet_notes.size():
 		var note     := sheet_notes[i]
 		var is_active := i == _note_idx
 		var is_done   := i < _note_idx
 
+		var duration := sheet_durations[i] if i < sheet_durations.size() else 1.0
+		var card_width := 70.0 + duration * 60.0
+
 		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(70, 70)
+		card.custom_minimum_size = Vector2(card_width, 70.0)
 		var cs := StyleBoxFlat.new()
 		cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
-		cs.corner_radius_top_left = 35; cs.corner_radius_top_right = 35
-		cs.corner_radius_bottom_left = 35; cs.corner_radius_bottom_right = 35
+		cs.corner_radius_top_left = 16; cs.corner_radius_top_right = 16
+		cs.corner_radius_bottom_left = 16; cs.corner_radius_bottom_right = 16
 		if is_active:
 			cs.bg_color     = C_GOLD
 			cs.border_color = Color(1.0, 0.9, 0.6, 1.0)
@@ -572,6 +637,25 @@ func _build_notation() -> void:
 			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
 		card.add_child(lbl)
 		notes_hbox.add_child(card)
+
+	# Scroll smoothly to center the active note
+	if scroll_container:
+		var separation := 16.0
+		var active_x := 0.0
+		var active_w := 70.0
+		for j in range(_note_idx):
+			var dur := sheet_durations[j] if j < sheet_durations.size() else 1.0
+			active_x += (70.0 + dur * 60.0) + separation
+		
+		if _note_idx < sheet_durations.size():
+			var dur := sheet_durations[_note_idx]
+			active_w = 70.0 + dur * 60.0
+			
+		var viewport_w : float = scroll_container.size.x if scroll_container.size.x > 0 else 800.0
+		var target_scroll : float = active_x + (active_w / 2.0) - (viewport_w / 2.0)
+		
+		var tween = create_tween()
+		tween.tween_property(scroll_container, "scroll_horizontal", int(max(0.0, target_scroll)), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _build_dots() -> void:
 	var total := 5
@@ -956,7 +1040,7 @@ func _start_pitch_detection() -> void:
 	if _lesson_mode == 0:
 		_backing_playing = false
 		var first_note = sheet_notes[0] if sheet_notes.size() > 0 else "Đô"
-		_play_zither_backing(first_note)
+		_play_flute_sound_guide(first_note)
 		_va_say("Bài 1: Hãy thổi nốt mẫu %s theo hướng dẫn bấm ngón nhé!" % first_note)
 	else:
 		_backing_playing = true
@@ -1057,20 +1141,13 @@ func _update_breath_physics(delta: float) -> void:
 		fill_style.corner_radius_bottom_left = 6; fill_style.corner_radius_bottom_right = 6
 		breath_progress.add_theme_stylebox_override("fill", fill_style)
 		
-	if _breath_pressure < 15.0:
+	if _breath_pressure < 12.0:
 		breath_status.text = "Chờ hơi thổi..."
 		breath_status.add_theme_color_override("font_color", C_CREAM_DIM)
 		fill_style.bg_color = C_CREAM_DIM
 		if _recording and _active_player and is_instance_valid(_active_player):
 			_active_player.volume_db = -80.0
-	elif _breath_pressure >= 15.0 and _breath_pressure < 40.0:
-		breath_status.text = "Hơi yếu (Hơi thấp)"
-		breath_status.add_theme_color_override("font_color", C_WARN)
-		fill_style.bg_color = C_WARN
-		if _recording and _active_player and is_instance_valid(_active_player):
-			_active_player.volume_db = -12.0
-			_active_player.pitch_scale = 0.985
-	elif _breath_pressure >= 40.0 and _breath_pressure <= 82.0:
+	elif _breath_pressure >= 12.0 and _breath_pressure <= 85.0:
 		breath_status.text = "Ổn định (Đạt chuẩn)"
 		breath_status.add_theme_color_override("font_color", C_GREEN_OK)
 		fill_style.bg_color = C_JADE
@@ -1274,6 +1351,38 @@ func _play_zither_backing(note: String) -> void:
 	pl.play()
 	get_tree().create_timer(2.5).timeout.connect(pl.queue_free)
 
+func _play_flute_sound_guide(note: String) -> void:
+	if not _flute_streams.has(note): return
+	
+	if _active_player and is_instance_valid(_active_player):
+		var old_player = _active_player
+		var fade_t = create_tween()
+		fade_t.tween_property(old_player, "volume_db", -30.0, 0.08)
+		fade_t.tween_callback(func() -> void:
+			old_player.stop()
+			old_player.queue_free()
+		)
+		
+	_active_player = AudioStreamPlayer.new()
+	_active_player.stream = _flute_streams[note]
+	_active_player.volume_db = -3.0 # audible guide sound
+	add_child(_active_player)
+	_active_player.play()
+	
+	# Set ignore input timer to prevent microphone feedback loop
+	_ignore_input_timer = 0.6
+	
+	# Fade out and stop the guide sound after 0.5s
+	var temp_player = _active_player
+	get_tree().create_timer(0.5).timeout.connect(func() -> void:
+		if is_instance_valid(temp_player):
+			var fade = create_tween()
+			fade.tween_property(temp_player, "volume_db", -30.0, 0.1)
+			fade.tween_callback(temp_player.queue_free)
+			if _active_player == temp_player:
+				_active_player = null
+	)
+
 func _build_lesson_beats() -> void:
 	_lesson_beats.clear()
 	var first_note = sheet_notes[0] if sheet_notes.size() > 0 else "Đô"
@@ -1337,5 +1446,5 @@ func _update_backing_track(delta: float) -> void:
 				_update_target_indicator()
 				
 				# Guide sound & prompt
-				_play_zither_backing(beat.note)
+				_play_flute_sound_guide(beat.note)
 				_va_say("Nghe nhạc mẫu. Hãy thổi nốt %s!" % beat.note)
