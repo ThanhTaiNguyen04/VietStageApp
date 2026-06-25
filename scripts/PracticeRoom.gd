@@ -1074,26 +1074,30 @@ func _play_zither_sound(string_idx: int, volume: float = -3.0) -> void:
 		_active_player.stop()
 		_active_player.queue_free()
 		_active_player = null
-	
-	_active_player = AudioStreamPlayer.new()
-	_active_player.stream = _string_streams[string_idx]
-	_active_player.volume_db = volume
+
+	var pl := AudioStreamPlayer.new()
+	pl.stream = _string_streams[string_idx]
+	pl.volume_db = volume
 	# Route to Zither bus for effects
 	if AudioServer.get_bus_index("Zither") != -1:
-		_active_player.bus = "Zither"
-	add_child(_active_player)
-	_active_player.play()
-	
-	# Longer sustain and fade for richer tone
+		pl.bus = "Zither"
+	add_child(pl)
+	pl.play()
+	_active_player = pl
+
+	# Sustain then fade — capture `pl` locally so this tween only affects THIS note
+	# (prevents old callbacks from killing the current player when notes change)
 	var ft = create_tween()
-	ft.tween_interval(3.0)                # keep note longer
-	ft.tween_property(_active_player, "volume_db", -80.0, 1.0)  # slow fade out
+	ft.tween_interval(3.0)
+	ft.tween_property(pl, "volume_db", -80.0, 1.0)
 	ft.tween_callback(func() -> void:
-		if _active_player and is_instance_valid(_active_player):
-			_active_player.stop()
-			_active_player.queue_free()
+		if is_instance_valid(pl):
+			pl.stop()
+			pl.queue_free()
+		# Only clear _active_player if it still points to this same player
+		if _active_player == pl:
 			_active_player = null
-		)
+	)
 
 func _toggle_demo_mode() -> void:
 	_is_demo_mode = not _is_demo_mode
@@ -1843,20 +1847,22 @@ func _play_intro_zither_sound_briefly(string_idx: int, volume: float = -3.0) -> 
 		_active_player.stop()
 		_active_player.queue_free()
 		_active_player = null
-		
-	_active_player = AudioStreamPlayer.new()
-	_active_player.stream = _string_streams[string_idx]
-	_active_player.volume_db = volume
-	add_child(_active_player)
-	_active_player.play()
-	
+
+	var pl := AudioStreamPlayer.new()
+	pl.stream = _string_streams[string_idx]
+	pl.volume_db = volume
+	add_child(pl)
+	pl.play()
+	_active_player = pl
+
 	var ft = create_tween()
 	ft.tween_interval(2.2)
-	ft.tween_property(_active_player, "volume_db", -80.0, 0.5)
+	ft.tween_property(pl, "volume_db", -80.0, 0.5)
 	ft.tween_callback(func() -> void:
-		if _active_player and is_instance_valid(_active_player):
-			_active_player.stop()
-			_active_player.queue_free()
+		if is_instance_valid(pl):
+			pl.stop()
+			pl.queue_free()
+		if _active_player == pl:
 			_active_player = null
 	)
 
