@@ -355,132 +355,7 @@ func _process(delta: float) -> void:
 		_detected_notes_history.clear()
 		return
 		
-	if _recording:
-		var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
-		if visualizer and is_instance_valid(visualizer):
-			var amplitude_db = visualizer.current_amplitude_db
-			var pitch = visualizer.current_pitch
-			
-			if amplitude_db > visualizer.volume_threshold_db and pitch > 0.0:
-				# Convert pitch to MIDI note index
-				var midi = 12.0 * log(pitch / 440.0) / log(2.0) + 69.0
-				var rounded_midi = int(round(midi))
-				var cents = (midi - rounded_midi) * 100.0
-				var note_in_octave = rounded_midi % 12
-				
-				var note_names = {
-					0: "Đô",
-					1: "Đô#",
-					2: "Rê",
-					3: "Rê#",
-					4: "Mi",
-					5: "Fa",
-					6: "Fa#",
-					7: "Sol",
-					8: "Sol#",
-					9: "La",
-					10: "La#",
-					11: "Si"
-				}
-				var base_note = note_names.get(note_in_octave, "")
-				var closest_note = base_note
-				if not base_note.is_empty():
-					if rounded_midi >= 84: # Octave 6 (C6 starts at MIDI 84)
-						closest_note = base_note + "3"
-					elif rounded_midi >= 72: # Octave 5 (C5 starts at MIDI 72)
-						closest_note = base_note + "2"
-				
-				# Stabilization filter
-				var stable_note = _get_stabilized_note(closest_note)
-				
-				if not stable_note.is_empty():
-					# Update UI with stabilized note
-					pitch_note.text = stable_note
-					
-					# Mirror the fingering of the detected note on the screen!
-					_update_virtual_holes(stable_note)
-					
-					# Calculate cents deviation status
-					var ac = absf(cents)
-					if ac < 15.0:
-						pitch_status.text = "Đúng cao độ"
-						pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
-						pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
-					elif ac < 35.0:
-						pitch_status.text = ("Hơi thấp" if cents < 0 else "Hơi cao")
-						pitch_status.add_theme_color_override("font_color", C_WARN)
-						pitch_note.add_theme_color_override("font_color",   C_WARN)
-					else:
-						pitch_status.text = "Lệch cao độ"
-						pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-						pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
-					
-					# Enforce breath pressure check for note advancement [12.0, 85.0] (very easy for beginners)
-					var target_note = sheet_notes[_note_idx]
-					var is_breath_ok = _breath_pressure >= 12.0 and _breath_pressure <= 85.0
-					
-					if stable_note == target_note and ac < 45.0:
-						if is_breath_ok:
-							_correct_pitch_hold_time += delta
-							if _correct_pitch_hold_time >= 0.15:
-								_correct_pitch_hold_time = 0.0
-								_score = clamp(_score + randf_range(2.0, 5.0), 0, 100)
-								_refresh_score()
-								_update_rhythm()
-								
-								if _lesson_mode == 0:
-									# Lesson 1: step-by-step note study
-									_note_idx = (_note_idx + 1) % sheet_notes.size()
-									_build_notation()
-									_update_target_indicator()
-									
-									# Play guide for the next note!
-									var next_note = sheet_notes[_note_idx]
-									_play_flute_sound_guide(next_note)
-									_va_say("Đúng rồi! Hãy tiếp tục thổi nốt mẫu %s nhé." % next_note)
-								else:
-									# Lesson 2: backing track practice
-									# Play zither pluck feedback
-									_play_zither_backing(target_note)
-									_va_say("Chuẩn nốt! Nhạc nền tiếp tục...")
-									
-									# Resume backing track!
-									_backing_playing = true
-									_backing_timer = BEAT_DURATION
-						else:
-							# Correct note but wrong breath pressure
-							_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta * 0.5)
-					else:
-						_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta * 0.5)
-					
-					# Check and give teacher tips (rate limited to once every 2 seconds)
-					_teacher_tip_timer += delta
-					if _teacher_tip_timer >= 2.0:
-						_teacher_tip_timer = 0.0
-						_check_teacher_advice(stable_note, is_breath_ok)
-				else:
-					# Filter stage
-					pitch_note.text = "---"
-					pitch_status.text = "Đang phân tích..."
-					pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
-					pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
-					_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
-					_update_virtual_holes(sheet_notes[_note_idx])
-			else:
-				# Quiet / Silence
-				_get_stabilized_note("")
-				pitch_note.text = "---"
-				pitch_status.text = "Chờ hơi thổi..."
-				pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
-				pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
-				_correct_pitch_hold_time = max(0.0, _correct_pitch_hold_time - delta)
-				_update_virtual_holes(sheet_notes[_note_idx])
-		else:
-			# Fallback to simulation if visualizer doesn't exist
-			_sim_timer += delta
-			if _sim_timer >= 1.2:
-				_sim_timer = 0.0
-				_simulate_tick()
+
 
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
@@ -1070,10 +945,24 @@ func _process_real_audio(delta: float) -> void:
 			_pitch_scores.append(pitch_err)
 			_breath_scores.append(visualizer.current_breath_purity)
 			
-			# Advance note
-			_note_idx = (_note_idx + 1) % sheet_notes.size()
-			_build_notation()
-			_update_target_indicator()
+			# Advance note / sequencer
+			if _lesson_mode == 0:
+				_note_idx = (_note_idx + 1) % sheet_notes.size()
+				_build_notation()
+				_update_target_indicator()
+				
+				# Guide sound & prompt
+				var next_note = sheet_notes[_note_idx]
+				_play_flute_sound_guide(next_note)
+				_va_say("Đúng rồi! Hãy tiếp tục thổi nốt mẫu %s nhé." % next_note)
+			else:
+				# Play zither backing pluck
+				_play_zither_backing(target_note)
+				_va_say("Chuẩn nốt! Nhạc nền tiếp tục...")
+				
+				# Resume backing track!
+				_backing_playing = true
+				_backing_timer = BEAT_DURATION
 			
 			# Dynamic AI scoring
 			var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
@@ -1093,7 +982,6 @@ func _process_real_audio(delta: float) -> void:
 			_covered_states = target_fingering.duplicate()
 			_build_flute()
 			
-			_va_say("Tuyệt vời! Tiếng sáo rất trong.")
 			_eval_cooldown = 1.0
 			return
 			
