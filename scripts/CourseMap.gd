@@ -4,7 +4,7 @@ class_name CourseMap
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
 const C_BG_DARK     := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0) # lacquer red
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0) # premium deep jade green
 const C_RED_SON_DK  := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream for panels/sidebar
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # gold
 const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
@@ -16,6 +16,7 @@ const C_LOCKED      := Color(0.92, 0.90, 0.86, 1.0) # light warm cream-gray for 
 
 # ─── Static Progress State ────────────────────────────────────────────────────
 static var video_completed := false
+static var active_lesson_id := "Node2"
 
 # ─── Refs ───
 @onready var course_title : Label         = $RootHBox/RightContent/TopBar/TopM/TopH/CourseTitle
@@ -35,8 +36,38 @@ static var video_completed := false
 var _active_side_btn : Button = null
 var _pulse_time := 0.0
 var _sidebar_icons_cache := {}
+var btn_minigame : Button
+var btn_minigame_mob : Button
+
 
 func _ready() -> void:
+	SecureDataManager.load_data()
+	
+	# Programmatic instantiation of MiniGame button
+	var side_v := $RootHBox/LeftSidebar/SideM/SideV as VBoxContainer
+	btn_minigame = Button.new()
+	btn_minigame.name = "BtnMiniGame"
+	btn_minigame.text = "Mini-game"
+	btn_minigame.flat = true
+	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	side_v.add_child(btn_minigame)
+	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+
+	var bottom_h := $RootHBox/RightContent/BottomBar/BottomM/BottomH as HBoxContainer
+	btn_minigame_mob = Button.new()
+	btn_minigame_mob.name = "BtnMiniGameMobile"
+	btn_minigame_mob.text = "Mini-game"
+	btn_minigame_mob.flat = true
+	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_h.add_child(btn_minigame_mob)
+	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
+
+	# Sync video_completed progress with SecureDataManager
+	if CourseMap.video_completed:
+		var inst := InstrumentSelect.selected_instrument
+		if not SecureDataManager.is_lesson_completed(inst, "Node1"):
+			SecureDataManager.complete_lesson(inst, "Node1", 3)
+			
 	# Hide or remove the default ColorRect to draw canvas backdrop directly
 	if has_node("BG"):
 		get_node("BG").queue_free()
@@ -86,18 +117,19 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-	
-	btn_room.hide()
-	btn_room_mob.hide()
 
 func _process(delta: float) -> void:
 	# Gentle breathing scale animation on active lesson node
 	_pulse_time += delta
-	var active_node : PanelContainer
-	if not video_completed:
-		active_node = map_hbox.get_node_or_null("Node1") as PanelContainer
-	else:
-		active_node = map_hbox.get_node_or_null("Node2") as PanelContainer
+	var inst := InstrumentSelect.selected_instrument
+	var active_node_idx := 1
+	for i in range(1, 6):
+		var node_id = "Node" + str(i)
+		if SecureDataManager.is_lesson_unlocked(inst, node_id):
+			active_node_idx = i
+			
+	var active_node_name = "Node" + str(active_node_idx)
+	var active_node = map_hbox.get_node_or_null(active_node_name) as PanelContainer
 	
 	if active_node and is_instance_valid(active_node):
 		if not active_node.is_queued_for_deletion():
@@ -144,21 +176,21 @@ func _set_labels() -> void:
 	var inst := InstrumentSelect.selected_instrument
 	if inst == "dan_tranh":
 		course_title.text = "Khóa Học Đàn Tranh Cơ Bản"
-		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "3 Nốt Đầu"
-		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Nhấn & Rung"
-		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Song Thanh"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "3 Nốt Đầu\n(Cơ bản)"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Nhấn & Rung\n(Trung bình)"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Song Thanh\n(Nâng cao)"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 	elif inst == "dan_bau":
 		course_title.text = "Khóa Học Đàn Bầu Cơ Bản"
-		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hài Âm Cơ Bản"
-		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Uốn Vòi Đàn"
-		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Luyến Láy"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hài Âm Cơ Bản\n(Cơ bản)"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Uốn Vòi Đàn\n(Trung bình)"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Luyến Láy\n(Nâng cao)"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
 	else:
 		course_title.text = "Khóa Học Sáo Trúc Cơ Bản"
-		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hơi & Che Lỗ"
-		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Luyện Ngón"
-		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón"
+		(map_hbox.get_node("Node2/N2V/Title") as Label).text = "Hơi & Che Lỗ\n(Cơ bản)"
+		(map_hbox.get_node("Node3/N3V/Title") as Label).text = "Luyện Ngón\n(Trung bình)"
+		(map_hbox.get_node("Node4/N4V/Title") as Label).text = "Nhấp Ngón\n(Nâng cao)"
 		(map_hbox.get_node("Node5/N5V/Title") as Label).text = "Khóa Học Tiếp"
  
 	btn_courses.text = "Khóa học"
@@ -182,6 +214,7 @@ func _build_theme() -> void:
 	_style_side_icon_btn(btn_courses,  true)
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false, not is_prem)
+	_style_side_icon_btn(btn_minigame, false)
 	_style_side_icon_btn(btn_account, false)
 
 	# Clean up any existing IconDraw instances
@@ -193,6 +226,8 @@ func _build_theme() -> void:
 		if child.name == "IconDraw": child.queue_free()
 	for child in btn_songs.get_children():
 		if child.name == "IconDraw": child.queue_free()
+	for child in btn_minigame.get_children():
+		if child.name == "IconDraw": child.queue_free()
 	for child in btn_account.get_children():
 		if child.name == "IconDraw": child.queue_free()
 
@@ -200,6 +235,7 @@ func _build_theme() -> void:
 	_attach_icon_draw(btn_courses,  1)
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2, not is_prem)
+	_attach_icon_draw(btn_minigame, 3)
 	_attach_icon_draw(btn_account,  5)
 
 	_active_side_btn = btn_courses
@@ -325,11 +361,13 @@ func _build_bottom_bar() -> void:
 	_style_bottom_icon_btn(btn_courses_mob, true)
 	_style_bottom_icon_btn(btn_room_mob,    false)
 	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
+	_style_bottom_icon_btn(btn_minigame_mob, false)
 	_style_bottom_icon_btn(btn_account_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
 	_attach_bottom_icon_draw(btn_room_mob,    6)
 	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
+	_attach_bottom_icon_draw(btn_minigame_mob, 3)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
@@ -377,65 +415,77 @@ func _setup_nodes() -> void:
 		var node := c as PanelContainer
 		node.pivot_offset = Vector2(90, 90)
 
-	# Configure Node 1 (Intro)
-	var n1 := map_hbox.get_node("Node1") as PanelContainer
-	var n1_icon := n1.get_node("IconAnchor/IconPill") as PanelContainer
-	var n1_lbl := n1.get_node("N1V/Title") as Label
+	var inst := InstrumentSelect.selected_instrument
+	SecureDataManager.load_data()
 
-	# Configure Node 2 (Practice)
-	var n2 := map_hbox.get_node("Node2") as PanelContainer
-	var n2_icon := n2.get_node("IconAnchor/IconPill") as PanelContainer
-	var n2_lbl := n2.get_node("N2V/Title") as Label
-	var n2_tooltip := n2.get_node("TooltipAnchor/Tooltip") as PanelContainer
+	# Clean up any programmatic active tooltip anchors
+	for c in map_hbox.get_children():
+		var child_anchor = c.get_node_or_null("TooltipAnchor")
+		if child_anchor:
+			var tooltip = child_anchor.get_node_or_null("Tooltip")
+			if tooltip:
+				tooltip.visible = false
 
-	# Configure Node 3, 4, 5
-	for name_node in ["Node3", "Node4", "Node5"]:
-		var node := map_hbox.get_node(name_node) as PanelContainer
+	# We'll determine the active (latest unlocked but not completed) node to show the TIẾP THEO tooltip
+	var active_node_idx := 1
+	for i in range(1, 6):
+		var node_id = "Node" + str(i)
+		if SecureDataManager.is_lesson_unlocked(inst, node_id):
+			active_node_idx = i
+
+	for i in range(1, 6):
+		var node_id = "Node" + str(i)
+		var node_name = "Node" + str(i)
+		var node := map_hbox.get_node(node_name) as PanelContainer
 		var n_icon := node.get_node("IconAnchor/IconPill") as PanelContainer
-		var n_lbl := node.get_node(name_node.replace("Node","N") + "V/Title") as Label
+		var n_lbl := node.get_node("N" + str(i) + "V/Title") as Label
 		
-		# Upgrade to gorgeous 3D cartoon stylebox
-		node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
-		n_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
-		_setup_icon_pill(n_icon, 2) # LOCK vector icon
-		n_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
-
-	if not video_completed:
-		# Node 1 is active (3D bubble cream circle, gold border)
-		n1.add_theme_stylebox_override("panel", _flat(C_CREAM, C_GOLD_LIGHT, 90, true, 6))
-		n1_icon.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 22, false, 2))
-		_setup_icon_pill(n1_icon, 0) # PLAY vector icon
-		n1_lbl.add_theme_color_override("font_color", C_RED_SON)
-
-		# Node 2 is locked (3D bubble dark circle)
-		n2.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
-		n2_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
-		_setup_icon_pill(n2_icon, 2) # LOCK vector icon
-		n2_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
-
-		# Hide Node 2's "NEXT" tooltip
-		n2_tooltip.visible = false
-
-		# Setup custom NEXT tooltip above Node 1!
-		_setup_active_tooltip(n1, "BẮT ĐẦU")
-	else:
-		# Node 1 is completed (solid Jade Green circle, checkmark play icon)
-		n1.add_theme_stylebox_override("panel", _flat(C_JADE, C_JADE_LIGHT, 90, true, 4))
-		n1_icon.add_theme_stylebox_override("panel", _flat(C_JADE_LIGHT, C_CREAM, 22, false, 2))
-		_setup_icon_pill(n1_icon, 1) # CHECK vector icon
-		n1_lbl.add_theme_color_override("font_color", C_JADE)
-
-		# Node 2 is unlocked (white circle, red border)
-		n2.add_theme_stylebox_override("panel", _flat(C_CREAM, C_RED_SON, 90, true, 6))
-		n2_icon.add_theme_stylebox_override("panel", _flat(C_RED_SON, C_CREAM, 22, false, 2))
-		_setup_icon_pill(n2_icon, 3) # MUSIC vector icon
-		n2_lbl.add_theme_color_override("font_color", C_RED_SON)
-
-		# Show Node 2's yellow NEXT tooltip (gorgeous 3D bubble speech indicator)
-		n2_tooltip.visible = true
-		n2_tooltip.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 12, true, 3))
-		n2_tooltip.get_node("TooltipText").add_theme_color_override("font_color", C_RED_SON)
-		_animate_bob(n2_tooltip)
+		# If this node is completed
+		if SecureDataManager.is_lesson_completed(inst, node_id):
+			# Solid Jade Green circle, checkmark play icon
+			node.add_theme_stylebox_override("panel", _flat(C_JADE, C_JADE_LIGHT, 90, true, 4))
+			n_icon.add_theme_stylebox_override("panel", _flat(C_JADE_LIGHT, C_CREAM, 22, false, 2))
+			_setup_icon_pill(n_icon, 1) # CHECK vector icon
+			n_lbl.add_theme_color_override("font_color", C_JADE)
+			
+		# If this node is unlocked
+		elif SecureDataManager.is_lesson_unlocked(inst, node_id):
+			# Cream circle, red border
+			node.add_theme_stylebox_override("panel", _flat(C_CREAM, C_RED_SON, 90, true, 6))
+			n_icon.add_theme_stylebox_override("panel", _flat(C_RED_SON, C_CREAM, 22, false, 2))
+			
+			var icon_type = 3 # Default to MUSIC note icon for practice
+			if i == 1:
+				icon_type = 0 # PLAY icon for intro video
+			elif i == 5:
+				icon_type = 1 # CHECK icon
+			_setup_icon_pill(n_icon, icon_type)
+			n_lbl.add_theme_color_override("font_color", C_RED_SON)
+			
+			# Setup active yellow speech tooltip only if it is the latest unlocked node
+			if i == active_node_idx:
+				if i == 1:
+					_setup_active_tooltip(node, "BẮT ĐẦU")
+				elif i == 5:
+					_setup_active_tooltip(node, "HOÀN THÀNH")
+				else:
+					_setup_active_tooltip(node, "TIẾP THEO")
+					
+				var anchor = node.get_node_or_null("TooltipAnchor")
+				if anchor:
+					var tooltip = anchor.get_node_or_null("Tooltip") as PanelContainer
+					if tooltip:
+						tooltip.visible = true
+						tooltip.add_theme_stylebox_override("panel", _flat(C_GOLD, C_GOLD_LIGHT, 12, true, 3))
+						tooltip.get_node("TooltipText").add_theme_color_override("font_color", C_RED_SON)
+						_animate_bob(tooltip)
+						
+		# If locked
+		else:
+			node.add_theme_stylebox_override("panel", _flat(C_LOCKED, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 90, true, 5))
+			n_icon.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), Color(0,0,0,0), 22, false, 2))
+			_setup_icon_pill(n_icon, 2) # LOCK vector icon
+			n_lbl.add_theme_color_override("font_color", Color(0.35, 0.25, 0.20, 0.75))
 
 func _setup_icon_pill(pill: PanelContainer, type: int) -> void:
 	# Attach the pixel-perfect anti-aliased dynamic vector icon script!
@@ -528,6 +578,14 @@ func _connect_buttons() -> void:
 		)
 		_make_button_bouncy(btn_account)
 
+	if btn_minigame:
+		btn_minigame.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file(_get_minigame_scene()))
+		)
+		_make_button_bouncy(btn_minigame)
+
 	if btn_courses:
 		_make_button_bouncy(btn_courses)
 
@@ -555,42 +613,57 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
 	)
 
-	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_account_mob]:
+	if btn_minigame_mob:
+		btn_minigame_mob.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file(_get_minigame_scene()))
+		)
+		_make_button_bouncy(btn_minigame_mob)
+
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]:
 		_make_button_bouncy(btn)
 
+	var inst_type := InstrumentSelect.selected_instrument
+	SecureDataManager.load_data()
+
+	# Node 1
 	var n1 := map_hbox.get_node("Node1") as PanelContainer
 	n1.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
 			_pluck_node(n1)
+			CourseMap.active_lesson_id = "Node1"
 			_go_video_lesson()
 	)
 	_make_node_hover_bouncy(n1)
 
-	var n2 := map_hbox.get_node("Node2") as PanelContainer
-	n2.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed:
-			if video_completed:
-				_pluck_node(n2)
-				_go_practice_room()
-			else:
-				# Show a prompt to watch video first
-				var t := create_tween()
-				t.tween_property(n1, "scale", Vector2(1.12, 1.12), 0.12).set_trans(Tween.TRANS_BACK)
-				t.tween_property(n1, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK)
-	)
-	if video_completed:
-		_make_node_hover_bouncy(n2)
-
-	# Locked nodes click visual feedback
-	for node_name in ["Node3", "Node4", "Node5"]:
+	# Nodes 2 to 5
+	for i in range(2, 6):
+		var node_name := "Node" + str(i)
+		var node_id := "Node" + str(i)
 		var node := map_hbox.get_node(node_name) as PanelContainer
+		
 		node.gui_input.connect(func(e: InputEvent) -> void:
 			if e is InputEventMouseButton and e.pressed:
-				var t := create_tween()
-				t.tween_property(node, "position:x", node.position.x - 8.0, 0.05)
-				t.tween_property(node, "position:x", node.position.x + 8.0, 0.05)
-				t.tween_property(node, "position:x", node.position.x,       0.05)
+				if SecureDataManager.is_lesson_unlocked(inst_type, node_id):
+					_pluck_node(node)
+					if i == 5:
+						SecureDataManager.complete_lesson(inst_type, "Node5", 3)
+						_show_course_completed_dialog()
+					else:
+						CourseMap.active_lesson_id = node_id
+						_go_practice_room_for_node(i)
+				else:
+					# Shake animation for locked nodes
+					var t := create_tween()
+					var original_x = node.position.x
+					t.tween_property(node, "position:x", original_x - 8.0, 0.05)
+					t.tween_property(node, "position:x", original_x + 8.0, 0.05)
+					t.tween_property(node, "position:x", original_x,       0.05)
 		)
+		
+		if SecureDataManager.is_lesson_unlocked(inst_type, node_id):
+			_make_node_hover_bouncy(node)
 
 func _pluck_node(node: Control) -> void:
 	var t := create_tween()
@@ -609,13 +682,57 @@ func _make_node_hover_bouncy(node: Control) -> void:
 		t.tween_property(node, "rotation_degrees", 0.0, 0.15).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	)
 
+func _get_minigame_scene() -> String:
+	match InstrumentSelect.selected_instrument:
+		"dan_tranh":
+			return "res://scenes/MiniGameDanTranh.tscn"
+		"sao_truc":
+			return "res://scenes/MiniGameSaoTruc.tscn"
+		"dan_bau":
+			return "res://scenes/MiniGameDanBau.tscn"
+		_:
+			return "res://scenes/MiniGameDanTranh.tscn"
+
 func _go_video_lesson() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn"))
 
-func _go_practice_room() -> void:
+func _go_practice_room_for_node(node_index: int) -> void:
 	var inst := InstrumentSelect.selected_instrument
+	
+	# Configure target song title and sheet notes for the selected lesson!
+	if inst == "dan_tranh":
+		if node_index == 2:
+			PracticeRoom.current_song_title = "3 Nốt Đầu (Đô - Rê - Mi)"
+			PracticeRoom.current_song_sheet = ["Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Đô"]
+		elif node_index == 3:
+			PracticeRoom.current_song_title = "Kỹ Thuật Nhấn Dây & Rung Âm"
+			PracticeRoom.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
+		elif node_index == 4:
+			PracticeRoom.current_song_title = "Kỹ Thuật Song Thanh"
+			PracticeRoom.current_song_sheet = ["Đô", "La", "Fa", "Si", "La", "Mi", "Sol", "La"]
+	elif inst == "dan_bau":
+		if node_index == 2:
+			PracticeDanBau.current_song_title = "Hài Âm Cơ Bản"
+			PracticeDanBau.current_song_sheet = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+		elif node_index == 3:
+			PracticeDanBau.current_song_title = "Uốn Vòi Đàn"
+			PracticeDanBau.current_song_sheet = ["Đô", "Mi", "Fa", "La", "Si", "La", "Fa", "Mi", "Rê", "Đô"]
+		elif node_index == 4:
+			PracticeDanBau.current_song_title = "Luyến Láy Đàn Bầu"
+			PracticeDanBau.current_song_sheet = ["Đô", "Fa", "La", "Si", "La", "Fa", "Đô"]
+	else: # sao_truc
+		if node_index == 2:
+			PracticeSaoTruc.current_song_title = "Hơi thở & Che lỗ cơ bản"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+		elif node_index == 3:
+			PracticeSaoTruc.current_song_title = "Luyện Ngón Sáo Trúc"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
+		elif node_index == 4:
+			PracticeSaoTruc.current_song_title = "Nhấp Ngón Kỹ Thuật"
+			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Si", "Đô", "Si", "La", "Sol"]
+
 	var path := "res://scenes/PracticeRoom.tscn"
 	if inst == "dan_tranh":
 		path = "res://scenes/PracticeRoom.tscn"
@@ -623,9 +740,43 @@ func _go_practice_room() -> void:
 		path = "res://scenes/PracticeDanBau.tscn"
 	else:
 		path = "res://scenes/PracticeSaoTruc.tscn"
+		
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
+
+func _show_course_completed_dialog() -> void:
+	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
+	if popup_scene:
+		var popup = popup_scene.instantiate()
+		add_child(popup)
+		
+		var inst := InstrumentSelect.selected_instrument
+		var inst_name := ""
+		var lessons_list := ""
+		var next_inst_msg := ""
+		
+		if inst == "dan_tranh":
+			inst_name = "Đàn Tranh"
+			lessons_list = "• Giới thiệu nhạc cụ\n• Kỹ thuật 3 Nốt Đầu\n• Kỹ thuật Nhấn Dây & Rung Âm\n• Kỹ thuật Song Thanh"
+			next_inst_msg = "• Đã mở khóa khóa học tiếp theo: [b]Sáo Trúc[/b]!"
+		elif inst == "sao_truc":
+			inst_name = "Sáo Trúc"
+			lessons_list = "• Giới thiệu nhạc cụ\n• Kỹ thuật Hơi & Che Lỗ\n• Kỹ thuật Luyện Ngón\n• Kỹ thuật Nhấp Ngón"
+			next_inst_msg = "• Đã mở khóa khóa học tiếp theo: [b]Đàn Bầu[/b]!"
+		else:
+			inst_name = "Đàn Bầu"
+			lessons_list = "• Giới thiệu nhạc cụ\n• Kỹ thuật Hài Âm Cơ Bản\n• Kỹ thuật Uốn Vòi Đàn\n• Kỹ thuật Luyến Láy"
+			next_inst_msg = "• Bạn đã hoàn thành toàn bộ các khóa học cơ bản!"
+
+		var text := "[b]🎉 CHÚC MỪNG HOÀN THÀNH KHÓA HỌC![/b]\n\nBạn đã xuất sắc vượt qua toàn bộ lộ trình học %s cơ bản:\n%s\n\n[b]💡 LỜI KHUYÊN TIẾP THEO:[/b]\n%s\n• Tiếp tục luyện tập hàng ngày trong phòng nhạc ảo.\n• Thử sức với phần bài hát truyền thống để rèn luyện sự uyển chuyển." % [inst_name, lessons_list, next_inst_msg]
+		
+		popup.setup_hint("Chúc mừng hoàn thành", text)
+		popup.closed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn"))
+		)
 
 func _animate_in() -> void:
 	var delay := 0.15
@@ -724,6 +875,8 @@ func _on_viewport_size_changed() -> void:
 			var label = v_box.get_node_or_null("Title") as Label
 			if label:
 				label.add_theme_font_size_override("font_size", title_font_size)
+				label.autowrap_mode = TextServer.AUTOWRAP_WORD
+				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				
 		# Update icon pill anchor and offsets
 		var anchor = node.get_node_or_null("IconAnchor") as Control

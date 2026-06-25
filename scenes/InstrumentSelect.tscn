@@ -50,7 +50,7 @@ size_flags_vertical = 4
 flat = true
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 19
-text = "← Quay lại"
+text = "< Quay lại"
 
 [node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2

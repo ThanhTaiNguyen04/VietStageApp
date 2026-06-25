@@ -3,7 +3,7 @@ extends Control
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
 
@@ -22,7 +22,7 @@ const ACHIEVEMENTS: Array[Dictionary] = [
 	{"icon":"🎓", "name":"Bài 4\nHoàn Thành",   "sub":"Điểm 88",     "earned":true,  "col":Color(0.12,0.37,0.23,1)},
 	{"icon":"💯", "name":"Hoàn Hảo\n100%",       "sub":"1 lần",       "earned":true,  "col":Color(0.20,0.40,0.80,1)},
 	{"icon":"🏆", "name":"10 Bài\nHoàn Thành",   "sub":"Cần 8 bài",   "earned":false, "col":Color(0.77,0.58,0.15,0.4)},
-	{"icon":"🎻", "name":"Nghệ Sĩ\nNâng Cao",    "sub":"Cần lv.12",   "earned":false, "col":Color(0.70,0.12,0.08,0.4)},
+	{"icon":"🎻", "name":"Nghệ Sĩ\nNâng Cao",    "sub":"Cần lv.12",   "earned":false, "col":Color(0.09,0.27,0.18,0.4)},
 	{"icon":"🌸", "name":"Hoa Mai\nMùa Xuân",    "sub":"Tháng 1/26",  "earned":false, "col":Color(0.90,0.55,0.20,0.4)},
 	{"icon":"🎵", "name":"Sáo Trúc\nMaster",     "sub":"Cần lv.15",   "earned":false, "col":Color(0.12,0.37,0.23,0.4)},
 ]
@@ -35,6 +35,7 @@ const STAT_DATA := [
 ]
 
 func _ready() -> void:
+	SecureDataManager.load_data()
 	_build_theme()
 	_set_labels()
 	_build_achievements()
@@ -69,7 +70,7 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
 	($Root/TopBar/TopM/TopH/PageTitle  as Label ).text = "Tiến độ học tập"
 
-	($Root/Content/ProfilePanel/ProfileM/ProfileV/PlayerName  as Label).text = "Linh"
+	($Root/Content/ProfilePanel/ProfileM/ProfileV/PlayerName  as Label).text = SecureDataManager.data.get("user_name", "Khách")
 	($Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge/LBM/LBLabel as Label).text = "Cấp độ 8"
 
 	($Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox/LvlLabel as Label).text = "Cấp độ 8"

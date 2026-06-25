@@ -86,15 +86,21 @@ theme_override_constants/margin_right = 48
 theme_override_constants/margin_top = 28
 theme_override_constants/margin_bottom = 28
 
-[node name="MainVBox" type="VBoxContainer" parent="Root/Content/ContentMargin"]
+[node name="SplitHBox" type="HBoxContainer" parent="Root/Content/ContentMargin"]
 layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="ListVBox" type="VBoxContainer" parent="Root/Content/ContentMargin/SplitHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.3
 theme_override_constants/separation = 24
 
-[node name="SearchFilterHBox" type="HBoxContainer" parent="Root/Content/ContentMargin/MainVBox"]
+[node name="SearchFilterHBox" type="HBoxContainer" parent="Root/Content/ContentMargin/SplitHBox/ListVBox"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SearchEdit" type="LineEdit" parent="Root/Content/ContentMargin/MainVBox/SearchFilterHBox"]
+[node name="SearchEdit" type="LineEdit" parent="Root/Content/ContentMargin/SplitHBox/ListVBox/SearchFilterHBox"]
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -102,50 +108,120 @@ theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 18
 placeholder_text = "Tìm kiếm tên bài hát..."
 
-[node name="FilterTabs" type="HBoxContainer" parent="Root/Content/ContentMargin/MainVBox"]
+[node name="FilterTabs" type="HBoxContainer" parent="Root/Content/ContentMargin/SplitHBox/ListVBox"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="BtnAll" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+[node name="BtnAll" type="Button" parent="Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs"]
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 16
 text = "Tất Cả"
 
-[node name="BtnDanCa" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+[node name="BtnDanCa" type="Button" parent="Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs"]
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 16
 text = "Dân Ca"
 
-[node name="BtnTruTinh" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+[node name="BtnTruTinh" type="Button" parent="Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs"]
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 16
 text = "Trữ Tình"
 
-[node name="BtnCoTruyen" type="Button" parent="Root/Content/ContentMargin/MainVBox/FilterTabs"]
+[node name="BtnCoTruyen" type="Button" parent="Root/Content/ContentMargin/SplitHBox/ListVBox/FilterTabs"]
 custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 16
 text = "Cổ Truyền"
 
-[node name="SongsScroll" type="ScrollContainer" parent="Root/Content/ContentMargin/MainVBox"]
+[node name="SongsScroll" type="ScrollContainer" parent="Root/Content/ContentMargin/SplitHBox/ListVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 3
 
-[node name="SongsGrid" type="GridContainer" parent="Root/Content/ContentMargin/MainVBox/SongsScroll"]
+[node name="SongsGrid" type="GridContainer" parent="Root/Content/ContentMargin/SplitHBox/ListVBox/SongsScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/h_separation = 24
 theme_override_constants/v_separation = 24
 columns = 2
+
+[node name="DetailPanel" type="PanelContainer" parent="Root/Content/ContentMargin/SplitHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="DetailM" type="MarginContainer" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_bottom = 28
+
+[node name="DetailVBox" type="VBoxContainer" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DetailHeader" type="VBoxContainer" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DetailTitle" type="Label" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/DetailHeader"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font_title")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.13, 0.08, 0.05, 1.0)
+text = "Tên Bài Hát"
+autowrap_mode = 2
+
+[node name="DetailTags" type="HBoxContainer" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/DetailHeader"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DetailDesc" type="Label" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.43, 0.38, 0.33, 1.0)
+text = "Chọn một bài hát từ danh sách để xem chi tiết và luyện tập."
+autowrap_mode = 2
+
+[node name="Divider" type="HSeparator" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+layout_mode = 2
+
+[node name="PreviewTitle" type="Label" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font_title")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.13, 0.08, 0.05, 1.0)
+text = "Xem Trước Nốt Nhạc:"
+
+[node name="NotesScroll" type="ScrollContainer" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+vertical_scroll_mode = 3
+
+[node name="NotesHBox" type="HBoxContainer" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox/NotesScroll"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Spacer" type="Control" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BtnStartPractice" type="Button" parent="Root/Content/ContentMargin/SplitHBox/DetailPanel/DetailM/DetailVBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "VÀO LUYỆN TẬP"
 
 [node name="BottomBar" type="PanelContainer" parent="Root"]
 visible = false

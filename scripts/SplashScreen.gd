@@ -1,17 +1,17 @@
 extends Control
 
-const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
-const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.40)
-const C_VER       := Color(1.00, 1.00, 1.00, 0.20)
+const C_JADE      := Color(0.09, 0.27, 0.18, 1.0)  # Brand deep jade green
+const C_GREY_DK   := Color(0.43, 0.38, 0.33, 1.0)  # Primary charcoal text
+const C_GREY_LT   := Color(0.43, 0.38, 0.33, 0.50) # Muted grey for version
 
 func _ready() -> void:
 	_style_text()
 	_animate()
 
 func _style_text() -> void:
-	($Center/AppName    as Label).add_theme_color_override("font_color", C_GOLD)
-	($Center/Tagline    as Label).add_theme_color_override("font_color", C_WHITE_DIM)
-	($VersionLabel      as Label).add_theme_color_override("font_color", C_VER)
+	($Center/AppName    as Label).add_theme_color_override("font_color", C_JADE)
+	($Center/Tagline    as Label).add_theme_color_override("font_color", C_GREY_DK)
+	($VersionLabel      as Label).add_theme_color_override("font_color", C_GREY_LT)
 
 func _animate() -> void:
 	modulate.a = 0.0
