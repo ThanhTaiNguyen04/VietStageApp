@@ -41,10 +41,23 @@ func _draw() -> void:
 			col = col.lerp(C_BAMBOO_SHADOW, (ratio - 0.8) / 0.2 * 0.6)
 			
 		draw_rect(Rect2(0, y1, w, y2 - y1), col)
+
+	# Draw longitudinal wood grain lines for organic texture
+	var rand_gen = RandomNumberGenerator.new()
+	rand_gen.seed = 12345 # deterministic seed so it doesn't flicker during redraw
+	for j in range(12):
+		var y_pos = rand_gen.randf_range(2.0, h - 2.0)
+		var thickness = rand_gen.randf_range(1.0, 2.5)
+		var opacity = rand_gen.randf_range(0.04, 0.12)
+		var col = Color(C_BAMBOO_SHADOW.r, C_BAMBOO_SHADOW.g, C_BAMBOO_SHADOW.b, opacity)
+		draw_line(Vector2(0, y_pos), Vector2(w, y_pos), col, thickness)
 		
 	# Draw segment nodes (bamboo nodes/creases)
 	var node_positions = [0.22 * w, 0.58 * w, 0.88 * w]
 	for pos_x in node_positions:
+		# Draw node bump highlight/shadow to simulate 3D node joint
+		draw_line(Vector2(pos_x - 4.0, 0), Vector2(pos_x - 4.0, h), Color(C_BAMBOO_LIGHT.r, C_BAMBOO_LIGHT.g, C_BAMBOO_LIGHT.b, 0.15), 3.0)
+		draw_line(Vector2(pos_x + 4.0, 0), Vector2(pos_x + 4.0, h), Color(0.0, 0.0, 0.0, 0.25), 4.0)
 		# Dark node line
 		draw_line(Vector2(pos_x, 0), Vector2(pos_x, h), Color(0.12, 0.06, 0.02, 0.85), 3.0)
 		# Soft highlight line
@@ -60,6 +73,9 @@ func _draw() -> void:
 	]
 	for tx in thread_zones:
 		var tw = 14.0 # Thread band width
+		# Drop shadows under thread band
+		draw_rect(Rect2(tx - tw/2.0 - 4.0, 0, 4.0, h), Color(0, 0, 0, 0.35))
+		draw_rect(Rect2(tx + tw/2.0, 0, 4.0, h), Color(0, 0, 0, 0.35))
 		# Black thread wraps
 		draw_rect(Rect2(tx - tw/2.0, 0, tw, h), C_THREAD)
 		# Gold accent lines
@@ -67,7 +83,9 @@ func _draw() -> void:
 		
 	# Draw embouchure hole (lỗ thổi) on the left side
 	var blow_hole_x = 0.12 * w
-	# Outer hole
+	# Outer hole bevel highlight (golden rim)
+	draw_ellipse_angle(Vector2(blow_hole_x, cy + 1.0), Vector2(13.0, 9.0), Color(0.95, 0.82, 0.45, 0.45))
+	# Outer hole body cut
 	draw_ellipse_angle(Vector2(blow_hole_x, cy), Vector2(12.0, 8.0), Color(0.12, 0.06, 0.02))
 	# Inner shadow
 	draw_ellipse_angle(Vector2(blow_hole_x + 1.0, cy + 1.0), Vector2(9.5, 6.0), Color(0.02, 0.02, 0.02))

@@ -29,8 +29,8 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 @onready var rhythm_acc   : Label         = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmAcc
 @onready var score_num    : Label         = $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreNum
 @onready var record_btn   : Button        = $Root/RecordBar/RecordM/RecordH/RecordBtn
-@onready var notes_hbox   : HBoxContainer = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
-@onready var target_note_label : Label    = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel
+@onready var notes_hbox   : HBoxContainer = $Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
+@onready var target_note_label : Label    = $Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/TargetNoteLabel
 @onready var target_label : Label         = $Root/StringsBoard/BoardM/BoardVBox/TargetLabel
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
 @onready var result_dialog: AcceptDialog  = $ResultDialog
@@ -44,6 +44,8 @@ var _score       := 75.0
 var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 2
+var _detected_notes_history : Array[String] = []
+const HISTORY_SIZE := 8
 
 # AI Analysis tracking variables
 var _practice_time := 0.0
@@ -59,11 +61,11 @@ var _linh_collapsed := true
 var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
-const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+const NOTES_VN : Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
 
-var sheet_notes : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
+var sheet_notes : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Sol","Sol","Sol","Mi","Rê","Đô"]
 const SPEECHES : Array[String] = [
 	"Gảy nhẹ dây số 3,\nnhấn rung bên trái nhạn đàn.",
 	"Rất tốt!\nGiữ ngón cố định hơn nhé.",
@@ -73,6 +75,11 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	$Root/TopBar/TopM/TopH/LessonTag.visible = false
+	$Root/TopBar/TopM/TopH/LessonTitle.visible = false
+	$Root/TopBar/TopM/TopH/DotsHBox.visible = false
+	$Root/TopBar/TopM/TopH/ProgressVBox.visible = false
+
 	if current_song_title != "":
 		sheet_notes = current_song_sheet
 	_generate_streams()
@@ -173,11 +180,6 @@ func _process(delta: float) -> void:
 		_practice_time += delta
 		if _mic_mode:
 			_process_real_audio(delta)
-		else:
-			_sim_timer += delta
-			if _sim_timer >= 1.2:
-				_sim_timer = 0.0
-				_simulate_tick()
 
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
@@ -206,8 +208,8 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
 	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
 
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
 	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
 	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
@@ -255,9 +257,9 @@ func _build_theme() -> void:
 
 	# Notation area — light parchment card
 	var na_s := _flat(Color(0.99, 0.98, 0.95, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12)
-	($Root/MiddleRow/MainContent/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
+	($Root/TopBar/TopM/TopH/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
 
 	# Stats panels
 	var stat_bg := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 12)
@@ -377,16 +379,14 @@ func _get_string_frequency(idx: int) -> float:
 	# Đàn tranh 16 dây - tần số chuẩn từ dây 1 (thấp) đến dây 16 (cao)
 	# Tuning theo hệ ngũ cung Việt Nam (pentatonic)
 	var base_freqs = [
-		130.81, # Đô  (C3)
-		146.83, # Rê  (D3)
-		164.81, # Mi  (E3)
-		174.61, # Fa  (F3)
 		196.00, # Sol (G3)
 		220.00, # La  (A3)
-		246.94  # Si  (B3)
+		261.63, # Đô  (C4)
+		293.66, # Rê  (D4)
+		329.63  # Mi  (E4)
 	]
-	var octave = idx / 7
-	var note_in_octave = idx % 7
+	var octave = idx / NOTES_VN.size()
+	var note_in_octave = idx % NOTES_VN.size()
 	return base_freqs[note_in_octave] * pow(2, octave)
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
@@ -574,6 +574,29 @@ func _simulate_tick() -> void:
 	_update_rhythm()
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
+func _get_stabilized_note(new_note: String) -> String:
+	_detected_notes_history.append(new_note)
+	if _detected_notes_history.size() > HISTORY_SIZE:
+		_detected_notes_history.remove_at(0)
+		
+	var counts := {}
+	for note in _detected_notes_history:
+		if note == "": continue
+		if not counts.has(note):
+			counts[note] = 0
+		counts[note] += 1
+		
+	var max_count := 0
+	var stable_note := ""
+	for note in counts:
+		if counts[note] > max_count:
+			max_count = counts[note]
+			stable_note = note
+			
+	if max_count >= 4:
+		return stable_note
+	return ""
+
 func _process_real_audio(delta: float) -> void:
 	if _eval_cooldown > 0.0:
 		_eval_cooldown -= delta
@@ -588,26 +611,36 @@ func _process_real_audio(delta: float) -> void:
 	if db > -45.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
 		
-		# Find the closest frequency matching the target note in all 16 strings
-		var closest_target_freq := 0.0
-		var min_diff := 999999.0
-		for i in range(16):
-			var note_name = NOTES_VN[i % 7]
-			if note_name == target_note:
-				var string_freq = _get_string_frequency(i)
-				var diff = abs(pitch - string_freq)
-				if diff < min_diff:
-					min_diff = diff
-					closest_target_freq = string_freq
-					
-		if closest_target_freq > 0.0:
-			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
-			if abs(cents) < 50.0:
+		# Convert pitch to chromatic note using robust MIDI formula
+		var midi = 12.0 * log(pitch / 440.0) / log(2.0) + 69.0
+		var rounded_midi = int(round(midi))
+		var cents = (midi - rounded_midi) * 100.0
+		var note_in_octave = rounded_midi % 12
+		
+		var note_names = {
+			0: "Đô",
+			1: "Đô#",
+			2: "Rê",
+			3: "Rê#",
+			4: "Mi",
+			5: "Fa",
+			6: "Fa#",
+			7: "Sol",
+			8: "Sol#",
+			9: "La",
+			10: "La#",
+			11: "Si"
+		}
+		var closest_note = note_names.get(note_in_octave, "")
+		var stable_note = _get_stabilized_note(closest_note)
+		
+		if not stable_note.is_empty():
+			if stable_note == target_note and absf(cents) < 48.0:
 				pitch_note.text = target_note
 				
 				# Scaled tolerance window based on difficulty scale
 				var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
-				if abs(cents) < tolerance_cents:
+				if absf(cents) < tolerance_cents:
 					pitch_status.text = "Đúng cao độ"
 					pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 					pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
@@ -618,7 +651,7 @@ func _process_real_audio(delta: float) -> void:
 					
 				# Record AI performance metrics
 				_detected_onsets.append(_practice_time)
-				var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
+				var pitch_err = clamp(100.0 - absf(cents) * 2.0, 0.0, 100.0)
 				_pitch_scores.append(pitch_err)
 				_tone_scores.append(visualizer.current_tone_quality)
 				
@@ -644,26 +677,14 @@ func _process_real_audio(delta: float) -> void:
 					
 				_va_say("Tuyệt vời! Gảy đúng nốt rồi.")
 				_eval_cooldown = 1.0
-				return
-				
-		var detected_note := ""
-		var closest_detected_freq := 0.0
-		var min_detected_diff := 999999.0
-		for i in range(16):
-			var string_freq = _get_string_frequency(i)
-			var diff = abs(pitch - string_freq)
-			if diff < min_detected_diff:
-				min_detected_diff = diff
-				closest_detected_freq = string_freq
-				detected_note = NOTES_VN[i % 7]
-				
-		if detected_note != "" and min_detected_diff < 30.0:
-			pitch_note.text = detected_note
-			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
-			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
-			_score = clamp(_score - 0.5 * delta, 0, 100)
-			_refresh_score()
+			else:
+				# Played the wrong note or out of tune
+				pitch_note.text = stable_note
+				pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
+				pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+				pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+				_score = clamp(_score - 0.5 * delta, 0, 100)
+				_refresh_score()
 	else:
 		pitch_note.text = "—"
 		pitch_status.text = "Đang nghe..."

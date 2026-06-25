@@ -27,7 +27,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 100,
-		"sheet": ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
+		"sheet": ["Đô","Đô","Rê","Mi","Mi","Sol","Sol","Sol","Mi","Rê","Đô"]
 	},
 	{
 		"id": "song_002",
@@ -40,7 +40,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 250,
-		"sheet": ["La","La","Si","La","Mi","Fa","Sol","Rê","Mi","La","Đô"]
+		"sheet": ["La","La","Đô","La","Mi","Sol","Sol","Rê","Mi","La","Đô"]
 	},
 	{
 		"id": "song_003",
@@ -53,7 +53,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 180,
-		"sheet": ["Mi","Rê","Đô","Rê","Mi","Fa","La","Sol","Fa","Mi","Đô"]
+		"sheet": ["Mi","Rê","Đô","Rê","Mi","Sol","La","Sol","Sol","Mi","Đô"]
 	},
 	{
 		"id": "song_004",
@@ -66,7 +66,7 @@ const SONGS_DATA := [
 		"genre": "tru_tinh",
 		"genre_label": "Trữ tình",
 		"xp": 200,
-		"sheet": ["Đô","Mi","Fa","La","Sol","La","Fa","Mi","Rê","Đô","Đô"]
+		"sheet": ["Đô","Mi","Sol","La","Sol","La","Sol","Mi","Rê","Đô","Đô"]
 	},
 	{
 		"id": "song_005",

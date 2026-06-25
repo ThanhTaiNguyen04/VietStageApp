@@ -18,7 +18,7 @@ const C_CARD       := Color(1.00, 1.00, 1.00, 1.0)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
 const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
-@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinh
+@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
 @onready var lesson_bar   : ProgressBar   = $Root/TopBar/TopM/TopH/ProgressVBox/LessonBar
 @onready var pitch_note   : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote
@@ -27,8 +27,8 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 @onready var rhythm_acc   : Label         = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmAcc
 @onready var score_num    : Label         = $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreNum
 @onready var record_btn   : Button        = $Root/RecordBar/RecordM/RecordH/RecordBtn
-@onready var notes_hbox   : HBoxContainer = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
-@onready var target_note_label : Label    = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel
+@onready var notes_hbox   : HBoxContainer = $Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
+@onready var target_note_label : Label    = $Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/TargetNoteLabel
 @onready var holes_hbox   : HBoxContainer = $Root/FluteBoard/BoardM/BoardVBox/FluteFrame/FluteM/FluteStack/HoleRow
 @onready var target_label : Label         = $Root/FluteBoard/BoardM/BoardVBox/TargetLabel
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
@@ -96,6 +96,11 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	$Root/TopBar/TopM/TopH/LessonTag.visible = false
+	$Root/TopBar/TopM/TopH/LessonTitle.visible = false
+	$Root/TopBar/TopM/TopH/DotsHBox.visible = false
+	$Root/TopBar/TopM/TopH/ProgressVBox.visible = false
+
 	if current_song_title != "":
 		sheet_notes = current_song_sheet
 	_generate_streams()
@@ -257,6 +262,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Update hole styles every frame to animate pulsing shadows and keep states synced
+	_update_hole_styles()
+
 	# 1. Update breath pressure first
 	_update_breath_physics(delta)
 	
@@ -394,8 +402,8 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
 	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
 
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Thổi theo dòng nốt"
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần thổi: Đô"
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Thổi theo dòng nốt"
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần thổi: Đô"
 	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
 	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
@@ -442,9 +450,9 @@ func _build_theme() -> void:
 
 	# Notation Area — light parchment card
 	var na_s := _flat(Color(0.99, 0.98, 0.95, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12)
-	($Root/MiddleRow/MainContent/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
+	($Root/TopBar/TopM/TopH/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($Root/TopBar/TopM/TopH/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
 
 	# Stats panels
 	var stat_bg := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 12)
@@ -479,6 +487,7 @@ func _build_theme() -> void:
 	bf.bg_color = C_JADE
 	bf.corner_radius_top_left = 6; bf.corner_radius_top_right = 6
 	bf.corner_radius_bottom_left = 6; bf.corner_radius_bottom_right = 6
+	bf.shadow_size = 5; bf.shadow_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.35)
 	var bb := StyleBoxFlat.new()
 	bb.bg_color = Color(0.0, 0.0, 0.0, 0.08)
 	bb.corner_radius_top_left = 6; bb.corner_radius_top_right = 6
@@ -503,6 +512,66 @@ func _build_theme() -> void:
 
 	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
 
+func _update_hole_styles() -> void:
+	var target_note := sheet_notes[_note_idx]
+	var target_fingering = FINGERINGS.get(target_note, [false, false, false, false, false, false])
+	
+	for i in range(HOLES):
+		if i >= holes_hbox.get_child_count(): break
+		var hole := holes_hbox.get_child(i) as PanelContainer
+		if not hole: continue
+		
+		var hs := hole.get_theme_stylebox("panel") as StyleBoxFlat
+		if not hs:
+			hs = StyleBoxFlat.new()
+			hole.add_theme_stylebox_override("panel", hs)
+			
+		var is_covered = _covered_states[i]
+		var is_target_covered = target_fingering[i]
+		
+		# Reset shadows
+		hs.shadow_size = 0
+		hs.shadow_color = Color(0, 0, 0, 0)
+		
+		# Common border settings
+		hs.corner_radius_top_left = 25
+		hs.corner_radius_top_right = 25
+		hs.corner_radius_bottom_left = 25
+		hs.corner_radius_bottom_right = 25
+		
+		if is_covered:
+			if is_target_covered:
+				# Covered & Target Covered (Correctly closed) -> Jade plug
+				hs.bg_color = C_JADE
+				hs.border_color = C_GOLD_LIGHT
+				hs.border_width_left = 4; hs.border_width_right = 4
+				hs.border_width_top = 4; hs.border_width_bottom = 4
+				hs.shadow_size = 6
+				hs.shadow_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.45)
+			else:
+				# Covered & Not Target (Incorrectly closed) -> Amber plug
+				hs.bg_color = C_GOLD
+				hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
+				hs.border_width_left = 2; hs.border_width_right = 2
+				hs.border_width_top = 2; hs.border_width_bottom = 2
+		else:
+			if is_target_covered:
+				# Open & Target Covered (Needs to be closed) -> Glowing target ring
+				hs.bg_color = Color(0.06, 0.03, 0.01) # hollow tube
+				hs.border_color = C_GOLD_LIGHT
+				hs.border_width_left = 4; hs.border_width_right = 4
+				hs.border_width_top = 4; hs.border_width_bottom = 4
+				hs.shadow_size = 8
+				# Pulsing gold halo
+				var pulse = (sin(Time.get_ticks_msec() * 0.012) + 1.0) * 0.5
+				hs.shadow_color = Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.35 + pulse * 0.35)
+			else:
+				# Open & Not Target (Correctly open) -> Simple dark hole
+				hs.bg_color = Color(0.04, 0.02, 0.01)
+				hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+				hs.border_width_left = 2; hs.border_width_right = 2
+				hs.border_width_top = 2; hs.border_width_bottom = 2
+
 func _build_flute() -> void:
 	for c in holes_hbox.get_children():
 		holes_hbox.remove_child(c)
@@ -515,18 +584,6 @@ func _build_flute() -> void:
 		hole.mouse_filter = Control.MOUSE_FILTER_STOP
 		
 		var hs := StyleBoxFlat.new()
-		hs.border_width_left = 3; hs.border_width_right = 3
-		hs.border_width_top = 3; hs.border_width_bottom = 3
-		hs.corner_radius_top_left = 25; hs.corner_radius_top_right = 25
-		hs.corner_radius_bottom_left = 25; hs.corner_radius_bottom_right = 25
-		
-		if _covered_states[i]:
-			hs.bg_color = C_GOLD
-			hs.border_color = C_GOLD_LIGHT
-		else:
-			hs.bg_color = Color(0.04, 0.02, 0.01)
-			hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
-			
 		hole.add_theme_stylebox_override("panel", hs)
 
 		var idx := i
@@ -693,14 +750,6 @@ func _get_current_note() -> String:
 
 func _toggle_hole_state(idx: int, hole: PanelContainer, hs: StyleBoxFlat) -> void:
 	_covered_states[idx] = not _covered_states[idx]
-	var is_covered = _covered_states[idx]
-	
-	if is_covered:
-		hs.bg_color = C_GOLD
-		hs.border_color = C_GOLD_LIGHT
-	else:
-		hs.bg_color = Color(0.04, 0.02, 0.01)
-		hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
 		
 	var t := create_tween().set_parallel(true)
 	t.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.06)
@@ -752,20 +801,8 @@ func _update_target_indicator() -> void:
 	else:
 		target_label.text = "Thế bấm nốt %s: Che lỗ %s" % [target_note, target_holes_txt]
 		
-	for i in holes_hbox.get_child_count():
-		var hole := holes_hbox.get_child(i) as PanelContainer
-		if hole:
-			var style := hole.get_theme_stylebox("panel") as StyleBoxFlat
-			if style:
-				var is_target_covered = target_fingering[i]
-				if is_target_covered:
-					style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.95)
-					style.border_width_left = 3; style.border_width_right = 3
-					style.border_width_top = 3; style.border_width_bottom = 3
-				else:
-					style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
-					style.border_width_left = 2; style.border_width_right = 2
-					style.border_width_top = 2; style.border_width_bottom = 2
+	# Handled dynamically by _update_hole_styles()
+	pass
 
 func _start_float() -> void:
 	_float_tween = create_tween().set_loops()

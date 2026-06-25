@@ -21,6 +21,11 @@ var current_composite_score := 100.0
 var recent_scores_history : Array[float] = []
 var difficulty_tolerance_scale := 1.0
 
+# Dynamic configurations for pitch detection and noise gating
+var min_frequency := 200.0
+var max_frequency := 2200.0
+var volume_threshold_db := -30.0
+
 var _analyzer: RefCounted = null
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0

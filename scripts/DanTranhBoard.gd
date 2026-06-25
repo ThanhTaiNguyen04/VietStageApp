@@ -283,9 +283,36 @@ func _draw() -> void:
 	# Draw gold highlight line
 	draw_polyline(div_pts, Color(0.77, 0.58, 0.15, 0.65), 1.6, true)
 
-	# 5. Draw mother-of-pearl inlay on right end block
-	var mop_color := Color(0.85, 0.92, 0.95, 0.72)
-	_draw_inlay_pattern(Rect2(W - 24.0, 15.0, 24.0, H - 30.0), mop_color)
+	# 5. Draw right-end curved tail cap / frame
+	var tail_sb := StyleBoxFlat.new()
+	tail_sb.bg_color = Color(0.12, 0.06, 0.02) # dark premium rosewood
+	tail_sb.set_corner_radius_all(8)
+	tail_sb.border_width_left = 2
+	tail_sb.border_width_right = 2
+	tail_sb.border_width_top = 2
+	tail_sb.border_width_bottom = 2
+	tail_sb.border_color = Color(0.77, 0.58, 0.15) # gold border
+	tail_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.4)
+	tail_sb.shadow_size = 4
+	tail_sb.shadow_offset = Vector2(1, 1)
+	
+	# Draw right tail cap block from W - 28.0 to W - 6.0
+	var tail_rect := Rect2(W - 28.0, 12.0, 22.0, H - 24.0)
+	draw_style_box(tail_sb, tail_rect)
+	
+	# Draw inner thin gold highlight line inside right tail cap
+	var tail_inner_pts := PackedVector2Array([
+		Vector2(tail_rect.position.x + 3.0, tail_rect.position.y + 3.0),
+		Vector2(tail_rect.end.x - 3.0, tail_rect.position.y + 3.0),
+		Vector2(tail_rect.end.x - 3.0, tail_rect.end.y - 3.0),
+		Vector2(tail_rect.position.x + 3.0, tail_rect.end.y - 3.0),
+		Vector2(tail_rect.position.x + 3.0, tail_rect.position.y + 3.0)
+	])
+	draw_polyline(tail_inner_pts, Color(0.77, 0.58, 0.15, 0.4), 1.0)
+	
+	# Draw mother-of-pearl inlay inside right tail cap
+	var mop_color := Color(0.85, 0.92, 0.95, 0.8)
+	_draw_inlay_pattern(Rect2(W - 26.0, 18.0, 18.0, H - 36.0), mop_color)
 
 	# 6. Draw Left Controls Panel (Lacquered black wood & MOP inlays)
 	var panel_sb := StyleBoxFlat.new()
@@ -410,7 +437,7 @@ func _draw() -> void:
 			var pulse_col := (sin(_pulse_phase[i]) + 1.0) * 0.5
 			str_col = base_col.lerp(Color(0.95, 0.72, 0.18), 0.25 + pulse_col * 0.25)
 
-		var sw := lerpf(3.0, 1.3, tc)
+		var sw := lerpf(4.0, 1.8, tc)
 
 		var pts := PackedVector2Array()
 		pts.append(Vector2(str_l, cy))
@@ -434,8 +461,8 @@ func _draw() -> void:
 		# Draw soft string drop shadow (floating higher above board)
 		var shad := PackedVector2Array()
 		for k in pts.size():
-			shad.append(pts[k] + Vector2(0.0, sw * 1.2 + 2.8))
-		draw_polyline(shad, Color(0.0, 0.0, 0.0, 0.18), sw * 1.1, true)
+			shad.append(pts[k] + Vector2(-1.0, sw * 1.5 + 4.5))
+		draw_polyline(shad, Color(0.0, 0.0, 0.0, 0.32), sw * 1.2, true)
 
 		# Draw motion blur vibrato lines
 		if _pluck_amp[i] > 0.005:
@@ -574,6 +601,9 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 	
 	# Small string guide notch in the saddle
 	draw_line(Vector2(bx, top_y - 2.0), Vector2(bx, top_y + 0.5), Color(0.12, 0.06, 0.02), 1.0)
+	
+	# Tiny golden highlight dot on the apex saddle
+	draw_circle(Vector2(bx, top_y - 1.5), 0.8, Color(0.95, 0.82, 0.45))
 
 # ─── Input helpers ────────────────────────────────────────────────────────────
 func _row_h() -> float:

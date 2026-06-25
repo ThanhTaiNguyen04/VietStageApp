@@ -708,10 +708,10 @@ func _go_practice_room_for_node(node_index: int) -> void:
 			PracticeRoom.current_song_sheet = ["Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Đô"]
 		elif node_index == 3:
 			PracticeRoom.current_song_title = "Kỹ Thuật Nhấn Dây & Rung Âm"
-			PracticeRoom.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
+			PracticeRoom.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Sol", "Sol", "Sol", "Mi", "Rê", "Đô"]
 		elif node_index == 4:
 			PracticeRoom.current_song_title = "Kỹ Thuật Song Thanh"
-			PracticeRoom.current_song_sheet = ["Đô", "La", "Fa", "Si", "La", "Mi", "Sol", "La"]
+			PracticeRoom.current_song_sheet = ["Đô", "La", "Sol", "Đô", "La", "Mi", "Sol", "La"]
 	elif inst == "dan_bau":
 		if node_index == 2:
 			PracticeDanBau.current_song_title = "Hài Âm Cơ Bản"

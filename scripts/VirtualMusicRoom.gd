@@ -741,7 +741,7 @@ func _open_focus_mode_popup(inst: String) -> void:
 	# Configure labels and details based on instrument
 	if inst == "tranh":
 		popup_title.text = "Giới Thiệu Đàn Tranh"
-		text_theory.text = "Đàn Tranh sử dụng thang âm chuẩn với các nốt nhạc: Đô - Rê - Mi - Fa - Sol - La - Si (tương đương với các tần số C3 - D3 - E3 - F3 - G3 - A3 - B3). Nhấn vào dây đàn bên phải nhạn để gảy âm."
+		text_theory.text = "Đàn Tranh sử dụng thang âm ngũ cung Việt Nam truyền thống với các nốt từ trên xuống lần lượt là: Son, La, Đồ, Rê, Mi (tương đương các tần số G3 - A3 - C4 - D4 - E4). Nhấn vào dây đàn bên phải nhạn để gảy âm."
 		text_fingering.text = "Kỹ thuật tay phải: Sử dụng ngón cái (1), ngón trỏ (2) và ngón giữa (3) đeo móng gảy để gảy dây đàn hướng vào lòng.\nKỹ thuật tay trái: Nhấn và rung dây ở phía bên trái nhạn đàn để tạo âm rung cảm xúc."
 		btn_popup_play.visible = true
 		btn_popup_play.text = "VÀO HỌC"
