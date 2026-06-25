@@ -1,10 +1,11 @@
 extends Control
+class_name PracticeRoom
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_JADE       := Color(0.12, 0.37, 0.23, 1.0)
-const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
+const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
 const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
 const C_GREEN_OK   := Color(0.12, 0.37, 0.23, 1.0)
@@ -18,7 +19,8 @@ const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
 const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
 # ─── @onready ─────────────────────────────────────────────────────────────────
-@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinh
+@onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
+@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
 @onready var lesson_bar   : ProgressBar   = $Root/TopBar/TopM/TopH/ProgressVBox/LessonBar
 @onready var pitch_note   : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote
@@ -37,18 +39,31 @@ const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var _recording   := false
+var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
 var _float_tween : Tween
 var _note_idx    := 2
+
+# AI Analysis tracking variables
+var _practice_time := 0.0
+var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
+var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
+var _pitch_scores : Array[float] = []
+var _tone_scores : Array[float] = []
+
 var _string_streams: Array[AudioStreamWAV] = []
 var _rec_tween   : Tween
+var _eval_cooldown := 0.0
+var _linh_collapsed := true
+var linh_mini_btn : Button
+var _collapse_timer : SceneTreeTimer = null
 
-const NOTES_VN : Array[String] = ["Hò", "Xự", "Xang", "Xê", "Công", "Liu", "Ú"]
+const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
 
-var sheet_notes : Array[String] = ["Hò","Hò","Xự","Xang","Xang","Xê","Công","Xê","Xang","Xự","Hò"]
+var sheet_notes : Array[String] = ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
 const SPEECHES : Array[String] = [
 	"Gảy nhẹ dây số 3,\nnhấn rung bên trái nhạn đàn.",
 	"Rất tốt!\nGiữ ngón cố định hơn nhé.",
@@ -69,6 +84,7 @@ func _ready() -> void:
 	_build_rhythm_bars()
 	_start_float()
 	_connect_buttons()
+	_setup_collapsible_linh()
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -93,6 +109,27 @@ func _ready() -> void:
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
+		
+		# Programmatic Mode Toggle Button
+		var mode_btn := Button.new()
+		mode_btn.name = "ModeToggleBtn"
+		mode_btn.text = "Chế độ: Micro 🎙️"
+		mode_btn.custom_minimum_size = Vector2(170, 44)
+		mode_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		record_hbox.add_child(mode_btn)
+		record_hbox.move_child(mode_btn, 0)
+		_style_outlined_btn(mode_btn)
+		_make_button_bouncy(mode_btn)
+		
+		mode_btn.pressed.connect(func() -> void:
+			_mic_mode = not _mic_mode
+			if _mic_mode:
+				mode_btn.text = "Chế độ: Micro 🎙️"
+				_va_say("Đã chuyển sang Chế độ luyện tập qua Micro.")
+			else:
+				mode_btn.text = "Chế độ: Chạm 📱"
+				_va_say("Đã chuyển sang Chế độ tự học qua màn hình chạm.")
+		)
 
 		# Programmatically add pulsing "REC" recording indicator next to record button
 		var rec_indicator := HBoxContainer.new()
@@ -133,23 +170,44 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _recording:
-		_sim_timer += delta
-		if _sim_timer >= 1.2:
-			_sim_timer = 0.0
-			_simulate_tick()
+		_practice_time += delta
+		if _mic_mode:
+			_process_real_audio(delta)
+		else:
+			_sim_timer += delta
+			if _sim_timer >= 1.2:
+				_sim_timer = 0.0
+				_simulate_tick()
 
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
-	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  BÀI 4" if current_song_title == "" else "ĐÀN TRANH  ·  BÀI HÁT"
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Kỹ Thuật Nhấn Dây & Rung Âm" if current_song_title == "" else current_song_title
+	
+	var diff := "Cơ bản"
+	if CourseMap.active_lesson_id == "Node3":
+		diff = "Trung bình"
+	elif CourseMap.active_lesson_id == "Node4":
+		diff = "Nâng cao"
+		
+	var title_lbl := "Kỹ Thuật Nhấn Dây & Rung Âm"
+	if current_song_title != "":
+		title_lbl = current_song_title
+		diff = "Bài hát"
+	else:
+		if CourseMap.active_lesson_id == "Node2":
+			title_lbl = "3 Nốt Đầu (Đô - Rê - Mi)"
+		elif CourseMap.active_lesson_id == "Node4":
+			title_lbl = "Kỹ Thuật Song Thanh"
+
+	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
 	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 	($Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button).text = "Demo"
 	($Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button).text = "x0.5"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Hò"
+	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
 	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
 	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
@@ -319,13 +377,13 @@ func _get_string_frequency(idx: int) -> float:
 	# Đàn tranh 16 dây - tần số chuẩn từ dây 1 (thấp) đến dây 16 (cao)
 	# Tuning theo hệ ngũ cung Việt Nam (pentatonic)
 	var base_freqs = [
-		130.81, # Hò  (C3)
-		146.83, # Xự  (D3)
-		174.61, # Xang (F3)
-		196.00, # Xê  (G3)
-		220.00, # Công (A3)
-		261.63, # Liu (C4)
-		293.66  # Ú   (D4)
+		130.81, # Đô  (C3)
+		146.83, # Rê  (D3)
+		164.81, # Mi  (E3)
+		174.61, # Fa  (F3)
+		196.00, # Sol (G3)
+		220.00, # La  (A3)
+		246.94  # Si  (B3)
 	]
 	var octave = idx / 7
 	var note_in_octave = idx % 7
@@ -456,9 +514,20 @@ func _toggle_record() -> void:
 		record_btn.text = "Dừng luyện tập"
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
-		if visualizer: visualizer.visible = true
+		if visualizer and _mic_mode: visualizer.visible = true
+		
+		# Reset AI tracking
+		_practice_time = 0.0
+		_detected_onsets.clear()
+		_pitch_scores.clear()
+		_tone_scores.clear()
+		_reference_onsets = PackedFloat32Array()
+		for i in range(sheet_notes.size()):
+			_reference_onsets.append(1.0 + i * 1.5)
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
+		if visualizer:
+			visualizer.add_practice_score(_score)
 		_show_custom_result()
 		_stop_pitch_detection()
 		if visualizer: visualizer.visible = false
@@ -505,6 +574,119 @@ func _simulate_tick() -> void:
 	_update_rhythm()
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
+func _process_real_audio(delta: float) -> void:
+	if _eval_cooldown > 0.0:
+		_eval_cooldown -= delta
+		return
+		
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if not visualizer: return
+	
+	var db = visualizer.current_amplitude_db
+	var pitch = visualizer.current_pitch
+	
+	if db > -45.0 and pitch > 50.0:
+		var target_note = sheet_notes[_note_idx]
+		
+		# Find the closest frequency matching the target note in all 16 strings
+		var closest_target_freq := 0.0
+		var min_diff := 999999.0
+		for i in range(16):
+			var note_name = NOTES_VN[i % 7]
+			if note_name == target_note:
+				var string_freq = _get_string_frequency(i)
+				var diff = abs(pitch - string_freq)
+				if diff < min_diff:
+					min_diff = diff
+					closest_target_freq = string_freq
+					
+		if closest_target_freq > 0.0:
+			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
+			if abs(cents) < 50.0:
+				pitch_note.text = target_note
+				
+				# Scaled tolerance window based on difficulty scale
+				var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
+				if abs(cents) < tolerance_cents:
+					pitch_status.text = "Đúng cao độ"
+					pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+					pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+				else:
+					pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
+					pitch_status.add_theme_color_override("font_color", C_WARN)
+					pitch_note.add_theme_color_override("font_color", C_WARN)
+					
+				# Record AI performance metrics
+				_detected_onsets.append(_practice_time)
+				var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
+				_pitch_scores.append(pitch_err)
+				_tone_scores.append(visualizer.current_tone_quality)
+				
+				# Advance note
+				_note_idx = (_note_idx + 1) % sheet_notes.size()
+				_build_notation()
+				_update_target_indicator()
+				
+				# Dynamic AI scoring
+				var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+				var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
+				var avg_tone_score = _get_average_score(_tone_scores, 80.0)
+				
+				_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, avg_tone_score, 100.0)
+				_refresh_score()
+				_update_rhythm_real()
+				rhythm_acc.text = "Nhịp điệu: %d%% | Âm sắc: %d%%" % [int(rhythm_score), int(avg_tone_score)]
+				
+				# Pluck visual effect on board
+				var target_string_idx := NOTES_VN.find(target_note)
+				if target_string_idx != -1 and _board:
+					_board.pluck(target_string_idx)
+					
+				_va_say("Tuyệt vời! Gảy đúng nốt rồi.")
+				_eval_cooldown = 1.0
+				return
+				
+		var detected_note := ""
+		var closest_detected_freq := 0.0
+		var min_detected_diff := 999999.0
+		for i in range(16):
+			var string_freq = _get_string_frequency(i)
+			var diff = abs(pitch - string_freq)
+			if diff < min_detected_diff:
+				min_detected_diff = diff
+				closest_detected_freq = string_freq
+				detected_note = NOTES_VN[i % 7]
+				
+		if detected_note != "" and min_detected_diff < 30.0:
+			pitch_note.text = detected_note
+			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
+			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			_score = clamp(_score - 0.5 * delta, 0, 100)
+			_refresh_score()
+	else:
+		pitch_note.text = "—"
+		pitch_status.text = "Đang nghe..."
+		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+		pitch_note.add_theme_color_override("font_color", C_RED_SON)
+
+func _update_rhythm_real() -> void:
+	var bars := rhythm_bars.get_children()
+	var ok := 0
+	for bar in bars:
+		var cr := bar as ColorRect
+		if randf() > 0.1:
+			ok += 1
+			var h := randf_range(16.0, 56.0)
+			var t := create_tween().set_parallel(true)
+			t.tween_property(cr, "custom_minimum_size:y", h, 0.08)
+			t.tween_property(cr, "color", C_JADE if randf() > 0.2 else C_GOLD, 0.07)
+			t.chain().parallel().tween_property(cr, "custom_minimum_size:y", 10.0, 0.36)
+			t.parallel().tween_property(cr, "color", Color(0.85, 0.82, 0.75, 1.0), 0.36)
+	var pct := int(float(ok) / float(bars.size()) * 100.0)
+	rhythm_acc.text = "Độ chính xác: %d%%" % pct
+	rhythm_acc.add_theme_color_override("font_color", C_GREEN_OK)
+
 func _refresh_score() -> void:
 	score_num.text = str(int(_score))
 	if _score >= 85.0:   score_num.add_theme_color_override("font_color", C_GREEN_OK)
@@ -535,6 +717,86 @@ func _va_say(text: String) -> void:
 	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
 	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
 
+	if _linh_collapsed:
+		_linh_collapsed = false
+		_update_linh_visibility()
+		
+	var active_timer = get_tree().create_timer(6.0)
+	_collapse_timer = active_timer
+	active_timer.timeout.connect(func():
+		if _collapse_timer == active_timer and not _linh_collapsed:
+			_linh_collapsed = true
+			_update_linh_visibility()
+	)
+
+func _setup_collapsible_linh() -> void:
+	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
+	if linh_vbox:
+		var collapse_btn := Button.new()
+		collapse_btn.text = "Thu nhỏ ◀"
+		collapse_btn.flat = true
+		collapse_btn.custom_minimum_size = Vector2(0, 36)
+		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		collapse_btn.pressed.connect(func():
+			_linh_collapsed = true
+			_update_linh_visibility()
+		)
+		linh_vbox.add_child(collapse_btn)
+		linh_vbox.move_child(collapse_btn, 0)
+		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
+		_make_button_bouncy(collapse_btn)
+		
+		# Add spacer to prevent floating avatar from overlapping the button text
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(0, 24)
+		linh_vbox.add_child(spacer)
+		linh_vbox.move_child(spacer, 1)
+
+	linh_mini_btn = Button.new()
+	linh_mini_btn.name = "LinhMiniBtn"
+	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
+	add_child(linh_mini_btn)
+	
+	linh_mini_btn.layout_mode = 1
+	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	linh_mini_btn.position.x += 24
+	linh_mini_btn.position.y -= 70
+	
+	var btn_s := StyleBoxFlat.new()
+	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
+	btn_s.border_color = C_GOLD
+	btn_s.border_width_left = 2; btn_s.border_width_right = 2
+	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
+	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
+	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
+	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	
+	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
+	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
+	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
+	
+	var mini_tex := TextureRect.new()
+	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
+	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mini_tex.size = Vector2(44, 44)
+	mini_tex.position = Vector2(10, 10)
+	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	linh_mini_btn.add_child(mini_tex)
+	
+	linh_mini_btn.pressed.connect(func():
+		_linh_collapsed = false
+		_update_linh_visibility()
+	)
+	_make_button_bouncy(linh_mini_btn)
+	_update_linh_visibility()
+
+func _update_linh_visibility() -> void:
+	if linh_panel:
+		linh_panel.visible = not _linh_collapsed
+	if linh_mini_btn:
+		linh_mini_btn.visible = _linh_collapsed
+
 func _update_target_indicator() -> void:
 	var target_note := sheet_notes[_note_idx]
 	var target_idx  := NOTES_VN.find(target_note)
@@ -545,6 +807,7 @@ func _update_target_indicator() -> void:
 
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 2
+	_eval_cooldown = 0.0
 	_build_notation()
 	record_btn.text   = "Bắt Đầu Luyện Tập"
 	_update_rec_pulse(false)
@@ -567,11 +830,26 @@ func _show_custom_hint() -> void:
 		popup.setup_hint("Gợi ý kỹ thuật", text)
 
 func _show_custom_result() -> void:
+	var inst := InstrumentSelect.selected_instrument
+	var stars := 1
+	if _score >= 85.0: stars = 3
+	elif _score >= 75.0: stars = 2
+	
+	if _score >= 70.0:
+		SecureDataManager.complete_lesson(inst, CourseMap.active_lesson_id, stars)
+		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
-		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa Bài 5")
+		
+		var next_lesson_name := "Khóa Học Tiếp"
+		if CourseMap.active_lesson_id == "Node2":
+			next_lesson_name = "Nhấn & Rung"
+		elif CourseMap.active_lesson_id == "Node3":
+			next_lesson_name = "Song Thanh"
+			
+		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
 
 func _go_back() -> void:
 	var t := create_tween()
@@ -670,3 +948,12 @@ func _update_rec_pulse(active: bool) -> void:
 		_rec_tween.chain().parallel()
 		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _get_average_score(scores: Array, default_val: float) -> float:
+	if scores.size() == 0:
+		return default_val
+	var sum := 0.0
+	for s in scores:
+		sum += s
+	return sum / scores.size()
+
