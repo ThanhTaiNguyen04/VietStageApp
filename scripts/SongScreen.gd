@@ -474,7 +474,7 @@ func _connect_events() -> void:
 	for btn in [btn_all, btn_danca, btn_trutinh, btn_cotruyen]:
 		_make_btn_bouncy(btn)
 
-	btn_courses_mob.pressed.connect(func() -> void: _fade_to("res://scenes/CourseMap.tscn"))
+	btn_courses_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
 	btn_room_mob.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_account_mob.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
 

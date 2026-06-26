@@ -727,7 +727,6 @@ func _animate_in() -> void:
 
 # ─── Connect Buttons ───────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
-	btn_courses.pressed.connect(func() -> void: _fade_to("res://scenes/CourseMap.tscn"))
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void:
 		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
@@ -745,15 +744,27 @@ func _connect_buttons() -> void:
 
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed: _fade_to("res://scenes/CourseMap.tscn")
+		if e is InputEventMouseButton and e.pressed:
+			SecureDataManager.active_lesson_id = "Node1"
+			_fade_to("res://scenes/VideoPlayer.tscn")
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed: _fade_to("res://scenes/CourseMap.tscn")
+		if e is InputEventMouseButton and e.pressed:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if SecureDataManager.is_lesson_completed(inst, "Node2"):
+				SecureDataManager.active_lesson_id = "Node3"
+				_go_practice_room_for_node(3)
+			else:
+				SecureDataManager.active_lesson_id = "Node2"
+				_go_practice_room_for_node(2)
 	)
 	
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
-	play_soloist.pressed.connect(_go_practice)
+	play_soloist.pressed.connect(func() -> void:
+		SecureDataManager.active_lesson_id = "Node4"
+		_go_practice_room_for_node(4)
+	)
 	_make_btn_bouncy(play_soloist)
 	
 	var play_chords := card_chords_skills.get_node("Margin/HBox/BtnPlay") as Button
@@ -786,7 +797,6 @@ func _connect_buttons() -> void:
 	)
 
 	# Mobile Navigation Connections
-	btn_courses_mob.pressed.connect(func() -> void: _fade_to("res://scenes/CourseMap.tscn"))
 	btn_room_mob.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs_mob.pressed.connect(func() -> void:
 		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
@@ -845,6 +855,50 @@ func _go_practice() -> void:
 		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
+
+func _go_practice_room_for_node(node_index: int) -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	
+	if inst == "dan_tranh":
+		if node_index == 2:
+			PracticeRoom.current_song_title = "3 Nốt Đầu (Đô - Rê - Mi)"
+			PracticeRoom.current_song_sheet = ["Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Đô"]
+		elif node_index == 3:
+			PracticeRoom.current_song_title = "Kỹ Thuật Nhấn Dây & Rung Âm"
+			PracticeRoom.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Sol", "Sol", "Sol", "Mi", "Rê", "Đô"]
+		elif node_index == 4:
+			PracticeRoom.current_song_title = "Kỹ Thuật Song Thanh"
+			PracticeRoom.current_song_sheet = ["Đô", "La", "Sol", "Đô", "La", "Mi", "Sol", "La"]
+	elif inst == "dan_bau":
+		if node_index == 2:
+			PracticeDanBau.current_song_title = "Hài Âm Cơ Bản"
+			PracticeDanBau.current_song_sheet = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+		elif node_index == 3:
+			PracticeDanBau.current_song_title = "Uốn Vòi Đàn"
+			PracticeDanBau.current_song_sheet = ["Đô", "Mi", "Fa", "La", "Si", "La", "Fa", "Mi", "Rê", "Đô"]
+		elif node_index == 4:
+			PracticeDanBau.current_song_title = "Luyến Láy Đàn Bầu"
+			PracticeDanBau.current_song_sheet = ["Đô", "Fa", "La", "Si", "La", "Fa", "Đô"]
+	else: # sao_truc
+		if node_index == 2:
+			PracticeSaoTruc.current_song_title = "Hơi thở & Che lỗ cơ bản"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+		elif node_index == 3:
+			PracticeSaoTruc.current_song_title = "Luyện Ngón Sáo Trúc"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
+		elif node_index == 4:
+			PracticeSaoTruc.current_song_title = "Nhấp Ngón Kỹ Thuật"
+			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Si", "Đô", "Si", "La", "Sol"]
+
+	var path := "res://scenes/PracticeRoom.tscn"
+	if inst == "dan_tranh":
+		path = "res://scenes/PracticeRoom.tscn"
+	elif inst == "dan_bau":
+		path = "res://scenes/PracticeDanBau.tscn"
+	else:
+		path = "res://scenes/PracticeSaoTruc.tscn"
+		
+	_fade_to(path)
 
 func _go_instruments() -> void: _fade_to("res://scenes/InstrumentSelect.tscn")
 func _go_progress()    -> void: _fade_to("res://scenes/ProgressScreen.tscn")

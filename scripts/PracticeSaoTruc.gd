@@ -847,9 +847,9 @@ func _process(delta: float) -> void:
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
 	var diff := "Cơ bản"
-	if CourseMap.active_lesson_id == "Node3":
+	if SecureDataManager.active_lesson_id == "Node3":
 		diff = "Trung bình"
-	elif CourseMap.active_lesson_id == "Node4":
+	elif SecureDataManager.active_lesson_id == "Node4":
 		diff = "Nâng cao"
 		
 	var title_lbl := "Lý Hoài Nam (Dân ca)"
@@ -857,9 +857,9 @@ func _set_labels() -> void:
 		title_lbl = current_song_title
 		diff = "Bài hát"
 	else:
-		if CourseMap.active_lesson_id == "Node3":
+		if SecureDataManager.active_lesson_id == "Node3":
 			title_lbl = "Luyện Ngón Sáo Trúc"
-		elif CourseMap.active_lesson_id == "Node4":
+		elif SecureDataManager.active_lesson_id == "Node4":
 			title_lbl = "Nhấp Ngón Kỹ Thuật"
 
 	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "SÁO TRÚC  ·  BÀI HÁT" if current_song_title != "" else "SÁO TRÚC  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
@@ -1924,7 +1924,7 @@ func _show_custom_result() -> void:
 	elif _score >= 75.0: stars = 2
 	
 	if _score >= 70.0:
-		SecureDataManager.complete_lesson(inst, CourseMap.active_lesson_id, stars)
+		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -1935,9 +1935,9 @@ func _show_custom_result() -> void:
 		var t := clampf((_score * 3.0 - p - r), 60, 95)
 		
 		var next_lesson_name := "Khóa Học Tiếp"
-		if CourseMap.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id == "Node2":
 			next_lesson_name = "Luyện Ngón"
-		elif CourseMap.active_lesson_id == "Node3":
+		elif SecureDataManager.active_lesson_id == "Node3":
 			next_lesson_name = "Nhấp Ngón"
 			
 		popup.setup_result(_score, p, r, t, 80, "Đã mở khóa: " + next_lesson_name)
@@ -1968,7 +1968,7 @@ func _go_back() -> void:
 		_intro_audio_manager.audio_player.stop()
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 ## Pitch-detection stubs — to be replaced with real audio analysis
 func _start_pitch_detection() -> void:

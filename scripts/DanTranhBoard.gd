@@ -22,6 +22,15 @@ var audio_enabled := true
 var _hovered_idx : int                = -1
 var _active_touches : Dictionary      = {}
 
+# ─── Notes on strings properties ──────────────────────────────────────────────
+var sheet_notes        : Array = []
+var sheet_durations    : Array = []
+var note_statuses      : Array = []
+var current_note_idx   : int   = 0
+var current_time_beats : float = 0.0
+var is_active          : bool  = false
+
+
 # ─── Init ─────────────────────────────────────────────────────────────────────
 func init(notes: Array[String], streams: Array, freqs: Array[float]) -> void:
 	_note_names = notes
@@ -498,6 +507,90 @@ func _draw() -> void:
 			draw_polyline(pts, Color(1.00, 0.92, 0.62, _glow_alpha[i] * 0.38), sw + 6.0,  true)
 			draw_polyline(pts, Color(1.00, 0.95, 0.75, _glow_alpha[i] * 0.18), sw + 12.0, true)
 
+
+		# ── Pluck Target Ring & Scrolling Notes ──
+		var trigger_x: float = bridge_x + 0.25 * (str_r - bridge_x)
+		
+		# Pluck target ring: glowing golden ring
+		var ring_col := Color(0.77, 0.58, 0.15, 0.35)
+		if _is_target[i]:
+			var pulse := (sin(_pulse_phase[i]) + 1.0) * 0.5
+			ring_col = Color(0.95, 0.72, 0.18, 0.5 + pulse * 0.4)
+		draw_circle(Vector2(trigger_x, cy), 9.0, ring_col, false, 1.5)
+		draw_circle(Vector2(trigger_x, cy), 4.0, Color(ring_col.r, ring_col.g, ring_col.b, ring_col.a * 0.3))
+		
+		# Draw scrolling notes on this string
+		if is_active and not sheet_notes.is_empty():
+			var PIXELS_PER_BEAT: float = 120.0
+			var note_time: float = 0.0
+			for k in range(sheet_notes.size()):
+				var note_name = sheet_notes[k]
+				var duration = sheet_durations[k] if k < sheet_durations.size() else 1.0
+				
+				var is_rest: bool = note_name == "Rest" or note_name == "-" or note_name == "nghỉ"
+				if is_rest:
+					note_time += duration
+					continue
+					
+				var target_str_idx: int = _note_names.find(note_name)
+				if target_str_idx != i:
+					note_time += duration
+					continue
+					
+				# Note X position (starts at right, scrolls to left)
+				var note_x: float = trigger_x + (note_time - current_time_beats) * PIXELS_PER_BEAT
+				
+				# Only draw if it's visible in the playable zither area
+				if note_x >= bridge_x - 100.0 and note_x <= str_r + 200.0:
+					var note_width: float = float(duration) * PIXELS_PER_BEAT * 0.85
+					var cap_h: float = clampf(rh * 0.72, 12.0, 26.0)
+					var cap_rect: Rect2 = Rect2(note_x, cy - cap_h * 0.5, note_width, cap_h)
+					
+					var cap_color: Color = Color(0.12, 0.43, 0.31, 0.6) # jade/teal future note
+					var border_color: Color = Color(0.18, 0.60, 0.44, 0.8)
+					
+					if k == current_note_idx:
+						var pulse: float = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
+						cap_color = Color(0.95, 0.72, 0.18, 0.85 + pulse * 0.1) # glowing gold
+						border_color = Color(1.0, 0.92, 0.60, 0.95)
+					elif k < current_note_idx:
+						var status = note_statuses[k] if k < note_statuses.size() else "unplayed"
+						if status == "correct":
+							cap_color = Color(0.15, 0.68, 0.37, 0.7) # emerald green
+							border_color = Color(0.18, 0.80, 0.44, 0.9)
+						elif status == "missed":
+							cap_color = Color(0.75, 0.22, 0.17, 0.5) # muted ruby red
+							border_color = Color(0.90, 0.30, 0.25, 0.75)
+						else:
+							cap_color = Color(0.4, 0.4, 0.4, 0.45) # grey
+							border_color = Color(0.55, 0.55, 0.55, 0.6)
+							
+					var cap_sb: StyleBoxFlat = StyleBoxFlat.new()
+					cap_sb.bg_color = cap_color
+					cap_sb.border_color = border_color
+					cap_sb.border_width_left = 1; cap_sb.border_width_right = 1
+					cap_sb.border_width_top = 1; cap_sb.border_width_bottom = 1
+					cap_sb.set_corner_radius_all(int(cap_h * 0.5))
+					
+					# Shadow
+					cap_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+					cap_sb.shadow_size = 3
+					cap_sb.shadow_offset = Vector2(1, 1)
+					
+					draw_style_box(cap_sb, cap_rect)
+					
+					# Draw note text inside capsule
+					if note_width > 22.0 and font != null:
+						var text_color: Color = Color.WHITE
+						if k == current_note_idx:
+							text_color = Color("#2e180d") # dark brown for active note readability
+						var txt_size: int = clamp(int(cap_h * 0.6), 8, 11)
+						var txt_y: float = cy + txt_size * 0.35
+						var txt_x: float = note_x + 6.0
+						draw_string(font, Vector2(txt_x, txt_y), note_name, HORIZONTAL_ALIGNMENT_LEFT, note_width - 12.0, txt_size, text_color)
+						
+				note_time += duration
+
 		# ── Note Label and String Numbers ──
 		if font != null:
 			var num_alpha := 0.50 + _glow_alpha[i] * 0.50
@@ -740,7 +833,7 @@ func _play_audio(idx: int, pitch: float) -> void:
 	pl.pitch_scale = pitch
 	pl.volume_db   = -3.0  # Slightly quieter to avoid clipping with multiple notes
 	pl.bus         = "Master"
-	get_tree().current_scene.add_child(pl)
+	add_child(pl)
 	pl.play()
 	_audio_players[idx] = pl
 	var t := get_tree().create_timer(3.5)

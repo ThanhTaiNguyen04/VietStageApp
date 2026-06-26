@@ -239,6 +239,15 @@ func _ready() -> void:
 	if scroll_container:
 		scroll_container.visible = false
 
+	# Hide NotationArea entirely and collapse MiddleRow to make Dan Tranh zither full screen
+	var notation_area := $Root/MiddleRow/MainContent/NotationArea as PanelContainer
+	if notation_area:
+		notation_area.visible = false
+	var middle_row := $Root/MiddleRow as HBoxContainer
+	if middle_row:
+		middle_row.custom_minimum_size.y = 0
+
+
 	# Create and style the NoteTrackPanel
 	var track_panel := Panel.new()
 	track_panel.name = "NoteTrackPanel"
@@ -630,15 +639,26 @@ func _process(delta: float) -> void:
 						_set_block_color(block, C_GREEN_OK)
 					else:
 						_set_block_color(block, Color("#5c8c72"))
+			
+			# Pass scrolling notes state to DanTranhBoard for direct string rendering
+			if _board:
+				_board.sheet_notes = sheet_notes
+				_board.sheet_durations = sheet_durations
+				_board.note_statuses = note_statuses
+				_board.current_note_idx = _note_idx
+				_board.current_time_beats = _current_time_beats
+				_board.is_active = _recording
+				_board.queue_redraw()
+
 
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
 	
 	var diff := "Cơ bản"
-	if CourseMap.active_lesson_id == "Node3":
+	if SecureDataManager.active_lesson_id == "Node3":
 		diff = "Trung bình"
-	elif CourseMap.active_lesson_id == "Node4":
+	elif SecureDataManager.active_lesson_id == "Node4":
 		diff = "Nâng cao"
 		
 	var title_lbl := "Kỹ Thuật Nhấn Dây & Rung Âm"
@@ -646,9 +666,9 @@ func _set_labels() -> void:
 		title_lbl = current_song_title
 		diff = "Bài hát"
 	else:
-		if CourseMap.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id == "Node2":
 			title_lbl = "3 Nốt Đầu (Đô - Rê - Mi)"
-		elif CourseMap.active_lesson_id == "Node4":
+		elif SecureDataManager.active_lesson_id == "Node4":
 			title_lbl = "Kỹ Thuật Song Thanh"
 
 	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
@@ -1038,7 +1058,7 @@ func _toggle_record() -> void:
 		_start_pitch_detection()
 		if visualizer and _mic_mode: visualizer.visible = true
 		if _board:
-			_board.audio_enabled = false
+			_board.audio_enabled = true
 		
 		# Reset AI tracking
 		_practice_time = 0.0
@@ -1453,7 +1473,7 @@ func _show_custom_result() -> void:
 	elif _score >= 75.0: stars = 2
 	
 	if _score >= 70.0:
-		SecureDataManager.complete_lesson(inst, CourseMap.active_lesson_id, stars)
+		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -1461,9 +1481,9 @@ func _show_custom_result() -> void:
 		add_child(popup)
 		
 		var next_lesson_name := "Khóa Học Tiếp"
-		if CourseMap.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id == "Node2":
 			next_lesson_name = "Nhấn & Rung"
-		elif CourseMap.active_lesson_id == "Node3":
+		elif SecureDataManager.active_lesson_id == "Node3":
 			next_lesson_name = "Song Thanh"
 			
 		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
@@ -1471,7 +1491,7 @@ func _show_custom_result() -> void:
 func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 ## Pitch-detection stubs — replace with real implementation or plugin integration
 func _start_pitch_detection() -> void:

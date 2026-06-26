@@ -6,7 +6,7 @@ const C_WHITE_DIM := Color(0.13, 0.08, 0.05, 1.0)
 const C_BUBBLE_BG := Color(1.00, 1.00, 1.00, 0.98)
 const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 
-const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "MainMenu", "CourseMap", "VirtualMusicRoom", "PracticeRoom", "PracticeSaoTruc", "PracticeDanBau"]
+const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "VirtualMusicRoom", "PracticeRoom", "PracticeSaoTruc", "PracticeDanBau"]
 
 const TIPS : Array[String] = [
 	"Thư giãn cổ tay khi gảy đàn nhé!",
@@ -137,8 +137,7 @@ func show_random_tip() -> void:
 
 func greet(scene_name: String) -> void:
 	var msgs := {
-		"MainMenu":        "Chào mừng trở lại! Hôm nay bạn muốn học gì?",
-		"CourseMap":       "Chọn bài học phù hợp với trình độ nhé!",
+		"MainMenu":        "Chọn bài học phù hợp với trình độ nhé!",
 		"PracticeRoom":    "Thư giãn và cảm nhận từng nốt đàn tranh!",
 		"PracticeSaoTruc": "Hít thở đều và thổi nhẹ vào miệng sáo nhé!",
 		"MiniGame":        "Lắng nghe kỹ âm thanh rồi hãy chọn nhé!",
