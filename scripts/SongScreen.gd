@@ -27,7 +27,7 @@ const SONGS_DATA := [
 		"genre": "dan_ca",
 		"genre_label": "Dân ca",
 		"xp": 100,
-		"sheet": ["Đô","Đô","Rê","Mi","Mi","Fa","Sol","Fa","Mi","Rê","Đô"]
+		"sheet": ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"]
 	},
 	{
 		"id": "song_002",
@@ -40,7 +40,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 250,
-		"sheet": ["La","La","Si","La","Mi","Fa","Sol","Rê","Mi","La","Đô"]
+		"sheet": ["Đô2","Đô2","Rê2","Đô2","Fa","Sol","La","Rê","Fa","Đô2","Đô"]
 	},
 	{
 		"id": "song_003",
@@ -53,7 +53,7 @@ const SONGS_DATA := [
 		"genre": "co_truyen",
 		"genre_label": "Cổ truyền",
 		"xp": 180,
-		"sheet": ["Mi","Rê","Đô","Rê","Mi","Fa","La","Sol","Fa","Mi","Đô"]
+		"sheet": ["Fa","Rê","Đô","Rê","Fa","Sol","Đô2","La","Sol","Fa","Đô"]
 	},
 	{
 		"id": "song_004",
@@ -66,7 +66,20 @@ const SONGS_DATA := [
 		"genre": "tru_tinh",
 		"genre_label": "Trữ tình",
 		"xp": 200,
-		"sheet": ["Đô","Mi","Fa","La","Sol","La","Fa","Mi","Rê","Đô","Đô"]
+		"sheet": ["Đô","Fa","Sol","Đô2","La","Đô2","Sol","Fa","Rê","Đô","Đô"]
+	},
+	{
+		"id": "song_004b",
+		"title": "Giấc Mơ Trưa",
+		"desc": "Tác phẩm trứ danh của nhạc sĩ Giáng Son - Giai điệu mộng mơ, thanh tao đặc trưng của Đàn Tranh.",
+		"instrument": "dan_tranh",
+		"instrument_label": "Đàn Tranh",
+		"difficulty": "Khó",
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0), # Jade green
+		"genre": "tru_tinh",
+		"genre_label": "Trữ tình",
+		"xp": 300,
+		"sheet": ["Rest", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Rê3", "Rê3", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Sol", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Rê2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Rê2", "Sol2", "Đô3", "Đô3", "Đô3", "Rest", "Mi2", "Rê2", "Sol2", "Rê2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Sol2", "Rest", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "Sol", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest"]
 	},
 	{
 		"id": "song_005",
@@ -119,6 +132,24 @@ const SONGS_DATA := [
 		"genre_label": "Trữ tình",
 		"xp": 120,
 		"sheet": ["Đô","Rê","Mi","Sol","Mi","Rê","Đô","Rê","Mi","Rê","Đô"]
+	},
+	{
+		"id": "song_011",
+		"title": "Futari no Kimochi",
+		"desc": "Bản nhạc chủ đề đầy cảm xúc trong phim hoạt hình InuYasha dành cho Sáo Trúc.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0), # Gold
+		"genre": "tru_tinh",
+		"genre_label": "Trữ tình",
+		"xp": 200,
+		"sheet": [
+			"Mi", "Sol", "La", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "Mi",
+			"Mi", "Sol", "La", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "La",
+			"Mi2", "Sol2", "La2", "Sol2", "La2", "Si2", "Sol2", "La2", "Sol2", "Rê2", "Mi2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Si2", "Sol2", "Mi2",
+			"Mi2", "Sol2", "La2", "Sol2", "La2", "Si2", "Sol2", "La2", "Sol2", "Rê2", "Mi2", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "La"
+		]
 	},
 	{
 		"id": "song_009",
@@ -443,7 +474,7 @@ func _connect_events() -> void:
 	for btn in [btn_all, btn_danca, btn_trutinh, btn_cotruyen]:
 		_make_btn_bouncy(btn)
 
-	btn_courses_mob.pressed.connect(func() -> void: _fade_to("res://scenes/CourseMap.tscn"))
+	btn_courses_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
 	btn_room_mob.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_account_mob.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
 
@@ -703,28 +734,27 @@ func _on_play_song(song: Dictionary) -> void:
 	SecureDataManager.data["selected_instrument"] = song.instrument
 	SecureDataManager.save_data()
 	
-	var typed_sheet : Array[String] = []
-	for note in song.sheet:
-		typed_sheet.append(str(note))
-	
 	# Transition dynamic values to practice room
+	var sheet_typed: Array[String] = []
+	sheet_typed.assign(song.sheet)
+
 	if song.instrument == "dan_tranh":
 		var pr_script = load("res://scripts/PracticeRoom.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = typed_sheet
+			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeRoom.tscn")
 	elif song.instrument == "dan_bau":
 		var pr_script = load("res://scripts/PracticeDanBau.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = typed_sheet
+			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		var pr_script = load("res://scripts/PracticeSaoTruc.gd")
 		if pr_script:
 			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = typed_sheet
+			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
 func _go_back() -> void:

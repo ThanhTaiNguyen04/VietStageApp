@@ -40,11 +40,15 @@ var _recording   := false
 var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
+var _correct_pitch_hold_time := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
 var _string_streams: Array[AudioStreamWAV] = []
 var _active_player : AudioStreamPlayer = null
 var _rec_tween   : Tween
+var _detected_notes_history: Array[String] = []
+const HISTORY_SIZE := 8
+var _teacher_tip_timer := 0.0
 var _current_bend_cents := 0.0
 var _eval_cooldown := 0.0
 var _linh_collapsed := true
@@ -104,6 +108,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		visualizer.min_frequency = 150.0
+		visualizer.max_frequency = 800.0
+		visualizer.volume_threshold_db = -32.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1)
@@ -161,7 +168,14 @@ func _ready() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
-
+	# Setup interactive teacher to open AI chat
+	char_linh.mouse_filter = Control.MOUSE_FILTER_STOP
+	char_linh.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			var chat = AIChatPopup.new()
+			add_child(chat)
+			chat.open_chat("dan_bau")
+	)
 
 func _process(delta: float) -> void:
 	if _recording:
@@ -179,9 +193,9 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
 	
 	var diff := "Cơ bản"
-	if CourseMap.active_lesson_id == "Node3":
+	if SecureDataManager.active_lesson_id == "Node3":
 		diff = "Trung bình"
-	elif CourseMap.active_lesson_id == "Node4":
+	elif SecureDataManager.active_lesson_id == "Node4":
 		diff = "Nâng cao"
 		
 	var title_lbl := "Hài Âm Cơ Bản & Uốn Vòi Đàn"
@@ -189,11 +203,11 @@ func _set_labels() -> void:
 		title_lbl = current_song_title
 		diff = "Bài hát"
 	else:
-		if CourseMap.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id == "Node2":
 			title_lbl = "Hài Âm Cơ Bản"
-		elif CourseMap.active_lesson_id == "Node3":
+		elif SecureDataManager.active_lesson_id == "Node3":
 			title_lbl = "Uốn Vòi Đàn"
-		elif CourseMap.active_lesson_id == "Node4":
+		elif SecureDataManager.active_lesson_id == "Node4":
 			title_lbl = "Luyến Láy Đàn Bầu"
 
 	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN BẦU  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
@@ -291,6 +305,12 @@ func _build_theme() -> void:
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
 	for c in notes_hbox.get_children(): c.queue_free()
+	
+	var scroll_container := notes_hbox.get_parent() as ScrollContainer
+	if scroll_container:
+		scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+		scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+
 	for i in sheet_notes.size():
 		var note     := sheet_notes[i]
 		var is_active := i == _note_idx
@@ -323,6 +343,20 @@ func _build_notation() -> void:
 			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
 		card.add_child(lbl)
 		notes_hbox.add_child(card)
+
+	# Scroll smoothly to center the active note
+	if scroll_container:
+		var separation := 4.0 # default HBox container separation
+		var active_x := 0.0
+		var active_w := 60.0
+		for j in range(_note_idx):
+			active_x += 60.0 + separation
+			
+		var viewport_w : float = scroll_container.size.x if scroll_container.size.x > 0 else 800.0
+		var target_scroll : float = active_x + (active_w / 2.0) - (viewport_w / 2.0)
+		
+		var tween = create_tween()
+		tween.tween_property(scroll_container, "scroll_horizontal", int(max(0.0, target_scroll)), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _build_dots() -> void:
 	var total := 5
@@ -444,7 +478,8 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
 	# Play synthesised sound at current pitch bend factor
-	_play_audio(idx)
+	if not _recording:
+		_play_audio(idx)
 
 	if note_name == sheet_notes[_note_idx]:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
@@ -895,7 +930,7 @@ func _show_custom_result() -> void:
 	elif _score >= 75.0: stars = 2
 	
 	if _score >= 70.0:
-		SecureDataManager.complete_lesson(inst, CourseMap.active_lesson_id, stars)
+		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -903,9 +938,9 @@ func _show_custom_result() -> void:
 		add_child(popup)
 		
 		var next_lesson_name := "Khóa Học Tiếp"
-		if CourseMap.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id == "Node2":
 			next_lesson_name = "Uốn Vòi Đàn"
-		elif CourseMap.active_lesson_id == "Node3":
+		elif SecureDataManager.active_lesson_id == "Node3":
 			next_lesson_name = "Luyến Láy"
 			
 		popup.setup_result(_score, 85.0, 78.0, 81.0, 100, "Đã mở khóa: " + next_lesson_name)
@@ -913,7 +948,7 @@ func _show_custom_result() -> void:
 func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 # ─── Dynamic Helpers ──────────────────────────────────────────────────────────
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
@@ -996,6 +1031,56 @@ func _update_rec_pulse(active: bool) -> void:
 		_rec_tween.chain().parallel()
 		_rec_tween.tween_property(rec_indicator, "modulate:a", 1.0, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		_rec_tween.tween_property(rec_indicator, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _find_closest_node_index(freq: float) -> int:
+	var closest_idx = -1
+	var min_diff = 1e9
+	for i in range(NOTES_VN.size()):
+		var note_freq = _get_node_frequency(i)
+		var diff = abs(freq - note_freq)
+		if diff < min_diff:
+			min_diff = diff
+			closest_idx = i
+	return closest_idx
+
+func _get_stabilized_note(new_note: String) -> String:
+	_detected_notes_history.append(new_note)
+	if _detected_notes_history.size() > HISTORY_SIZE:
+		_detected_notes_history.remove_at(0)
+		
+	var counts := {}
+	for note in _detected_notes_history:
+		if note == "": continue
+		if not counts.has(note):
+			counts[note] = 0
+		counts[note] += 1
+		
+	var max_count := 0
+	var stable_note := ""
+	for note in counts:
+		if counts[note] > max_count:
+			max_count = counts[note]
+			stable_note = note
+			
+	if max_count >= 5:
+		return stable_note
+	return ""
+
+func _check_teacher_advice(closest_note: String, cents_dev: float) -> void:
+	if not _recording: return
+	
+	var target_note = sheet_notes[_note_idx]
+	if closest_note == "":
+		return
+		
+	if closest_note == target_note:
+		if cents_dev > 15.0:
+			_va_say("Đúng nốt %s rồi! Nhưng cao độ lệch nhẹ. Con hãy uốn nhẹ cần đàn (bend) để khớp chuẩn nhé." % target_note)
+		else:
+			if randf() > 0.6:
+				_va_say("Âm hài âm chuẩn xác! Kỹ thuật uốn cần nốt %s của con rất điệu nghệ." % target_note)
+	else:
+		_va_say("Nghe như nốt %s. Nốt mục tiêu là %s đấy. Con hãy chỉnh lại vị trí gảy hài âm hoặc góc uốn cần nhé!" % [closest_note, target_note])
 
 func _get_average_score(scores: Array, default_val: float) -> float:
 	if scores.size() == 0:

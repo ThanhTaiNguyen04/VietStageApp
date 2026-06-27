@@ -405,16 +405,16 @@ func _on_complete() -> void:
 	video_stream_player.stop()
 	var inst := InstrumentSelect.selected_instrument
 	SecureDataManager.complete_lesson(inst, "Node1", 3) # Mark Intro completed with 3 stars securely!
-	CourseMap.video_completed = true
+	SecureDataManager.video_completed = true
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 func _go_back() -> void:
 	video_stream_player.stop()
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:
 	var bn := _flat(Color(0,0,0,0), Color(0.13, 0.08, 0.05, 0.20), radius)

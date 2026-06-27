@@ -18,8 +18,18 @@ var _is_pressed  : PackedByteArray    = PackedByteArray()
 var _press_x     : PackedFloat32Array = PackedFloat32Array()
 var _press_y     : PackedFloat32Array = PackedFloat32Array()
 var _audio_players : Array            = []
+var audio_enabled := true
 var _hovered_idx : int                = -1
 var _active_touches : Dictionary      = {}
+
+# ─── Notes on strings properties ──────────────────────────────────────────────
+var sheet_notes        : Array = []
+var sheet_durations    : Array = []
+var note_statuses      : Array = []
+var current_note_idx   : int   = 0
+var current_time_beats : float = 0.0
+var is_active          : bool  = false
+
 
 # ─── Init ─────────────────────────────────────────────────────────────────────
 func init(notes: Array[String], streams: Array, freqs: Array[float]) -> void:
@@ -58,7 +68,8 @@ func pluck(idx: int) -> void:
 	_pluck_time[idx] = 0.0
 	_pluck_amp[idx]  = 1.0
 	_glow_alpha[idx] = 1.0
-	_play_audio(idx, 1.0)
+	if audio_enabled:
+		_play_audio(idx, 1.0)
 	var name_idx := idx % _note_names.size()
 	string_plucked.emit(idx, _note_names[name_idx])
 	queue_redraw()
@@ -281,9 +292,36 @@ func _draw() -> void:
 	# Draw gold highlight line
 	draw_polyline(div_pts, Color(0.77, 0.58, 0.15, 0.65), 1.6, true)
 
-	# 5. Draw mother-of-pearl inlay on right end block
-	var mop_color := Color(0.85, 0.92, 0.95, 0.72)
-	_draw_inlay_pattern(Rect2(W - 24.0, 15.0, 24.0, H - 30.0), mop_color)
+	# 5. Draw right-end curved tail cap / frame
+	var tail_sb := StyleBoxFlat.new()
+	tail_sb.bg_color = Color(0.12, 0.06, 0.02) # dark premium rosewood
+	tail_sb.set_corner_radius_all(8)
+	tail_sb.border_width_left = 2
+	tail_sb.border_width_right = 2
+	tail_sb.border_width_top = 2
+	tail_sb.border_width_bottom = 2
+	tail_sb.border_color = Color(0.77, 0.58, 0.15) # gold border
+	tail_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.4)
+	tail_sb.shadow_size = 4
+	tail_sb.shadow_offset = Vector2(1, 1)
+	
+	# Draw right tail cap block from W - 28.0 to W - 6.0
+	var tail_rect := Rect2(W - 28.0, 12.0, 22.0, H - 24.0)
+	draw_style_box(tail_sb, tail_rect)
+	
+	# Draw inner thin gold highlight line inside right tail cap
+	var tail_inner_pts := PackedVector2Array([
+		Vector2(tail_rect.position.x + 3.0, tail_rect.position.y + 3.0),
+		Vector2(tail_rect.end.x - 3.0, tail_rect.position.y + 3.0),
+		Vector2(tail_rect.end.x - 3.0, tail_rect.end.y - 3.0),
+		Vector2(tail_rect.position.x + 3.0, tail_rect.end.y - 3.0),
+		Vector2(tail_rect.position.x + 3.0, tail_rect.position.y + 3.0)
+	])
+	draw_polyline(tail_inner_pts, Color(0.77, 0.58, 0.15, 0.4), 1.0)
+	
+	# Draw mother-of-pearl inlay inside right tail cap
+	var mop_color := Color(0.85, 0.92, 0.95, 0.8)
+	_draw_inlay_pattern(Rect2(W - 26.0, 18.0, 18.0, H - 36.0), mop_color)
 
 	# 6. Draw Left Controls Panel (Lacquered black wood & MOP inlays)
 	var panel_sb := StyleBoxFlat.new()
@@ -408,7 +446,7 @@ func _draw() -> void:
 			var pulse_col := (sin(_pulse_phase[i]) + 1.0) * 0.5
 			str_col = base_col.lerp(Color(0.95, 0.72, 0.18), 0.25 + pulse_col * 0.25)
 
-		var sw := lerpf(3.0, 1.3, tc)
+		var sw := lerpf(4.0, 1.8, tc)
 
 		var pts := PackedVector2Array()
 		pts.append(Vector2(str_l, cy))
@@ -432,8 +470,8 @@ func _draw() -> void:
 		# Draw soft string drop shadow (floating higher above board)
 		var shad := PackedVector2Array()
 		for k in pts.size():
-			shad.append(pts[k] + Vector2(0.0, sw * 1.2 + 2.8))
-		draw_polyline(shad, Color(0.0, 0.0, 0.0, 0.18), sw * 1.1, true)
+			shad.append(pts[k] + Vector2(-1.0, sw * 1.5 + 4.5))
+		draw_polyline(shad, Color(0.0, 0.0, 0.0, 0.32), sw * 1.2, true)
 
 		# Draw motion blur vibrato lines
 		if _pluck_amp[i] > 0.005:
@@ -468,6 +506,90 @@ func _draw() -> void:
 		if _glow_alpha[i] > 0.01:
 			draw_polyline(pts, Color(1.00, 0.92, 0.62, _glow_alpha[i] * 0.38), sw + 6.0,  true)
 			draw_polyline(pts, Color(1.00, 0.95, 0.75, _glow_alpha[i] * 0.18), sw + 12.0, true)
+
+
+		# ── Pluck Target Ring & Scrolling Notes ──
+		var trigger_x: float = bridge_x + 0.25 * (str_r - bridge_x)
+		
+		# Pluck target ring: glowing golden ring
+		var ring_col := Color(0.77, 0.58, 0.15, 0.35)
+		if _is_target[i]:
+			var pulse := (sin(_pulse_phase[i]) + 1.0) * 0.5
+			ring_col = Color(0.95, 0.72, 0.18, 0.5 + pulse * 0.4)
+		draw_circle(Vector2(trigger_x, cy), 9.0, ring_col, false, 1.5)
+		draw_circle(Vector2(trigger_x, cy), 4.0, Color(ring_col.r, ring_col.g, ring_col.b, ring_col.a * 0.3))
+		
+		# Draw scrolling notes on this string
+		if is_active and not sheet_notes.is_empty():
+			var PIXELS_PER_BEAT: float = 120.0
+			var note_time: float = 0.0
+			for k in range(sheet_notes.size()):
+				var note_name = sheet_notes[k]
+				var duration = sheet_durations[k] if k < sheet_durations.size() else 1.0
+				
+				var is_rest: bool = note_name == "Rest" or note_name == "-" or note_name == "nghỉ"
+				if is_rest:
+					note_time += duration
+					continue
+					
+				var target_str_idx: int = _note_names.find(note_name)
+				if target_str_idx != i:
+					note_time += duration
+					continue
+					
+				# Note X position (starts at right, scrolls to left)
+				var note_x: float = trigger_x + (note_time - current_time_beats) * PIXELS_PER_BEAT
+				
+				# Only draw if it's visible in the playable zither area
+				if note_x >= bridge_x - 100.0 and note_x <= str_r + 200.0:
+					var note_width: float = float(duration) * PIXELS_PER_BEAT * 0.85
+					var cap_h: float = clampf(rh * 0.72, 12.0, 26.0)
+					var cap_rect: Rect2 = Rect2(note_x, cy - cap_h * 0.5, note_width, cap_h)
+					
+					var cap_color: Color = Color(0.12, 0.43, 0.31, 0.6) # jade/teal future note
+					var border_color: Color = Color(0.18, 0.60, 0.44, 0.8)
+					
+					if k == current_note_idx:
+						var pulse: float = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
+						cap_color = Color(0.95, 0.72, 0.18, 0.85 + pulse * 0.1) # glowing gold
+						border_color = Color(1.0, 0.92, 0.60, 0.95)
+					elif k < current_note_idx:
+						var status = note_statuses[k] if k < note_statuses.size() else "unplayed"
+						if status == "correct":
+							cap_color = Color(0.15, 0.68, 0.37, 0.7) # emerald green
+							border_color = Color(0.18, 0.80, 0.44, 0.9)
+						elif status == "missed":
+							cap_color = Color(0.75, 0.22, 0.17, 0.5) # muted ruby red
+							border_color = Color(0.90, 0.30, 0.25, 0.75)
+						else:
+							cap_color = Color(0.4, 0.4, 0.4, 0.45) # grey
+							border_color = Color(0.55, 0.55, 0.55, 0.6)
+							
+					var cap_sb: StyleBoxFlat = StyleBoxFlat.new()
+					cap_sb.bg_color = cap_color
+					cap_sb.border_color = border_color
+					cap_sb.border_width_left = 1; cap_sb.border_width_right = 1
+					cap_sb.border_width_top = 1; cap_sb.border_width_bottom = 1
+					cap_sb.set_corner_radius_all(int(cap_h * 0.5))
+					
+					# Shadow
+					cap_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+					cap_sb.shadow_size = 3
+					cap_sb.shadow_offset = Vector2(1, 1)
+					
+					draw_style_box(cap_sb, cap_rect)
+					
+					# Draw note text inside capsule
+					if note_width > 22.0 and font != null:
+						var text_color: Color = Color.WHITE
+						if k == current_note_idx:
+							text_color = Color("#2e180d") # dark brown for active note readability
+						var txt_size: int = clamp(int(cap_h * 0.6), 8, 11)
+						var txt_y: float = cy + txt_size * 0.35
+						var txt_x: float = note_x + 6.0
+						draw_string(font, Vector2(txt_x, txt_y), note_name, HORIZONTAL_ALIGNMENT_LEFT, note_width - 12.0, txt_size, text_color)
+						
+				note_time += duration
 
 		# ── Note Label and String Numbers ──
 		if font != null:
@@ -572,6 +694,9 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 	
 	# Small string guide notch in the saddle
 	draw_line(Vector2(bx, top_y - 2.0), Vector2(bx, top_y + 0.5), Color(0.12, 0.06, 0.02), 1.0)
+	
+	# Tiny golden highlight dot on the apex saddle
+	draw_circle(Vector2(bx, top_y - 1.5), 0.8, Color(0.95, 0.82, 0.45))
 
 # ─── Input helpers ────────────────────────────────────────────────────────────
 func _row_h() -> float:
@@ -706,9 +831,9 @@ func _play_audio(idx: int, pitch: float) -> void:
 	var pl := AudioStreamPlayer.new()
 	pl.stream      = _streams[idx]
 	pl.pitch_scale = pitch
-	pl.volume_db   = 0.0
+	pl.volume_db   = -3.0  # Slightly quieter to avoid clipping with multiple notes
 	pl.bus         = "Master"
-	get_tree().current_scene.add_child(pl)
+	add_child(pl)
 	pl.play()
 	_audio_players[idx] = pl
 	var t := get_tree().create_timer(3.5)
@@ -725,12 +850,23 @@ func _get_pitch_scale(idx: int) -> float:
 	var cy    := _row_cy(idx)
 	var max_b := _row_h() * 0.48
 	var bend  := clampf((_press_y[idx] - cy) / max_b, 0.0, 1.0)
-	
+
+	# ── Nhấn rung (vibrato) — authentic đàn tranh feel ───────────────────────
+	# Vibrato starts with a short delay then grows in depth (like a real player)
+	var t_ms := Time.get_ticks_msec()
 	var vibrato := 0.0
 	if bend > 0.05:
-		vibrato = sin(Time.get_ticks_msec() * 0.041) * 0.015 * bend
-		
+		# 5.5 Hz vibrato rate (typical for đàn tranh nhấn rung)
+		var rate_hz := 5.5
+		# Vibrato depth: max ~1.5 semitone swing (±0.022), scaled by bend
+		var max_depth := 0.022 * bend
+		# Vibrato onset: ramp up over first 200ms of press for natural feel
+		var press_time_sec := float(_pluck_time[idx]) if _pluck_time.size() > idx else 0.3
+		var onset := clampf(press_time_sec / 0.2, 0.0, 1.0)
+		vibrato = onset * max_depth * sin(t_ms * 0.001 * rate_hz * TAU)
+
 	return 1.0 + bend * 0.12246 + vibrato
+
 
 func _update_press(idx: int) -> void:
 	var scale := _get_pitch_scale(idx)

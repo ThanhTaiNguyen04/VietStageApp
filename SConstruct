@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 env = SConscript("godot-cpp/SConstruct")
 
 # Tweaks to include src/ folder

@@ -5,6 +5,10 @@ class_name SecureDataManager
 const SAVE_FILE_PATH := "user://vietstage_progress.dat"
 const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLearning"
 
+# Progression session state (migrated from CourseMap)
+static var video_completed := false
+static var active_lesson_id := "Node2"
+
 # Default player state synchronized across all scenes
 static var data := {
 	"selected_instrument": "dan_tranh",

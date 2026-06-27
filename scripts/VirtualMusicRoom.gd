@@ -54,8 +54,11 @@ var _time : float = 0.0
 var _hovered_station : String = ""
 var _linh_base_y : float = 220.0
 var _speech_timer : float = 0.0
+var _welcome_bow_timer : float = 1.6
+
 
 var _current_popup_instrument : String = ""
+var _audio_manager : AIAudioManager = null
 
 var _linh_is_moving : bool = false
 var _linh_tween : Tween = null
@@ -108,6 +111,7 @@ var _font_title : Font
 var _font_body : Font
 var _font_body_bold : Font
 
+
 const LINH_TIPS := [
 	"Bạn có biết: Đàn Tranh có nguồn gốc từ đàn Tranh cổ tự, nhưng được các nghệ nhân cải tiến với âm sắc thanh tao đặc trưng Việt Nam.",
 	"Luyện tập hàng ngày giúp tai nghe nhạy bén và ngón tay linh hoạt hơn đó!",
@@ -115,6 +119,7 @@ const LINH_TIPS := [
 	"Sáo Trúc làm từ các ống tre, trúc già tự nhiên, mang hơi thở của sông núi làng quê Việt Nam.",
 	"Các nhạc cụ Đàn Bầu và Trống đang được các nghệ nhân chế tác tỉ mỉ, sẽ sớm ra mắt!"
 ]
+
 
 func _ready() -> void:
 	# Reset anchors to Top-Left to allow manual absolute positioning in _on_viewport_size_changed()
@@ -137,14 +142,9 @@ func _ready() -> void:
 	_tex_linh = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
 	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
 	
-	# Initialize Player Character
-	char_player = Control.new()
-	char_player.name = "CharPlayer"
-	char_player.size = Vector2(160, 160)
-	char_player.pivot_offset = Vector2(80, 80)
-	char_player.position = _player_pos - Vector2(80, 150)
-	room_content.add_child(char_player)
-	char_player.draw.connect(_draw_player.bind(char_player))
+	# Initialize Player Character (Disabled/Removed by design)
+	char_player = null
+
 	
 	# FloorCanvas click handling
 	floor_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -223,6 +223,8 @@ func _ready() -> void:
 	_style_popup_button(btn_back, true)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
+		if _audio_manager:
+			_audio_manager.audio_player.stop()
 		_fade_to("res://scenes/MainMenu.tscn")
 	)
 	
@@ -233,6 +235,18 @@ func _ready() -> void:
 	# Responsive connection
 	get_viewport().size_changed.connect(func() -> void: _on_viewport_size_changed.call_deferred())
 	_on_viewport_size_changed()
+	
+	_audio_manager = AIAudioManager.new()
+	_audio_manager.name = "AIAudioManager"
+	add_child(_audio_manager)
+	
+	# Play welcome speech after transition
+	get_tree().create_timer(0.8).timeout.connect(func() -> void:
+		if is_instance_valid(_audio_manager):
+			_audio_manager.speak_vietnamese("Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì")
+	)
+
+
 
 func _process(delta: float) -> void:
 	_time += delta
@@ -322,16 +336,29 @@ func _process(delta: float) -> void:
 					"color": Color(1.0, 0.85, 0.35, 0.8) # gold sparkle
 				})
 
-	# Bob Linh up and down
-	char_linh.position.y = _linh_base_y + sin(_time * 2.5) * 7.0
-	
-	# Proximity check and prompt update
-	var closest_station := _get_closest_station()
-	var is_near_linh := _get_player_feet().distance_to(Vector2(600, 370)) < _interact_range
-	var is_ui_focused := popup.visible or (dialogue_box != null and dialogue_box.visible) or (shop_popup != null and shop_popup.visible)
+	# Update welcome bow timer
+	_welcome_bow_timer = maxf(0.0, _welcome_bow_timer - delta)
 
-	# Movement logic
-	if not is_ui_focused:
+	# Floating animation for pedestals/stations
+	s_tranh.position.y = 520.0 + sin(_time * 2.0) * 8.0
+	s_sao.position.y = 520.0 + sin(_time * 2.0 + PI/2.0) * 8.0
+	s_bau.position.y = 360.0 + sin(_time * 2.0 + PI) * 8.0
+	s_trong.position.y = 360.0 + sin(_time * 2.0 + 1.5*PI) * 8.0
+
+	# Keep Linh at base Y (procedural animations handled in _draw_linh canvas transform)
+	char_linh.position.y = _linh_base_y
+	
+	# Proximity check and prompt update (Bypassed if no player)
+	var closest_station := ""
+	var is_near_linh := false
+	var is_ui_focused := popup.visible or (dialogue_box != null and dialogue_box.visible) or (shop_popup != null and shop_popup.visible)
+	
+	if char_player != null:
+		closest_station = _get_closest_station()
+		is_near_linh = _get_player_feet().distance_to(Vector2(600, 370)) < _interact_range
+
+	# Movement logic (Only if student character is present)
+	if char_player != null and not is_ui_focused:
 		var move_dir := Vector2.ZERO
 		if Input.is_action_pressed("ui_left") or Input.is_key_pressed(KEY_A):
 			move_dir.x -= 1
@@ -396,25 +423,27 @@ func _process(delta: float) -> void:
 		_interact_target_station = ""
 		_interact_target_linh = false
 
-	# Update walk cycle timer and trigger redraw
-	if _player_is_moving:
-		_player_walk_time += delta * 12.0
-		char_player.queue_redraw()
-		
-		# Spawn walk particles
-		_walk_particle_timer += delta
-		if _walk_particle_timer > 0.08:
-			_walk_particle_timer = 0.0
-			_walk_particles.append({
-				"pos": _get_player_feet(),
-				"vel": Vector2(randf_range(-20, 20), randf_range(-10, -30)),
-				"life": 0.6,
-				"max_life": 0.6,
-				"initial_size": randf_range(3.0, 6.5),
-				"color": Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.7)
-			})
-	else:
-		char_player.queue_redraw()
+	# Update walk cycle timer and trigger redraw (Only if student is present)
+	if char_player != null:
+		if _player_is_moving:
+			_player_walk_time += delta * 12.0
+			char_player.queue_redraw()
+			
+			# Spawn walk particles
+			_walk_particle_timer += delta
+			if _walk_particle_timer > 0.08:
+				_walk_particle_timer = 0.0
+				_walk_particles.append({
+					"pos": _get_player_feet(),
+					"vel": Vector2(randf_range(-20, 20), randf_range(-10, -30)),
+					"life": 0.6,
+					"max_life": 0.6,
+					"initial_size": randf_range(3.0, 6.5),
+					"color": Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.7)
+				})
+		else:
+			char_player.queue_redraw()
+
 		
 	# Update walk particles
 	var temp_walk_particles : Array[Dictionary] = []
@@ -427,65 +456,69 @@ func _process(delta: float) -> void:
 			temp_walk_particles.append(p)
 	_walk_particles = temp_walk_particles
 
-	# Proximity prompt update with smooth slide & fade Tween transition
-	var want_prompt := false
-	var prompt_text := ""
-	var prompt_action_station := ""
-	var prompt_action_linh := false
-	
-	if closest_station != "" and not is_ui_focused:
-		want_prompt = true
-		var station_name := ""
-		match closest_station:
-			"tranh": station_name = "Đàn Tranh"
-			"sao": station_name = "Sáo Trúc"
-			"bau": station_name = "Đàn Bầu"
-			"trong": station_name = "Trống Chầu"
-		prompt_text = "Ấn [E] để tương tác với " + station_name
-		prompt_action_station = closest_station
-	elif is_near_linh and not is_ui_focused:
-		want_prompt = true
-		prompt_text = "Ấn [E] để trò chuyện với cô Mai"
-		prompt_action_linh = true
+	# Proximity prompt update (Only if student is present)
+	if char_player != null:
+		var want_prompt := false
+		var prompt_text := ""
+		var prompt_action_station := ""
+		var prompt_action_linh := false
+		
+		if closest_station != "" and not is_ui_focused:
+			want_prompt = true
+			var station_name := ""
+			match closest_station:
+				"tranh": station_name = "Đàn Tranh"
+				"sao": station_name = "Sáo Trúc"
+				"bau": station_name = "Đàn Bầu"
+				"trong": station_name = "Trống Chầu"
+			prompt_text = "Ấn [E] để tương tác với " + station_name
+			prompt_action_station = closest_station
+		elif is_near_linh and not is_ui_focused:
+			want_prompt = true
+			prompt_text = "Ấn [E] để trò chuyện với cô Mai"
+			prompt_action_linh = true
 
-	if want_prompt:
-		prompt_lbl.text = prompt_text
-		
-		# Center above player head
-		var target_x := char_player.position.x + (char_player.size.x - interact_prompt.size.x) / 2.0
-		var target_y := char_player.position.y - 10.0
-		
-		if not _prompt_is_showing:
-			_prompt_is_showing = true
-			interact_prompt.visible = true
-			interact_prompt.position = Vector2(target_x, target_y + 15.0) # start slightly lower
-			interact_prompt.modulate.a = 0.0
+		if want_prompt:
+			prompt_lbl.text = prompt_text
 			
-			if _prompt_tween:
-				_prompt_tween.kill()
-			_prompt_tween = create_tween().set_parallel(true)
-			_prompt_tween.tween_property(interact_prompt, "position", Vector2(target_x, target_y), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			_prompt_tween.tween_property(interact_prompt, "modulate:a", 1.0, 0.25)
-		else:
-			# Update position continuously
-			interact_prompt.position = Vector2(target_x, target_y)
-			
-		if Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_E):
-			if prompt_action_station != "":
-				_open_focus_mode_popup(prompt_action_station)
-			elif prompt_action_linh:
-				_show_dialogue(LINH_TIPS.pick_random())
-	else:
-		if _prompt_is_showing:
-			_prompt_is_showing = false
-			if _prompt_tween:
-				_prompt_tween.kill()
-			_prompt_tween = create_tween().set_parallel(true)
-			var target_y := char_player.position.y - 10.0
+			# Center above player head
 			var target_x := char_player.position.x + (char_player.size.x - interact_prompt.size.x) / 2.0
-			_prompt_tween.tween_property(interact_prompt, "position", Vector2(target_x, target_y + 15.0), 0.2).set_ease(Tween.EASE_IN)
-			_prompt_tween.tween_property(interact_prompt, "modulate:a", 0.0, 0.2)
-			_prompt_tween.chain().tween_callback(func() -> void: interact_prompt.visible = false)
+			var target_y := char_player.position.y - 10.0
+			
+			if not _prompt_is_showing:
+				_prompt_is_showing = true
+				interact_prompt.visible = true
+				interact_prompt.position = Vector2(target_x, target_y + 15.0) # start slightly lower
+				interact_prompt.modulate.a = 0.0
+				
+				if _prompt_tween:
+					_prompt_tween.kill()
+				_prompt_tween = create_tween().set_parallel(true)
+				_prompt_tween.tween_property(interact_prompt, "position", Vector2(target_x, target_y), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+				_prompt_tween.tween_property(interact_prompt, "modulate:a", 1.0, 0.25)
+			else:
+				# Update position continuously
+				interact_prompt.position = Vector2(target_x, target_y)
+				
+			if Input.is_action_just_pressed("ui_accept") or Input.is_key_pressed(KEY_E):
+				if prompt_action_station != "":
+					_open_focus_mode_popup(prompt_action_station)
+				elif prompt_action_linh:
+					_show_dialogue(LINH_TIPS.pick_random())
+		else:
+			if _prompt_is_showing:
+				_prompt_is_showing = false
+				if _prompt_tween:
+					_prompt_tween.kill()
+				_prompt_tween = create_tween().set_parallel(true)
+				var target_y := char_player.position.y - 10.0
+				var target_x := char_player.position.x + (char_player.size.x - interact_prompt.size.x) / 2.0
+				_prompt_tween.tween_property(interact_prompt, "position", Vector2(target_x, target_y + 15.0), 0.2).set_ease(Tween.EASE_IN)
+				_prompt_tween.tween_property(interact_prompt, "modulate:a", 0.0, 0.2)
+				_prompt_tween.chain().tween_callback(func() -> void: interact_prompt.visible = false)
+	else:
+		interact_prompt.visible = false
+
 
 	if _linh_is_moving or _player_is_moving:
 		_sort_room_elements()
@@ -586,8 +619,29 @@ func _on_station_pressed(btn: Button, code_name: String) -> void:
 	pt.tween_property(btn, "scale", Vector2(0.92, 0.92), 0.08)
 	pt.tween_property(btn, "scale", Vector2(1.08, 1.08) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK)
 	
-	# Move player to the station
-	_move_player_to_station(code_name)
+	# Skip introduction popup and select instrument directly to enter MainMenu
+	if code_name == "tranh":
+		InstrumentSelect.selected_instrument = "dan_tranh"
+		SecureDataManager.data["selected_instrument"] = "dan_tranh"
+		SecureDataManager.save_data()
+		_fade_to("res://scenes/MainMenu.tscn")
+	elif code_name == "sao":
+		InstrumentSelect.selected_instrument = "sao_truc"
+		SecureDataManager.data["selected_instrument"] = "sao_truc"
+		SecureDataManager.save_data()
+		_fade_to("res://scenes/MainMenu.tscn")
+	elif code_name == "bau":
+		InstrumentSelect.selected_instrument = "dan_bau"
+		SecureDataManager.data["selected_instrument"] = "dan_bau"
+		SecureDataManager.save_data()
+		_fade_to("res://scenes/MainMenu.tscn")
+	elif code_name == "trong":
+		_show_dialogue("Trống Chầu đang được các nghệ nhân chế tác, sẽ sớm ra mắt học viên nhé!")
+		if _audio_manager and is_instance_valid(_audio_manager):
+			_audio_manager.audio_player.stop()
+			_audio_manager.speak_vietnamese("Trống Chầu đang được chế tác, sẽ sớm ra mắt học viên nhé")
+
+
 
 func _move_player_to_station(code_name: String) -> void:
 	var target_feet := _get_station_interact_spot(code_name)
@@ -676,16 +730,11 @@ func _linh_talk(_txt: String) -> void:
 
 func _on_char_linh_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-		var target_feet := Vector2(600, 430)
-		var player_feet := _get_player_feet()
-		if player_feet.distance_to(Vector2(600, 370)) < _interact_range:
-			_show_dialogue(LINH_TIPS.pick_random())
-		else:
-			_target_position = target_feet
-			_is_moving_to_target = true
-			_interact_target_station = ""
-			_interact_target_linh = true
-			_close_dialogue()
+		if _audio_manager:
+			_audio_manager.audio_player.stop()
+		var chat = AIChatPopup.new()
+		$HUD.add_child(chat)
+		chat.open_chat("general")
 
 
 
@@ -734,6 +783,8 @@ func _setup_focus_popup_controls() -> void:
 	_make_btn_bouncy(btn_popup_close)
 
 func _open_focus_mode_popup(inst: String) -> void:
+	if _audio_manager:
+		_audio_manager.audio_player.stop()
 	_current_popup_instrument = inst
 	_player_expression = "focused"
 	_toggle_popup_tab(true)
@@ -964,6 +1015,29 @@ func _draw_room_background() -> void:
 func _draw_floor_canvas() -> void:
 	var shadow_col := Color(0.06, 0.03, 0.01, 0.55)
 	
+	# Draw teacher's floor reflection (Flipped vertical texture, soft jade blend)
+	if _tex_linh:
+		var ref_h := 160.0 * 0.62
+		var ref_rect := Rect2(600.0 - 80.0, 370.0 + ref_h, 160.0, -ref_h)
+		floor_canvas.draw_texture_rect(_tex_linh, ref_rect, false, Color(0.09, 0.27, 0.18, 0.14))
+
+	# Draw active speaking soundwave ripples under teacher
+	var is_linh_speaking := false
+	if _audio_manager and is_instance_valid(_audio_manager) and _audio_manager.audio_player:
+		is_linh_speaking = _audio_manager.audio_player.playing
+		
+	if is_linh_speaking:
+		var wave_center := Vector2(600.0, 370.0) # base of Linh
+		var w1 := fmod(_time * 3.8, 1.0)
+		var r1 := 35.0 + w1 * 65.0
+		var a1 := (1.0 - w1) * 0.4
+		floor_canvas.draw_arc(wave_center, r1, 0.0, TAU, 32, Color(0.95, 0.72, 0.18, a1), 2.0, true)
+		
+		var w2 := fmod(_time * 3.8 + 0.5, 1.0)
+		var r2 := 35.0 + w2 * 65.0
+		var a2 := (1.0 - w2) * 0.4
+		floor_canvas.draw_arc(wave_center, r2, 0.0, TAU, 32, Color(0.95, 0.72, 0.18, a2), 2.0, true)
+	
 	# Station data: [center_pos, name]
 	var stations := [
 		[Vector2(s_tranh.position.x + 120.0, 655.0), "Đàn Tranh"],
@@ -984,15 +1058,7 @@ func _draw_floor_canvas() -> void:
 		floor_canvas.draw_arc(pos, 82.0, 0, TAU, 32, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 6.0)
 		floor_canvas.draw_arc(pos, 70.0, 0, TAU, 32, Color(1.0, 0.95, 0.80, halo_a * 0.6), 2.0)
 	
-	# 3. Dynamic spotlight under player's feet (Soften by 50%)
-	var player_feet := _get_player_feet()
-	var spotlight_color := Color(1.0, 0.91, 0.68) # Warm gold spotlight
-	for layer in range(5):
-		var radius := 115.0 - layer * 18.0
-		var alpha := (0.06 - layer * 0.01) * (1.0 + 0.16 * sin(_time * 3.2))
-		floor_canvas.draw_circle(player_feet, radius, Color(spotlight_color.r, spotlight_color.g, spotlight_color.b, alpha))
-	
-	# 4. Pulsing yellow glow circle when hovering (Soften by 50%)
+	# 3. Pulsing yellow glow circle when hovering (Soften by 50%)
 	if _hovered_station != "":
 		var base_pos := Vector2.ZERO
 		
@@ -1013,6 +1079,7 @@ func _draw_floor_canvas() -> void:
 			# Inner bright ring
 			floor_canvas.draw_arc(base_pos, 74.0, 0, TAU, 32,
 				Color(1.0, 0.97, 0.90, 0.45), 2.5, true)
+
 				
 	# 5. Draw walking particles
 	for p in _walk_particles:
@@ -1367,7 +1434,41 @@ func _draw_linh(c: Control) -> void:
 	var cx := sz.x * 0.5
 	var cy := sz.y * 0.5
 	
-	c.draw_arc(Vector2(cx, cy + 74), 28.0, 0, TAU, 16, Color(0, 0, 0, 0.22), 6.0)
+	# Check if she is speaking
+	var is_speaking := false
+	if _audio_manager and is_instance_valid(_audio_manager) and _audio_manager.audio_player:
+		is_speaking = _audio_manager.audio_player.playing
+
+	# Welcome bow calculation
+	var bow_t := clampf((1.6 - _welcome_bow_timer) / 1.6, 0.0, 1.0)
+	var bow_tilt := 0.0
+	var bow_y := 0.0
+	if _welcome_bow_timer > 0.0:
+		var bow_phase := sin(bow_t * PI)
+		bow_tilt = bow_phase * 0.12 # tilt forward
+		bow_y = bow_phase * 15.0 # drop down slightly
+		
+	# Compute procedural bob, sway (rotation) and squash/stretch scale
+	var bob := 0.0
+	var rot := bow_tilt
+	var scale_vec := Vector2.ONE
+	
+	if is_speaking:
+		bob = bow_y + sin(_time * 6.5) * 5.0
+		rot += sin(_time * 3.5) * 0.038
+		scale_vec = Vector2(1.0 + sin(_time * 9.0) * 0.022, 1.0 - sin(_time * 9.0) * 0.022)
+	else:
+		bob = bow_y + sin(_time * 1.8) * 3.0
+		rot += sin(_time * 0.8) * 0.015
+		scale_vec = Vector2(1.0, 1.0 + sin(_time * 1.8) * 0.008)
+		
+	# Draw flat feet shadow (before transform so it doesn't move with her)
+	var shadow_radius := 28.0 * clampf(1.0 - (bob / 45.0), 0.7, 1.15)
+	c.draw_arc(Vector2(cx, cy + 74), shadow_radius, 0, TAU, 16, Color(0, 0, 0, 0.22), 6.0)
+	
+	# Apply 2D drawing transform centered at the character base (feet)
+	var base_pos := Vector2(cx, cy + 74.0)
+	c.draw_set_transform(base_pos + Vector2(0.0, bob - 74.0), rot, scale_vec)
 	
 	if _tex_linh:
 		var img_w := sz.x
@@ -1378,22 +1479,24 @@ func _draw_linh(c: Control) -> void:
 		else:
 			img_w = sz.y * tex_ratio
 		
-		# Draw centered and sitting on the shadow
-		var img_rect := Rect2(cx - img_w * 0.5, sz.y - img_h, img_w, img_h)
+		# Draw centered relative to the new origin (0.0, 74.0 is feet in local space, so offset is (6.0 - img_h))
+		var img_rect := Rect2(-img_w * 0.5, 6.0 - img_h, img_w, img_h)
 		c.draw_texture_rect(_tex_linh, img_rect, false)
 	else:
+		# Draw procedural fallback (relative coordinates shifted by new origin at base_pos)
+		# Origin is at (cx, cy + 74), so we subtract cx from X and (cy + 74) from Y
 		# 1. Ao Dai Robe (Jade/Teal)
 		var body_pts := PackedVector2Array([
-			Vector2(cx - 36, cy + 62),
-			Vector2(cx + 36, cy + 62),
-			Vector2(cx + 12, cy + 18),
-			Vector2(cx - 12, cy + 18)
+			Vector2(-36, -12),
+			Vector2(36, -12),
+			Vector2(12, -56),
+			Vector2(-12, -56)
 		])
 		c.draw_colored_polygon(body_pts, Color(0.15, 0.56, 0.62))
 		c.draw_polyline(body_pts, C_GOLD, 2.0, true)
-		c.draw_line(Vector2(cx - 8, cy + 18), Vector2(cx + 8, cy + 18), C_GOLD, 3.0)
+		c.draw_line(Vector2(-8, -56), Vector2(8, -56), C_GOLD, 3.0)
 		
-		var head_c := Vector2(cx, cy - 12)
+		var head_c := Vector2(0, -86)
 		c.draw_circle(head_c, 24.0, C_CREAM)
 		c.draw_arc(head_c, 24.0, 0, TAU, 32, C_GOLD, 2.0, true)
 		
@@ -1412,6 +1515,7 @@ func _draw_linh(c: Control) -> void:
 		c.draw_colored_polygon(hair_pts, Color(0.10, 0.08, 0.08))
 		
 		c.draw_line(head_c + Vector2(-20, -18), head_c + Vector2(20, -18), C_GOLD, 6.0, true)
+
 		c.draw_line(head_c + Vector2(-16, -20), head_c + Vector2(16, -20), C_RED_SON, 2.5, true)
 		
 		c.draw_circle(head_c + Vector2(-12, 4), 3.0, Color(1.0, 0.5, 0.5, 0.5))

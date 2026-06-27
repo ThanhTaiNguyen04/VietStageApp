@@ -199,7 +199,7 @@ func _go_back() -> void:
 	else:
 		var t := create_tween()
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
-		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 # ─── UI Helpers ───────────────────────────────────────────────────────────────
 

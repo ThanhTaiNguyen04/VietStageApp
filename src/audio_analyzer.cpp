@@ -8,7 +8,7 @@ using namespace godot;
 void AudioAnalyzer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("analyze_pitch", "samples", "sample_rate"), &AudioAnalyzer::analyze_pitch);
 	ClassDB::bind_method(D_METHOD("calculate_peak_db", "samples"), &AudioAnalyzer::calculate_peak_db);
-	ClassDB::bind_method(D_METHOD("analyze_pitch_yin", "samples", "sample_rate", "threshold"), &AudioAnalyzer::analyze_pitch_yin);
+	ClassDB::bind_method(D_METHOD("analyze_pitch_yin", "samples", "sample_rate", "threshold", "min_freq", "max_freq"), &AudioAnalyzer::analyze_pitch_yin);
 	ClassDB::bind_method(D_METHOD("evaluate_rhythm", "detected_onsets", "reference_onsets", "tolerance"), &AudioAnalyzer::evaluate_rhythm);
 	ClassDB::bind_method(D_METHOD("evaluate_tone_quality", "samples"), &AudioAnalyzer::evaluate_tone_quality);
 	ClassDB::bind_method(D_METHOD("analyze_breath_pattern", "samples"), &AudioAnalyzer::analyze_breath_pattern);
@@ -85,7 +85,7 @@ float AudioAnalyzer::calculate_peak_db(const PackedFloat32Array &samples) {
 }
 
 // ─── Real-Time YIN Pitch Detection Algorithm ──────────────────────────────────
-float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float sample_rate, float threshold) {
+float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float sample_rate, float threshold, float min_freq, float max_freq) {
 	int size = samples.size();
 	// YIN requires a integration window size W. We use half of the buffer size.
 	int W = size / 2;
@@ -93,16 +93,17 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 		return 0.0f;
 	}
 
-	int min_period = std::max(1, static_cast<int>(sample_rate / 1000.0f)); // ~1000Hz (44 samples)
-	int max_period = std::min(W - 2, static_cast<int>(sample_rate / 60.0f)); // ~60Hz (735 samples)
+	int min_period = std::max(1, static_cast<int>(sample_rate / max_freq));
+	int max_period = std::min(W - 2, static_cast<int>(sample_rate / min_freq));
 
 	if (min_period >= max_period) {
 		return 0.0f;
 	}
 
 	// Step 1: Difference function d(tau)
+	// Populate d completely from 1 to max_period to ensure mathematically correct cumulative mean normalized difference
 	std::vector<float> d(max_period + 1, 0.0f);
-	for (int tau = min_period; tau <= max_period; ++tau) {
+	for (int tau = 1; tau <= max_period; ++tau) {
 		for (int t = 0; t < W; ++t) {
 			float diff = samples[t] - samples[t + tau];
 			d[tau] += diff * diff;

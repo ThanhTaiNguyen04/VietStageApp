@@ -20,7 +20,7 @@ public:
 	float calculate_peak_db(const PackedFloat32Array &samples);
 
 	// Advanced AI Analysis Features
-	float analyze_pitch_yin(const PackedFloat32Array &samples, float sample_rate, float threshold);
+	float analyze_pitch_yin(const PackedFloat32Array &samples, float sample_rate, float threshold, float min_freq, float max_freq);
 	float evaluate_rhythm(const PackedFloat32Array &detected_onsets, const PackedFloat32Array &reference_onsets, float tolerance);
 	float evaluate_tone_quality(const PackedFloat32Array &samples);
 	float analyze_breath_pattern(const PackedFloat32Array &samples);
