@@ -307,17 +307,15 @@ func _build_bottom_bar() -> void:
 	bottom_s.shadow_offset = Vector2(0, -4)
 	bottom_bar.add_theme_stylebox_override("panel", bottom_s)
 
-	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-
 	_style_bottom_icon_btn(btn_courses_mob, true)
 	_style_bottom_icon_btn(btn_room_mob,    false)
-	_style_bottom_icon_btn(btn_songs_mob,   false, not is_prem)
+	_style_bottom_icon_btn(btn_songs_mob,   false)
 	_style_bottom_icon_btn(btn_account_mob, false)
 	_style_bottom_icon_btn(btn_minigame_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
 	_attach_bottom_icon_draw(btn_room_mob,    6)
-	_attach_bottom_icon_draw(btn_songs_mob,   2, not is_prem)
+	_attach_bottom_icon_draw(btn_songs_mob,   2)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
 	_attach_bottom_icon_draw(btn_minigame_mob, 3)
 
@@ -360,19 +358,17 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
-	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
 	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false, not is_prem)
+	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
 	_attach_icon_draw(btn_courses,  1)
 	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2, not is_prem)
+	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
 	_attach_icon_draw(btn_account,  5)
 
@@ -729,11 +725,7 @@ func _animate_in() -> void:
 func _connect_buttons() -> void:
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void:
-		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-		if is_prem:
-			_fade_to("res://scenes/SongScreen.tscn")
-		else:
-			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
+		_fade_to("res://scenes/SongScreen.tscn")
 	)
 	btn_account.pressed.connect(_go_account)
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
@@ -799,11 +791,7 @@ func _connect_buttons() -> void:
 	# Mobile Navigation Connections
 	btn_room_mob.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs_mob.pressed.connect(func() -> void:
-		var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-		if is_prem:
-			_fade_to("res://scenes/SongScreen.tscn")
-		else:
-			VirtualArtist.show_tip("Phần Bài hát chỉ dành cho tài khoản Premium! Hãy nâng cấp trong phần Hồ sơ nhé.", 4.5)
+		_fade_to("res://scenes/SongScreen.tscn")
 	)
 	btn_account_mob.pressed.connect(_go_account)
 	btn_minigame_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
@@ -813,10 +801,6 @@ func _connect_buttons() -> void:
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 func _set_active_tab(active: Button) -> void:
-	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
-	if (active == btn_songs or active == btn_songs_mob) and not is_prem:
-		return
-		
 	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]
 	var active_desktop : Button = null
 	if active == btn_courses or active == btn_courses_mob: active_desktop = btn_courses
@@ -827,7 +811,7 @@ func _set_active_tab(active: Button) -> void:
 	
 	for b : Button in all:
 		var is_a : bool = (b == active_desktop)
-		_style_side_icon_btn(b, is_a, b == btn_songs and not is_prem)
+		_style_side_icon_btn(b, is_a)
 		var ic := b.get_node_or_null("IconDraw") as Control
 		if ic: ic.queue_redraw()
 	_active_side_btn = active_desktop
@@ -842,7 +826,7 @@ func _set_active_tab(active: Button) -> void:
 	
 	for b : Button in all_mob:
 		var is_a : bool = (b == active_mobile)
-		_style_bottom_icon_btn(b, is_a, b == btn_songs_mob and not is_prem)
+		_style_bottom_icon_btn(b, is_a)
 		var ic := b.get_node_or_null("IconDraw") as Control
 		if ic: ic.queue_redraw()
 

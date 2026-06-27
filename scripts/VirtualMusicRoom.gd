@@ -2743,4 +2743,3 @@ func _make_texture_transparent(tex: Texture2D) -> Texture2D:
 				img.set_pixel(x, y, Color(0, 0, 0, 0))
 				
 	return ImageTexture.create_from_image(img)
-
