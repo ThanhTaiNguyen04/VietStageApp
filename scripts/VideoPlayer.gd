@@ -70,13 +70,16 @@ var active_subtitles := []
 func _ready() -> void:
 	var inst := InstrumentSelect.selected_instrument
 	if inst == "sao_truc":
-		video_stream_player.stream = load("res://Video/st_bai1.ogv")
+		video_stream_player.stream = load("res://nvaore/saotruc.mp4")
 		active_subtitles = SUBTITLES_SAO_TRUC
 	elif inst == "dan_bau":
-		video_stream_player.stream = load("res://Video/coMai_danBau.ogv")
+		video_stream_player.stream = load("res://nvaore/body.mp4")
 		active_subtitles = SUBTITLES_DAN_BAU
+	elif inst == "trong_chau" or inst == "trong":
+		video_stream_player.stream = load("res://nvaore/trongchau.mp4")
+		active_subtitles = []
 	else:
-		video_stream_player.stream = load("res://Video/coMai_danTranh.ogv")
+		video_stream_player.stream = load("res://nvaore/dantranh.mp4")
 		active_subtitles = SUBTITLES_DAN_TRANH
 
 	# Make PlayerCard take up the entire screen programmatically

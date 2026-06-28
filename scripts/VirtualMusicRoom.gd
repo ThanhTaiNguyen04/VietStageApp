@@ -12,7 +12,43 @@ const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TEXT_MUTED  := Color(0.43, 0.38, 0.33, 1.0)
 const C_JADE        := Color(0.12, 0.37, 0.23, 1.0) # bamboo jade green
 
-const FORCE_PROCEDURAL_PLAYER : bool = true
+const FORCE_PROCEDURAL_PLAYER : bool = false
+
+# Subtitle Constants for Interactive Video Mode
+const SUBTITLES_DAN_TRANH := [
+	{"start": 0.0,  "end": 2.0,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 2.0,  "end": 4.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
+	{"start": 4.5,  "end": 6.5,  "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
+	{"start": 6.5,  "end": 8.0,  "text": "Tuyệt vời! Bây giờ hãy nhấn 'VÀO HỌC' để bắt đầu thực hành ngay thôi!"}
+]
+
+const SUBTITLES_SAO_TRUC := [
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cầm sáo, cách đặt môi và thổi nốt nhạc đầu tiên."},
+	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ thẳng lưng, lấy hơi sâu bằng bụng và lắng nghe âm vang trong trẻo của tiếng sáo nhé."},
+	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'VÀO HỌC' để bắt đầu thực hành ngay thôi!"}
+]
+
+const SUBTITLES_DAN_BAU := [
+	{"start": 0.0,  "end": 2.0,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 2.0,  "end": 4.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách gẩy và tạo tiếng bồi âm đầu tiên."},
+	{"start": 4.5,  "end": 6.5,  "text": "Hãy chú ý giữ lưng thẳng, tay cầm que gảy nhẹ nhàng và lắng nghe âm vang độc đáo từ một dây đàn nhé."},
+	{"start": 6.5,  "end": 8.0,  "text": "Tuyệt vời! Bây giờ hãy nhấn 'VÀO HỌC' để bắt đầu thực hành ngay thôi!"}
+]
+
+const SUBTITLES_TRONG_CHAU := [
+	{"start": 0.0,  "end": 2.5,  "text": "Chào mừng bạn đến với bài học Trống Chầu! Tôi là cô Mai."},
+	{"start": 2.5,  "end": 5.5,  "text": "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền."},
+	{"start": 5.5,  "end": 9.0,  "text": "Hãy nhấn 'VÀO HỌC' để bắt đầu luyện tập giữ nhịp cùng cô nhé!"}
+]
+
+const SUBTITLES_INTRO := [
+	{"start": 0.0,  "end": 5.5,  "text": "Chào mừng bạn đến với lớp học âm nhạc truyền thống Việt Nam! Hãy chọn nhạc cụ bạn muốn học."}
+]
+
+var _room_video_player : VideoStreamPlayer = null
+var _sub_label : Label = null
+var _active_subtitles : Array = []
 
 # ─── @onready references ───────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BGCanvas
@@ -61,12 +97,18 @@ var _audio_manager : AIAudioManager = null
 var _linh_is_moving : bool = false
 var _linh_tween : Tween = null
 var _particles : Array[Dictionary] = []
+var _tex_bg : Texture2D
 var _tex_tranh : Texture2D
 var _tex_sao : Texture2D
 var _tex_bau : Texture2D
 var _tex_trong : Texture2D
 var _tex_linh : Texture2D
 var _tex_player : Texture2D
+var _tex_btn_tranh : Texture2D
+var _tex_btn_sao : Texture2D
+var _tex_btn_bau : Texture2D
+var _tex_btn_trong : Texture2D
+var _tex_btn_kham_pha : Texture2D
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
 var _is_blinking : bool = false
@@ -137,21 +179,65 @@ func _ready() -> void:
 	_tex_sao = _make_texture_transparent(load("res://assets/textures/sao_truc_asset.png") as Texture2D)
 	_tex_bau = _make_texture_transparent(load("res://assets/textures/dan_bau_asset.png") as Texture2D)
 	_tex_trong = _make_texture_transparent(load("res://assets/textures/trong_chau_asset.png") as Texture2D)
+	_tex_bg = load("res://assets/textures/bg_practice_room.png") as Texture2D
 	_tex_linh = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
-	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
+	_tex_player = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
 	
-	# Initialize Player Character
+	_tex_btn_tranh = _load_image_texture("res://buttons_split/batdau_dantranh.png")
+	_tex_btn_sao = _load_image_texture("res://buttons_split/batdau_saotruc.png")
+	_tex_btn_bau = _load_image_texture("res://buttons_split/danbau.png")
+	_tex_btn_trong = _load_image_texture("res://buttons_split/trongchau.png")
+	_tex_btn_kham_pha = _load_image_texture("res://buttons_split/khampha.png")
+	
+	# Initialize Player Character (hidden in video interactive mode)
 	char_player = Control.new()
 	char_player.name = "CharPlayer"
 	char_player.size = Vector2(160, 160)
 	char_player.pivot_offset = Vector2(80, 80)
 	char_player.position = _player_pos - Vector2(80, 150)
+	char_player.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	char_player.gui_input.connect(_on_char_linh_gui_input)
 	room_content.add_child(char_player)
 	char_player.draw.connect(_draw_player.bind(char_player))
+	char_player.visible = false
 	
-	# FloorCanvas click handling
-	floor_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
-	floor_canvas.gui_input.connect(_on_floor_gui_input)
+	# Create VideoStreamPlayer for background video
+	_room_video_player = VideoStreamPlayer.new()
+	_room_video_player.name = "RoomVideoPlayer"
+	_room_video_player.expand = true
+	_room_video_player.loop = false
+	_room_video_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg_canvas.add_child(_room_video_player)
+	_room_video_player.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	_room_video_player.stream = load("res://nvaore/intro.ogv")
+	_room_video_player.finished.connect(_on_video_finished)
+	_room_video_player.play()
+	_active_subtitles = SUBTITLES_INTRO
+	
+	# Create Subtitle Label
+	_sub_label = Label.new()
+	_sub_label.name = "RoomSubtitleLabel"
+	_sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sub_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_sub_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_sub_label.add_theme_font_size_override("font_size", 20)
+	_sub_label.add_theme_color_override("font_color", C_CREAM)
+	_sub_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	_sub_label.add_theme_constant_override("shadow_offset_x", 2)
+	_sub_label.add_theme_constant_override("shadow_offset_y", 2)
+	$HUD.add_child(_sub_label)
+	_sub_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_sub_label.offset_left = 50
+	_sub_label.offset_right = -50
+	_sub_label.offset_top = -120
+	_sub_label.offset_bottom = -20
+	
+	# Hide duplicate static character NPC
+	char_linh.visible = false
+	
+	# FloorCanvas click handling (disabled in video interactive mode)
+	floor_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	# Load premium fonts
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -200,16 +286,16 @@ func _ready() -> void:
 	station_tooltip.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, C_RED_SON, 12, true, 2))
 	tooltip_lbl.add_theme_color_override("font_color", C_RED_DK)
 	
-	# Setup Interactive Stations
-	s_tranh.size = Vector2(240, 140)
-	s_sao.size = Vector2(240, 140)
-	s_bau.size = Vector2(240, 140)
-	s_trong.size = Vector2(240, 140)
+	# Setup Interactive Stations (aligned to floating instruments in video)
+	s_bau.position = Vector2(80, 120); s_bau.size = Vector2(280, 200)
+	s_tranh.position = Vector2(80, 440); s_tranh.size = Vector2(280, 200)
+	s_trong.position = Vector2(840, 120); s_trong.size = Vector2(280, 200)
+	s_sao.position = Vector2(840, 440); s_sao.size = Vector2(280, 200)
 	
 	_setup_station_button(s_tranh, "tranh", "Đàn Tranh", _draw_tranh)
 	_setup_station_button(s_sao, "sao", "Sáo Trúc", _draw_sao)
-	_setup_station_button(s_bau, "bau", "Đàn Bầu (Sắp ra mắt)", _draw_bau)
-	_setup_station_button(s_trong, "trong", "Trống Chầu (Sắp ra mắt)", _draw_trong)
+	_setup_station_button(s_bau, "bau", "Đàn Bầu", _draw_bau)
+	_setup_station_button(s_trong, "trong", "Trống Chầu", _draw_trong)
 	
 	# Setup Linh Assist
 	char_linh.draw.connect(_draw_linh.bind(char_linh))
@@ -243,12 +329,6 @@ func _ready() -> void:
 	_audio_manager.name = "AIAudioManager"
 	add_child(_audio_manager)
 	
-	# Play welcome speech after transition
-	get_tree().create_timer(0.8).timeout.connect(func() -> void:
-		if is_instance_valid(_audio_manager):
-			_audio_manager.speak_vietnamese("Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì")
-	)
-
 
 
 func _process(delta: float) -> void:
@@ -256,6 +336,22 @@ func _process(delta: float) -> void:
 	bg_canvas.queue_redraw()
 	char_linh.queue_redraw()
 	floor_canvas.queue_redraw()
+	
+
+	
+	# Update Subtitle Text from playing video stream
+	if _room_video_player != null and _room_video_player.is_playing():
+		var time_pos := _room_video_player.stream_position
+		var sub_found := false
+		for sub in _active_subtitles:
+			var s_start: float = sub["start"]
+			var s_end: float = sub["end"]
+			if time_pos >= s_start and time_pos < s_end:
+				_sub_label.text = sub["text"]
+				sub_found = true
+				break
+		if not sub_found:
+			_sub_label.text = ""
 	
 	# Update idle breathing cycle when not moving
 	if not _player_is_moving:
@@ -507,12 +603,7 @@ func _process(delta: float) -> void:
 	if _linh_is_moving or _player_is_moving:
 		_sort_room_elements()
 	
-	# Occasional random talk from Linh if idle
-	_speech_timer += delta
-	if _speech_timer > 15.0:
-		_speech_timer = 0.0
-		if _hovered_station == "" and not is_ui_focused:
-			_show_dialogue(LINH_TIPS.pick_random())
+
 
 # ─── Tooltip & Affordance Interactive Stations ─────────────────────────────────
 func _setup_station_button(btn: Button, code_name: String, displayName: String, draw_func: Callable) -> void:
@@ -531,39 +622,21 @@ func _setup_station_button(btn: Button, code_name: String, displayName: String, 
 	btn.mouse_exited.connect(_on_station_mouse_exited.bind(btn, code_name))
 	btn.pressed.connect(_on_station_pressed.bind(btn, code_name))
 
-func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> void:
+func _on_station_draw(btn: Button, _displayName: String, _draw_func: Callable) -> void:
 	var sz := btn.size
 	var is_hov := btn.is_hovered()
 	
-	# Draw the custom instrument vectors
-	draw_func.call(btn)
-	
-	# Draw instrument name label at the bottom of the card using _font_body_bold
-	var font := _font_body_bold if _font_body_bold else btn.get_theme_default_font()
-	if font:
-		var name_str := displayName
-		if displayName.contains(" (Sắp ra mắt)"):
-			name_str = displayName.replace(" (Sắp ra mắt)", "")
-			
-		var cy := sz.y * 0.5
-		var lbl_x := 0.0
-		var has_tex := false
-		if btn.name == "StationTranh" and _tex_tranh: has_tex = true
-		elif btn.name == "StationSao" and _tex_sao: has_tex = true
-		elif btn.name == "StationBau" and _tex_bau: has_tex = true
-		elif btn.name == "StationTrong" and _tex_trong: has_tex = true
-		
-		var lbl_y := sz.y - 12.0
-		if has_tex:
-			lbl_y = cy + 25.0
-		
-		# Shadow
-		btn.draw_string(font, Vector2(lbl_x + 1, lbl_y + 1), name_str,
-			HORIZONTAL_ALIGNMENT_CENTER, sz.x, 16, Color(0, 0, 0, 0.6))
-		# Main text: gold when hovered, cream when normal
-		var text_col := C_GOLD_LIGHT if is_hov else C_CREAM
-		btn.draw_string(font, Vector2(lbl_x, lbl_y), name_str,
-			HORIZONTAL_ALIGNMENT_CENTER, sz.x, 16, text_col)
+	if is_hov:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(1, 1, 1, 0.0) # Transparent background
+		sb.border_color = Color(0.95, 0.82, 0.45, 0.85) # Gold
+		sb.border_width_left = 3; sb.border_width_right = 3
+		sb.border_width_top = 3; sb.border_width_bottom = 3
+		sb.corner_radius_top_left = 16; sb.corner_radius_top_right = 16
+		sb.corner_radius_bottom_left = 16; sb.corner_radius_bottom_right = 16
+		sb.shadow_size = 12
+		sb.shadow_color = Color(0.95, 0.82, 0.45, 0.4)
+		btn.draw_style_box(sb, Rect2(Vector2.ZERO, sz))
 
 func _on_station_mouse_entered(btn: Button, code_name: String, displayName: String) -> void:
 	_hovered_station = code_name
@@ -603,8 +676,30 @@ func _on_station_pressed(btn: Button, code_name: String) -> void:
 	pt.tween_property(btn, "scale", Vector2(0.92, 0.92), 0.08)
 	pt.tween_property(btn, "scale", Vector2(1.08, 1.08) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK)
 	
-	# Move player to the station
-	_move_player_to_station(code_name)
+	# Load and play target video
+	var stream_path := "res://nvaore/intro.ogv"
+	match code_name:
+		"tranh":
+			stream_path = "res://nvaore/dantranh.ogv"
+			_active_subtitles = SUBTITLES_DAN_TRANH
+		"sao":
+			stream_path = "res://nvaore/saotruc.ogv"
+			_active_subtitles = SUBTITLES_SAO_TRUC
+		"bau":
+			stream_path = "res://nvaore/danbau.ogv"
+			_active_subtitles = SUBTITLES_DAN_BAU
+		"trong":
+			stream_path = "res://nvaore/trongchau.ogv"
+			_active_subtitles = SUBTITLES_TRONG_CHAU
+	
+	if _room_video_player:
+		_room_video_player.visible = true
+		_room_video_player.stream = load(stream_path)
+		_room_video_player.loop = false
+		_room_video_player.play()
+	char_linh.visible = false
+		
+	_open_focus_mode_popup(code_name)
 
 func _move_player_to_station(code_name: String) -> void:
 	var target_feet := _get_station_interact_spot(code_name)
@@ -703,23 +798,68 @@ func _on_char_linh_gui_input(e: InputEvent) -> void:
 
 # ─── Focus Mode Popup ──────────────────────────────────────────────────────────
 func _setup_focus_popup_controls() -> void:
-	_style_popup_button(btn_popup_play, true)
-	_style_popup_button(btn_popup_close, false)
-	_style_popup_tab_button(btn_tab_theory, true)
-	_style_popup_tab_button(btn_tab_fingering, false)
+	# Hide the original ScrollPanel and OverlayBG to avoid blocking the video
+	var scroll_panel = popup.get_node_or_null("ScrollPanel")
+	if scroll_panel:
+		scroll_panel.visible = false
+	var overlay_bg = popup.get_node_or_null("OverlayBG")
+	if overlay_bg:
+		overlay_bg.visible = false
+		
+	# Reparent the original buttons directly to popup so they can be positioned on left and right sides
+	btn_popup_play.get_parent().remove_child(btn_popup_play)
+	btn_popup_close.get_parent().remove_child(btn_popup_close)
 	
-	btn_tab_theory.pressed.connect(func() -> void:
-		_toggle_popup_tab(true)
-	)
-	btn_tab_fingering.pressed.connect(func() -> void:
-		_toggle_popup_tab(false)
-	)
+	popup.add_child(btn_popup_play)
+	popup.add_child(btn_popup_close)
+	
+	btn_popup_play.visible = true
+	btn_popup_close.visible = true
+	
+	# Play Button (Left side): custom size 350x155
+	btn_popup_play.custom_minimum_size = Vector2(350, 155)
+	btn_popup_play.anchor_left = 0.0
+	btn_popup_play.anchor_right = 0.0
+	btn_popup_play.anchor_top = 1.0
+	btn_popup_play.anchor_bottom = 1.0
+	btn_popup_play.grow_horizontal = Control.GROW_DIRECTION_END
+	btn_popup_play.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	# Positions: 60px from left edge, 65px from bottom edge
+	btn_popup_play.offset_left = 60
+	btn_popup_play.offset_right = 60 + 350
+	btn_popup_play.offset_top = -220
+	btn_popup_play.offset_bottom = -65
+	
+	# Close Button / Kham Pha (Right side): custom size 418x155
+	btn_popup_close.custom_minimum_size = Vector2(418, 155)
+	btn_popup_close.anchor_left = 1.0
+	btn_popup_close.anchor_right = 1.0
+	btn_popup_close.anchor_top = 1.0
+	btn_popup_close.anchor_bottom = 1.0
+	btn_popup_close.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	btn_popup_close.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	# Positions: 60px from right edge, 65px from bottom edge
+	btn_popup_close.offset_left = -60 - 418
+	btn_popup_close.offset_right = -60
+	btn_popup_close.offset_top = -220
+	btn_popup_close.offset_bottom = -65
+	
+	# Set Kham Pha button texture for close button
+	_apply_custom_button_texture(btn_popup_close, _tex_btn_kham_pha)
 	
 	btn_popup_close.pressed.connect(func() -> void:
 		_player_expression = "normal"
 		var t := create_tween()
 		t.tween_property(popup, "modulate:a", 0.0, 0.2)
 		t.tween_callback(func() -> void: popup.visible = false)
+		
+		# Reset to body video as pingpong loop
+		if _room_video_player:
+			_room_video_player.stream = load("res://nvaore/body_pingpong.ogv")
+			_room_video_player.loop = true
+			_room_video_player.play()
+			_active_subtitles = []
+			_sub_label.text = ""
 	)
 	
 	btn_popup_play.pressed.connect(func() -> void:
@@ -738,12 +878,61 @@ func _setup_focus_popup_controls() -> void:
 			SecureDataManager.data["selected_instrument"] = "dan_bau"
 			SecureDataManager.save_data()
 			_fade_to("res://scenes/MainMenu.tscn")
+		elif _current_popup_instrument == "trong":
+			InstrumentSelect.selected_instrument = "trong_chau"
+			SecureDataManager.data["selected_instrument"] = "trong_chau"
+			SecureDataManager.save_data()
+			_fade_to("res://scenes/MainMenu.tscn")
 	)
 	
-	_make_btn_bouncy(btn_tab_theory)
-	_make_btn_bouncy(btn_tab_fingering)
 	_make_btn_bouncy(btn_popup_play)
 	_make_btn_bouncy(btn_popup_close)
+
+func _apply_custom_button_texture(btn: Button, tex: Texture2D) -> void:
+	if tex == null:
+		return
+	
+	# Normal state: transparent textured button
+	var sb_n := StyleBoxTexture.new()
+	sb_n.texture = tex
+	
+	# Hover state: bright glow modulation
+	var sb_h := StyleBoxTexture.new()
+	sb_h.texture = tex
+	sb_h.modulate_color = Color(1.15, 1.15, 1.15, 1.0)
+	
+	# Pressed state: darker modulation
+	var sb_p := StyleBoxTexture.new()
+	sb_p.texture = tex
+	sb_p.modulate_color = Color(0.85, 0.85, 0.85, 1.0)
+	
+	btn.add_theme_stylebox_override("normal", sb_n)
+	btn.add_theme_stylebox_override("hover", sb_h)
+	btn.add_theme_stylebox_override("pressed", sb_p)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	# Clear standard text since texture has built-in text
+	btn.text = ""
+	btn.flat = false
+
+func _load_image_texture(path: String) -> Texture2D:
+	if not FileAccess.file_exists(path):
+		printerr("File does not exist: ", path)
+		return null
+	var img := Image.load_from_file(path)
+	if img:
+		return ImageTexture.create_from_image(img)
+	return null
+
+func _on_video_finished() -> void:
+	if _room_video_player and _room_video_player.stream:
+		var path := _room_video_player.stream.resource_path
+		if path.ends_with("intro.ogv"):
+			_room_video_player.stream = load("res://nvaore/body_pingpong.ogv")
+			_room_video_player.loop = true
+			_room_video_player.play()
+			_active_subtitles = []
+			_sub_label.text = ""
 
 func _open_focus_mode_popup(inst: String) -> void:
 	if _audio_manager:
@@ -753,35 +942,47 @@ func _open_focus_mode_popup(inst: String) -> void:
 	_toggle_popup_tab(true)
 	
 	# Configure labels and details based on instrument
+	var play_width: float = 350.0
 	if inst == "tranh":
 		popup_title.text = "Giới Thiệu Đàn Tranh"
 		text_theory.text = "Đàn Tranh sử dụng thang âm chuẩn với các nốt nhạc: Đô - Rê - Mi - Fa - Sol - La - Si (tương đương với các tần số C3 - D3 - E3 - F3 - G3 - A3 - B3). Nhấn vào dây đàn bên phải nhạn để gảy âm."
 		text_fingering.text = "Kỹ thuật tay phải: Sử dụng ngón cái (1), ngón trỏ (2) và ngón giữa (3) đeo móng gảy để gảy dây đàn hướng vào lòng.\nKỹ thuật tay trái: Nhấn và rung dây ở phía bên trái nhạn đàn để tạo âm rung cảm xúc."
 		btn_popup_play.visible = true
-		btn_popup_play.text = "VÀO HỌC"
+		_apply_custom_button_texture(btn_popup_play, _tex_btn_tranh)
+		play_width = 350.0
 	elif inst == "sao":
 		popup_title.text = "Giới Thiệu Sáo Trúc"
 		text_theory.text = "Sáo Trúc sử dụng thang âm tự nhiên. Bằng cách lấy hơi bụng tròn trịa và hé/bịt các lỗ bấm, người thổi có thể tạo ra các nốt Đô - Rê - Mi - Fa - Sol - La chuẩn âm điệu dân tộc."
 		text_fingering.text = "Kỹ thuật ngón: Đặt môi đều vào lỗ thổi. Bịt kín lỗ ngón bằng đầu ngón tay mềm mại (không dùng đốt ngón tay). Thổi hơi đều để âm thanh không bị rè."
 		btn_popup_play.visible = true
-		btn_popup_play.text = "VÀO HỌC"
+		_apply_custom_button_texture(btn_popup_play, _tex_btn_sao)
+		play_width = 350.0
 	elif inst == "bau":
 		popup_title.text = "Giới Thiệu Đàn Bầu"
 		text_theory.text = "Đàn Bầu (Độc huyền cầm) chỉ sử dụng một dây tơ duy nhất căng trên thân tre gỗ. Các nốt nhạc được tạo ra bằng cách gảy vào các điểm hài âm và uốn vòi đàn để đổi cao độ."
 		text_fingering.text = "Tay phải: Dùng que gảy nhỏ gảy vào dây đồng thời chạm cạnh bàn tay vào điểm hài âm để tạo tiếng bầu trầm bổng.\nTay trái: Cầm vòi đàn uốn về phía trước (giảm cao độ) hoặc kéo về sau (tăng cao độ)."
 		btn_popup_play.visible = true
-		btn_popup_play.text = "VÀO HỌC"
+		_apply_custom_button_texture(btn_popup_play, _tex_btn_bau)
+		play_width = 233.0
 	elif inst == "trong":
 		popup_title.text = "Giới Thiệu Trống Chầu"
 		text_theory.text = "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền. Mặt trống bằng da bò căng chặt tạo tiếng vang đanh thép rực lửa."
 		text_fingering.text = "Gõ vào tâm mặt trống tạo tiếng 'Tịch' trầm sâu. Gõ vào vành gỗ trống bằng dùi chầu gỗ tạo tiếng 'Cắc' vang dội réo rắt báo hiệu đổi làn điệu."
 		btn_popup_play.visible = true
-		btn_popup_play.text = "SẮP RA MẮT" # locked
+		_apply_custom_button_texture(btn_popup_play, _tex_btn_trong)
+		play_width = 233.0
 	else:
 		popup_title.text = "Giới Thiệu Nhạc Cụ"
 		text_theory.text = ""
 		text_fingering.text = ""
 		btn_popup_play.visible = false
+
+	if btn_popup_play.visible:
+		btn_popup_play.custom_minimum_size = Vector2(play_width, 155)
+		btn_popup_play.offset_left = 60
+		btn_popup_play.offset_right = 60 + play_width
+		btn_popup_play.offset_top = -220
+		btn_popup_play.offset_bottom = -65
 	
 	# Request redraws on diagrams
 	diagram_theory.queue_redraw()
@@ -791,7 +992,7 @@ func _open_focus_mode_popup(inst: String) -> void:
 	# Anim modal fade-in
 	popup.visible = true
 	popup.modulate.a = 0.0
-	create_tween().tween_property(popup, "modulate:a", 1.0, 0.2)
+	create_tween().tween_property(popup, "modulate:a", 1.0, 2.0)
 
 func _toggle_popup_tab(show_theory: bool) -> void:
 	theory_panel.visible = show_theory
@@ -812,30 +1013,47 @@ func _style_popup_tab_button(btn: Button, active: bool) -> void:
 	btn.add_theme_color_override("font_pressed_color", fg)
 
 func _style_popup_button(btn: Button, primary: bool) -> void:
-	var bg := C_RED_SON if primary else Color(0, 0, 0, 0)
-	var border := C_GOLD if primary else C_RED_SON
-	var fg := C_CREAM if primary else C_RED_SON
-	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 20, primary, 3))
-	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.12), border.lightened(0.1), 20, primary, 3))
-	btn.add_theme_stylebox_override("pressed", _flat_sb(bg.darkened(0.12), border, 20, false, 1))
+	var bg := Color(0.08, 0.05, 0.03, 0.75) if primary else Color(0.08, 0.05, 0.03, 0.55)
+	var border := Color(0.95, 0.82, 0.45, 0.85) if primary else Color(0.77, 0.58, 0.15, 0.45)
+	var fg := C_CREAM
+	
+	var sb_n := _flat_sb(bg, border, 24, true, 2)
+	var sb_h := _flat_sb(bg.lightened(0.1), border.lightened(0.1), 24, true, 2)
+	sb_h.shadow_size = 10
+	sb_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+	
+	var sb_p := _flat_sb(bg.darkened(0.12), border, 24, false, 1)
+	
+	btn.add_theme_stylebox_override("normal", sb_n)
+	btn.add_theme_stylebox_override("hover", sb_h)
+	btn.add_theme_stylebox_override("pressed", sb_p)
 	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color", fg)
-	btn.add_theme_color_override("font_hover_color", fg)
+	btn.add_theme_color_override("font_hover_color", C_GOLD_LIGHT)
 	btn.remove_theme_stylebox_override("disabled")
 	btn.remove_theme_color_override("font_disabled_color")
 
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
 	var viewport_size : Vector2 = get_viewport().get_visible_rect().size
-	# 1. Deep background — aged indigo/midnight tone
-	bg_canvas.draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.07, 0.05, 0.04))
+	
+	# 1. Draw premium background texture (Concept B style) with aspect cover
+	if _tex_bg:
+		var t_size := _tex_bg.get_size()
+		var scale_factor := maxf(viewport_size.x / t_size.x, viewport_size.y / t_size.y)
+		var new_size := t_size * scale_factor
+		var offset := (viewport_size - new_size) * 0.5
+		bg_canvas.draw_texture_rect(_tex_bg, Rect2(offset, new_size), false)
+	else:
+		# Fallback deep background color
+		bg_canvas.draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.07, 0.05, 0.04))
 	
 	# Set transform relative to room_content (1200x800 space)
 	bg_canvas.draw_set_transform(room_content.position, 0.0, room_content.scale)
 	var sz := Vector2(1200, 800)
 	var wall_h := 310.0
 	
-	# Calculate visible screen boundaries in transformed coordinates to stretch room background
+	# Calculate visible screen boundaries in transformed coordinates
 	var rx := room_content.position.x
 	var ry := room_content.position.y
 	var scale := room_content.scale.x
@@ -844,138 +1062,149 @@ func _draw_room_background() -> void:
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
 	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
 	
-	# ── 2. Wall: aged cream plaster (Stretched!) ──────────────────────
-	var wall_base := Color(0.95, 0.93, 0.89)  # warm cream-beige (#F3EFE3)
-	bg_canvas.draw_rect(Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound), wall_base)
-	
-	# Subtle aged plaster texture — horizontal streaks stretching across bounds
-	for i in range(int(top_bound), int(wall_h), 8):
-		var streak_a := 0.04 * sin(float(i) * 0.3 + _time * 0.1)
-		var streak_col := Color(0.92 + streak_a, 0.88, 0.80, 0.25)
-		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
-	
-	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
-	var cornice_y := wall_h - 36.0
-	bg_canvas.draw_rect(Rect2(left_bound, cornice_y, right_bound - left_bound, 36), C_RED_SON) # Deep jade green cornice
-	# Gold leaf trim lines
-	bg_canvas.draw_line(Vector2(left_bound, cornice_y), Vector2(right_bound, cornice_y), C_GOLD, 3.0)
-	bg_canvas.draw_line(Vector2(left_bound, cornice_y + 6), Vector2(right_bound, cornice_y + 6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 1.0)
-	bg_canvas.draw_line(Vector2(left_bound, wall_h - 3), Vector2(right_bound, wall_h - 3), C_GOLD, 3.0)
-	
-	# Cornice notches (repeating motif across bounds)
-	var start_notch : float = floor(left_bound / 80.0) * 80.0
-	for cx_n in range(start_notch, right_bound, 80.0):
-		bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
-	
-	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
-	var scroll_w := 220.0
-	var scroll_h := 230.0
-	var scroll_x := (sz.x - scroll_w) / 2.0
-	var scroll_y := 28.0
-	# Scroll background (aged silk)
-	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), Color(0.94, 0.89, 0.74))
-	# Decorative inner border
-	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(0.94, 0.89, 0.74), false)
-	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), false, 1.5)
-	# Gold outer frame
-	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), C_GOLD, false, 3.0)
-	# Top & bottom rollers (dark lacquered wood)
-	var roller_col := Color(0.18, 0.10, 0.05)
-	bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y - 10, scroll_w + 24, 14), roller_col)
-	bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y - 10, scroll_w + 24, 14), C_GOLD, false, 1.5)
-	bg_canvas.draw_circle(Vector2(scroll_x - 12, scroll_y - 3), 8, C_GOLD)
-	bg_canvas.draw_circle(Vector2(scroll_x + scroll_w + 12, scroll_y - 3), 8, C_GOLD)
-	bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y + scroll_h - 4, scroll_w + 24, 14), roller_col)
-	bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y + scroll_h - 4, scroll_w + 24, 14), C_GOLD, false, 1.5)
-	bg_canvas.draw_circle(Vector2(scroll_x - 12, scroll_y + scroll_h + 3), 8, C_GOLD)
-	bg_canvas.draw_circle(Vector2(scroll_x + scroll_w + 12, scroll_y + scroll_h + 3), 8, C_GOLD)
-	# Hanging ribbons from scroll
-	var rib_x1 := scroll_x + scroll_w * 0.25
-	var rib_x2 := scroll_x + scroll_w * 0.75
-	bg_canvas.draw_line(Vector2(rib_x1, scroll_y - 10), Vector2(rib_x1, 0), C_RED_SON, 3.0)
-	bg_canvas.draw_line(Vector2(rib_x2, scroll_y - 10), Vector2(rib_x2, 0), C_RED_SON, 3.0)
-	# Kanji/Chu Nom style vertical strokes (abstract decorative)
-	var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
-	if font:
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 44), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 90), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
-	# Thin horizontal separator lines
-	bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 60), Vector2(scroll_x + scroll_w - 20, scroll_y + 60), C_GOLD, 1.0)
-	bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
-	# Ink-wash lotus / seal decorative motif
-	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + 175)
-	bg_canvas.draw_circle(seal_pos, 24.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
-	bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
-	bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
-	
-	# ── 5. Side column pillars (deep jade green wood - Framed to Screen!) ──
-	for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
-		# Column base shadow
-		bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.25))
-		# Column body
-		bg_canvas.draw_rect(Rect2(col_x, 0, 20, wall_h), C_RED_SON) # Premium deep jade green body
-		# Gold gilded edge
-		bg_canvas.draw_line(Vector2(col_x, 0), Vector2(col_x, wall_h), C_GOLD, 2.0)
-		bg_canvas.draw_line(Vector2(col_x + 20, 0), Vector2(col_x + 20, wall_h), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 1.0)
-		# Capital ornament at top
-		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_RED_SON)
-		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_GOLD, false, 1.5)
+	# 2. Wall plaster (Only draw if no background texture)
+	if not _tex_bg:
+		var wall_base := Color(0.95, 0.93, 0.89)  # warm cream-beige (#F3EFE3)
+		bg_canvas.draw_rect(Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound), wall_base)
 		
-	# ── 6. Hanging lanterns (two golden silk lanterns either side) ──────────────────
-	var pulse := 0.08 * sin(_time * 1.8)
-	for lan_x in [_left_bound + 180.0, _right_bound - 200.0]:
-		var lan_y := 20.0
-		# Lantern string from ceiling
-		bg_canvas.draw_line(Vector2(lan_x, 0), Vector2(lan_x, lan_y + 12), Color(0.50, 0.35, 0.15), 2.0)
-		# Lantern body (oval) - soft warm gold/orange instead of red
-		var lan_col := Color(0.92 + pulse, 0.76, 0.30)
-		var lh := 60.0
-		var lw := 28.0
-		for layer in range(20):
-			var t_fac := float(layer) / 20.0
-			var layer_w := sin(t_fac * PI) * lw
-			var layer_y := lan_y + t_fac * lh
-			var stripe_col := Color(0.77 + pulse, 0.58, 0.15) if layer % 4 < 2 else lan_col # C_GOLD stripes
-			bg_canvas.draw_line(Vector2(lan_x - layer_w, layer_y), Vector2(lan_x + layer_w, layer_y), stripe_col, lh / 20.0 + 0.5)
-		# Top & bottom caps (gold)
-		bg_canvas.draw_rect(Rect2(lan_x - lw * 0.4, lan_y, lw * 0.8, 8), C_GOLD)
-		bg_canvas.draw_rect(Rect2(lan_x - lw * 0.4, lan_y + lh - 4, lw * 0.8, 8), C_GOLD)
-		# Tassel fringes at bottom
-		for fi in range(-3, 4):
-			var flen := 18.0 + sin(fi * 1.2 + _time * 2.0) * 4.0
-			bg_canvas.draw_line(Vector2(lan_x + fi * 4, lan_y + lh + 4), Vector2(lan_x + fi * 4 + sin(_time + fi) * 2, lan_y + lh + 4 + flen), Color(0.90, 0.65, 0.15, 0.85), 1.5)
+		# Subtle aged plaster texture
+		for i in range(int(top_bound), int(wall_h), 8):
+			bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), Color(0.90, 0.86, 0.78, 0.45), 1.0)
+		
+		# 3. Wall trim cornice
+		var cornice_y := wall_h - 32.0
+		bg_canvas.draw_rect(Rect2(left_bound, cornice_y, right_bound - left_bound, 32), Color(0.18, 0.10, 0.05))
+		bg_canvas.draw_rect(Rect2(left_bound, cornice_y, right_bound - left_bound, 36), C_RED_SON)
+		bg_canvas.draw_line(Vector2(left_bound, cornice_y), Vector2(right_bound, cornice_y), C_GOLD, 3.0)
+		bg_canvas.draw_line(Vector2(left_bound, cornice_y + 6), Vector2(right_bound, cornice_y + 6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 1.0)
+		bg_canvas.draw_line(Vector2(left_bound, wall_h - 3), Vector2(right_bound, wall_h - 3), C_GOLD, 3.0)
+		
+		# Cornice notches
+		var start_notch : float = floor(left_bound / 80.0) * 80.0
+		for cx_n in range(start_notch, right_bound, 80.0):
+			bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
 	
-	# ── 7. Muted dark teak hardwood floor (Stretched!) ─────────────────────────────
-	var floor_pts := PackedVector2Array([
-		Vector2(left_bound, wall_h), Vector2(right_bound, wall_h),
-		Vector2(right_bound, bottom_bound), Vector2(left_bound, bottom_bound)
-	])
-	bg_canvas.draw_colored_polygon(floor_pts, Color(0.16, 0.12, 0.09))  # muted dark teak wood
+	# 4. Central Calligraphy Panel or Modern Banner Title
+	if _tex_bg:
+		# Draw a small elegant horizontal title banner at top center (Concept B style)
+		var banner_w := 280.0
+		var banner_h := 50.0
+		var banner_x := (sz.x - banner_w) / 2.0
+		var banner_y := 24.0
+		
+		var b_sb := StyleBoxFlat.new()
+		b_sb.bg_color = Color(0.08, 0.05, 0.03, 0.75)
+		b_sb.border_color = Color(0.95, 0.82, 0.45, 0.85)
+		b_sb.border_width_left = 2; b_sb.border_width_right = 2
+		b_sb.border_width_top = 2; b_sb.border_width_bottom = 2
+		b_sb.corner_radius_top_left = 12; b_sb.corner_radius_top_right = 12
+		b_sb.corner_radius_bottom_left = 12; b_sb.corner_radius_bottom_right = 12
+		bg_canvas.draw_style_box(b_sb, Rect2(banner_x, banner_y, banner_w, banner_h))
+		
+		var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
+		if font:
+			bg_canvas.draw_string(font, Vector2(banner_x, banner_y + 34), "PHÒNG TẬP NHẠC", HORIZONTAL_ALIGNMENT_CENTER, banner_w, 20, C_GOLD_LIGHT)
+	else:
+		# Classic hanging scroll panel
+		var scroll_w := 220.0
+		var scroll_h := 230.0
+		var scroll_x := (sz.x - scroll_w) / 2.0
+		var scroll_y := 28.0
+		
+		bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), Color(0.94, 0.89, 0.74))
+		bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(0.94, 0.89, 0.74), false)
+		bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), false, 1.5)
+		bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), C_GOLD, false, 3.0)
+		
+		var roller_col := Color(0.18, 0.10, 0.05)
+		bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y - 10, scroll_w + 24, 14), roller_col)
+		bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y - 10, scroll_w + 24, 14), C_GOLD, false, 1.5)
+		bg_canvas.draw_circle(Vector2(scroll_x - 12, scroll_y - 3), 8, C_GOLD)
+		bg_canvas.draw_circle(Vector2(scroll_x + scroll_w + 12, scroll_y - 3), 8, C_GOLD)
+		bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y + scroll_h - 4, scroll_w + 24, 14), roller_col)
+		bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y + scroll_h - 4, scroll_w + 24, 14), C_GOLD, false, 1.5)
+		bg_canvas.draw_circle(Vector2(scroll_x - 12, scroll_y + scroll_h + 3), 8, C_GOLD)
+		bg_canvas.draw_circle(Vector2(scroll_x + scroll_w + 12, scroll_y + scroll_h + 3), 8, C_GOLD)
+		
+		var rib_x1 := scroll_x + scroll_w * 0.25
+		var rib_x2 := scroll_x + scroll_w * 0.75
+		bg_canvas.draw_line(Vector2(rib_x1, scroll_y - 10), Vector2(rib_x1, 0), C_RED_SON, 3.0)
+		bg_canvas.draw_line(Vector2(rib_x2, scroll_y - 10), Vector2(rib_x2, 0), C_RED_SON, 3.0)
+		
+		var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
+		if font:
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 44), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 90), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
+		
+		bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 60), Vector2(scroll_x + scroll_w - 20, scroll_y + 60), C_GOLD, 1.0)
+		bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
+		
+		var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + 175)
+		bg_canvas.draw_circle(seal_pos, 24.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
+		bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
+		bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
-	# Horizontal plank grain lines stretching across bounds
-	var plank_h := 26.0
-	for y_floor in range(int(wall_h), int(bottom_bound), int(plank_h)):
-		bg_canvas.draw_line(Vector2(left_bound, y_floor), Vector2(right_bound, y_floor), Color(0.11, 0.08, 0.05, 0.6), 1.2)
-		# Staggered joint
-		var joint_off := int(y_floor / plank_h) % 2 * 300
-		var start_joint : float = floor((left_bound - joint_off) / 500.0) * 500.0 + joint_off
-		for x_j in range(start_joint, right_bound, 500.0):
-			bg_canvas.draw_line(Vector2(x_j, y_floor), Vector2(x_j, y_floor + plank_h), Color(0.11, 0.08, 0.05, 0.55), 1.0)
-		# Subtle lacquer sheen highlights
-		bg_canvas.draw_line(Vector2(left_bound, y_floor + 3), Vector2(right_bound, y_floor + 3), Color(0.25, 0.20, 0.15, 0.1), 1.5)
-	
-	# Deep shadow at the base of the wall (Stretched!)
-	for j in range(30):
-		var y_pos := wall_h + j * 4.0
-		var alpha := (1.0 - float(j) / 30.0) * 0.75
-		bg_canvas.draw_line(Vector2(left_bound, y_pos), Vector2(right_bound, y_pos), Color(0.04, 0.02, 0.01, alpha), 5.0)
+	# Only draw pillars, lanterns, and floor planks if no background texture
+	if not _tex_bg:
+		# 5. Side column pillars
+		for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
+			bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.25))
+			bg_canvas.draw_rect(Rect2(col_x, 0, 20, wall_h), C_RED_SON)
+			bg_canvas.draw_line(Vector2(col_x, 0), Vector2(col_x, wall_h), C_GOLD, 2.0)
+			bg_canvas.draw_line(Vector2(col_x + 20, 0), Vector2(col_x + 20, wall_h), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 1.0)
+			bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_RED_SON)
+			bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_GOLD, false, 1.5)
+			
+		# 6. Hanging lanterns
+		var pulse := 0.08 * sin(_time * 1.8)
+		for lan_x in [_left_bound + 180.0, _right_bound - 200.0]:
+			var lan_y := 20.0
+			bg_canvas.draw_line(Vector2(lan_x, 0), Vector2(lan_x, lan_y + 12), Color(0.50, 0.35, 0.15), 2.0)
+			var lan_col := Color(0.92 + pulse, 0.76, 0.30)
+			var lh := 60.0
+			var lw := 28.0
+			for layer in range(20):
+				var t_fac := float(layer) / 20.0
+				var layer_w := sin(t_fac * PI) * lw
+				var layer_y := lan_y + t_fac * lh
+				var stripe_col := Color(0.77 + pulse, 0.58, 0.15) if layer % 4 < 2 else lan_col
+				bg_canvas.draw_line(Vector2(lan_x - layer_w, layer_y), Vector2(lan_x + layer_w, layer_y), stripe_col, lh / 20.0 + 0.5)
+			bg_canvas.draw_rect(Rect2(lan_x - lw * 0.4, lan_y, lw * 0.8, 8), C_GOLD)
+			bg_canvas.draw_rect(Rect2(lan_x - lw * 0.4, lan_y + lh - 4, lw * 0.8, 8), C_GOLD)
+			for fi in range(-3, 4):
+				var flen := 18.0 + sin(fi * 1.2 + _time * 2.0) * 4.0
+				bg_canvas.draw_line(Vector2(lan_x + fi * 4, lan_y + lh + 4), Vector2(lan_x + fi * 4 + sin(_time + fi) * 2, lan_y + lh + 4 + flen), Color(0.90, 0.65, 0.15, 0.85), 1.5)
+		
+		# 7. Muted dark teak hardwood floor
+		var floor_pts := PackedVector2Array([
+			Vector2(left_bound, wall_h), Vector2(right_bound, wall_h),
+			Vector2(right_bound, bottom_bound), Vector2(left_bound, bottom_bound)
+		])
+		bg_canvas.draw_colored_polygon(floor_pts, Color(0.16, 0.12, 0.09))
+		
+		var plank_h := 26.0
+		for y_floor in range(int(wall_h), int(bottom_bound), int(plank_h)):
+			bg_canvas.draw_line(Vector2(left_bound, y_floor), Vector2(right_bound, y_floor), Color(0.11, 0.08, 0.05, 0.6), 1.2)
+			var joint_off := int(y_floor / plank_h) % 2 * 300
+			var start_joint : float = floor((left_bound - joint_off) / 500.0) * 500.0 + joint_off
+			for x_j in range(start_joint, right_bound, 500.0):
+				bg_canvas.draw_line(Vector2(x_j, y_floor), Vector2(x_j, y_floor + plank_h), Color(0.11, 0.08, 0.05, 0.55), 1.0)
+			bg_canvas.draw_line(Vector2(left_bound, y_floor + 3), Vector2(right_bound, y_floor + 3), Color(0.25, 0.20, 0.15, 0.1), 1.5)
+		
+		# Deep shadow at base of wall
+		for j in range(30):
+			var y_pos := wall_h + j * 4.0
+			var alpha := (1.0 - float(j) / 30.0) * 0.75
+			bg_canvas.draw_line(Vector2(left_bound, y_pos), Vector2(right_bound, y_pos), Color(0.04, 0.02, 0.01, alpha), 5.0)
 	
 	# ── 8. Drifting golden dust motes (incense smoke atmosphere - Softened!) ─────────────────
 	for p in _particles:
 		bg_canvas.draw_circle(p.pos, 2.5 * p.scale, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, p.color.a * 0.15))
 
 func _draw_floor_canvas() -> void:
+	if _room_video_player:
+		return
 	var shadow_col := Color(0.06, 0.03, 0.01, 0.55)
 	
 	# Station data: [center_pos, name]
@@ -1059,6 +1288,26 @@ func _sort_room_elements() -> void:
 	for i in range(items.size()):
 		room_content.move_child(items[i], i + 1)
 	
+func _draw_station_card_bg(c: Button, card_rect: Rect2, is_hov: bool) -> void:
+	var r_sb := StyleBoxFlat.new()
+	if is_hov:
+		r_sb.bg_color = Color(0.06, 0.04, 0.03, 0.80)
+		r_sb.border_color = Color(0.95, 0.82, 0.45, 0.95)
+		r_sb.shadow_size = 14
+		r_sb.shadow_color = Color(0.77, 0.58, 0.15, 0.35)
+		r_sb.shadow_offset = Vector2(0, 5)
+	else:
+		r_sb.bg_color = Color(0.04, 0.03, 0.02, 0.65)
+		r_sb.border_color = Color(0.77, 0.58, 0.15, 0.45)
+		r_sb.shadow_size = 8
+		r_sb.shadow_color = Color(0, 0, 0, 0.15)
+		r_sb.shadow_offset = Vector2(0, 4)
+	r_sb.border_width_left = 2; r_sb.border_width_right = 2
+	r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
+	r_sb.corner_radius_top_left = 14; r_sb.corner_radius_top_right = 14
+	r_sb.corner_radius_bottom_left = 14; r_sb.corner_radius_bottom_right = 14
+	c.draw_style_box(r_sb, card_rect)
+
 func _draw_tranh(c: Button) -> void:
 	var sz := c.size
 	var cx := sz.x * 0.5
@@ -1078,17 +1327,7 @@ func _draw_tranh(c: Button) -> void:
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
+		_draw_station_card_bg(c, card_rect, is_hov)
 		
 		# Draw the loaded Dan Tranh image texture on top of the glass card
 		c.draw_texture_rect(_tex_tranh, img_rect, false)
@@ -1166,17 +1405,7 @@ func _draw_sao(c: Button) -> void:
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
+		_draw_station_card_bg(c, card_rect, is_hov)
 		
 		# Draw the loaded Sao Truc image texture on top of the glass card
 		c.draw_texture_rect(_tex_sao, img_rect, false)
@@ -1240,17 +1469,7 @@ func _draw_bau(c: Button) -> void:
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
+		_draw_station_card_bg(c, card_rect, is_hov)
 		
 		# Draw the loaded Dan Bau image texture on top of the glass card
 		c.draw_texture_rect(_tex_bau, img_rect, false)
@@ -1313,17 +1532,7 @@ func _draw_trong(c: Button) -> void:
 		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
 		
 		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
+		_draw_station_card_bg(c, card_rect, is_hov)
 		
 		# Draw the loaded Trong image texture on top of the glass card
 		c.draw_texture_rect(_tex_trong, img_rect, false)
@@ -2178,12 +2387,14 @@ func _setup_hud_shop_button() -> void:
 	hud_hbox.add_child(star_badge)
 	
 	var badge_s := StyleBoxFlat.new()
-	badge_s.bg_color = Color(0.08, 0.05, 0.03, 0.8) # Dark premium brown
-	badge_s.border_color = C_GOLD
+	badge_s.bg_color = Color(0.08, 0.05, 0.03, 0.55)
+	badge_s.border_color = Color(0.77, 0.58, 0.15, 0.45)
 	badge_s.border_width_left = 2; badge_s.border_width_right = 2
 	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
 	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
 	badge_s.corner_radius_bottom_left = 24; badge_s.corner_radius_bottom_right = 24
+	badge_s.shadow_size = 6
+	badge_s.shadow_color = Color(0, 0, 0, 0.12)
 	star_badge.add_theme_stylebox_override("panel", badge_s)
 	
 	var badge_margin := MarginContainer.new()
@@ -2212,6 +2423,7 @@ func _setup_hud_shop_button() -> void:
 	_style_popup_button(btn_shop, true)
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
+	hud_hbox.visible = false
 
 func _update_star_badge() -> void:
 	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
@@ -2653,4 +2865,3 @@ func _make_texture_transparent(tex: Texture2D) -> Texture2D:
 				img.set_pixel(x, y, Color(0, 0, 0, 0))
 				
 	return ImageTexture.create_from_image(img)
-
