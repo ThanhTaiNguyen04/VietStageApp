@@ -946,35 +946,46 @@ func _open_focus_mode_popup(inst: String) -> void:
 	btn_back.visible = false
 	
 	# Configure labels and details based on instrument
-	var play_width: float = 450.0
+	var play_width: float = 472.0
+	var btn_height: float = 210.0
+	var close_width: float = 565.0
+	
 	if inst == "tranh":
 		popup_title.text = "Giới Thiệu Đàn Tranh"
 		text_theory.text = "Đàn Tranh sử dụng thang âm chuẩn với các nốt nhạc: Đô - Rê - Mi - Fa - Sol - La - Si (tương đương với các tần số C3 - D3 - E3 - F3 - G3 - A3 - B3). Nhấn vào dây đàn bên phải nhạn để gảy âm."
 		text_fingering.text = "Kỹ thuật tay phải: Sử dụng ngón cái (1), ngón trỏ (2) và ngón giữa (3) đeo móng gảy để gảy dây đàn hướng vào lòng.\nKỹ thuật tay trái: Nhấn và rung dây ở phía bên trái nhạn đàn để tạo âm rung cảm xúc."
 		btn_popup_play.visible = true
 		_apply_custom_button_texture(btn_popup_play, _tex_btn_tranh)
-		play_width = 450.0
+		play_width = 472.0
+		btn_height = 210.0
+		close_width = 565.0
 	elif inst == "sao":
 		popup_title.text = "Giới Thiệu Sáo Trúc"
 		text_theory.text = "Sáo Trúc sử dụng thang âm tự nhiên. Bằng cách lấy hơi bụng tròn trịa và hé/bịt các lỗ bấm, người thổi có thể tạo ra các nốt Đô - Rê - Mi - Fa - Sol - La chuẩn âm điệu dân tộc."
 		text_fingering.text = "Kỹ thuật ngón: Đặt môi đều vào lỗ thổi. Bịt kín lỗ ngón bằng đầu ngón tay mềm mại (không dùng đốt ngón tay). Thổi hơi đều để âm thanh không bị rè."
 		btn_popup_play.visible = true
 		_apply_custom_button_texture(btn_popup_play, _tex_btn_sao)
-		play_width = 450.0
+		play_width = 472.0
+		btn_height = 210.0
+		close_width = 565.0
 	elif inst == "bau":
 		popup_title.text = "Giới Thiệu Đàn Bầu"
 		text_theory.text = "Đàn Bầu (Độc huyền cầm) chỉ sử dụng một dây tơ duy nhất căng trên thân tre gỗ. Các nốt nhạc được tạo ra bằng cách gảy vào các điểm hài âm và uốn vòi đàn để đổi cao độ."
 		text_fingering.text = "Tay phải: Dùng que gảy nhỏ gảy vào dây đồng thời chạm cạnh bàn tay vào điểm hài âm để tạo tiếng bầu trầm bổng.\nTay trái: Cầm vòi đàn uốn về phía trước (giảm cao độ) hoặc kéo về sau (tăng cao độ)."
 		btn_popup_play.visible = true
 		_apply_custom_button_texture(btn_popup_play, _tex_btn_bau)
-		play_width = 300.0
+		play_width = 390.0
+		btn_height = 260.0
+		close_width = 700.0
 	elif inst == "trong":
 		popup_title.text = "Giới Thiệu Trống Chầu"
 		text_theory.text = "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền. Mặt trống bằng da bò căng chặt tạo tiếng vang đanh thép rực lửa."
 		text_fingering.text = "Gõ vào tâm mặt trống tạo tiếng 'Tịch' trầm sâu. Gõ vào vành gỗ trống bằng dùi chầu gỗ tạo tiếng 'Cắc' vang dội réo rắt báo hiệu đổi làn điệu."
 		btn_popup_play.visible = true
 		_apply_custom_button_texture(btn_popup_play, _tex_btn_trong)
-		play_width = 300.0
+		play_width = 390.0
+		btn_height = 260.0
+		close_width = 700.0
 	else:
 		popup_title.text = "Giới Thiệu Nhạc Cụ"
 		text_theory.text = ""
@@ -982,11 +993,20 @@ func _open_focus_mode_popup(inst: String) -> void:
 		btn_popup_play.visible = false
 
 	if btn_popup_play.visible:
-		btn_popup_play.custom_minimum_size = Vector2(play_width, 200)
-		btn_popup_play.offset_left = 60
-		btn_popup_play.offset_right = 60 + play_width
-		btn_popup_play.offset_top = -265
+		# Update Play Button position and size
+		btn_popup_play.custom_minimum_size = Vector2(play_width, btn_height)
+		btn_popup_play.offset_left = 40
+		btn_popup_play.offset_right = 40 + play_width
+		btn_popup_play.offset_top = -65 - btn_height
 		btn_popup_play.offset_bottom = -65
+		
+		# Update Close Button position, size, and texture style box to match the height
+		btn_popup_close.custom_minimum_size = Vector2(close_width, btn_height)
+		btn_popup_close.offset_left = -40 - close_width
+		btn_popup_close.offset_right = -40
+		btn_popup_close.offset_top = -65 - btn_height
+		btn_popup_close.offset_bottom = -65
+		_apply_custom_button_texture(btn_popup_close, _tex_btn_kham_pha)
 	
 	# Request redraws on diagrams
 	diagram_theory.queue_redraw()
