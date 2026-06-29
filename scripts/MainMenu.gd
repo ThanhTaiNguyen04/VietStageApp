@@ -163,7 +163,7 @@ func _draw_lock_icon(c: Control) -> void:
 	if _sidebar_icons_cache.has("lock"):
 		lock_tex = _sidebar_icons_cache["lock"]
 	else:
-		lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
+		lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
 		_sidebar_icons_cache["lock"] = lock_tex
 
 	if lock_tex:
@@ -422,18 +422,18 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var tex_name := ""
 	match t:
 		0: tex_name = "menu"
-		1: tex_name = "course"
-		2: tex_name = "songs"
-		3: tex_name = "game"
-		4: tex_name = "progress"
-		5: tex_name = "account"
-		6: tex_name = "room"
+		1: tex_name = "graduation-cap"
+		2: tex_name = "music"
+		3: tex_name = "gamepad-2"
+		4: tex_name = "trending-up"
+		5: tex_name = "user"
+		6: tex_name = "home"
 	
 	var texture : Texture2D = null
 	if _sidebar_icons_cache.has(t):
 		texture = _sidebar_icons_cache[t]
 	elif tex_name != "":
-		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
+		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
 		_sidebar_icons_cache[t] = texture
 	
 	if texture:
@@ -448,7 +448,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		if _sidebar_icons_cache.has("lock"):
 			lock_tex = _sidebar_icons_cache["lock"]
 		else:
-			lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
+			lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
 			_sidebar_icons_cache["lock"] = lock_tex
 			
 		if lock_tex:
