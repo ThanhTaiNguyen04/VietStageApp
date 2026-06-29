@@ -367,6 +367,7 @@ func _ready() -> void:
 	_start_float()
 	_connect_buttons()
 	_setup_collapsible_linh()
+	char_linh.get_parent().visible = false
 	# Dynamic Song & Speed Selector setup inside SettingsPanel/SettingsM/SettingsVBox
 	var settings_vbox := $SettingsPanel/SettingsM/SettingsVBox as VBoxContainer
 	if settings_vbox:
@@ -916,8 +917,7 @@ func _build_theme() -> void:
 			_style_outlined_btn(btn)
 
 	# Linh panel
-	var linh_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 0)
-	linh_s.border_width_right = 2; linh_s.border_width_left = 0; linh_s.border_width_top = 0; linh_s.border_width_bottom = 0
+	var linh_s := StyleBoxEmpty.new()
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
 
 	var bubble_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 14)
@@ -1287,9 +1287,7 @@ func _update_target_indicator() -> void:
 					style.border_width_left = 2; style.border_width_right = 2
 					style.border_width_top = 2; style.border_width_bottom = 2
 func _start_float() -> void:
-	_float_tween = create_tween().set_loops()
-	_float_tween.tween_property(char_linh, "position:y", -12.0, 2.1).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	_float_tween.tween_property(char_linh, "position:y", 0.0, 2.1).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	pass
 
 func _connect_buttons() -> void:
 	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
@@ -1817,91 +1815,18 @@ func _update_rhythm() -> void:
 	rhythm_acc.add_theme_color_override("font_color",
 		C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
 
-func _va_say(text: String) -> void:
-	speech_label.text = text
-	var t := create_tween()
-	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
-	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
+func _hop_linh() -> void:
+	pass
 
-	if _linh_collapsed:
-		_linh_collapsed = false
-		_update_linh_visibility()
-		
-	var active_timer = get_tree().create_timer(6.0)
-	_collapse_timer = active_timer
-	active_timer.timeout.connect(func():
-		if _collapse_timer == active_timer and not _linh_collapsed:
-			_linh_collapsed = true
-			_update_linh_visibility()
-	)
+func _va_say(text: String) -> void:
+	pass
 
 func _setup_collapsible_linh() -> void:
-	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
-	if linh_vbox:
-		var collapse_btn := Button.new()
-		collapse_btn.text = "Thu nhỏ ◀"
-		collapse_btn.flat = true
-		collapse_btn.custom_minimum_size = Vector2(0, 36)
-		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		collapse_btn.pressed.connect(func():
-			_linh_collapsed = true
-			_update_linh_visibility()
-		)
-		linh_vbox.add_child(collapse_btn)
-		linh_vbox.move_child(collapse_btn, 0)
-		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
-		_make_button_bouncy(collapse_btn)
-		
-		# Add spacer to prevent floating avatar from overlapping the button text
-		var spacer := Control.new()
-		spacer.custom_minimum_size = Vector2(0, 24)
-		linh_vbox.add_child(spacer)
-		linh_vbox.move_child(spacer, 1)
-
-	linh_mini_btn = Button.new()
-	linh_mini_btn.name = "LinhMiniBtn"
-	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
-	add_child(linh_mini_btn)
-	
-	linh_mini_btn.layout_mode = 1
-	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	linh_mini_btn.position.x += 24
-	linh_mini_btn.position.y -= 70
-	
-	var btn_s := StyleBoxFlat.new()
-	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
-	btn_s.border_color = C_GOLD
-	btn_s.border_width_left = 2; btn_s.border_width_right = 2
-	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
-	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
-	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
-	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	
-	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
-	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
-	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
-	
-	var mini_tex := TextureRect.new()
-	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
-	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	mini_tex.size = Vector2(44, 44)
-	mini_tex.position = Vector2(10, 10)
-	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	linh_mini_btn.add_child(mini_tex)
-	
-	linh_mini_btn.pressed.connect(func():
-		_linh_collapsed = false
-		_update_linh_visibility()
-	)
-	_make_button_bouncy(linh_mini_btn)
-	_update_linh_visibility()
+	pass
 
 func _update_linh_visibility() -> void:
 	if linh_panel:
-		linh_panel.visible = not _linh_collapsed
-	if linh_mini_btn:
-		linh_mini_btn.visible = _linh_collapsed
+		linh_panel.visible = false
 
 func _show_custom_hint() -> void:
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
@@ -2658,48 +2583,6 @@ func _show_introduction_overlay() -> void:
 	main_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(main_hbox)
 	
-	# ─── LEFT PANEL: Teacher Mai & Speech Bubble ───
-	var left_vbox := VBoxContainer.new()
-	left_vbox.custom_minimum_size = Vector2(350, 0)
-	left_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	left_vbox.add_theme_constant_override("separation", 20)
-	main_hbox.add_child(left_vbox)
-	
-	# Teacher Portrait
-	var portrait := TextureRect.new()
-	portrait.texture = load("res://assets/textures/virtual_artist_mai.png")
-	portrait.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.custom_minimum_size = Vector2(240, 360)
-	left_vbox.add_child(portrait)
-	
-	# Speech Bubble Panel Container
-	var bubble := PanelContainer.new()
-	var bs := StyleBoxFlat.new()
-	bs.bg_color = C_BG_BAR
-	bs.border_color = C_GOLD
-	bs.border_width_left = 2; bs.border_width_right = 2
-	bs.border_width_top = 2; bs.border_width_bottom = 2
-	bs.corner_radius_top_left = 16; bs.corner_radius_top_right = 16
-	bs.corner_radius_bottom_left = 16; bs.corner_radius_bottom_right = 16
-	bubble.add_theme_stylebox_override("panel", bs)
-	left_vbox.add_child(bubble)
-	
-	var bubble_margin := MarginContainer.new()
-	bubble_margin.add_theme_constant_override("margin_left", 16)
-	bubble_margin.add_theme_constant_override("margin_right", 16)
-	bubble_margin.add_theme_constant_override("margin_top", 16)
-	bubble_margin.add_theme_constant_override("margin_bottom", 16)
-	bubble.add_child(bubble_margin)
-	
-	_intro_text_lbl = Label.new()
-	_intro_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_intro_text_lbl.custom_minimum_size = Vector2(300, 100)
-	if f_body: _intro_text_lbl.add_theme_font_override("font", f_body)
-	_intro_text_lbl.add_theme_font_size_override("font_size", 14)
-	_intro_text_lbl.add_theme_color_override("font_color", C_TEXT)
-	bubble_margin.add_child(_intro_text_lbl)
-	
 	# ─── RIGHT PANEL: Flute & Navigation ───
 	var right_vbox := VBoxContainer.new()
 	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2724,18 +2607,47 @@ func _show_introduction_overlay() -> void:
 	_intro_active_note_display_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	right_vbox.add_child(_intro_active_note_display_lbl)
 	
-	# Flute Display Container
+	# Speech Bubble Panel Container for instructions
+	var bubble := PanelContainer.new()
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = C_BG_BAR
+	bs.border_color = C_GOLD
+	bs.border_width_left = 2; bs.border_width_right = 2
+	bs.border_width_top = 2; bs.border_width_bottom = 2
+	bs.corner_radius_top_left = 16; bs.corner_radius_top_right = 16
+	bs.corner_radius_bottom_left = 16; bs.corner_radius_bottom_right = 16
+	bubble.add_theme_stylebox_override("panel", bs)
+	bubble.custom_minimum_size = Vector2(800, 80)
+	bubble.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	right_vbox.add_child(bubble)
+	
+	var bubble_margin := MarginContainer.new()
+	bubble_margin.add_theme_constant_override("margin_left", 16)
+	bubble_margin.add_theme_constant_override("margin_right", 16)
+	bubble_margin.add_theme_constant_override("margin_top", 16)
+	bubble_margin.add_theme_constant_override("margin_bottom", 16)
+	bubble.add_child(bubble_margin)
+	
+	_intro_text_lbl = Label.new()
+	_intro_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_intro_text_lbl.custom_minimum_size = Vector2(760, 50)
+	if f_body: _intro_text_lbl.add_theme_font_override("font", f_body)
+	_intro_text_lbl.add_theme_font_size_override("font_size", 14)
+	_intro_text_lbl.add_theme_color_override("font_color", C_TEXT)
+	bubble_margin.add_child(_intro_text_lbl)
+	
+	# Flute Display Container (Larger!)
 	var flute_area := Control.new()
-	flute_area.custom_minimum_size = Vector2(760, 160)
+	flute_area.custom_minimum_size = Vector2(1060, 200)
 	flute_area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	right_vbox.add_child(flute_area)
 	
-	# Flute Body cylinder
+	# Flute Body cylinder (Larger!)
 	_intro_flute_body = Control.new()
 	_intro_flute_body.set_script(load("res://scripts/FluteBody.gd"))
-	_intro_flute_body.custom_minimum_size = Vector2(680, 32)
-	_intro_flute_body.size = Vector2(680, 32)
-	_intro_flute_body.position = Vector2(40, 95)
+	_intro_flute_body.custom_minimum_size = Vector2(980, 48)
+	_intro_flute_body.size = Vector2(980, 48)
+	_intro_flute_body.position = Vector2(40, 110)
 	flute_area.add_child(_intro_flute_body)
 	
 	# Hole columns row
@@ -2743,7 +2655,7 @@ func _show_introduction_overlay() -> void:
 	hole_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	hole_row.add_theme_constant_override("separation", 34)
 	hole_row.size = Vector2(480, 120)
-	hole_row.position = Vector2(140, 20)
+	hole_row.position = Vector2(290, 30)
 	flute_area.add_child(hole_row)
 	
 	var hole_notes = ["Si", "La", "Sol", "Fa", "Mi", "Rê"]

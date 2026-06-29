@@ -23,7 +23,7 @@ const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 @onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
 @onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
-@onready var lesson_bar   : ProgressBar   = $Root/TopBar/TopM/TopH/ProgressVBox/LessonBar
+@onready var lesson_bar   : ProgressBar   = $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/LessonBar
 @onready var pitch_note   : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote
 @onready var pitch_status : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchStatus
 @onready var rhythm_bars  : HBoxContainer = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmBars
@@ -35,7 +35,7 @@ const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 @onready var target_label : Label         = $Root/StringsBoard/BoardM/BoardVBox/TargetLabel
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
 @onready var result_dialog: AcceptDialog  = $ResultDialog
-@onready var dots_hbox    : HBoxContainer = $Root/TopBar/TopM/TopH/DotsHBox
+@onready var dots_hbox    : HBoxContainer = $SettingsPanel/SettingsM/SettingsVBox/DotsHBox
 @onready var _board       : Control       = $Root/StringsBoard/BoardM/BoardVBox/DanTranhBoard
 
 # --- Audio settings (simpler, no runtime bus creation) ---
@@ -55,6 +55,7 @@ var _is_wait_mode := true
 var _is_demo_mode := false
 var _current_note_elapsed := 0.0
 var _song_bpm := 80.0
+var _speed_scale := 1.0
 var _current_note_hit := false
 var _demo_note_plucked := false
 
@@ -239,13 +240,26 @@ func _ready() -> void:
 	if scroll_container:
 		scroll_container.visible = false
 
-	# Hide NotationArea entirely and collapse MiddleRow to make Dan Tranh zither full screen
+	# Hide NotationArea entirely
 	var notation_area := $Root/MiddleRow/MainContent/NotationArea as PanelContainer
 	if notation_area:
 		notation_area.visible = false
+
+	# Reparent SpeechBubble to make it a floating overlay
+	# This allows us to hide MiddleRow entirely, expanding the zither to fill the extra vertical space
+	var speech_bubble := $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer
+	if speech_bubble:
+		speech_bubble.get_parent().remove_child(speech_bubble)
+		add_child(speech_bubble)
+		speech_bubble.anchors_preset = Control.PRESET_TOP_LEFT
+		speech_bubble.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		# Position it beautifully over the top-left of the zither board
+		speech_bubble.position = Vector2(96, 72)
+		speech_bubble.custom_minimum_size = Vector2(320, 0)
+
 	var middle_row := $Root/MiddleRow as HBoxContainer
 	if middle_row:
-		middle_row.custom_minimum_size.y = 0
+		middle_row.visible = false
 
 
 	# Create and style the NoteTrackPanel
@@ -340,6 +354,7 @@ func _ready() -> void:
 	_start_float()
 	_connect_buttons()
 	_setup_collapsible_linh()
+	char_linh.get_parent().visible = false
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -439,12 +454,12 @@ func _ready() -> void:
 	_update_demo_mode_ui()
 	_update_wait_mode_ui()
 		
-	# Dynamic Song Selector OptionButton setup
-	var top_h := $Root/TopBar/TopM/TopH as HBoxContainer
-	if top_h:
+	# Dynamic Song & Speed Selector setup inside SettingsPanel/SettingsM/SettingsVBox
+	var settings_vbox := $SettingsPanel/SettingsM/SettingsVBox as VBoxContainer
+	if settings_vbox:
 		var song_sel := OptionButton.new()
 		song_sel.name = "SongSelector"
-		song_sel.custom_minimum_size = Vector2(220, 44)
+		song_sel.custom_minimum_size = Vector2(200, 44)
 		song_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		
 		# Premium Styling matching the Vietnamese classical style
@@ -484,11 +499,43 @@ func _ready() -> void:
 			song_sel.add_item(songs_list[i]["title"], i)
 			
 		song_sel.selected = default_idx
-		top_h.add_child(song_sel)
-		top_h.move_child(song_sel, 3)
+		settings_vbox.add_child(song_sel)
+		settings_vbox.move_child(song_sel, 2)
 		
 		song_sel.item_selected.connect(func(index: int) -> void:
 			_on_song_selected(index)
+		)
+		
+		# Dynamic Speed Selector OptionButton setup
+		var speed_sel := OptionButton.new()
+		speed_sel.name = "SpeedSelector"
+		speed_sel.custom_minimum_size = Vector2(165, 44)
+		speed_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		speed_sel.add_theme_stylebox_override("normal", sb_normal)
+		speed_sel.add_theme_stylebox_override("hover", sb_hover)
+		speed_sel.add_theme_stylebox_override("pressed", sb_pressed)
+		if f_body: speed_sel.add_theme_font_override("font", f_body)
+		speed_sel.add_theme_color_override("font_color", C_TEXT)
+		speed_sel.add_theme_color_override("font_hover_color", C_TEXT)
+		speed_sel.add_theme_font_size_override("font_size", 16)
+		
+		speed_sel.add_item("Tốc độ: 100%", 0)
+		speed_sel.add_item("Tốc độ: 80%", 1)
+		speed_sel.add_item("Tốc độ: 60%", 2)
+		speed_sel.add_item("Tốc độ: 50%", 3)
+		speed_sel.selected = 0
+		
+		settings_vbox.add_child(speed_sel)
+		settings_vbox.move_child(speed_sel, 3)
+		
+		speed_sel.item_selected.connect(func(index: int) -> void:
+			match index:
+				0: _speed_scale = 1.0
+				1: _speed_scale = 0.8
+				2: _speed_scale = 0.6
+				3: _speed_scale = 0.5
+			_va_say("Đã chỉnh tốc độ nốt chạy thành %d%%." % int(_speed_scale * 100))
 		)
 
 
@@ -509,7 +556,7 @@ func _process(delta: float) -> void:
 						_active_player.volume_db = backing_volume_db
 		
 		if _is_demo_mode:
-			_current_note_elapsed += delta
+			_current_note_elapsed += delta * _speed_scale
 			var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
 			
 			if not _demo_note_plucked:
@@ -532,7 +579,7 @@ func _process(delta: float) -> void:
 				_build_notation()
 				_update_target_indicator()
 		elif not _is_wait_mode:
-			_current_note_elapsed += delta
+			_current_note_elapsed += delta * _speed_scale
 			var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
 			
 			if _mic_mode:
@@ -571,7 +618,7 @@ func _process(delta: float) -> void:
 		else:
 			var target_note = sheet_notes[_note_idx]
 			if target_note == "Rest" or target_note == "-" or target_note == "nghỉ":
-				_current_note_elapsed += delta
+				_current_note_elapsed += delta * _speed_scale
 				var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
 				if _current_note_elapsed >= target_duration:
 					_current_note_elapsed = 0.0
@@ -673,8 +720,8 @@ func _set_labels() -> void:
 
 	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
-	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
+	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
+	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
@@ -706,22 +753,59 @@ func _build_theme() -> void:
 
 	($Root/TopBar/TopM/TopH/LessonTag   as Label).add_theme_color_override("font_color", C_RED_SON)
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).add_theme_color_override("font_color", C_TEXT)
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 	_style_progress_bar(lesson_bar, C_RED_SON, Color(0,0,0,0.08))
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
 	_style_text_btn(back, C_RED_SON, C_RED_SON.lightened(0.15))
+	
+	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	if menu_btn:
+		_style_text_btn(menu_btn, C_RED_SON, C_RED_SON.lightened(0.15))
+
+	var settings_panel := $SettingsPanel as PanelContainer
+	if settings_panel:
+		var sp_style := StyleBoxFlat.new()
+		sp_style.bg_color = C_CARD
+		sp_style.border_color = C_GOLD
+		sp_style.border_width_left = 2; sp_style.border_width_right = 2
+		sp_style.border_width_top = 2; sp_style.border_width_bottom = 2
+		sp_style.corner_radius_top_left = 14; sp_style.corner_radius_top_right = 14
+		sp_style.corner_radius_bottom_left = 14; sp_style.corner_radius_bottom_right = 14
+		sp_style.shadow_size = 10; sp_style.shadow_color = Color(0.2, 0.15, 0.1, 0.25)
+		settings_panel.add_theme_stylebox_override("panel", sp_style)
+		
+		var menu_title := $SettingsPanel/SettingsM/SettingsVBox/MenuTitle as Label
+		if menu_title:
+			menu_title.add_theme_color_override("font_color", C_TEXT)
+			var f_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+			if f_title: menu_title.add_theme_font_override("font", f_title)
+
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
-		_style_outlined_btn($Root/TopBar/TopM/TopH/CtrlBtns.get_node(bn) as Button)
+		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node(bn) as Button
+		if btn:
+			_style_outlined_btn(btn)
 
 	# Linh panel
-	var linh_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
-	linh_s.border_width_right = 2; linh_s.border_width_left = 0; linh_s.border_width_top = 0; linh_s.border_width_bottom = 0
-	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
+	var linh_s := StyleBoxEmpty.new()
+	var lp = get_node_or_null("Root/MiddleRow/LinhPanel")
+	if lp:
+		lp.add_theme_stylebox_override("panel", linh_s)
 
-	var bubble_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 14)
-	($Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer).add_theme_stylebox_override("panel", bubble_s)
-	speech_label.add_theme_color_override("font_color", C_TEXT)
+	# Speech bubble stylebox - empty to remove the frame/border
+	var bubble_s := StyleBoxEmpty.new()
+	var sb = get_node_or_null("Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble")
+	if not sb:
+		sb = get_node_or_null("SpeechBubble")
+	if sb:
+		sb.add_theme_stylebox_override("panel", bubble_s)
+
+	# High contrast text color with drop shadow for readability on dark zither board background
+	speech_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	speech_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	speech_label.add_theme_constant_override("shadow_offset_x", 1)
+	speech_label.add_theme_constant_override("shadow_offset_y", 1)
+	speech_label.add_theme_constant_override("shadow_outline_size", 2)
 
 	# Notation area — light parchment card
 	var na_s := _flat(Color(0.99, 0.98, 0.95, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12)
@@ -1022,19 +1106,21 @@ func _on_string_pressed(idx: int, cents_offset: float) -> void:
 
 # ─── Float Linh ───────────────────────────────────────────────────────────────
 func _start_float() -> void:
-	_float_tween = create_tween().set_loops()
-	_float_tween.tween_property(char_linh, "position:y", -12.0, 2.1).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	_float_tween.tween_property(char_linh, "position:y", 0.0, 2.1).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	pass
 
 # ─── Connections ──────────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
 	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
-	var hint_btn := $Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button
-	var demo_btn := $Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button
-	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
+	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	var hint_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button
+	var demo_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
+	var slow_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 
 	back_btn.pressed.connect(_go_back)
+	menu_btn.pressed.connect(func() -> void:
+		$SettingsPanel.visible = not $SettingsPanel.visible
+	)
 	hint_btn.pressed.connect(_show_custom_hint)
 	demo_btn.pressed.connect(_toggle_demo_mode)
 	slow_btn.pressed.connect(_toggle_wait_mode)
@@ -1042,6 +1128,7 @@ func _connect_buttons() -> void:
 	reset_btn.pressed.connect(_reset)
 
 	_make_button_bouncy(back_btn)
+	_make_button_bouncy(menu_btn)
 	_make_button_bouncy(hint_btn)
 	_make_button_bouncy(demo_btn)
 	_make_button_bouncy(slow_btn)
@@ -1132,7 +1219,7 @@ func _toggle_demo_mode() -> void:
 	_update_demo_mode_ui()
 
 func _update_demo_mode_ui() -> void:
-	var demo_btn := $Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button
+	var demo_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
 	if not demo_btn: return
 	if _is_demo_mode:
 		demo_btn.text = "Nghe mẫu: BẬT 🔊"
@@ -1153,7 +1240,7 @@ func _toggle_wait_mode() -> void:
 	_update_wait_mode_ui()
 
 func _update_wait_mode_ui() -> void:
-	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
+	var slow_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	if not slow_btn: return
 	if _is_wait_mode:
 		slow_btn.text = "Chờ nốt: Bật ⏳"
@@ -1333,91 +1420,18 @@ func _update_rhythm() -> void:
 	rhythm_acc.add_theme_color_override("font_color",
 		C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
 
-func _va_say(text: String) -> void:
-	speech_label.text = text
-	var t := create_tween()
-	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
-	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
+func _hop_linh() -> void:
+	pass
 
-	if _linh_collapsed:
-		_linh_collapsed = false
-		_update_linh_visibility()
-		
-	var active_timer = get_tree().create_timer(6.0)
-	_collapse_timer = active_timer
-	active_timer.timeout.connect(func():
-		if _collapse_timer == active_timer and not _linh_collapsed:
-			_linh_collapsed = true
-			_update_linh_visibility()
-	)
+func _va_say(text: String) -> void:
+	pass
 
 func _setup_collapsible_linh() -> void:
-	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
-	if linh_vbox:
-		var collapse_btn := Button.new()
-		collapse_btn.text = "Thu nhỏ ◀"
-		collapse_btn.flat = true
-		collapse_btn.custom_minimum_size = Vector2(0, 36)
-		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		collapse_btn.pressed.connect(func():
-			_linh_collapsed = true
-			_update_linh_visibility()
-		)
-		linh_vbox.add_child(collapse_btn)
-		linh_vbox.move_child(collapse_btn, 0)
-		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
-		_make_button_bouncy(collapse_btn)
-		
-		# Add spacer to prevent floating avatar from overlapping the button text
-		var spacer := Control.new()
-		spacer.custom_minimum_size = Vector2(0, 24)
-		linh_vbox.add_child(spacer)
-		linh_vbox.move_child(spacer, 1)
-
-	linh_mini_btn = Button.new()
-	linh_mini_btn.name = "LinhMiniBtn"
-	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
-	add_child(linh_mini_btn)
-	
-	linh_mini_btn.layout_mode = 1
-	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	linh_mini_btn.position.x += 24
-	linh_mini_btn.position.y -= 70
-	
-	var btn_s := StyleBoxFlat.new()
-	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
-	btn_s.border_color = C_GOLD
-	btn_s.border_width_left = 2; btn_s.border_width_right = 2
-	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
-	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
-	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
-	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	
-	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
-	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
-	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
-	
-	var mini_tex := TextureRect.new()
-	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
-	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	mini_tex.size = Vector2(44, 44)
-	mini_tex.position = Vector2(10, 10)
-	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	linh_mini_btn.add_child(mini_tex)
-	
-	linh_mini_btn.pressed.connect(func():
-		_linh_collapsed = false
-		_update_linh_visibility()
-	)
-	_make_button_bouncy(linh_mini_btn)
-	_update_linh_visibility()
+	pass
 
 func _update_linh_visibility() -> void:
 	if linh_panel:
-		linh_panel.visible = not _linh_collapsed
-	if linh_mini_btn:
-		linh_mini_btn.visible = _linh_collapsed
+		linh_panel.visible = false
 
 func _update_target_indicator() -> void:
 	var target_note := sheet_notes[_note_idx]
@@ -1643,48 +1657,6 @@ func _show_introduction_overlay() -> void:
 	main_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(main_hbox)
 	
-	# ─── LEFT PANEL: Teacher Mai & Speech Bubble ───
-	var left_vbox := VBoxContainer.new()
-	left_vbox.custom_minimum_size = Vector2(350, 0)
-	left_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	left_vbox.add_theme_constant_override("separation", 20)
-	main_hbox.add_child(left_vbox)
-	
-	# Teacher Portrait
-	var portrait := TextureRect.new()
-	portrait.texture = load("res://assets/textures/virtual_artist_mai.png")
-	portrait.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait.custom_minimum_size = Vector2(240, 360)
-	left_vbox.add_child(portrait)
-	
-	# Speech Bubble Panel Container
-	var bubble := PanelContainer.new()
-	var bs := StyleBoxFlat.new()
-	bs.bg_color = C_BG_BAR
-	bs.border_color = C_GOLD
-	bs.border_width_left = 2; bs.border_width_right = 2
-	bs.border_width_top = 2; bs.border_width_bottom = 2
-	bs.corner_radius_top_left = 16; bs.corner_radius_top_right = 16
-	bs.corner_radius_bottom_left = 16; bs.corner_radius_bottom_right = 16
-	bubble.add_theme_stylebox_override("panel", bs)
-	left_vbox.add_child(bubble)
-	
-	var bubble_margin := MarginContainer.new()
-	bubble_margin.add_theme_constant_override("margin_left", 16)
-	bubble_margin.add_theme_constant_override("margin_right", 16)
-	bubble_margin.add_theme_constant_override("margin_top", 16)
-	bubble_margin.add_theme_constant_override("margin_bottom", 16)
-	bubble.add_child(bubble_margin)
-	
-	_intro_text_lbl = Label.new()
-	_intro_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_intro_text_lbl.custom_minimum_size = Vector2(300, 100)
-	if f_body: _intro_text_lbl.add_theme_font_override("font", f_body)
-	_intro_text_lbl.add_theme_font_size_override("font_size", 14)
-	_intro_text_lbl.add_theme_color_override("font_color", C_TEXT)
-	bubble_margin.add_child(_intro_text_lbl)
-	
 	# ─── RIGHT PANEL: Zither & Navigation ───
 	var right_vbox := VBoxContainer.new()
 	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1709,18 +1681,47 @@ func _show_introduction_overlay() -> void:
 	_intro_active_note_display_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	right_vbox.add_child(_intro_active_note_display_lbl)
 	
-	# Zither Display Container
+	# Speech Bubble Panel Container for instructions
+	var bubble := PanelContainer.new()
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = C_BG_BAR
+	bs.border_color = C_GOLD
+	bs.border_width_left = 2; bs.border_width_right = 2
+	bs.border_width_top = 2; bs.border_width_bottom = 2
+	bs.corner_radius_top_left = 16; bs.corner_radius_top_right = 16
+	bs.corner_radius_bottom_left = 16; bs.corner_radius_bottom_right = 16
+	bubble.add_theme_stylebox_override("panel", bs)
+	bubble.custom_minimum_size = Vector2(800, 80)
+	bubble.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	right_vbox.add_child(bubble)
+	
+	var bubble_margin := MarginContainer.new()
+	bubble_margin.add_theme_constant_override("margin_left", 16)
+	bubble_margin.add_theme_constant_override("margin_right", 16)
+	bubble_margin.add_theme_constant_override("margin_top", 16)
+	bubble_margin.add_theme_constant_override("margin_bottom", 16)
+	bubble.add_child(bubble_margin)
+	
+	_intro_text_lbl = Label.new()
+	_intro_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_intro_text_lbl.custom_minimum_size = Vector2(760, 50)
+	if f_body: _intro_text_lbl.add_theme_font_override("font", f_body)
+	_intro_text_lbl.add_theme_font_size_override("font_size", 14)
+	_intro_text_lbl.add_theme_color_override("font_color", C_TEXT)
+	bubble_margin.add_child(_intro_text_lbl)
+	
+	# Zither Display Container (Larger!)
 	var zither_area := Control.new()
-	zither_area.custom_minimum_size = Vector2(760, 200)
+	zither_area.custom_minimum_size = Vector2(1060, 360)
 	zither_area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	right_vbox.add_child(zither_area)
 	
-	# Zither Body
+	# Zither Body (Larger!)
 	var theme_font := get_theme_font("font")
 	_intro_zither_body = Control.new()
-	_intro_zither_body.custom_minimum_size = Vector2(680, 180)
-	_intro_zither_body.size = Vector2(680, 180)
-	_intro_zither_body.position = Vector2(40, 10)
+	_intro_zither_body.custom_minimum_size = Vector2(980, 320)
+	_intro_zither_body.size = Vector2(980, 320)
+	_intro_zither_body.position = Vector2(40, 20)
 	zither_area.add_child(_intro_zither_body)
 	
 	_intro_zither_body.draw.connect(func() -> void:

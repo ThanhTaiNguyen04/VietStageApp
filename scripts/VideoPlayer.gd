@@ -45,10 +45,10 @@ var speed_btn : Button
 var zoom_btn : Button
 
 const SUBTITLES_DAN_TRANH := [
-	{"start": 0.0,  "end": 2.0,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
-	{"start": 2.0,  "end": 4.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
-	{"start": 4.5,  "end": 6.5,  "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
-	{"start": 6.5,  "end": 8.0,  "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là giảng viên, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
+	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
+	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
+	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
 ]
 
 const SUBTITLES_SAO_TRUC := [
@@ -76,7 +76,7 @@ func _ready() -> void:
 		video_stream_player.stream = load("res://Video/coMai_danBau.ogv")
 		active_subtitles = SUBTITLES_DAN_BAU
 	else:
-		video_stream_player.stream = load("res://Video/coMai_danTranh.ogv")
+		video_stream_player.stream = load("res://Video/giang_vien_dan_tranh_1942.ogv")
 		active_subtitles = SUBTITLES_DAN_TRANH
 
 	# Make PlayerCard take up the entire screen programmatically
@@ -129,7 +129,7 @@ func _ready() -> void:
 			elif inst == "dan_bau":
 				_duration = 10.0
 			else:
-				_duration = 8.0 # coMai_danTranh is 8.0s
+				_duration = 10.0 # new danTranh video is 10.0s
 	
 	# Update initially
 	_update_media_progress()

@@ -87,6 +87,7 @@ func _ready() -> void:
 	_start_float()
 	_connect_buttons()
 	_setup_collapsible_linh()
+	char_linh.get_parent().visible = false
 	
 	# Check mic permission
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -250,8 +251,8 @@ func _build_theme() -> void:
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
 		_style_outlined_btn($Root/TopBar/TopM/TopH/CtrlBtns.get_node(bn) as Button)
 
-	var linh_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
-	linh_s.border_width_right = 2; linh_s.border_width_left = 0; linh_s.border_width_top = 0; linh_s.border_width_bottom = 0
+	# Linh panel
+	var linh_s := StyleBoxEmpty.new()
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
 
 	var bubble_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 14)
@@ -564,9 +565,7 @@ func _refresh_score() -> void:
 
 # ─── Float Linh ───────────────────────────────────────────────────────────────
 func _start_float() -> void:
-	_float_tween = create_tween().set_loops()
-	_float_tween.tween_property(char_linh, "position:y", -12.0, 2.1).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	_float_tween.tween_property(char_linh, "position:y", 0.0, 2.1).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	pass
 
 # ─── Connections & Navigation ─────────────────────────────────────────────────
 func _connect_buttons() -> void:
@@ -807,91 +806,18 @@ func _update_rhythm() -> void:
 	rhythm_acc.add_theme_color_override("font_color",
 		C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
 
-func _va_say(text: String) -> void:
-	speech_label.text = text
-	var t := create_tween()
-	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
-	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
+func _hop_linh() -> void:
+	pass
 
-	if _linh_collapsed:
-		_linh_collapsed = false
-		_update_linh_visibility()
-		
-	var active_timer = get_tree().create_timer(6.0)
-	_collapse_timer = active_timer
-	active_timer.timeout.connect(func():
-		if _collapse_timer == active_timer and not _linh_collapsed:
-			_linh_collapsed = true
-			_update_linh_visibility()
-	)
+func _va_say(text: String) -> void:
+	pass
 
 func _setup_collapsible_linh() -> void:
-	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
-	if linh_vbox:
-		var collapse_btn := Button.new()
-		collapse_btn.text = "Thu nhỏ ◀"
-		collapse_btn.flat = true
-		collapse_btn.custom_minimum_size = Vector2(0, 36)
-		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		collapse_btn.pressed.connect(func():
-			_linh_collapsed = true
-			_update_linh_visibility()
-		)
-		linh_vbox.add_child(collapse_btn)
-		linh_vbox.move_child(collapse_btn, 0)
-		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
-		_make_button_bouncy(collapse_btn)
-		
-		# Add spacer to prevent floating avatar from overlapping the button text
-		var spacer := Control.new()
-		spacer.custom_minimum_size = Vector2(0, 24)
-		linh_vbox.add_child(spacer)
-		linh_vbox.move_child(spacer, 1)
-
-	linh_mini_btn = Button.new()
-	linh_mini_btn.name = "LinhMiniBtn"
-	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
-	add_child(linh_mini_btn)
-	
-	linh_mini_btn.layout_mode = 1
-	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	linh_mini_btn.position.x += 24
-	linh_mini_btn.position.y -= 70
-	
-	var btn_s := StyleBoxFlat.new()
-	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
-	btn_s.border_color = C_GOLD
-	btn_s.border_width_left = 2; btn_s.border_width_right = 2
-	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
-	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
-	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
-	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	
-	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
-	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
-	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
-	
-	var mini_tex := TextureRect.new()
-	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
-	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	mini_tex.size = Vector2(44, 44)
-	mini_tex.position = Vector2(10, 10)
-	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	linh_mini_btn.add_child(mini_tex)
-	
-	linh_mini_btn.pressed.connect(func():
-		_linh_collapsed = false
-		_update_linh_visibility()
-	)
-	_make_button_bouncy(linh_mini_btn)
-	_update_linh_visibility()
+	pass
 
 func _update_linh_visibility() -> void:
 	if linh_panel:
-		linh_panel.visible = not _linh_collapsed
-	if linh_mini_btn:
-		linh_mini_btn.visible = _linh_collapsed
+		linh_panel.visible = false
 
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 0
