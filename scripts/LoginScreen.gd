@@ -8,6 +8,10 @@ const C_WHITE       := Color(1.00, 1.00, 1.00, 1.00)
 const C_WHITE_DIM   := Color(1.00, 1.00, 1.00, 0.40)
 const C_ERR         := Color(0.98, 0.32, 0.22, 1.0)
 const C_GREEN_OK    := Color(0.25, 0.88, 0.55, 1.0)
+# Primary brand crimson (đồng bộ với web #610000)
+const C_PRIMARY     := Color(0.38, 0.00, 0.00, 1.0)
+const C_PRIMARY_LT  := Color(0.50, 0.06, 0.06, 1.0)
+const C_PRIMARY_DK  := Color(0.26, 0.00, 0.00, 1.0)
 # Google brand
 const C_G_BLUE      := Color(0.26, 0.52, 0.96, 1.0)
 # Màu hạt hoạt hình (Lá trúc & Đom đóm vàng)
@@ -39,11 +43,21 @@ var is_register_mode := false
 @onready var card           : PanelContainer = $Center/Card
 @onready var particle_layer : Control        = $ParticleLayer
 
+var _pass_visible   := false
+var _forgot_btn     : Button = null
+var _pass_toggle_btn: Button = null
+var _welcome_lbl    : Label  = null
+var _welcome_sub    : Label  = null
+var _email_lbl      : Label  = null
+var _pass_lbl       : Label  = null
+var _name_lbl       : Label  = null
+
 func _ready() -> void:
 	name_edit.visible = false
-	gap_name.visible = false
+	gap_name.visible  = false
 	_style_card()
 	_style_all()
+	_setup_extra_ui()   # thêm welcome header, input labels, forgot, eye toggle
 	_connect_all()
 	_spawn_bg_particles()
 	_animate_in()
@@ -51,7 +65,222 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
 
-# ── Entrance animation ─────────────────────────────────────────────────────────
+
+# ── Setup extra UI elements (labels, forgot, eye toggle, welcome) ──────────────
+func _setup_extra_ui() -> void:
+	var vbox := get_node(FP) as VBoxContainer
+	var font_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+
+	# — Welcome header (chèn ngay dưới LogoVBox) —
+	_welcome_lbl = Label.new()
+	_welcome_lbl.name = "WelcomeLabel"
+	_welcome_lbl.text = "Chào mừng trở lại"
+	_welcome_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_title:
+		_welcome_lbl.add_theme_font_override("font", font_title)
+	_welcome_lbl.add_theme_font_size_override("font_size", 28)
+	_welcome_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	var logo_vbox := get_node(FP + "LogoVBox")
+	var logo_vbox_idx := logo_vbox.get_index()
+	vbox.add_child(_welcome_lbl)
+	vbox.move_child(_welcome_lbl, logo_vbox_idx + 1)
+
+	# — Subtitle chào mừng —
+	_welcome_sub = Label.new()
+	_welcome_sub.name = "WelcomeSub"
+	_welcome_sub.text = "Tiếp tục hành trình khám phá âm nhạc dân tộc"
+	_welcome_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_welcome_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if font_body:
+		_welcome_sub.add_theme_font_override("font", font_body)
+	_welcome_sub.add_theme_font_size_override("font_size", 14)
+	_welcome_sub.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.85))
+	vbox.add_child(_welcome_sub)
+	vbox.move_child(_welcome_sub, _welcome_lbl.get_index() + 1)
+
+	# Spacing sau welcome sub
+	var gap_w := Control.new(); gap_w.custom_minimum_size = Vector2(0, 16)
+	vbox.add_child(gap_w); vbox.move_child(gap_w, _welcome_sub.get_index() + 1)
+
+	# — Label “Tên hiển thị” trước name_edit —
+	_name_lbl = Label.new()
+	_name_lbl.text = "Tên hiển thị"
+	_name_lbl.visible = false
+	if font_body:
+		_name_lbl.add_theme_font_override("font", font_body)
+	_name_lbl.add_theme_font_size_override("font_size", 13)
+	_name_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	var name_idx := name_edit.get_index()
+	vbox.add_child(_name_lbl)
+	vbox.move_child(_name_lbl, name_idx)
+
+	# — Label “Email” trước email_edit —
+	_email_lbl = Label.new()
+	_email_lbl.text = "Email"
+	if font_body:
+		_email_lbl.add_theme_font_override("font", font_body)
+	_email_lbl.add_theme_font_size_override("font_size", 13)
+	_email_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	var email_idx := email_edit.get_index()
+	vbox.add_child(_email_lbl)
+	vbox.move_child(_email_lbl, email_idx)
+
+	# — Label “Mật khẩu” + nút Quên mật khẩu cùng hàng —
+	var pass_row := HBoxContainer.new()
+	pass_row.name = "PassLabelRow"
+	_pass_lbl = Label.new()
+	_pass_lbl.text = "Mật khẩu"
+	_pass_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if font_body:
+		_pass_lbl.add_theme_font_override("font", font_body)
+	_pass_lbl.add_theme_font_size_override("font_size", 13)
+	_pass_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+
+	_forgot_btn = Button.new()
+	_forgot_btn.text = "Quên mật khẩu?"
+	_forgot_btn.flat = true
+	if font_body:
+		_forgot_btn.add_theme_font_override("font", font_body)
+	_forgot_btn.add_theme_font_size_override("font_size", 13)
+	_forgot_btn.add_theme_color_override("font_color", C_PRIMARY)
+	_forgot_btn.add_theme_color_override("font_hover_color", C_PRIMARY_LT)
+	_forgot_btn.add_theme_stylebox_override("normal", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_forgot_btn.add_theme_stylebox_override("hover",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_forgot_btn.add_theme_stylebox_override("focus",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_forgot_btn.pressed.connect(func() -> void:
+		error_label.add_theme_color_override("font_color", C_PRIMARY)
+		error_label.text = "Tính năng đang phát triển. Liên hệ admin để đặt lại mật khẩu."
+	)
+	pass_row.add_child(_pass_lbl)
+	pass_row.add_child(_forgot_btn)
+	var pass_idx := password_edit.get_index()
+	vbox.add_child(pass_row)
+	vbox.move_child(pass_row, pass_idx)
+
+	# — Nút mắt hiện/ẩn mật khẩu (overlay trong password_edit) —
+	_pass_toggle_btn = Button.new()
+	_pass_toggle_btn.name = "PassToggle"
+	_pass_toggle_btn.flat = true
+	_pass_toggle_btn.layout_mode = 1
+	_pass_toggle_btn.anchor_left   = 1.0
+	_pass_toggle_btn.anchor_right  = 1.0
+	_pass_toggle_btn.anchor_top    = 0.5
+	_pass_toggle_btn.anchor_bottom = 0.5
+	_pass_toggle_btn.offset_left   = -52
+	_pass_toggle_btn.offset_right  = -8
+	_pass_toggle_btn.offset_top    = -18
+	_pass_toggle_btn.offset_bottom = 18
+	_pass_toggle_btn.add_theme_stylebox_override("normal", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_pass_toggle_btn.add_theme_stylebox_override("hover",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_pass_toggle_btn.add_theme_stylebox_override("focus",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	
+	var eye_drawing := Control.new()
+	eye_drawing.name = "EyeDrawing"
+	eye_drawing.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	eye_drawing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	eye_drawing.draw.connect(func() -> void:
+		var size_vec: Vector2 = eye_drawing.size
+		var center: Vector2 = size_vec / 2.0
+		var color: Color = Color(0.13, 0.08, 0.05, 0.45)
+		if _pass_toggle_btn.is_hovered():
+			color = Color(0.13, 0.08, 0.05, 0.8)
+		
+		# Kích thước icon mắt vector
+		var w: float = 18.0
+		var h: float = 11.0
+		var steps: int = 12
+		var pts_top: PackedVector2Array = PackedVector2Array()
+		var pts_bottom: PackedVector2Array = PackedVector2Array()
+		
+		for i in range(steps + 1):
+			var t: float = float(i) / steps
+			var px: float = center.x - w/2.0 + t * w
+			var dx: float = (t - 0.5) * 2.0
+			var dy: float = 1.0 - dx*dx # Parabolic curve
+			pts_top.append(Vector2(px, center.y - dy * h/2.0))
+			pts_bottom.append(Vector2(px, center.y + dy * h/2.0))
+		
+		# Vẽ mí mắt trên và dưới
+		eye_drawing.draw_polyline(pts_top, color, 1.6, true)
+		eye_drawing.draw_polyline(pts_bottom, color, 1.6, true)
+		
+		# Vẽ lòng đen (nhãn cầu)
+		eye_drawing.draw_arc(center, 3.5, 0, TAU, 24, color, 1.6, true)
+		
+		# Vẽ con ngươi (nhân nhỏ)
+		eye_drawing.draw_circle(center, 1.2, color)
+		
+		# Giống trên web: nếu _pass_visible = true (đang hiện pass), icon hiển thị là EyeOff (mắt có gạch chéo)
+		if _pass_visible:
+			# Vẽ đường gạch chéo chéo từ góc trên-trái xuống dưới-phải
+			var line_start := center + Vector2(-w/2.0 - 2, -h/2.0 - 2)
+			var line_end := center + Vector2(w/2.0 + 2, h/2.0 + 2)
+			eye_drawing.draw_line(line_start, line_end, color, 1.6, true)
+	)
+	_pass_toggle_btn.add_child(eye_drawing)
+
+	_pass_toggle_btn.pressed.connect(func() -> void:
+		_pass_visible = not _pass_visible
+		password_edit.secret = not _pass_visible
+		eye_drawing.queue_redraw()
+	)
+	_pass_toggle_btn.mouse_entered.connect(func() -> void: eye_drawing.queue_redraw())
+	_pass_toggle_btn.mouse_exited.connect(func() -> void: eye_drawing.queue_redraw())
+	password_edit.add_child(_pass_toggle_btn)
+
+	# — Icon trong Email input (👤) —
+	var email_icon := TextureRect.new()
+	email_icon.name = "EmailIcon"
+	email_icon.texture = load("res://assets/textures/icons8/account.png")
+	email_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	email_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	email_icon.custom_minimum_size = Vector2(20, 20)
+	email_icon.size = Vector2(20, 20)
+	email_icon.layout_mode = 1
+	email_icon.anchor_top = 0.5
+	email_icon.anchor_bottom = 0.5
+	email_icon.offset_left = 16
+	email_icon.offset_top = -10
+	email_icon.offset_bottom = 10
+	email_icon.self_modulate = Color(0.13, 0.08, 0.05, 0.45)
+	email_edit.add_child(email_icon)
+
+	# — Icon trong Mật khẩu input (🔒) —
+	var pass_icon := TextureRect.new()
+	pass_icon.name = "PassIcon"
+	pass_icon.texture = load("res://assets/textures/icons8/lock.png")
+	pass_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pass_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pass_icon.custom_minimum_size = Vector2(20, 20)
+	pass_icon.size = Vector2(20, 20)
+	pass_icon.layout_mode = 1
+	pass_icon.anchor_top = 0.5
+	pass_icon.anchor_bottom = 0.5
+	pass_icon.offset_left = 16
+	pass_icon.offset_top = -10
+	pass_icon.offset_bottom = 10
+	pass_icon.self_modulate = Color(0.13, 0.08, 0.05, 0.45)
+	password_edit.add_child(pass_icon)
+
+	# — Icon trong Tên hiển thị input (👤) —
+	var name_icon := TextureRect.new()
+	name_icon.name = "NameIcon"
+	name_icon.texture = load("res://assets/textures/icons8/account.png")
+	name_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	name_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	name_icon.custom_minimum_size = Vector2(20, 20)
+	name_icon.size = Vector2(20, 20)
+	name_icon.layout_mode = 1
+	name_icon.anchor_top = 0.5
+	name_icon.anchor_bottom = 0.5
+	name_icon.offset_left = 16
+	name_icon.offset_top = -10
+	name_icon.offset_bottom = 10
+	name_icon.self_modulate = Color(0.13, 0.08, 0.05, 0.45)
+	name_edit.add_child(name_icon)
+
+# ── Entrance animation ───────────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
 	modulate.a   = 0.0
 	card.scale   = Vector2(0.92, 0.92)
@@ -195,18 +424,44 @@ func _style_card() -> void:
 
 # ── Tô màu toàn bộ UI theo Cream/Espresso ─────────────────────────────────────
 func _style_all() -> void:
-	app_name.add_theme_color_override("font_color",    C_PETAL_2) # đỏ thẫm sơn mài
-	app_sub.add_theme_color_override("font_color",     Color(0.43, 0.38, 0.33, 1.0))
+	# Hide App Name text ("VietStage"), the original App Sub, and the footer text completely
+	app_name.visible = false
+	app_sub.visible = false
+	footer_lbl.visible = false
+
+	# Hide Google login VBox
+	var google_vbox := get_node_or_null(FP + "SocialRow/GoogleVBox")
+	if google_vbox:
+		google_vbox.visible = false
+
+	# Apply sans-serif font (BeVietnamPro) to match the web's Montserrat style
+	var font_reg := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var font_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	
+	if font_reg:
+		email_edit.add_theme_font_override("font", font_reg)
+		name_edit.add_theme_font_override("font", font_reg)
+		password_edit.add_theme_font_override("font", font_reg)
+		or_label.add_theme_font_override("font", font_reg)
+		toggle_mode_btn.add_theme_font_override("font", font_reg)
+		guest_lbl.add_theme_font_override("font", font_reg)
+		google_lbl.add_theme_font_override("font", font_reg)
+		error_label.add_theme_font_override("font", font_reg)
+	if font_bold:
+		sign_in_btn.add_theme_font_override("font", font_bold)
+
 	or_label.add_theme_color_override("font_color",    Color(0.43, 0.38, 0.33, 1.0))
-	footer_lbl.add_theme_color_override("font_color",  Color(0.13, 0.08, 0.05, 0.35))
 	error_label.add_theme_color_override("font_color", C_ERR)
-	google_lbl.add_theme_color_override("font_color",  Color(0.43, 0.38, 0.33, 1.0))
 	guest_lbl.add_theme_color_override("font_color",   Color(0.43, 0.38, 0.33, 1.0))
 
 	# Name & Email: Light warm glass pill
 	var ei_n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(0.13, 0.08, 0.05, 0.15), 28)
 	var ei_f := _pill(Color(1.00, 1.00, 1.00, 1.00),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
 	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	
+	# Add left content padding to line edits to fit the 👤 / 🔒 icons beautifully
+	ei_n.content_margin_left = 46
+	ei_f.content_margin_left = 46
 	
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
@@ -226,19 +481,19 @@ func _style_all() -> void:
 	password_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
 	password_edit.add_theme_color_override("caret_color",       C_GOLD)
 
-	# Nút Đăng nhập: Vàng đồng rực rỡ
-	var si_n := _pill(C_GOLD,                 Color(0,0,0,0), 28)
-	var si_h := _pill(C_GOLD_LT,              Color(0,0,0,0), 28)
-	var si_p := _pill(C_GOLD.darkened(0.14),  Color(0,0,0,0), 28)
-	si_n.shadow_size = 16; si_n.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-	si_h.shadow_size = 24; si_h.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.48)
+	# Nút Đăng nhập: Đỏ Crimson — đồng bộ màu primary với web (#610000)
+	var si_n := _pill(C_PRIMARY,    Color(1, 1, 1, 0.15), 28)
+	var si_h := _pill(C_PRIMARY_LT, Color(1, 1, 1, 0.20), 28)
+	var si_p := _pill(C_PRIMARY_DK, Color(0, 0, 0, 0.20), 28)
+	si_n.shadow_size = 16; si_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.35)
+	si_h.shadow_size = 22; si_h.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.48)
 	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
 	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
 	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
 	sign_in_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	sign_in_btn.add_theme_color_override("font_color",         C_GOLD_DARK)
-	sign_in_btn.add_theme_color_override("font_hover_color",   C_GOLD_DARK)
-	sign_in_btn.add_theme_color_override("font_pressed_color", C_GOLD_DARK)
+	sign_in_btn.add_theme_color_override("font_color",         Color(1, 1, 1, 1))
+	sign_in_btn.add_theme_color_override("font_hover_color",   Color(1, 1, 1, 1))
+	sign_in_btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 0.85))
 
 	# Nút Chuyển chế độ: Flat link button
 	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))
@@ -289,6 +544,8 @@ func _connect_all() -> void:
 func _on_toggle_mode() -> void:
 	is_register_mode = not is_register_mode
 	if is_register_mode:
+		# Hiển thị name label + input
+		if _name_lbl: _name_lbl.visible = true
 		name_edit.visible = true
 		gap_name.visible = true
 		name_edit.modulate.a = 0.0
@@ -298,16 +555,23 @@ func _on_toggle_mode() -> void:
 		t.tween_property(name_edit, "scale", Vector2.ONE, 0.15)
 		sign_in_btn.text = "ĐĂNG KÝ"
 		toggle_mode_btn.text = "Đã có tài khoản? Đăng nhập"
+		if _welcome_lbl: _welcome_lbl.text = "Tạo tài khoản mới"
+		if _welcome_sub: _welcome_sub.visible = false
+		if _forgot_btn:  _forgot_btn.visible = false
 	else:
 		var t := create_tween().set_parallel(true)
 		t.tween_property(name_edit, "modulate:a", 0.0, 0.1)
 		t.tween_property(name_edit, "scale", Vector2(0.95, 0.95), 0.1)
 		t.chain().tween_callback(func() -> void:
+			if _name_lbl: _name_lbl.visible = false
 			name_edit.visible = false
 			gap_name.visible = false
 		)
 		sign_in_btn.text = "ĐĂNG NHẬP"
 		toggle_mode_btn.text = "Chưa có tài khoản? Đăng ký ngay"
+		if _welcome_lbl: _welcome_lbl.text = "Chào mừng trở lại"
+		if _welcome_sub: _welcome_sub.visible = true
+		if _forgot_btn:  _forgot_btn.visible = true
 
 func _on_sign_in() -> void:
 	var em := email_edit.text.strip_edges()

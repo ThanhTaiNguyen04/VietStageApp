@@ -60,12 +60,6 @@ flat = true
 text = "Back"
 theme_override_font_sizes/font_size = 20
 
-[node name="LessonTag" type="Label" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 16
-text = "DAN BAU"
-
 [node name="LessonTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -73,75 +67,13 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 24
 text = "Bai 1"
 
-[node name="DotsHBox" type="HBoxContainer" parent="Root/TopBar/TopM/TopH"]
+[node name="MenuBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
 size_flags_vertical = 4
-alignment = 1
-theme_override_constants/separation = 8
-
-[node name="Dot1" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
-
-[node name="Dot2" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
-
-[node name="Dot3" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
-
-[node name="Dot4" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
-
-[node name="Dot5" type="ColorRect" parent="Root/TopBar/TopM/TopH/DotsHBox"]
-custom_minimum_size = Vector2(20, 20)
-
-[node name="TopSpacer" type="Control" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(32, 0)
-layout_mode = 2
-
-[node name="ProgressVBox" type="VBoxContainer" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(240, 0)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 4
-alignment = 1
-
-[node name="PctLabel" type="Label" parent="Root/TopBar/TopM/TopH/ProgressVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "60%"
-horizontal_alignment = 2
-
-[node name="LessonBar" type="ProgressBar" parent="Root/TopBar/TopM/TopH/ProgressVBox"]
-custom_minimum_size = Vector2(0, 12)
-layout_mode = 2
-value = 60.0
-show_percentage = false
-
-[node name="CtrlBtns" type="HBoxContainer" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 12
-
-[node name="HintBtn" type="Button" parent="Root/TopBar/TopM/TopH/CtrlBtns"]
-custom_minimum_size = Vector2(110, 56)
-layout_mode = 2
 flat = true
-text = "Goi y"
-theme_override_font_sizes/font_size = 18
-
-[node name="DemoBtn" type="Button" parent="Root/TopBar/TopM/TopH/CtrlBtns"]
-custom_minimum_size = Vector2(110, 56)
-layout_mode = 2
-flat = true
-text = "Demo"
-theme_override_font_sizes/font_size = 18
-
-[node name="SlowBtn" type="Button" parent="Root/TopBar/TopM/TopH/CtrlBtns"]
-custom_minimum_size = Vector2(110, 56)
-layout_mode = 2
-flat = true
-text = "x0.5"
-theme_override_font_sizes/font_size = 18
+text = "⋮"
+theme_override_font_sizes/font_size = 28
 
 [node name="MiddleRow" type="HBoxContainer" parent="Root"]
 custom_minimum_size = Vector2(0, 240)
@@ -399,3 +331,95 @@ size_flags_vertical = 4
 flat = true
 text = "Lam lai"
 theme_override_font_sizes/font_size = 18
+
+[node name="SettingsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -336.0
+offset_top = 74.0
+offset_right = -16.0
+offset_bottom = 490.0
+grow_horizontal = 0
+
+[node name="SettingsM" type="MarginContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel/SettingsM"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MenuTitle" type="Label" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CÀI ĐẶT LUYỆN TẬP"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+
+[node name="DotsHBox" type="HBoxContainer" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="Dot1" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot2" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot3" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot4" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot5" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="ProgressVBox" type="VBoxContainer" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PctLabel" type="Label" parent="SettingsPanel/SettingsM/SettingsVBox/ProgressVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "20%"
+horizontal_alignment = 2
+
+[node name="LessonBar" type="ProgressBar" parent="SettingsPanel/SettingsM/SettingsVBox/ProgressVBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+value = 20.0
+show_percentage = false
+
+[node name="CtrlBtns" type="VBoxContainer" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="HintBtn" type="Button" parent="SettingsPanel/SettingsM/SettingsVBox/CtrlBtns"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Gợi ý"
+
+[node name="DemoBtn" type="Button" parent="SettingsPanel/SettingsM/SettingsVBox/CtrlBtns"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Nghe mẫu: TẮT"
+
+[node name="SlowBtn" type="Button" parent="SettingsPanel/SettingsM/SettingsVBox/CtrlBtns"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Chờ nốt: Bật"

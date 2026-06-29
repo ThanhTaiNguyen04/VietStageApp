@@ -23,7 +23,7 @@ const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 @onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
 @onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
-@onready var lesson_bar   : ProgressBar   = $Root/TopBar/TopM/TopH/ProgressVBox/LessonBar
+@onready var lesson_bar   : ProgressBar   = $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/LessonBar
 @onready var pitch_note   : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote
 @onready var pitch_status : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchStatus
 @onready var rhythm_bars  : HBoxContainer = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmBars
@@ -35,7 +35,7 @@ const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 @onready var target_label : Label         = $Root/StringsBoard/BoardM/BoardVBox/TargetLabel
 @onready var hint_dialog  : AcceptDialog  = $HintDialog
 @onready var result_dialog: AcceptDialog  = $ResultDialog
-@onready var dots_hbox    : HBoxContainer = $Root/TopBar/TopM/TopH/DotsHBox
+@onready var dots_hbox    : HBoxContainer = $SettingsPanel/SettingsM/SettingsVBox/DotsHBox
 @onready var _board       : Control       = $Root/StringsBoard/BoardM/BoardVBox/DanTranhBoard
 
 # --- Audio settings (simpler, no runtime bus creation) ---
@@ -440,8 +440,8 @@ func _ready() -> void:
 	_update_wait_mode_ui()
 		
 	# Dynamic Song Selector OptionButton setup
-	var top_h := $Root/TopBar/TopM/TopH as HBoxContainer
-	if top_h:
+	var settings_vbox := $SettingsPanel/SettingsM/SettingsVBox as VBoxContainer
+	if settings_vbox:
 		var song_sel := OptionButton.new()
 		song_sel.name = "SongSelector"
 		song_sel.custom_minimum_size = Vector2(220, 44)
@@ -484,8 +484,8 @@ func _ready() -> void:
 			song_sel.add_item(songs_list[i]["title"], i)
 			
 		song_sel.selected = default_idx
-		top_h.add_child(song_sel)
-		top_h.move_child(song_sel, 3)
+		settings_vbox.add_child(song_sel)
+		settings_vbox.move_child(song_sel, 2)
 		
 		song_sel.item_selected.connect(func(index: int) -> void:
 			_on_song_selected(index)
@@ -671,10 +671,9 @@ func _set_labels() -> void:
 		elif SecureDataManager.active_lesson_id == "Node4":
 			title_lbl = "Kỹ Thuật Song Thanh"
 
-	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN TRANH  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
-	($Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button).text = "Gợi ý"
+	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
+	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
@@ -704,15 +703,37 @@ func _build_theme() -> void:
 	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
 
-	($Root/TopBar/TopM/TopH/LessonTag   as Label).add_theme_color_override("font_color", C_RED_SON)
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).add_theme_color_override("font_color", C_TEXT)
-	($Root/TopBar/TopM/TopH/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 	_style_progress_bar(lesson_bar, C_RED_SON, Color(0,0,0,0.08))
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
 	_style_text_btn(back, C_RED_SON, C_RED_SON.lightened(0.15))
+	
+	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	if menu_btn:
+		_style_text_btn(menu_btn, C_RED_SON, C_RED_SON.lightened(0.15))
+		
+	var settings_panel := $SettingsPanel as PanelContainer
+	if settings_panel:
+		var sp_style := StyleBoxFlat.new()
+		sp_style.bg_color = C_CARD
+		sp_style.border_color = C_GOLD
+		sp_style.border_width_left = 2; sp_style.border_width_right = 2
+		sp_style.border_width_top = 2; sp_style.border_width_bottom = 2
+		sp_style.corner_radius_top_left = 14; sp_style.corner_radius_top_right = 14
+		sp_style.corner_radius_bottom_left = 14; sp_style.corner_radius_bottom_right = 14
+		sp_style.shadow_size = 10; sp_style.shadow_color = Color(0.2, 0.15, 0.1, 0.25)
+		settings_panel.add_theme_stylebox_override("panel", sp_style)
+		
+		var menu_title := $SettingsPanel/SettingsM/SettingsVBox/MenuTitle as Label
+		if menu_title:
+			menu_title.add_theme_color_override("font_color", C_TEXT)
+
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
-		_style_outlined_btn($Root/TopBar/TopM/TopH/CtrlBtns.get_node(bn) as Button)
+		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node(bn) as Button
+		if btn:
+			_style_outlined_btn(btn)
 
 	# Linh panel
 	var linh_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
@@ -1029,12 +1050,16 @@ func _start_float() -> void:
 # ─── Connections ──────────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
 	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
-	var hint_btn := $Root/TopBar/TopM/TopH/CtrlBtns/HintBtn as Button
-	var demo_btn := $Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button
-	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
+	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	var hint_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button
+	var demo_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
+	var slow_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 
 	back_btn.pressed.connect(_go_back)
+	menu_btn.pressed.connect(func() -> void:
+		$SettingsPanel.visible = not $SettingsPanel.visible
+	)
 	hint_btn.pressed.connect(_show_custom_hint)
 	demo_btn.pressed.connect(_toggle_demo_mode)
 	slow_btn.pressed.connect(_toggle_wait_mode)
@@ -1042,6 +1067,7 @@ func _connect_buttons() -> void:
 	reset_btn.pressed.connect(_reset)
 
 	_make_button_bouncy(back_btn)
+	_make_button_bouncy(menu_btn)
 	_make_button_bouncy(hint_btn)
 	_make_button_bouncy(demo_btn)
 	_make_button_bouncy(slow_btn)
@@ -1132,7 +1158,7 @@ func _toggle_demo_mode() -> void:
 	_update_demo_mode_ui()
 
 func _update_demo_mode_ui() -> void:
-	var demo_btn := $Root/TopBar/TopM/TopH/CtrlBtns/DemoBtn as Button
+	var demo_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
 	if not demo_btn: return
 	if _is_demo_mode:
 		demo_btn.text = "Nghe mẫu: BẬT 🔊"
@@ -1153,7 +1179,7 @@ func _toggle_wait_mode() -> void:
 	_update_wait_mode_ui()
 
 func _update_wait_mode_ui() -> void:
-	var slow_btn := $Root/TopBar/TopM/TopH/CtrlBtns/SlowBtn as Button
+	var slow_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	if not slow_btn: return
 	if _is_wait_mode:
 		slow_btn.text = "Chờ nốt: Bật ⏳"
