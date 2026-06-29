@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://mini_game_dan_tranh"]
 
-[ext_resource type="Script" uid="uid://mgdtranh02b5c8" path="res://scripts/MiniGameDanTranh.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/MiniGameDanTranh.gd" id="1_script"]
 
 [node name="MiniGameDanTranh" type="Control"]
 layout_mode = 3

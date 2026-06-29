@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://mini_game_dan_bau"]
 
-[ext_resource type="Script" uid="uid://mgdanbau04f7g2" path="res://scripts/MiniGameDanBau.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/MiniGameDanBau.gd" id="1_script"]
 
 [node name="MiniGameDanBau" type="Control"]
 layout_mode = 3
