@@ -639,16 +639,7 @@ func _go_main() -> void:
 	t.tween_property(self, "modulate:a", 0.0, 0.40).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:
 		SecureDataManager.load_data()
-		# Nếu đã từng chọn nhạc cụ → vào MainMenu, ngược lại → chọn nhạc cụ trước
-		var inst = SecureDataManager.data.get("selected_instrument", "")
-		var has_played = SecureDataManager.data.get("user_has_played", false)
-		if inst != "" and has_played:
-			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
-		else:
-			# Đánh dấu đã login lần đầu
-			SecureDataManager.data["user_has_played"] = true
-			SecureDataManager.save_data()
-			get_tree().change_scene_to_file("res://scenes/InstrumentSelect.tscn")
+		get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn")
 	)
 
 # ── Hiệu ứng lắc khi nhập sai ────────────────────────────────────────────────

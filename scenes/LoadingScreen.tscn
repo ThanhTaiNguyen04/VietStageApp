@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://loading_screen_001"]
 
 [ext_resource type="Script"    path="res://scripts/LoadingScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/ui_logo.png" id="2_logo"]
+[ext_resource type="Texture2D" path="res://assets/textures/logovuongtachnen.png" id="2_logo"]
 [ext_resource type="FontFile"  path="res://assets/fonts/Lora-Bold.ttf" id="3_font_title"]
 
 [node name="LoadingScreen" type="Control"]
