@@ -163,3 +163,15 @@ static func toggle_decoration(decor_id: String) -> void:
 	else:
 		data["active_decorations"].append(decor_id)
 	save_data()
+
+static func has_viewed_intro(instrument: String) -> bool:
+	if not data.has("viewed_intros"):
+		data["viewed_intros"] = []
+	return data["viewed_intros"].has(instrument)
+
+static func mark_intro_viewed(instrument: String) -> void:
+	if not data.has("viewed_intros"):
+		data["viewed_intros"] = []
+	if not data["viewed_intros"].has(instrument):
+		data["viewed_intros"].append(instrument)
+		save_data()

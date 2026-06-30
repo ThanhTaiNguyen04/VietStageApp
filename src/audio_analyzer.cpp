@@ -124,15 +124,19 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 		}
 	}
 
-	// Step 3: Absolute threshold
+	// Step 3: Absolute threshold (with local minimum check)
 	int best_tau = -1;
 	float min_val = 1e10f;
 	int global_min_tau = -1;
 
 	for (int tau = min_period; tau <= max_period; ++tau) {
 		if (d_prime[tau] < threshold) {
-			best_tau = tau;
-			break;
+			if (tau > min_period && tau < max_period) {
+				if (d_prime[tau] < d_prime[tau - 1] && d_prime[tau] < d_prime[tau + 1]) {
+					best_tau = tau;
+					break;
+				}
+			}
 		}
 		if (d_prime[tau] < min_val) {
 			min_val = d_prime[tau];

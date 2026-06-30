@@ -70,7 +70,7 @@ var active_subtitles := []
 func _ready() -> void:
 	var inst := InstrumentSelect.selected_instrument
 	if inst == "sao_truc":
-		video_stream_player.stream = load("res://Video/st_bai1.ogv")
+		video_stream_player.stream = load("res://Video/Giảng_viên_dạy_sáo_trúc_202606300842.ogv")
 		active_subtitles = SUBTITLES_SAO_TRUC
 	elif inst == "dan_bau":
 		video_stream_player.stream = load("res://Video/coMai_danBau.ogv")

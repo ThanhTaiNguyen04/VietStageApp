@@ -245,17 +245,10 @@ func _ready() -> void:
 	if notation_area:
 		notation_area.visible = false
 
-	# Reparent SpeechBubble to make it a floating overlay
-	# This allows us to hide MiddleRow entirely, expanding the zither to fill the extra vertical space
+	# Hide SpeechBubble overlay as requested
 	var speech_bubble := $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer
 	if speech_bubble:
-		speech_bubble.get_parent().remove_child(speech_bubble)
-		add_child(speech_bubble)
-		speech_bubble.anchors_preset = Control.PRESET_TOP_LEFT
-		speech_bubble.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-		# Position it beautifully over the top-left of the zither board
-		speech_bubble.position = Vector2(96, 72)
-		speech_bubble.custom_minimum_size = Vector2(320, 0)
+		speech_bubble.visible = false
 
 	var middle_row := $Root/MiddleRow as HBoxContainer
 	if middle_row:
@@ -353,8 +346,10 @@ func _ready() -> void:
 	_build_rhythm_bars()
 	_start_float()
 	_connect_buttons()
+	# Setup collapsible LinhPanel system
 	_setup_collapsible_linh()
-	char_linh.get_parent().visible = false
+	
+	# Removed char_linh.get_parent().visible = false because collapsible system handles it
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -448,7 +443,7 @@ func _ready() -> void:
 			chat.open_chat("dan_tranh")
 	)
 	
-	if current_song_title == "":
+	if current_song_title == "" and not SecureDataManager.has_viewed_intro("dan_tranh"):
 		_show_introduction_overlay()
 		
 	_update_demo_mode_ui()
@@ -1427,11 +1422,72 @@ func _va_say(text: String) -> void:
 	pass
 
 func _setup_collapsible_linh() -> void:
-	pass
+	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
+	if linh_vbox:
+		var collapse_btn := Button.new()
+		collapse_btn.text = "Thu nhỏ ◀"
+		collapse_btn.flat = true
+		collapse_btn.custom_minimum_size = Vector2(0, 36)
+		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		collapse_btn.pressed.connect(func():
+			_linh_collapsed = true
+			_update_linh_visibility()
+		)
+		linh_vbox.add_child(collapse_btn)
+		linh_vbox.move_child(collapse_btn, 0)
+		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
+		_make_button_bouncy(collapse_btn)
+		
+		# Add spacer to prevent floating avatar from overlapping the button text
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(0, 24)
+		linh_vbox.add_child(spacer)
+		linh_vbox.move_child(spacer, 1)
+
+	linh_mini_btn = Button.new()
+	linh_mini_btn.name = "LinhMiniBtn"
+	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
+	add_child(linh_mini_btn)
+	
+	linh_mini_btn.layout_mode = 1
+	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	linh_mini_btn.position.x += 24
+	linh_mini_btn.position.y -= 70
+	
+	var btn_s := StyleBoxFlat.new()
+	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
+	btn_s.border_color = C_GOLD
+	btn_s.border_width_left = 2; btn_s.border_width_right = 2
+	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
+	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
+	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
+	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	
+	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
+	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
+	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
+	
+	var mini_tex := TextureRect.new()
+	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
+	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mini_tex.size = Vector2(44, 44)
+	mini_tex.position = Vector2(10, 10)
+	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	linh_mini_btn.add_child(mini_tex)
+	
+	linh_mini_btn.pressed.connect(func():
+		_linh_collapsed = false
+		_update_linh_visibility()
+	)
+	_make_button_bouncy(linh_mini_btn)
+	_update_linh_visibility()
 
 func _update_linh_visibility() -> void:
 	if linh_panel:
-		linh_panel.visible = false
+		linh_panel.visible = not _linh_collapsed
+	if linh_mini_btn:
+		linh_mini_btn.visible = _linh_collapsed
 
 func _update_target_indicator() -> void:
 	var target_note := sheet_notes[_note_idx]
@@ -1637,32 +1693,36 @@ func _show_introduction_overlay() -> void:
 	_intro_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_intro_overlay)
 	
+	# ─── Virtual Instructor (Mai) - 2/3 Screen Width ───
+	var artist_img := TextureRect.new()
+	artist_img.texture = load("res://assets/textures/virtual_artist_mai.png")
+	artist_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artist_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artist_img.size = Vector2(850, 720)
+	artist_img.custom_minimum_size = Vector2(850, 720)
+	artist_img.position = Vector2(-80, 0)
+	_intro_overlay.add_child(artist_img)
+	
 	# Load premium fonts
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
 	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	
-	# 2. Main Margin Container
+	# 2. Main Margin Container (Pushed to the right 1/3 of the screen)
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 60)
-	margin.add_theme_constant_override("margin_right", 60)
+	margin.add_theme_constant_override("margin_left", 850)
+	margin.add_theme_constant_override("margin_right", 50)
 	margin.add_theme_constant_override("margin_top", 40)
 	margin.add_theme_constant_override("margin_bottom", 40)
 	_intro_overlay.add_child(margin)
 	
-	# 3. Main HBox to split Left (Mai) and Right (Zither + Navigation)
-	var main_hbox := HBoxContainer.new()
-	main_hbox.add_theme_constant_override("separation", 50)
-	main_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	margin.add_child(main_hbox)
-	
-	# ─── RIGHT PANEL: Zither & Navigation ───
+	# 3. Content VBox (Direct child of margin)
 	var right_vbox := VBoxContainer.new()
 	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	right_vbox.add_theme_constant_override("separation", 36)
-	main_hbox.add_child(right_vbox)
+	margin.add_child(right_vbox)
 	
 	# Cinematic Title
 	var title := Label.new()
@@ -1690,8 +1750,10 @@ func _show_introduction_overlay() -> void:
 	bs.border_width_top = 2; bs.border_width_bottom = 2
 	bs.corner_radius_top_left = 16; bs.corner_radius_top_right = 16
 	bs.corner_radius_bottom_left = 16; bs.corner_radius_bottom_right = 16
+	bs.shadow_size = 6
+	bs.shadow_color = Color(0, 0, 0, 0.25)
 	bubble.add_theme_stylebox_override("panel", bs)
-	bubble.custom_minimum_size = Vector2(800, 80)
+	bubble.custom_minimum_size = Vector2(360, 160)
 	bubble.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	right_vbox.add_child(bubble)
 	
@@ -1704,24 +1766,26 @@ func _show_introduction_overlay() -> void:
 	
 	_intro_text_lbl = Label.new()
 	_intro_text_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_intro_text_lbl.custom_minimum_size = Vector2(760, 50)
+	_intro_text_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_intro_text_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_intro_text_lbl.custom_minimum_size = Vector2(320, 120)
 	if f_body: _intro_text_lbl.add_theme_font_override("font", f_body)
-	_intro_text_lbl.add_theme_font_size_override("font_size", 14)
+	_intro_text_lbl.add_theme_font_size_override("font_size", 15)
 	_intro_text_lbl.add_theme_color_override("font_color", C_TEXT)
 	bubble_margin.add_child(_intro_text_lbl)
 	
 	# Zither Display Container (Larger!)
 	var zither_area := Control.new()
-	zither_area.custom_minimum_size = Vector2(1060, 360)
+	zither_area.custom_minimum_size = Vector2(360, 360)
 	zither_area.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	right_vbox.add_child(zither_area)
 	
 	# Zither Body (Larger!)
 	var theme_font := get_theme_font("font")
 	_intro_zither_body = Control.new()
-	_intro_zither_body.custom_minimum_size = Vector2(980, 320)
-	_intro_zither_body.size = Vector2(980, 320)
-	_intro_zither_body.position = Vector2(40, 20)
+	_intro_zither_body.custom_minimum_size = Vector2(340, 320)
+	_intro_zither_body.size = Vector2(340, 320)
+	_intro_zither_body.position = Vector2(10, 20)
 	zither_area.add_child(_intro_zither_body)
 	
 	_intro_zither_body.draw.connect(func() -> void:
@@ -1756,16 +1820,16 @@ func _show_introduction_overlay() -> void:
 			_intro_zither_body.draw_string(theme_font, Vector2(w - 50, y + 4), NOTES_VN[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, C_CREAM)
 	)
 	
-	# Navigation HBox Container
-	var btn_hbox := HBoxContainer.new()
-	btn_hbox.add_theme_constant_override("separation", 20)
-	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	right_vbox.add_child(btn_hbox)
+	# Navigation VBox Container
+	var btn_vbox := VBoxContainer.new()
+	btn_vbox.add_theme_constant_override("separation", 12)
+	btn_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	right_vbox.add_child(btn_vbox)
 
 	# Listen Button (Nghe Thử)
 	_intro_listen_btn = Button.new()
 	_intro_listen_btn.text = "🔊 NGHE THỬ"
-	_intro_listen_btn.custom_minimum_size = Vector2(180, 48)
+	_intro_listen_btn.custom_minimum_size = Vector2(340, 48)
 	if f_body_bold: _intro_listen_btn.add_theme_font_override("font", f_body_bold)
 	_intro_listen_btn.add_theme_font_size_override("font_size", 15)
 	_intro_listen_btn.add_theme_color_override("font_color", C_CREAM)
@@ -1796,13 +1860,13 @@ func _show_introduction_overlay() -> void:
 			if highlighted_idx != -1:
 				_play_intro_zither_sound_briefly(highlighted_idx, -3.0)
 	)
-	btn_hbox.add_child(_intro_listen_btn)
+	btn_vbox.add_child(_intro_listen_btn)
 	_make_button_bouncy(_intro_listen_btn)
 
 	# Next / Understood Button
 	_intro_next_btn = Button.new()
 	_intro_next_btn.text = "ĐÃ HIỂU ➔"
-	_intro_next_btn.custom_minimum_size = Vector2(220, 48)
+	_intro_next_btn.custom_minimum_size = Vector2(340, 48)
 	if f_body_bold: _intro_next_btn.add_theme_font_override("font", f_body_bold)
 	_intro_next_btn.add_theme_font_size_override("font_size", 15)
 	_intro_next_btn.add_theme_color_override("font_color", C_CREAM)
@@ -1827,7 +1891,7 @@ func _show_introduction_overlay() -> void:
 	_intro_next_btn.add_theme_stylebox_override("hover", sb_hover)
 	_intro_next_btn.add_theme_stylebox_override("pressed", sb_normal)
 	_intro_next_btn.pressed.connect(_on_intro_next_pressed)
-	btn_hbox.add_child(_intro_next_btn)
+	btn_vbox.add_child(_intro_next_btn)
 	_make_button_bouncy(_intro_next_btn)
 	
 	# Instantiate Voice Manager
@@ -1842,6 +1906,7 @@ func _on_intro_next_pressed() -> void:
 	if _current_intro_step < _intro_slides.size() - 1:
 		_update_cinematic_step(_current_intro_step + 1)
 	else:
+		SecureDataManager.mark_intro_viewed("dan_tranh")
 		if _intro_audio_manager:
 			_intro_audio_manager.audio_player.stop()
 			_intro_audio_manager.queue_free()

@@ -394,15 +394,17 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 		else:
 			d_prime[tau] = 1.0
 			
-	# Step 3: Absolute threshold
+	# Step 3: Absolute threshold (with local minimum check)
 	var best_tau := -1
 	var min_val := 1e10
 	var global_min_tau := -1
 	
 	for tau in range(min_period, max_period + 1):
 		if d_prime[tau] < threshold:
-			best_tau = tau
-			break
+			if tau > min_period and tau < max_period:
+				if d_prime[tau] < d_prime[tau - 1] and d_prime[tau] < d_prime[tau + 1]:
+					best_tau = tau
+					break
 		if d_prime[tau] < min_val:
 			min_val = d_prime[tau]
 			global_min_tau = tau

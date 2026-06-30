@@ -73,8 +73,10 @@ const SPEECHES : Array[String] = [
 	"Cao độ chuẩn âm sắc truyền thống,\ntiếp tục nào.",
 	"Tiếng bầu ngân nga mềm mại,\nnhịp điệu rất đẹp.",
 ]
-
 func _ready() -> void:
+	# Setup collapsible LinhPanel system
+	_setup_collapsible_linh()
+	
 	if current_song_title != "":
 		sheet_notes = current_song_sheet
 	_generate_streams()
@@ -86,8 +88,8 @@ func _ready() -> void:
 	_build_rhythm_bars()
 	_start_float()
 	_connect_buttons()
-	_setup_collapsible_linh()
-	char_linh.get_parent().visible = false
+	# Removed duplicate _setup_collapsible_linh() call
+	# Removed char_linh.get_parent().visible = false because collapsible system handles it
 	
 	# Check mic permission
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -813,11 +815,72 @@ func _va_say(text: String) -> void:
 	pass
 
 func _setup_collapsible_linh() -> void:
-	pass
+	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
+	if linh_vbox:
+		var collapse_btn := Button.new()
+		collapse_btn.text = "Thu nhỏ ◀"
+		collapse_btn.flat = true
+		collapse_btn.custom_minimum_size = Vector2(0, 36)
+		collapse_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		collapse_btn.pressed.connect(func():
+			_linh_collapsed = true
+			_update_linh_visibility()
+		)
+		linh_vbox.add_child(collapse_btn)
+		linh_vbox.move_child(collapse_btn, 0)
+		_style_text_btn(collapse_btn, C_RED_SON, C_GOLD)
+		_make_button_bouncy(collapse_btn)
+		
+		# Add spacer to prevent floating avatar from overlapping the button text
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(0, 24)
+		linh_vbox.add_child(spacer)
+		linh_vbox.move_child(spacer, 1)
+
+	linh_mini_btn = Button.new()
+	linh_mini_btn.name = "LinhMiniBtn"
+	linh_mini_btn.custom_minimum_size = Vector2(64, 64)
+	add_child(linh_mini_btn)
+	
+	linh_mini_btn.layout_mode = 1
+	linh_mini_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	linh_mini_btn.position.x += 24
+	linh_mini_btn.position.y -= 70
+	
+	var btn_s := StyleBoxFlat.new()
+	btn_s.bg_color = Color(1.0, 1.0, 1.0, 0.95)
+	btn_s.border_color = C_GOLD
+	btn_s.border_width_left = 2; btn_s.border_width_right = 2
+	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
+	btn_s.corner_radius_top_left = 32; btn_s.corner_radius_top_right = 32
+	btn_s.corner_radius_bottom_left = 32; btn_s.corner_radius_bottom_right = 32
+	btn_s.shadow_size = 8; btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	
+	linh_mini_btn.add_theme_stylebox_override("normal", btn_s)
+	linh_mini_btn.add_theme_stylebox_override("hover", btn_s.duplicate())
+	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
+	
+	var mini_tex := TextureRect.new()
+	mini_tex.texture = load("res://assets/textures/virtual_artist_mai.png")
+	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mini_tex.size = Vector2(44, 44)
+	mini_tex.position = Vector2(10, 10)
+	mini_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	linh_mini_btn.add_child(mini_tex)
+	
+	linh_mini_btn.pressed.connect(func():
+		_linh_collapsed = false
+		_update_linh_visibility()
+	)
+	_make_button_bouncy(linh_mini_btn)
+	_update_linh_visibility()
 
 func _update_linh_visibility() -> void:
 	if linh_panel:
-		linh_panel.visible = false
+		linh_panel.visible = not _linh_collapsed
+	if linh_mini_btn:
+		linh_mini_btn.visible = _linh_collapsed
 
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 0
