@@ -35,6 +35,7 @@ var _playing     := false
 var _time        := 0.0
 var _duration    := 10.0
 var _video_zoomed := false
+var _current_video_idx := 0
 
 const SPEEDS := [0.5, 1.0, 1.5, 2.0]
 var speed_idx := 1
@@ -44,41 +45,62 @@ var forward_btn : Button
 var speed_btn : Button
 var zoom_btn : Button
 
+# Up Next Interactive Check references
+var up_next_overlay : PanelContainer
+var up_next_lbl : Label
+var question_lbl : Label
+var option_a_btn : Button
+var option_b_btn : Button
+
 const SUBTITLES_DAN_TRANH := [
-	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là giảng viên, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
-	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách đặt ngón gảy và làm quen nốt đầu tiên."},
-	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ lưng thẳng, cổ tay thả lỏng nhẹ nhàng và lắng nghe âm vang tự nhiên từ nhạc cụ nhé."},
-	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
-]
-
-const SUBTITLES_SAO_TRUC := [
-	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
-	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cầm sáo, cách đặt môi và thổi nốt nhạc đầu tiên."},
-	{"start": 5.5,  "end": 8.0,  "text": "Hãy chú ý giữ thẳng lưng, lấy hơi sâu bằng bụng và lắng nghe âm vang trong trẻo của tiếng sáo nhé."},
-	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
-]
-
-const SUBTITLES_DAN_BAU := [
-	{"start": 0.0,  "end": 2.0,  "text": "Xin chào bạn! Tôi là cô Mai, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
-	{"start": 2.0,  "end": 4.5,  "text": "Hôm nay, chúng ta sẽ cùng nhau làm quen với tư thế cơ bản, cách gẩy và tạo tiếng bồi âm đầu tiên."},
-	{"start": 4.5,  "end": 6.5,  "text": "Hãy chú ý giữ lưng thẳng, tay cầm que gảy nhẹ nhàng và lắng nghe âm vang độc đáo từ một dây đàn nhé."},
-	{"start": 6.5,  "end": 8.0,  "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
+	{"start": 0.0,  "end": 999.0,  "text": "Hãy xem kĩ hướng dẫn của cô giáo để chuẩn bị vào thực hành nhé!"}
 ]
 
 var active_subtitles := []
 
-func _ready() -> void:
-	var inst := InstrumentSelect.selected_instrument
-	if inst == "sao_truc":
-		video_stream_player.stream = load("res://Video/Giảng_viên_dạy_sáo_trúc_202606300842.ogv")
-		active_subtitles = SUBTITLES_SAO_TRUC
-	elif inst == "dan_bau":
-		video_stream_player.stream = load("res://Video/coMai_danBau.ogv")
-		active_subtitles = SUBTITLES_DAN_BAU
-	else:
-		video_stream_player.stream = load("res://Video/giang_vien_dan_tranh_1942.ogv")
-		active_subtitles = SUBTITLES_DAN_TRANH
+func _load_video(idx: int) -> void:
+	_current_video_idx = idx
+	_playing = true
+	_time = 0.0
+	if up_next_overlay:
+		up_next_overlay.visible = false
+	if card_m:
+		card_m.visible = true
+	
+	# Load from Video directory
+	var video_path := "res://Video/intro" + str(idx + 1) + ".ogv"
+	video_stream_player.stream = load(video_path)
+	
+	# Determine duration dynamically
+	if video_stream_player.stream:
+		var stream_len := video_stream_player.get_stream_length()
+		if stream_len > 0.0:
+			_duration = stream_len
+		else:
+			_duration = 10.0
+			
+	var title_lbl := top_row.get_node_or_null("VideoTitle") as Label
+	if title_lbl:
+		title_lbl.text = "Bài Học Video: Nhập Môn (Phần " + str(idx + 1) + "/3)"
+		
+	video_stream_player.stream_position = 0.0
+	video_stream_player.stop()
+	
+	play_overlay.visible = false
+	linh_rect.visible = false
+	video_stream_player.visible = true
+	
+	if complete_btn:
+		if idx < 2:
+			complete_btn.text = "❯"
+		else:
+			complete_btn.text = "Hoàn Thành Video"
+			
+	_update_play_state()
+	_update_media_progress()
+	_on_viewport_size_changed()
 
+func _ready() -> void:
 	# Make PlayerCard take up the entire screen programmatically
 	var center_container = $Center
 	if center_container:
@@ -88,7 +110,7 @@ func _ready() -> void:
 		player_card.custom_minimum_size = Vector2.ZERO
 		center_container.queue_free()
 
-	# Instantiate buttons programmatically
+	# Instantiate control buttons programmatically to satisfy layout checks but hide them
 	var control_row := player_vbox.get_node("ControlRow") as HBoxContainer
 	
 	rewind_btn = Button.new()
@@ -116,23 +138,21 @@ func _ready() -> void:
 
 	_build_theme()
 	_connect_buttons()
-	_update_play_state()
+	_build_up_next_overlay()
 	
-	# Determine duration dynamically
-	if video_stream_player.stream:
-		var stream_len := video_stream_player.get_stream_length()
-		if stream_len > 0.0:
-			_duration = stream_len
-		else:
-			if inst == "sao_truc":
-				_duration = 10.0
-			elif inst == "dan_bau":
-				_duration = 10.0
-			else:
-				_duration = 10.0 # new danTranh video is 10.0s
+	if control_row:
+		control_row.visible = false
+	if skip_btn:
+		skip_btn.visible = false
+	if sub_panel:
+		sub_panel.visible = false
 	
-	# Update initially
-	_update_media_progress()
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	video_stream_player.finished.connect(_on_video_finished)
+	_on_viewport_size_changed()
+	
+	# Load the first intro video
+	_load_video(0)
 	
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
@@ -142,286 +162,351 @@ func _process(delta: float) -> void:
 		if video_stream_player.is_playing():
 			_time = video_stream_player.stream_position
 		
+		# Fallback checking for EOF if stream finished fails
 		if _time >= _duration:
-			_time = _duration
-			_playing = false
-			_update_play_state()
-			_va_success_prompt()
-			video_stream_player.stop()
-			linh_rect.visible = true
-			video_stream_player.visible = false
+			_on_video_finished()
 			
 		_update_media_progress()
 
 func _update_media_progress() -> void:
-	# Progress bar
 	if _duration > 0.0:
 		progress_bar.value = (_time / _duration) * 100.0
 	else:
 		progress_bar.value = 0.0
 		
-	# Time label
 	var cur_min := int(_time) / 60
 	var cur_sec := int(_time) % 60
 	var dur_min := int(_duration) / 60
 	var dur_sec := int(_duration) % 60
 	time_label.text = "%d:%02d / %d:%02d" % [cur_min, cur_sec, dur_min, dur_sec]
-	
-	# Subtitles - only update if the video is not at the end
-	if _time < _duration:
-		var sub_found := false
-		for sub in active_subtitles:
-			var s_start: float = sub["start"]
-			var s_end: float = sub["end"]
-			if _time >= s_start and _time < s_end:
-				sub_label.text = sub["text"] as String
-				sub_found = true
-				break
-		if not sub_found:
-			sub_label.text = ""
 
 func _build_theme() -> void:
 	var inst := InstrumentSelect.selected_instrument
 	
-	var theme_color := C_RED_SON      # default for dan_tranh (jade green)
-	var accent_color := C_GOLD        # default for dan_tranh (gold)
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
 	var accent_light := C_GOLD_LIGHT
-	var bg_color := Color(0.98, 0.97, 0.94, 1.0) # cream background
+	var bg_color := Color(0, 0, 0, 1.0) # Solid black background for fullscreen video
 	
 	if inst == "sao_truc":
 		theme_color = C_JADE
 		accent_color = Color(0.25, 0.65, 0.45, 1.0)
 		accent_light = Color(0.35, 0.85, 0.60, 1.0)
-		bg_color = Color(0.95, 0.97, 0.95, 1.0)
 	elif inst == "dan_bau":
 		theme_color = Color(0.38, 0.25, 0.60, 1.0)
 		accent_color = Color(0.55, 0.45, 0.80, 1.0)
 		accent_light = Color(0.70, 0.60, 0.90, 1.0)
-		bg_color = Color(0.96, 0.95, 0.98, 1.0)
 
-	# Apply BG color
 	var bg_node := get_node_or_null("BG") as ColorRect
 	if bg_node:
 		bg_node.color = bg_color
 
-	# Title text color
 	var title_lbl := top_row.get_node_or_null("VideoTitle") as Label
 	if title_lbl:
-		title_lbl.add_theme_color_override("font_color", theme_color)
+		title_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.85))
 
-	# Main card container (styled flat for fullscreen layout)
-	var card_s := _flat(Color(1.0, 1.0, 1.0, 0.95), Color(accent_color.r, accent_color.g, accent_color.b, 0.15), 0)
-	card_s.shadow_size = 0
+	var card_s := StyleBoxEmpty.new() # Transparent layout to draw directly over video
 	player_card.add_theme_stylebox_override("panel", card_s)
 
-	# Video screen box
-	var frame_s := _flat(C_SCREEN_BG, Color(accent_color.r, accent_color.g, accent_color.b, 0.15), 16)
+	var frame_s := StyleBoxFlat.new()
+	frame_s.bg_color = Color(0, 0, 0, 1.0)
+	frame_s.border_width_left = 0; frame_s.border_width_right = 0
+	frame_s.border_width_top = 0; frame_s.border_width_bottom = 0
 	if video_frame:
 		video_frame.add_theme_stylebox_override("panel", frame_s)
 
-	# Play Overlay circle button
 	var overlay_s := _flat(accent_color, accent_light, 44)
-	overlay_s.shadow_size = 8; overlay_s.shadow_color = Color(0.13, 0.08, 0.05, 0.18)
 	play_overlay.add_theme_stylebox_override("panel", overlay_s)
-	play_overlay.get_node("PlayText").add_theme_color_override("font_color", Color(1, 1, 1, 1) if inst != "dan_tranh" else Color(0.13, 0.08, 0.05, 1.0))
 
-	# Subtitles box - light warm background
-	var sub_s := _flat(Color(0.95, 0.93, 0.89, 0.85), Color(accent_color.r, accent_color.g, accent_color.b, 0.20), 16)
-	if sub_panel:
-		sub_panel.add_theme_stylebox_override("panel", sub_s)
-	sub_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-
-	# Buttons
 	_style_outlined_btn(back_btn, 18, theme_color, accent_color)
-	_style_outlined_btn(skip_btn, 22, theme_color, accent_color)
-	_style_outlined_btn(play_btn, 16, theme_color, accent_color)
+	_style_outlined_btn(complete_btn, 22, theme_color, accent_color)
+
+func _build_up_next_overlay() -> void:
+	up_next_overlay = PanelContainer.new()
+	up_next_overlay.name = "UpNextOverlay"
+	up_next_overlay.visible = false
 	
-	if rewind_btn:
-		_style_outlined_btn(rewind_btn, 16, theme_color, accent_color)
-	if forward_btn:
-		_style_outlined_btn(forward_btn, 16, theme_color, accent_color)
-	if speed_btn:
-		_style_outlined_btn(speed_btn, 16, theme_color, accent_color)
-	if zoom_btn:
-		_style_outlined_btn(zoom_btn, 16, theme_color, accent_color)
+	var purple_sb := StyleBoxFlat.new()
+	purple_sb.bg_color = Color(0.38, 0.05, 0.85, 0.78) # translucent violet base
+	up_next_overlay.add_theme_stylebox_override("panel", purple_sb)
+	
+	player_card.add_child(up_next_overlay)
+	player_card.move_child(up_next_overlay, 1)
+	up_next_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	var overlay_m := MarginContainer.new()
+	overlay_m.add_theme_constant_override("margin_left", 32)
+	overlay_m.add_theme_constant_override("margin_right", 32)
+	overlay_m.add_theme_constant_override("margin_top", 32)
+	overlay_m.add_theme_constant_override("margin_bottom", 32)
+	up_next_overlay.add_child(overlay_m)
+	
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 16)
+	overlay_m.add_child(vbox)
+	
+	up_next_lbl = Label.new()
+	up_next_lbl.text = "Up Next:"
+	up_next_lbl.add_theme_font_size_override("font_size", 24)
+	up_next_lbl.add_theme_color_override("font_color", Color(1, 1, 1))
+	up_next_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(up_next_lbl)
+	
+	var black_panel := PanelContainer.new()
+	var black_sb := StyleBoxFlat.new()
+	black_sb.bg_color = Color(0, 0, 0, 0.95)
+	black_sb.corner_radius_top_left = 12
+	black_sb.corner_radius_top_right = 12
+	black_sb.corner_radius_bottom_left = 12
+	black_sb.corner_radius_bottom_right = 12
+	black_panel.add_theme_stylebox_override("panel", black_sb)
+	black_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(black_panel)
+	
+	var pm := MarginContainer.new()
+	pm.add_theme_constant_override("margin_left", 48)
+	pm.add_theme_constant_override("margin_right", 48)
+	pm.add_theme_constant_override("margin_top", 28)
+	pm.add_theme_constant_override("margin_bottom", 28)
+	black_panel.add_child(pm)
+	
+	var inner_vbox := VBoxContainer.new()
+	inner_vbox.add_theme_constant_override("separation", 20)
+	pm.add_child(inner_vbox)
+	
+	question_lbl = Label.new()
+	question_lbl.text = "Bạn đã nắm rõ nội dung bài học chưa?"
+	question_lbl.add_theme_font_size_override("font_size", 20)
+	question_lbl.add_theme_color_override("font_color", Color(1, 1, 1))
+	question_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	question_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inner_vbox.add_child(question_lbl)
+	
+	var options_hbox := HBoxContainer.new()
+	options_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	options_hbox.add_theme_constant_override("separation", 16)
+	inner_vbox.add_child(options_hbox)
+	
+	option_b_btn = Button.new()
+	option_b_btn.text = "Chưa rõ, xem lại"
+	option_b_btn.custom_minimum_size = Vector2(220, 46)
+	option_b_btn.add_theme_font_size_override("font_size", 16)
+	options_hbox.add_child(option_b_btn)
+	option_b_btn.pressed.connect(_on_replay_current)
+	_make_button_bouncy(option_b_btn)
+	
+	option_a_btn = Button.new()
+	option_a_btn.text = "Đã rõ, tiếp tục!"
+	option_a_btn.custom_minimum_size = Vector2(220, 46)
+	option_a_btn.add_theme_font_size_override("font_size", 16)
+	options_hbox.add_child(option_a_btn)
+	option_a_btn.pressed.connect(_on_complete)
+	_make_button_bouncy(option_a_btn)
 
-	# Complete Btn (Gold filled primary CTA)
-	var c_n := _flat(theme_color, Color(1,1,1,0.2), 22)
-	c_n.shadow_size = 12; c_n.shadow_color = Color(theme_color.r, theme_color.g, theme_color.b, 0.25)
-	var c_h := _flat(theme_color.lightened(0.12), Color(1,1,1,0.3), 22)
-	c_h.shadow_size = 18; c_h.shadow_color = Color(theme_color.r, theme_color.g, theme_color.b, 0.35)
-	complete_btn.add_theme_stylebox_override("normal", c_n)
-	complete_btn.add_theme_stylebox_override("hover", c_h)
-	complete_btn.add_theme_stylebox_override("pressed", _flat(theme_color.darkened(0.18), Color(0,0,0,0.2), 22))
-	complete_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	complete_btn.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	complete_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 1))
-	complete_btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 1))
-	complete_btn.add_theme_font_size_override("font_size", 20)
+func _on_viewport_size_changed() -> void:
+	var vp_size = get_viewport().size
+	var is_mobile = vp_size.x < vp_size.y or vp_size.x < 1000
+	var inst := InstrumentSelect.selected_instrument
+	
+	var theme_color := C_RED_SON
+	var accent_color := C_GOLD
+	var accent_light := C_GOLD_LIGHT
+	
+	if inst == "sao_truc":
+		theme_color = C_JADE
+		accent_color = Color(0.25, 0.65, 0.45, 1.0)
+		accent_light = Color(0.35, 0.85, 0.60, 1.0)
+	elif inst == "dan_bau":
+		theme_color = Color(0.38, 0.25, 0.60, 1.0)
+		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+		accent_light = Color(0.70, 0.60, 0.90, 1.0)
 
-	# Progress bar
-	var pf := StyleBoxFlat.new(); pf.bg_color = accent_color
-	pf.corner_radius_top_left = 6; pf.corner_radius_top_right = 6
-	pf.corner_radius_bottom_left = 6; pf.corner_radius_bottom_right = 6
-	var pb := StyleBoxFlat.new(); pb.bg_color = Color(0.13, 0.08, 0.05, 0.08)
-	pb.corner_radius_top_left = 6; pb.corner_radius_top_right = 6
-	pb.corner_radius_bottom_left = 6; pb.corner_radius_bottom_right = 6
-	progress_bar.add_theme_stylebox_override("fill", pf)
-	progress_bar.add_theme_stylebox_override("background", pb)
-	time_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 0.70))
+	# Format circular buttons for mobile viewports
+	if is_mobile:
+		if back_btn.get_parent() == top_row:
+			top_row.remove_child(back_btn)
+			footer_row.add_child(back_btn)
+			footer_row.move_child(back_btn, 0)
+			
+		back_btn.text = "↺"
+		back_btn.custom_minimum_size = Vector2(56, 56)
+		back_btn.add_theme_font_size_override("font_size", 24)
+		_style_outlined_btn(back_btn, 28, Color(1, 1, 1, 0.85), Color(0.13, 0.08, 0.05, 0.15))
+		
+		if complete_btn:
+			if _current_video_idx < 2:
+				complete_btn.text = "❯"
+				complete_btn.custom_minimum_size = Vector2(56, 56)
+				complete_btn.add_theme_font_size_override("font_size", 24)
+				_style_outlined_btn(complete_btn, 28, theme_color, accent_color)
+			else:
+				complete_btn.text = "Hoàn Thành Video"
+				complete_btn.custom_minimum_size = Vector2(220, 56)
+				complete_btn.add_theme_font_size_override("font_size", 16)
+				
+				# Filled primary styling
+				var c_n := _flat(theme_color, Color(1,1,1,0.2), 28)
+				var c_h := _flat(theme_color.lightened(0.12), Color(1,1,1,0.3), 28)
+				complete_btn.add_theme_stylebox_override("normal", c_n)
+				complete_btn.add_theme_stylebox_override("hover", c_h)
+	else:
+		if back_btn.get_parent() == footer_row:
+			footer_row.remove_child(back_btn)
+			top_row.add_child(back_btn)
+			top_row.move_child(back_btn, 0)
+			
+		back_btn.text = "Quay lại"
+		back_btn.custom_minimum_size = Vector2(140, 42)
+		back_btn.add_theme_font_size_override("font_size", 16)
+		_style_outlined_btn(back_btn, 18, theme_color, accent_color)
+		
+		if complete_btn:
+			if _current_video_idx < 2:
+				complete_btn.text = "Video Tiếp Theo"
+			else:
+				complete_btn.text = "Hoàn Thành Video"
+			complete_btn.custom_minimum_size = Vector2(220, 44)
+			complete_btn.add_theme_font_size_override("font_size", 16)
+			
+			var c_n := _flat(theme_color, Color(1,1,1,0.2), 22)
+			var c_h := _flat(theme_color.lightened(0.12), Color(1,1,1,0.3), 22)
+			complete_btn.add_theme_stylebox_override("normal", c_n)
+			complete_btn.add_theme_stylebox_override("hover", c_h)
+
+	# Style Option B (Outlined, retry)
+	var ob_n := _flat(Color(0, 0, 0, 0.4), theme_color, 20)
+	var ob_h := _flat(Color(0.2, 0.2, 0.2, 0.5), theme_color.lightened(0.15), 20)
+	option_b_btn.add_theme_stylebox_override("normal", ob_n)
+	option_b_btn.add_theme_stylebox_override("hover", ob_h)
+	option_b_btn.add_theme_stylebox_override("pressed", _flat(Color(0.1, 0.1, 0.1, 0.6), Color(0,0,0,0), 20))
+	option_b_btn.add_theme_color_override("font_color", Color(1, 1, 1))
+	option_b_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	
+	# Style Option A (Filled, next)
+	var oa_n := _flat(theme_color, accent_color, 20)
+	var oa_h := _flat(theme_color.lightened(0.15), accent_light, 20)
+	option_a_btn.add_theme_stylebox_override("normal", oa_n)
+	option_a_btn.add_theme_stylebox_override("hover", oa_h)
+	option_a_btn.add_theme_stylebox_override("pressed", _flat(theme_color.darkened(0.15), Color(0,0,0,0), 20))
+	option_a_btn.add_theme_color_override("font_color", Color(1, 1, 1))
+	option_a_btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
 
 func _connect_buttons() -> void:
 	back_btn.pressed.connect(_go_back)
-	skip_btn.pressed.connect(_go_back)
 	complete_btn.pressed.connect(_on_complete)
-	play_btn.pressed.connect(_toggle_play)
-
-	if rewind_btn:
-		rewind_btn.pressed.connect(_on_rewind_pressed)
-		_make_button_bouncy(rewind_btn)
-	if forward_btn:
-		forward_btn.pressed.connect(_on_forward_pressed)
-		_make_button_bouncy(forward_btn)
-	if speed_btn:
-		speed_btn.pressed.connect(_on_speed_pressed)
-		_make_button_bouncy(speed_btn)
-	if zoom_btn:
-		zoom_btn.pressed.connect(_on_zoom_pressed)
-		_make_button_bouncy(zoom_btn)
-
+	
 	play_overlay.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
 			_toggle_play()
 	)
 
 	_make_button_bouncy(back_btn)
-	_make_button_bouncy(skip_btn)
-	_make_button_bouncy(play_btn)
 	_make_button_bouncy(complete_btn)
 
 func _toggle_play() -> void:
-	if _time >= _duration:
-		# replay from start
-		_time = 0.0
-		video_stream_player.stream_position = 0.0
-		linh_rect.texture = load("res://assets/textures/virtual_artist_mai.png") # reset to default vector avatar
 	_playing = not _playing
 	_update_play_state()
 
-func _on_rewind_pressed() -> void:
-	var new_pos = _time - 2.0
-	if new_pos < 0.0:
-		new_pos = 0.0
-	_time = new_pos
-	video_stream_player.stream_position = new_pos
-	_update_media_progress()
-
-func _on_forward_pressed() -> void:
-	var new_pos = _time + 2.0
-	if new_pos >= _duration:
-		new_pos = _duration
-		_time = _duration
-		_playing = false
-		_update_play_state()
-		_va_success_prompt()
-		video_stream_player.stop()
-		linh_rect.visible = true
-		video_stream_player.visible = false
-	else:
-		_time = new_pos
-		video_stream_player.stream_position = new_pos
-	_update_media_progress()
-
-func _on_speed_pressed() -> void:
-	speed_idx = (speed_idx + 1) % SPEEDS.size()
-	var speed = SPEEDS[speed_idx]
-	video_stream_player.speed_scale = speed
-	speed_btn.text = "%.1fx" % speed
-
-func _on_zoom_pressed() -> void:
-	_video_zoomed = not _video_zoomed
-	
-	if top_row:
-		top_row.visible = not _video_zoomed
-	if sub_panel:
-		sub_panel.visible = not _video_zoomed
-	if footer_row:
-		footer_row.visible = not _video_zoomed
-		
-	if _video_zoomed:
-		zoom_btn.text = "⇲"
-		if card_m:
-			card_m.add_theme_constant_override("margin_left", 0)
-			card_m.add_theme_constant_override("margin_right", 0)
-			card_m.add_theme_constant_override("margin_top", 0)
-			card_m.add_theme_constant_override("margin_bottom", 0)
-	else:
-		zoom_btn.text = "⛶"
-		if card_m:
-			card_m.add_theme_constant_override("margin_left", 32)
-			card_m.add_theme_constant_override("margin_right", 32)
-			card_m.add_theme_constant_override("margin_top", 24)
-			card_m.add_theme_constant_override("margin_bottom", 24)
-
 func _update_play_state() -> void:
 	if _playing:
-		play_btn.text = "⏸"
 		play_overlay.visible = false
 		linh_rect.visible = false
 		video_stream_player.visible = true
-		if video_stream_player.paused:
-			video_stream_player.paused = false
-		else:
-			video_stream_player.play()
+		video_stream_player.paused = false
+		video_stream_player.play()
 	else:
-		play_btn.text = "▶"
 		play_overlay.visible = true
 		if video_stream_player.is_playing() and not video_stream_player.paused:
 			video_stream_player.paused = true
 
 func _va_success_prompt() -> void:
 	var inst := InstrumentSelect.selected_instrument
-	var btn_color_name := "màu vàng"
 	var text_col := C_RED_SON
 	if inst == "sao_truc":
-		btn_color_name = "màu xanh"
 		text_col = C_JADE
 	elif inst == "dan_bau":
-		btn_color_name = "màu tím"
 		text_col = Color(0.38, 0.25, 0.60, 1.0)
 		
-	sub_label.text = "Tuyệt vời! Bài học hoàn thành. Hãy bấm nút 'Hoàn Thành Video' %s để mở khóa thực hành!" % btn_color_name
-	sub_label.add_theme_color_override("font_color", text_col)
-	
-	# Load the happy virtual artist texture when completed
-	linh_rect.texture = load("res://assets/textures/mai_happy.jpg")
-	
-	# Flash the complete button
-	var ct := create_tween()
-	ct.tween_property(complete_btn, "scale", Vector2(1.08, 1.08), 0.15).set_trans(Tween.TRANS_BACK)
-	ct.tween_property(complete_btn, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK)
+	# Show the Yousician-style custom instrument theme "Up Next" overlay
+	if up_next_overlay:
+		up_next_overlay.visible = true
+		
+		# Change background to theme color matching the instrument with alpha opacity (translucent overlay)
+		var theme_sb := StyleBoxFlat.new()
+		theme_sb.bg_color = Color(text_col.r, text_col.g, text_col.b, 0.78)
+		up_next_overlay.add_theme_stylebox_override("panel", theme_sb)
+		
+		if _current_video_idx < 2:
+			up_next_lbl.text = "Up Next: Phần " + str(_current_video_idx + 2)
+		else:
+			up_next_lbl.text = "Up Next: Thực Hành"
+			
+		if _current_video_idx == 0:
+			question_lbl.text = "Bạn đã hiểu rõ về cấu tạo và tính năng cơ bản của nhạc cụ này chưa?"
+			option_a_btn.text = "Đã rõ, tiếp tục!"
+			option_b_btn.text = "Chưa rõ, xem lại"
+		elif _current_video_idx == 1:
+			question_lbl.text = "Bạn đã nắm được cách cầm nhạc cụ và tư thế ngồi chuẩn chưa?"
+			option_a_btn.text = "Đã nắm rõ, tiếp tục!"
+			option_b_btn.text = "Chưa rõ, xem lại"
+		else:
+			question_lbl.text = "Bạn đã hiểu cách chơi nốt nhạc đầu tiên và sẵn sàng cấp quyền Micro để bắt đầu thực hành chưa?"
+			option_a_btn.text = "Sẵn sàng, vào tập!"
+			option_b_btn.text = "Chưa rõ, xem lại"
+			
+		# Hide the main HUD (CardM) to hide corner circular icons and capture input
+		if card_m:
+			card_m.visible = false
+
+func _on_replay_current() -> void:
+	_time = 0.0
+	video_stream_player.stream_position = 0.0
+	_playing = true
+	_update_play_state()
+	if up_next_overlay:
+		up_next_overlay.visible = false
+	if card_m:
+		card_m.visible = true
+
+func _on_video_finished() -> void:
+	if not _playing and up_next_overlay and up_next_overlay.visible:
+		return
+	_time = _duration
+	_playing = false
+	_update_play_state()
+	_va_success_prompt()
+	video_stream_player.paused = true
+	linh_rect.visible = false
+	video_stream_player.visible = true
 
 func _on_complete() -> void:
-	video_stream_player.stop()
-	var inst := InstrumentSelect.selected_instrument
-	SecureDataManager.complete_lesson(inst, "Node1", 3) # Mark Intro completed with 3 stars securely!
-	SecureDataManager.video_completed = true
-	var t := create_tween()
-	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	if _current_video_idx < 2:
+		_load_video(_current_video_idx + 1)
+	else:
+		video_stream_player.stop()
+		var inst := InstrumentSelect.selected_instrument
+		SecureDataManager.complete_lesson(inst, "Node1", 3) # Mark Intro completed securely!
+		SecureDataManager.video_completed = true
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 func _go_back() -> void:
-	video_stream_player.stop()
-	var t := create_tween()
-	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	if _current_video_idx > 0:
+		_load_video(_current_video_idx - 1)
+	else:
+		video_stream_player.stop()
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:
-	var bn := _flat(Color(0,0,0,0), Color(0.13, 0.08, 0.05, 0.20), radius)
-	var bh := _flat(Color(0,0,0,0.04), Color(theme_color.r, theme_color.g, theme_color.b, 0.60), radius)
+	var bn := _flat(Color(1.0, 0.98, 0.95, 0.85), Color(0.13, 0.08, 0.05, 0.15), radius)
+	var bh := _flat(Color(1.0, 0.98, 0.95, 1.0), theme_color, radius)
 	btn.add_theme_stylebox_override("normal", bn)
 	btn.add_theme_stylebox_override("hover", bh)
-	btn.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.08), accent_color, radius))
+	btn.add_theme_stylebox_override("pressed", _flat(Color(1.0, 0.98, 0.95, 0.65), accent_color, radius))
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
 	btn.add_theme_color_override("font_hover_color", theme_color)
