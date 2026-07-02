@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://mini_game_sao_truc"]
 
-[ext_resource type="Script" uid="uid://mgsaotruc3d6e9" path="res://scripts/MiniGameSaoTruc.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/MiniGameSaoTruc.gd" id="1_script"]
 
 [node name="MiniGameSaoTruc" type="Control"]
 layout_mode = 3
