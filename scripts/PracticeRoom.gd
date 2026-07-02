@@ -77,15 +77,17 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si",
-	"Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2",
-	"Đô3", "Rê3"
+	"Sol", "La", "Đô", "Rê", "Mi",
+	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
+	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
+	"Sol4"
 ]
 
 const LANES : Array[String] = [
-	"Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si",
-	"Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2",
-	"Đô3", "Rê3"
+	"Sol", "La", "Đô", "Rê", "Mi",
+	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
+	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
+	"Sol4"
 ]
 
 static var current_song_title := ""
@@ -920,19 +922,16 @@ func _generate_streams() -> void:
 		_string_streams[i] = _generate_pluck_stream(freq)
 
 func _get_string_frequency(idx: int) -> float:
-	# Đàn tranh 16 dây - tần số chuẩn từ dây 1 (thấp) đến dây 16 (cao)
-	# Tuning theo hệ thất cung (diatonic) Đô, Rê, Mi, Fa, Sol, La, Si
+	# Đàn tranh 16 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
 	var base_freqs = [
-		130.81, # Đô (C3)
-		146.83, # Rê (D3)
-		164.81, # Mi (E3)
-		174.61, # Fa (F3)
 		196.00, # Sol (G3)
 		220.00, # La (A3)
-		246.94  # Si (B3)
+		261.63, # Đô (C4)
+		293.66, # Rê (D4)
+		329.63  # Mi (E4)
 	]
-	var octave = idx / 7
-	var note_in_octave = idx % 7
+	var octave = idx / 5
+	var note_in_octave = idx % 5
 	return base_freqs[note_in_octave] * pow(2, octave)
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
@@ -1605,7 +1604,7 @@ func _show_introduction_overlay() -> void:
 			"note_to_play": ""
 		},
 		{
-			"text": "Cây đàn tranh của chúng ta có 16 dây chính, được lên dây theo thang năm âm (pentatonic) truyền thống gồm: Hò (Đô), Xự (Rê), Xang (Fa), Xê (Sol), Công (La).",
+			"text": "Cây đàn tranh của chúng ta có 16 dây chính, được lên dây theo thang năm âm (pentatonic) truyền thống gồm: Sol, La, Đô, Rê, Mi.",
 			"voice": "Cây đàn tranh của chúng ta có mười sáu dây chính, được lên dây theo thang năm âm truyền thống gồm: Hò tức là Đô, Xự tức là Rê, Xang tức là Fáp, Xê tức là Sol, và Công tức là La.",
 			"highlighted_string": -1,
 			"note_to_play": ""
@@ -1623,10 +1622,10 @@ func _show_introduction_overlay() -> void:
 			"note_to_play": "Rê"
 		},
 		{
-			"text": "Dây số 3 là nốt Mi (với thang diatonic) hoặc nốt Fa (Xang). Dưới đây là âm nốt Fa.",
-			"voice": "Dây số ba là nốt Mi hoặc nốt Fa. Dưới đây là âm nốt Fa.",
-			"highlighted_string": 3,
-			"note_to_play": "Fa"
+			"text": "Dây số 3 là nốt Đô. Dưới đây là âm nốt Đô.",
+			"voice": "Dây số ba là nốt Đô. Dưới đây là âm nốt Đô.",
+			"highlighted_string": 2,
+			"note_to_play": "Đô"
 		},
 		{
 			"text": "Khi gảy, con chạm và vuốt nhẹ bên phải nhạn đàn. Khi nhấn nhấn bên trái nhạn đàn, âm thanh sẽ có tiếng nhấn rung vô cùng điệu nghệ.",
