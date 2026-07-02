@@ -67,8 +67,8 @@ func _load_video(idx: int) -> void:
 	if card_m:
 		card_m.visible = true
 	
-	# Load from Video directory
-	var video_path := "res://Video/intro" + str(idx + 1) + ".ogv"
+	# Load from nvaore directory (pre-compiled stable high-quality ogv videos from NamTest)
+	var video_path := "res://nvaore/intro" + str(idx + 1) + ".ogv"
 	video_stream_player.stream = load(video_path)
 	
 	# Determine duration dynamically
