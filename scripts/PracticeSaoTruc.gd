@@ -2861,6 +2861,7 @@ func _show_introduction_overlay() -> void:
 	_update_cinematic_step(0)
 
 func _on_intro_next_pressed() -> void:
+	if not _intro_overlay or not is_instance_valid(_intro_overlay): return
 	if _current_intro_step < _intro_slides.size() - 1:
 		_update_cinematic_step(_current_intro_step + 1)
 	else:
@@ -2873,11 +2874,15 @@ func _on_intro_next_pressed() -> void:
 			_active_player.stop()
 			_active_player.queue_free()
 			_active_player = null
+		
+		# Temporarily store the reference to prevent race conditions during tween
+		var temp_overlay := _intro_overlay
+		_intro_overlay = null
 		var t := create_tween()
-		t.tween_property(_intro_overlay, "modulate:a", 0.0, 0.25)
+		t.tween_property(temp_overlay, "modulate:a", 0.0, 0.25)
 		t.tween_callback(func() -> void:
-			_intro_overlay.queue_free()
-			_intro_overlay = null
+			if is_instance_valid(temp_overlay):
+				temp_overlay.queue_free()
 		)
 
 func _play_intro_flute_sound_briefly(note: String, volume: float = -12.0) -> void:

@@ -56,7 +56,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var h := size.y
-	var r := Vector2(38, h / 2.0) # Position of the icon center (shifted right for scale)
+	var r := Vector2(38, h / 2.0) # Position of the icon center
 	
 	var is_prem : bool = SecureDataManager.data.get("is_premium", false)
 	var is_locked : bool = (current_type == TabType.SONG and not is_prem)
@@ -65,134 +65,40 @@ func _draw() -> void:
 	if is_hovered():
 		active_color = C_GOLD_LIGHT if is_active else (C_CREAM_DIM.darkened(0.2) if is_locked else C_CREAM)
 		
-	if current_type == TabType.MENU:
-		# Draw three gorgeous rounded horizontal hamburger menu bars!
-		var bar_w := 32.0
-		var bar_h := 4.5
-		var gap := 9.0
-		var mc := Vector2(size.x / 2.0, size.y / 2.0) # Centered
+	var tex : Texture2D = null
+	match current_type:
+		TabType.MENU:
+			tex = load("res://assets/textures/icons8/menu.png") as Texture2D
+		TabType.LESSON:
+			tex = load("res://assets/textures/icons8/course.png") as Texture2D
+		TabType.SONG:
+			tex = load("res://assets/textures/icons8/songs.png") as Texture2D
+		TabType.GAME:
+			tex = load("res://assets/textures/icons8/game.png") as Texture2D
+		TabType.ACCOUNT:
+			tex = load("res://assets/textures/icons8/account.png") as Texture2D
+		TabType.ROOM:
+			tex = load("res://assets/textures/icons8/room.png") as Texture2D
+
+	if tex:
+		# Draw icon with shadow/offset first
+		var icon_size := Vector2(32, 32)
+		# For MENU type, let's keep it centered horizontally in the button since it has no text
+		var draw_pos := r
+		if current_type == TabType.MENU:
+			draw_pos = Vector2(size.x / 2.0, size.y / 2.0)
+			
+		var shadow_rect := Rect2(draw_pos - icon_size / 2.0 + Vector2(0, 1.5), icon_size)
+		draw_texture_rect(tex, shadow_rect, false, Color(0, 0, 0, 0.45))
 		
-		# Shadow
-		var s_color := Color(0, 0, 0, 0.35)
-		draw_rect(Rect2(mc + Vector2(-bar_w/2, -bar_h/2 - gap + 1.5), Vector2(bar_w, bar_h)), s_color, true)
-		draw_rect(Rect2(mc + Vector2(-bar_w/2, -bar_h/2 + 1.5), Vector2(bar_w, bar_h)), s_color, true)
-		draw_rect(Rect2(mc + Vector2(-bar_w/2, -bar_h/2 + gap + 1.5), Vector2(bar_w, bar_h)), s_color, true)
-		
-		# Main bars
-		var m_color := C_GOLD_LIGHT if is_hovered() else C_CREAM
-		draw_rect(Rect2(mc + Vector2(-bar_w/2, -bar_h/2 - gap), Vector2(bar_w, bar_h)), m_color, true)
-		draw_rect(Rect2(mc + Vector2(-bar_w/2, -bar_h/2), Vector2(bar_w, bar_h)), m_color, true)
-		draw_rect(Rect2(mc + Vector2(-bar_w/2, -bar_h/2 + gap), Vector2(bar_w, bar_h)), m_color, true)
-		
-	elif current_type == TabType.LESSON:
-		# Draw a beautiful graduation cap!
-		# Cap shadow
-		_draw_cap(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
-		# Cap main
-		_draw_cap(r, active_color)
-		
-	elif current_type == TabType.SONG:
-		# Draw a beautiful beamed double note!
-		# Note shadow
-		_draw_double_note(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
-		# Note main
-		_draw_double_note(r, active_color)
+		# Draw main icon
+		var main_rect := Rect2(draw_pos - icon_size / 2.0, icon_size)
+		draw_texture_rect(tex, main_rect, false, active_color)
 
-		# Overlay lock icon if locked
-		if is_locked:
-			var lx := r.x + 12.0
-			var ly := r.y + 10.0
-			# draw small lock
-			draw_rect(Rect2(lx - 5, ly - 2, 10, 8), C_GOLD, true) # golden lock body
-			draw_rect(Rect2(lx - 5, ly - 2, 10, 8), Color(0.07, 0.04, 0.015, 1.0), false, 1.0)
-			draw_arc(Vector2(lx, ly - 2), 3.5, PI, TAU, 8, C_GOLD, 1.5, true)
-
-	elif current_type == TabType.GAME:
-		# Draw a beautiful retro game controller!
-		_draw_controller(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
-		_draw_controller(r, active_color)
-	elif current_type == TabType.ACCOUNT:
-		# Draw a beautiful head-and-shoulders person profile icon!
-		_draw_person(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
-		_draw_person(r, active_color)
-	elif current_type == TabType.ROOM:
-		# Draw a beautiful traditional gate/house outline!
-		_draw_house(r + Vector2(0, 2), Color(0.04, 0.02, 0.01, 0.45))
-		_draw_house(r, active_color)
-
-func _draw_cap(pos: Vector2, color: Color) -> void:
-	# Rhombus cap board
-	var pts := PackedVector2Array([
-		pos + Vector2(0, -12),
-		pos + Vector2(20, -3),
-		pos + Vector2(0, 7),
-		pos + Vector2(-20, -3)
-	])
-	draw_colored_polygon(pts, color)
-	
-	# Cap base band below
-	var base_pts := PackedVector2Array([
-		pos + Vector2(-11, 1),
-		pos + Vector2(11, 1),
-		pos + Vector2(8, 8),
-		pos + Vector2(-8, 8)
-	])
-	draw_colored_polygon(base_pts, color)
-	
-	# Cute tassel hanging down right side
-	draw_line(pos + Vector2(0, -3), pos + Vector2(15, 4), color, 2.8, true)
-	draw_circle(pos + Vector2(15, 7), 3.5, color)
-
-func _draw_double_note(pos: Vector2, color: Color) -> void:
-	# Two note heads
-	draw_circle(pos + Vector2(-8, 8), 5.5, color)
-	draw_circle(pos + Vector2(8, 5), 5.5, color)
-	
-	# Two stems
-	draw_line(pos + Vector2(-3.5, 8), pos + Vector2(-3.5, -8), color, 2.8, true)
-	draw_line(pos + Vector2(12.5, 5), pos + Vector2(12.5, -11), color, 2.8, true)
-	
-	# Connecting diagonal beam at the top
-	var beam_pts := PackedVector2Array([
-		pos + Vector2(-3.5, -8),
-		pos + Vector2(12.5, -11),
-		pos + Vector2(12.5, -6.5),
-		pos + Vector2(-3.5, -3.5)
-	])
-	draw_colored_polygon(beam_pts, color)
-
-func _draw_controller(pos: Vector2, color: Color) -> void:
-	# Main body (capsule/rounded rect)
-	var body_rect := Rect2(pos + Vector2(-14, -7), Vector2(28, 14))
-	draw_rect(body_rect, color, true)
-	draw_circle(pos + Vector2(-14, 0), 7.0, color)
-	draw_circle(pos + Vector2(14, 0), 7.0, color)
-	
-	# D-pad (small cross inside)
-	var dpad_col := C_RED_SON_DK if color != Color(0.04, 0.02, 0.01, 0.45) else Color(0.12, 0.06, 0.03, 0.8)
-	draw_line(pos + Vector2(-13, 0), pos + Vector2(-7, 0), dpad_col, 2.8, true)
-	draw_line(pos + Vector2(-10, -3), pos + Vector2(-10, 3), dpad_col, 2.8, true)
-	
-	# Action buttons
-	draw_circle(pos + Vector2(8, -2), 2.2, dpad_col)
-	draw_circle(pos + Vector2(12, 2), 2.2, dpad_col)
-
-func _draw_person(pos: Vector2, color: Color) -> void:
-	# Head circle
-	draw_circle(pos + Vector2(0, -6), 6.5, color)
-	# Shoulders arc
-	draw_arc(pos + Vector2(0, 10), 10.0, PI, TAU, 16, color, 3.0, true)
-
-func _draw_house(pos: Vector2, color: Color) -> void:
-	# Pitched roof (triangle)
-	var roof_pts := PackedVector2Array([
-		pos + Vector2(0, -12),
-		pos + Vector2(16, -2),
-		pos + Vector2(-16, -2)
-	])
-	draw_colored_polygon(roof_pts, color)
-	# House body (rectangle)
-	draw_rect(Rect2(pos + Vector2(-12, -2), Vector2(24, 14)), color, true)
-	# Door cutout (darker color)
-	var door_col := C_RED_SON_DK if color != Color(0.04, 0.02, 0.01, 0.45) else Color(0.12, 0.06, 0.03, 0.8)
-	draw_rect(Rect2(pos + Vector2(-3, 4), Vector2(6, 8)), door_col, true)
+	# Overlay lock icon if locked
+	if is_locked:
+		var tex_lock := load("res://assets/textures/icons8/lock.png") as Texture2D
+		if tex_lock:
+			var lock_size := Vector2(16, 16)
+			var lock_rect := Rect2(r + Vector2(6, 4), lock_size)
+			draw_texture_rect(tex_lock, lock_rect, false, C_GOLD)
