@@ -1,31 +1,27 @@
-[gd_resource type="Theme" load_steps=3 format=3 uid="uid://vietstage_theme"]
+[gd_resource type="Theme" format=3 uid="uid://b28gkbftkwysp"]
 
-[ext_resource type="FontFile" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="1_font"]
+[ext_resource type="FontFile" uid="uid://dm1siqu17a31w" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="1_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_default_btn"]
 bg_color = Color(0.13, 0.08, 0.05, 0.9)
-border_color = Color(0.77, 0.58, 0.15, 0.35)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
+border_color = Color(0.77, 0.58, 0.15, 0.35)
 corner_radius_top_left = 14
 corner_radius_top_right = 14
-corner_radius_bottom_left = 14
 corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [resource]
 default_font = ExtResource("1_font")
 default_font_size = 20
-
 Button/colors/font_color = Color(1, 0.97, 0.88, 1)
+Button/colors/font_disabled_color = Color(0.43, 0.38, 0.33, 1)
 Button/colors/font_hover_color = Color(1, 0.87, 0.45, 1)
 Button/colors/font_pressed_color = Color(1, 0.87, 0.45, 1)
-Button/colors/font_disabled_color = Color(0.43, 0.38, 0.33, 1)
 Button/styles/normal = SubResource("StyleBoxFlat_default_btn")
-
 Label/colors/font_color = Color(0.13, 0.08, 0.05, 1)
-
 LineEdit/colors/font_color = Color(0.13, 0.08, 0.05, 1)
 LineEdit/colors/placeholder_color = Color(0.43, 0.38, 0.33, 0.6)
-

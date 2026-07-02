@@ -21,7 +21,8 @@ func _init():
 		"res://scenes/AccountScreen.tscn",
 		"res://scenes/ProgressScreen.tscn",
 		"res://scenes/VideoPlayer.tscn",
-		"res://scenes/CustomPopup.tscn"
+		"res://scenes/CustomPopup.tscn",
+		"res://scenes/LessonDanBau.tscn"
 	]
 	
 	var has_error = false

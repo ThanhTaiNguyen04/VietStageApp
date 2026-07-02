@@ -77,7 +77,14 @@ func _ready() -> void:
 	# Setup collapsible LinhPanel system
 	_setup_collapsible_linh()
 	
-	if current_song_title != "":
+	if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
+		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
+		var idx := int(clean_id.replace("dan_bau_coban_", ""))
+		if idx >= 1 and idx <= 2:
+			sheet_notes = ["Đô", "Đô", "Đô", "Đô"]
+		elif idx == 3:
+			sheet_notes = ["Đô", "Rê", "Mi", "Sol", "La", "Đô"]
+	elif current_song_title != "":
 		sheet_notes = current_song_sheet
 	_generate_streams()
 	_set_labels()
@@ -200,13 +207,21 @@ func _set_labels() -> void:
 		diff = "Trung bình"
 	elif SecureDataManager.active_lesson_id == "Node4":
 		diff = "Nâng cao"
+	elif SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
+		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
+		var idx := int(clean_id.replace("dan_bau_coban_", ""))
+		diff = "Bài %d" % idx
 		
 	var title_lbl := "Hài Âm Cơ Bản & Uốn Vòi Đàn"
 	if current_song_title != "":
 		title_lbl = current_song_title
 		diff = "Bài hát"
 	else:
-		if SecureDataManager.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
+			var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
+			var idx := int(clean_id.replace("dan_bau_coban_", ""))
+			title_lbl = "Đàn Bầu Cơ Bản %d" % idx
+		elif SecureDataManager.active_lesson_id == "Node2":
 			title_lbl = "Hài Âm Cơ Bản"
 		elif SecureDataManager.active_lesson_id == "Node3":
 			title_lbl = "Uốn Vòi Đàn"
@@ -927,17 +942,33 @@ func _show_custom_result() -> void:
 		add_child(popup)
 		
 		var next_lesson_name := "Khóa Học Tiếp"
-		if SecureDataManager.active_lesson_id == "Node2":
+		if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
+			var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
+			var idx := int(clean_id.replace("dan_bau_coban_", ""))
+			if idx < 3:
+				next_lesson_name = "Đàn Bầu Cơ Bản %d" % (idx + 1)
+			else:
+				next_lesson_name = "Độc Tấu Đàn Bầu"
+		elif SecureDataManager.active_lesson_id == "Node2":
 			next_lesson_name = "Uốn Vòi Đàn"
 		elif SecureDataManager.active_lesson_id == "Node3":
 			next_lesson_name = "Luyến Láy"
 			
 		popup.setup_result(_score, 85.0, 78.0, 81.0, 100, "Đã mở khóa: " + next_lesson_name)
+		popup.closed.connect(func() -> void:
+			_go_back()
+		)
 
 func _go_back() -> void:
+	var lesson_id := SecureDataManager.active_lesson_id
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	t.tween_callback(func() -> void:
+		if lesson_id.begins_with("dan_bau_coban_"):
+			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
+		else:
+			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+	)
 
 # ─── Dynamic Helpers ──────────────────────────────────────────────────────────
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:

@@ -737,18 +737,25 @@ func _connect_buttons() -> void:
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
-			SecureDataManager.active_lesson_id = "Node1"
-			_fade_to("res://scenes/VideoPlayer.tscn")
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_bau":
+				_fade_to("res://scenes/LessonDanBau.tscn")
+			else:
+				SecureDataManager.active_lesson_id = "Node1"
+				_fade_to("res://scenes/VideoPlayer.tscn")
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-			if SecureDataManager.is_lesson_completed(inst, "Node2"):
-				SecureDataManager.active_lesson_id = "Node3"
-				_go_practice_room_for_node(3)
+			if inst == "dan_bau":
+				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
-				SecureDataManager.active_lesson_id = "Node2"
-				_go_practice_room_for_node(2)
+				if SecureDataManager.is_lesson_completed(inst, "Node2"):
+					SecureDataManager.active_lesson_id = "Node3"
+					_go_practice_room_for_node(3)
+				else:
+					SecureDataManager.active_lesson_id = "Node2"
+					_go_practice_room_for_node(2)
 	)
 	
 	# Play Buttons -> Practice Room
