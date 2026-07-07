@@ -82,6 +82,29 @@ const SONGS_DATA := [
 		"sheet": ["Rest", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Rê3", "Rê3", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Sol", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Rê2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Rê2", "Sol2", "Đô3", "Đô3", "Đô3", "Rest", "Mi2", "Rê2", "Sol2", "Rê2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Sol2", "Rest", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "Sol", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest"]
 	},
 	{
+		"id": "song_012",
+		"title": "Inh Lả Ơi",
+		"desc": "Dân ca Thái, chuyển soạn cho sáo trúc theo nhịp Jiangnan, tempo 110 BPM.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Dễ",
+		"difficulty_color": Color(0.12, 0.37, 0.23, 1.0), # Jade green
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 130,
+		"bpm": 110.0,
+		"sheet": [
+			"Đô2", "La", "Si", "Đô2", "Rest", "Đô2", "Sol", "La", "Rest", "Đô2", "Sol",
+			"Fa", "Đô2", "Si", "La", "Sol", "Rest", "Fa", "La", "Đô2", "Sol",
+			"Sol", "Sol", "Fa", "Fa", "Rest", "Đô2", "Sol", "La", "Rest", "Đô2", "Sol", "Đô2", "Rest"
+		],
+		"durations": [
+			1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+			1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+			1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0
+		]
+	},
+	{
 		"id": "song_005",
 		"title": "Lý Hoài Nam",
 		"desc": "Làn điệu dân ca miền Trung, đặc biệt du dương khi thổi sáo trúc.",
@@ -737,6 +760,9 @@ func _on_play_song(song: Dictionary) -> void:
 	# Transition dynamic values to practice room
 	var sheet_typed: Array[String] = []
 	sheet_typed.assign(song.sheet)
+	var durations_typed: Array[float] = []
+	if song.has("durations"):
+		durations_typed.assign(song.durations)
 
 	if song.instrument == "dan_tranh":
 		var pr_script = load("res://scripts/PracticeRoom.gd")
@@ -755,6 +781,9 @@ func _on_play_song(song: Dictionary) -> void:
 		if pr_script:
 			pr_script.current_song_title = song.title
 			pr_script.current_song_sheet = sheet_typed
+			pr_script.current_song_durations = durations_typed
+			if song.has("bpm"):
+				pr_script.current_song_bpm = float(song.bpm)
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
 func _go_back() -> void:
