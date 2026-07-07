@@ -243,7 +243,7 @@ func _set_labels() -> void:
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
 
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên trái để đổi âm"
+	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên phải để đổi âm"
 	record_btn.text = "Bắt đầu luyện tập"
 	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
 
@@ -958,7 +958,7 @@ func _show_custom_hint() -> void:
 	if popup_scene:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
-		var text := "[b]🎵 GẢY HÀI ÂM:[/b]\nChạm nhẹ tay vào các điểm nút tròn (Đô, Rê, Mi...) và gảy để phát ra tiếng đàn sắc nét.\n\n[b]🎵 UỐN CẦN (Luyến âm):[/b]\nChạm và giữ cần đàn phía bên trái. Kéo sang trái/lên trên để căng dây (nâng cao độ), kéo sang phải/xuống dưới để trùng dây (hạ cao độ).\n\n[b]💡 LƯU Ý KỸ THUẬT:[/b]\n• Tiếng đàn bầu đẹp nhờ sự kết hợp nhuần nhuyễn giữa gảy hài âm và uốn vòi luyến láy.\n• Thả lỏng cổ tay trái để uốn nốt mềm mại và tạo độ rung ngân chuẩn xác."
+		var text := "[b]🎵 GẢY HÀI ÂM:[/b]\nChạm nhẹ tay vào các điểm nút tròn (Đô, Rê, Mi...) và gảy để phát ra tiếng đàn sắc nét.\n\n[b]🎵 UỐN CẦN (Luyến âm):[/b]\nChạm và giữ cần đàn phía bên phải. Kéo lên để căng dây (nâng cao độ), kéo xuống để trùng dây (hạ cao độ).\n\n[b]💡 LƯU Ý KỸ THUẬT:[/b]\n• Tiếng đàn bầu đẹp nhờ sự kết hợp nhuần nhuyễn giữa gảy hài âm và uốn vòi luyến láy.\n• Thả lỏng cổ tay trái để uốn nốt mềm mại và tạo độ rung ngân chuẩn xác."
 		popup.setup_hint("Kỹ thuật Đàn Bầu", text)
 
 func _show_custom_result() -> void:
