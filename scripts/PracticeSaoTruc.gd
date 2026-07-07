@@ -18,12 +18,6 @@ const C_BG_BAR     := Color(0.071, 0.047, 0.020, 1.0) # #120C05 Darker Mahogany
 const C_CARD       := Color(0.059, 0.180, 0.118, 1.0) # #0F2E1E Deep Jade (notation bg)
 const C_TEXT       := Color(0.941, 0.871, 0.706, 1.0) # #F0DEB4 Warm Ivory
 const C_TEXT_MUTED := Color(0.659, 0.565, 0.439, 1.0) # #A89070 Muted Sand
-
-const C_BG         := Color(0.055, 0.035, 0.12, 1.0)  # Deep Purple-Black
-const C_BG_BAR     := Color(0.04, 0.025, 0.09, 1.0)   # Even darker
-const C_CARD       := Color(0.09, 0.06, 0.18, 1.0)    # Purple card
-const C_TEXT       := Color(0.92, 0.92, 1.0, 1.0)     # Near-white text
-const C_TEXT_MUTED := Color(0.55, 0.52, 0.70, 1.0)    # Muted purple-gray
 @onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
 @onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
