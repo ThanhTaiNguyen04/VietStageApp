@@ -1,8 +1,11 @@
 extends Control
 
-## DanBauBoard — Vietnamese Monochord (Đàn Bầu) 2.5D Renderer
-## Layout: LEFT = tuning peg, RIGHT = gourd + horn (exactly as real instrument)
-## Designed for wide-and-short canvas (aspect ~5:1 to 8:1)
+## DanBauBoard — Vietnamese Đàn Bầu (Monochord) 2.5D Renderer
+## Layout matches concept sheet exactly:
+##   LEFT  end: Bầu cộng hưởng (round gourd resonator) + Cần đàn (bamboo rod curving up)
+##   RIGHT end: Chốt dây (tuning peg)
+##   Top surface: light oak soundboard with floral carvings
+##   Sides: dark walnut lacquer
 
 signal string_plucked(idx: int, note_name: String)
 signal pitch_bent(cents_offset: float)
@@ -10,23 +13,35 @@ signal pitch_bent(cents_offset: float)
 const NODE_COUNT := 7
 const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 
-# ─── Color Palette ──────────────────────────────────────────────────────────
-const C_GOLD        := Color("#c99a3c")
-const C_GOLD_LIGHT  := Color("#fce8b3")
-const C_GOLD_DARK   := Color("#7a5510")
-const C_LACQUER     := Color("#0d0804")   # near-black lacquer body
-const C_LACQUER2    := Color("#1a0d05")   # slightly lighter lacquer
-const C_ROSEWOOD    := Color("#5c1f06")   # rosewood top surface
-const C_ROSEWOOD2   := Color("#8c3510")   # lighter rosewood highlight
-const C_HORN_DARK   := Color("#0c0a09")   # buffalo horn dark
-const C_HORN_MID    := Color("#1e1814")   # horn mid-tone
-const C_HORN_EDGE   := Color("#2e2420")   # horn edge highlight
-const C_GOURD_BASE  := Color("#8c4a08")   # gourd dark base
-const C_GOURD_MID   := Color("#c87818")   # gourd mid golden
-const C_GOURD_HIGH  := Color("#f5d060")   # gourd specular
-const C_MOP         := Color("#e8ede8")   # mother-of-pearl white
-const C_MOP2        := Color("#a8d4cc")   # MOP teal iridescent
-const C_STRING      := Color("#d8dce8")   # steel string
+# ─── Color Palette (from concept sheet) ────────────────────────────────────
+# Body / sides — dark walnut
+const C_WALNUT_DARK  := Color("#2a1608")
+const C_WALNUT_MID   := Color("#3d2010")
+const C_WALNUT_LIGHT := Color("#5c3018")
+const C_WALNUT_HIGH  := Color("#7a4820")
+# Soundboard — light oak
+const C_OAK_BASE     := Color("#c08840")
+const C_OAK_MID      := Color("#d4a050")
+const C_OAK_LIGHT    := Color("#e8c070")
+const C_OAK_HIGH     := Color("#f5d890")
+# Floral inlay — warm gold
+const C_INLAY_GOLD   := Color("#c8941c")
+const C_INLAY_LIGHT  := Color("#f0c840")
+# Gourd — brown lacquer
+const C_GOURD_DARK   := Color("#3a1c0a")
+const C_GOURD_MID    := Color("#5c3010")
+const C_GOURD_LIGHT  := Color("#8a5020")
+const C_GOURD_HIGH   := Color("#b87030")
+# Bamboo rod
+const C_BAMBOO_DARK  := Color("#4a4018")
+const C_BAMBOO_MID   := Color("#6a5c28")
+const C_BAMBOO_LIGHT := Color("#8a7a40")
+# Gold trim / hardware
+const C_GOLD         := Color("#c99a3c")
+const C_GOLD_LIGHT   := Color("#fce8b3")
+# Metal string
+const C_STRING       := Color("#c8ccd8")
+const C_STRING_VIBE  := Color("#f8e898")
 
 # ─── State ──────────────────────────────────────────────────────────────────
 var _note_names  : Array[String]      = []
@@ -38,22 +53,16 @@ var _glow_alpha  : PackedFloat32Array = PackedFloat32Array()
 var _pulse_phase : float              = 0.0
 var _is_target   : PackedByteArray    = PackedByteArray()
 var _is_bending    := false
-var _bend_offset   := 0.0
+var _bend_offset   := 0.0   # rod tip Y offset
 var _bend_cents    := 0.0
 var _bend_velocity := 0.0
 var _hovered_node_idx := -1
 var _target_node_idx  := 0
-var _active_player : AudioStreamPlayer = null
 
 func init(notes: Array[String], streams: Array, freqs: Array[float]) -> void:
-	_note_names = notes
-	_streams    = streams
-	_freqs      = freqs
-	_glow_alpha.resize(NODE_COUNT)
-	_is_target.resize(NODE_COUNT)
-	for i in NODE_COUNT:
-		_glow_alpha[i] = 0.0
-		_is_target[i]  = 0
+	_note_names = notes; _streams = streams; _freqs = freqs
+	_glow_alpha.resize(NODE_COUNT); _is_target.resize(NODE_COUNT)
+	for i in NODE_COUNT: _glow_alpha[i] = 0.0; _is_target[i] = 0
 	queue_redraw()
 
 func _ready() -> void:
@@ -63,533 +72,539 @@ func _ready() -> void:
 
 func set_target(idx: int) -> void:
 	_target_node_idx = idx
-	for i in NODE_COUNT:
-		_is_target[i] = 1 if i == idx else 0
+	for i in NODE_COUNT: _is_target[i] = 1 if i == idx else 0
 	queue_redraw()
 
 func pluck(idx: int) -> void:
 	if idx < 0 or idx >= NODE_COUNT: return
-	_pluck_time = 0.0
-	_pluck_amp  = 1.0
-	_glow_alpha[idx] = 1.0
+	_pluck_time = 0.0; _pluck_amp = 1.0; _glow_alpha[idx] = 1.0
 	string_plucked.emit(idx, _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx])
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	var need := false
 	if _pluck_amp > 0.0:
-		_pluck_time += delta
-		_pluck_amp   = maxf(0.0, _pluck_amp - delta * 2.5)
-		need = true
+		_pluck_time += delta; _pluck_amp = maxf(0.0, _pluck_amp - delta * 2.5); need = true
 	for i in NODE_COUNT:
 		if _glow_alpha[i] > 0.0:
-			_glow_alpha[i] = maxf(0.0, _glow_alpha[i] - delta * 3.0)
-			need = true
-	_pulse_phase += delta * 3.5
-	need = true
-	# Spring physics for rod return
+			_glow_alpha[i] = maxf(0.0, _glow_alpha[i] - delta * 3.0); need = true
+	_pulse_phase += delta * 3.5; need = true
 	if not _is_bending and (_bend_offset != 0.0 or _bend_velocity != 0.0):
 		var accel := -420.0 * _bend_offset - 15.0 * _bend_velocity
-		_bend_velocity += accel * delta
-		_bend_offset   += _bend_velocity * delta
+		_bend_velocity += accel * delta; _bend_offset += _bend_velocity * delta
 		if abs(_bend_offset) < 0.05 and abs(_bend_velocity) < 0.05:
 			_bend_offset = 0.0; _bend_velocity = 0.0; _bend_cents = 0.0
 			pitch_bent.emit(0.0)
 		else:
-			_bend_cents = (_bend_offset / (size.y * 0.12)) * 350.0
+			_bend_cents = (_bend_offset / maxf(size.y * 0.12, 10.0)) * 350.0
 			pitch_bent.emit(_bend_cents)
 		need = true
 	if need: queue_redraw()
 
 # ════════════════════════════════════════════════════════════════════════════
-# MAIN DRAW
+# MAIN DRAW  —  Wide-short canvas (typical ~870 × 180 px)
 # ════════════════════════════════════════════════════════════════════════════
 func _draw() -> void:
-	var W := size.x
-	var H := size.y
-	if W < 100.0 or H < 40.0: return
+	var W := size.x; var H := size.y
+	if W < 120.0 or H < 50.0: return
 
-	# ── Key geometry ──────────────────────────────────────────────────────
-	# Body: horizontal rectangular box from BL to BR
-	var BL := W * 0.06                  # body left X
-	var BR := W * 0.82                  # body right X (leaves room for gourd)
-	var BW := BR - BL                   # body width
+	# ── Key dimensions ────────────────────────────────────────────────────
+	# Body rectangle on screen (main wooden box)
+	var BL := W * 0.18     # body left  — leaves room for gourd on LEFT
+	var BR := W * 0.96     # body right — tuning peg here
+	var BW := BR - BL
 
-	# 2.5D perspective: top surface visible above front face
-	# TOP_Y = top edge of top surface (far edge)
-	# MID_Y = edge between top surface and front face
-	# BOT_Y = bottom of front face
-	var TOP_Y := H * 0.06              # top surface top edge
-	var MID_Y := H * 0.46             # boundary top↔front
-	var BOT_Y := H * 0.88             # front face bottom
+	# 2.5D perspective layers (top-to-bottom in canvas):
+	#   TOP_Y  = top edge of soundboard (far edge)
+	#   MID_Y  = boundary soundboard → front side panel
+	#   BOT_Y  = bottom of front side panel
+	var TOP_Y := H * 0.05
+	var MID_Y := H * 0.52
+	var BOT_Y := H * 0.88
 
-	var TOP_H := MID_Y - TOP_Y        # height of top surface
-	var FRT_H := BOT_Y - MID_Y        # height of front face
+	var TOP_H := MID_Y - TOP_Y   # soundboard visible height
+	var FRT_H := BOT_Y - MID_Y   # front panel visible height
 
-	# String sits 60% into the top surface
-	var STR_Y_L := TOP_Y + TOP_H * 0.60
-	var STR_Y_R := TOP_Y + TOP_H * 0.64   # slight perspective drop right
+	# String sits on the soundboard surface
+	var STR_Y := TOP_Y + TOP_H * 0.55   # Y of the single monochord string
 
-	# ── Gourd and Horn positions ──────────────────────────────────────────
-	var GOURD_CX := BR + H * 0.28          # gourd center X (right of body)
-	var GOURD_CY := MID_Y - TOP_H * 0.25   # gourd center Y (on top surface)
-	var GOURD_R  := H * 0.22               # gourd lower bulb radius — BIG
+	# Gourd center (LEFT side, partially outside body)
+	var GR    := minf(H * 0.30, BW * 0.10)  # gourd radius
+	var GX    := BL - GR * 0.55             # gourd center X (overlaps left end)
+	var GY    := MID_Y - TOP_H * 0.30       # gourd center Y (on soundboard level)
 
-	# Horn base: top of the gourd
-	var HORN_BASE := Vector2(GOURD_CX, GOURD_CY - GOURD_R - H * 0.04)
-	# Horn tip: curves up and slightly left from base
-	var HORN_TIP  := Vector2(GOURD_CX - H * 0.18 + _bend_offset, TOP_Y - H * 0.05)
-	# Bezier control points
-	var HORN_C1   := Vector2(GOURD_CX + H * 0.05, HORN_BASE.y - TOP_H * 0.60)
-	var HORN_C2   := Vector2(HORN_TIP.x  + H * 0.08, HORN_TIP.y  + TOP_H * 0.40)
+	# Bamboo rod: emerges from top of gourd, curves upward and slightly RIGHT
+	var ROD_BASE := Vector2(GX, GY - GR * 0.85)
+	var ROD_TIP  := Vector2(GX + W * 0.06, TOP_Y - H * 0.08 + _bend_offset)
+	var ROD_C1   := Vector2(GX + GR * 0.20, ROD_BASE.y - TOP_H * 0.55)
+	var ROD_C2   := Vector2(ROD_TIP.x - GR * 0.30, ROD_TIP.y + TOP_H * 0.30)
 
-	# String anchor points
-	var STR_START := Vector2(BL + 22.0, STR_Y_L)
-	var STR_END   := Vector2(GOURD_CX,  GOURD_CY)
+	# String anchors
+	var STR_START := Vector2(GX,        GY)          # string starts at gourd surface
+	var STR_END   := Vector2(BR - 6.0,  STR_Y)       # string ends at tuning peg
 
-	# ── Draw Order ────────────────────────────────────────────────────────
-	_draw_shadow(BL, BR, BOT_Y, W)
-	_draw_top_surface(BL, BR, TOP_Y, MID_Y)
-	_draw_front_face(BL, BR, MID_Y, BOT_Y)
-	_draw_side_caps(BL, BR, TOP_Y, MID_Y, BOT_Y)
-	_draw_gold_borders(BL, BR, TOP_Y, MID_Y, BOT_Y)
-	_draw_mop_scenes(BL, BR, MID_Y, BOT_Y)
-	_draw_peg(STR_START, TOP_Y, MID_Y)
-	_draw_string(STR_START, STR_END, STR_Y_L, STR_Y_R, BL, BR)
-	_draw_nodes(STR_Y_L, STR_Y_R, BL, BR)
-	_draw_gourd(GOURD_CX, GOURD_CY, GOURD_R)
-	_draw_horn(HORN_BASE, HORN_TIP, HORN_C1, HORN_C2)
-	if _is_bending:
-		var font := get_theme_font("font")
-		_draw_cents_readout(font, HORN_TIP + Vector2(0, 16), _bend_cents)
+	# Tuning peg (right end)
+	var PEG_X := BR - 4.0
+	var PEG_Y := STR_Y
+
+	# ── Draw order ────────────────────────────────────────────────────────
+	_draw_ground_shadow(BL, BR, BOT_Y)
+	_draw_feet(BL, BR, BOT_Y)
+	_draw_front_panel(BL, BR, MID_Y, BOT_Y)
+	_draw_soundboard(BL, BR, TOP_Y, MID_Y)
+	_draw_side_bevels(BL, BR, TOP_Y, MID_Y, BOT_Y)
+	_draw_gold_trim(BL, BR, TOP_Y, MID_Y, BOT_Y)
+	_draw_floral_inlay(BL, BR, TOP_Y, MID_Y, STR_Y)
+	_draw_bridge(BL + BW * 0.50, STR_Y, MID_Y)
+	_draw_string(STR_START, STR_END, STR_Y)
+	_draw_nodes(STR_Y, BL, BR, STR_START.x, STR_END.x)
+	_draw_gourd(GX, GY, GR)
+	_draw_bamboo_rod(ROD_BASE, ROD_TIP, ROD_C1, ROD_C2, GR)
+	_draw_tuning_peg(PEG_X, PEG_Y, TOP_Y, MID_Y)
+	var font := get_theme_font("font")
+	if _is_bending and font:
+		_draw_cents_badge(font, ROD_TIP + Vector2(16, 0), _bend_cents)
 
 # ════════════════════════════════════════════════════════════════════════════
-# COMPONENT DRAWS
+# BODY COMPONENTS
 # ════════════════════════════════════════════════════════════════════════════
 
-func _draw_shadow(BL: float, BR: float, BOT_Y: float, W: float) -> void:
-	var shadow := PackedVector2Array([
-		Vector2(BL - 12, BOT_Y + 4),
-		Vector2(BR + 48, BOT_Y + 4),
-		Vector2(BR + 28, BOT_Y + 14),
-		Vector2(BL - 4,  BOT_Y + 14)
+func _draw_ground_shadow(BL: float, BR: float, BOT_Y: float) -> void:
+	var sx := PackedVector2Array([
+		Vector2(BL - 18, BOT_Y + 4), Vector2(BR + 12, BOT_Y + 4),
+		Vector2(BR - 4,  BOT_Y + 16), Vector2(BL - 6,  BOT_Y + 16)
 	])
-	draw_colored_polygon(shadow, Color(0, 0, 0, 0.20))
+	draw_colored_polygon(sx, Color(0, 0, 0, 0.22))
 
-func _draw_top_surface(BL: float, BR: float, TOP_Y: float, MID_Y: float) -> void:
-	# The playing surface — rosewood/mahogany with cylindrical shading
-	var steps := 18
-	for i in steps:
-		var r1 := float(i)     / float(steps)
-		var r2 := float(i + 1) / float(steps)
-		var y1 := lerpf(TOP_Y, MID_Y, r1)
-		var y2 := lerpf(TOP_Y, MID_Y, r2)
-		# Cylindrical light: brightest at ~30% from top
-		var light := sin(r1 * PI)
-		var col   := C_LACQUER.lerp(C_ROSEWOOD2, light * 0.85)
-		# Glossy specular stripe near top
-		if r1 > 0.12 and r1 < 0.28:
-			var f := (r1 - 0.12) / 0.16
-			col = col.lerp(Color("#c06030"), sin(f * PI) * 0.55)
-		# Shadow near front face edge
-		elif r1 > 0.78:
-			col = col.lerp(Color("#080301"), ((r1 - 0.78) / 0.22) * 0.70)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(BL, y1), Vector2(BR, y1), Vector2(BR, y2), Vector2(BL, y2)
-		]), col)
+func _draw_feet(BL: float, BR: float, BOT_Y: float) -> void:
+	# Small wooden feet below the body (visible in concept art)
+	var foot_h : float = (BOT_Y) * 0.08
+	var foot_w : float = (BR - BL) * 0.10
+	var positions : Array[float] = [0.12, 0.50, 0.88]
+	for p in positions:
+		var fx : float = BL + (BR - BL) * p
+		var foot_pts := PackedVector2Array([
+			Vector2(fx - foot_w * 0.5, BOT_Y),
+			Vector2(fx + foot_w * 0.5, BOT_Y),
+			Vector2(fx + foot_w * 0.4, BOT_Y + foot_h),
+			Vector2(fx - foot_w * 0.4, BOT_Y + foot_h)
+		])
+		draw_colored_polygon(foot_pts, C_WALNUT_DARK)
+		draw_line(Vector2(fx - foot_w*0.5, BOT_Y), Vector2(fx + foot_w*0.5, BOT_Y),
+			Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 0.8)
 
-	# Deterministic wood grain
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11223
-	var BH := MID_Y - TOP_Y
-	for _j in range(8):
-		var f   := rng.randf()
-		var gy  := TOP_Y + BH * f
-		var pts := PackedVector2Array()
-		for k in range(21):
-			var t  := float(k) / 20.0
-			var gx := lerpf(BL, BR, t)
-			var wy := gy + sin(t * 11.0 + f * 6.0) * 1.4 + cos(t * 7.0) * 0.8
-			pts.append(Vector2(gx, wy))
-		var gc := C_LACQUER.lerp(C_ROSEWOOD, f)
-		gc.a    = rng.randf_range(0.07, 0.20)
-		draw_polyline(pts, gc, rng.randf_range(0.6, 1.6), true)
-
-func _draw_front_face(BL: float, BR: float, MID_Y: float, BOT_Y: float) -> void:
-	# Front face: near-BLACK lacquer — the most visible face of the body
-	var FH    := BOT_Y - MID_Y
+func _draw_front_panel(BL: float, BR: float, MID_Y: float, BOT_Y: float) -> void:
+	# Front side panel — dark walnut with slight gradient
+	var FH := BOT_Y - MID_Y
 	var steps := 14
 	for i in steps:
-		var r1 := float(i)     / float(steps)
-		var r2 := float(i + 1) / float(steps)
+		var r1 : float = float(i) / float(steps)
+		var r2 : float = float(i + 1) / float(steps)
 		var y1 := lerpf(MID_Y, BOT_Y, r1)
 		var y2 := lerpf(MID_Y, BOT_Y, r2)
-		# Very dark lacquer with slight edge brightening at top
-		var col := C_LACQUER
-		if r1 < 0.15:
-			col = col.lerp(Color("#2a1005"), (0.15 - r1) / 0.15 * 0.50)
-		elif r1 > 0.80:
-			col = col.lerp(Color("#000000"), (r1 - 0.80) / 0.20)
+		var col := C_WALNUT_DARK
+		# Slight highlight at top, darkens toward bottom
+		if r1 < 0.12: col = col.lerp(C_WALNUT_MID, (0.12 - r1) / 0.12 * 0.55)
+		elif r1 > 0.75: col = col.lerp(Color("#0a0503"), (r1 - 0.75) / 0.25)
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(BL, y1), Vector2(BR, y1), Vector2(BR, y2), Vector2(BL, y2)
 		]), col)
 
-func _draw_side_caps(BL: float, BR: float, TOP_Y: float, MID_Y: float, BOT_Y: float) -> void:
-	# Left cap
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(BL - 8, TOP_Y + 2), Vector2(BL, TOP_Y),
-		Vector2(BL, BOT_Y), Vector2(BL - 8, BOT_Y - 2)
-	]), Color("#120800"))
-	# Right cap
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(BR, TOP_Y), Vector2(BR + 8, TOP_Y + 2),
-		Vector2(BR + 8, BOT_Y - 2), Vector2(BR, BOT_Y)
-	]), Color("#120800"))
+	# Wood grain lines on front panel
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77331
+	for _j in range(5):
+		var f : float = rng.randf()
+		var gy := lerpf(MID_Y + FH * 0.1, BOT_Y - FH * 0.1, f)
+		var pts := PackedVector2Array()
+		for k in range(18):
+			var t : float = float(k) / 17.0
+			var gx := lerpf(BL + 8, BR - 8, t)
+			var wy := gy + sin(t * 9.0 + f * 5.0) * 0.8
+			pts.append(Vector2(gx, wy))
+		var gc := C_WALNUT_DARK.lerp(C_WALNUT_MID, f * 0.5)
+		gc.a = rng.randf_range(0.06, 0.14)
+		draw_polyline(pts, gc, 0.7, true)
 
-func _draw_gold_borders(BL: float, BR: float, TOP_Y: float, MID_Y: float, BOT_Y: float) -> void:
-	var g  := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.90)
+func _draw_soundboard(BL: float, BR: float, TOP_Y: float, MID_Y: float) -> void:
+	# Light oak soundboard — the top playing surface (most distinctive visual feature)
+	var TOP_H := MID_Y - TOP_Y
+	var steps  := 20
+	for i in steps:
+		var r1 : float = float(i)     / float(steps)
+		var r2 : float = float(i + 1) / float(steps)
+		var y1 := lerpf(TOP_Y, MID_Y, r1)
+		var y2 := lerpf(TOP_Y, MID_Y, r2)
+		# Oak grain: brightest in center strip
+		var light := sin(r1 * PI)
+		var col   := C_OAK_BASE.lerp(C_OAK_LIGHT, light * 0.75)
+		if r1 < 0.08: col = col.lerp(C_WALNUT_MID, 0.45)       # shadow from top bevel
+		elif r1 > 0.82: col = col.lerp(C_OAK_BASE, (r1 - 0.82) / 0.18 * 0.40)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(BL, y1), Vector2(BR, y1), Vector2(BR, y2), Vector2(BL, y2)
+		]), col)
+	# Wood grain on soundboard
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 44210
+	for _j in range(12):
+		var f : float = rng.randf()
+		var gy := lerpf(TOP_Y + 2, MID_Y - 2, f)
+		var pts := PackedVector2Array()
+		for k in range(22):
+			var t : float = float(k) / 21.0
+			var gx := lerpf(BL + 4, BR - 4, t)
+			var wy := gy + sin(t * 13.0 + f * 7.0) * 1.2 + cos(t * 5.0) * 0.7
+			pts.append(Vector2(gx, wy))
+		var gc := C_OAK_BASE.lerp(C_OAK_MID, f)
+		gc.a = rng.randf_range(0.08, 0.22)
+		draw_polyline(pts, gc, rng.randf_range(0.5, 1.2), true)
+
+func _draw_side_bevels(BL: float, BR: float, TOP_Y: float, MID_Y: float, BOT_Y: float) -> void:
+	# Left end cap
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(BL - 6, TOP_Y + 2), Vector2(BL, TOP_Y),
+		Vector2(BL, BOT_Y),         Vector2(BL - 6, BOT_Y - 2)
+	]), C_WALNUT_DARK.lerp(Color("#0a0503"), 0.30))
+	# Right end cap
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(BR, TOP_Y),     Vector2(BR + 6, TOP_Y + 2),
+		Vector2(BR + 6, BOT_Y - 2), Vector2(BR, BOT_Y)
+	]), C_WALNUT_DARK.lerp(Color("#0a0503"), 0.30))
+
+func _draw_gold_trim(BL: float, BR: float, TOP_Y: float, MID_Y: float, BOT_Y: float) -> void:
+	var g  := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85)
 	var gd := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
 
-	# Outer borders
+	# Main border lines
 	draw_line(Vector2(BL, TOP_Y),  Vector2(BR, TOP_Y),  g,  1.5)  # top far edge
-	draw_line(Vector2(BL, MID_Y), Vector2(BR, MID_Y),   g,  1.2)  # surface/face divider
-	draw_line(Vector2(BL, BOT_Y), Vector2(BR, BOT_Y),   gd, 1.0)  # bottom edge
+	draw_line(Vector2(BL, MID_Y), Vector2(BR, MID_Y),   g,  1.2)  # soundboard edge
+	draw_line(Vector2(BL, BOT_Y), Vector2(BR, BOT_Y),   gd, 1.0)  # bottom
 
-	# Inner inlay lines on top surface
-	var GAP := (MID_Y - TOP_Y) * 0.12
-	draw_line(Vector2(BL + 4, TOP_Y + GAP), Vector2(BR - 4, TOP_Y + GAP), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 0.8)
-	draw_line(Vector2(BL + 4, MID_Y - GAP), Vector2(BR - 4, MID_Y - GAP), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 0.8)
+	# Inner frame on soundboard (inset border)
+	var inset : float = minf((MID_Y - TOP_Y) * 0.10, 5.0)
+	draw_polyline(PackedVector2Array([
+		Vector2(BL + 12, TOP_Y + inset),
+		Vector2(BR - 12, TOP_Y + inset),
+		Vector2(BR - 12, MID_Y - inset),
+		Vector2(BL + 12, MID_Y - inset),
+		Vector2(BL + 12, TOP_Y + inset)
+	]), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 0.8, true)
 
-	# Inner inlay lines on front face
-	var FG := (BOT_Y - MID_Y) * 0.12
-	draw_line(Vector2(BL + 6, MID_Y + FG), Vector2(BR - 6, MID_Y + FG), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 1.0)
-	draw_line(Vector2(BL + 6, BOT_Y - FG), Vector2(BR - 6, BOT_Y - FG), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 0.8)
+	# Inner frame on front panel
+	var f_inset : float = minf((BOT_Y - MID_Y) * 0.12, 5.0)
+	draw_polyline(PackedVector2Array([
+		Vector2(BL + 10, MID_Y + f_inset),
+		Vector2(BR - 10, MID_Y + f_inset),
+		Vector2(BR - 10, BOT_Y - f_inset),
+		Vector2(BL + 10, BOT_Y - f_inset),
+		Vector2(BL + 10, MID_Y + f_inset)
+	]), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 0.8, true)
 
-	# Corner rivet plates
-	var RS := 18.0
-	_rivet(Vector2(BL, TOP_Y),  RS, false, false)
-	_rivet(Vector2(BR, TOP_Y),  RS, true,  false)
-	_rivet(Vector2(BL, BOT_Y),  RS, false, true)
-	_rivet(Vector2(BR, BOT_Y),  RS, true,  true)
+	# Corner brass rivets
+	var rs : float = minf(14.0, (MID_Y - TOP_Y) * 0.25)
+	_rivet(Vector2(BL, TOP_Y),  rs, false, false)
+	_rivet(Vector2(BR, TOP_Y),  rs, true,  false)
+	_rivet(Vector2(BL, BOT_Y),  rs, false, true)
+	_rivet(Vector2(BR, BOT_Y),  rs, true,  true)
 
 func _rivet(pos: Vector2, s: float, fx: bool, fy: bool) -> void:
-	var sx := -1.0 if fx else 1.0
-	var sy := -1.0 if fy else 1.0
-	var pts := PackedVector2Array([pos,
-		pos + Vector2(sx*s, 0), pos + Vector2(sx*s*0.5, sy*s*0.5), pos + Vector2(0, sy*s)])
-	draw_colored_polygon(pts, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70))
+	var sx := -1.0 if fx else 1.0; var sy := -1.0 if fy else 1.0
+	draw_colored_polygon(PackedVector2Array([
+		pos, pos + Vector2(sx*s, 0),
+		pos + Vector2(sx*s*0.55, sy*s*0.55), pos + Vector2(0, sy*s)
+	]), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70))
 	var rv := pos + Vector2(sx*s*0.35, sy*s*0.35)
-	draw_circle(rv, 2.0, Color(0.12, 0.06, 0.0, 0.90))
-	draw_circle(rv, 0.9, Color(1, 0.95, 0.7, 0.50))
+	draw_circle(rv, 1.8, Color(0.12, 0.06, 0.0, 0.90))
+	draw_circle(rv, 0.8, Color(1, 0.95, 0.7, 0.50))
 
-func _draw_mop_scenes(BL: float, BR: float, MID_Y: float, BOT_Y: float) -> void:
-	# Mother-of-pearl (xà cừ) inlay scenes on the BLACK lacquer front face
-	# Mimicking the real dan bau: cranes, clouds, pine trees, pavilions
-	var FW  := BR - BL
-	var FCY := (MID_Y + BOT_Y) * 0.5
-	var FH  := (BOT_Y - MID_Y)
+func _draw_floral_inlay(BL: float, BR: float, TOP_Y: float, MID_Y: float, STR_Y: float) -> void:
+	# Golden floral carvings on the oak soundboard
+	# Inspired by concept sheet: lotus + vines running along the length
+	var BW := BR - BL
+	var cy := (TOP_Y + MID_Y) * 0.5
+	var fh := (MID_Y - TOP_Y) * 0.32  # floral pattern height
 
-	# Gold vine scrollwork dividing sections
-	var gold_scroll := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55)
-	for i in range(1, 4):
-		var sx := BL + FW * (float(i) / 4.0)
-		draw_line(Vector2(sx, MID_Y + FH*0.15), Vector2(sx, BOT_Y - FH*0.15), gold_scroll, 0.8)
+	# Central lotus flower cluster
+	_floral_lotus(BL + BW * 0.50, cy, fh, C_INLAY_GOLD)
+	# Side vine scrolls
+	_floral_vine_left(BL  + BW * 0.10, BL + BW * 0.44, cy, fh)
+	_floral_vine_right(BL + BW * 0.56, BL + BW * 0.90, cy, fh)
+	# Small accent lotuses
+	_floral_lotus(BL + BW * 0.22, cy, fh * 0.62, Color(C_INLAY_GOLD.r, C_INLAY_GOLD.g, C_INLAY_GOLD.b, 0.65))
+	_floral_lotus(BL + BW * 0.78, cy, fh * 0.62, Color(C_INLAY_GOLD.r, C_INLAY_GOLD.g, C_INLAY_GOLD.b, 0.65))
 
-	# Scene 1 (leftmost): Crane in flight
-	_mop_crane(BL + FW * 0.12, FCY, FH * 0.38, C_MOP)
-	# Scene 2: Mountain / landscape
-	_mop_mountain(BL + FW * 0.36, FCY, FH * 0.40, C_MOP2)
-	# Scene 3: Lotus flowers
-	_mop_lotus_group(BL + FW * 0.62, FCY, FH * 0.35, C_MOP)
-	# Scene 4 (rightmost): Boat on water
-	_mop_boat(BL + FW * 0.85, FCY, FH * 0.32, C_MOP2)
+func _floral_lotus(cx: float, cy: float, size: float, col: Color) -> void:
+	# Central circle
+	draw_circle(Vector2(cx, cy), size * 0.18, Color(col.r, col.g, col.b, col.a * 0.80))
+	draw_circle(Vector2(cx, cy), size * 0.10, col)
+	# Six petals
+	for pi in range(6):
+		var rad := deg_to_rad(float(pi) * 60.0)
+		var px  := cx + cos(rad) * size * 0.28
+		var py  := cy + sin(rad) * size * 0.28
+		draw_circle(Vector2(px, py), size * 0.12, Color(col.r, col.g, col.b, col.a * 0.75))
+		draw_circle(Vector2(px, py), size * 0.06, col)
+	# Outer ring
+	draw_arc(Vector2(cx, cy), size * 0.44, 0.0, TAU, 24,
+		Color(col.r, col.g, col.b, col.a * 0.45), 0.8)
 
-func _mop_crane(cx: float, cy: float, size: float, col: Color) -> void:
-	# Body
-	draw_circle(Vector2(cx, cy), size * 0.18, col)
-	# Head + neck
-	draw_circle(Vector2(cx + size*0.12, cy - size*0.22), size*0.09, col)
-	draw_line(Vector2(cx + size*0.06, cy - size*0.04), Vector2(cx + size*0.12, cy - size*0.16), col, size*0.06, true)
-	# Wings spread
-	var wl := PackedVector2Array([
-		Vector2(cx, cy - size*0.04),
-		Vector2(cx - size*0.42, cy - size*0.18),
-		Vector2(cx - size*0.28, cy + size*0.08)
-	])
-	draw_colored_polygon(wl, Color(col.r, col.g, col.b, col.a * 0.80))
-	var wr := PackedVector2Array([
-		Vector2(cx, cy - size*0.04),
-		Vector2(cx + size*0.38, cy - size*0.14),
-		Vector2(cx + size*0.22, cy + size*0.10)
-	])
-	draw_colored_polygon(wr, Color(col.r, col.g, col.b, col.a * 0.80))
-	# Legs
-	draw_line(Vector2(cx - size*0.06, cy + size*0.16), Vector2(cx - size*0.06, cy + size*0.36), col, size*0.04)
-	draw_line(Vector2(cx + size*0.06, cy + size*0.16), Vector2(cx + size*0.06, cy + size*0.36), col, size*0.04)
-	# Red crown dot
-	draw_circle(Vector2(cx + size*0.14, cy - size*0.28), size*0.05, Color("#cc2222", 0.85))
+func _floral_vine_left(x0: float, x1: float, cy: float, fh: float) -> void:
+	# Winding vine from left toward center
+	var col := Color(C_INLAY_GOLD.r, C_INLAY_GOLD.g, C_INLAY_GOLD.b, 0.50)
+	var pts := PackedVector2Array()
+	var steps := 20
+	for k in range(steps + 1):
+		var t : float = float(k) / float(steps)
+		var vx := lerpf(x0, x1, t)
+		var vy := cy + sin(t * TAU * 1.5) * fh * 0.45
+		pts.append(Vector2(vx, vy))
+	draw_polyline(pts, col, 1.0, true)
+	# Leaf buds along vine
+	for k in range(0, steps + 1, 5):
+		var t : float = float(k) / float(steps)
+		var vx : float = lerpf(x0, x1, t)
+		var vy : float = cy + sin(t * TAU * 1.5) * fh * 0.45
+		draw_circle(Vector2(vx, vy), fh * 0.09, Color(col.r, col.g, col.b, 0.65))
 
-func _mop_mountain(cx: float, cy: float, size: float, col: Color) -> void:
-	# Three mountain peaks
-	var y_bot := cy + size * 0.40
-	var peaks := [
-		PackedVector2Array([Vector2(cx - size*0.38, y_bot), Vector2(cx - size*0.10, cy - size*0.30), Vector2(cx + size*0.18, y_bot)]),
-		PackedVector2Array([Vector2(cx - size*0.10, y_bot), Vector2(cx + size*0.18, cy - size*0.45), Vector2(cx + size*0.44, y_bot)]),
-		PackedVector2Array([Vector2(cx + size*0.16, y_bot), Vector2(cx + size*0.42, cy - size*0.20), Vector2(cx + size*0.60, y_bot)])
-	]
-	for i in peaks.size():
-		var a := 0.75 - i * 0.10
-		draw_colored_polygon(peaks[i], Color(col.r, col.g, col.b, a))
-	# Moon
-	draw_circle(Vector2(cx - size*0.22, cy - size*0.38), size*0.10, Color(col.r, col.g, col.b, 0.65))
-	# Pine tree silhouette
+func _floral_vine_right(x0: float, x1: float, cy: float, fh: float) -> void:
+	var col := Color(C_INLAY_GOLD.r, C_INLAY_GOLD.g, C_INLAY_GOLD.b, 0.50)
+	var pts := PackedVector2Array()
+	var steps := 20
+	for k in range(steps + 1):
+		var t : float = float(k) / float(steps)
+		var vx := lerpf(x0, x1, t)
+		var vy := cy + sin(t * TAU * 1.5 + PI) * fh * 0.45
+		pts.append(Vector2(vx, vy))
+	draw_polyline(pts, col, 1.0, true)
+	for k in range(0, steps + 1, 5):
+		var t : float = float(k) / float(steps)
+		var vx : float = lerpf(x0, x1, t)
+		var vy : float = cy + sin(t * TAU * 1.5 + PI) * fh * 0.45
+		draw_circle(Vector2(vx, vy), fh * 0.09, Color(col.r, col.g, col.b, 0.65))
+
+func _draw_bridge(bx: float, str_y: float, mid_y: float) -> void:
+	# Ngựa đàn — small bridge piece sitting on soundboard holding the string up
+	var bw : float = size.x * 0.015
+	var bh : float = (mid_y - str_y) * 0.55
 	draw_colored_polygon(PackedVector2Array([
-		Vector2(cx - size*0.46, y_bot),
-		Vector2(cx - size*0.36, cy + size*0.05),
-		Vector2(cx - size*0.26, y_bot)
-	]), Color(col.r, col.g, col.b, 0.55))
+		Vector2(bx - bw, str_y), Vector2(bx + bw, str_y),
+		Vector2(bx + bw * 0.7, mid_y - (mid_y - str_y) * 0.08),
+		Vector2(bx - bw * 0.7, mid_y - (mid_y - str_y) * 0.08)
+	]), C_WALNUT_MID)
+	draw_line(Vector2(bx - bw, str_y), Vector2(bx + bw, str_y),
+		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.60), 1.0)
 
-func _mop_lotus_group(cx: float, cy: float, size: float, col: Color) -> void:
-	# Three lotus flowers
-	for i in range(-1, 2):
-		var lx := cx + float(i) * size * 0.32
-		var ly := cy + float(abs(i)) * size * 0.06
-		# Stem
-		draw_line(Vector2(lx, ly + size*0.35), Vector2(lx, ly + size*0.10), col, size*0.04)
-		# Petals
-		var petal_col := Color(col.r, col.g, col.b, 0.75)
-		for ang in [0.0, 60.0, 120.0, 180.0, 240.0, 300.0]:
-			var rad  := deg_to_rad(ang)
-			var pdx  := cos(rad) * size * 0.14
-			var pdy  := sin(rad) * size * 0.10
-			draw_circle(Vector2(lx + pdx, ly + pdy), size * 0.07, petal_col)
-		# Center
-		draw_circle(Vector2(lx, ly), size * 0.07, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70))
+# ════════════════════════════════════════════════════════════════════════════
+# STRING & NODES
+# ════════════════════════════════════════════════════════════════════════════
 
-func _mop_boat(cx: float, cy: float, size: float, col: Color) -> void:
-	# Boat hull
-	var hull := PackedVector2Array([
-		Vector2(cx - size*0.40, cy + size*0.10),
-		Vector2(cx + size*0.40, cy + size*0.10),
-		Vector2(cx + size*0.30, cy + size*0.35),
-		Vector2(cx - size*0.30, cy + size*0.35)
-	])
-	draw_colored_polygon(hull, Color(col.r, col.g, col.b, 0.65))
-	# Sail
-	var sail := PackedVector2Array([
-		Vector2(cx, cy + size*0.12),
-		Vector2(cx + size*0.30, cy - size*0.30),
-		Vector2(cx, cy - size*0.30)
-	])
-	draw_colored_polygon(sail, Color(col.r, col.g, col.b, 0.55))
-	# Water ripples
-	for ri in range(3):
-		var ry := cy + size * (0.42 + ri * 0.08)
-		draw_arc(Vector2(cx + float(ri-1) * size * 0.20, ry), size*0.12, 0.0, PI, 8, Color(col.r, col.g, col.b, 0.30), 0.7)
-
-func _draw_peg(str_start: Vector2, TOP_Y: float, MID_Y: float) -> void:
-	# Trục cuộn (tuning peg) at left end
-	var px := str_start.x
-	var py := str_start.y
-	var ph := (MID_Y - TOP_Y) * 0.55
-
-	# Mount block on body
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(px - 8, py - 5), Vector2(px + 5, py - 5),
-		Vector2(px + 5, py + 5), Vector2(px - 8, py + 5)
-	]), Color("#1e1006"))
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(px - 6, py - 3.5), Vector2(px + 3.5, py - 3.5),
-		Vector2(px + 3.5, py + 3.5), Vector2(px - 6, py + 3.5)
-	]), Color("#2e1808"))
-
-	# Vertical pin
-	draw_line(Vector2(px, py - ph * 0.5), Vector2(px, py - ph - 4), Color("#3a3028"), 4.0)
-
-	# Peg knob (3D sphere shading)
-	var kc := Vector2(px, py - ph - 4)
-	for i in range(10):
-		var r_ratio := float(10 - i) / 10.0
-		var r := 6.5 * r_ratio
-		var col := Color("#1a1412").lerp(Color("#4a3c30"), r_ratio)
-		if r_ratio > 0.82: col = col.lerp(Color("#8a7060"), (r_ratio - 0.82) / 0.18 * 0.70)
-		draw_circle(kc + Vector2(-r_ratio*0.8, -r_ratio*0.8) * 0.5, r, col)
-	draw_circle(kc + Vector2(-1.8, -2.0), 1.4, Color(1, 1, 1, 0.45))
-
-	# Gold collar
-	draw_arc(Vector2(px, py), 6.0, 0.0, TAU, 14, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 1.4)
-
-func _draw_string(str_start: Vector2, str_end: Vector2, SY_L: float, SY_R: float,
-		BL: float, BR: float) -> void:
+func _draw_string(str_start: Vector2, str_end: Vector2, str_y: float) -> void:
 	var pts := PackedVector2Array()
 	pts.append(str_start)
 	if _pluck_amp > 0.005:
-		for k in range(1, 34):
-			var ratio : float = float(k) / 34.0
+		for k in range(1, 36):
+			var ratio : float = float(k) / 36.0
 			var px    : float = lerpf(str_start.x, str_end.x, ratio)
 			var py    : float = lerpf(str_start.y, str_end.y, ratio)
-			var decay : float = exp(-_pluck_time * 2.0)
-			var osc   : float = sin(ratio * PI) * sin(ratio * PI * 5.0 - _pluck_time * 88.0) * _pluck_amp * 7.0 * decay
+			var decay : float = exp(-_pluck_time * 1.8)
+			var osc   : float = sin(ratio * PI) * sin(ratio * PI * 5.0 - _pluck_time * 85.0) * _pluck_amp * 6.5 * decay
 			pts.append(Vector2(px, py + osc))
 	pts.append(str_end)
 	# Shadow
 	var shd := PackedVector2Array()
-	for pt in pts: shd.append(pt + Vector2(0, 3))
-	draw_polyline(shd, Color(0, 0, 0, 0.35), 1.3, true)
-	# Glow
+	for pt in pts: shd.append(pt + Vector2(0, 2.5))
+	draw_polyline(shd, Color(0, 0, 0, 0.30), 1.2, true)
+	# Vibration glow
 	if _pluck_amp > 0.01:
-		draw_polyline(pts, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, _pluck_amp*0.55), 5.0, true)
-	# Core string
-	var sc := C_GOLD_LIGHT if _pluck_amp > 0.12 else C_STRING
+		draw_polyline(pts, Color(C_STRING_VIBE.r, C_STRING_VIBE.g, C_STRING_VIBE.b, _pluck_amp * 0.55), 4.5, true)
+	# String core
+	var sc := C_STRING_VIBE if _pluck_amp > 0.12 else C_STRING
 	if _is_bending: sc = Color("#fc882b")
-	draw_polyline(pts, sc, 1.7, true)
+	draw_polyline(pts, sc, 1.5, true)
 
-func _draw_nodes(SY_L: float, SY_R: float, BL: float, BR: float) -> void:
+func _draw_nodes(str_y: float, BL: float, BR: float, sx: float, ex: float) -> void:
 	var font    := get_theme_font("font")
-	var START_X := BL + (BR - BL) * 0.04
-	var END_X   := BL + (BR - BL) * 0.93
-	var STEP_X  := (END_X - START_X) / float(NODE_COUNT - 1)
+	# Distribute 7 nodes along the string between sx and ex, skipping gourd area
+	var START_X : float = maxf(sx + (ex - sx) * 0.03, BL + (BR - BL) * 0.04)
+	var END_X   : float = ex - (ex - sx) * 0.03
+	var STEP_X  : float = (END_X - START_X) / float(NODE_COUNT - 1)
 	for i in NODE_COUNT:
-		var nx     : float = START_X + float(i) * STEP_X
-		var ratio  : float = (nx - BL) / (BR - BL)
-		var ny     : float = lerpf(SY_L, SY_R, ratio)
-		_draw_node(Vector2(nx, ny), i, _is_target[i] == 1, _hovered_node_idx == i, _glow_alpha[i], font)
+		var nx : float = START_X + float(i) * STEP_X
+		_draw_node(Vector2(nx, str_y), i, _is_target[i] == 1, _hovered_node_idx == i, _glow_alpha[i], font)
 
 func _draw_node(pos: Vector2, idx: int, is_tgt: bool, is_hov: bool, glow: float, font: Font) -> void:
-	# Shadow
-	draw_circle(pos + Vector2(0, 2.5), 12.0, Color(0, 0, 0, 0.32))
-	# Target glow pulse
+	draw_circle(pos + Vector2(0, 2.5), 11.5, Color(0, 0, 0, 0.30))
+	# Target pulse
 	if is_tgt:
-		var pulse := (sin(_pulse_phase * 2.0) + 1.0) * 0.5
-		draw_circle(pos, 17.0 + pulse * 5.0, Color(0.79, 0.60, 0.24, 0.13 + pulse*0.13))
-		draw_arc(pos, 17.0 + pulse*5.0, 0.0, TAU, 28, Color(0.79, 0.60, 0.24, 0.38 + pulse*0.25), 1.3)
+		var p := (sin(_pulse_phase * 2.0) + 1.0) * 0.5
+		draw_circle(pos, 16.0 + p*5.0, Color(0.79, 0.60, 0.24, 0.12 + p*0.12))
+		draw_arc(pos, 16.0 + p*5.0, 0.0, TAU, 28, Color(0.79, 0.60, 0.24, 0.38 + p*0.25), 1.3)
 	# Pluck glow
 	if glow > 0.01:
-		draw_circle(pos, 12.0 + glow * 22.0, Color(1, 0.95, 0.75, glow * 0.45))
-		draw_arc(pos,   12.0 + glow * 22.0, 0.0, TAU, 24, Color(1, 0.9, 0.5, glow*0.55), 1.5)
-	# Node layers (ivory + brass)
-	var R := 9.5 + (1.5 if is_hov else (1.0 if is_tgt else 0.0))
+		draw_circle(pos, 11.0 + glow*20.0, Color(1, 0.95, 0.75, glow*0.44))
+		draw_arc(pos, 11.0 + glow*20.0, 0.0, TAU, 24, Color(1, 0.9, 0.5, glow*0.54), 1.5)
+	var R : float = 9.5 + (1.5 if is_hov else (1.0 if is_tgt else 0.0))
 	draw_circle(pos, R,       C_GOLD)
 	draw_circle(pos, R - 1.6, Color("#faf5e6"))
 	draw_circle(pos, R - 4.0, C_GOLD)
-	draw_circle(pos, R - 6.0, Color("#1a0c04"))
-	draw_circle(pos, 1.3,     Color(1, 1, 1, 0.80))
-	# Label above
+	draw_circle(pos, R - 6.0, C_WALNUT_DARK)
+	draw_circle(pos, 1.2, Color(1, 1, 1, 0.80))
 	if font != null:
-		var text    := _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx]
-		var fsz     := 13 if (is_tgt or is_hov) else 11
-		var tcol    := Color("#faf6eb") if is_tgt else (Color.WHITE if is_hov else Color("#c8b8a0"))
-		var ts      := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, fsz)
-		var tp      := Vector2(pos.x - ts.x * 0.5, pos.y - R - 7.0)
-		draw_string(font, tp + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, Color(0, 0, 0, 0.70))
+		var text  := _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx]
+		var fsz   := 13 if (is_tgt or is_hov) else 11
+		var tcol  := Color("#faf6eb") if is_tgt else (Color.WHITE if is_hov else Color("#c8b090"))
+		var ts    := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, fsz)
+		var tp    := Vector2(pos.x - ts.x * 0.5, pos.y - R - 7.0)
+		draw_string(font, tp + Vector2(1,1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, Color(0,0,0,0.70))
 		draw_string(font, tp, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, tcol)
 
+# ════════════════════════════════════════════════════════════════════════════
+# GOURD (BẦU CỘNG HƯỞNG) — LEFT SIDE, SPHERICAL
+# ════════════════════════════════════════════════════════════════════════════
+
 func _draw_gourd(GX: float, GY: float, GR: float) -> void:
-	# Quả bầu: double-gourd shape — LOWER big bulb + UPPER smaller bulb
-	# This is the iconic round resonator on the right side of the instrument
+	# Single round gourd (brown lacquered) — Bầu cộng hưởng
+	# Per concept sheet: spherical, sits at left end, bamboo rod emerges from top
 
-	var NECK_R := GR * 0.58   # upper bulb radius
-	var NECK_Y := GY - GR - NECK_R * 0.85  # upper bulb center Y
+	# Drop shadow
+	draw_circle(Vector2(GX + 3, GY + 5), GR + 3, Color(0, 0, 0, 0.35))
 
-	# ── Lower bulb shadow ──
-	draw_circle(Vector2(GX, GY + 5), GR + 4, Color(0, 0, 0, 0.38))
-
-	# ── Lower bulb: 3D sphere gradient ──
-	var steps := 22
+	# 3D sphere shading — dark brown lacquer
+	var steps := 24
 	for i in range(steps):
-		var r_ratio := float(steps - i) / float(steps)
-		var r := GR * r_ratio
-		var offset := Vector2(-0.9, -0.9) * (1.0 - r_ratio)
-		var col := C_GOURD_BASE.lerp(C_GOURD_MID, r_ratio)
-		if r_ratio > 0.78:
-			col = col.lerp(C_GOURD_HIGH, (r_ratio - 0.78) / 0.22 * 0.88)
+		var r_ratio : float = float(steps - i) / float(steps)
+		var r       : float = GR * r_ratio
+		var offset  := Vector2(-0.8, -0.8) * (1.0 - r_ratio)
+		var col : Color = C_GOURD_DARK.lerp(C_GOURD_LIGHT, r_ratio * 0.85)
+		if r_ratio > 0.75: col = col.lerp(C_GOURD_HIGH, (r_ratio - 0.75) / 0.25 * 0.60)
 		draw_circle(Vector2(GX, GY) + offset, r, col)
-	# Specular
-	draw_circle(Vector2(GX - GR*0.32, GY - GR*0.34), GR * 0.14, Color(1, 1, 1, 0.80))
-	draw_circle(Vector2(GX - GR*0.20, GY - GR*0.22), GR * 0.07, Color(1, 1, 1, 0.55))
-	# Engraved ring
-	draw_arc(Vector2(GX, GY), GR * 0.66, 0.0, TAU, 28, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 1.2)
-	# Gold lotus engraving on front
-	draw_arc(Vector2(GX, GY), GR * 0.38, 0.0, TAU, 16, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 0.9)
-	for ang in [0.0, 72.0, 144.0, 216.0, 288.0]:
-		var r2 := deg_to_rad(ang)
-		draw_circle(Vector2(GX + cos(r2)*GR*0.52, GY + sin(r2)*GR*0.52), GR*0.07,
-			Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45))
 
-	# ── Red silk cord between two bulbs ──
-	var cord_y := GY - GR + NECK_R * 0.12
-	draw_arc(Vector2(GX, cord_y),             NECK_R * 0.40, 0.0, TAU, 14, Color("#cc1111", 0.90), NECK_R*0.13)
-	draw_arc(Vector2(GX, cord_y + NECK_R*0.18), NECK_R * 0.30, 0.0, TAU, 12, Color("#ee3322", 0.80), NECK_R*0.10)
+	# Primary specular highlight (top-left)
+	draw_circle(Vector2(GX - GR*0.30, GY - GR*0.32), GR * 0.13, Color(1, 1, 1, 0.72))
+	draw_circle(Vector2(GX - GR*0.18, GY - GR*0.20), GR * 0.06, Color(1, 1, 1, 0.50))
 
-	# ── Upper bulb shadow ──
-	draw_circle(Vector2(GX, NECK_Y + 3), NECK_R + 3, Color(0, 0, 0, 0.32))
+	# Decorative ring grooves (typical on Vietnamese lacquerware)
+	draw_arc(Vector2(GX, GY), GR * 0.70, 0.0, TAU, 28,
+		Color(C_GOURD_DARK.r, C_GOURD_DARK.g, C_GOURD_DARK.b, 0.55), 1.2)
+	draw_arc(Vector2(GX, GY), GR * 0.50, 0.0, TAU, 24,
+		Color(C_GOURD_DARK.r, C_GOURD_DARK.g, C_GOURD_DARK.b, 0.40), 0.8)
 
-	# ── Upper bulb ──
-	for i in range(steps):
-		var r_ratio := float(steps - i) / float(steps)
-		var r := NECK_R * r_ratio
-		var offset := Vector2(-0.7, -0.7) * (1.0 - r_ratio)
-		var col := C_GOURD_BASE.lerp(C_GOURD_MID, r_ratio * 0.88)
-		if r_ratio > 0.80:
-			col = col.lerp(C_GOURD_HIGH, (r_ratio - 0.80) / 0.20 * 0.80)
-		draw_circle(Vector2(GX, NECK_Y) + offset, r, col)
-	draw_circle(Vector2(GX - NECK_R*0.28, NECK_Y - NECK_R*0.30), NECK_R * 0.12, Color(1, 1, 1, 0.72))
-	draw_arc(Vector2(GX, NECK_Y), NECK_R * 0.60, 0.0, TAU, 20, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50), 1.0)
+	# Small decorative floral accent on front face
+	for fi in range(4):
+		var ang : float = deg_to_rad(float(fi) * 90.0 + 45.0)
+		draw_circle(
+			Vector2(GX + cos(ang) * GR*0.52, GY + sin(ang) * GR*0.52),
+			GR * 0.06, Color(C_GOURD_HIGH.r, C_GOURD_HIGH.g, C_GOURD_HIGH.b, 0.55))
 
-	# ── Tip knob at top of upper bulb ──
-	var tip := Vector2(GX, NECK_Y - NECK_R - 2)
-	draw_circle(tip, NECK_R * 0.20, Color("#3a1a06"))
-	draw_circle(tip, NECK_R * 0.12, Color("#c07818"))
-	draw_circle(tip + Vector2(-1, -1.2), NECK_R * 0.05, Color(1, 1, 1, 0.55))
+	# Metal ring collar where gourd meets body (brass fitting)
+	var collar_y := GY + GR * 0.72
+	for ci in range(7):
+		var r_ratio : float = float(7 - ci) / 7.0
+		var r       : float = GR * 0.24 * r_ratio
+		draw_circle(Vector2(GX, collar_y) + Vector2(-r_ratio, -r_ratio) * 0.4,
+			r, C_GOLD_DARK.lerp(C_GOLD, r_ratio))
+	draw_circle(Vector2(GX - GR*0.08, collar_y - GR*0.09), GR*0.07, Color(1,1,1,0.45))
 
-func _draw_horn(HORN_BASE: Vector2, HORN_TIP: Vector2, C1: Vector2, C2: Vector2) -> void:
-	# Cần đàn: polished buffalo horn rod — dark, elegant, curved like a fishing rod
-	var seg_cnt := 28
-	var rod_pts := PackedVector2Array()
-	for k in range(seg_cnt + 1):
-		var t := float(k) / float(seg_cnt)
-		rod_pts.append(_cbez(HORN_BASE, C1, C2, HORN_TIP, t))
+# ════════════════════════════════════════════════════════════════════════════
+# BAMBOO ROD (CẦN ĐÀN) — emerges from gourd top, curves up-right
+# ════════════════════════════════════════════════════════════════════════════
+
+func _draw_bamboo_rod(BASE: Vector2, TIP: Vector2, C1: Vector2, C2: Vector2, GR: float) -> void:
+	# Bamboo rod — thin, natural bamboo color, with knot nodes along its length
+	var seg := 30
+	var pts := PackedVector2Array()
+	for k in range(seg + 1):
+		var t : float = float(k) / float(seg)
+		pts.append(_cbez(BASE, C1, C2, TIP, t))
 
 	# Shadow
 	var shd := PackedVector2Array()
-	for pt in rod_pts: shd.append(pt + Vector2(3, 4))
-	for k in range(seg_cnt):
-		var t := float(k) / float(seg_cnt)
-		draw_line(shd[k], shd[k+1], Color(0, 0, 0, 0.22), lerpf(10.0, 2.0, t), true)
+	for pt in pts: shd.append(pt + Vector2(2, 3))
+	for k in range(seg):
+		var t : float = float(k) / float(seg)
+		draw_line(shd[k], shd[k+1], Color(0, 0, 0, 0.20), lerpf(7.0, 2.0, t), true)
 
-	# Main rod — dark horn with subtle shading
-	for k in range(seg_cnt):
-		var t   : float = float(k) / float(seg_cnt)
-		var th  : float = lerpf(9.5, 2.0, t)
-		var col : Color = C_HORN_DARK.lerp(C_HORN_MID, 0.35 + 0.30 * sin(t * PI))
-		draw_line(rod_pts[k], rod_pts[k+1], col, th, true)
-		if k == 0: draw_circle(rod_pts[k], th * 0.5, col)
+	# Rod body — bamboo gradient (slightly lighter in center of cylinder)
+	for k in range(seg):
+		var t  : float = float(k) / float(seg)
+		var th : float = lerpf(7.0, 1.8, t)
+		var col := C_BAMBOO_DARK.lerp(C_BAMBOO_MID, 0.40 + 0.30 * sin(t * PI))
+		draw_line(pts[k], pts[k+1], col, th, true)
+		if k == 0: draw_circle(pts[k], th * 0.5, col)
 
-	# Specular highlight on top edge of rod
-	for k in range(seg_cnt):
-		var t   : float = float(k) / float(seg_cnt)
-		var th  : float = lerpf(9.5, 2.0, t)
-		var spec_off := Vector2(-th * 0.18, -th * 0.18)
-		draw_line(rod_pts[k] + spec_off, rod_pts[k+1] + spec_off,
-			Color(1.0, 1.0, 1.0, 0.13 * (1.0 - t)), th * 0.22, true)
+	# Bamboo knot rings (characteristic feature of bamboo rods)
+	var knot_positions : Array[float] = [0.28, 0.52, 0.72]
+	for kp in knot_positions:
+		var ki := int(kp * float(seg))
+		if ki < pts.size():
+			var t  : float = kp
+			var th : float = lerpf(7.0, 1.8, t)
+			# Dark ring at knot
+			draw_circle(pts[ki], th * 0.72, C_BAMBOO_DARK)
+			draw_circle(pts[ki], th * 0.55, C_BAMBOO_MID)
+			# Slight specular at knot
+			draw_circle(pts[ki] + Vector2(-th*0.15, -th*0.15), th * 0.18, Color(1,1,1,0.30))
 
-	# Rod tip cap
-	draw_circle(HORN_TIP, 3.0, C_HORN_EDGE)
-	draw_circle(HORN_TIP + Vector2(-0.8, -0.8), 1.0, Color(1, 1, 1, 0.42))
+	# Specular highlight along rod
+	for k in range(seg):
+		var t   : float = float(k) / float(seg)
+		var th  : float = lerpf(7.0, 1.8, t)
+		var so  := Vector2(-th*0.16, -th*0.16)
+		draw_line(pts[k] + so, pts[k+1] + so,
+			Color(C_BAMBOO_LIGHT.r, C_BAMBOO_LIGHT.g, C_BAMBOO_LIGHT.b, 0.28 * (1.0 - t * 0.5)),
+			th * 0.20, true)
 
-	# Brass socket where horn enters body (at base)
-	var sock := HORN_BASE
-	for i in range(8):
-		var r_ratio := float(8 - i) / 8.0
-		var col := C_GOLD_DARK.lerp(C_GOLD, r_ratio)
-		draw_circle(sock + Vector2(-r_ratio*0.5, -r_ratio*0.5), 7.0 * r_ratio, col)
-	draw_circle(sock + Vector2(-1.5, -1.5), 2.0, Color(1, 1, 1, 0.50))
+	# Tip of rod (thin pointed end)
+	draw_circle(TIP, 1.5, C_BAMBOO_DARK)
 
-func _cbez(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
-	var u := 1.0 - t
-	return u*u*u*p0 + 3.0*u*u*t*p1 + 3.0*u*t*t*p2 + t*t*t*p3
+	# String attachment wrap at base (where rod inserts into gourd top)
+	var wrap := BASE + Vector2(0, GR * 0.05)
+	draw_arc(wrap, GR * 0.16, 0.0, TAU, 12, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 1.5)
+	draw_arc(wrap - Vector2(0, GR*0.05), GR * 0.14, 0.0, TAU, 10, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50), 1.2)
 
-func _draw_cents_readout(font: Font, pos: Vector2, cents: float) -> void:
+# ════════════════════════════════════════════════════════════════════════════
+# TUNING PEG (CHỐT DÂY) — RIGHT END
+# ════════════════════════════════════════════════════════════════════════════
+
+func _draw_tuning_peg(px: float, py: float, TOP_Y: float, MID_Y: float) -> void:
+	# Chốt dây: small cylindrical metal tuning peg on the right end
+	var ph : float = (MID_Y - TOP_Y) * 0.60
+
+	# Peg mount block
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(px - 7, py - 4), Vector2(px + 2, py - 4),
+		Vector2(px + 2, py + 4), Vector2(px - 7, py + 4)
+	]), C_WALNUT_MID)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(px - 5, py - 2.5), Vector2(px + 0.5, py - 2.5),
+		Vector2(px + 0.5, py + 2.5), Vector2(px - 5, py + 2.5)
+	]), C_WALNUT_LIGHT)
+
+	# Vertical pin shaft
+	draw_line(Vector2(px - 2.5, py - ph*0.3), Vector2(px - 2.5, py - ph - 3),
+		Color("#4a4030"), 3.5)
+	draw_line(Vector2(px - 2.5, py - ph*0.3), Vector2(px - 2.5, py - ph - 3),
+		Color("#6a5c40"), 1.5)
+
+	# Peg knob — spherical, dark wood + gold accent
+	var kc := Vector2(px - 2.5, py - ph - 3)
+	for i in range(10):
+		var r_ratio : float = float(10 - i) / 10.0
+		var r       : float = 5.5 * r_ratio
+		var col     : Color = C_WALNUT_DARK.lerp(C_WALNUT_MID, r_ratio * 0.70)
+		if r_ratio > 0.80: col = col.lerp(C_WALNUT_HIGH, (r_ratio-0.80)/0.20*0.60)
+		draw_circle(kc + Vector2(-r_ratio*0.6, -r_ratio*0.6)*0.5, r, col)
+	draw_circle(kc + Vector2(-1.5, -1.8), 1.3, Color(1, 1, 1, 0.42))
+
+	# Gold collar ring at base of peg
+	draw_arc(Vector2(px - 2.5, py), 5.0, 0.0, TAU, 14,
+		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70), 1.3)
+
+# ════════════════════════════════════════════════════════════════════════════
+# CENTS READOUT BADGE
+# ════════════════════════════════════════════════════════════════════════════
+
+func _draw_cents_badge(font: Font, pos: Vector2, cents: float) -> void:
 	if font == null: return
 	var sign := "+" if cents > 0 else ""
 	var txt  := "%s%d ¢" % [sign, int(cents)]
@@ -598,7 +613,7 @@ func _draw_cents_readout(font: Font, pos: Vector2, cents: float) -> void:
 	elif cents < -5.0: col = Color("#e74c3c")
 	var ts := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_CENTER, -1, 13)
 	var bs := StyleBoxFlat.new()
-	bs.bg_color = Color(0.04, 0.02, 0.01, 0.90)
+	bs.bg_color = Color(0.06, 0.03, 0.01, 0.90)
 	bs.border_color = Color(col.r, col.g, col.b, 0.55)
 	bs.border_width_left = 1; bs.border_width_right = 1
 	bs.border_width_top  = 1; bs.border_width_bottom = 1
@@ -606,11 +621,17 @@ func _draw_cents_readout(font: Font, pos: Vector2, cents: float) -> void:
 	bs.corner_radius_bottom_left = 7; bs.corner_radius_bottom_right = 7
 	var bw := ts.x + 14.0; var bh := ts.y + 4.0
 	draw_style_box(bs, Rect2(pos.x - bw*0.5, pos.y - bh*0.5, bw, bh))
-	draw_string(font, pos + Vector2(-ts.x*0.5, ts.y*0.5 - 2), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, col)
+	draw_string(font, pos + Vector2(-ts.x*0.5, ts.y*0.5 - 2),
+		txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, col)
+
+func _cbez(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var u := 1.0 - t
+	return u*u*u*p0 + 3.0*u*u*t*p1 + 3.0*u*t*t*p2 + t*t*t*p3
 
 # ════════════════════════════════════════════════════════════════════════════
 # INPUT
 # ════════════════════════════════════════════════════════════════════════════
+
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var ev := event as InputEventMouseButton
@@ -627,8 +648,8 @@ func _gui_input(event: InputEvent) -> void:
 		_touch_move((event as InputEventScreenDrag).position)
 
 func _touch_start(pos: Vector2) -> void:
-	# Bend zone: right 20% of canvas (near the gourd/horn)
-	if pos.x > size.x * 0.80:
+	# Bend zone: LEFT 20% (near the gourd and rod)
+	if pos.x < size.x * 0.20:
 		_is_bending = true
 		_update_bend(pos.y)
 	else:
@@ -636,41 +657,37 @@ func _touch_start(pos: Vector2) -> void:
 		if ni != -1: pluck(ni)
 
 func _touch_move(pos: Vector2) -> void:
-	if _is_bending:
-		_update_bend(pos.y)
+	if _is_bending: _update_bend(pos.y)
 	else:
 		var ni := _node_at(pos)
 		if ni != _hovered_node_idx:
-			_hovered_node_idx = ni
-			queue_redraw()
+			_hovered_node_idx = ni; queue_redraw()
 
 func _touch_end() -> void:
-	_is_bending = false
-	_hovered_node_idx = -1
-	queue_redraw()
+	_is_bending = false; _hovered_node_idx = -1; queue_redraw()
 
 func _node_at(pos: Vector2) -> int:
 	var W      := size.x; var H := size.y
-	var BL     : float = W * 0.06; var BR : float = W * 0.82
-	var TOP_Y  : float = H * 0.06; var MID_Y : float = H * 0.46
-	var TOP_H  : float = MID_Y - TOP_Y
-	var SY_L   : float = TOP_Y + TOP_H * 0.60
-	var SY_R   : float = TOP_Y + TOP_H * 0.64
-	var START_X: float = BL + (BR - BL) * 0.04
-	var END_X  : float = BL + (BR - BL) * 0.93
+	var BL     : float = W * 0.18; var BR : float = W * 0.96
+	var TOP_Y  : float = H * 0.05; var MID_Y : float = H * 0.52
+	var GR     : float = minf(H * 0.30, (BR - BL) * 0.10)
+	var GX     : float = BL - GR * 0.55
+	var GY     : float = MID_Y - (MID_Y - TOP_Y) * 0.30
+	var STR_Y  : float = TOP_Y + (MID_Y - TOP_Y) * 0.55
+	var sx     : float = GX
+	var ex     : float = BR - 6.0
+	var START_X: float = maxf(sx + (ex - sx) * 0.03, BL + (BR - BL) * 0.04)
+	var END_X  : float = ex - (ex - sx) * 0.03
 	var STEP_X : float = (END_X - START_X) / float(NODE_COUNT - 1)
 	for i in NODE_COUNT:
-		var nx    : float = START_X + float(i) * STEP_X
-		var ratio : float = (nx - BL) / (BR - BL)
-		var ny    : float = lerpf(SY_L, SY_R, ratio)
-		if pos.distance_to(Vector2(nx, ny)) <= 28.0:
-			return i
+		var nx : float = START_X + float(i) * STEP_X
+		if pos.distance_to(Vector2(nx, STR_Y)) <= 28.0: return i
 	return -1
 
-func _update_bend(touch_y: float) -> void:
-	var mid_y  : float = size.y * 0.20
-	var max_d  : float = size.y * 0.12
-	_bend_offset   = clampf(touch_y - mid_y, -max_d, max_d)
+func _update_bend(ty: float) -> void:
+	var mid_y : float = size.y * 0.20
+	var max_d : float = size.y * 0.12
+	_bend_offset   = clampf(ty - mid_y, -max_d, max_d)
 	_bend_velocity = 0.0
 	_bend_cents    = (_bend_offset / max_d) * 350.0
 	pitch_bent.emit(_bend_cents)
