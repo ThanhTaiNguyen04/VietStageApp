@@ -373,4 +373,3 @@ func _on_viewport_size_changed() -> void:
 		var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
 		back_btn.custom_minimum_size = Vector2(160, back_btn.custom_minimum_size.y)
 		($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_font_size_override("font_size", 32)
-

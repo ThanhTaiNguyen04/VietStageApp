@@ -443,8 +443,8 @@ func _ready() -> void:
 			chat.open_chat("dan_tranh")
 	)
 	
-	if current_song_title == "" and not SecureDataManager.has_viewed_intro("dan_tranh"):
-		_show_introduction_overlay()
+	# Bypass intro overlay and setup fullscreen video practice
+	_setup_fullscreen_video_practice("res://nvaore/dantranh.ogv")
 		
 	_update_demo_mode_ui()
 	_update_wait_mode_ui()
@@ -2213,3 +2213,144 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 	ft.tween_interval(1.5)
 	ft.tween_property(bp, "volume_db", -80.0, 0.4)
 	ft.tween_callback(bp.queue_free)
+
+
+func _setup_fullscreen_video_practice(guide_path: String) -> void:
+	# 1. Make sure middle_row, MainContent, and NotationArea are visible
+	var middle_row := $Root/MiddleRow as Control
+	if middle_row: middle_row.visible = true
+	var main_content := $Root/MiddleRow/MainContent as Control
+	if main_content: main_content.visible = true
+	var notation_area := $Root/MiddleRow/MainContent/NotationArea as PanelContainer
+	if notation_area: 
+		notation_area.visible = true
+		notation_area.clip_contents = true
+
+	# Style NotationM with 0 margins to maximize vertical and horizontal draw area
+	var notation_m := $Root/MiddleRow/MainContent/NotationArea/NotationM as MarginContainer
+	if notation_m:
+		notation_m.add_theme_constant_override("margin_left", 0)
+		notation_m.add_theme_constant_override("margin_right", 0)
+		notation_m.add_theme_constant_override("margin_top", 0)
+		notation_m.add_theme_constant_override("margin_bottom", 0)
+	
+	# Enlarge UI items for mobile readability
+	var back_btn = $Root/TopBar/TopM/TopH/BackBtn as Button
+	if back_btn:
+		back_btn.custom_minimum_size = Vector2(160, 48)
+		back_btn.add_theme_font_size_override("font_size", 22)
+		
+	var lesson_title = $Root/TopBar/TopM/TopH/LessonTitle as Label
+	if lesson_title:
+		lesson_title.add_theme_font_size_override("font_size", 26)
+		
+	var notation_label = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/NotationLabel as Label
+	if notation_label:
+		notation_label.add_theme_font_size_override("font_size", 24)
+		
+	var target_note_label = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/TargetNoteLabel as Label
+	if target_note_label:
+		target_note_label.add_theme_font_size_override("font_size", 32)
+	
+	# 2. Hide the dark Simply Piano lanes (NoteTrackPanel)
+	var track_panel = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox.get_node_or_null("NoteTrackPanel")
+	if track_panel:
+		track_panel.visible = false
+	var scroll_container := notes_hbox.get_parent() as ScrollContainer
+	if scroll_container:
+		scroll_container.visible = false
+		
+	# 3. Style NotationArea with solid white background and thin gold border
+	var na_s := StyleBoxFlat.new()
+	na_s.bg_color = Color.WHITE
+	na_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	na_s.border_width_left = 2; na_s.border_width_right = 2
+	na_s.border_width_top = 2; na_s.border_width_bottom = 2
+	na_s.corner_radius_top_left = 12; na_s.corner_radius_top_right = 12
+	na_s.corner_radius_bottom_left = 12; na_s.corner_radius_bottom_right = 12
+	notation_area.add_theme_stylebox_override("panel", na_s)
+	
+	# 4. Hide Linh character and recording controls
+	if linh_panel:
+		linh_panel.visible = false
+	var r_bar := $Root/RecordBar as Control
+	if r_bar:
+		r_bar.visible = false
+		
+	# 5. Hide FluteBoard/StringsBoard guide at the bottom
+	var flute_board := $Root/FluteBoard as Control
+	if flute_board: flute_board.visible = false
+	var strings_board := $Root/StringsBoard as Control
+	if strings_board: strings_board.visible = false
+	
+	# 6. Hide right-side detail vbox in Sao Truc
+	var right_vbox := $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/FluteVBoxRight as Control
+	if right_vbox: right_vbox.visible = false
+	
+	# 7. Add VideoStreamPlayer or TextureRect inside NotationVBox to display guide content
+	var notation_vbox := $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox as VBoxContainer
+	if notation_vbox:
+		# Add a spacer to push the wrapper to the bottom
+		var spacer := Control.new()
+		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		notation_vbox.add_child(spacer)
+
+		# Add a clean white margin container as wrapper to center the guide nicely
+		var wrapper := MarginContainer.new()
+		wrapper.name = "GuideWrapper"
+		wrapper.add_theme_constant_override("margin_left", 8)
+		wrapper.add_theme_constant_override("margin_right", 8)
+		wrapper.add_theme_constant_override("margin_top", 0)
+		wrapper.add_theme_constant_override("margin_bottom", 12) # Small gap from bottom edge
+		wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		wrapper.size_flags_vertical = Control.SIZE_SHRINK_END # Bottom align
+		wrapper.custom_minimum_size = Vector2(0, 160) # Safe height
+		notation_vbox.add_child(wrapper)
+		
+		if guide_path.ends_with(".png") or guide_path.ends_with(".jpg"):
+			# Load as static image guide
+			var img_rect := TextureRect.new()
+			img_rect.name = "GuideImage"
+			img_rect.texture = load(guide_path)
+			img_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			img_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			img_rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			img_rect.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			wrapper.add_child(img_rect)
+			
+			# Visually scale up the image to zoom in on the flute!
+			# This bypasses all container minimum size constraints and avoids UI stretching!
+			img_rect.scale = Vector2(1.8, 1.8)
+			img_rect.item_rect_changed.connect(func() -> void:
+				img_rect.pivot_offset = img_rect.size / 2
+			)
+		else:
+			# Load as video stream guide
+			var guide_player := VideoStreamPlayer.new()
+			guide_player.name = "GuideVideoPlayer"
+			guide_player.stream = load(guide_path)
+			guide_player.expand = true
+			guide_player.loop = true
+			guide_player.volume_db = -80.0 # Silent loop
+			guide_player.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			guide_player.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			wrapper.add_child(guide_player)
+			
+			# Visually scale up the video to zoom in!
+			guide_player.scale = Vector2(1.8, 1.8)
+			guide_player.item_rect_changed.connect(func() -> void:
+				guide_player.pivot_offset = guide_player.size / 2
+			)
+			
+			guide_player.play()
+			guide_player.finished.connect(func() -> void:
+				guide_player.play()
+			)
+		
+	# 8. Hide StatsRow (cao độ/âm lượng) completely as requested
+	var stats_row = $Root/MiddleRow/MainContent/StatsRow
+	if stats_row:
+		stats_row.visible = false
+		
+	# 9. Auto-start recording
+	_toggle_record()

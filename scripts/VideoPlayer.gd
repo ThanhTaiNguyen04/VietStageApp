@@ -110,6 +110,39 @@ func _ready() -> void:
 		player_card.custom_minimum_size = Vector2.ZERO
 		center_container.queue_free()
 
+	# Reparent ScreenAnchor to fill the entire player_card background for a true fullscreen layout
+	if video_frame:
+		var frame_m := video_frame.get_node_or_null("FrameM")
+		if frame_m:
+			var anchor := frame_m.get_node_or_null("ScreenAnchor") as Control
+			if anchor:
+				frame_m.remove_child(anchor)
+				player_card.add_child(anchor)
+				player_card.move_child(anchor, 0) # Draw first (below HUD layer)
+				anchor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				
+				# Stretch VideoStreamPlayer to cover the entire screen!
+				video_stream_player.expand = true
+				video_stream_player.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				
+				# Stretch other components inside the anchor
+				var bg := anchor.get_node_or_null("ScreenBG") as Control
+				if bg: bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				var linh := anchor.get_node_or_null("LinhTexture") as Control
+				if linh: linh.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				var overlay := anchor.get_node_or_null("PlayOverlay") as Control
+				if overlay: overlay.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+				
+		# Remove the empty VideoFrame from PlayerVBox
+		player_vbox.remove_child(video_frame)
+		video_frame.queue_free()
+		
+		# Insert transparent expanding spacer inside PlayerVBox to push control elements to top/bottom
+		var spacer := Control.new()
+		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		player_vbox.add_child(spacer)
+		player_vbox.move_child(spacer, 1)
+
 	# Instantiate control buttons programmatically to satisfy layout checks but hide them
 	var control_row := player_vbox.get_node("ControlRow") as HBoxContainer
 	
@@ -218,8 +251,9 @@ func _build_theme() -> void:
 	var overlay_s := _flat(accent_color, accent_light, 44)
 	play_overlay.add_theme_stylebox_override("panel", overlay_s)
 
-	_style_outlined_btn(back_btn, 18, theme_color, accent_color)
-	_style_outlined_btn(complete_btn, 22, theme_color, accent_color)
+	_apply_image_style(back_btn, "res://image/quaylai.png", 240.0, 160.0)
+	if complete_btn:
+		_apply_image_style(complete_btn, "res://image/videott.png", 240.0, 160.0)
 
 func _build_up_next_overlay() -> void:
 	up_next_overlay = PanelContainer.new()
@@ -227,7 +261,7 @@ func _build_up_next_overlay() -> void:
 	up_next_overlay.visible = false
 	
 	var purple_sb := StyleBoxFlat.new()
-	purple_sb.bg_color = Color(0.38, 0.05, 0.85, 0.78) # translucent violet base
+	purple_sb.bg_color = Color(0.38, 0.05, 0.85, 0.22) # translucent violet base
 	up_next_overlay.add_theme_stylebox_override("panel", purple_sb)
 	
 	player_card.add_child(up_next_overlay)
@@ -255,7 +289,7 @@ func _build_up_next_overlay() -> void:
 	
 	var black_panel := PanelContainer.new()
 	var black_sb := StyleBoxFlat.new()
-	black_sb.bg_color = Color(0, 0, 0, 0.95)
+	black_sb.bg_color = Color(0, 0, 0, 0.55)
 	black_sb.corner_radius_top_left = 12
 	black_sb.corner_radius_top_right = 12
 	black_sb.corner_radius_bottom_left = 12
@@ -322,57 +356,22 @@ func _on_viewport_size_changed() -> void:
 		accent_color = Color(0.55, 0.45, 0.80, 1.0)
 		accent_light = Color(0.70, 0.60, 0.90, 1.0)
 
-	# Format circular buttons for mobile viewports
+	# Reparent back_btn dynamically based on viewport layout
 	if is_mobile:
 		if back_btn.get_parent() == top_row:
 			top_row.remove_child(back_btn)
 			footer_row.add_child(back_btn)
 			footer_row.move_child(back_btn, 0)
-			
-		back_btn.text = "↺"
-		back_btn.custom_minimum_size = Vector2(56, 56)
-		back_btn.add_theme_font_size_override("font_size", 24)
-		_style_outlined_btn(back_btn, 28, Color(1, 1, 1, 0.85), Color(0.13, 0.08, 0.05, 0.15))
-		
-		if complete_btn:
-			if _current_video_idx < 2:
-				complete_btn.text = "❯"
-				complete_btn.custom_minimum_size = Vector2(56, 56)
-				complete_btn.add_theme_font_size_override("font_size", 24)
-				_style_outlined_btn(complete_btn, 28, theme_color, accent_color)
-			else:
-				complete_btn.text = "Hoàn Thành Video"
-				complete_btn.custom_minimum_size = Vector2(220, 56)
-				complete_btn.add_theme_font_size_override("font_size", 16)
-				
-				# Filled primary styling
-				var c_n := _flat(theme_color, Color(1,1,1,0.2), 28)
-				var c_h := _flat(theme_color.lightened(0.12), Color(1,1,1,0.3), 28)
-				complete_btn.add_theme_stylebox_override("normal", c_n)
-				complete_btn.add_theme_stylebox_override("hover", c_h)
 	else:
 		if back_btn.get_parent() == footer_row:
 			footer_row.remove_child(back_btn)
 			top_row.add_child(back_btn)
 			top_row.move_child(back_btn, 0)
-			
-		back_btn.text = "Quay lại"
-		back_btn.custom_minimum_size = Vector2(140, 42)
-		back_btn.add_theme_font_size_override("font_size", 16)
-		_style_outlined_btn(back_btn, 18, theme_color, accent_color)
-		
-		if complete_btn:
-			if _current_video_idx < 2:
-				complete_btn.text = "Video Tiếp Theo"
-			else:
-				complete_btn.text = "Hoàn Thành Video"
-			complete_btn.custom_minimum_size = Vector2(220, 44)
-			complete_btn.add_theme_font_size_override("font_size", 16)
-			
-			var c_n := _flat(theme_color, Color(1,1,1,0.2), 22)
-			var c_h := _flat(theme_color.lightened(0.12), Color(1,1,1,0.3), 22)
-			complete_btn.add_theme_stylebox_override("normal", c_n)
-			complete_btn.add_theme_stylebox_override("hover", c_h)
+
+	# Apply custom premium image button styling per user request (aspect ratio 1.5)
+	_apply_image_style(back_btn, "res://image/quaylai.png", 240.0, 160.0)
+	if complete_btn:
+		_apply_image_style(complete_btn, "res://image/videott.png", 240.0, 160.0)
 
 	# Style Option B (Outlined, retry)
 	var ob_n := _flat(Color(0, 0, 0, 0.4), theme_color, 20)
@@ -434,7 +433,7 @@ func _va_success_prompt() -> void:
 		
 		# Change background to theme color matching the instrument with alpha opacity (translucent overlay)
 		var theme_sb := StyleBoxFlat.new()
-		theme_sb.bg_color = Color(text_col.r, text_col.g, text_col.b, 0.78)
+		theme_sb.bg_color = Color(text_col.r, text_col.g, text_col.b, 0.22)
 		up_next_overlay.add_theme_stylebox_override("panel", theme_sb)
 		
 		if _current_video_idx < 2:
@@ -499,7 +498,18 @@ func _go_back() -> void:
 		video_stream_player.stop()
 		var t := create_tween()
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
-		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/CourseMap.tscn"))
+func _apply_image_style(btn: Button, path: String, width: float, height: float) -> void:
+	var tex = load(path) as Texture2D
+	if not tex: return
+	btn.text = ""
+	btn.custom_minimum_size = Vector2(width, height)
+	var sb := StyleBoxTexture.new()
+	sb.texture = tex
+	btn.add_theme_stylebox_override("normal", sb)
+	btn.add_theme_stylebox_override("hover", sb)
+	btn.add_theme_stylebox_override("pressed", sb)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:
 	var bn := _flat(Color(1.0, 0.98, 0.95, 0.85), Color(0.13, 0.08, 0.05, 0.15), radius)
