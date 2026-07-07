@@ -744,9 +744,10 @@ func _process_real_audio(delta: float) -> void:
 				est_bend = clamp(est_bend, -400.0, 400.0)
 				
 				_board._bend_cents = est_bend
-				var W := _board.size.x
-				var max_drag := W * 0.08 if W > 0 else 100.0
-				_board._bend_offset = - (est_bend / 350.0) * max_drag
+				var H_board := _board.size.y
+				var max_drag := H_board * 0.10 if H_board > 0 else 80.0
+				# Bend offset is vertical (Y-axis) in new DanBauBoard design
+				_board._bend_offset = (est_bend / 350.0) * max_drag
 				_board._is_bending = true
 				_board.queue_redraw()
 				
