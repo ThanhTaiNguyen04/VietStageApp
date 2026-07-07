@@ -1,24 +1,41 @@
 extends Control
 
-# ─── Color Palette (Traditional Vietnamese Lacquer Red & Gold - Light Cream Theme)
-const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige for sidebar
-const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
-const C_WAVE_COLOR  := Color(0.92, 0.88, 0.80, 0.45) # soft warm gray wave
-const C_WAVE_COLOR2 := Color(0.95, 0.85, 0.60, 0.22) # soft warm gold wave
-const C_CARD_BG     := Color(0.09, 0.27, 0.18, 1.0) # C_RED_SON - premium deep jade green
-const C_CARD_BG_DK  := Color(0.28, 0.16, 0.10, 1.0) # deep warm brown wood
-const C_CARD_LOCKED := Color(0.92, 0.90, 0.86, 0.70) # light warm gray-cream
-const C_GOLD_GLOW   := Color(0.77, 0.58, 0.15, 1.0) # C_GOLD - glowing gold progress ring
-const C_PATH_LINE   := Color(0.77, 0.58, 0.15, 0.80) # gold path line
-const C_PATH_SHADOW := Color(0.90, 0.86, 0.78, 0.40) # soft gold/beige shadow
+# ─── Color Palette — Skill §4: Dark Warm Vietnamese Premium
+# Background
+const C_BG_DARK     := Color(0.102, 0.071, 0.031, 1.0) # #1A1208 Deep Mahogany
+const C_BG_DARKER   := Color(0.169, 0.122, 0.055, 1.0) # #2B1F0E Rich Walnut
+const C_BG_PANEL    := Color(0.102, 0.071, 0.031, 0.96) # sidebar/bottombar glass
 
-const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
-const C_RED_DK      := Color(0.05, 0.16, 0.11, 0.96)
-const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0)
-const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
-const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
-const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
-const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
+# Animated waves — subtle warm glow on dark bg
+const C_WAVE_COLOR  := Color(0.753, 0.329, 0.102, 0.07) # terracotta wave
+const C_WAVE_COLOR2 := Color(0.961, 0.784, 0.259, 0.05) # amber wave
+
+# Card backgrounds
+const C_CARD_BG     := Color(0.059, 0.180, 0.118, 1.0) # #0F2E1E deep jade (active card)
+const C_CARD_BG_DK  := Color(0.169, 0.122, 0.055, 1.0) # #2B1F0E walnut (essentials card)
+const C_CARD_LOCKED := Color(0.130, 0.094, 0.047, 0.80) # dark muted (locked card)
+
+# Primary — Warm Terracotta #C0541A
+const C_PRIMARY     := Color(0.753, 0.329, 0.102, 1.0)
+const C_PRIMARY_LT  := Color(0.831, 0.388, 0.122, 1.0) # #D4631F button gradient top
+const C_PRIMARY_DK  := Color(0.620, 0.247, 0.063, 1.0) # #9E3F10 button gradient bottom
+
+# Accent — Golden Amber #F5C842
+const C_GOLD        := Color(0.961, 0.784, 0.259, 1.0) # #F5C842
+const C_GOLD_GLOW   := Color(0.961, 0.784, 0.259, 1.0) # progress ring
+const C_GOLD_LIGHT  := Color(0.961, 0.784, 0.259, 1.0)
+const C_GOLD_DARK   := Color(0.655, 0.510, 0.118, 1.0)
+const C_PATH_LINE   := Color(0.961, 0.784, 0.259, 0.70)
+const C_PATH_SHADOW := Color(0.961, 0.784, 0.259, 0.15)
+
+# Secondary — Deep Jade #2E6E4E (used for dark card bg, kept as alias)
+const C_RED_SON     := Color(0.059, 0.180, 0.118, 1.0) # historical alias → deep jade card
+const C_RED_DK      := Color(0.039, 0.118, 0.078, 0.96)
+
+# Text
+const C_CREAM       := Color(0.941, 0.871, 0.706, 1.0) # #F0DEB4 Warm Ivory
+const C_CREAM_DIM   := Color(0.659, 0.565, 0.439, 1.0) # #A89070 Muted Sand
+const C_TEXT_DIS    := Color(0.353, 0.290, 0.220, 1.0) # #5A4A38 Disabled
 
 var _active_side_btn : Button = null
 var _time : float = 0.0
@@ -174,34 +191,50 @@ func _draw_lock_icon(c: Control) -> void:
 
 func _draw_background_waves() -> void:
 	var sz := bg_canvas.size
-	# Lacquer deep dark brown base
-	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARKER)
 	
-	# Lacquer Red Wave 1 (Animated)
+	# ── Base: dark mahogany fill ──────────────────────────────────────────────
+	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARK)
+	
+	# ── Radial warm glow from top-right (ambient lantern light) ───────────────
+	var glow_cx := sz.x * 0.75; var glow_cy := sz.y * 0.12
+	for i in range(6):
+		var r := sz.x * (0.65 - i * 0.08)
+		var a := 0.028 - i * 0.003
+		bg_canvas.draw_circle(Vector2(glow_cx, glow_cy), r,
+			Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, a))
+	
+	# ── Terracotta Wave 1 — lower sweep (animated) ───────────────────────────
 	var w1_pts := PackedVector2Array()
-	var w1_start := Vector2(0, sz.y * 0.15 + sin(_time * 0.8) * 8.0)
-	var w1_ctrl1 := Vector2(sz.x * 0.3, sz.y * 0.45 + cos(_time * 0.6) * 12.0)
-	var w1_ctrl2 := Vector2(sz.x * 0.6, sz.y * 0.10 + sin(_time * 0.7) * 10.0)
-	var w1_end   := Vector2(sz.x, sz.y * 0.35 + cos(_time * 0.9) * 8.0)
-	for i in range(30):
-		var t := i / 29.0
+	var w1_start := Vector2(0, sz.y * 0.55 + sin(_time * 0.55) * 14.0)
+	var w1_ctrl1 := Vector2(sz.x * 0.30, sz.y * 0.80 + cos(_time * 0.45) * 18.0)
+	var w1_ctrl2 := Vector2(sz.x * 0.65, sz.y * 0.48 + sin(_time * 0.50) * 14.0)
+	var w1_end   := Vector2(sz.x, sz.y * 0.70 + cos(_time * 0.60) * 12.0)
+	for i in range(32):
+		var t := i / 31.0
 		w1_pts.append(w1_start.bezier_interpolate(w1_ctrl1, w1_ctrl2, w1_end, t))
 	w1_pts.append(Vector2(sz.x, sz.y))
 	w1_pts.append(Vector2(0, sz.y))
 	bg_canvas.draw_colored_polygon(w1_pts, C_WAVE_COLOR)
 	
-	# Bronze Golden Wave 2 (Animated)
+	# ── Amber Wave 2 — upper sweep (animated) ────────────────────────────────
 	var w2_pts := PackedVector2Array()
-	var w2_start := Vector2(0, sz.y * 0.45 + cos(_time * 0.7) * 10.0)
-	var w2_ctrl1 := Vector2(sz.x * 0.35, sz.y * 0.20 + sin(_time * 0.8) * 12.0)
-	var w2_ctrl2 := Vector2(sz.x * 0.7, sz.y * 0.55 + cos(_time * 0.5) * 10.0)
-	var w2_end   := Vector2(sz.x, sz.y * 0.25 + sin(_time * 0.6) * 8.0)
-	for i in range(30):
-		var t := i / 29.0
+	var w2_start := Vector2(0, sz.y * 0.18 + cos(_time * 0.42) * 10.0)
+	var w2_ctrl1 := Vector2(sz.x * 0.28, sz.y * 0.38 + sin(_time * 0.52) * 14.0)
+	var w2_ctrl2 := Vector2(sz.x * 0.62, sz.y * 0.08 + cos(_time * 0.38) * 10.0)
+	var w2_end   := Vector2(sz.x, sz.y * 0.28 + sin(_time * 0.48) * 10.0)
+	for i in range(32):
+		var t := i / 31.0
 		w2_pts.append(w2_start.bezier_interpolate(w2_ctrl1, w2_ctrl2, w2_end, t))
 	w2_pts.append(Vector2(sz.x, sz.y))
 	w2_pts.append(Vector2(0, sz.y))
 	bg_canvas.draw_colored_polygon(w2_pts, C_WAVE_COLOR2)
+	
+	# ── Walnut mid tone bottom gradient ──────────────────────────────────────
+	for i in range(8):
+		var t := float(i) / 7.0
+		var y := sz.y * (0.75 + t * 0.25)
+		bg_canvas.draw_rect(Rect2(0, y, sz.x, sz.y / 7.0),
+			Color(C_BG_DARKER.r, C_BG_DARKER.g, C_BG_DARKER.b, t * 0.55))
 
 func _draw_roadmap_paths() -> void:
 	# Draw gorgeous traditional cloud designs and star particles under paths
@@ -290,21 +323,23 @@ func _draw_traditional_cloud(c: Control, pos: Vector2, size: float) -> void:
 
 # ─── Sidebar ───────────────────────────────────────────────────────────────────
 func _build_sidebar() -> void:
-	var side_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	# Dark glass panel — deep mahogany with subtle gold right border
+	var side_s := _flat(C_BG_PANEL, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	side_s.shadow_offset = Vector2(4, 0)
+	side_s.shadow_size = 24
+	side_s.shadow_color = Color(0, 0, 0, 0.45)
+	side_s.shadow_offset = Vector2(8, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
 
 func _build_bottom_bar() -> void:
-	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
+	# Dark glass panel — deep mahogany with gold top border
+	var bottom_s := _flat(C_BG_PANEL, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 0)
 	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
 	bottom_s.border_width_top = 2
-	bottom_s.shadow_size = 12
-	bottom_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	bottom_s.shadow_offset = Vector2(0, -4)
+	bottom_s.shadow_size = 24
+	bottom_s.shadow_color = Color(0, 0, 0, 0.45)
+	bottom_s.shadow_offset = Vector2(0, -8)
 	bottom_bar.add_theme_stylebox_override("panel", bottom_s)
 
 	_style_bottom_icon_btn(btn_courses_mob, true)
@@ -320,9 +355,12 @@ func _build_bottom_bar() -> void:
 	_attach_bottom_icon_draw(btn_minigame_mob, 3)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
-	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
-	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	# Active tab: gold top border + warm ivory text; inactive: muted sand
+	var active_bg := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10), Color(0, 0, 0, 0), 12)
+	var normal_bg := _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	var bg_n := active_bg if is_active else normal_bg
+	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	var bg_p := _flat(Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.15) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
 
 	bg_n.content_margin_top = 42
 	bg_n.content_margin_bottom = 6
@@ -332,7 +370,8 @@ func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = fals
 	bg_p.content_margin_bottom = 6
 
 	if is_active:
-		bg_n.border_width_top = 4
+		# Gold indicator at top of active tab
+		bg_n.border_width_top = 3
 		bg_n.border_width_left = 0; bg_n.border_width_right = 0; bg_n.border_width_bottom = 0
 		bg_n.border_color = C_GOLD
 
@@ -340,9 +379,11 @@ func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = fals
 	btn.add_theme_stylebox_override("hover",   bg_h)
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
-	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	# Active = warm ivory; locked = very dim; normal = muted sand
+	var fc_normal := C_CREAM if is_active else (Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.35) if is_locked else C_CREAM_DIM)
+	btn.add_theme_color_override("font_color",         fc_normal)
+	btn.add_theme_color_override("font_hover_color",   C_CREAM if not is_locked else Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.35))
+	btn.add_theme_color_override("font_pressed_color", C_GOLD if not is_locked else Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.35))
 	btn.add_theme_font_size_override("font_size", 14)
 
 func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
@@ -375,9 +416,12 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	_active_side_btn = btn_courses
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
-	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
-	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	# Active sidebar btn: gold left border + warm ivory text + subtle gold bg tint
+	var active_bg := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10), Color(0, 0, 0, 0), 18)
+	var normal_bg := _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	var bg_n := active_bg if is_active else normal_bg
+	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.07) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	var bg_p := _flat(Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.18) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 
 	bg_n.content_margin_top = 96
 	bg_n.content_margin_bottom = 8
@@ -387,7 +431,8 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
-		bg_n.border_width_left = 6
+		# Gold left accent bar
+		bg_n.border_width_left = 5
 		bg_n.border_width_right = 0; bg_n.border_width_top = 0; bg_n.border_width_bottom = 0
 		bg_n.border_color = C_GOLD
 
@@ -395,9 +440,10 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	btn.add_theme_stylebox_override("hover",   bg_h)
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
-	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	var fc_s := C_GOLD if is_active else (Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.30) if is_locked else C_CREAM_DIM)
+	btn.add_theme_color_override("font_color",         fc_s)
+	btn.add_theme_color_override("font_hover_color",   C_CREAM if not is_locked else Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.30))
+	btn.add_theme_color_override("font_pressed_color", C_GOLD if not is_locked else Color(C_CREAM_DIM.r, C_CREAM_DIM.g, C_CREAM_DIM.b, 0.30))
 	btn.add_theme_font_size_override("font_size", 22)
 
 func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
@@ -458,20 +504,20 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 
 # ─── Top Bar ──────────────────────────────────────────────────────────────────
 func _build_top_bar() -> void:
-	# Khung avatar: bo tròn hoàn toàn, viền vàng phát sáng
+	# Avatar: dark glass circle with gold border + glow
 	var av_s := StyleBoxFlat.new()
-	av_s.bg_color              = C_BG_DARK
+	av_s.bg_color              = C_BG_PANEL
 	av_s.border_color          = C_GOLD
 	av_s.border_width_left     = 3; av_s.border_width_right  = 3
 	av_s.border_width_top      = 3; av_s.border_width_bottom = 3
 	av_s.corner_radius_top_left     = 34; av_s.corner_radius_top_right    = 34
 	av_s.corner_radius_bottom_left  = 34; av_s.corner_radius_bottom_right = 34
-	av_s.shadow_size   = 10
-	av_s.shadow_color  = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	av_s.shadow_size   = 14
+	av_s.shadow_color  = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	av_s.shadow_offset = Vector2(0, 2)
 	avatar_circle.add_theme_stylebox_override("panel", av_s)
 
-	# Lớp vẽ vòng tròn bo góc phía trên avatar (đảm bảo cắt đúng)
+	# Gold glow ring around avatar
 	var ring_draw := Control.new()
 	ring_draw.name = "RingDraw"
 	ring_draw.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -480,24 +526,27 @@ func _build_top_bar() -> void:
 		var sz := ring_draw.size
 		var c  := sz / 2.0
 		var r  := minf(c.x, c.y) - 3.0
-		# Vòng nhẫn vàng ngoài cùng
-		ring_draw.draw_arc(c, r, 0, TAU, 64, C_GOLD, 3.0, true)
-		# Vòng nhẫn vàng nhạt phát sáng
-		ring_draw.draw_arc(c, r - 1.5, 0, TAU, 64, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 6.0, true)
+		# Outer gold ring
+		ring_draw.draw_arc(c, r, 0, TAU, 64, C_GOLD, 2.5, true)
+		# Soft inner glow
+		ring_draw.draw_arc(c, r - 2.0, 0, TAU, 64, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 5.0, true)
 	)
 	avatar_circle.add_child(ring_draw)
 
-	var sp_s := _flat(Color(0.13, 0.08, 0.05, 0.9), Color(0.9, 0.42, 0.08, 0.4), 22)
+	# Streak pill — dark glass, warm orange border, amber text
+	var sp_s := _flat(C_BG_PANEL, Color(0.961, 0.651, 0.137, 0.55), 22)
+	sp_s.shadow_size = 8; sp_s.shadow_color = Color(0.961, 0.651, 0.137, 0.18)
 	streak_pill.add_theme_stylebox_override("panel", sp_s)
-	sp_label.add_theme_color_override("font_color", Color(1.0, 0.70, 0.22, 1.0))
-	sp_label.text = str(SecureDataManager.data.daily_streak) + " ngày"
+	sp_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.24, 1.0))
+	sp_label.text = "🔥 " + str(SecureDataManager.data.daily_streak) + " ngày"
 
-	var xp_s := _flat(Color(0.13, 0.08, 0.05, 0.9), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 22)
+	# XP pill — dark glass, gold border, gold text
+	var xp_s := _flat(C_BG_PANEL, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 22)
+	xp_s.shadow_size = 8; xp_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
 	xp_pill.add_theme_stylebox_override("panel", xp_s)
-	xp_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
-
+	xp_label.add_theme_color_override("font_color", C_GOLD)
 	var total_xp : int = 1240 + int(SecureDataManager.data.practice_time_seconds) / 6
-	xp_label.text = str(total_xp) + " XP"
+	xp_label.text = "⭐ " + str(total_xp) + " XP"
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
 func _build_roadmap_cards() -> void:
@@ -621,74 +670,85 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = "Sáo Trúc Pop"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
 
-		# Style Card Basic
-	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
-	basic_sb.border_width_left = 4; basic_sb.border_width_right = 4
-	basic_sb.border_width_top = 4; basic_sb.border_width_bottom = 4
-	basic_sb.shadow_size = 20; basic_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	# ── Style Card Basic — deep jade, gold border, warm glow ─────────────────
+	var basic_sb := _flat(C_CARD_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 20)
+	basic_sb.border_width_left = 2; basic_sb.border_width_right = 2
+	basic_sb.border_width_top = 2; basic_sb.border_width_bottom = 2
+	basic_sb.shadow_size = 28
+	basic_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28)
 	card_basic.add_theme_stylebox_override("panel", basic_sb)
 	basic_title.add_theme_color_override("font_color", C_CREAM)
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
-	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	basic_details.add_theme_color_override("font_color", C_GOLD)
 	
-	# Style Card Essentials
-	var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+	# ── Style Card Essentials — walnut, gold border glow ─────────────────────
+	var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 20)
+	ess_sb.border_width_left = 2; ess_sb.border_width_right = 2
+	ess_sb.border_width_top = 2; ess_sb.border_width_bottom = 2
+	ess_sb.shadow_size = 22; ess_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
 	card_essentials.add_theme_stylebox_override("panel", ess_sb)
 	ess_title.add_theme_color_override("font_color", C_CREAM)
 	ess_desc.add_theme_color_override("font_color", C_CREAM_DIM)
-	ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	ess_details.add_theme_color_override("font_color", C_GOLD)
 	
-	# Locked Cards (Soloist & Chords Unlock)
-	var lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 20)
-	lock_sb.shadow_size = 12; lock_sb.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
+	# ── Locked Cards — dark muted, subtle primary border ──────────────────────
+	var lock_sb := _flat(C_CARD_LOCKED, Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.20), 20)
+	lock_sb.border_width_left = 1; lock_sb.border_width_right = 1
+	lock_sb.border_width_top = 1; lock_sb.border_width_bottom = 1
+	lock_sb.shadow_size = 10; lock_sb.shadow_color = Color(0, 0, 0, 0.30)
 	
 	for card in [card_soloist_unlock, card_chords_unlock]:
 		card.add_theme_stylebox_override("panel", lock_sb)
 		var title := card.get_node("Margin/VBox/Title") as Label
-		title.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+		title.add_theme_color_override("font_color", C_CREAM_DIM)
 		
-		# Buttons "MỞ KHÓA" - Dark outline on light card
+		# Unlock button — terracotta gradient on dark card
 		var btn := card.get_node("Margin/VBox/BtnUnlock") as Button
-		var btn_sb := _flat(Color(0,0,0,0), Color(0.13, 0.08, 0.05, 0.30), 12)
-		btn.add_theme_stylebox_override("normal", btn_sb)
-		btn.add_theme_stylebox_override("hover", _flat(Color(0,0,0,0.06), Color(0.13, 0.08, 0.05, 0.60), 12))
-		btn.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.12), C_GOLD, 12))
-		btn.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-		btn.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
-		btn.add_theme_color_override("font_pressed_color", C_GOLD_DARK)
-		btn.add_theme_font_size_override("font_size", 14)
+		var btn_n := _flat(C_PRIMARY, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 14)
+		btn_n.shadow_size = 12; btn_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.40)
+		btn.add_theme_stylebox_override("normal",  btn_n)
+		btn.add_theme_stylebox_override("hover",   _flat(C_PRIMARY_LT, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 14))
+		btn.add_theme_stylebox_override("pressed", _flat(C_PRIMARY_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 14))
+		btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), C_GOLD, 14))
+		btn.add_theme_color_override("font_color",         C_CREAM)
+		btn.add_theme_color_override("font_hover_color",   C_CREAM)
+		btn.add_theme_color_override("font_pressed_color", C_GOLD)
+		btn.add_theme_font_size_override("font_size", 15)
 
-	# Skills & End cards (partially master)
-	var skills_sb := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 20)
-	skills_sb.border_width_left = 3; skills_sb.border_width_right = 3
-	skills_sb.border_width_top = 3; skills_sb.border_width_bottom = 3
-	skills_sb.shadow_size = 12; skills_sb.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
+	# ── Skills & end cards — dark walnut, gold border ─────────────────────────
+	var skills_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 20)
+	skills_sb.border_width_left = 2; skills_sb.border_width_right = 2
+	skills_sb.border_width_top = 2; skills_sb.border_width_bottom = 2
+	skills_sb.shadow_size = 18; skills_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.14)
 	
 	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
-		title.add_theme_color_override("font_color", C_RED_SON)
-		bullets.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+		# Warm ivory title, muted sand bullet text
+		title.add_theme_color_override("font_color", C_GOLD)
+		bullets.add_theme_color_override("font_color", C_CREAM_DIM)
 		
-		# Style circular play button (Vermilion red filled, gold border)
+		# Style circular play button — terracotta filled, gold border
 		var btn := card.get_node("Margin/HBox/BtnPlay") as Button
 		_style_circular_play_btn(btn)
 
 func _style_circular_play_btn(btn: Button) -> void:
-	var pb_n := _flat(C_RED_SON, C_GOLD, 32)
-	pb_n.border_width_left = 3; pb_n.border_width_right = 3
-	pb_n.border_width_top = 3; pb_n.border_width_bottom = 3
-	pb_n.shadow_size = 10; pb_n.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4)
+	# Terracotta gradient fill, gold glow border
+	var pb_n := _flat(C_PRIMARY, C_GOLD, 32)
+	pb_n.border_width_left = 2; pb_n.border_width_right = 2
+	pb_n.border_width_top = 2; pb_n.border_width_bottom = 2
+	pb_n.shadow_size = 14; pb_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.50)
 	
-	var pb_h := _flat(Color(0.85, 0.18, 0.12, 1.0), Color.WHITE, 32)
-	pb_h.border_width_left = 3; pb_h.border_width_right = 3
-	pb_h.border_width_top = 3; pb_h.border_width_bottom = 3
+	var pb_h := _flat(C_PRIMARY_LT, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.90), 32)
+	pb_h.border_width_left = 2; pb_h.border_width_right = 2
+	pb_h.border_width_top = 2; pb_h.border_width_bottom = 2
+	pb_h.shadow_size = 20; pb_h.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.65)
 	
 	btn.add_theme_stylebox_override("normal", pb_n)
 	btn.add_theme_stylebox_override("hover", pb_h)
-	btn.add_theme_stylebox_override("pressed", _flat(C_RED_DK, C_GOLD, 32))
-	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_stylebox_override("pressed", _flat(C_PRIMARY_DK, C_GOLD, 32))
+	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), C_GOLD, 32))
 	
 	# Procedural play triangle icon inside
 	var draw_node := Control.new()

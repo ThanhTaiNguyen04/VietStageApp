@@ -18,7 +18,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.98, 0.97, 0.94, 1.0)
+color = Color(0.102, 0.071, 0.031, 1.0) # #1A1208 Deep Mahogany — Skill §4 background
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
