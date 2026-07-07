@@ -39,6 +39,7 @@ const C_BAMBOO_LIGHT := Color("#8a7a40")
 # Gold trim / hardware
 const C_GOLD         := Color("#c99a3c")
 const C_GOLD_LIGHT   := Color("#fce8b3")
+const C_GOLD_DARK    := Color("#7a5510")
 # Metal string
 const C_STRING       := Color("#c8ccd8")
 const C_STRING_VIBE  := Color("#f8e898")
