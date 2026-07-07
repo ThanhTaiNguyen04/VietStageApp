@@ -813,7 +813,7 @@ func _open_focus_mode_popup(inst: String) -> void:
 		text_theory.text = "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền. Mặt trống bằng da bò căng chặt tạo tiếng vang đanh thép rực lửa."
 		text_fingering.text = "Gõ vào tâm mặt trống tạo tiếng 'Tịch' trầm sâu. Gõ vào vành gỗ trống bằng dùi chầu gỗ tạo tiếng 'Cắc' vang dội réo rắt báo hiệu đổi làn điệu."
 		btn_popup_play.visible = true
-		btn_popup_play.text = "SẮP RA MẮT" # locked
+		btn_popup_play.text = "VÀO HỌC" # locked
 	else:
 		popup_title.text = "Giới Thiệu Nhạc Cụ"
 		text_theory.text = ""
