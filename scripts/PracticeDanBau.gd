@@ -96,6 +96,9 @@ func _ready() -> void:
 	_build_rhythm_bars()
 	_start_float()
 	_connect_buttons()
+	
+	resized.connect(_on_resized)
+	_on_resized()
 	# Removed duplicate _setup_collapsible_linh() call
 	# Removed char_linh.get_parent().visible = false because collapsible system handles it
 	
@@ -243,7 +246,7 @@ func _set_labels() -> void:
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
 
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên phải để đổi âm"
+	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên trái để đổi âm"
 	record_btn.text = "Bắt đầu luyện tập"
 	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
 
@@ -958,7 +961,7 @@ func _show_custom_hint() -> void:
 	if popup_scene:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
-		var text := "[b]🎵 GẢY HÀI ÂM:[/b]\nChạm nhẹ tay vào các điểm nút tròn (Đô, Rê, Mi...) và gảy để phát ra tiếng đàn sắc nét.\n\n[b]🎵 UỐN CẦN (Luyến âm):[/b]\nChạm và giữ cần đàn phía bên phải. Kéo lên để căng dây (nâng cao độ), kéo xuống để trùng dây (hạ cao độ).\n\n[b]💡 LƯU Ý KỸ THUẬT:[/b]\n• Tiếng đàn bầu đẹp nhờ sự kết hợp nhuần nhuyễn giữa gảy hài âm và uốn vòi luyến láy.\n• Thả lỏng cổ tay trái để uốn nốt mềm mại và tạo độ rung ngân chuẩn xác."
+		var text := "[b]🎵 GẢY HÀI ÂM:[/b]\nChạm nhẹ tay vào các điểm nút tròn (Đô, Rê, Mi...) và gảy để phát ra tiếng đàn sắc nét.\n\n[b]🎵 UỐN CẦN (Luyến âm):[/b]\nChạm và giữ cần đàn phía bên trái. Kéo lên để căng dây (nâng cao độ), kéo xuống để trùng dây (hạ cao độ).\n\n[b]💡 LƯU Ý KỸ THUẬT:[/b]\n• Tiếng đàn bầu đẹp nhờ sự kết hợp nhuần nhuyễn giữa gảy hài âm và uốn vòi luyến láy.\n• Thả lỏng cổ tay trái để uốn nốt mềm mại và tạo độ rung ngân chuẩn xác."
 		popup.setup_hint("Kỹ thuật Đàn Bầu", text)
 
 func _show_custom_result() -> void:
@@ -1143,3 +1146,100 @@ func _get_average_score(scores: Array, default_val: float) -> float:
 	for s in scores:
 		sum += s
 	return sum / scores.size()
+
+func _on_resized() -> void:
+	var w := size.x
+	var h := size.y
+
+	# 1. Top Bar responsiveness
+	var top_m := $Root/TopBar/TopM as MarginContainer
+	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
+	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	var lesson_title := $Root/TopBar/TopM/TopH/LessonTitle as Label
+
+	if w < 600:
+		top_m.add_theme_constant_override("margin_left", 12)
+		top_m.add_theme_constant_override("margin_right", 12)
+		back_btn.custom_minimum_size = Vector2(90, 40)
+		back_btn.add_theme_font_size_override("font_size", 14)
+		menu_btn.custom_minimum_size = Vector2(44, 44)
+		menu_btn.add_theme_font_size_override("font_size", 24)
+		lesson_title.add_theme_font_size_override("font_size", 16)
+	else:
+		top_m.add_theme_constant_override("margin_left", 40)
+		top_m.add_theme_constant_override("margin_right", 40)
+		back_btn.custom_minimum_size = Vector2(150, 48)
+		back_btn.add_theme_font_size_override("font_size", 20)
+		menu_btn.custom_minimum_size = Vector2(72, 72)
+		menu_btn.add_theme_font_size_override("font_size", 40)
+		lesson_title.add_theme_font_size_override("font_size", 24)
+
+	# 2. Middle Content & Stats responsiveness
+	var notation_m := $Root/MiddleRow/MainContent/NotationArea/NotationM as MarginContainer
+	var pitch_note_lbl := $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote as Label
+	var score_num_lbl := $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreNum as Label
+
+	if w < 600:
+		notation_m.add_theme_constant_override("margin_left", 12)
+		notation_m.add_theme_constant_override("margin_right", 12)
+		notation_m.add_theme_constant_override("margin_top", 8)
+		notation_m.add_theme_constant_override("margin_bottom", 8)
+		pitch_note_lbl.add_theme_font_size_override("font_size", 24)
+		score_num_lbl.add_theme_font_size_override("font_size", 26)
+	else:
+		notation_m.add_theme_constant_override("margin_left", 32)
+		notation_m.add_theme_constant_override("margin_right", 32)
+		notation_m.add_theme_constant_override("margin_top", 18)
+		notation_m.add_theme_constant_override("margin_bottom", 18)
+		pitch_note_lbl.add_theme_font_size_override("font_size", 34)
+		score_num_lbl.add_theme_font_size_override("font_size", 38)
+
+	# 3. Bottom Control Bar responsiveness
+	var record_m := $Root/RecordBar/RecordM as MarginContainer
+	var record_h := $Root/RecordBar/RecordM/RecordH as HBoxContainer
+
+	if w < 600:
+		record_m.add_theme_constant_override("margin_left", 12)
+		record_m.add_theme_constant_override("margin_right", 12)
+		record_h.add_theme_constant_override("separation", 10)
+		
+		# Shrink button widths on mobile portrait
+		record_btn.custom_minimum_size = Vector2(0, 48)
+		record_btn.size_flags_horizontal = SIZE_EXPAND_FILL
+		record_btn.add_theme_font_size_override("font_size", 16)
+		
+		var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+		if reset_btn:
+			reset_btn.custom_minimum_size = Vector2(90, 48)
+			reset_btn.add_theme_font_size_override("font_size", 15)
+			
+		var mode_btn := record_h.get_node_or_null("ModeToggleBtn") as Button
+		if mode_btn:
+			mode_btn.custom_minimum_size = Vector2(110, 40)
+			mode_btn.add_theme_font_size_override("font_size", 12)
+			
+		var visualizer := record_h.get_node_or_null("WaveformVisualizer") as Control
+		if visualizer:
+			visualizer.custom_minimum_size = Vector2(100, 44)
+	else:
+		record_m.add_theme_constant_override("margin_left", 48)
+		record_m.add_theme_constant_override("margin_right", 48)
+		record_h.add_theme_constant_override("separation", 20)
+		
+		record_btn.custom_minimum_size = Vector2(500, 56)
+		record_btn.size_flags_horizontal = SIZE_SHRINK_CENTER
+		record_btn.add_theme_font_size_override("font_size", 22)
+		
+		var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+		if reset_btn:
+			reset_btn.custom_minimum_size = Vector2(150, 52)
+			reset_btn.add_theme_font_size_override("font_size", 18)
+			
+		var mode_btn := record_h.get_node_or_null("ModeToggleBtn") as Button
+		if mode_btn:
+			mode_btn.custom_minimum_size = Vector2(170, 44)
+			mode_btn.add_theme_font_size_override("font_size", 16)
+			
+		var visualizer := record_h.get_node_or_null("WaveformVisualizer") as Control
+		if visualizer:
+			visualizer.custom_minimum_size = Vector2(320, 62)
