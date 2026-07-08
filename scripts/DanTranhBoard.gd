@@ -3,7 +3,7 @@ extends Control
 signal string_plucked(idx: int, note_name: String)
 signal string_pressed(idx: int, pitch_cents_offset: float)
 
-const STR_COUNT := 16
+const STR_COUNT := 17
 
 var _note_names  : Array[String]      = []
 var _streams     : Array              = []
@@ -17,6 +17,7 @@ var _is_target   : PackedByteArray    = PackedByteArray()
 var _is_pressed  : PackedByteArray    = PackedByteArray()
 var _press_x     : PackedFloat32Array = PackedFloat32Array()
 var _press_y     : PackedFloat32Array = PackedFloat32Array()
+var _bridge_offsets : PackedFloat32Array = PackedFloat32Array()
 var _audio_players : Array            = []
 var audio_enabled := true
 var _hovered_idx : int                = -1
@@ -46,6 +47,7 @@ func init(notes: Array[String], streams: Array, freqs: Array[float]) -> void:
 	_is_pressed.resize(STR_COUNT)
 	_press_x.resize(STR_COUNT)
 	_press_y.resize(STR_COUNT)
+	_bridge_offsets.resize(STR_COUNT)
 	_audio_players.resize(STR_COUNT)
 	for i in STR_COUNT:
 		_audio_players[i] = null
@@ -71,7 +73,17 @@ func pluck(idx: int) -> void:
 	_pluck_amp[idx]  = 1.0
 	_glow_alpha[idx] = 1.0
 	if audio_enabled:
-		_play_audio(idx, 1.0)
+		var pitch_mult := 1.0
+		if _bridge_offsets.size() > idx and _bridge_offsets[idx] != 0.0:
+			var W_ref := size.y * 1.1 if is_portrait_mode else size.x
+			var str_r := W_ref - 24.0
+			var bridge_x := get_bridge_x(idx)
+			var base_bridge_x := bridge_x - _bridge_offsets[idx]
+			var current_len := str_r - bridge_x
+			var base_len := str_r - base_bridge_x
+			if current_len > 10.0 and base_len > 10.0:
+				pitch_mult = base_len / current_len
+		_play_audio(idx, pitch_mult)
 	var name_idx := idx % _note_names.size()
 	string_plucked.emit(idx, _note_names[name_idx])
 	queue_redraw()
@@ -105,20 +117,22 @@ func get_bridge_x(idx: int) -> float:
 	var ix := 24.0
 	var iw := W - 60.0
 	var t := float(idx) / float(STR_COUNT - 1)
-	# Beautiful S-curve representing real Đàn Tranh nhạn arrangement
-	var smooth_t := t * t * (3.0 - 2.0 * t)
+	# Straight diagonal line representing real Đàn Tranh nhạn arrangement
 	var start_pct := 0.26
-	var end_pct := 0.82
-	var pct := lerpf(start_pct, end_pct, smooth_t)
-	return ix + iw * pct
+	var end_pct := 0.88
+	var pct := lerpf(start_pct, end_pct, t)
+	var offset := 0.0
+	if _bridge_offsets.size() > idx:
+		offset = _bridge_offsets[idx]
+	return ix + iw * pct + offset
 
 func get_str_l(idx: int) -> float:
 	var W := size.y * 1.1 if is_portrait_mode else size.x
 	var ix := 24.0
 	var iw := W - 60.0
 	var t := float(idx) / float(STR_COUNT - 1)
-	# Curved left bridge shape from reference image: C-shape bulge to the right
-	var pct := 0.14 - 0.06 * t + 0.15 * sin(t * PI)
+	# Straight diagonal line for the left string anchor
+	var pct := 0.08 - 0.02 * t
 	return ix + iw * pct
 
 func _draw_inlay_pattern(rect: Rect2, color: Color) -> void:
@@ -194,16 +208,16 @@ func _draw() -> void:
 	if _note_names.is_empty():
 		return
 
-	# 1. Base zither body shadow & background (Dark Rosewood)
+	# 1. Base zither body shadow & background (Light Pale Wood)
 	var base_sb := StyleBoxFlat.new()
-	base_sb.bg_color = Color(0.28, 0.13, 0.03)
+	base_sb.bg_color = Color(0.85, 0.76, 0.55)
 	base_sb.set_corner_radius_all(14)
 	base_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.45)
 	base_sb.shadow_size = 8
 	base_sb.shadow_offset = Vector2(0, 4)
 	base_sb.border_width_left = 6
 	base_sb.border_width_right = 6
-	base_sb.border_color = Color(0.34, 0.16, 0.04)
+	base_sb.border_color = Color(0.20, 0.08, 0.04)
 	draw_style_box(base_sb, Rect2(0.0, 0.0, W, H))
 
 	var ix    := 24.0
@@ -224,8 +238,8 @@ func _draw() -> void:
 		
 		var center_t := float(i) / float(STR_COUNT - 1)
 		var curvature_light := sin(center_t * PI)
-		var wood_glow := Color(0.28, 0.15, 0.07)
-		var base_bg := Color(0.13, 0.06, 0.02) if (i % 2 == 0) else Color(0.17, 0.08, 0.03)
+		var wood_glow := Color(0.80, 0.68, 0.45)
+		var base_bg := Color(0.85, 0.76, 0.55) if (i % 2 == 0) else Color(0.82, 0.73, 0.52)
 		var bg_col := base_bg.lerp(wood_glow, curvature_light * 0.38)
 		
 		# Cylindrical simulation gradient (3 sub-strips per row) for realistic 3D convex shape
@@ -254,7 +268,7 @@ func _draw() -> void:
 				var wave := (sin(t_wave) * 0.45 + cos(t_wave * 0.5) * 0.3) * (rh * 0.22)
 				grain_pts.append(Vector2(row_l + row_w * ratio, gy_base + wave))
 			
-			var grain_col := Color(0.08, 0.04, 0.01, 0.15) if g % 2 == 0 else Color(0.24, 0.15, 0.08, 0.08)
+			var grain_col := Color(0.40, 0.30, 0.15, 0.15) if g % 2 == 0 else Color(0.45, 0.35, 0.20, 0.08)
 			draw_polyline(grain_pts, grain_col, 1.1)
 
 		# Hover indicator
@@ -274,7 +288,7 @@ func _draw() -> void:
 	board_sb.bg_color = Color(0, 0, 0, 0)
 	board_sb.border_width_top = 8
 	board_sb.border_width_bottom = 8
-	board_sb.border_color = Color(0.32, 0.15, 0.04)
+	board_sb.border_color = Color(0.20, 0.08, 0.04)
 	draw_style_box(board_sb, Rect2(24.0, 0.0, W - 48.0, H))
 	
 	# Gold accent frame lines
@@ -293,13 +307,13 @@ func _draw() -> void:
 		div_pts_shadow.append(p + Vector2(2.5, 0.0))
 	draw_polyline(div_pts_shadow, Color(0.06, 0.03, 0.01, 0.65), 7.0, true)
 	# Draw main divider wood
-	draw_polyline(div_pts, Color(0.30, 0.12, 0.03), 6.0, true)
+	draw_polyline(div_pts, Color(0.20, 0.08, 0.04), 6.0, true)
 	# Draw gold highlight line
 	draw_polyline(div_pts, Color(0.77, 0.58, 0.15, 0.65), 1.6, true)
 
 	# 5. Draw right-end curved tail cap / frame
 	var tail_sb := StyleBoxFlat.new()
-	tail_sb.bg_color = Color(0.12, 0.06, 0.02) # dark premium rosewood
+	tail_sb.bg_color = Color(0.20, 0.08, 0.04) # dark premium ebony
 	tail_sb.set_corner_radius_all(8)
 	tail_sb.border_width_left = 2
 	tail_sb.border_width_right = 2
@@ -329,77 +343,78 @@ func _draw() -> void:
 	_draw_inlay_pattern(Rect2(W - 26.0, 18.0, 18.0, H - 36.0), mop_color)
 
 	# 6. Draw Left Controls Panel (Lacquered black wood & MOP inlays)
-	var panel_sb := StyleBoxFlat.new()
-	panel_sb.bg_color = Color(0.04, 0.03, 0.02, 0.96) # deep black lacquer
-	panel_sb.set_corner_radius_all(12)
-	panel_sb.border_width_left = 2
-	panel_sb.border_width_right = 2
-	panel_sb.border_width_top = 2
-	panel_sb.border_width_bottom = 2
-	panel_sb.border_color = Color(0.77, 0.58, 0.15, 0.8) # gold border
-	panel_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.5)
-	panel_sb.shadow_size = 6
-	panel_sb.shadow_offset = Vector2(2, 2)
-	draw_style_box(panel_sb, Rect2(16.0, 20.0, 64.0, H - 40.0))
+	if false:
+		var panel_sb := StyleBoxFlat.new()
+		panel_sb.bg_color = Color(0.04, 0.03, 0.02, 0.96) # deep black lacquer
+		panel_sb.set_corner_radius_all(12)
+		panel_sb.border_width_left = 2
+		panel_sb.border_width_right = 2
+		panel_sb.border_width_top = 2
+		panel_sb.border_width_bottom = 2
+		panel_sb.border_color = Color(0.77, 0.58, 0.15, 0.8) # gold border
+		panel_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.5)
+		panel_sb.shadow_size = 6
+		panel_sb.shadow_offset = Vector2(2, 2)
+		draw_style_box(panel_sb, Rect2(16.0, 20.0, 64.0, H - 40.0))
+		
+		# Draw inner thin gold frame line
+		var inner_rect := Rect2(20.0, 24.0, 56.0, H - 48.0)
+		var inner_pts := PackedVector2Array([
+			inner_rect.position,
+			Vector2(inner_rect.end.x, inner_rect.position.y),
+			inner_rect.end,
+			Vector2(inner_rect.position.x, inner_rect.end.y),
+			inner_rect.position
+		])
+		draw_polyline(inner_pts, Color(0.77, 0.58, 0.15, 0.35), 1.0)
 	
-	# Draw inner thin gold frame line
-	var inner_rect := Rect2(20.0, 24.0, 56.0, H - 48.0)
-	var inner_pts := PackedVector2Array([
-		inner_rect.position,
-		Vector2(inner_rect.end.x, inner_rect.position.y),
-		inner_rect.end,
-		Vector2(inner_rect.position.x, inner_rect.end.y),
-		inner_rect.position
-	])
-	draw_polyline(inner_pts, Color(0.77, 0.58, 0.15, 0.35), 1.0)
-
-	# Draw mother-of-pearl inlays in corners of the panel
-	var mop_col1 := Color(0.85, 0.92, 0.95, 0.75) # cyan-white MOP
-	var mop_col2 := Color(0.95, 0.85, 0.90, 0.75) # pink-white MOP
-	_draw_mop_flower(Vector2(26.0, 30.0), 1.6, mop_col1)
-	_draw_mop_flower(Vector2(70.0, 30.0), 1.6, mop_col2)
-	_draw_mop_flower(Vector2(26.0, H - 30.0), 1.6, mop_col2)
-	_draw_mop_flower(Vector2(70.0, H - 30.0), 1.6, mop_col1)
-	
-	# Vector Icons inside Panel
-	var px := 16.0 + 32.0
-	var py_start := 20.0 + 30.0
-	var py_step := (H - 100.0) / 5.0
-	
-	# Menu icon (three lines)
-	var my := py_start
-	draw_line(Vector2(px - 10.0, my - 4.0), Vector2(px + 10.0, my - 4.0), Color(0.95, 0.82, 0.45), 1.5)
-	draw_line(Vector2(px - 10.0, my), Vector2(px + 10.0, my), Color(0.95, 0.82, 0.45), 1.5)
-	draw_line(Vector2(px - 10.0, my + 4.0), Vector2(px + 10.0, my + 4.0), Color(0.95, 0.82, 0.45), 1.5)
-	
-	# Zoom icon
-	var zy := py_start + py_step
-	draw_circle(Vector2(px - 2.0, zy - 2.0), 5.0, Color(0.95, 0.82, 0.45), false, 1.2)
-	draw_line(Vector2(px + 1.0, zy + 1.0), Vector2(px + 8.0, zy + 8.0), Color(0.95, 0.82, 0.45), 1.5)
-	draw_line(Vector2(px - 4.0, zy - 2.0), Vector2(px, zy - 2.0), Color(0.95, 0.82, 0.45), 1.0)
-	draw_line(Vector2(px - 2.0, zy - 4.0), Vector2(px - 2.0, zy), Color(0.95, 0.82, 0.45), 1.0)
-	
-	# Record icon (red dot with gold border)
-	var ry_rec := py_start + 2.0 * py_step
-	draw_circle(Vector2(px, ry_rec), 10.0, Color(0.72, 0.54, 0.18, 0.5), false, 1.2)
-	draw_circle(Vector2(px, ry_rec), 6.0, Color(0.90, 0.15, 0.10))
-	
-	# Loop icon
-	var ly_loop := py_start + 3.0 * py_step
-	draw_circle(Vector2(px, ly_loop), 10.0, Color(0.72, 0.54, 0.18, 0.5), false, 1.2)
-	var loop_color := Color(0.95, 0.82, 0.45)
-	var arc_points := PackedVector2Array()
-	for step in range(12):
-		var angle := float(step) * (1.6 * PI / 11.0) - PI * 0.3
-		arc_points.append(Vector2(px, ly_loop) + Vector2(cos(angle), sin(angle)) * 5.5)
-	draw_polyline(arc_points, loop_color, 1.2)
-	draw_line(Vector2(px + 4.0, ly_loop - 4.0), Vector2(px + 1.0, ly_loop - 1.0), loop_color, 1.2)
-	draw_line(Vector2(px + 4.0, ly_loop - 4.0), Vector2(px + 6.0, ly_loop - 1.0), loop_color, 1.2)
-	
-	# Play mode button
-	var py_play := py_start + 4.0 * py_step
-	draw_circle(Vector2(px, py_play), 10.0, Color(0.95, 0.82, 0.45), false, 1.5)
-	draw_circle(Vector2(px, py_play), 4.0, Color(0.95, 0.82, 0.45))
+		# Draw mother-of-pearl inlays in corners of the panel
+		var mop_col1 := Color(0.85, 0.92, 0.95, 0.75) # cyan-white MOP
+		var mop_col2 := Color(0.95, 0.85, 0.90, 0.75) # pink-white MOP
+		_draw_mop_flower(Vector2(26.0, 30.0), 1.6, mop_col1)
+		_draw_mop_flower(Vector2(70.0, 30.0), 1.6, mop_col2)
+		_draw_mop_flower(Vector2(26.0, H - 30.0), 1.6, mop_col2)
+		_draw_mop_flower(Vector2(70.0, H - 30.0), 1.6, mop_col1)
+		
+		# Vector Icons inside Panel
+		var px := 16.0 + 32.0
+		var py_start := 20.0 + 30.0
+		var py_step := (H - 100.0) / 5.0
+		
+		# Menu icon (three lines)
+		var my := py_start
+		draw_line(Vector2(px - 10.0, my - 4.0), Vector2(px + 10.0, my - 4.0), Color(0.95, 0.82, 0.45), 1.5)
+		draw_line(Vector2(px - 10.0, my), Vector2(px + 10.0, my), Color(0.95, 0.82, 0.45), 1.5)
+		draw_line(Vector2(px - 10.0, my + 4.0), Vector2(px + 10.0, my + 4.0), Color(0.95, 0.82, 0.45), 1.5)
+		
+		# Zoom icon
+		var zy := py_start + py_step
+		draw_circle(Vector2(px - 2.0, zy - 2.0), 5.0, Color(0.95, 0.82, 0.45), false, 1.2)
+		draw_line(Vector2(px + 1.0, zy + 1.0), Vector2(px + 8.0, zy + 8.0), Color(0.95, 0.82, 0.45), 1.5)
+		draw_line(Vector2(px - 4.0, zy - 2.0), Vector2(px, zy - 2.0), Color(0.95, 0.82, 0.45), 1.0)
+		draw_line(Vector2(px - 2.0, zy - 4.0), Vector2(px - 2.0, zy), Color(0.95, 0.82, 0.45), 1.0)
+		
+		# Record icon (red dot with gold border)
+		var ry_rec := py_start + 2.0 * py_step
+		draw_circle(Vector2(px, ry_rec), 10.0, Color(0.72, 0.54, 0.18, 0.5), false, 1.2)
+		draw_circle(Vector2(px, ry_rec), 6.0, Color(0.90, 0.15, 0.10))
+		
+		# Loop icon
+		var ly_loop := py_start + 3.0 * py_step
+		draw_circle(Vector2(px, ly_loop), 10.0, Color(0.72, 0.54, 0.18, 0.5), false, 1.2)
+		var loop_color := Color(0.95, 0.82, 0.45)
+		var arc_points := PackedVector2Array()
+		for step in range(12):
+			var angle := float(step) * (1.6 * PI / 11.0) - PI * 0.3
+			arc_points.append(Vector2(px, ly_loop) + Vector2(cos(angle), sin(angle)) * 5.5)
+		draw_polyline(arc_points, loop_color, 1.2)
+		draw_line(Vector2(px + 4.0, ly_loop - 4.0), Vector2(px + 1.0, ly_loop - 1.0), loop_color, 1.2)
+		draw_line(Vector2(px + 4.0, ly_loop - 4.0), Vector2(px + 6.0, ly_loop - 1.0), loop_color, 1.2)
+		
+		# Play mode button
+		var py_play := py_start + 4.0 * py_step
+		draw_circle(Vector2(px, py_play), 10.0, Color(0.95, 0.82, 0.45), false, 1.5)
+		draw_circle(Vector2(px, py_play), 4.0, Color(0.95, 0.82, 0.45))
 
 	# 7. Subtle wood carvings in soundboard background
 	var carve_dark := Color(0.08, 0.04, 0.02, 0.28)
@@ -418,10 +433,8 @@ func _draw() -> void:
 		var cy := ry + rh * 0.5
 		var str_l := get_str_l(i)
 
-		# Draw gold rivet peg on Left curve (with shiny 3D specular highlight)
-		draw_circle(Vector2(str_l, cy), 3.5, Color(0.77, 0.58, 0.15)) # gold ring
-		draw_circle(Vector2(str_l, cy), 1.5, Color(0.12, 0.08, 0.05)) # dark center
-		draw_circle(Vector2(str_l - 1.0, cy - 1.0), 0.7, Color(1.0, 1.0, 1.0, 0.85)) # shiny reflection
+		# Draw dark hole for string entry at the left end
+		draw_circle(Vector2(str_l, cy), 2.5, Color(0.08, 0.04, 0.02))
 		
 		# Draw brass rivet on the Right end block (with shiny 3D specular highlight)
 		draw_circle(Vector2(str_r, cy), 3.5, Color(0.75, 0.55, 0.15)) # gold ring
@@ -437,10 +450,10 @@ func _draw() -> void:
 		# ── Premium vibrating string lines ──
 		var tc       := float(i) / float(STR_COUNT - 1)
 		
-		# String coloring matches zither image: 4, 10, 15 are turquoise, others silver/gold
-		var base_col := Color(0.92, 0.72, 0.22).lerp(Color(0.85, 0.88, 0.92), tc)
-		if i == 3 or i == 9 or i == 14:
-			base_col = Color(0.05, 0.75, 0.55) # turquoise string
+		# String coloring matches zither image: 0, 5, 10, 15 (Sol strings) are green, others silver/white
+		var base_col := Color(0.85, 0.85, 0.85)
+		if i == 0 or i == 5 or i == 10 or i == 15:
+			base_col = Color(0.15, 0.80, 0.35) # green string
 
 		var str_col := base_col
 		if _pluck_amp[i] > 0.05:
@@ -490,8 +503,6 @@ func _draw() -> void:
 			draw_polyline(pts_up, blur_col, sw * 0.8, true)
 			draw_polyline(pts_down, blur_col, sw * 0.8, true)
 
-		# Draw blue protective sleeve wrapping at Left end
-		draw_line(Vector2(str_l, cy), Vector2(str_l + 12.0, cy), Color(0.1, 0.5, 0.9), sw + 1.0)
 
 		# Draw main string core
 		draw_polyline(pts, str_col, sw, true)
@@ -542,13 +553,20 @@ func _draw() -> void:
 					note_time += duration
 					continue
 					
-				# Note X position (starts at right, scrolls to left)
-				var note_x: float = trigger_x + (note_time - current_time_beats) * PIXELS_PER_BEAT
+				# Note X position (starts at left, scrolls to right)
+				var note_x: float = trigger_x - (note_time - current_time_beats) * PIXELS_PER_BEAT
 				
 				# Only draw if it's visible in the playable zither area
-				if note_x >= bridge_x - 100.0 and note_x <= str_r + 200.0:
+				if note_x >= str_l - 20.0 and note_x <= str_r + 200.0:
 					var cap_h: float = clampf(rh * 0.72, 12.0, 30.0)
 					var note_width: float = cap_h # Force perfect circle
+					
+					# Fade in as it emerges from the left knot
+					var alpha_mult: float = clampf((note_x - str_l) / (note_width * 1.5), 0.0, 1.0)
+					if alpha_mult <= 0.01:
+						note_time += duration
+						continue
+						
 					# Center the circle on the note_x position
 					var cap_rect: Rect2 = Rect2(note_x - note_width * 0.5, cy - cap_h * 0.5, note_width, cap_h)
 					
@@ -571,6 +589,9 @@ func _draw() -> void:
 							cap_color = Color(0.4, 0.4, 0.4, 0.45) # grey
 							border_color = Color(0.55, 0.55, 0.55, 0.6)
 							
+					cap_color.a *= alpha_mult
+					border_color.a *= alpha_mult
+							
 					var cap_sb: StyleBoxFlat = StyleBoxFlat.new()
 					cap_sb.bg_color = cap_color
 					cap_sb.border_color = border_color
@@ -579,7 +600,7 @@ func _draw() -> void:
 					cap_sb.set_corner_radius_all(int(cap_h * 0.5))
 					
 					# Shadow
-					cap_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+					cap_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.3 * alpha_mult)
 					cap_sb.shadow_size = 3
 					cap_sb.shadow_offset = Vector2(1, 1)
 					
@@ -590,6 +611,7 @@ func _draw() -> void:
 						var text_color: Color = Color.WHITE
 						if k == current_note_idx:
 							text_color = Color("#2e180d") # dark brown for active note readability
+						text_color.a *= alpha_mult
 						var txt_size: int = clamp(int(cap_h * 0.55), 8, 14)
 						var txt_y: float = cy + txt_size * 0.35
 						# Draw centered in the circle
@@ -665,7 +687,7 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 		Vector2(bx - 1.5, top_y + bh * 0.2),
 		Vector2(bx - 3.0, top_y + bh * 0.2)
 	])
-	draw_colored_polygon(poly_l, Color(0.24, 0.10, 0.03)) 
+	draw_colored_polygon(poly_l, Color(0.12, 0.05, 0.02)) 
 	
 	# Right leg (lit/bright side)
 	var poly_r := PackedVector2Array([
@@ -674,7 +696,7 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 		Vector2(bx + 1.5, top_y + bh * 0.2),
 		Vector2(bx + 3.0, top_y + bh * 0.2)
 	])
-	draw_colored_polygon(poly_r, Color(0.36, 0.16, 0.05)) 
+	draw_colored_polygon(poly_r, Color(0.18, 0.08, 0.04)) 
 	
 	# Apex block (connects legs)
 	var poly_top := PackedVector2Array([
@@ -683,10 +705,10 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 		Vector2(bx + 2.5, top_y),
 		Vector2(bx - 2.5, top_y)
 	])
-	draw_colored_polygon(poly_top, Color(0.30, 0.12, 0.04))
+	draw_colored_polygon(poly_top, Color(0.15, 0.06, 0.03))
 	
 	# Highlight edges
-	draw_line(left_foot, apex, Color(0.65, 0.40, 0.15, 0.55), 1.2, true)
+	draw_line(left_foot, apex, Color(0.35, 0.20, 0.10, 0.55), 1.2, true)
 	draw_line(apex, right_foot, Color(0.12, 0.06, 0.02, 0.65), 1.0, true)
 	
 	# White saddle (nhạn cap)
@@ -771,12 +793,15 @@ func _handle_touch_start(finger_idx: int, pos: Vector2) -> void:
 	var cy       := _row_cy(idx)
 
 	var interaction := "none"
-	# Tăng vùng nhận diện cảm ứng (Hitbox) lên 120% (thêm margin vào cả X và Y)
 	var pluck_hitbox_margin := 40.0
-	if pos.x >= bridge_x - pluck_hitbox_margin and pos.x <= str_r + pluck_hitbox_margin:
+	var bridge_hitbox := 30.0 # Vùng bắt chạm để di chuyển nhạn
+	
+	if abs(pos.x - bridge_x) < bridge_hitbox:
+		interaction = "move_bridge"
+	elif pos.x >= bridge_x + bridge_hitbox and pos.x <= str_r + pluck_hitbox_margin:
 		interaction = "pluck"
 		pluck(idx)
-	elif pos.x >= str_l - 5.0 and pos.x < bridge_x:
+	elif pos.x >= str_l - 5.0 and pos.x < bridge_x - bridge_hitbox:
 		interaction = "press"
 		_is_pressed[idx] = 1
 		_press_x[idx] = clamp(pos.x, str_l + 5.0, bridge_x - 5.0)
@@ -808,15 +833,33 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 		# String crossing check for glissando / swipe
 		if idx != touch_info["last_string_idx"]:
 			var pluck_hitbox_margin := 40.0
-			if pos.x >= bridge_x - pluck_hitbox_margin and pos.x <= str_r + pluck_hitbox_margin:
+			var bridge_hitbox := 30.0
+			if pos.x >= bridge_x + bridge_hitbox and pos.x <= str_r + pluck_hitbox_margin:
 				pluck(idx)
 				touch_info["last_string_idx"] = idx
 	elif touch_info["interaction_type"] == "press":
 		# Move bending point
-		_press_x[idx] = clamp(pos.x, str_l + 5.0, bridge_x - 5.0)
+		_press_x[idx] = clamp(pos.x, str_l + 5.0, bridge_x - 30.0)
 		_press_y[idx] = clamp(pos.y, cy, cy + rh * 0.48)
 		_update_press(idx)
 		queue_redraw()
+	elif touch_info["interaction_type"] == "move_bridge":
+		# Điều chỉnh con nhạn (bridge)
+		var W_base := size.y * 1.1 if is_portrait_mode else size.x
+		var ix_base := 24.0
+		var iw_base := W_base - 60.0
+		var t_base := float(idx) / float(STR_COUNT - 1)
+		var pct_base := lerpf(0.26, 0.88, t_base)
+		var base_bridge_x := ix_base + iw_base * pct_base
+		
+		# Giới hạn không cho nhạn kéo quá sát 2 đầu
+		var min_x := get_str_l(idx) + 40.0
+		var max_x := str_r - 40.0
+		var clamped_x = clamp(pos.x, min_x, max_x)
+		
+		if _bridge_offsets.size() == STR_COUNT:
+			_bridge_offsets[idx] = clamped_x - base_bridge_x
+			queue_redraw()
 
 func _handle_touch_end(finger_idx: int) -> void:
 	if not _active_touches.has(finger_idx): return

@@ -266,6 +266,11 @@ func _ready() -> void:
 	var middle_row := $Root/MiddleRow as HBoxContainer
 	if middle_row:
 		middle_row.custom_minimum_size.y = 0
+		
+	# Ẩn StatsRow để tối ưu không gian hiển thị trên mobile (Giống giao diện Sáo Trúc)
+	var stats_row = $Root/MiddleRow/MainContent/StatsRow
+	if stats_row:
+		stats_row.visible = false
 
 
 	# Create and style the NoteTrackPanel
@@ -388,59 +393,30 @@ func _ready() -> void:
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
 		
-		# Programmatic Mode Toggle Button
-		var mode_btn := Button.new()
-		mode_btn.name = "ModeToggleBtn"
-		mode_btn.text = "Chế độ: Micro 🎙️"
-		mode_btn.custom_minimum_size = Vector2(170, 44)
-		mode_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		record_hbox.add_child(mode_btn)
-		record_hbox.move_child(mode_btn, 0)
-		_style_outlined_btn(mode_btn)
-		_make_button_bouncy(mode_btn)
+		# Căn giữa các nút theo giao diện Sáo Trúc
+		record_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 		
-		mode_btn.pressed.connect(func() -> void:
-			_mic_mode = not _mic_mode
-			if _mic_mode:
-				mode_btn.text = "Chế độ: Micro 🎙️"
-				_va_say("Đã chuyển sang Chế độ luyện tập qua Micro.")
-			else:
-				mode_btn.text = "Chế độ: Chạm 📱"
-				_va_say("Đã chuyển sang Chế độ tự học qua màn hình chạm.")
-		)
-
-		# Programmatically add pulsing "REC" recording indicator next to record button
-		var rec_indicator := HBoxContainer.new()
-		rec_indicator.name = "RecIndicator"
-		rec_indicator.alignment = BoxContainer.ALIGNMENT_CENTER
-		rec_indicator.visible = false
-		
-		# Small red dot
-		var dot := Panel.new()
-		dot.custom_minimum_size = Vector2(12, 12)
-		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var dot_style := StyleBoxFlat.new()
-		dot_style.bg_color = C_RED_SON
-		dot_style.corner_radius_top_left = 6
-		dot_style.corner_radius_top_right = 6
-		dot_style.corner_radius_bottom_left = 6
-		dot_style.corner_radius_bottom_right = 6
-		dot.add_theme_stylebox_override("panel", dot_style)
-		
-		# REC Label
-		var lbl := Label.new()
-		lbl.text = "REC"
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.add_theme_color_override("font_color", C_RED_SON)
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		
-		rec_indicator.add_child(dot)
-		rec_indicator.add_child(lbl)
-		rec_indicator.add_theme_constant_override("separation", 6)
-		rec_indicator.custom_minimum_size = Vector2(60, 30)
-		
-		record_hbox.add_child(rec_indicator)
-		record_hbox.move_child(rec_indicator, 2)
+		# Style nút Bắt đầu luyện tập (RecordBtn)
+		if record_btn:
+			var btn_s := StyleBoxFlat.new()
+			btn_s.bg_color = C_JADE
+			btn_s.corner_radius_top_left = 14; btn_s.corner_radius_top_right = 14
+			btn_s.corner_radius_bottom_left = 14; btn_s.corner_radius_bottom_right = 14
+			var btn_h := btn_s.duplicate()
+			btn_h.bg_color = C_JADE.lightened(0.12)
+			record_btn.add_theme_stylebox_override("normal", btn_s)
+			record_btn.add_theme_stylebox_override("hover", btn_h)
+			record_btn.add_theme_stylebox_override("pressed", btn_s)
+			record_btn.add_theme_color_override("font_color", C_CREAM)
+			record_btn.add_theme_color_override("font_hover_color", Color.WHITE)
+			_make_button_bouncy(record_btn)
+			
+		# Style nút Làm lại (ResetBtn)
+		var reset_btn = record_hbox.get_node_or_null("ResetBtn") as Button
+		if reset_btn:
+			_style_outlined_btn(reset_btn)
+			_make_button_bouncy(reset_btn)
+			record_hbox.move_child(reset_btn, 0)
 		
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
