@@ -43,10 +43,10 @@ const RATIO_ROD_CTRL2_Y        := 0.40   # Control point 2 Y offset ratio of BH
 
 const RATIO_BRIDGE_X           := 0.08   # Bridge X position ratio of BW
 const RATIO_BRIDGE_WIDTH       := 0.0065 # Bridge width ratio of total width
-const RATIO_BRIDGE_HEIGHT      := 1.10   # Bridge height increased slightly for recognition
+const RATIO_BRIDGE_HEIGHT      := 1.45   # Taller bridge — clearly supports the string
 
 const RATIO_PEG_X              := 5.0    # Peg offset X from BR
-const RATIO_PEG_HEIGHT         := 0.60   # Peg height ratio of soundboard height
+const RATIO_PEG_HEIGHT         := 0.85   # Peg height ratio of soundboard height (taller)
 
 const RATIO_NODES_START        := 0.16   # Node start X ratio of BW
 const RATIO_NODES_END          := 0.90   # Node end X ratio of BW
@@ -187,19 +187,20 @@ func _draw() -> void:
 	var SY  := SBT - BH * RATIO_STRING_Y
 	_str_y  = SY
 
-	# Gourd resonator (bầu cộng hưởng) on the LEFT side (leaves safe margin)
+	# Gourd resonator (bầu cộng hưởng) on the LEFT side
+	# Center at string height — lower half overlaps body left end, matching real đàn bầu
 	var GR  := BH * RATIO_GOURD_RADIUS
 	var GX  := BL - GR * RATIO_GOURD_X_OFFSET
-	var GY  := BCY
+	var GY  := SY  # Gourd center aligned with string: sits on body, upper half above
 
 	# Bamboo rod (cần đàn) on the LEFT side leaning OUTWARD (to the left) by ~11.5°
+	# Base anchors from the top of the resonator
 	var RB   := Vector2(GX, GY - GR * RATIO_ROD_BASE_Y)
-	var RT_y := maxf(H * 0.05, BT - BH * RATIO_ROD_TIP_Y + _bend_offset)
-	
+
 	# Bamboo rod leans to the LEFT (outward)
 	var rod_height_val := BH * RATIO_ROD_TIP_Y
 	var rod_lean := rod_height_val * RATIO_ROD_LEAN_ANGLE
-	
+
 	# Resting tip and resting curve control points (for stable base & lower 65% curvature)
 	var RT_rest := Vector2(GX - rod_lean, BT - BH * RATIO_ROD_TIP_Y)
 	var RC1  := Vector2(GX - rod_lean * RATIO_ROD_CTRL1_X, RB.y - BH * RATIO_ROD_CTRL1_Y)
@@ -222,9 +223,10 @@ func _draw() -> void:
 
 	var RT := rod_pts[SEG_ROD]
 
-	# Mirrored String: Starts near Gourd on Left, ends at Bridge on Right (Perfect horizontal)
-	var SS := Vector2(GX + GR * 0.22, SY)
-	var SE := Vector2(BR - BW * RATIO_BRIDGE_X, SY)
+	# String: slight downward slope from resonator side to chốt dây at right end
+	# Left end (near gourd) is slightly higher; right end terminates at chốt dây
+	var SS := Vector2(GX + GR * 0.22, SY - BH * 0.05)  # Left end slightly raised
+	var SE := Vector2(BR - RATIO_PEG_X, SY)             # Ends at chốt dây (not bridge)
 
 	# Harmonic Nodes: start near gourd (left) and end near bridge (right)
 	var N0  := BL + BW * RATIO_NODES_START
@@ -499,13 +501,13 @@ func _draw_node(pos: Vector2, idx: int, tgt: bool, hov: bool, glow: float, font:
 	draw_string(font, tp,             text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, tc)
 
 func _draw_gourd(gx: float, gy: float, gr: float) -> void:
-	# 1. Resonator connection neck (draw first so it sits behind the gourd)
-	var W := size.x
-	var BL := W * RATIO_BODY_LEFT
-	draw_line(Vector2(gx, gy), Vector2(BL, gy), COLOR_WAL_DRK, 8.0, true)
-	draw_line(Vector2(gx, gy - 1.5), Vector2(BL, gy - 1.5), COLOR_WAL_MID, 2.0, true)
-	# Muted gold joint collar at body edge
-	draw_line(Vector2(BL, gy - 4.5), Vector2(BL, gy + 4.5), COLOR_GOLD, 1.2, true)
+	# gy is at string height (SY): lower half of gourd overlaps body left end — correct for real đàn bầu
+
+	# 1. Decorative gold collar ring where gourd meets body left edge
+	var W   := size.x
+	var BL  := W * RATIO_BODY_LEFT
+	draw_circle(Vector2(BL, gy), 3.5, COLOR_GOLD)
+	draw_circle(Vector2(BL, gy), 2.0, COLOR_GOLD_DRK)
 
 	# 2. Horizontal tuning peg protruding from the left side of the resonator
 	var peg_x := gx - gr * 0.90
@@ -720,8 +722,11 @@ func _do_bend(ty: float) -> void:
 	var BH    : float = clampf(BW * RATIO_BODY_HEIGHT, MIN_BODY_HEIGHT, MAX_BODY_HEIGHT)
 	
 	var BCY   : float = size.y * 0.55
-	var GY    : float = BCY
+	var BT    : float = BCY - BH * 0.5
+	var SBT   : float = BT
 	var GR    : float = BH * RATIO_GOURD_RADIUS
+	var SY    : float = SBT - BH * RATIO_STRING_Y
+	var GY    : float = SY  # Matches gourd position in _draw()
 	var RB_y  : float = GY - GR * RATIO_ROD_BASE_Y
 	var rest_y: float = RB_y
 	var max_d : float = _max_bend()
