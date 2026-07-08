@@ -301,26 +301,57 @@ func _start_logo_float() -> void:
 func _on_viewport_size_changed() -> void:
 	var size = get_viewport().size
 	var is_mobile = size.x < size.y or size.x < 768
+	var is_compact = size.y < 540
 	
 	var content_vbox := get_node(FP) as VBoxContainer
 	var card_margin := $Center/Card/CardMargin as MarginContainer
 	
+	# Show/hide logo elements on mobile landscape to save vertical space
+	var logo_vbox := get_node_or_null(FP + "LogoVBox") as Control
+	if logo_vbox:
+		logo_vbox.visible = not is_compact
+		
+	var gap1 := get_node_or_null(FP + "Gap1") as Control
+	if gap1:
+		gap1.visible = not is_compact
+		
+	if footer_lbl:
+		footer_lbl.visible = not is_compact
+		
+	if _welcome_sub:
+		_welcome_sub.visible = not is_compact
+
 	if is_mobile:
 		content_vbox.custom_minimum_size = Vector2(0, content_vbox.custom_minimum_size.y)
 		card.custom_minimum_size = Vector2(size.x - 32, card.custom_minimum_size.y)
 		card_margin.add_theme_constant_override("margin_left", 20)
 		card_margin.add_theme_constant_override("margin_right", 20)
-		card_margin.add_theme_constant_override("margin_top", 32)
-		card_margin.add_theme_constant_override("margin_bottom", 32)
+		if is_compact:
+			card_margin.add_theme_constant_override("margin_top", 10)
+			card_margin.add_theme_constant_override("margin_bottom", 10)
+		else:
+			card_margin.add_theme_constant_override("margin_top", 32)
+			card_margin.add_theme_constant_override("margin_bottom", 32)
 		app_name.add_theme_font_size_override("font_size", 42)
 	else:
-		content_vbox.custom_minimum_size = Vector2(460, content_vbox.custom_minimum_size.y)
-		card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
-		card_margin.add_theme_constant_override("margin_left", 64)
-		card_margin.add_theme_constant_override("margin_right", 64)
-		card_margin.add_theme_constant_override("margin_top", 52)
-		card_margin.add_theme_constant_override("margin_bottom", 52)
+		if is_compact:
+			content_vbox.custom_minimum_size = Vector2(380, content_vbox.custom_minimum_size.y)
+			card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
+			card_margin.add_theme_constant_override("margin_left", 32)
+			card_margin.add_theme_constant_override("margin_right", 32)
+			card_margin.add_theme_constant_override("margin_top", 12)
+			card_margin.add_theme_constant_override("margin_bottom", 12)
+		else:
+			content_vbox.custom_minimum_size = Vector2(460, content_vbox.custom_minimum_size.y)
+			card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
+			card_margin.add_theme_constant_override("margin_left", 64)
+			card_margin.add_theme_constant_override("margin_right", 64)
+			card_margin.add_theme_constant_override("margin_top", 52)
+			card_margin.add_theme_constant_override("margin_bottom", 52)
 		app_name.add_theme_font_size_override("font_size", 58)
+		
+	if _welcome_lbl:
+		_welcome_lbl.add_theme_font_size_override("font_size", 20 if is_compact else 28)
 
 # ── Hệ thống hạt hoạt hình nền ────────────────────────────────────────────────
 func _spawn_bg_particles() -> void:
