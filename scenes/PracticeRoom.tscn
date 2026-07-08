@@ -37,9 +37,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 theme_override_constants/separation = 0
 
-; ── Top bar (compact: 56px) ───────────────────────────────────────────────────
 [node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 
 [node name="TopM" type="MarginContainer" parent="Root/TopBar"]
@@ -61,6 +60,13 @@ flat = true
 text = "Back"
 theme_override_font_sizes/font_size = 15
 
+[node name="LessonTag" type="Label" parent="Root/TopBar/TopM/TopH"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 13
+text = "DAN TRANH"
+
 [node name="LessonTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -69,22 +75,19 @@ theme_override_font_sizes/font_size = 16
 text = "Bai 4"
 
 [node name="MenuBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
 text = "⋮"
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 24
 
-; ── Hàng chính (fills toàn bộ chiều cao còn lại) ─────────────────────────────
-; MiddleRow: Linh (trái) | MainContent (giữa) | RightPanel (phải)
 [node name="MiddleRow" type="HBoxContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 390)
+custom_minimum_size = Vector2(0, 240)
 layout_mode = 2
 size_flags_vertical = 1
 theme_override_constants/separation = 0
 
-; ── Panel Linh: nhân vật ảo + speech bubble ───────────────────────────────────
 [node name="LinhPanel" type="PanelContainer" parent="Root/MiddleRow"]
 custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
@@ -126,7 +129,6 @@ text = "Gay nhe!"
 autowrap_mode = 3
 horizontal_alignment = 1
 
-; ── Nội dung giữa: notation + stats ──────────────────────────────────────────
 [node name="MainContent" type="VBoxContainer" parent="Root/MiddleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -164,15 +166,16 @@ vertical_scroll_mode = 0
 
 [node name="NotesHBox" type="HBoxContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
-; Stats: pitch / rhythm / score (compact cho landscape)
 [node name="StatsRow" type="HBoxContainer" parent="Root/MiddleRow/MainContent"]
+visible = false
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="PitchPanel" type="PanelContainer" parent="Root/MiddleRow/MainContent/StatsRow"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -232,7 +235,7 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 4
+theme_override_constants/separation = 5
 
 [node name="RhythmAcc" type="Label" parent="Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV"]
 layout_mode = 2
@@ -312,14 +315,14 @@ script = ExtResource("4_board")
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 
-[node name="RecordM" type="MarginContainer" parent="Root/MiddleRow/RightPanel/RecordBar"]
+[node name="RecordM" type="MarginContainer" parent="Root/RecordBar"]
 layout_mode = 2
-theme_override_constants/margin_left   = 12
-theme_override_constants/margin_right  = 12
-theme_override_constants/margin_top    = 0
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_top = 0
 theme_override_constants/margin_bottom = 0
 
-[node name="RecordH" type="VBoxContainer" parent="Root/MiddleRow/RightPanel/RecordBar/RecordM"]
+[node name="RecordH" type="HBoxContainer" parent="Root/RecordBar/RecordM"]
 layout_mode = 2
 theme_override_constants/separation = 16
 alignment = 1
@@ -339,14 +342,6 @@ flat = true
 text = "Lam lai"
 theme_override_font_sizes/font_size = 14
 
-[node name="HintDialog" type="AcceptDialog" parent="."]
-title = "Goi y ky thuat"
-dialog_text = ""
-
-[node name="ResultDialog" type="AcceptDialog" parent="."]
-title = "Ket qua luyen tap"
-dialog_text = ""
-
 [node name="SettingsPanel" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 1
@@ -354,9 +349,9 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -336.0
-offset_top = 74.0
+offset_top = 54.0
 offset_right = -16.0
-offset_bottom = 490.0
+offset_bottom = 470.0
 grow_horizontal = 0
 
 [node name="SettingsM" type="MarginContainer" parent="SettingsPanel"]
@@ -438,3 +433,11 @@ text = "Nghe mẫu: TẮT"
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Chờ nốt: Bật"
+
+[node name="HintDialog" type="AcceptDialog" parent="."]
+title = "Goi y ky thuat"
+dialog_text = ""
+
+[node name="ResultDialog" type="AcceptDialog" parent="."]
+title = "Ket qua luyen tap"
+dialog_text = ""
