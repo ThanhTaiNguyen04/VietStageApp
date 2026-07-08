@@ -442,6 +442,19 @@ func _ready() -> void:
 		_layout_btn = layout_btn
 		layout_btn.pressed.connect(toggle_orientation)
 
+		# Add Micro mode toggle button
+		var mic_btn = Button.new()
+		mic_btn.name = "MicBtn"
+		mic_btn.text = "Micro: Bật" if _mic_mode else "Micro: Tắt"
+		mic_btn.custom_minimum_size = Vector2(100, 36)
+		ctrl_btns.add_child(mic_btn)
+		_style_outlined_btn(mic_btn)
+		_make_button_bouncy(mic_btn)
+		mic_btn.pressed.connect(func():
+			_mic_mode = not _mic_mode
+			mic_btn.text = "Micro: Bật" if _mic_mode else "Micro: Tắt"
+		)
+
 	
 	if current_song_title == "":
 		_show_introduction_overlay()
@@ -1371,18 +1384,6 @@ func _va_say(text: String) -> void:
 	var t := create_tween()
 	t.tween_property(char_linh, "scale", Vector2(1.03, 0.97), 0.08)
 	t.tween_property(char_linh, "scale", Vector2.ONE, 0.14)
-
-	if _linh_collapsed:
-		_linh_collapsed = false
-		_update_linh_visibility()
-		
-	var active_timer = get_tree().create_timer(6.0)
-	_collapse_timer = active_timer
-	active_timer.timeout.connect(func():
-		if _collapse_timer == active_timer and not _linh_collapsed:
-			_linh_collapsed = true
-			_update_linh_visibility()
-	)
 
 func _setup_collapsible_linh() -> void:
 	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer

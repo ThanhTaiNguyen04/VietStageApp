@@ -131,8 +131,8 @@ func get_str_l(idx: int) -> float:
 	var ix := 24.0
 	var iw := W - 60.0
 	var t := float(idx) / float(STR_COUNT - 1)
-	# Straight diagonal line for the left string anchor
-	var pct := 0.08 - 0.02 * t
+	# Curve that matches the diagonal slope of the bridges
+	var pct := lerpf(0.04, 0.22, t) - sin(t * PI) * 0.02
 	return ix + iw * pct
 
 func _draw_inlay_pattern(rect: Rect2, color: Color) -> void:
@@ -211,7 +211,7 @@ func _draw() -> void:
 	# 1. Base zither body shadow & background (Light Pale Wood)
 	var base_sb := StyleBoxFlat.new()
 	base_sb.bg_color = Color(0.85, 0.76, 0.55)
-	base_sb.set_corner_radius_all(14)
+	base_sb.set_corner_radius_all(40) # Bo tròn nhiều hơn giống thân đàn thật
 	base_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.45)
 	base_sb.shadow_size = 8
 	base_sb.shadow_offset = Vector2(0, 4)
@@ -289,6 +289,7 @@ func _draw() -> void:
 	board_sb.border_width_top = 8
 	board_sb.border_width_bottom = 8
 	board_sb.border_color = Color(0.20, 0.08, 0.04)
+	board_sb.set_corner_radius_all(40) # Bo tròn theo base_sb
 	draw_style_box(board_sb, Rect2(24.0, 0.0, W - 48.0, H))
 	
 	# Gold accent frame lines
@@ -524,16 +525,10 @@ func _draw() -> void:
 			draw_polyline(pts, Color(1.00, 0.95, 0.75, _glow_alpha[i] * 0.18), sw + 12.0, true)
 
 
-		# ── Pluck Target Ring & Scrolling Notes ──
-		var trigger_x: float = bridge_x + 0.25 * (str_r - bridge_x)
+		# ── Pluck Target Line & Scrolling Notes ──
+		var trigger_x: float = get_bridge_x(STR_COUNT - 1) + 32.0
 		
-		# Pluck target ring: glowing golden ring
-		var ring_col := Color(0.77, 0.58, 0.15, 0.35)
-		if _is_target[i]:
-			var pulse := (sin(_pulse_phase[i]) + 1.0) * 0.5
-			ring_col = Color(0.95, 0.72, 0.18, 0.5 + pulse * 0.4)
-		draw_circle(Vector2(trigger_x, cy), 9.0, ring_col, false, 1.5)
-		draw_circle(Vector2(trigger_x, cy), 4.0, Color(ring_col.r, ring_col.g, ring_col.b, ring_col.a * 0.3))
+		# (Removed circular target ring, replaced with a straight vertical finish line drawn later)
 		
 		# Draw scrolling notes on this string
 		if is_active and not sheet_notes.is_empty():
@@ -558,10 +553,10 @@ func _draw() -> void:
 				
 				# Only draw if it's visible in the playable zither area
 				if note_x >= str_l - 20.0 and note_x <= str_r + 200.0:
-					var cap_h: float = clampf(rh * 0.72, 12.0, 30.0)
+					var cap_h: float = clampf(rh * 0.90, 14.0, 42.0) # To bằng con nhạn
 					var note_width: float = cap_h # Force perfect circle
 					
-					# Fade in as it emerges from the left knot
+					# Fade in as the leading edge emerges from the left knot
 					var alpha_mult: float = clampf((note_x - str_l) / (note_width * 1.5), 0.0, 1.0)
 					if alpha_mult <= 0.01:
 						note_time += duration
@@ -570,23 +565,25 @@ func _draw() -> void:
 					# Center the circle on the note_x position
 					var cap_rect: Rect2 = Rect2(note_x - note_width * 0.5, cy - cap_h * 0.5, note_width, cap_h)
 					
-					var cap_color: Color = Color(0.12, 0.43, 0.31, 0.6) # jade/teal future note
-					var border_color: Color = Color(0.18, 0.60, 0.44, 0.8)
+					var cap_color: Color = base_col
+					cap_color.a = 0.35 # Semi-transparent background
+					var border_color: Color = base_col.lightened(0.2)
+					border_color.a = 0.85 # Bright solid border
 					
 					if k == current_note_idx:
 						var pulse: float = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
-						cap_color = Color(0.95, 0.72, 0.18, 0.85 + pulse * 0.1) # glowing gold
+						cap_color = Color(0.95, 0.72, 0.18, 0.4 + pulse * 0.1) # semi-transparent gold
 						border_color = Color(1.0, 0.92, 0.60, 0.95)
 					elif k < current_note_idx:
 						var status = note_statuses[k] if k < note_statuses.size() else "unplayed"
 						if status == "correct":
-							cap_color = Color(0.15, 0.68, 0.37, 0.7) # emerald green
+							cap_color = Color(0.15, 0.68, 0.37, 0.35)
 							border_color = Color(0.18, 0.80, 0.44, 0.9)
 						elif status == "missed":
-							cap_color = Color(0.75, 0.22, 0.17, 0.5) # muted ruby red
+							cap_color = Color(0.75, 0.22, 0.17, 0.35)
 							border_color = Color(0.90, 0.30, 0.25, 0.75)
 						else:
-							cap_color = Color(0.4, 0.4, 0.4, 0.45) # grey
+							cap_color = Color(0.4, 0.4, 0.4, 0.2)
 							border_color = Color(0.55, 0.55, 0.55, 0.6)
 							
 					cap_color.a *= alpha_mult
@@ -599,23 +596,24 @@ func _draw() -> void:
 					cap_sb.border_width_top = 1; cap_sb.border_width_bottom = 1
 					cap_sb.set_corner_radius_all(int(cap_h * 0.5))
 					
-					# Shadow
-					cap_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.3 * alpha_mult)
+					# Shadow/Glow effect
+					cap_sb.shadow_color = Color(border_color.r, border_color.g, border_color.b, 0.3 * alpha_mult)
 					cap_sb.shadow_size = 3
-					cap_sb.shadow_offset = Vector2(1, 1)
+					cap_sb.shadow_offset = Vector2(0, 0)
 					
 					draw_style_box(cap_sb, cap_rect)
 					
-					# Draw note text inside circle
-					if font != null:
-						var text_color: Color = Color.WHITE
-						if k == current_note_idx:
-							text_color = Color("#2e180d") # dark brown for active note readability
-						text_color.a *= alpha_mult
-						var txt_size: int = clamp(int(cap_h * 0.55), 8, 14)
-						var txt_y: float = cy + txt_size * 0.35
-						# Draw centered in the circle
-						draw_string(font, Vector2(note_x - note_width * 0.5, txt_y), note_name, HORIZONTAL_ALIGNMENT_CENTER, note_width, txt_size, text_color)
+					# Draw flower inside
+					var fc = border_color
+					var fr = cap_h * 0.22
+					var center_pos = Vector2(note_x, cy)
+					draw_circle(center_pos + Vector2(-fr, 0.0), fr, fc)
+					draw_circle(center_pos + Vector2(fr, 0.0), fr, fc)
+					draw_circle(center_pos + Vector2(0.0, -fr), fr, fc)
+					draw_circle(center_pos + Vector2(0.0, fr), fr, fc)
+					var center_dot = fc
+					center_dot.a = 0.5 * alpha_mult
+					draw_circle(center_pos, fr * 0.6, center_dot)
 						
 				note_time += duration
 
@@ -653,6 +651,10 @@ func _draw() -> void:
 			var marker_y = _press_y[i] + visual_vibrato
 			draw_circle(Vector2(_press_x[i], marker_y), 6.0, Color(0.95, 0.22, 0.08, 0.85))
 			draw_circle(Vector2(_press_x[i], marker_y), 3.0, Color(1.00, 0.75, 0.35, 0.95))
+			
+	# 5. Draw the target finish line (đường thẳng kết thúc)
+	var finish_x = get_bridge_x(STR_COUNT - 1) + 32.0
+	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(1.0, 0.85, 0.15, 0.65), 3.0)
 
 func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 	var bw := 20.0
