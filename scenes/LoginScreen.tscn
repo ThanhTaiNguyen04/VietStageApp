@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://login_screen_001"]
+[gd_scene load_steps=6 format=3 uid="uid://login_screen_001"]
 
 [ext_resource type="Script"    path="res://scripts/LoginScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/bg_login.jpg" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/textures/ui_logo.jpg" id="3_logo"]
-[ext_resource type="FontFile"  path="res://assets/fonts/Nunito.ttf" id="4_font"]
+[ext_resource type="Texture2D" path="res://assets/textures/login-heritage-bg.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/textures/logovuongtachnen.png" id="3_logo"]
+[ext_resource type="FontFile"  path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="4_font"]
+[ext_resource type="FontFile"  path="res://assets/fonts/Lora-Bold.ttf" id="5_font_title"]
 
 [node name="LoginScreen" type="Control"]
 layout_mode = 3
@@ -24,28 +25,31 @@ texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 6
 
+; Lớp kem sáng phủ lên
 [node name="RedOverlay" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.22, 0.03, 0.03, 0.78)
+color = Color(0.15, 0.02, 0.02, 0.5)
 
+; Gradient tối thành mờ trong suốt
 [node name="TopDark" type="ColorRect" parent="."]
 layout_mode = 1
 anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 1.0
-anchor_bottom = 0.35
-color = Color(0.05, 0.01, 0.01, 0.55)
+anchor_bottom = 0.40
+color = Color(1.0, 1.0, 1.0, 0.0)
 
+; Gradient vàng nhạt mờ từ dưới lên (ánh sáng đèn lồng)
 [node name="BottomGlow" type="ColorRect" parent="."]
 layout_mode = 1
 anchor_left = 0.0
 anchor_top = 0.70
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.60, 0.30, 0.04, 0.15)
+color = Color(0.77, 0.58, 0.15, 0.08)
 
 ; Hạt hoạt hình (tạo bởi script)
 [node name="ParticleLayer" type="Control" parent="."]
@@ -55,12 +59,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
+; Vignette bo góc màu kem nhạt
 [node name="Vignette" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.0, 0.0, 0.0, 0.38)
+color = Color(0.95, 0.93, 0.88, 0.20)
 
 ; ── Cột trái: thương hiệu (logo lớn + tên app + tagline) ─────────────────────
 [node name="LeftBrand" type="CenterContainer" parent="."]
@@ -138,8 +143,8 @@ stretch_mode = 5
 
 [node name="AppName" type="Label" parent="Center/Card/CardMargin/ContentVBox/LogoVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 28
+theme_override_fonts/font = ExtResource("5_font_title")
+theme_override_font_sizes/font_size = 58
 text = "VietStage"
 horizontal_alignment = 1
 
@@ -151,12 +156,46 @@ text = "Học nhạc cụ dân tộc Việt Nam"
 horizontal_alignment = 1
 
 [node name="Gap1" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+
+; ── Ô nhập tên (Đăng ký) và email ──────────────────────────────────────────────
+[node name="NameEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Tên hiển thị của bạn"
+
+[node name="GapName" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-; ── Ô nhập email ──────────────────────────────────────────────────────────────
 [node name="EmailEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Email của bạn"
+
+[node name="Gap2" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="PasswordEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 18
+secret = true
+placeholder_text = "Mật khẩu của bạn"
+
+[node name="GapPassword" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ErrorLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 15
@@ -185,6 +224,18 @@ theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 16
 text = "ĐĂNG NHẬP"
 
+[node name="GapToggle" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ToggleModeBtn" type="Button" parent="Center/Card/CardMargin/ContentVBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_font")
+theme_override_font_sizes/font_size = 14
+text = "Chưa có tài khoản? Đăng ký ngay"
+flat = true
+
 [node name="Gap3" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
@@ -200,7 +251,7 @@ custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-color = Color(1.0, 1.0, 1.0, 0.14)
+color = Color(0.13, 0.08, 0.05, 0.14)
 
 [node name="OrLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox/DivRow"]
 layout_mode = 2
@@ -213,7 +264,7 @@ custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-color = Color(1.0, 1.0, 1.0, 0.14)
+color = Color(0.13, 0.08, 0.05, 0.14)
 
 [node name="Gap4" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
 custom_minimum_size = Vector2(0, 8)

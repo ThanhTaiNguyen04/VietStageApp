@@ -30,6 +30,11 @@ window/size/viewport_width=844
 window/size/viewport_height=390
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation="landscape"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/xogot_connect/plugin.cfg")
 
 [gui]
 
@@ -38,6 +43,13 @@ theme/custom="res://assets/theme/global_theme.tres"
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
+virtual_controller/ios/enable_controller=false
+virtual_controller/ios/enable_left_thumbstick=true
+virtual_controller/ios/enable_right_thumbstick=true
+virtual_controller/ios/enable_button_a=true
+virtual_controller/ios/enable_button_b=true
+virtual_controller/ios/enable_button_x=true
+virtual_controller/ios/enable_button_y=true
 
 [rendering]
 

@@ -1,0 +1,218 @@
+[gd_scene load_steps=2 format=3 uid="uid://custom_popup_001"]
+
+[ext_resource type="Script" path="res://scripts/CustomPopup.gd" id="1_script"]
+
+[node name="CustomPopup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="DimBG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.02, 0.008, 0.75)
+
+[node name="CardContainer" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(650, 480)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -325.0
+offset_top = -240.0
+offset_right = 325.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(325, 240)
+
+[node name="MarginContainer" type="MarginContainer" parent="CardContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="Content" type="VBoxContainer" parent="CardContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="CardContainer/MarginContainer/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "KẾT QUẢ LUYỆN TẬP"
+horizontal_alignment = 1
+
+[node name="Divider" type="ColorRect" parent="CardContainer/MarginContainer/Content"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.77, 0.58, 0.15, 0.35)
+
+[node name="HintScroll" type="ScrollContainer" parent="CardContainer/MarginContainer/Content"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="HintText" type="RichTextLabel" parent="CardContainer/MarginContainer/Content/HintScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Hint Text Goes Here..."
+
+[node name="ResultVBox" type="VBoxContainer" parent="CardContainer/MarginContainer/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="MainRow" type="HBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="ScoreCircle" type="PanelContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="ScoreM" type="MarginContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/ScoreCircle"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ScoreV" type="VBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/ScoreCircle/ScoreM"]
+layout_mode = 2
+theme_override_constants/separation = -4
+alignment = 1
+
+[node name="ScoreVal" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/ScoreCircle/ScoreM/ScoreV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "95"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/ScoreCircle/ScoreM/ScoreV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ĐIỂM"
+horizontal_alignment = 1
+
+[node name="DetailsVBox" type="VBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="RatingLabel" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/DetailsVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Xuất sắc! 🎉"
+
+[node name="RewardsCard" type="PanelContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/DetailsVBox"]
+layout_mode = 2
+
+[node name="RewardM" type="MarginContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/DetailsVBox/RewardsCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="RewardsLabel" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MainRow/DetailsVBox/RewardsCard/RewardM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "💎 +80 XP  ·  🔓 Đã mở khóa Bài 5"
+
+[node name="MetricsVBox" type="VBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MetricPitch" type="HBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox"]
+layout_mode = 2
+
+[node name="PitchLabel" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricPitch"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎵 Cao độ"
+
+[node name="PitchBar" type="ProgressBar" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricPitch"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 82.0
+show_percentage = false
+
+[node name="PitchVal" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricPitch"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "82%"
+horizontal_alignment = 2
+
+[node name="MetricRhythm" type="HBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox"]
+layout_mode = 2
+
+[node name="RhythmLabel" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricRhythm"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "⏱️ Nhịp điệu"
+
+[node name="RhythmBar" type="ProgressBar" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricRhythm"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 71.0
+show_percentage = false
+
+[node name="RhythmVal" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricRhythm"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "71%"
+horizontal_alignment = 2
+
+[node name="MetricTech" type="HBoxContainer" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox"]
+layout_mode = 2
+
+[node name="TechLabel" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricTech"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "⚡ Kỹ thuật"
+
+[node name="TechBar" type="ProgressBar" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricTech"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 79.0
+show_percentage = false
+
+[node name="TechVal" type="Label" parent="CardContainer/MarginContainer/Content/ResultVBox/MetricsVBox/MetricTech"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "79%"
+horizontal_alignment = 2
+
+[node name="ActionBtn" type="Button" parent="CardContainer/MarginContainer/Content"]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 18
+text = "Tiếp tục"

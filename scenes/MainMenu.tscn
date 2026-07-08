@@ -72,6 +72,12 @@ layout_mode = 2
 flat = true
 text = "Khóa học"
 
+[node name="BtnRoom" type="Button" parent="Root/Sidebar/SideM/SideV"]
+custom_minimum_size = Vector2(220, 140)
+layout_mode = 2
+flat = true
+text = "Phòng nhạc"
+
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV"]
 custom_minimum_size = Vector2(160, 68)
 layout_mode = 2
@@ -118,12 +124,6 @@ layout_mode = 2
 texture = ExtResource("3_avatar")
 expand_mode = 1
 stretch_mode = 6
-
-[node name="GreetLabel" type="Label" parent="Root/RightContent/TopBar/TopRow"]
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 18
-text = "Hi, Tai!"
 
 [node name="Spacer" type="Control" parent="Root/RightContent/TopBar/TopRow"]
 layout_mode = 2
@@ -567,3 +567,41 @@ custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 size_flags_vertical = 4
 flat = true
+
+[node name="BottomBar" type="PanelContainer" parent="Root/RightContent"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="BottomM" type="MarginContainer" parent="Root/RightContent/BottomBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+
+[node name="BottomH" type="HBoxContainer" parent="Root/RightContent/BottomBar/BottomM"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="BtnCoursesMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Khóa học"
+
+[node name="BtnRoomMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Phòng nhạc"
+
+[node name="BtnSongsMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Bài hát"
+
+[node name="BtnAccountMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Hồ sơ"

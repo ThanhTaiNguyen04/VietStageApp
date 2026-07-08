@@ -1,0 +1,320 @@
+[gd_scene load_steps=5 format=3 uid="uid://practice_dan_bau_001"]
+
+[ext_resource type="Script"    path="res://scripts/PracticeDanBau.gd"                      id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dh73yas1kofe0" path="res://assets/textures/bg_practice_room.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://d3ewwh4ccte6v" path="res://assets/textures/virtual_artist_mai.png" id="3_char"]
+[ext_resource type="Script"    path="res://scripts/DanBauBoard.gd"                         id="4_board"]
+
+[node name="PracticeDanBau" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BGOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.02, 0.008, 0.90)
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 0
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+
+[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+text = "Back"
+theme_override_font_sizes/font_size = 20
+
+[node name="LessonTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 24
+text = "Bai 1"
+
+[node name="MenuBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+text = "⋮"
+theme_override_font_sizes/font_size = 28
+
+[node name="MiddleRow" type="HBoxContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_constants/separation = 0
+
+[node name="LinhPanel" type="PanelContainer" parent="Root/MiddleRow"]
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LinhVBox" type="VBoxContainer" parent="Root/MiddleRow/LinhPanel"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CharLinhWrapper" type="Control" parent="Root/MiddleRow/LinhPanel/LinhVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CharLinh" type="TextureRect" parent="Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_char")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpeechBubble" type="PanelContainer" parent="Root/MiddleRow/LinhPanel/LinhVBox"]
+layout_mode = 2
+
+[node name="SpeechM" type="MarginContainer" parent="Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="SpeechLabel" type="Label" parent="Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Gay nhe!"
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="MainContent" type="VBoxContainer" parent="Root/MiddleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="NotationArea" type="PanelContainer" parent="Root/MiddleRow/MainContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NotationM" type="MarginContainer" parent="Root/MiddleRow/MainContent/NotationArea"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="NotationVBox" type="VBoxContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="NotationLabel" type="Label" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "BAN NHAC"
+
+[node name="TargetNoteLabel" type="Label" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Nốt cần gảy: Hò"
+
+[node name="NotesScroll" type="ScrollContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox"]
+layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="NotesHBox" type="HBoxContainer" parent="Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+
+
+[node name="StringsBoard" type="PanelContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BoardM" type="MarginContainer" parent="Root/StringsBoard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 4
+
+[node name="BoardVBox" type="VBoxContainer" parent="Root/StringsBoard/BoardM"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BoardLabel" type="Label" parent="Root/StringsBoard/BoardM/BoardVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "DÂN BẦU  —  Chạm hài âm  ·  Kéo vòi"
+horizontal_alignment = 1
+
+[node name="TargetLabel" type="Label" parent="Root/StringsBoard/BoardM/BoardVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Dây cần gảy: 2"
+horizontal_alignment = 1
+
+[node name="DanBauBoard" type="Control" parent="Root/StringsBoard/BoardM/BoardVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 0
+script = ExtResource("4_board")
+
+[node name="RecordBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+
+[node name="RecordM" type="MarginContainer" parent="Root/RecordBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="RecordH" type="HBoxContainer" parent="Root/RecordBar/RecordM"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="RecordBtn" type="Button" parent="Root/RecordBar/RecordM/RecordH"]
+custom_minimum_size = Vector2(500, 56)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 22
+text = "Bat dau luyen tap"
+
+[node name="ResetBtn" type="Button" parent="Root/RecordBar/RecordM/RecordH"]
+custom_minimum_size = Vector2(150, 52)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+text = "Lam lai"
+theme_override_font_sizes/font_size = 18
+
+[node name="SettingsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -336.0
+offset_top = 74.0
+offset_right = -16.0
+offset_bottom = 490.0
+grow_horizontal = 0
+
+[node name="SettingsM" type="MarginContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel/SettingsM"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MenuTitle" type="Label" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "CÀI ĐẶT LUYỆN TẬP"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+
+[node name="DotsHBox" type="HBoxContainer" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="Dot1" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot2" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot3" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot4" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="Dot5" type="ColorRect" parent="SettingsPanel/SettingsM/SettingsVBox/DotsHBox"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="ProgressVBox" type="VBoxContainer" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PctLabel" type="Label" parent="SettingsPanel/SettingsM/SettingsVBox/ProgressVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "20%"
+horizontal_alignment = 2
+
+[node name="LessonBar" type="ProgressBar" parent="SettingsPanel/SettingsM/SettingsVBox/ProgressVBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+value = 20.0
+show_percentage = false
+
+[node name="CtrlBtns" type="VBoxContainer" parent="SettingsPanel/SettingsM/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="HintBtn" type="Button" parent="SettingsPanel/SettingsM/SettingsVBox/CtrlBtns"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Gợi ý"
+
+[node name="DemoBtn" type="Button" parent="SettingsPanel/SettingsM/SettingsVBox/CtrlBtns"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Nghe mẫu: TẮT"
+
+[node name="SlowBtn" type="Button" parent="SettingsPanel/SettingsM/SettingsVBox/CtrlBtns"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Chờ nốt: Bật"

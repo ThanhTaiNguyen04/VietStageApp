@@ -5,25 +5,34 @@ class_name SecureDataManager
 const SAVE_FILE_PATH := "user://vietstage_progress.dat"
 const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLearning"
 
+# Progression session state (migrated from CourseMap)
+static var video_completed := false
+static var active_lesson_id := "Node2"
+
 # Default player state synchronized across all scenes
 static var data := {
 	"selected_instrument": "dan_tranh",
 	"is_premium": false,
 	"unlocked_lessons": {
 		"dan_tranh": ["Node1", "Node2"],
-		"sao_truc": ["Node1", "Node2"]
+		"sao_truc": ["Node1", "Node2"],
+		"dan_bau": ["Node1", "Node2", "dan_bau_coban_1_video"]
 	},
 	"completed_lessons": {
 		"dan_tranh": [],
-		"sao_truc": []
+		"sao_truc": [],
+		"dan_bau": []
 	},
 	"stars": {
 		"dan_tranh": {},
-		"sao_truc": {}
+		"sao_truc": {},
+		"dan_bau": {}
 	},
 	"daily_streak": 1,
 	"last_practice_date": "",
-	"practice_time_seconds": 0
+	"practice_time_seconds": 0,
+	"unlocked_decorations": [],
+	"active_decorations": []
 }
 
 static func save_data() -> void:
@@ -92,8 +101,84 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		next_lesson_id = "Node4"
 	elif lesson_id == "Node4":
 		next_lesson_id = "Node5"
+	elif lesson_id.begins_with("dan_bau_coban_"):
+		if lesson_id.ends_with("_video"):
+			next_lesson_id = lesson_id.replace("_video", "_practice")
+		elif lesson_id.ends_with("_practice"):
+			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_practice", ""))
+			if idx < 3:
+				next_lesson_id = "dan_bau_coban_" + str(idx + 1) + "_video"
 		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
+		save_data()
+
+static func get_course_progress(instrument: String) -> float:
+	var completed := 0
+	var core_nodes := ["Node1", "Node2", "Node3", "Node4", "Node5"]
+	for node in core_nodes:
+		if is_lesson_completed(instrument, node):
+			completed += 1
+	return float(completed) / float(core_nodes.size()) * 100.0
+
+static func is_instrument_unlocked(instrument: String) -> bool:
+	if instrument == "dan_tranh":
+		return true
+	elif instrument == "sao_truc":
+		return is_lesson_completed("dan_tranh", "Node5")
+	elif instrument == "dan_bau":
+		return is_lesson_completed("sao_truc", "Node5")
+	return false
+
+static func get_total_stars() -> int:
+	var total := 0
+	if data.has("stars"):
+		for inst in data.stars.keys():
+			for lesson_id in data.stars[inst].keys():
+				total += int(data.stars[inst][lesson_id])
+	return total
+
+static func unlock_decoration(decor_id: String, cost: int) -> bool:
+	if not data.has("unlocked_decorations"):
+		data["unlocked_decorations"] = []
+	if not data.has("active_decorations"):
+		data["active_decorations"] = []
 		
+	if data["unlocked_decorations"].has(decor_id):
+		return true
+		
+	var stars = get_total_stars()
+	if stars >= cost:
+		data["unlocked_decorations"].append(decor_id)
+		if not data["active_decorations"].has(decor_id):
+			data["active_decorations"].append(decor_id)
+		save_data()
+		return true
+	return false
+
+static func toggle_decoration(decor_id: String) -> void:
+	if not data.has("unlocked_decorations"):
+		data["unlocked_decorations"] = []
+	if not data.has("active_decorations"):
+		data["active_decorations"] = []
+		
+	if not data["unlocked_decorations"].has(decor_id):
+		return
+		
+	if data["active_decorations"].has(decor_id):
+		data["active_decorations"].erase(decor_id)
+	else:
+		data["active_decorations"].append(decor_id)
 	save_data()
+
+static func has_viewed_intro(instrument: String) -> bool:
+	if not data.has("viewed_intros"):
+		data["viewed_intros"] = []
+	return data["viewed_intros"].has(instrument)
+
+static func mark_intro_viewed(instrument: String) -> void:
+	if not data.has("viewed_intros"):
+		data["viewed_intros"] = []
+	if not data["viewed_intros"].has(instrument):
+		data["viewed_intros"].append(instrument)
+		save_data()

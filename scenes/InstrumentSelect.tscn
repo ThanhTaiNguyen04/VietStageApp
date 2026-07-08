@@ -1,7 +1,8 @@
 [gd_scene load_steps=3 format=3 uid="uid://instrument_select_001"]
 
-[ext_resource type="Script"   path="res://scripts/InstrumentSelect.gd" id="1_script"]
-[ext_resource type="FontFile" path="res://assets/fonts/Nunito.ttf"     id="2_font"]
+[ext_resource type="Script"  path="res://scripts/InstrumentSelect.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="2_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="3_font_title"]
 
 [node name="InstrumentSelect" type="Control"]
 layout_mode = 3
@@ -17,7 +18,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.051, 0.031, 0.137, 1.0)
+color = Color(0.98, 0.97, 0.94, 1.0)
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -48,15 +49,15 @@ layout_mode = 2
 size_flags_vertical = 4
 flat = true
 theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 15
-text = "← Quay lại"
+theme_override_font_sizes/font_size = 19
+text = "< Quay lại"
 
 [node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 20
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 28
 text = "Chọn Nhạc Cụ"
 horizontal_alignment = 1
 
@@ -86,40 +87,37 @@ size_flags_vertical = 3
 horizontal_scroll_mode = 3
 vertical_scroll_mode = 0
 
-[node name="CardsArea" type="MarginContainer" parent="Root/ScrollArea"]
-layout_mode = 2
-theme_override_constants/margin_left   = 16
-theme_override_constants/margin_right  = 16
-theme_override_constants/margin_top    = 8
-theme_override_constants/margin_bottom = 12
-
-; ── Cards: landscape → HBoxContainer (CardsVBox giữ tên để script tương thích) ─
-[node name="CardsVBox" type="HBoxContainer" parent="Root/ScrollArea/CardsArea"]
+[node name="CardsScroll" type="ScrollContainer" parent="Root/CardsArea"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 14
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="CardsHBox" type="HBoxContainer" parent="Root/CardsArea/CardsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 28
 
 ; ─── Card: Đàn Tranh ──────────────────────────────────────────────────────────
-[node name="CardDanTranh" type="PanelContainer" parent="Root/ScrollArea/CardsArea/CardsVBox"]
-custom_minimum_size = Vector2(0, 0)
+[node name="CardDanTranh" type="PanelContainer" parent="Root/CardsArea/CardsScroll/CardsHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 clip_contents = true
 
-; DTRoot: landscape → VBoxContainer (ảnh trên, nội dung dưới)
-[node name="DTRoot" type="VBoxContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh"]
+[node name="DTRoot" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="DTImageArea" type="Control" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot"]
-custom_minimum_size = Vector2(0, 100)
+[node name="DTImageArea" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot"]
+custom_minimum_size = Vector2(0, 248)
 layout_mode = 2
 size_flags_horizontal = 3
 clip_contents = true
 
-[node name="DTImage" type="TextureRect" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTImageArea"]
+[node name="DTImage" type="TextureRect" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTImageArea"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -128,76 +126,70 @@ expand_mode = 1
 stretch_mode = 5
 mouse_filter = 2
 
-[node name="DTContent" type="MarginContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left   = 14
-theme_override_constants/margin_right  = 14
-theme_override_constants/margin_top    = 10
-theme_override_constants/margin_bottom = 12
-
-[node name="DTCVBox" type="VBoxContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent"]
+[node name="DTContent" type="MarginContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 5
 
-[node name="DTName" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+[node name="DTCVBox" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
+theme_override_constants/separation = 10
+
+[node name="DTName" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 28
 text = "Đàn Tranh"
 
-[node name="DTDesc" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+[node name="DTDesc" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 11
 text = "16 dây  ·  72 bài học  ·  3 cấp độ"
 autowrap_mode = 3
 
-[node name="DTSpacer" type="Control" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+[node name="DTSpacer" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="DTBar" type="ProgressBar" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
-custom_minimum_size = Vector2(0, 5)
+[node name="DTBar" type="ProgressBar" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 value = 60.0
 show_percentage = false
 
-[node name="DTPct" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+[node name="DTPct" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 11
 text = "60% hoàn thành"
 
-[node name="DTBtn" type="Button" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
-custom_minimum_size = Vector2(0, 38)
+[node name="DTBtn" type="Button" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox"]
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 14
 text = "Học ngay"
 
 ; ─── Card: Sáo Trúc ───────────────────────────────────────────────────────────
-[node name="CardSaoTruc" type="PanelContainer" parent="Root/ScrollArea/CardsArea/CardsVBox"]
-custom_minimum_size = Vector2(0, 0)
+[node name="CardSaoTruc" type="PanelContainer" parent="Root/CardsArea/CardsScroll/CardsHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 clip_contents = true
 
-[node name="STRoot" type="VBoxContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc"]
+[node name="STRoot" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="STImageArea" type="Control" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot"]
-custom_minimum_size = Vector2(0, 100)
+[node name="STImageArea" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot"]
+custom_minimum_size = Vector2(0, 248)
 layout_mode = 2
 size_flags_horizontal = 3
 clip_contents = true
 
-[node name="STImage" type="TextureRect" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STImageArea"]
+[node name="STImage" type="TextureRect" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STImageArea"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -206,76 +198,70 @@ expand_mode = 1
 stretch_mode = 5
 mouse_filter = 2
 
-[node name="STContent" type="MarginContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left   = 14
-theme_override_constants/margin_right  = 14
-theme_override_constants/margin_top    = 10
-theme_override_constants/margin_bottom = 12
-
-[node name="STCVBox" type="VBoxContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent"]
+[node name="STContent" type="MarginContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 5
 
-[node name="STName" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+[node name="STCVBox" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
+theme_override_constants/separation = 10
+
+[node name="STName" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 28
 text = "Sáo Trúc"
 
-[node name="STDesc" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+[node name="STDesc" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 11
 text = "Sáo tre  ·  58 bài học  ·  2 cấp độ"
 autowrap_mode = 3
 
-[node name="STSpacer" type="Control" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+[node name="STSpacer" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="STBar" type="ProgressBar" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent/STCVBox"]
-custom_minimum_size = Vector2(0, 5)
+[node name="STBar" type="ProgressBar" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 value = 0.0
 show_percentage = false
 
-[node name="STPct" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+[node name="STPct" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 11
 text = "Chưa bắt đầu"
 
-[node name="STBtn" type="Button" parent="Root/ScrollArea/CardsArea/CardsVBox/CardSaoTruc/STRoot/STContent/STCVBox"]
-custom_minimum_size = Vector2(0, 38)
+[node name="STBtn" type="Button" parent="Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox"]
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 14
 text = "Bắt đầu"
 
 ; ─── Card: Đàn Bầu (locked) ───────────────────────────────────────────────────
-[node name="CardDanBau" type="PanelContainer" parent="Root/ScrollArea/CardsArea/CardsVBox"]
-custom_minimum_size = Vector2(0, 0)
+[node name="CardDanBau" type="PanelContainer" parent="Root/CardsArea/CardsScroll/CardsHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 clip_contents = true
 
-[node name="DBRoot" type="VBoxContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau"]
+[node name="DBRoot" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="DBImageArea" type="Control" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot"]
-custom_minimum_size = Vector2(0, 100)
+[node name="DBImageArea" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot"]
+custom_minimum_size = Vector2(0, 248)
 layout_mode = 2
 size_flags_horizontal = 3
 clip_contents = true
 
-[node name="DBImage" type="TextureRect" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBImageArea"]
+[node name="DBImage" type="TextureRect" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBImageArea"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -284,48 +270,47 @@ expand_mode = 1
 stretch_mode = 5
 mouse_filter = 2
 
-[node name="DBContent" type="MarginContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/margin_left   = 14
-theme_override_constants/margin_right  = 14
-theme_override_constants/margin_top    = 10
-theme_override_constants/margin_bottom = 12
-
-[node name="DBCVBox" type="VBoxContainer" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBContent"]
+[node name="DBContent" type="MarginContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 5
 
-[node name="DBName" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+[node name="DBCVBox" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 18
+theme_override_constants/separation = 10
+
+[node name="DBName" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 28
 text = "Đàn Bầu"
 
-[node name="DBDesc" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 11
-text = "Độc huyền cầm  ·  45 bài học"
-autowrap_mode = 3
-
-[node name="DBSpacer" type="Control" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="DBComingSoon" type="Label" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 11
-text = "Sắp ra mắt"
-horizontal_alignment = 1
-
-[node name="DBBtn" type="Button" parent="Root/ScrollArea/CardsArea/CardsVBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
-custom_minimum_size = Vector2(0, 38)
+[node name="DBDesc" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 14
-text = "Sắp Ra Mắt"
-disabled = true
+text = "Độc huyền cầm  ·  45 bài học"
+autowrap_mode = 3
+
+[node name="DBSpacer" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DBBar" type="ProgressBar" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+value = 0.0
+show_percentage = false
+
+[node name="DBPct" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 13
+text = "Chưa bắt đầu"
+
+[node name="DBBtn" type="Button" parent="Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "Bắt đầu"
