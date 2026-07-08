@@ -57,7 +57,10 @@ var _current_note_elapsed := 0.0
 var _song_bpm := 80.0
 var _current_note_hit := false
 var _demo_note_plucked := false
+var _layout_btn: Button = null
 
+enum BoardOrientation { LANDSCAPE, PORTRAIT }
+var _current_orientation: BoardOrientation = BoardOrientation.LANDSCAPE
 # AI Analysis tracking variables
 var _practice_time := 0.0
 var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
@@ -434,6 +437,20 @@ func _ready() -> void:
 			add_child(chat)
 			chat.open_chat("dan_tranh")
 	)
+	
+	# Add Layout toggle button
+	var ctrl_btns = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns as Control
+	if ctrl_btns:
+		var layout_btn = Button.new()
+		layout_btn.name = "LayoutBtn"
+		layout_btn.text = "Giao diện ngang" # Initial state is LANDSCAPE
+		layout_btn.custom_minimum_size = Vector2(100, 36)
+		ctrl_btns.add_child(layout_btn)
+		_style_outlined_btn(layout_btn)
+		_make_button_bouncy(layout_btn)
+		_layout_btn = layout_btn
+		layout_btn.pressed.connect(toggle_orientation)
+
 	
 	if current_song_title == "":
 		_show_introduction_overlay()
@@ -1517,6 +1534,49 @@ func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+
+func reset_layout_transforms() -> void:
+	if not _board: return
+	
+	# Clear all applied transforms/offsets to ensure a clean slate
+	_board.rotation = 0.0
+	_board.scale = Vector2.ONE
+	_board.position = Vector2.ZERO
+	_board.pivot_offset = Vector2.ZERO
+	_board.custom_minimum_size = Vector2.ZERO
+	_board.is_portrait_mode = false
+	_board.queue_redraw()
+	
+	# Sync Container logic to recalibrate its child controls
+	var parent_vbox = _board.get_parent()
+	if parent_vbox and parent_vbox is Container:
+		parent_vbox.queue_sort()
+		
+func toggle_orientation() -> void:
+	if not _board: return
+	
+	# Always reset to original baseline before applying new transforms
+	reset_layout_transforms()
+	
+	if _current_orientation == BoardOrientation.LANDSCAPE:
+		# Switch to PORTRAIT
+		_current_orientation = BoardOrientation.PORTRAIT
+		var vp_size = get_viewport_rect().size
+		
+		# Set dimensions so it perfectly fills the portrait screen
+		# By swapping custom_minimum_size, the VBoxContainer gives it portrait proportions
+		_board.custom_minimum_size = Vector2(vp_size.x, vp_size.y * 1.2)
+		_board.size = _board.custom_minimum_size
+		_board.is_portrait_mode = true
+		_board.queue_redraw()
+		
+		if _layout_btn:
+			_layout_btn.text = "Giao diện dọc"
+	else:
+		# Switch to LANDSCAPE
+		_current_orientation = BoardOrientation.LANDSCAPE
+		if _layout_btn:
+			_layout_btn.text = "Giao diện ngang"
 
 ## Pitch-detection stubs — replace with real implementation or plugin integration
 func _start_pitch_detection() -> void:

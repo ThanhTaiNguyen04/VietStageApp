@@ -22,6 +22,8 @@ var audio_enabled := true
 var _hovered_idx : int                = -1
 var _active_touches : Dictionary      = {}
 
+var is_portrait_mode : bool = false
+
 # ─── Notes on strings properties ──────────────────────────────────────────────
 var sheet_notes        : Array = []
 var sheet_durations    : Array = []
@@ -99,7 +101,7 @@ func _process(delta: float) -> void:
 
 # ─── Draw ─────────────────────────────────────────────────────────────────────
 func get_bridge_x(idx: int) -> float:
-	var W := size.x
+	var W := size.y * 1.1 if is_portrait_mode else size.x
 	var ix := 24.0
 	var iw := W - 60.0
 	var t := float(idx) / float(STR_COUNT - 1)
@@ -111,7 +113,7 @@ func get_bridge_x(idx: int) -> float:
 	return ix + iw * pct
 
 func get_str_l(idx: int) -> float:
-	var W := size.x
+	var W := size.y * 1.1 if is_portrait_mode else size.x
 	var ix := 24.0
 	var iw := W - 60.0
 	var t := float(idx) / float(STR_COUNT - 1)
@@ -180,9 +182,12 @@ func _draw_mop_flower(pos: Vector2, r: float, color: Color) -> void:
 
 
 func _draw() -> void:
-	var W := size.x
-	var H := size.y
-	print("DEBUG_DRAW: W=", W, " H=", H, " note_count=", _note_names.size())
+	if is_portrait_mode:
+		draw_set_transform(Vector2(0, size.y), -PI / 2.0, Vector2.ONE)
+		
+	var W := size.y * 1.1 if is_portrait_mode else size.x
+	var H := size.x if is_portrait_mode else size.y
+	
 	if W < 16.0 or H < 16.0:
 		return
 
@@ -542,9 +547,10 @@ func _draw() -> void:
 				
 				# Only draw if it's visible in the playable zither area
 				if note_x >= bridge_x - 100.0 and note_x <= str_r + 200.0:
-					var note_width: float = float(duration) * PIXELS_PER_BEAT * 0.85
-					var cap_h: float = clampf(rh * 0.72, 12.0, 26.0)
-					var cap_rect: Rect2 = Rect2(note_x, cy - cap_h * 0.5, note_width, cap_h)
+					var cap_h: float = clampf(rh * 0.72, 12.0, 30.0)
+					var note_width: float = cap_h # Force perfect circle
+					# Center the circle on the note_x position
+					var cap_rect: Rect2 = Rect2(note_x - note_width * 0.5, cy - cap_h * 0.5, note_width, cap_h)
 					
 					var cap_color: Color = Color(0.12, 0.43, 0.31, 0.6) # jade/teal future note
 					var border_color: Color = Color(0.18, 0.60, 0.44, 0.8)
@@ -579,15 +585,15 @@ func _draw() -> void:
 					
 					draw_style_box(cap_sb, cap_rect)
 					
-					# Draw note text inside capsule
-					if note_width > 22.0 and font != null:
+					# Draw note text inside circle
+					if font != null:
 						var text_color: Color = Color.WHITE
 						if k == current_note_idx:
 							text_color = Color("#2e180d") # dark brown for active note readability
-						var txt_size: int = clamp(int(cap_h * 0.6), 8, 11)
+						var txt_size: int = clamp(int(cap_h * 0.55), 8, 14)
 						var txt_y: float = cy + txt_size * 0.35
-						var txt_x: float = note_x + 6.0
-						draw_string(font, Vector2(txt_x, txt_y), note_name, HORIZONTAL_ALIGNMENT_LEFT, note_width - 12.0, txt_size, text_color)
+						# Draw centered in the circle
+						draw_string(font, Vector2(note_x - note_width * 0.5, txt_y), note_name, HORIZONTAL_ALIGNMENT_CENTER, note_width, txt_size, text_color)
 						
 				note_time += duration
 
@@ -700,56 +706,64 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 
 # ─── Input helpers ────────────────────────────────────────────────────────────
 func _row_h() -> float:
-	var ih := size.y - 20.0
-	if ih <= 0.0:
-		return 20.0
-	return ih / float(STR_COUNT)
+	var H := size.x if is_portrait_mode else size.y
+	return (H - 20.0) / float(STR_COUNT)
 
-func _row_at(pos: Vector2) -> int:
-	var ih := size.y - 20.0
+func _row_at(y: float) -> int:
+	var H := size.x if is_portrait_mode else size.y
+	var ih := H - 20.0
 	if ih <= 0.0:
 		return -1
-	var rel_y := pos.y - 10.0
+	var rel_y := y - 10.0
 	if rel_y < 0.0 or rel_y >= ih:
 		return -1
 	return clamp(int(rel_y / (ih / float(STR_COUNT))), 0, STR_COUNT - 1)
 
 func _row_cy(idx: int) -> float:
 	var rh := _row_h()
-	return 10.0 + float(idx) * rh + rh * 0.5
+	return 10.0 + rh * 0.5 + float(idx) * rh
+
+func _get_local_touch_pos(event_pos: Vector2) -> Vector2:
+	if is_portrait_mode:
+		# Inverse of draw_set_transform(Vector2(0, size.y), -PI/2)
+		return Vector2(size.y - event_pos.y, event_pos.x)
+	return event_pos
 
 # ─── GUI Input ────────────────────────────────────────────────────────────────
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
-		var ev := event as InputEventMouseButton
-		if ev.button_index == MOUSE_BUTTON_LEFT:
-			if ev.pressed:
-				_handle_touch_start(-1, ev.position)
+		var pos = _get_local_touch_pos(event.position)
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_active_touches[-1] = pos
+				_handle_touch_start(-1, pos)
 			else:
-				_handle_touch_end(-1)
+				if _active_touches.has(-1):
+					_handle_touch_end(-1)
+					_active_touches.erase(-1)
 	elif event is InputEventMouseMotion:
-		var ev := event as InputEventMouseMotion
-		var new_hov := _row_at(ev.position)
-		if new_hov != _hovered_idx:
-			_hovered_idx = new_hov
-			queue_redraw()
-		_handle_touch_move(-1, ev.position)
+		var pos = _get_local_touch_pos(event.position)
+		_hovered_idx = _row_at(pos.y)
+		if _active_touches.has(-1):
+			_active_touches[-1] = pos
+			_handle_touch_move(-1, pos)
 	elif event is InputEventScreenTouch:
-		var ev := event as InputEventScreenTouch
-		if ev.pressed:
-			_handle_touch_start(ev.index, ev.position)
+		var pos = _get_local_touch_pos(event.position)
+		if event.pressed:
+			_active_touches[event.index] = pos
+			_handle_touch_start(event.index, pos)
 		else:
-			_handle_touch_end(ev.index)
+			_handle_touch_end(event.index)
 	elif event is InputEventScreenDrag:
-		var ev := event as InputEventScreenDrag
-		_handle_touch_move(ev.index, ev.position)
+		var pos = _get_local_touch_pos(event.position)
+		_handle_touch_move(event.index, pos)
 
 func _handle_touch_start(finger_idx: int, pos: Vector2) -> void:
 	if _is_pressed.size() < STR_COUNT: return
-	var idx := _row_at(pos)
+	var idx := _row_at(pos.y)
 	if idx < 0: return
 
-	var W        := size.x
+	var W        := size.y * 1.1 if is_portrait_mode else size.x
 	var str_l    := get_str_l(idx)
 	var str_r    := W - 24.0
 	var bridge_x := get_bridge_x(idx)
@@ -757,7 +771,9 @@ func _handle_touch_start(finger_idx: int, pos: Vector2) -> void:
 	var cy       := _row_cy(idx)
 
 	var interaction := "none"
-	if pos.x >= bridge_x - 10.0 and pos.x <= str_r + 10.0:
+	# Tăng vùng nhận diện cảm ứng (Hitbox) lên 120% (thêm margin vào cả X và Y)
+	var pluck_hitbox_margin := 40.0
+	if pos.x >= bridge_x - pluck_hitbox_margin and pos.x <= str_r + pluck_hitbox_margin:
 		interaction = "pluck"
 		pluck(idx)
 	elif pos.x >= str_l - 5.0 and pos.x < bridge_x:
@@ -776,10 +792,12 @@ func _handle_touch_start(finger_idx: int, pos: Vector2) -> void:
 func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 	if not _active_touches.has(finger_idx): return
 	var touch_info = _active_touches[finger_idx]
-	var idx := _row_at(pos)
+	if typeof(touch_info) != TYPE_DICTIONARY: return
+
+	var idx := _row_at(pos.y)
 	if idx < 0: return
 
-	var W        := size.x
+	var W        := size.y * 1.1 if is_portrait_mode else size.x
 	var str_l    := get_str_l(idx)
 	var str_r    := W - 24.0
 	var bridge_x := get_bridge_x(idx)
@@ -789,7 +807,8 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 	if touch_info["interaction_type"] == "pluck":
 		# String crossing check for glissando / swipe
 		if idx != touch_info["last_string_idx"]:
-			if pos.x >= bridge_x - 10.0 and pos.x <= str_r + 10.0:
+			var pluck_hitbox_margin := 40.0
+			if pos.x >= bridge_x - pluck_hitbox_margin and pos.x <= str_r + pluck_hitbox_margin:
 				pluck(idx)
 				touch_info["last_string_idx"] = idx
 	elif touch_info["interaction_type"] == "press":
