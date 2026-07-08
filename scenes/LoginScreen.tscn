@@ -15,7 +15,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-; ── Nền hoa văn + overlay đỏ sẫm ─────────────────────────────────────────────
+; ── Background: hình nền hoa văn cổ trang ────────────────────────────────────
 [node name="BG" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -46,12 +46,12 @@ color = Color(1.0, 1.0, 1.0, 0.0)
 [node name="BottomGlow" type="ColorRect" parent="."]
 layout_mode = 1
 anchor_left = 0.0
-anchor_top = 0.70
+anchor_top = 0.65
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.77, 0.58, 0.15, 0.08)
 
-; Hạt hoạt hình (tạo bởi script)
+; Layer chứa các hạt hoạt hình (tạo bởi script)
 [node name="ParticleLayer" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -67,46 +67,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.95, 0.93, 0.88, 0.20)
 
-; ── Cột trái: thương hiệu (logo lớn + tên app + tagline) ─────────────────────
-[node name="LeftBrand" type="CenterContainer" parent="."]
-layout_mode = 1
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.48
-anchor_bottom = 1.0
-
-[node name="BrandVBox" type="VBoxContainer" parent="LeftBrand"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="BrandLogo" type="TextureRect" parent="LeftBrand/BrandVBox"]
-custom_minimum_size = Vector2(88, 88)
-layout_mode = 2
-size_flags_horizontal = 4
-texture = ExtResource("3_logo")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="BrandName" type="Label" parent="LeftBrand/BrandVBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 46
-text = "VietStage"
-horizontal_alignment = 1
-
-[node name="BrandSub" type="Label" parent="LeftBrand/BrandVBox"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 14
-text = "Học nhạc cụ dân tộc Việt Nam"
-horizontal_alignment = 1
-
-; ── Cột phải: thẻ đăng nhập (script tham chiếu qua $Center/Card) ─────────────
+; ── Thẻ kính trung tâm ───────────────────────────────────────────────────────
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
-anchor_left = 0.50
-anchor_top = 0.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
@@ -115,26 +79,25 @@ layout_mode = 2
 
 [node name="CardMargin" type="MarginContainer" parent="Center/Card"]
 layout_mode = 2
-theme_override_constants/margin_left   = 22
-theme_override_constants/margin_right  = 22
-theme_override_constants/margin_top    = 18
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left   = 64
+theme_override_constants/margin_right  = 64
+theme_override_constants/margin_top    = 52
+theme_override_constants/margin_bottom = 52
 
 [node name="ContentVBox" type="VBoxContainer" parent="Center/Card/CardMargin"]
-custom_minimum_size = Vector2(0, 0)
+custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 0
 alignment = 1
 
-; ── Logo nhỏ trong card ───────────────────────────────────────────────────────
+; ── Khu vực logo / thương hiệu ───────────────────────────────────────────────
 [node name="LogoVBox" type="VBoxContainer" parent="Center/Card/CardMargin/ContentVBox"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="LogoRect" type="TextureRect" parent="Center/Card/CardMargin/ContentVBox/LogoVBox"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 size_flags_horizontal = 4
 texture = ExtResource("3_logo")
@@ -151,7 +114,7 @@ horizontal_alignment = 1
 [node name="AppSub" type="Label" parent="Center/Card/CardMargin/ContentVBox/LogoVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 16
 text = "Học nhạc cụ dân tộc Việt Nam"
 horizontal_alignment = 1
 
@@ -195,22 +158,22 @@ custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="ErrorLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 
 [node name="Gap2b" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 4)
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 ; ── Nút đăng nhập ────────────────────────────────────────────────────────────
 [node name="SignInBtn" type="Button" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 text = "ĐĂNG NHẬP"
 
 [node name="GapToggle" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
@@ -226,13 +189,13 @@ text = "Chưa có tài khoản? Đăng ký ngay"
 flat = true
 
 [node name="Gap3" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 10)
+custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 
-; ── Divider ───────────────────────────────────────────────────────────────────
+; ── Đường kẻ phân cách ───────────────────────────────────────────────────────
 [node name="DivRow" type="HBoxContainer" parent="Center/Card/CardMargin/ContentVBox"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="DivLine1" type="ColorRect" parent="Center/Card/CardMargin/ContentVBox/DivRow"]
@@ -245,7 +208,7 @@ color = Color(0.13, 0.08, 0.05, 0.14)
 [node name="OrLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox/DivRow"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 14
 text = "hoặc tiếp tục với"
 
 [node name="DivLine2" type="ColorRect" parent="Center/Card/CardMargin/ContentVBox/DivRow"]
@@ -256,60 +219,60 @@ size_flags_vertical = 4
 color = Color(0.13, 0.08, 0.05, 0.14)
 
 [node name="Gap4" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 8)
+custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
 ; ── Nút mạng xã hội ──────────────────────────────────────────────────────────
 [node name="SocialRow" type="HBoxContainer" parent="Center/Card/CardMargin/ContentVBox"]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 20
 alignment = 1
 
 [node name="GoogleVBox" type="VBoxContainer" parent="Center/Card/CardMargin/ContentVBox/SocialRow"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8
 alignment = 1
 
 [node name="GoogleBtn" type="Button" parent="Center/Card/CardMargin/ContentVBox/SocialRow/GoogleVBox"]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(90, 90)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 36
 text = "G"
 
 [node name="GoogleLbl" type="Label" parent="Center/Card/CardMargin/ContentVBox/SocialRow/GoogleVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 13
 text = "Google"
 horizontal_alignment = 1
 
 [node name="GuestVBox" type="VBoxContainer" parent="Center/Card/CardMargin/ContentVBox/SocialRow"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 8
 alignment = 1
 
 [node name="GuestBtn" type="Button" parent="Center/Card/CardMargin/ContentVBox/SocialRow/GuestVBox"]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(90, 90)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 28
 text = "👤"
 
 [node name="GuestLbl" type="Label" parent="Center/Card/CardMargin/ContentVBox/SocialRow/GuestVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 13
 text = "Khách"
 horizontal_alignment = 1
 
 [node name="Gap5" type="Control" parent="Center/Card/CardMargin/ContentVBox"]
-custom_minimum_size = Vector2(0, 6)
+custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 
 [node name="FooterLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 12
 text = "VietStage  ·  Đồ Án Tốt Nghiệp 2025"
 horizontal_alignment = 1

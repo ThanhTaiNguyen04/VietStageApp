@@ -287,71 +287,45 @@ func _animate_in() -> void:
 	card.modulate.a = 0.0
 
 	var t := create_tween().set_parallel(true)
-	t.tween_property(self, "modulate:a", 1.0, 0.50).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(card, "scale", Vector2.ONE, 0.60).set_delay(0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(card, "modulate:a", 1.0, 0.50).set_delay(0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "modulate:a",    1.0,        0.50)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(card, "scale",         Vector2.ONE, 0.60).set_delay(0.10)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(card, "modulate:a",    1.0,         0.50).set_delay(0.10)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	t.chain().tween_callback(_start_logo_float)
 
 func _start_logo_float() -> void:
 	if not is_instance_valid(logo_rect): return
 	var lp := create_tween().set_loops()
-	lp.tween_property(logo_rect, "position:y", -6.0, 2.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	lp.tween_property(logo_rect, "position:y",  0.0, 2.5).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	lp.tween_property(logo_rect, "position:y", -6.0, 2.5)\
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	lp.tween_property(logo_rect, "position:y",  0.0, 2.5)\
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
 func _on_viewport_size_changed() -> void:
 	var size = get_viewport().size
 	var is_mobile = size.x < size.y or size.x < 768
-	var is_compact = size.y < 540
 	
 	var content_vbox := get_node(FP) as VBoxContainer
 	var card_margin := $Center/Card/CardMargin as MarginContainer
 	
-	# Show/hide logo elements on mobile landscape to save vertical space
-	var logo_vbox := get_node_or_null(FP + "LogoVBox") as Control
-	if logo_vbox:
-		logo_vbox.visible = not is_compact
-		
-	var gap1 := get_node_or_null(FP + "Gap1") as Control
-	if gap1:
-		gap1.visible = not is_compact
-		
-	if footer_lbl:
-		footer_lbl.visible = not is_compact
-		
-	if _welcome_sub:
-		_welcome_sub.visible = not is_compact
-
 	if is_mobile:
 		content_vbox.custom_minimum_size = Vector2(0, content_vbox.custom_minimum_size.y)
 		card.custom_minimum_size = Vector2(size.x - 32, card.custom_minimum_size.y)
 		card_margin.add_theme_constant_override("margin_left", 20)
 		card_margin.add_theme_constant_override("margin_right", 20)
-		if is_compact:
-			card_margin.add_theme_constant_override("margin_top", 10)
-			card_margin.add_theme_constant_override("margin_bottom", 10)
-		else:
-			card_margin.add_theme_constant_override("margin_top", 32)
-			card_margin.add_theme_constant_override("margin_bottom", 32)
+		card_margin.add_theme_constant_override("margin_top", 32)
+		card_margin.add_theme_constant_override("margin_bottom", 32)
 		app_name.add_theme_font_size_override("font_size", 42)
 	else:
-		if is_compact:
-			content_vbox.custom_minimum_size = Vector2(380, content_vbox.custom_minimum_size.y)
-			card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
-			card_margin.add_theme_constant_override("margin_left", 32)
-			card_margin.add_theme_constant_override("margin_right", 32)
-			card_margin.add_theme_constant_override("margin_top", 12)
-			card_margin.add_theme_constant_override("margin_bottom", 12)
-		else:
-			content_vbox.custom_minimum_size = Vector2(460, content_vbox.custom_minimum_size.y)
-			card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
-			card_margin.add_theme_constant_override("margin_left", 64)
-			card_margin.add_theme_constant_override("margin_right", 64)
-			card_margin.add_theme_constant_override("margin_top", 52)
-			card_margin.add_theme_constant_override("margin_bottom", 52)
+		content_vbox.custom_minimum_size = Vector2(460, content_vbox.custom_minimum_size.y)
+		card.custom_minimum_size = Vector2(0, card.custom_minimum_size.y)
+		card_margin.add_theme_constant_override("margin_left", 64)
+		card_margin.add_theme_constant_override("margin_right", 64)
+		card_margin.add_theme_constant_override("margin_top", 52)
+		card_margin.add_theme_constant_override("margin_bottom", 52)
 		app_name.add_theme_font_size_override("font_size", 58)
-		
-	if _welcome_lbl:
-		_welcome_lbl.add_theme_font_size_override("font_size", 20 if is_compact else 28)
 
 # ── Hệ thống hạt hoạt hình nền ────────────────────────────────────────────────
 func _spawn_bg_particles() -> void:
@@ -407,11 +381,21 @@ func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float,
 
 	var t := create_tween().set_parallel(true)
 
-	t.tween_property(p, "modulate:a", 1.0, dur * 0.22).set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(p, "position:y", end_y, dur).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	t.tween_property(p, "position:x", sx + drift, dur * 0.50).set_delay(delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	t.tween_property(p, "position:x", sx + drift * 0.40, dur * 0.50).set_delay(delay + dur * 0.50).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	t.tween_property(p, "modulate:a", 0.0, dur * 0.28).set_delay(delay + dur * 0.72).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Fade vào (20% đầu)
+	t.tween_property(p, "modulate:a", 1.0, dur * 0.22).set_delay(delay)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Bay lên
+	t.tween_property(p, "position:y", end_y, dur).set_delay(delay)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Lắc lư nửa đầu
+	t.tween_property(p, "position:x", sx + drift, dur * 0.50).set_delay(delay)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Lắc lư nửa sau (về phía kia)
+	t.tween_property(p, "position:x", sx + drift * 0.40, dur * 0.50).set_delay(delay + dur * 0.50)\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Fade ra (25% cuối)
+	t.tween_property(p, "modulate:a", 0.0, dur * 0.28).set_delay(delay + dur * 0.72)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	# Khi xong: reset lại vị trí và loop
 	t.chain().tween_callback(func() -> void:
@@ -680,15 +664,15 @@ func _make_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
 	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
 	btn.mouse_entered.connect(func() -> void:
-		create_tween().tween_property(btn, "scale", Vector2(1.06, 1.06), 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", Vector2(1.06, 1.06), 0.14)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
 	btn.mouse_exited.connect(func() -> void:
-		create_tween().tween_property(btn, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", Vector2.ONE, 0.14)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
 	btn.button_down.connect(func() -> void:
-		create_tween().tween_property(btn, "scale", Vector2(0.93, 0.93), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", Vector2(0.93, 0.93), 0.08)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT))
 	btn.button_up.connect(func() -> void:
 		var target := Vector2(1.06, 1.06) if btn.is_hovered() else Vector2.ONE
-		create_tween().tween_property(btn, "scale", target, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
+		create_tween().tween_property(btn, "scale", target, 0.14)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))

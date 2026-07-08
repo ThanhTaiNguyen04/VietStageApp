@@ -23,7 +23,6 @@ const STAT_CARDS := [
 @onready var name_lbl   : Label          = $Root/Content/ContentV/Card/CardM/CardV/ProfileSection/NameLabel
 @onready var email_lbl  : Label          = $Root/Content/ContentV/Card/CardM/CardV/ProfileSection/EmailLabel
 @onready var logout_btn : Button         = $Root/Content/ContentV/Card/CardM/CardV/LogoutBtn
-@onready var change_av_btn: Button       = $Root/Content/ContentV/Card/CardM/CardV/ProfileSection/ChangeAvatarBtn
 @onready var ver_label  : Label          = $Root/Content/ContentV/VerLabel
 @onready var grid       : GridContainer  = $Root/Content/ContentV/Card/CardM/CardV/Grid
 @onready var card_node  : PanelContainer = $Root/Content/ContentV/Card
@@ -41,7 +40,6 @@ func _ready() -> void:
 	logout_btn.pressed.connect(_on_logout)
 	_make_btn_bouncy(back_btn)
 	_make_btn_bouncy(logout_btn)
-	_make_btn_bouncy(change_av_btn)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
@@ -71,7 +69,7 @@ func _populate_data() -> void:
 		SecureDataManager.save_data()
 
 	# Stat icons, values, labels
-	var stat_icons  := ["flame", "sparkles", "trophy", "calendar-days"]
+	var stat_icons  := ["🔥", "✨", "🏆", "📅"]
 	var stat_values := [
 		"%d Ngày" % streak,
 		"%d XP"   % xp,
@@ -82,13 +80,9 @@ func _populate_data() -> void:
 	for i in STAT_CARDS.size():
 		var id  : String = STAT_CARDS[i][0] as String
 		var lbl : String = STAT_CARDS[i][1] as String
-		var tex := load("res://assets/textures/lucide/" + stat_icons[i] + ".svg") as Texture2D
-		var icon_rect := _get_stat_node(id, "Icon") as TextureRect
-		if icon_rect: icon_rect.texture = tex
-		var val_lbl := _get_stat_node(id, "Val") as Label
-		if val_lbl: val_lbl.text  = stat_values[i]
-		var l_lbl := _get_stat_node(id, "Lbl") as Label
-		if l_lbl: l_lbl.text  = lbl
+		_get_stat_node(id, "Icon").text = stat_icons[i]
+		_get_stat_node(id, "Val").text  = stat_values[i]
+		_get_stat_node(id, "Lbl").text  = lbl
 
 # ─── Theme ───────────────────────────────────────────────────────────────────
 func _build_theme() -> void:
@@ -142,36 +136,21 @@ func _build_theme() -> void:
 		card_s.border_width_top = 3
 		card_s.shadow_size = 4; card_s.shadow_color = Color(0, 0, 0, 0.05)
 		nc.add_theme_stylebox_override("panel", card_s)
-		var icon_rect := _get_stat_node(id, "Icon") as TextureRect
-		if icon_rect: icon_rect.modulate = acc
-		var val_lbl := _get_stat_node(id, "Val") as Label
-		if val_lbl: val_lbl.add_theme_color_override("font_color", C_TEXT)
-		var l_lbl := _get_stat_node(id, "Lbl") as Label
-		if l_lbl: l_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+		_get_stat_node(id, "Icon").add_theme_color_override("font_color", acc)
+		_get_stat_node(id, "Val").add_theme_color_override("font_color", C_TEXT)
+		_get_stat_node(id, "Lbl").add_theme_color_override("font_color", C_TEXT_MUTED)
 
 	# Logout button
-	var logout_red := Color(0.85, 0.25, 0.25, 1.0)
-	var lg_n : StyleBoxFlat = _flat(Color(1.0, 0.95, 0.95, 1.0), Color(0.85, 0.25, 0.25, 0.4), 14)
-	var lg_h : StyleBoxFlat = _flat(Color(1.0, 0.9, 0.9, 1.0), Color(0.85, 0.25, 0.25, 0.75), 14)
-	lg_h.shadow_size = 4; lg_h.shadow_color = Color(0.85, 0.25, 0.25, 0.15)
+	var lg_n : StyleBoxFlat = _flat(C_CARD, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4), 14)
+	var lg_h : StyleBoxFlat = _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.75), 14)
+	lg_h.shadow_size = 4; lg_h.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1)
 	logout_btn.add_theme_stylebox_override("normal",  lg_n)
 	logout_btn.add_theme_stylebox_override("hover",   lg_h)
-	logout_btn.add_theme_stylebox_override("pressed", _flat(Color(1.0, 0.85, 0.85, 1.0), Color(0.85, 0.25, 0.25, 0.5), 14))
+	logout_btn.add_theme_stylebox_override("pressed", _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5), 14))
 	logout_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	logout_btn.add_theme_color_override("font_color",         logout_red)
-	logout_btn.add_theme_color_override("font_hover_color",   logout_red)
-	logout_btn.add_theme_color_override("font_pressed_color", logout_red)
-	
-	# Change Avatar Button
-	var cam_tex := load("res://assets/textures/lucide/camera.svg") as Texture2D
-	change_av_btn.icon = cam_tex
-	change_av_btn.expand_icon = true
-	change_av_btn.add_theme_color_override("font_color", C_TEXT_MUTED)
-	change_av_btn.add_theme_color_override("font_hover_color", C_TEXT)
-	change_av_btn.add_theme_stylebox_override("normal", _flat(Color(0,0,0,0), Color(0,0,0,0), 6))
-	change_av_btn.add_theme_stylebox_override("hover", _flat(Color(0,0,0,0.05), Color(0,0,0,0), 6))
-	change_av_btn.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.1), Color(0,0,0,0), 6))
-	change_av_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	logout_btn.add_theme_color_override("font_color",         C_TEXT)
+	logout_btn.add_theme_color_override("font_hover_color",   C_RED_SON)
+	logout_btn.add_theme_color_override("font_pressed_color", C_RED_SON)
 
 	# Version label
 	ver_label.add_theme_color_override("font_color", Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.45))
@@ -226,13 +205,13 @@ func _on_logout() -> void:
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn"))
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
-func _get_stat_node(id: String, child: String) -> Control:
+func _get_stat_node(id: String, child: String) -> Label:
 	var path := id + "/" + id + "M/" + id + "V/" + child
 	var node := grid.get_node_or_null(path)
 	if node == null:
 		push_warning("AccountScreen: stat node not found: " + path)
-		return null
-	return node as Control
+		return Label.new()
+	return node as Label
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

@@ -17,10 +17,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.984, 0.976, 0.957, 1.0)
+color = Color(0.98, 0.97, 0.94, 1.0)
 
-; ── Landscape: logo kiri + text kanan, căn giữa màn hình 844×390 ────────────
-[node name="Center" type="HBoxContainer" parent="."]
+[node name="Center" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -29,54 +28,48 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
-offset_left = -320
-offset_top = -130
-offset_right = 320
-offset_bottom = 130
-theme_override_constants/separation = 28
+offset_left = -300
+offset_top = -280
+offset_right = 300
+offset_bottom = 280
+theme_override_constants/separation = 18
 alignment = 1
 
 [node name="LogoRect" type="TextureRect" parent="Center"]
-custom_minimum_size = Vector2(140, 140)
+custom_minimum_size = Vector2(220, 220)
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 4
 texture = ExtResource("2_logo")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TextVBox" type="VBoxContainer" parent="Center"]
+[node name="Gap1" type="Control" parent="Center"]
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 10
-alignment = 1
 
-[node name="AppName" type="Label" parent="Center/TextVBox"]
+[node name="AppName" type="Label" parent="Center"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Di sản nhạc cụ dân tộc trong tầm tay bạn"
+theme_override_font_sizes/font_size = 76
+text = "VietStage"
 horizontal_alignment = 1
-autowrap_mode = 3
 
-[node name="Gap1" type="Control" parent="Center/TextVBox"]
-custom_minimum_size = Vector2(0, 4)
+[node name="Tagline" type="Label" parent="Center"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Học tập tương tác với Nghệ sĩ ảo và công nghệ phân tích âm thanh AI ngay trên điện thoại di động."
+theme_override_font_sizes/font_size = 21
+text = "Học nhạc cụ dân tộc · Mọi lúc · Mọi nơi"
 horizontal_alignment = 1
-autowrap_mode = 3
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1
-anchor_left = 1.0
+anchor_left = 0.5
 anchor_top = 1.0
-anchor_right = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
-grow_horizontal = 0
-grow_vertical = 0
-offset_left = -130
-offset_top = -32
-offset_right = -12
-offset_bottom = -10
-theme_override_font_sizes/font_size = 13
+grow_horizontal = 2
+offset_left = -200
+offset_top = -46
+offset_right = 200
+offset_bottom = -12
+theme_override_font_sizes/font_size = 15
 text = "v1.0.0"
-horizontal_alignment = 2
+horizontal_alignment = 1

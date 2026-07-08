@@ -17,16 +17,13 @@ const IMG_DAN_TRANH := "res://assets/textures/dan_tranh_asset.png"
 const IMG_SAO_TRUC  := "res://assets/textures/sao_truc_asset.png"
 const IMG_DAN_BAU   := "res://assets/textures/dan_bau_asset.png"
 
-# Instrument-specific accent colours
-
 func _ready() -> void:
 	_build_theme()
 	_setup_images()
 	_animate_in()
 
-	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	back.pressed.connect(_go_back)
-	_make_bouncy(back)
+	($Root/TopBar/TopM/TopH/BackBtn as Button).pressed.connect(_go_back)
+	_make_bouncy($Root/TopBar/TopM/TopH/BackBtn as Button)
 
 	var dt_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox/DTBtn as Button
 	dt_btn.pressed.connect(_go_practice_tranh)
@@ -48,7 +45,6 @@ func _ready() -> void:
 	_on_viewport_size_changed()
 
 # ── Image / Illustration setup ────────────────────────────────────────────────
-
 func _setup_images() -> void:
 	var cards := [
 		{
@@ -78,8 +74,8 @@ func _setup_images() -> void:
 			"path":   IMG_DAN_BAU,
 			"bg":     Color(0.92, 0.90, 0.95, 1.0), # soft lavender/gray
 			"accent": Color(0.55, 0.45, 0.80, 1.0),
-			"kind":  "dan_bau",
-			"tag":   "Nhạc cụ dây",
+			"kind":   "dan_bau",
+			"tag":    "Nhạc cụ dây",
 		},
 		{
 			"img":    $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCImageArea/TCImage,
@@ -101,6 +97,7 @@ func _setup_card_image(img: TextureRect, area: Control, cvbox: VBoxContainer,
 	if FileAccess.file_exists(path + ".import"):
 		img.texture = load(path)
 	else:
+		# ── Coloured background ───────────────────────────────────────────────
 		var bg_rect := ColorRect.new()
 		bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg_rect.color = bg
@@ -108,6 +105,7 @@ func _setup_card_image(img: TextureRect, area: Control, cvbox: VBoxContainer,
 		area.add_child(bg_rect)
 		area.move_child(bg_rect, 0)
 
+		# ── Vector illustration ───────────────────────────────────────────────
 		var illus := Control.new()
 		illus.set_anchors_preset(Control.PRESET_FULL_RECT)
 		illus.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -119,25 +117,27 @@ func _setup_card_image(img: TextureRect, area: Control, cvbox: VBoxContainer,
 			_:            illus.draw.connect(func() -> void: _draw_dan_bau(illus, accent))
 		area.add_child(illus)
 
-	# Gradient fade at bottom edge (blends into card bg)
+	# ── Gradient fade at bottom of image area ────────────────────────────────
 	var fade := Control.new()
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card_bg := cvbox.get_parent().get_parent().get_parent()  # DTRoot parent = card
 	var fade_col := bg
 	fade.draw.connect(func() -> void:
 		var sz := fade.size
-		var start_y := sz.y * 0.50
-		var steps := 10
+		var start_y := sz.y * 0.55
+		var steps := 12
 		for i in range(steps):
-			var t  := float(i) / float(steps - 1)
+			var t := float(i) / float(steps - 1)
 			var y0 := start_y + t * (sz.y - start_y)
-			var y1 := start_y + (t + 1.0 / steps) * (sz.y - start_y)
+			var y1 := start_y + (t + 1.0/steps) * (sz.y - start_y)
+			var a := t * t * 0.88
 			fade.draw_rect(Rect2(0, y0, sz.x, max(1, y1 - y0)),
-				Color(fade_col.r, fade_col.g, fade_col.b, t * t * 0.85))
+				Color(fade_col.r, fade_col.g, fade_col.b, a))
 	)
 	area.add_child(fade)
 
-	# Accent stripe at bottom of illustration
+	# ── Accent stripe ─────────────────────────────────────────────────────────
 	var stripe := ColorRect.new()
 	stripe.anchor_top = 1.0; stripe.anchor_bottom = 1.0
 	stripe.anchor_left = 0.0; stripe.anchor_right  = 1.0
@@ -146,123 +146,184 @@ func _setup_card_image(img: TextureRect, area: Control, cvbox: VBoxContainer,
 	stripe.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	area.add_child(stripe)
 
-	# Category badge bottom-left
+	# ── Category badge (bottom-left of image) ────────────────────────────────
 	var badge := Label.new()
 	badge.text = tag
 	badge.anchor_left   = 0.0; badge.anchor_right  = 0.0
 	badge.anchor_top    = 1.0; badge.anchor_bottom = 1.0
 	badge.grow_horizontal = Control.GROW_DIRECTION_END
 	badge.grow_vertical   = Control.GROW_DIRECTION_BEGIN
-	badge.offset_left   = 10.0; badge.offset_top    = -30.0
-	badge.offset_right  = 130.0; badge.offset_bottom = -8.0
-	badge.add_theme_font_size_override("font_size", 10)
-	badge.add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 0.85))
+	badge.offset_left   = 14.0; badge.offset_top    = -36.0
+	badge.offset_right  = 180.0; badge.offset_bottom = -12.0
+	badge.add_theme_font_size_override("font_size", 11)
+	badge.add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 0.80))
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	area.add_child(badge)
 
-# ── Illustrations ─────────────────────────────────────────────────────────────
-# (All use c.size for auto-scaling — work at any size including 130×160)
-
+# ── Đàn Tranh illustration ────────────────────────────────────────────────────
 func _draw_dan_tranh(c: Control, ac: Color) -> void:
-	var w := c.size.x; var h := c.size.y
+	var w := c.size.x;  var h := c.size.y
 	var cx := w * 0.50; var cy := h * 0.50
 
-	for i in range(4):
-		c.draw_circle(Vector2(cx, cy), h * (0.50 - i * 0.07), Color(ac.r, ac.g, ac.b, 0.018))
+	# Ambient glow (multi-layer)
+	for i in range(5):
+		var r := h * (0.55 - i * 0.07)
+		c.draw_circle(Vector2(cx, cy), r, Color(ac.r, ac.g, ac.b, 0.018))
 
-	var bw2 := w * 0.38; var bh2 := h * 0.28; var taper := w * 0.06
+	# Shadow beneath
+	for i in range(3):
+		c.draw_circle(Vector2(cx, cy + h*0.30 + i*4),
+			w * (0.30 - i*0.04), Color(0, 0, 0, 0.18))
+
+	# Body geometry
+	var bw2 := w * 0.36; var bh2 := h * 0.26; var taper := w * 0.06
 	var body := PackedVector2Array([
 		Vector2(cx - bw2,         cy + bh2),
 		Vector2(cx + bw2,         cy + bh2),
 		Vector2(cx + bw2 - taper, cy - bh2),
 		Vector2(cx - bw2 + taper, cy - bh2),
 	])
+	# Wood fill (dark amber)
 	c.draw_colored_polygon(body, Color(0.28, 0.11, 0.03, 0.95))
+	# Warm highlight overlay on left half
 	var hi := PackedVector2Array([
-		Vector2(cx - bw2,         cy + bh2),
-		Vector2(cx,               cy + bh2),
-		Vector2(cx - taper * 0.5, cy - bh2),
-		Vector2(cx - bw2 + taper, cy - bh2),
+		Vector2(cx - bw2,          cy + bh2),
+		Vector2(cx,                cy + bh2),
+		Vector2(cx - taper * 0.5,  cy - bh2),
+		Vector2(cx - bw2 + taper,  cy - bh2),
 	])
 	c.draw_colored_polygon(hi, Color(1.0, 0.55, 0.20, 0.10))
 
-	for i in range(8):
-		var t := float(i) / 7.0
-		var gy := (cy - bh2 + 5) + t * (bh2 * 2 - 10)
-		var lx := cx - bw2 + taper * (1.0 - t) + 5
-		var rx := cx + bw2 - taper * (1.0 - t) - 5
-		c.draw_line(Vector2(lx, gy), Vector2(rx, gy), Color(0.55, 0.28, 0.10, 0.15), 1.0)
+	# Wood grain lines
+	for i in range(10):
+		var t := float(i) / 9.0
+		var gy := (cy - bh2 + 6) + t * (bh2 * 2 - 12)
+		var lx := cx - bw2 + taper * (1.0 - t) + 6
+		var rx := cx + bw2 - taper * (1.0 - t) - 6
+		c.draw_line(Vector2(lx, gy), Vector2(rx, gy),
+			Color(0.55, 0.28, 0.10, 0.15), 1.0)
 
+	# Inner inlay border
+	var inset := 9.0
+	var inlay := PackedVector2Array([
+		Vector2(cx - bw2 + inset,          cy + bh2 - inset),
+		Vector2(cx + bw2 - inset,          cy + bh2 - inset),
+		Vector2(cx + bw2 - taper - inset,  cy - bh2 + inset),
+		Vector2(cx - bw2 + taper + inset,  cy - bh2 + inset),
+	])
 	for i in range(4):
-		c.draw_line(body[i], body[(i+1)%4], Color(0.75, 0.45, 0.15, 0.85), 2.0)
+		c.draw_line(inlay[i], inlay[(i+1)%4], Color(ac.r, ac.g, ac.b, 0.30), 1.0)
 
+	# Body outline
+	for i in range(4):
+		c.draw_line(body[i], body[(i+1)%4],
+			Color(0.75, 0.45, 0.15, 0.85), 2.2)
+
+	# Sound holes (2 circles)
+	for sx in [cx - bw2*0.48, cx + bw2*0.48]:
+		var sy := cy + bh2 * 0.52
+		c.draw_circle(Vector2(sx, sy), 7.0, Color(0.06, 0.02, 0.00, 0.95))
+		c.draw_arc(Vector2(sx, sy), 7.0, 0, TAU, 20,
+			Color(ac.r, ac.g, ac.b, 0.45), 1.5)
+		c.draw_arc(Vector2(sx, sy), 4.5, 0, TAU, 16,
+			Color(ac.r, ac.g, ac.b, 0.20), 1.0)
+
+	# 16 strings
 	var n := 16
-	var sy0 := cy - bh2 + 3.0; var sy1 := cy + bh2 - 3.0
-	var sw0 := (bw2 - taper) * 2.0 - 8.0
-	var sw1 := bw2 * 2.0 - 8.0
+	var sy0 := cy - bh2 + 4.0; var sy1 := cy + bh2 - 4.0
+	var sw0 := (bw2 - taper) * 2.0 - 10.0
+	var sw1 := bw2 * 2.0 - 10.0
 	for i in range(n):
 		var t := float(i) / float(n - 1)
 		var xt := cx - sw0/2 + t * sw0
 		var xb := cx - sw1/2 + t * sw1
-		var mb : float = 1.0 - absf(t - 0.5) * 0.6
+		var mid_bright : float = 1.0 - absf(t - 0.5) * 0.6
+		# Glow pass (thick, dim)
 		c.draw_line(Vector2(xt, sy0), Vector2(xb, sy1),
-			Color(ac.r, ac.g * mb, ac.b * 0.2, 0.18), 3.5)
+			Color(ac.r, ac.g * mid_bright, ac.b * 0.2, 0.18), 4.0)
+		# Main string
 		c.draw_line(Vector2(xt, sy0), Vector2(xb, sy1),
-			Color(ac.r, ac.g * mb * 1.1, ac.b * 0.3, 0.80), 1.2)
+			Color(ac.r, ac.g * mid_bright * 1.1, ac.b * 0.3, 0.80), 1.3)
 
+	# Bridges (ngựa) — teardrop markers at 40% along each string
 	for i in range(n):
 		var t := float(i) / float(n - 1)
 		var xt := cx - sw0/2 + t * sw0
 		var xb := cx - sw1/2 + t * sw1
 		var bx := lerpf(xt, xb, 0.40)
 		var by := lerpf(sy0, sy1, 0.40)
-		c.draw_circle(Vector2(bx, by), 3.0, Color(0.92, 0.76, 0.30, 0.95))
+		c.draw_circle(Vector2(bx, by), 4.0, Color(0.92, 0.76, 0.30, 0.95))
+		c.draw_circle(Vector2(bx, by), 2.0, Color(1.00, 0.95, 0.65, 1.00))
 
+# ── Sáo Trúc illustration ─────────────────────────────────────────────────────
 func _draw_sao_truc(c: Control, ac: Color) -> void:
 	var w := c.size.x; var h := c.size.y
-	var p0  := Vector2(w * 0.12, h * 0.28)
-	var p1  := Vector2(w * 0.90, h * 0.72)
+
+	var p0 := Vector2(w * 0.12, h * 0.30)
+	var p1 := Vector2(w * 0.90, h * 0.70)
 	var dir  := (p1 - p0).normalized()
 	var perp := Vector2(-dir.y, dir.x)
-	var hw   := 14.0
+	var hw   := 16.0  # half-width of flute
 
-	for i in range(3):
+	# Ambient glow
+	for i in range(4):
+		var r := h * (0.40 - i * 0.06)
 		var mid := p0.lerp(p1, 0.5)
-		c.draw_circle(mid, h * (0.38 - i * 0.06), Color(ac.r, ac.g, ac.b, 0.018))
+		c.draw_circle(mid, r, Color(ac.r, ac.g, ac.b, 0.018))
 
+	# Shadow beneath
+	for i in range(3):
+		var off := perp * (hw + 6 + i * 5)
+		c.draw_line(p0 + off, p1 + off,
+			Color(0, 0, 0, 0.12 - i * 0.03), (hw + i * 3) * 0.8)
+
+	# Flute body base (dark bamboo green)
 	var corners := PackedVector2Array([
 		p0 + perp * hw, p1 + perp * hw,
 		p1 - perp * hw, p0 - perp * hw,
 	])
 	c.draw_colored_polygon(corners, Color(0.08, 0.24, 0.08, 0.92))
 
+	# Highlight strip (top edge, lighter)
 	var hi_w := hw * 0.35
 	var hi_corners := PackedVector2Array([
-		p0 - perp * hw,              p1 - perp * hw,
+		p0 - perp * hw,       p1 - perp * hw,
 		p1 - perp * (hw - hi_w * 2), p0 - perp * (hw - hi_w * 2),
 	])
 	c.draw_colored_polygon(hi_corners, Color(0.35, 0.68, 0.25, 0.22))
 
+	# Bamboo nodes (6 rings across the flute)
 	for i in range(1, 7):
 		var t := float(i) / 7.0
 		var mid := p0.lerp(p1, t)
+		# Dark ring
 		c.draw_line(mid + perp * (hw + 2), mid - perp * (hw + 2),
-			Color(0.04, 0.10, 0.04, 0.85), 3.0)
+			Color(0.04, 0.10, 0.04, 0.85), 3.5)
+		# Light highlight on node
 		c.draw_line(mid + perp * hw * 0.6, mid - perp * hw * 0.6,
-			Color(0.40, 0.72, 0.30, 0.30), 1.2)
+			Color(0.40, 0.72, 0.30, 0.30), 1.5)
 
+	# Flute outline
 	for i in range(4):
-		c.draw_line(corners[i], corners[(i+1)%4], Color(ac.r, ac.g, ac.b, 0.55), 1.5)
+		c.draw_line(corners[i], corners[(i+1)%4],
+			Color(ac.r, ac.g, ac.b, 0.55), 1.8)
 
+	# Mouthpiece hole (at ~12% along flute)
 	var blow := p0.lerp(p1, 0.12)
-	c.draw_circle(blow, 7.0, Color(0.02, 0.06, 0.02, 0.95))
-	c.draw_arc(blow, 7.0, 0, TAU, 18, Color(ac.r, ac.g, ac.b, 0.65), 2.0)
+	c.draw_circle(blow, 8.0, Color(0.02, 0.06, 0.02, 0.95))
+	c.draw_arc(blow, 8.0, 0, TAU, 20, Color(ac.r, ac.g, ac.b, 0.65), 2.0)
+	c.draw_arc(blow, 5.0, 0, TAU, 16, Color(ac.r, ac.g, ac.b, 0.30), 1.0)
 
+	# 6 finger holes
 	for i in range(6):
-		var t  := 0.28 + float(i) * 0.105
+		var t := 0.28 + float(i) * 0.105
 		var hc := p0.lerp(p1, t)
-		c.draw_circle(hc, 6.0, Color(0.01, 0.04, 0.01, 0.95))
-		c.draw_arc(hc, 6.0, 0, TAU, 16, Color(ac.r, ac.g, ac.b, 0.70), 1.6)
+		# Hole shadow
+		c.draw_circle(hc, 6.5, Color(0.01, 0.04, 0.01, 0.95))
+		# Bright ring
+		c.draw_arc(hc, 6.5, 0, TAU, 18, Color(ac.r, ac.g, ac.b, 0.70), 1.8)
+		# Inner highlight
+		c.draw_circle(hc + Vector2(-1.5, -1.5), 2.0, Color(ac.r, ac.g, ac.b, 0.25))
 
 	# End cap (right end of flute)
 	var end_cap := p1 + dir * 4
@@ -273,7 +334,7 @@ func _draw_sao_truc(c: Control, ac: Color) -> void:
 # ── Đàn Bầu illustration ──────────────────────────────────────────────────────
 func _draw_dan_bau(c: Control, ac: Color) -> void:
 	var w := c.size.x; var h := c.size.y
-	var cx := w * 0.50; var cy := h * 0.52
+	var cx := w * 0.50; var cy := h * 0.54
 
 	# Deep warm ambient glow
 	for i in range(5):
@@ -341,6 +402,7 @@ func _draw_dan_bau(c: Control, ac: Color) -> void:
 	# String core
 	c.draw_line(str_start, str_end, Color(0.95, 0.82, 0.45, 1.0), 1.5)
 
+# ── Card theming ──────────────────────────────────────────────────────────────
 func _build_theme() -> void:
 	var top_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(0.77, 0.58, 0.15, 0.15), 0)
 	top_s.border_width_top    = 0; top_s.border_width_left  = 0
@@ -429,7 +491,7 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 	pbg.bg_color = Color(0.13, 0.08, 0.05, 0.07)
 	pbg.corner_radius_top_left = 3; pbg.corner_radius_top_right    = 3
 	pbg.corner_radius_bottom_left = 3; pbg.corner_radius_bottom_right = 3
-	pb.add_theme_stylebox_override("fill",       pf)
+	pb.add_theme_stylebox_override("fill", pf)
 	pb.add_theme_stylebox_override("background", pbg)
 
 	var btn := cvbox.get_node(btn_name) as Button
@@ -439,8 +501,8 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 	bh.shadow_size = 18; bh.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.38)
 	btn.add_theme_stylebox_override("normal",  bn)
 	btn.add_theme_stylebox_override("hover",   bh)
-	btn.add_theme_stylebox_override("pressed", _flat(btn_col.darkened(0.15), Color.TRANSPARENT, 28))
-	btn.add_theme_stylebox_override("focus",   StyleBoxEmpty.new())
+	btn.add_theme_stylebox_override("pressed", _flat(btn_col.darkened(0.15), Color(0,0,0,0), 28))
+	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color",         C_WHITE)
 	btn.add_theme_color_override("font_hover_color",   C_WHITE)
 	btn.add_theme_color_override("font_pressed_color", C_WHITE)
@@ -513,8 +575,7 @@ func _update_card_ui(card: PanelContainer, cvbox: VBoxContainer, progress: float
 		btn.text = "Chưa mở khóa"
 		_style_card_locked(card, cvbox, btn_name)
 
-# ── Entrance animation ─────────────────────────────────────────────────────────
-
+# ── Entrance animation ────────────────────────────────────────────────────────
 func _animate_in() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.32)

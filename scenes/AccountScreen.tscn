@@ -27,7 +27,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.06, 0.03, 0.012, 0.7)
+color = Color(0.06, 0.03, 0.012, 0.88)
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -36,7 +36,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 theme_override_constants/separation = 0
 
-; ── Top bar (56px) ────────────────────────────────────────────────────────────
 [node name="TopBar" type="PanelContainer" parent="Root"]
 custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
@@ -110,14 +109,6 @@ texture = ExtResource("3_avatar")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ChangeAvatarBtn" type="Button" parent="Root/Content/ContentV/Card/CardM/CardV/ProfileSection"]
-custom_minimum_size = Vector2(80, 24)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 12
-text = "Đổi ảnh"
-flat = true
-
 [node name="NameLabel" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/ProfileSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
@@ -154,12 +145,10 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M/G1V"]
-custom_minimum_size = Vector2(24, 24)
+[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M/G1V"]
 layout_mode = 2
-size_flags_horizontal = 0
-expand_mode = 1
-stretch_mode = 5
+theme_override_font_sizes/font_size = 24
+text = "F"
 
 [node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M/G1V"]
 layout_mode = 2
@@ -186,12 +175,10 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M/G2V"]
-custom_minimum_size = Vector2(24, 24)
+[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M/G2V"]
 layout_mode = 2
-size_flags_horizontal = 0
-expand_mode = 1
-stretch_mode = 5
+theme_override_font_sizes/font_size = 24
+text = "S"
 
 [node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M/G2V"]
 layout_mode = 2
@@ -218,12 +205,10 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M/G3V"]
-custom_minimum_size = Vector2(24, 24)
+[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M/G3V"]
 layout_mode = 2
-size_flags_horizontal = 0
-expand_mode = 1
-stretch_mode = 5
+theme_override_font_sizes/font_size = 24
+text = "T"
 
 [node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M/G3V"]
 layout_mode = 2
@@ -250,12 +235,10 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Icon" type="TextureRect" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M/G4V"]
-custom_minimum_size = Vector2(24, 24)
+[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M/G4V"]
 layout_mode = 2
-size_flags_horizontal = 0
-expand_mode = 1
-stretch_mode = 5
+theme_override_font_sizes/font_size = 24
+text = "C"
 
 [node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M/G4V"]
 layout_mode = 2

@@ -163,7 +163,7 @@ func _draw_lock_icon(c: Control) -> void:
 	if _sidebar_icons_cache.has("lock"):
 		lock_tex = _sidebar_icons_cache["lock"]
 	else:
-		lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
+		lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
 		_sidebar_icons_cache["lock"] = lock_tex
 
 	if lock_tex:
@@ -379,12 +379,12 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 
-	bg_n.content_margin_top = 44
-	bg_n.content_margin_bottom = 6
-	bg_h.content_margin_top = 44
-	bg_h.content_margin_bottom = 6
-	bg_p.content_margin_top = 44
-	bg_p.content_margin_bottom = 6
+	bg_n.content_margin_top = 96
+	bg_n.content_margin_bottom = 8
+	bg_h.content_margin_top = 96
+	bg_h.content_margin_bottom = 8
+	bg_p.content_margin_top = 96
+	bg_p.content_margin_bottom = 8
 
 	if is_active:
 		bg_n.border_width_left = 6
@@ -405,35 +405,35 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.name = "IconDraw"
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ic.layout_mode = 1
-	ic.anchor_left = 0.0; ic.anchor_right = 1.0
+	ic.anchors_preset = Control.PRESET_CENTER_TOP
+	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
-	ic.offset_left = 0;   ic.offset_right = 0
-	ic.offset_top = 2;    ic.offset_bottom = 42
+	ic.offset_left = -40; ic.offset_right = 40
+	ic.offset_top = 12;   ic.offset_bottom = 92
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
 func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
-	var sz  := c.size
-	var cx  := sz.x * 0.5
-	var cy  := sz.y * 0.5
-	var s   := minf(sz.x, sz.y) * 0.42  # scale unit proportional to icon area
+	var sz := c.size
+	var cx := sz.x * 0.5
+	var cy := sz.y * 0.5
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
 
 	var tex_name := ""
 	match t:
 		0: tex_name = "menu"
-		1: tex_name = "graduation-cap"
-		2: tex_name = "music"
-		3: tex_name = "gamepad-2"
-		4: tex_name = "trending-up"
-		5: tex_name = "user"
-		6: tex_name = "home"
+		1: tex_name = "course"
+		2: tex_name = "songs"
+		3: tex_name = "game"
+		4: tex_name = "progress"
+		5: tex_name = "account"
+		6: tex_name = "room"
 	
 	var texture : Texture2D = null
 	if _sidebar_icons_cache.has(t):
 		texture = _sidebar_icons_cache[t]
 	elif tex_name != "":
-		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
+		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
 		_sidebar_icons_cache[t] = texture
 	
 	if texture:
@@ -448,7 +448,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		if _sidebar_icons_cache.has("lock"):
 			lock_tex = _sidebar_icons_cache["lock"]
 		else:
-			lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
+			lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
 			_sidebar_icons_cache["lock"] = lock_tex
 			
 		if lock_tex:
