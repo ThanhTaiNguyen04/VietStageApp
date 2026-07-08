@@ -467,21 +467,38 @@ func _draw_string(ss: Vector2, se: Vector2) -> void:
 
 func _draw_nodes(sy: float) -> void:
 	var font := get_theme_font("font")
+	var W := size.x; var H := size.y
+	var BL := W * RATIO_BODY_LEFT
+	var BR := W * RATIO_BODY_RIGHT
+	var BW := BR - BL
+	var BH := clampf(BW * RATIO_BODY_HEIGHT, MIN_BODY_HEIGHT, MAX_BODY_HEIGHT)
+	var BCY := H * 0.55
+	var BT := BCY - BH * 0.5
+	var BB := BCY + BH * 0.5
 	for i in NODE_COUNT:
-		_draw_node(Vector2(_node_xs[i], sy), i, _is_target[i] == 1, _hovered_node_idx == i, _glow_alpha[i], font)
+		_draw_node(Vector2(_node_xs[i], sy), i, _is_target[i] == 1, _hovered_node_idx == i, _glow_alpha[i], font, BT, BB)
 
-func _draw_node(pos: Vector2, idx: int, tgt: bool, hov: bool, glow: float, font: Font) -> void:
+func _draw_node(pos: Vector2, idx: int, tgt: bool, hov: bool, glow: float, font: Font, BT: float, BB: float) -> void:
 	# Subtle drop shadow
 	draw_circle(pos + Vector2(0, 1.0), 6.5, Color(0, 0, 0, 0.18))
 	
 	if glow > 0.01:
 		draw_circle(pos, 6.5 + glow * 8.0, Color(COLOR_STR_GLOW.r, COLOR_STR_GLOW.g, COLOR_STR_GLOW.b, glow * 0.35))
 
-	if tgt:
-		var p := (sin(_pulse_phase * 2.0) + 1.0) * 0.5
-		draw_arc(pos, 10.0 + p * 2.0, 0.0, TAU, 16, Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.25 + p * 0.20), 0.8)
+	var p := (sin(_pulse_phase * 2.5) + 1.0) * 0.5
 
-	var R : float = (5.8 + (0.8 if hov else (0.4 if tgt else 0.0))) * (1.0 + glow * 0.15)
+	if tgt:
+		# 1. Glowing vertical fret-like target indicator line
+		var glow_col := Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.15 + p * 0.07)
+		var center_col := Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.70 + p * 0.15)
+		draw_rect(Rect2(pos.x - 4.5, BT, 9.0, BB - BT), glow_col)
+		draw_line(Vector2(pos.x, BT), Vector2(pos.x, BB), center_col, 1.8)
+		
+		# 2. Prominent pulsing outer zither halo
+		draw_circle(pos, 10.0 + p * 3.5, Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.14 + p * 0.14))
+		draw_arc(pos, 14.5 + p * 5.5, 0.0, TAU, 24, Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.60 + p * 0.35), 2.2)
+
+	var R : float = (5.8 + (0.8 if hov else (3.2 if tgt else 0.0))) * (1.0 + glow * 0.15)
 	draw_circle(pos, R,        COLOR_GOLD)
 	draw_circle(pos, R * 0.83,  Color("#FAF7EC"))
 	draw_circle(pos, R * 0.62,  COLOR_GOLD_DRK)
@@ -490,13 +507,23 @@ func _draw_node(pos: Vector2, idx: int, tgt: bool, hov: bool, glow: float, font:
 
 	if font == null: return
 	var text := _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx]
-	var fsz  := 11 if (tgt or hov) else 9
-	var tc   := (COLOR_OAK_HI if tgt else (Color.WHITE if hov else Color("#cbb085")))
+	var fsz  := 14 if tgt else (11 if hov else 9)
+	var tc   := (Color("#fff0a5") if tgt else (Color.WHITE if hov else Color("#cbb085")))
 	var ts   := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, fsz)
 	var tp   := Vector2(pos.x - ts.x * 0.5, pos.y - R - 4.5)
 
 	draw_string(font, tp + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, Color(0, 0, 0, 0.65))
 	draw_string(font, tp,             text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz, tc)
+
+	if tgt:
+		# 3. Downward triangle pointer above text
+		var tri_y := pos.y - R - 6.0 - fsz - 5.0
+		var tri_pts := PackedVector2Array([
+			Vector2(pos.x, tri_y),
+			Vector2(pos.x - 5.5, tri_y - 9.0),
+			Vector2(pos.x + 5.5, tri_y - 9.0)
+		])
+		draw_colored_polygon(tri_pts, COLOR_GOLD)
 
 func _draw_gourd(gx: float, gy: float, gr: float) -> void:
 	# 1. Resonator connection neck (draw first so it sits behind the gourd)
