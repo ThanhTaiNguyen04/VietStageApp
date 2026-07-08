@@ -163,7 +163,7 @@ func _draw_lock_icon(c: Control) -> void:
 	if _sidebar_icons_cache.has("lock"):
 		lock_tex = _sidebar_icons_cache["lock"]
 	else:
-		lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
+		lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
 		_sidebar_icons_cache["lock"] = lock_tex
 
 	if lock_tex:
@@ -422,18 +422,18 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var tex_name := ""
 	match t:
 		0: tex_name = "menu"
-		1: tex_name = "course"
-		2: tex_name = "songs"
-		3: tex_name = "game"
-		4: tex_name = "progress"
-		5: tex_name = "account"
-		6: tex_name = "room"
+		1: tex_name = "graduation-cap"
+		2: tex_name = "music"
+		3: tex_name = "gamepad-2"
+		4: tex_name = "trending-up"
+		5: tex_name = "user"
+		6: tex_name = "home"
 	
 	var texture : Texture2D = null
 	if _sidebar_icons_cache.has(t):
 		texture = _sidebar_icons_cache[t]
 	elif tex_name != "":
-		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
+		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
 		_sidebar_icons_cache[t] = texture
 	
 	if texture:
@@ -448,7 +448,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		if _sidebar_icons_cache.has("lock"):
 			lock_tex = _sidebar_icons_cache["lock"]
 		else:
-			lock_tex = load("res://assets/textures/icons8/lock.png") as Texture2D
+			lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
 			_sidebar_icons_cache["lock"] = lock_tex
 			
 		if lock_tex:
@@ -651,7 +651,7 @@ func _build_roadmap_cards() -> void:
 	# Dynamic progression styling for Card Basic (Node1 Video)
 	var is_basic_completed := SecureDataManager.is_lesson_completed(instrument, "Node1")
 	var basic_stars: int = SecureDataManager.data.stars[instrument].get("Node1", 0)
-	
+
 	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
 	basic_sb.border_width_left = 4; basic_sb.border_width_right = 4
 	basic_sb.border_width_top = 4; basic_sb.border_width_bottom = 4
@@ -660,14 +660,13 @@ func _build_roadmap_cards() -> void:
 	basic_title.add_theme_color_override("font_color", C_CREAM)
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
-	
 	if instrument != "dan_bau":
 		if is_basic_completed:
 			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
 		else:
 			basic_details.text = "📖 2 Bài Học | ⭐ 0 Sao | 0%% Hoàn Thành"
 
-	# Dynamic progression styling for Card Essentials (Node2/3 Practice)
+	# Dynamic progression styling for Card Essentials
 	var is_ess_unlocked := is_basic_completed or instrument == "dan_bau"
 	if instrument != "dan_bau" and not is_ess_unlocked:
 		var ess_lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24)
@@ -682,7 +681,6 @@ func _build_roadmap_cards() -> void:
 		ess_title.add_theme_color_override("font_color", C_CREAM)
 		ess_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
-		
 		if instrument != "dan_bau":
 			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
 			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
@@ -808,7 +806,6 @@ func _connect_buttons() -> void:
 				if not is_ess_unlocked:
 					VirtualArtist.play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
 					return
-				
 				if SecureDataManager.is_lesson_completed(inst, "Node2"):
 					SecureDataManager.active_lesson_id = "Node3"
 					_go_practice_room_for_node(3)
