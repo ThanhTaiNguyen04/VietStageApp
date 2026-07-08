@@ -1,80 +1,55 @@
 extends SceneTree
 
 func _init():
-	print("--- Headless Verification for Sáo Trúc & Đàn Tranh ---")
+	var log_file := FileAccess.open("res://scenes_check_results.log", FileAccess.WRITE)
+	if not log_file:
+		printerr("Cannot open log file")
+		quit(1)
+		return
+		
+	log_file.store_line("--- Headless Verification for All Scenes ---")
 	
-	var script = load("res://scripts/PracticeSaoTruc.gd")
-	if script == null:
-		print("  [ERROR] FAILED to load res://scripts/PracticeSaoTruc.gd")
-	else:
-		print("  [OK] PracticeSaoTruc script loaded successfully.")
-		var instance = script.new()
-		if instance == null:
-			print("  [ERROR] FAILED to instantiate res://scripts/PracticeSaoTruc.gd")
+	var scenes = [
+		"res://scenes/PracticeTrongChau.tscn",
+		"res://scenes/SplashScreen.tscn",
+		"res://scenes/LoadingScreen.tscn",
+		"res://scenes/LoginScreen.tscn",
+		"res://scenes/InstrumentSelect.tscn",
+		"res://scenes/MainMenu.tscn",
+		"res://scenes/VirtualMusicRoom.tscn",
+		"res://scenes/PracticeRoom.tscn",
+		"res://scenes/PracticeSaoTruc.tscn",
+		"res://scenes/PracticeDanBau.tscn",
+		"res://scenes/MiniGame.tscn",
+		"res://scenes/MiniGameDanTranh.tscn",
+		"res://scenes/MiniGameSaoTruc.tscn",
+		"res://scenes/MiniGameDanBau.tscn",
+		"res://scenes/MiniGameTrongChau.tscn",
+		"res://scenes/SongScreen.tscn",
+		"res://scenes/AccountScreen.tscn",
+		"res://scenes/ProgressScreen.tscn",
+		"res://scenes/VideoPlayer.tscn",
+		"res://scenes/CustomPopup.tscn",
+		"res://scenes/LessonDanBau.tscn"
+	]
+	
+	var has_error = false
+	
+	for path in scenes:
+		var scene = load(path)
+		if scene == null:
+			log_file.store_line("  [ERROR] FAILED to load: " + path)
+			has_error = true
 		else:
-			print("  [OK] PracticeSaoTruc script instantiated successfully.")
-			instance.free()
+			log_file.store_line("  [OK] Loaded: " + path)
+			var instance = scene.instantiate()
+			if instance == null:
+				log_file.store_line("  [ERROR] FAILED to instantiate: " + path)
+				has_error = true
+			else:
+				log_file.store_line("  [OK] Instantiated: " + path)
+				instance.queue_free()
 
-	var scene = load("res://scenes/PracticeSaoTruc.tscn")
-	if scene == null:
-		print("  [ERROR] FAILED to load res://scenes/PracticeSaoTruc.tscn")
-	else:
-		print("  [OK] PracticeSaoTruc scene loaded successfully. Instantiating...")
-		var instance = scene.instantiate()
-		if instance == null:
-			print("  [ERROR] FAILED to instantiate res://scenes/PracticeSaoTruc.tscn")
-		else:
-			print("  [OK] PracticeSaoTruc scene instantiated successfully.")
-			instance.queue_free()
-
-	var script_pr = load("res://scripts/PracticeRoom.gd")
-	if script_pr == null:
-		print("  [ERROR] FAILED to load res://scripts/PracticeRoom.gd")
-	else:
-		print("  [OK] PracticeRoom script loaded successfully.")
-		var instance = script_pr.new()
-		if instance == null:
-			print("  [ERROR] FAILED to instantiate res://scripts/PracticeRoom.gd")
-		else:
-			print("  [OK] PracticeRoom script instantiated successfully.")
-			instance.free()
-
-	var scene_pr = load("res://scenes/PracticeRoom.tscn")
-	if scene_pr == null:
-		print("  [ERROR] FAILED to load res://scenes/PracticeRoom.tscn")
-	else:
-		print("  [OK] PracticeRoom scene loaded successfully. Instantiating...")
-		var instance = scene_pr.instantiate()
-		if instance == null:
-			print("  [ERROR] FAILED to instantiate res://scenes/PracticeRoom.tscn")
-		else:
-			print("  [OK] PracticeRoom scene instantiated successfully.")
-			instance.queue_free()
-
-	var script_db = load("res://scripts/PracticeDanBau.gd")
-	if script_db == null:
-		print("  [ERROR] FAILED to load res://scripts/PracticeDanBau.gd")
-	else:
-		print("  [OK] PracticeDanBau script loaded successfully.")
-		var instance = script_db.new()
-		if instance == null:
-			print("  [ERROR] FAILED to instantiate res://scripts/PracticeDanBau.gd")
-		else:
-			print("  [OK] PracticeDanBau script instantiated successfully.")
-			instance.free()
-
-	var scene_db = load("res://scenes/PracticeDanBau.tscn")
-	if scene_db == null:
-		print("  [ERROR] FAILED to load res://scenes/PracticeDanBau.tscn")
-	else:
-		print("  [OK] PracticeDanBau scene loaded successfully. Instantiating...")
-		var instance = scene_db.instantiate()
-		if instance == null:
-			print("  [ERROR] FAILED to instantiate res://scenes/PracticeDanBau.tscn")
-		else:
-			print("  [OK] PracticeDanBau scene instantiated successfully.")
-			instance.queue_free()
-
-	print("--- Verification Complete ---")
-	quit()
-
+	log_file.store_line("--- Verification Complete (has_error = " + str(has_error) + ") ---")
+	log_file.close()
+	quit(1 if has_error else 0)

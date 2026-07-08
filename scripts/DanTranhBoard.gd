@@ -413,6 +413,19 @@ func _draw() -> void:
 	if dtheme != null:
 		font = dtheme.get_default_font()
 
+	# Draw the curved timeline connecting all target points across the strings
+	if is_active and not sheet_notes.is_empty():
+		var timeline_pts := PackedVector2Array()
+		for i in STR_COUNT:
+			var cy := iy + float(i) * rh + rh * 0.5
+			var bridge_x := get_bridge_x(i)
+			var trigger_x: float = bridge_x + 0.25 * (str_r - bridge_x)
+			timeline_pts.append(Vector2(trigger_x, cy))
+		
+		# Draw a glowing back line and a sharp front line
+		draw_polyline(timeline_pts, Color(0.95, 0.72, 0.18, 0.12), 4.0, true)
+		draw_polyline(timeline_pts, Color(0.77, 0.58, 0.15, 0.35), 1.0, true)
+
 	for i in STR_COUNT:
 		var ry := iy + float(i) * rh
 		var cy := ry + rh * 0.5
@@ -521,8 +534,11 @@ func _draw() -> void:
 		if _is_target[i]:
 			var pulse := (sin(_pulse_phase[i]) + 1.0) * 0.5
 			ring_col = Color(0.95, 0.72, 0.18, 0.5 + pulse * 0.4)
-		draw_circle(Vector2(trigger_x, cy), 9.0, ring_col, false, 1.5)
-		draw_circle(Vector2(trigger_x, cy), 4.0, Color(ring_col.r, ring_col.g, ring_col.b, ring_col.a * 0.3))
+		
+		var size_scale := 1.0
+		if _is_target[i]:
+			size_scale = 1.0 + (sin(_pulse_phase[i]) + 1.0) * 0.1
+		_draw_lotus_target(Vector2(trigger_x, cy), ring_col, size_scale)
 		
 		# Draw scrolling notes on this string
 		if is_active and not sheet_notes.is_empty():
@@ -631,6 +647,59 @@ func _draw() -> void:
 			var marker_y = _press_y[i] + visual_vibrato
 			draw_circle(Vector2(_press_x[i], marker_y), 6.0, Color(0.95, 0.22, 0.08, 0.85))
 			draw_circle(Vector2(_press_x[i], marker_y), 3.0, Color(1.00, 0.75, 0.35, 0.95))
+
+func _draw_bamboo_leaf_note(note_x: float, cy: float, note_width: float, cap_h: float, cap_color: Color, border_color: Color) -> void:
+	var pts := PackedVector2Array()
+	var steps := 12
+	var w := maxf(note_width, 16.0)
+	
+	# Top half curve of the leaf
+	for step in range(steps + 1):
+		var ratio := float(step) / float(steps)
+		var px := note_x + w * ratio
+		var height_factor := sin(ratio * PI)
+		var py := cy - (cap_h * 0.5 * height_factor)
+		pts.append(Vector2(px, py))
+	# Bottom half curve of the leaf
+	for step in range(steps, -1, -1):
+		var ratio := float(step) / float(steps)
+		var px := note_x + w * ratio
+		var height_factor := sin(ratio * PI)
+		var py := cy + (cap_h * 0.5 * height_factor)
+		pts.append(Vector2(px, py))
+
+	# Draw fill
+	draw_colored_polygon(pts, cap_color)
+	# Draw outline
+	draw_polyline(pts, border_color, 1.2, true)
+	
+	# Draw a delicate ink-wash stroke/stem at the back of the leaf (scrolling from right to left, so back is at px = note_x + w)
+	var stem_pts := PackedVector2Array([
+		Vector2(note_x + w, cy),
+		Vector2(note_x + w + 6.0, cy - 2.0),
+		Vector2(note_x + w + 12.0, cy - 1.0)
+	])
+	draw_polyline(stem_pts, Color(border_color.r, border_color.g, border_color.b, border_color.a * 0.4), 0.8, true)
+
+func _draw_lotus_target(center: Vector2, color: Color, size_scale: float) -> void:
+	# Core ring
+	draw_circle(center, 9.0 * size_scale, color, false, 1.2)
+	draw_circle(center, 4.0 * size_scale, Color(color.r, color.g, color.b, color.a * 0.3))
+	
+	# Draw 8 delicate lotus petals around the core ring
+	var petals := 8
+	var r_inner := 6.0 * size_scale
+	var r_outer := 11.5 * size_scale
+	for p in petals:
+		var angle := float(p) * (TAU / petals)
+		var p_center := center + Vector2(cos(angle), sin(angle)) * r_inner
+		var p_tip := center + Vector2(cos(angle), sin(angle)) * r_outer
+		var p_left := center + Vector2(cos(angle - 0.25), sin(angle - 0.25)) * (r_inner + r_outer) * 0.48
+		var p_right := center + Vector2(cos(angle + 0.25), sin(angle + 0.25)) * (r_inner + r_outer) * 0.48
+		
+		var petal_pts := PackedVector2Array([p_center, p_left, p_tip, p_right])
+		draw_colored_polygon(petal_pts, Color(color.r, color.g, color.b, color.a * 0.15))
+		draw_polyline(petal_pts, Color(color.r, color.g, color.b, color.a * 0.6), 0.8, true)
 
 func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 	var bw := 20.0

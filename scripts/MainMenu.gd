@@ -593,7 +593,7 @@ func _build_roadmap_cards() -> void:
 		
 		pop_chords_title.text = "Đệm Hát Quê Hương"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Trống Cơm / Lý Kéo Chài\n✓ Nhạc quê hương & trữ tình sâu lắng"
-	else:
+	elif instrument == "sao_truc":
 		# Lộ trình Sáo Trúc
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎷 ĐƯỜNG HÒA TẤU (ENSEMBLE PATH)"
@@ -620,8 +620,38 @@ func _build_roadmap_cards() -> void:
 		
 		pop_chords_title.text = "Sáo Trúc Pop"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
+	else:
+		# Lộ trình Trống Chầu
+		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
+		path_chords_title.text = "🥁 ĐƯỜNG TIẾT TẤU (RHYTHM PATH)"
+		
+		basic_title.text = "Nhập Môn Trống Chầu"
+		basic_desc.text = "Học cách cầm dùi chầu, tư thế ngồi gõ và gõ các âm sắc cơ bản trên mặt trống."
+		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 0% Hoàn Thành"
+		
+		ess_title.text = "Nhịp Điệu Cơ Bản"
+		ess_desc.text = "Luyện các làn điệu trống cơ bản và cách gõ vào tâm mặt trống tạo tiếng Tịch trầm sâu."
+		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		
+		soloist_unlock_title.text = "Độc Tấu"
+		chords_unlock_title.text = "Đệm Làn Điệu"
+		
+		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
+		soloist_skills_bullets.text = "✓ Tiếng Cắc vang dội trên vành\n✓ Gõ song đúp giữ nhịp rộn ràng\n✓ Đọc nhịp phổ Trống hát chèo cổ"
+		
+		chords_skills_title.text = "Đệm Làn Điệu Trống"
+		chords_skills_bullets.text = "✓ Cách đánh nhịp dẫn lối chèo\n✓ Đệm trống cho đào nương Ca trù\n✓ Kỹ thuật đổi làn điệu linh hoạt"
+		
+		classical_title.text = "Nhạc Cổ Truyền"
+		classical_desc.text = "✓ Điệu Trống Chiến (Độc tấu)\n✓ Nhịp đệm Ca trù cổ truyền\n✓ Điệu trống chèo mừng hội xuân"
+		
+		pop_chords_title.text = "Tiết Tấu Hiện Đại"
+		pop_chords_desc.text = "✓ Hòa âm Trống Đồng Tây Nguyên\n✓ Đệm tiết tấu Pop nhẹ nhàng\n✓ Trống chầu phá cách cùng hòa tấu"
 
-		# Style Card Basic
+	# Dynamic progression styling for Card Basic (Node1 Video)
+	var is_basic_completed := SecureDataManager.is_lesson_completed(instrument, "Node1")
+	var basic_stars: int = SecureDataManager.data.stars[instrument].get("Node1", 0)
+	
 	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
 	basic_sb.border_width_left = 4; basic_sb.border_width_right = 4
 	basic_sb.border_width_top = 4; basic_sb.border_width_bottom = 4
@@ -631,12 +661,36 @@ func _build_roadmap_cards() -> void:
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	
-	# Style Card Essentials
-	var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
-	card_essentials.add_theme_stylebox_override("panel", ess_sb)
-	ess_title.add_theme_color_override("font_color", C_CREAM)
-	ess_desc.add_theme_color_override("font_color", C_CREAM_DIM)
-	ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	if instrument != "dan_bau":
+		if is_basic_completed:
+			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
+		else:
+			basic_details.text = "📖 2 Bài Học | ⭐ 0 Sao | 0%% Hoàn Thành"
+
+	# Dynamic progression styling for Card Essentials (Node2/3 Practice)
+	var is_ess_unlocked := is_basic_completed or instrument == "dan_bau"
+	if instrument != "dan_bau" and not is_ess_unlocked:
+		var ess_lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24)
+		card_essentials.add_theme_stylebox_override("panel", ess_lock_sb)
+		ess_title.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
+		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
+		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
+		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+	else:
+		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+		card_essentials.add_theme_stylebox_override("panel", ess_sb)
+		ess_title.add_theme_color_override("font_color", C_CREAM)
+		ess_desc.add_theme_color_override("font_color", C_CREAM_DIM)
+		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
+		
+		if instrument != "dan_bau":
+			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
+			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
+			var total_stars = stars_n2 + stars_n3
+			var pct = 0.0
+			if SecureDataManager.is_lesson_completed(instrument, "Node2"): pct += 50.0
+			if SecureDataManager.is_lesson_completed(instrument, "Node3"): pct += 50.0
+			ess_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [total_stars, int(pct)]
 	
 	# Locked Cards (Soloist & Chords Unlock)
 	var lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 20)
@@ -750,6 +804,11 @@ func _connect_buttons() -> void:
 			if inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
+				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
+				if not is_ess_unlocked:
+					VirtualArtist.play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
+					return
+				
 				if SecureDataManager.is_lesson_completed(inst, "Node2"):
 					SecureDataManager.active_lesson_id = "Node3"
 					_go_practice_room_for_node(3)
@@ -844,6 +903,8 @@ func _go_practice() -> void:
 		_fade_to("res://scenes/PracticeRoom.tscn")
 	elif instrument == "dan_bau":
 		_fade_to("res://scenes/PracticeDanBau.tscn")
+	elif instrument == "trong_chau":
+		_fade_to("res://scenes/PracticeTrongChau.tscn")
 	else:
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
@@ -870,6 +931,19 @@ func _go_practice_room_for_node(node_index: int) -> void:
 		elif node_index == 4:
 			PracticeDanBau.current_song_title = "Luyến Láy Đàn Bầu"
 			PracticeDanBau.current_song_sheet = ["Đô", "Fa", "La", "Si", "La", "Fa", "Đô"]
+	elif inst == "trong_chau":
+		var script = load("res://scripts/PracticeTrongChau.gd")
+		var sheet: Array[String] = []
+		if node_index == 2:
+			script.current_song_title = "Nhịp Trống Cơ Bản"
+			sheet.assign(["Tịch", "Tịch", "Cắc", "Tịch", "Tịch", "Cắc"])
+		elif node_index == 3:
+			script.current_song_title = "Tiếng Cắc Vành Gỗ"
+			sheet.assign(["Tịch", "Cắc", "Cắc", "Tịch", "Cắc", "Cắc", "Tịch"])
+		elif node_index == 4:
+			script.current_song_title = "Liên Khúc Trống Chầu"
+			sheet.assign(["Tịch", "Cắc", "Tịch", "Cắc", "Tịch", "Cắc", "Tịch", "Cắc"])
+		script.current_song_sheet = sheet
 	else: # sao_truc
 		if node_index == 2:
 			PracticeSaoTruc.current_song_title = "Hơi thở & Che lỗ cơ bản"
@@ -886,6 +960,8 @@ func _go_practice_room_for_node(node_index: int) -> void:
 		path = "res://scenes/PracticeRoom.tscn"
 	elif inst == "dan_bau":
 		path = "res://scenes/PracticeDanBau.tscn"
+	elif inst == "trong_chau":
+		path = "res://scenes/PracticeTrongChau.tscn"
 	else:
 		path = "res://scenes/PracticeSaoTruc.tscn"
 		

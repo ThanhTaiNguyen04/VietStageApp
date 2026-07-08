@@ -314,3 +314,76 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 18
 text = "Bắt đầu"
+
+; ─── Card: Trống Chầu (locked) ────────────────────────────────────────────────
+[node name="CardTrongChau" type="PanelContainer" parent="Root/CardsArea/CardsScroll/CardsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+
+[node name="TCRoot" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TCImageArea" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot"]
+custom_minimum_size = Vector2(0, 248)
+layout_mode = 2
+clip_contents = true
+
+[node name="TCImage" type="TextureRect" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCImageArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="TCContent" type="MarginContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left   = 26
+theme_override_constants/margin_right  = 26
+theme_override_constants/margin_top    = 20
+theme_override_constants/margin_bottom = 26
+
+[node name="TCCVBox" type="VBoxContainer" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TCName" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font_title")
+theme_override_font_sizes/font_size = 28
+text = "Trống Chầu"
+
+[node name="TCDesc" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "Nhịp điệu chèo cổ  ·  35 bài học"
+autowrap_mode = 3
+
+[node name="TCSpacer" type="Control" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TCBar" type="ProgressBar" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+value = 0.0
+show_percentage = false
+
+[node name="TCPct" type="Label" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 13
+text = "Chưa bắt đầu"
+
+[node name="TCBtn" type="Button" parent="Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "Bắt đầu"
