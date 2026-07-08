@@ -18,8 +18,6 @@ const IMG_SAO_TRUC  := "res://assets/textures/sao_truc_asset.png"
 const IMG_DAN_BAU   := "res://assets/textures/dan_bau_asset.png"
 
 # Instrument-specific accent colours
-const C_JADE    := Color(0.22, 0.86, 0.55, 1.0)
-const C_JADE_LT := Color(0.42, 0.95, 0.70, 1.0)
 
 func _ready() -> void:
 	_build_theme()
@@ -28,15 +26,15 @@ func _ready() -> void:
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
 	back.pressed.connect(_go_back)
-	DS.make_bouncy(back)
+	_make_bouncy(back)
 
 	var dt_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox/DTBtn as Button
 	dt_btn.pressed.connect(_go_practice_tranh)
-	DS.make_bouncy(dt_btn)
+	_make_bouncy(dt_btn)
 
 	var st_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox/STBtn as Button
 	st_btn.pressed.connect(_go_practice_sao)
-	DS.make_bouncy(st_btn)
+	_make_bouncy(st_btn)
 
 	var db_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox/DBBtn as Button
 	db_btn.pressed.connect(_go_practice_bau)
@@ -441,11 +439,11 @@ func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 	bh.shadow_size = 18; bh.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.38)
 	btn.add_theme_stylebox_override("normal",  bn)
 	btn.add_theme_stylebox_override("hover",   bh)
-	btn.add_theme_stylebox_override("pressed", DS.flat(btn_col.darkened(0.15), Color.TRANSPARENT, DS.R_MD, 0))
-	btn.add_theme_stylebox_override("focus",   DS.no_style())
-	btn.add_theme_color_override("font_color",         DS.C_CREAM)
-	btn.add_theme_color_override("font_hover_color",   DS.C_CREAM)
-	btn.add_theme_color_override("font_pressed_color", DS.C_CREAM)
+	btn.add_theme_stylebox_override("pressed", _flat(btn_col.darkened(0.15), Color.TRANSPARENT, 28))
+	btn.add_theme_stylebox_override("focus",   StyleBoxEmpty.new())
+	btn.add_theme_color_override("font_color",         C_WHITE)
+	btn.add_theme_color_override("font_hover_color",   C_WHITE)
+	btn.add_theme_color_override("font_pressed_color", C_WHITE)
 
 func _style_card_locked(card: PanelContainer, cvbox: VBoxContainer, btn_name: String) -> void:
 	var cs := _flat(Color(0.95, 0.93, 0.89, 0.65), Color(0.13, 0.08, 0.05, 0.08), 24)
@@ -596,9 +594,6 @@ func _go_practice_trong() -> void:
 	_fade_to("res://scenes/MainMenu.tscn")
 
 func _go_back() -> void:
-<<<<<<< HEAD
-	DS.fade_to(self, "res://scenes/LoginScreen.tscn")
-=======
 	_fade_to("res://scenes/LoginScreen.tscn")
 
 func _draw_trong_chau(c: Control, ac: Color) -> void:
@@ -689,4 +684,3 @@ func _make_bouncy(btn: Button) -> void:
 		var target := Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE
 		create_tween().tween_property(btn, "scale", target, 0.12)\
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
->>>>>>> origin/dat
