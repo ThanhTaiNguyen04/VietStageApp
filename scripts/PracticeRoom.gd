@@ -80,18 +80,13 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Sol", "La", "Đô", "Rê", "Mi",
-	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
-	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
-	"Sol4"
+	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
+	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
+	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
+	"Sol4", "La4" 
 ]
 
-const LANES : Array[String] = [
-	"Sol", "La", "Đô", "Rê", "Mi",
-	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
-	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
-	"Sol4"
-]
+const LANES : Array[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
@@ -124,7 +119,7 @@ var songs_list : Array = [
 	{
 		"title": "Giấc Mơ Trưa",
 		"bpm": 90.0,
-		"sheet": ["Rest", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Rê3", "Rê3", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Sol", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Rê2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Rê2", "Sol2", "Đô3", "Đô3", "Đô3", "Rest", "Mi2", "Rê2", "Sol2", "Rê2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Sol2", "Rest", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "Sol", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest"],
+		"sheet": ["Rest", "Sol1", "La1", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Rê4", "Rê4", "Rest", "La2", "Sol2", "Mi3", "Rê3", "Đô3", "La1", "Sol1", "Đô3", "Đô3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "Mi3", "Rê3", "Rê3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Đô4", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Rê3", "Mi3", "Rê3", "Đô3", "Đô3", "Rest", "Mi3", "Rê3", "Đô3", "Rê3", "Sol2", "Rê3", "Sol2", "Đô4", "Đô4", "Đô4", "Rest", "Mi3", "Rê3", "Sol2", "Rê3", "Rê3", "Rê3", "Rest", "Mi3", "Rê3", "Đô3", "Rê3", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi3", "Rê3", "Đô3", "Rê3", "Sol2", "Sol2", "Rest", "Rê4", "Đô4", "La2", "Đô4", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Sol2", "Rê3", "Rê3", "Rest", "Mi3", "Rê3", "Đô3", "Rê3", "Sol1", "Sol1", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "Rê4", "Đô4", "La2", "Đô4", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Sol2", "Rê3", "Mi3", "Đô3", "Đô3", "Rest", "La1", "Sol1", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "Mi3", "Rê3", "Đô3", "Đô3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "Rê4", "Đô4", "La2", "Đô4", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Sol2", "Rê3", "Mi3", "Đô3", "Đô3", "Rest", "La1", "Sol1", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "Mi3", "Rê3", "Đô3", "Đô3", "Rest"],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 2.0,
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 2.0,
@@ -148,6 +143,26 @@ var songs_list : Array = [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 1.0, 1.0,
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 1.0, 1.0,
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 1.0, 1.0
+		]
+	},
+	{
+		"title": "Sứ Thanh Hoa",
+		"bpm": 80.0,
+		"sheet": [
+			"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+			"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+			"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+			"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+			"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+			"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3"
+		],
+		"durations": [
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
+			0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
+			1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5
 		]
 	}
 ]
@@ -284,7 +299,7 @@ func _ready() -> void:
 		for i in range(count):
 			var y = h - i * step
 			note_container.draw_line(Vector2(0, y), Vector2(w, y), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08), 1.0)
-			note_container.draw_string(theme_font, Vector2(10, y - 5), LANES[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.45))
+			note_container.draw_string(theme_font, Vector2(10, y - 5), NOTES_VN[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.45))
 	)
 	track_panel.add_child(note_container)
 	
@@ -887,7 +902,7 @@ func _get_lane_y(note_name: String) -> float:
 	if not note_container: return 0.0
 	
 	var clean_note := note_name.strip_edges()
-	var lane_idx = LANES.find(clean_note)
+	var lane_idx = NOTES_VN.find(clean_note)
 	if lane_idx == -1:
 		lane_idx = 0
 	var container_h = note_container.size.y if note_container.size.y > 0 else 300.0
