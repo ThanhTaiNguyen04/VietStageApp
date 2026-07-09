@@ -811,8 +811,6 @@ func _connect_buttons() -> void:
 				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
 				if not completed.has("dan_bau_coban_1_video"):
 					_play_dan_bau_video(0)
-				elif not completed.has("dan_bau_coban_1_practice"):
-					_play_dan_bau_practice(1)
 				elif not completed.has("dan_bau_coban_2_video"):
 					_play_dan_bau_video(1)
 				else:
@@ -1141,21 +1139,23 @@ func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 	
 	var total_stars := 0
 	var completed_count := 0
-	var total_count := 2 # 2 lessons per card
+	var total_count := 2
 	
-	var lessons_to_check := []
+	var steps_to_check := []
 	if card_type == "basic":
-		lessons_to_check = ["dan_bau_coban_1", "dan_bau_coban_2"]
+		steps_to_check = ["dan_bau_coban_1_video", "dan_bau_coban_2_video", "dan_bau_coban_2_practice"]
+		total_count = 3
 	elif card_type == "essentials":
-		lessons_to_check = ["dan_bau_coban_3", "dan_bau_coban_4"]
+		steps_to_check = ["dan_bau_coban_3_video", "dan_bau_coban_3_practice", "dan_bau_coban_4_video", "dan_bau_coban_4_practice"]
+		total_count = 4
 	elif card_type == "soloist":
-		lessons_to_check = ["dan_bau_coban_5"]
-		total_count = 1
+		steps_to_check = ["dan_bau_coban_5_video", "dan_bau_coban_5_practice"]
+		total_count = 2
 		
-	for lid in lessons_to_check:
-		if completed.has(lid + "_practice"):
+	for step in steps_to_check:
+		if completed.has(step):
 			completed_count += 1
-		total_stars += stars_dict.get(lid + "_video", 0) + stars_dict.get(lid + "_practice", 0)
+		total_stars += stars_dict.get(step, 0)
 		
 	var pct := int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
@@ -1172,4 +1172,3 @@ func _play_dan_bau_video(lesson_idx: int) -> void:
 func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
 	_fade_to("res://scenes/PracticeDanBau.tscn")
-
