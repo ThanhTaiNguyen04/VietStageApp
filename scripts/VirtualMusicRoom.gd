@@ -934,8 +934,8 @@ func _draw_room_background() -> void:
 	# ── 2. Wall: aged cream plaster with soft lighting gradient (Stretched!) ──────
 	var steps := 32
 	var step_h := (wall_h - top_bound) / steps
-	var col_top := Color(0.92, 0.89, 0.83) # Warmer top shade
-	var col_bottom := Color(0.97, 0.95, 0.91) # Bright bottom cream
+	var col_top := Color(0.97, 0.96, 0.92) # Luminous light cream-white
+	var col_bottom := Color(0.99, 0.99, 0.96) # Luminous bright warm-white
 	for s in range(steps):
 		var y1 = top_bound + s * step_h
 		var y2 = y1 + step_h
@@ -946,7 +946,7 @@ func _draw_room_background() -> void:
 	# Subtle aged plaster texture — horizontal streaks stretching across bounds
 	for i in range(int(top_bound), int(wall_h), 8):
 		var streak_a := 0.02 * sin(float(i) * 0.3 + _time * 0.1)
-		var streak_col := Color(0.90 + streak_a, 0.85, 0.78, 0.12)
+		var streak_col := Color(0.95 + streak_a, 0.93, 0.88, 0.08) # Very subtle bright streaks
 		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
 	
 	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
