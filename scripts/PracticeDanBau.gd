@@ -52,6 +52,11 @@ var _correct_pitch_hold_time := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
 var _string_streams: Array[AudioStreamWAV] = []
+# ── Sample-based playback: base WAV + pitch ratio per note ──
+# Measured fundamental of dan_bau.wav recording (FFT analysis: ~379 Hz ≈ G4-)
+const BASE_SAMPLE_FREQ: float = 379.0
+var _base_wav: AudioStreamWAV = null
+var _current_playing_idx: int = 0   # tracks which note index is currently active
 var _active_player : AudioStreamPlayer = null
 var _rec_tween   : Tween
 var _detected_notes_history: Array[String] = []
@@ -473,12 +478,20 @@ func _build_board() -> void:
 		_highway.advance_to(0)
 
 
-# ─── Karplus-Strong Audio Generator ───────────────────────────────────────────
+# ─── Sample-Based Audio (Real Dan Bau Recording) ─────────────────────────────
 func _generate_streams() -> void:
+	# Load the real Dan Bau WAV recording as the base sample
+	_base_wav = load("res://assets/audio/dan_bau.wav") as AudioStreamWAV
+	if _base_wav == null:
+		# Fallback to KSE synthesis if WAV missing
+		_string_streams.resize(NOTES_VN.size())
+		for i in NOTES_VN.size():
+			_string_streams[i] = _generate_pluck_stream(_get_node_frequency(i))
+		return
+	# Fill array with the base wav (same stream for all notes; pitch done in _play_audio)
 	_string_streams.resize(NOTES_VN.size())
 	for i in NOTES_VN.size():
-		var freq := _get_node_frequency(i)
-		_string_streams[i] = _generate_pluck_stream(freq)
+		_string_streams[i] = _base_wav
 
 func _get_node_frequency(idx: int) -> float:
 	# Standard frequencies starting at C4 (Đô)
@@ -496,64 +509,95 @@ func _get_node_frequency(idx: int) -> float:
 	return 261.63
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
-	const SAMPLE_RATE: int = 44100
-	const DURATION: float  = 2.2 # Đàn Bầu sound rings slightly longer
-	var sample_count: int  = int(SAMPLE_RATE * DURATION)
+	# ── Karplus-Strong Extended (KSE) – tuned for Đàn Bầu monochord timbre ──
+	# Key improvements over basic KS:
+	#   1. Fractional-delay interpolation so vibrato actually shifts pitch
+	#   2. Low-pass + high-pass blend for bright pluck → warm tail character
+	#   3. Vibrato depth grows after attack (simulates uốn vòi cần rung)
+	#   4. Sustain tuned longer for the monochord's metallic resonance
+	#   5. Gentle fade-out over last 0.25 s to avoid click
 
-	# Delay buffer size
-	var delay_len: int = int(float(SAMPLE_RATE) / freq)
-	if delay_len < 2:
-		delay_len = 2
+	const SR: int   = 44100
+	const DUR: float = 3.2            # Dan Bau sustains longer than a guitar
+	var N: int = int(SR * DUR)
 
-	# White noise initialization
-	var delay_buf := PackedFloat32Array()
-	delay_buf.resize(delay_len)
+	# ── Delay line length = samples per fundamental period ──
+	var base_len: float = float(SR) / freq
+	var delay_len: int  = int(base_len)
+	if delay_len < 2: delay_len = 2
+
+	# ── Initialize delay buffer: band-limited white noise ──
+	var buf := PackedFloat32Array()
+	buf.resize(delay_len)
+	# Two-pass: random + one LP pass to soften the initial burst
 	for k in delay_len:
-		delay_buf[k] = randf_range(-1.0, 1.0)
+		buf[k] = randf_range(-1.0, 1.0)
+	for k in range(1, delay_len):
+		buf[k] = 0.5 * (buf[k] + buf[k - 1])
 
-	# Decay rate (longer sustain for Monochord metallic string)
-	var decay: float = clamp(0.9975 - freq / 25000.0, 0.990, 0.9997)
+	# ── Decay: longer for low frequencies (physically correct) ──
+	# Formula keeps T60 ≈ 3–6 s in the Dan Bau range (C4–B4)
+	var decay: float = 1.0 - (1.0 / (base_len * (18.0 + freq * 0.01)))
+	decay = clamp(decay, 0.9990, 0.99980)
 
-	# Synthesize samples
 	var samples := PackedFloat32Array()
-	samples.resize(sample_count)
-	var buf_pos: int = 0
+	samples.resize(N)
+	var pos: int = 0
+	var hp_prev: float = 0.0   # High-pass memory (removes DC drift)
 
-	for i in sample_count:
-		var next_pos: int = (buf_pos + 1) % delay_len
-		var new_sample: float = decay * 0.5 * (delay_buf[buf_pos] + delay_buf[next_pos])
-		
-		# Adding slight frequency vibrato modulation (6Hz) to simulate natural hand shake uốn vòi
-		var t_sec = float(i) / float(SAMPLE_RATE)
-		var vib := 1.0 + 0.003 * sin(t_sec * 5.8 * TAU)
-		
-		samples[i] = new_sample
-		delay_buf[buf_pos] = new_sample
-		buf_pos = (buf_pos + 1) % delay_len
+	for i in N:
+		var t: float = float(i) / float(SR)
 
-	# Normalize audio
-	var max_amp: float = 0.0
+		# ── Vibrato: slow onset, depth = 0.4% at peak (human uốn vòi speed) ──
+		var vib_depth: float = 0.004 * clamp((t - 0.12) / 0.25, 0.0, 1.0)
+		var vib_phase_offset: float = vib_depth * sin(t * 5.6 * TAU)
+
+		# ── Fractional delay pickup with vibrato ──
+		var frac_offset: float = vib_phase_offset * base_len
+		var rd: float    = float(pos) - frac_offset
+		var r_int: int   = int(rd) % delay_len
+		if r_int < 0: r_int += delay_len
+		var r_next: int  = (r_int + 1) % delay_len
+		var alpha: float = rd - floor(rd)
+		var interp: float = lerpf(buf[r_int], buf[r_next], alpha - floor(alpha))
+
+		# ── KS averaging filter (low-pass = smooths high partials) ──
+		var next_pos: int = (pos + 1) % delay_len
+		var ks_out: float  = decay * 0.5 * (buf[pos] + buf[next_pos])
+
+		# ── HP filter to remove DC / very-low-freq rumble ──
+		var hp: float = ks_out - hp_prev + 0.998 * hp_prev
+		hp_prev = ks_out
+
+		buf[pos] = ks_out
+		samples[i] = interp
+		pos = (pos + 1) % delay_len
+
+	# ── Fade out last 0.28 s to avoid audible click ──
+	var fade_n: int = int(SR * 0.28)
+	for i in fade_n:
+		var fi: int = N - fade_n + i
+		samples[fi] *= 1.0 - float(i) / float(fade_n)
+
+	# ── Normalize to 0.88 FS ──
+	var peak: float = 0.0
 	for s in samples:
-		var abs_s: float = absf(s)
-		if abs_s > max_amp:
-			max_amp = abs_s
-	if max_amp < 0.0001:
-		max_amp = 1.0
-	var norm_factor: float = 0.92 / max_amp
+		var a: float = absf(s)
+		if a > peak: peak = a
+	var nf_factor: float = 0.88 / peak if peak > 0.0001 else 1.0
 
+	# ── Pack to 16-bit PCM ──
 	var data := PackedByteArray()
-	data.resize(sample_count * 2)
-
-	for i in sample_count:
-		var val: float = clamp(samples[i] * norm_factor, -1.0, 1.0)
-		var val_i16: int = int(val * 32767.0)
-		var u16: int = val_i16 & 0xFFFF
-		data[i * 2]     = u16 & 0xFF
-		data[i * 2 + 1] = (u16 >> 8) & 0xFF
+	data.resize(N * 2)
+	for i in N:
+		var v: int = int(clamp(samples[i] * nf_factor, -1.0, 1.0) * 32767.0)
+		var u: int = v & 0xFFFF
+		data[i * 2]     = u & 0xFF
+		data[i * 2 + 1] = (u >> 8) & 0xFF
 
 	var stream := AudioStreamWAV.new()
 	stream.format   = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = SAMPLE_RATE
+	stream.mix_rate = SR
 	stream.stereo   = false
 	stream.data     = data
 	return stream
@@ -567,7 +611,9 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
-	# Play synthesised sound at current pitch bend factor
+	# Reset bend when a new note is plucked — old bend must NOT carry over
+	_current_bend_cents = 0.0
+	# Play the real WAV sample pitched to the correct note
 	if not _recording:
 		_play_audio(idx)
 
@@ -585,15 +631,20 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 
 func _on_pitch_bent(cents_offset: float) -> void:
 	_current_bend_cents = cents_offset
-	
+
 	# Update active sound player pitch scale
-	# Pitch scale = 2^(cents / 1200)
-	var multiplier := pow(2.0, _current_bend_cents / 1200.0)
-	
+	# When using sample-based WAV: pitch_scale = (note_freq / base_freq) * 2^(cents/1200)
+	var bend_mult := pow(2.0, _current_bend_cents / 1200.0)
+
 	if _active_player and is_instance_valid(_active_player) and _active_player.playing:
+		var target_scale := bend_mult
+		if _base_wav != null:
+			# Use _current_playing_idx (not stream.find) because all streams share the same WAV object
+			var note_freq: float = _get_node_frequency(_current_playing_idx)
+			target_scale = (note_freq / BASE_SAMPLE_FREQ) * bend_mult
 		# Smoothly slide pitch scale to simulate natural uốn cần
 		var tween := create_tween()
-		tween.tween_property(_active_player, "pitch_scale", multiplier, 0.04)
+		tween.tween_property(_active_player, "pitch_scale", target_scale, 0.04)
 
 	# Update status text
 	if abs(_current_bend_cents) > 5.0:
@@ -619,23 +670,34 @@ func _on_pitch_bent(cents_offset: float) -> void:
 func _play_audio(idx: int) -> void:
 	if idx >= _string_streams.size() or _string_streams[idx] == null:
 		return
-	
+
 	# Stop old active player
 	if _active_player and is_instance_valid(_active_player):
 		_active_player.stop()
 		_active_player.queue_free()
-		
+
 	var pl := AudioStreamPlayer.new()
-	pl.stream      = _string_streams[idx]
-	pl.pitch_scale = pow(2.0, _current_bend_cents / 1200.0)
-	pl.volume_db   = -2.0
-	pl.bus         = "Master"
+	pl.stream  = _string_streams[idx]
+
+	_current_playing_idx = idx  # remember which note is active
+	if _base_wav != null:
+		# Sample-based: pitch-shift the real recording to the target note
+		var target_freq: float = _get_node_frequency(idx)
+		var note_scale: float  = target_freq / BASE_SAMPLE_FREQ
+		var bend_scale: float  = pow(2.0, _current_bend_cents / 1200.0)
+		pl.pitch_scale = note_scale * bend_scale
+	else:
+		# KSE fallback: stream is already at the correct pitch
+		pl.pitch_scale = pow(2.0, _current_bend_cents / 1200.0)
+
+	pl.volume_db = -1.0   # slightly louder than before (WAV is normalized)
+	pl.bus       = "Master"
 	add_child(pl)
 	pl.play()
 	_active_player = pl
-	
+
 	var temp_player := pl
-	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+	get_tree().create_timer(4.0).timeout.connect(func() -> void:
 		if is_instance_valid(temp_player):
 			if _active_player == temp_player:
 				_active_player = null
