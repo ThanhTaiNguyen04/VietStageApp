@@ -315,26 +315,26 @@ func _draw() -> void:
 	draw_polyline(sheen_pts, Color(1.0, 1.0, 1.0, 0.40), 1.5, false)
 
 	# ─── 3. Thick Curved Bamboo Rod (Cần rung sừng trâu) ─────────────────────
-	# Almost vertical (7 degree tilt), arising from the center of the gourd - stiffened
+	# Arising from the gold collar at the top of the gourd, tilted left and curving elegantly
 	var GX := BL - 10.0       # Nested close inside the zither body (as requested!)
 	var GY := BCY
-	var GR := 54.0            # Increased to 54.0 (108px diameter) traditional cherry wood sphere
+	var GR := 54.0            # Gourd radius
 
-	var rod_start := Vector2(GX, GY)
-	var rod_ht := BH * 0.65   # Proportional height
+	var rod_start := Vector2(GX, GY - GR - 5.0) # Attached directly to the top of the gourd collar
+	var rod_ht := BH * 0.52   # Tighter proportional height since starting higher
 	var tip_deflect := _bend_offset * 0.90
 
 	# Construct rod coordinates: curving and bending along its entire length!
-	var base_tilt_angle := deg_to_rad(7.0) # Closer to vertical for stability look
+	var base_tilt_angle := deg_to_rad(6.5) # Almost vertical base
 	var base_dir := Vector2(-sin(base_tilt_angle), -cos(base_tilt_angle))
 	
 	var rod_pts := PackedVector2Array()
 	for s in 21:
 		var t := float(s) / 20.0
 		var p_pos := rod_start + base_dir * (t * rod_ht)
-		# Static curve + dynamic deflection bend distributed quadratically along the entire height (t*t)
-		var static_curve := -28.0
-		p_pos.x += (static_curve + tip_deflect) * (t * t)
+		# Static curve concentrated at the tip (pow 2.5) for a beautiful horn shape
+		var static_curve := -55.0
+		p_pos.x += static_curve * pow(t, 2.5) + tip_deflect * (t * t)
 		rod_pts.append(p_pos)
 
 	var rod_end := rod_pts[20]
@@ -344,45 +344,45 @@ func _draw() -> void:
 		var t1 := float(s) / 20.0
 		var p1 := rod_pts[s] + Vector2(-6.0, 6.0)
 		var p2 := rod_pts[s + 1] + Vector2(-6.0, 6.0)
-		var w := lerpf(24.0, 12.0, t1)
+		var w := lerpf(20.0, 10.0, t1)
 		draw_line(p1, p2, Color(0, 0, 0, 0.22), w)
 
-	# Draw rod dark border (outer silhouette - tapered from 28px to 15px - black horn)
+	# Draw rod dark border (outer silhouette - tapered from 22px to 12px - black horn)
 	for s in 20:
 		var t1 := float(s) / 20.0
-		var w := lerpf(28.0, 15.0, t1)
+		var w := lerpf(22.0, 12.0, t1)
 		draw_line(rod_pts[s], rod_pts[s + 1], Color("#090909"), w)
 
-	# Draw rod core (polished black - tapered from 19.0px to 9.0px)
+	# Draw rod core (polished black - tapered from 15.0px to 8.0px)
 	for s in 20:
 		var t1 := float(s) / 20.0
-		var w := lerpf(19.0, 9.0, t1)
+		var w := lerpf(15.0, 8.0, t1)
 		draw_line(rod_pts[s], rod_pts[s + 1], Color("#181818"), w)
 
 	# Draw rod core highlight (charcoal grey)
 	for s in 20:
 		var t1 := float(s) / 20.0
-		var w := lerpf(9.0, 4.0, t1)
+		var w := lerpf(7.0, 3.5, t1)
 		draw_line(rod_pts[s], rod_pts[s + 1], Color("#2d2d2d"), w)
 
 	# Draw specular sheen line (sharp polished piano-black/horn sheen)
 	for s in 20:
 		var t1 := float(s) / 20.0
-		var w := lerpf(2.2, 1.0, t1)
-		var offset := Vector2(-2.0, 0.0)
+		var w := lerpf(2.0, 0.8, t1)
+		var offset := Vector2(-1.5, 0.0)
 		draw_line(rod_pts[s] + offset, rod_pts[s + 1] + offset, Color("#ffffff", 0.52), w)
 
 	# Bamboo joints (only on the lower straight part, scaled proportionally)
 	for jt_t in [0.25, 0.50]:
 		var idx := int(jt_t * 20)
 		var jp := rod_pts[idx]
-		var jt_w := lerpf(28.0, 15.0, jt_t)
+		var jt_w := lerpf(22.0, 12.0, jt_t)
 		draw_circle(jp, jt_w * 0.48, Color("#090909"))
 		draw_circle(jp, jt_w * 0.35, Color("#2d2d2d"))
 
 	# Decorative gold cap on tip
-	draw_circle(rod_end, 7.5, Color("#cca43b"))
-	draw_circle(rod_end, 4.0, Color("#090909"))
+	draw_circle(rod_end, 6.0, Color("#cca43b"))
+	draw_circle(rod_end, 3.0, Color("#090909"))
 
 	# ─── 4. Unified Turned Wooden Gourd Cup (Bầu đàn dáng chum tiện gỗ nguyên khối) ─
 	# Sits on top of the rod base, nested inside the zither body, oriented horizontally
