@@ -804,7 +804,7 @@ func _connect_buttons() -> void:
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
-					VirtualArtist.play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
+					_virtual_artist_play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
 					return
 				if SecureDataManager.is_lesson_completed(inst, "Node2"):
 					SecureDataManager.active_lesson_id = "Node3"
@@ -837,13 +837,13 @@ func _connect_buttons() -> void:
 	# Unlock Buttons -> Virtual Artist Mai popup
 	var unlock_sol := card_soloist_unlock.get_node("Margin/VBox/BtnUnlock") as Button
 	unlock_sol.pressed.connect(func() -> void:
-		VirtualArtist.play_happy("Chúc mừng! Bạn đã tích lũy đủ XP để mở khóa con đường Độc Tấu.")
+		_virtual_artist_play_happy("Chúc mừng! Bạn đã tích lũy đủ XP để mở khóa con đường Độc Tấu.")
 	)
 	_make_btn_bouncy(unlock_sol)
 
 	var unlock_cho := card_chords_unlock.get_node("Margin/VBox/BtnUnlock") as Button
 	unlock_cho.pressed.connect(func() -> void:
-		VirtualArtist.play_happy("Chúc mừng! Bạn đã sẵn sàng mở khóa con đường Hợp Âm.")
+		_virtual_artist_play_happy("Chúc mừng! Bạn đã sẵn sàng mở khóa con đường Hợp Âm.")
 	)
 	_make_btn_bouncy(unlock_cho)
 
@@ -894,6 +894,11 @@ func _set_active_tab(active: Button) -> void:
 		if ic: ic.queue_redraw()
 
 # ─── Navigation ────────────────────────────────────────────────────────────────
+func _virtual_artist_play_happy(text: String) -> void:
+	var artist := get_node_or_null("/root/VirtualArtist")
+	if artist and artist.has_method("play_happy"):
+		artist.call("play_happy", text)
+
 func _go_practice() -> void:
 	var instrument : String = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	if instrument == "dan_tranh":

@@ -259,18 +259,78 @@ func _ready() -> void:
 	if scroll_container:
 		scroll_container.visible = false
 
-	# Hide NotationArea entirely and collapse MiddleRow to make Dan Tranh zither full screen
+	# Fully collapse MiddleRow: hide NotationArea, StatsRow, and LinhPanel
+	# so StringsBoard takes full vertical space
 	var notation_area := $Root/MiddleRow/MainContent/NotationArea as PanelContainer
 	if notation_area:
 		notation_area.visible = false
+
+	# Hide StatsRow — stats will be shown as compact overlay in TopBar
+	var stats_row := $Root/MiddleRow/MainContent/StatsRow as HBoxContainer
+	if stats_row:
+		stats_row.visible = false
+
+	# Hide LinhPanel (AI teacher panel) — collapse MiddleRow entirely
+	var linh_panel_node := $Root/MiddleRow/LinhPanel as PanelContainer
+	if linh_panel_node:
+		linh_panel_node.visible = false
+
 	var middle_row := $Root/MiddleRow as HBoxContainer
 	if middle_row:
 		middle_row.custom_minimum_size.y = 0
-		
-	# Ẩn StatsRow để tối ưu không gian hiển thị trên mobile (Giống giao diện Sáo Trúc)
-	var stats_row = $Root/MiddleRow/MainContent/StatsRow
-	if stats_row:
-		stats_row.visible = false
+		middle_row.visible = false  # Fully collapse since all children are hidden
+
+	# Inject compact stats HBox into TopBar (right side of TopH)
+	var top_h := $Root/TopBar/TopM/TopH as HBoxContainer
+	if top_h:
+		var stats_compact := HBoxContainer.new()
+		stats_compact.name = "TopStatsCompact"
+		stats_compact.size_flags_horizontal = Control.SIZE_SHRINK_END
+		stats_compact.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
+		stats_compact.add_theme_constant_override("separation", 0)
+
+		# Helper to create a mini stat pill
+		var _make_stat_pill = func(title_str: String, val_node_name: String) -> Control:
+			var pill := PanelContainer.new()
+			var pill_m := MarginContainer.new()
+			pill_m.add_theme_constant_override("margin_left",   10)
+			pill_m.add_theme_constant_override("margin_right",  10)
+			pill_m.add_theme_constant_override("margin_top",     2)
+			pill_m.add_theme_constant_override("margin_bottom",  2)
+			var pill_v := VBoxContainer.new()
+			pill_v.add_theme_constant_override("separation", 1)
+			pill_v.alignment = BoxContainer.ALIGNMENT_CENTER
+			var t_lbl := Label.new()
+			t_lbl.text = title_str
+			t_lbl.add_theme_font_size_override("font_size", 9)
+			t_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			t_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+			var v_lbl := Label.new()
+			v_lbl.name = val_node_name
+			v_lbl.text = "-"
+			v_lbl.add_theme_font_size_override("font_size", 15)
+			v_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			v_lbl.add_theme_color_override("font_color", C_RED_SON)
+			pill_v.add_child(t_lbl)
+			pill_v.add_child(v_lbl)
+			pill_m.add_child(pill_v)
+			pill.add_child(pill_m)
+			var pill_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 8)
+			pill.add_theme_stylebox_override("panel", pill_s)
+			return pill
+
+		var pitch_pill := _make_stat_pill.call("CAO ĐỘ", "TopPitchVal") as Control
+		var rhythm_pill := _make_stat_pill.call("NHỊP ĐIỆU", "TopRhythmVal") as Control
+		var score_pill := _make_stat_pill.call("ĐIỂM SỐ", "TopScoreVal") as Control
+
+		# Add pills to compact HBox and inject into TopBar
+		stats_compact.add_child(pitch_pill)
+		stats_compact.add_child(rhythm_pill)
+		stats_compact.add_child(score_pill)
+
+		# Insert before MenuBtn (last child)
+		top_h.add_child(stats_compact)
+		top_h.move_child(stats_compact, top_h.get_child_count() - 2)
 
 
 	# Create and style the NoteTrackPanel
@@ -1031,6 +1091,13 @@ func _on_string_plucked(idx: int, plucked_note: String) -> void:
 	pitch_status.text = "Dây %d  —  Vừa gảy" % (idx + 1)
 	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
+	# Mirror to compact TopBar pitch pill
+	var top_stats := get_node_or_null("Root/TopBar/TopM/TopH/TopStatsCompact")
+	if top_stats:
+		var pv := top_stats.find_child("TopPitchVal", true, false)
+		if pv is Label:
+			pv.text = plucked_note
+			pv.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
 	if plucked_note == sheet_notes[_note_idx]:
 		if not _is_wait_mode:
@@ -1360,6 +1427,15 @@ func _refresh_score() -> void:
 	if _score >= 85.0:   score_num.add_theme_color_override("font_color", C_GREEN_OK)
 	elif _score >= 70.0: score_num.add_theme_color_override("font_color", C_GOLD)
 	else:                score_num.add_theme_color_override("font_color", C_RED_ERR)
+	# Mirror to compact TopBar score pill
+	var top_score := get_node_or_null("Root/TopBar/TopM/TopH/TopStatsCompact")
+	if top_score:
+		var sv := top_score.find_child("TopScoreVal", true, false)
+		if sv is Label:
+			sv.text = str(int(_score))
+			if _score >= 85.0:   sv.add_theme_color_override("font_color", C_GREEN_OK)
+			elif _score >= 70.0: sv.add_theme_color_override("font_color", C_GOLD)
+			else:                sv.add_theme_color_override("font_color", C_RED_ERR)
 
 func _update_rhythm() -> void:
 	var bars := rhythm_bars.get_children()
@@ -1378,6 +1454,14 @@ func _update_rhythm() -> void:
 	rhythm_acc.text = "Độ chính xác: %d%%" % pct
 	rhythm_acc.add_theme_color_override("font_color",
 		C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
+	# Mirror to compact TopBar rhythm pill
+	var top_stats := get_node_or_null("Root/TopBar/TopM/TopH/TopStatsCompact")
+	if top_stats:
+		var rv := top_stats.find_child("TopRhythmVal", true, false)
+		if rv is Label:
+			rv.text = "%d%%" % pct
+			rv.add_theme_color_override("font_color",
+				C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
 
 func _va_say(text: String) -> void:
 	speech_label.text = text
