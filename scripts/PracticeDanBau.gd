@@ -274,11 +274,7 @@ func _set_labels() -> void:
 	var sens := get_node_or_null("Root/RecordBar/RecordM/RecordH/SensitivityBtn") as Button
 	if sens: sens.text = "⧱ Chế độ Nhạy cao"
 
-=======
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên trái để đổi âm"
-	record_btn.text = "Bắt đầu luyện tập"
-	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
->>>>>>> origin/Tien
+
 	speech_label.text = SPEECHES[0]
 	if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
 		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
