@@ -233,11 +233,7 @@ func _ready() -> void:
 	btn_back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
 	btn_back.expand_icon = true
 	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# Add theme colors to modulate the icon to fit normal/hover/pressed states
-	btn_back.add_theme_color_override("icon_normal_color", C_CREAM)
-	btn_back.add_theme_color_override("icon_hover_color", C_GOLD_LIGHT)
-	btn_back.add_theme_color_override("icon_pressed_color", C_GOLD)
-	_style_popup_button(btn_back, true)
+	_style_hud_icon_button(btn_back)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
 		if _audio_manager:
@@ -905,6 +901,15 @@ func _style_popup_button(btn: Button, primary: bool) -> void:
 	btn.add_theme_color_override("font_hover_color", fg)
 	btn.remove_theme_stylebox_override("disabled")
 	btn.remove_theme_color_override("font_disabled_color")
+
+func _style_hud_icon_button(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_stylebox_override("hover", _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), Color(0,0,0,0), 28))
+	btn.add_theme_stylebox_override("pressed", _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), Color(0,0,0,0), 28))
+	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_color_override("icon_normal_color", C_RED_SON)
+	btn.add_theme_color_override("icon_hover_color", C_GOLD)
+	btn.add_theme_color_override("icon_pressed_color", C_RED_SON)
 
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
@@ -2333,7 +2338,7 @@ func _on_viewport_size_changed() -> void:
 	if dialogue_box and is_instance_valid(dialogue_box):
 		_update_dialogue_layout(size)
 
-	btn_back.custom_minimum_size = Vector2(42, 42) if is_mobile else Vector2(48, 48)
+	btn_back.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
 	btn_back.offset_left = 12.0 if is_mobile else 32.0
 	btn_back.offset_top = 12.0 if is_mobile else 32.0
 	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
@@ -2384,18 +2389,18 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	hud_hbox.offset_top = 12 if is_mobile else 32
 	hud_hbox.offset_right = -12 if is_mobile else -32
-	hud_hbox.offset_left = -142 if is_mobile else -204
-	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 48)
+	hud_hbox.offset_left = -120 if is_mobile else -172
+	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 56)
 	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
 	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
 	if star_badge:
-		star_badge.custom_minimum_size = Vector2(92, 42) if is_mobile else Vector2(140, 48)
+		star_badge.custom_minimum_size = Vector2(64, 42) if is_mobile else Vector2(100, 48)
 		var label = star_badge.get_node_or_null("Margin/Label") as Label
 		if label:
 			label.add_theme_font_size_override("font_size", 12 if is_mobile else 15)
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
-		btn_shop.custom_minimum_size = Vector2(42, 42) if is_mobile else Vector2(48, 48)
+		btn_shop.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2471,7 +2476,7 @@ func _setup_hud_shop_button() -> void:
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "⭐ %d SAO" % SecureDataManager.get_total_stars()
+	badge_label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 15)
@@ -2487,20 +2492,16 @@ func _setup_hud_shop_button() -> void:
 	btn_shop.icon = load("res://icons8/icons8-store-16.png") as Texture2D
 	btn_shop.expand_icon = true
 	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	btn_shop.custom_minimum_size = Vector2(48, 48)
-	# Add theme colors to modulate the icon to fit normal/hover/pressed states
-	btn_shop.add_theme_color_override("icon_normal_color", C_CREAM)
-	btn_shop.add_theme_color_override("icon_hover_color", C_GOLD_LIGHT)
-	btn_shop.add_theme_color_override("icon_pressed_color", C_GOLD)
+	btn_shop.custom_minimum_size = Vector2(56, 56)
 	hud_hbox.add_child(btn_shop)
-	_style_popup_button(btn_shop, true)
+	_style_hud_icon_button(btn_shop)
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
 
 func _update_star_badge() -> void:
 	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "⭐ %d SAO" % SecureDataManager.get_total_stars()
+		label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
