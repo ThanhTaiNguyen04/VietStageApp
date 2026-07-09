@@ -20,21 +20,28 @@ const C_TEXT       := Color("#0e3d26") # Deep Forest Green text
 const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 
 # ─── @onready ─────────────────────────────────────────────────────────────────
-@onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
-@onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
-@onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
-@onready var lesson_bar   : ProgressBar   = $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/LessonBar
-@onready var pitch_note   : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote
-@onready var pitch_status : Label         = $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchStatus
-@onready var rhythm_bars  : HBoxContainer = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmBars
-@onready var rhythm_acc   : Label         = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmAcc
-@onready var score_num    : Label         = $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreNum
-@onready var record_btn   : Button        = $Root/RecordBar/RecordM/RecordH/RecordBtn
-@onready var notes_hbox   : HBoxContainer = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
-@onready var target_note_label : Label    = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel
-@onready var target_label : Label         = $Root/StringsBoard/BoardM/BoardVBox/TargetLabel
-@onready var dots_hbox    : HBoxContainer = $SettingsPanel/SettingsM/SettingsVBox/DotsHBox
-@onready var _board       : Control       = $Root/StringsBoard/BoardM/BoardVBox/DanBauBoard
+@onready var linh_panel        : PanelContainer = $Root/MiddleRow/LinhPanel
+@onready var char_linh         : TextureRect    = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
+@onready var speech_label      : Label          = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
+@onready var lesson_bar        : ProgressBar    = $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/LessonBar
+# TopBar chips (Simply Piano layout)
+@onready var pitch_note        : Label          = $Root/TopBar/TopM/TopH/PitchChip/PitchNote
+@onready var pitch_status      : Label          = $Root/TopBar/TopM/TopH/PitchChip/PitchStatus
+@onready var score_num         : Label          = $Root/TopBar/TopM/TopH/ScoreChip/ScoreNum
+# Highway & instruction strip
+@onready var _highway          : Control        = $Root/MiddleRow/MainContent/HighwayPanel/HighwayM/MusicHighway
+@onready var target_note_label : Label          = $Root/MiddleRow/MainContent/InstructionBar/InstructionM/InstructionH/TargetNoteLabel
+@onready var rhythm_acc        : Label          = $Root/MiddleRow/MainContent/InstructionBar/InstructionM/InstructionH/RhythmAcc
+# Notes scroll (hidden, kept for notation build logic)
+@onready var notes_hbox        : HBoxContainer  = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
+# StatsRow still exists (hidden) — rhythm_bars references it
+@onready var rhythm_bars       : HBoxContainer  = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmBars
+@onready var target_label      : Label          = $Root/StringsBoard/BoardM/BoardHBox/BoardVBox/TargetLabel
+@onready var dots_hbox         : HBoxContainer  = $SettingsPanel/SettingsM/SettingsVBox/DotsHBox
+@onready var _board            : Control        = $Root/StringsBoard/BoardM/BoardHBox/BoardVBox/DanBauBoard
+@onready var record_btn        : Button         = $Root/RecordBar/RecordM/RecordH/RecordBtn
+
+
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var _recording   := false
@@ -55,6 +62,8 @@ var _eval_cooldown := 0.0
 var _linh_collapsed := true
 var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
+var _demo_active := false
+var _demo_tween : Tween = null
 
 # AI Analysis tracking variables
 var _practice_time := 0.0
@@ -78,15 +87,15 @@ func _ready() -> void:
 	# Setup collapsible LinhPanel system
 	_setup_collapsible_linh()
 	
-	if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
+	if current_song_title != "":
+		sheet_notes = current_song_sheet
+	elif SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
 		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
 		var idx := int(clean_id.replace("dan_bau_coban_", ""))
 		if idx >= 1 and idx <= 2:
 			sheet_notes = ["Đô", "Đô", "Đô", "Đô"]
 		elif idx == 3:
 			sheet_notes = ["Đô", "Rê", "Mi", "Sol", "La", "Đô"]
-	elif current_song_title != "":
-		sheet_notes = current_song_sheet
 	_generate_streams()
 	_set_labels()
 	_build_theme()
@@ -236,21 +245,29 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "40%" if current_song_title == "" else "100%"
 	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button).text = "Demo"
+	($Root/MiddleRow/LinhPanel/LinhVBox/DemoBtn as Button).text = "🔊 Demo"
 	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button).text = "x0.5"
 
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
-	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
-	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
+	# Instruction bar (new Simply Piano layout)
+	if target_note_label: target_note_label.text = sheet_notes[0] if sheet_notes.size() > 0 else "Đô"
+	# Hidden notation area labels (safe access)
+	var nl := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel") as Label
+	if nl: nl.text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên trái để đổi âm"
-	record_btn.text = "Bắt đầu luyện tập"
-	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
+	var blbl := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/BoardVBox/BoardLabel") as Label
+	if blbl: blbl.text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Uốn vòi để đổi âm"
+	
+	record_btn.text = "▶  Bắt đầu luyện tập"
+	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "⟲ Làm lại"
+	
+	var sm := get_node_or_null("Root/RecordBar/RecordM/RecordH/SoundModeBtn") as Button
+	if sm: sm.text = "🎵 Âm thanh Đàn bầu"
+	var sens := get_node_or_null("Root/RecordBar/RecordM/RecordH/SensitivityBtn") as Button
+	if sens: sens.text = "⧱ Chế độ Nhạy cao"
 
 	speech_label.text = SPEECHES[0]
+
+
 
 # ─── Custom Theming ───────────────────────────────────────────────────────────
 # ─── Custom Theming ───────────────────────────────────────────────────────────
@@ -275,8 +292,13 @@ func _build_theme() -> void:
 	if menu_btn:
 		_style_text_btn(menu_btn, C_RED_SON, C_RED_SON.lightened(0.15))
 
-	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
-		_style_outlined_btn($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node(bn) as Button)
+	for bn in ["HintBtn","SlowBtn"]:
+		var btn_node := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(bn) as Button
+		if btn_node: _style_outlined_btn(btn_node)
+
+	var dm_btn := get_node_or_null("Root/MiddleRow/LinhPanel/LinhVBox/DemoBtn") as Button
+	if dm_btn: _style_outlined_btn(dm_btn)
+
 
 	var settings_panel := $SettingsPanel as PanelContainer
 	if settings_panel:
@@ -289,7 +311,6 @@ func _build_theme() -> void:
 		sp_style.corner_radius_bottom_left = 14; sp_style.corner_radius_bottom_right = 14
 		sp_style.shadow_size = 10; sp_style.shadow_color = Color(0.2, 0.15, 0.1, 0.25)
 		settings_panel.add_theme_stylebox_override("panel", sp_style)
-		
 		var menu_title := $SettingsPanel/SettingsM/SettingsVBox/MenuTitle as Label
 		if menu_title:
 			menu_title.add_theme_color_override("font_color", C_TEXT)
@@ -297,40 +318,51 @@ func _build_theme() -> void:
 	# Linh panel
 	var linh_s := StyleBoxEmpty.new()
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", linh_s)
-
 	var bubble_s := _flat(C_CARD, Color("#c99a3c", 0.35), 14)
 	($Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer).add_theme_stylebox_override("panel", bubble_s)
 	speech_label.add_theme_color_override("font_color", C_TEXT)
 
-	var na_s := _flat(Color("#fdfbf7"), Color("#c99a3c", 0.30), 12)
-	($Root/MiddleRow/MainContent/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).add_theme_color_override("font_color", C_TEXT)
+	# Highway panel: dark rosewood background
+	var hw_panel := get_node_or_null("Root/MiddleRow/MainContent/HighwayPanel") as PanelContainer
+	if hw_panel:
+		hw_panel.add_theme_stylebox_override("panel", _flat(Color("#0e0603"), Color("#c99a3c", 0.22), 0))
 
-	var stat_bg := _flat(C_CARD, Color("#c99a3c", 0.30), 14)
-	stat_bg.shadow_size = 6
-	stat_bg.shadow_color = Color(0, 0, 0, 0.05)
-	($Root/MiddleRow/MainContent/StatsRow/PitchPanel  as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
-	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel  as PanelContainer).add_theme_stylebox_override("panel", stat_bg.duplicate())
-
-	pitch_note.add_theme_color_override("font_color",   C_RED_SON)
+	# TopBar pitch/score chips color
+	pitch_note.add_theme_color_override("font_color",   C_GOLD)
 	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	rhythm_acc.add_theme_color_override("font_color", C_TEXT_MUTED)
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	score_num.add_theme_color_override("font_color", C_RED_SON)
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
+	score_num.add_theme_color_override("font_color",    C_GOLD)
+	rhythm_acc.add_theme_color_override("font_color",   C_TEXT_MUTED)
+
 
 	var sb_s := StyleBoxFlat.new()
-	sb_s.bg_color = Color("#120702") # Rosewood wood base
-	sb_s.border_color = Color("#c99a3c", 0.40)
+	sb_s.bg_color = Color("#100804") # Dark rosewood base
+	sb_s.border_color = Color("#cca43b", 0.40)
 	sb_s.border_width_top = 2; sb_s.border_width_bottom = 2
 	sb_s.border_width_left = 0; sb_s.border_width_right = 0
 	($Root/StringsBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75))
-	($Root/StringsBoard/BoardM/BoardVBox/TargetLabel as Label).add_theme_color_override("font_color", Color(1.0, 0.92, 0.70, 1.0))
+	
+	# Safe styling using get_node_or_null
+	var blbl := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/BoardVBox/BoardLabel") as Label
+	if blbl: blbl.add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75))
+	var tlbl := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/BoardVBox/TargetLabel") as Label
+	if tlbl: tlbl.add_theme_color_override("font_color", Color(1.0, 0.92, 0.70, 1.0))
+
+	# Left guide panel styling: transparent and borderless
+	var guide_panel := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/LeftGuide") as PanelContainer
+	if guide_panel:
+		var guide_style := StyleBoxFlat.new()
+		guide_style.bg_color = Color(0, 0, 0, 0)
+		guide_style.border_width_left = 0; guide_style.border_width_right = 0
+		guide_style.border_width_top = 0; guide_style.border_width_bottom = 0
+		guide_panel.add_theme_stylebox_override("panel", guide_style)
+		
+		var glbl := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/LeftGuide/GuideVBox/GuideLabel") as Label
+		if glbl: glbl.add_theme_color_override("font_color", Color("#ffdcb0"))
+		var a_up := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/LeftGuide/GuideVBox/ArrowUp") as Label
+		if a_up: a_up.add_theme_color_override("font_color", C_GOLD)
+		var a_down := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/LeftGuide/GuideVBox/ArrowDown") as Label
+		if a_down: a_down.add_theme_color_override("font_color", C_GOLD)
+
 
 	var rec_bar_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
@@ -347,6 +379,11 @@ func _build_theme() -> void:
 	record_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 
 	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
+	var sm_btn := get_node_or_null("Root/RecordBar/RecordM/RecordH/SoundModeBtn") as Button
+	if sm_btn: _style_outlined_btn(sm_btn)
+	var sens_btn := get_node_or_null("Root/RecordBar/RecordM/RecordH/SensitivityBtn") as Button
+	if sens_btn: _style_outlined_btn(sens_btn)
+
 
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
@@ -430,6 +467,11 @@ func _build_board() -> void:
 	_board.string_plucked.connect(_on_string_plucked)
 	_board.pitch_bent.connect(_on_pitch_bent)
 	_update_target_indicator()
+	# ── Simply Piano Music Highway: load sheet and set cursor to first note ──
+	if _highway and is_instance_valid(_highway):
+		_highway.load_sheet(sheet_notes)
+		_highway.advance_to(0)
+
 
 # ─── Karplus-Strong Audio Generator ───────────────────────────────────────────
 func _generate_streams() -> void:
@@ -518,6 +560,8 @@ func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 
 # ─── Playback & Interaction ───────────────────────────────────────────────────
 func _on_string_plucked(idx: int, note_name: String) -> void:
+	if _demo_active:
+		return
 	pitch_note.text   = note_name
 	pitch_status.text = "Nốt %s  —  Vừa gảy" % note_name
 	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
@@ -534,6 +578,10 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		_score = clamp(_score + 4.0, 0, 100)
 		_refresh_score()
 		_va_say("Tuyệt vời! Gảy đúng nốt hài âm rồi.")
+		# Advance Music Highway cursor to next note
+		if _highway and is_instance_valid(_highway):
+			_highway.advance_to(_note_idx)
+
 
 func _on_pitch_bent(cents_offset: float) -> void:
 	_current_bend_cents = cents_offset
@@ -598,9 +646,10 @@ func _update_target_indicator() -> void:
 	var target_note := sheet_notes[_note_idx]
 	var target_idx  := NOTES_VN.find(target_note)
 	if target_idx == -1: target_idx = 0
-	target_label.text      = "Nốt cần gảy: %s (Hài âm vị trí %d)" % [target_note, target_idx + 1]
-	target_note_label.text = "Nốt tiếp theo: %s" % target_note
+	target_label.text      = "Nốt cần gảy: %s (Hài âm %d)" % [target_note, target_idx + 1]
+	target_note_label.text = target_note   # Simply Piano: just the note name
 	if _board: _board.set_target(target_idx)
+
 
 func _refresh_score() -> void:
 	score_num.text = str(int(_score))
@@ -616,7 +665,7 @@ func _start_float() -> void:
 func _connect_buttons() -> void:
 	var back_btn  := $Root/TopBar/TopM/TopH/BackBtn as Button
 	var hint_btn  := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button
-	var demo_btn  := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
+	var demo_btn  := $Root/MiddleRow/LinhPanel/LinhVBox/DemoBtn as Button
 	var slow_btn  := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 	var menu_btn  := $Root/TopBar/TopM/TopH/MenuBtn as Button
@@ -666,21 +715,86 @@ func _toggle_record() -> void:
 		if visualizer: visualizer.visible = false
 
 func _demo() -> void:
-	_va_say("Đây là kỹ thuật uốn cần đàn bầu chuẩn.\nHãy chú ý vòi đàn chuyển động.")
-	var t := create_tween()
-	t.tween_property(char_linh, "modulate", Color(1.5, 1.1, 0.6, 1.0), 0.3)
-	t.tween_property(char_linh, "modulate", Color.WHITE, 0.5)
+	if _demo_active:
+		_stop_demo()
+		return
+		
+	_demo_active = true
+	var song_name := current_song_title if current_song_title != "" else "Gió Đánh Đò Đưa"
+	_va_say("Hãy lắng nghe bài nhạc mẫu: " + song_name)
+	
+	_note_idx = 0
+	_build_notation()
+	_update_target_indicator()
+	# Start Music Highway scrolling
+	if _highway and is_instance_valid(_highway):
+		_highway.load_sheet(sheet_notes)
+		_highway.advance_to(0)
+		_highway.play_demo()
 
-	var target_note := sheet_notes[_note_idx]
-	var target_idx  := NOTES_VN.find(target_note)
-	if target_idx == -1: target_idx = 0
+	
+	_demo_tween = create_tween()
+	
+	for i in range(sheet_notes.size()):
+		var note_name := sheet_notes[i]
+		var target_idx := NOTES_VN.find(note_name)
+		if target_idx == -1: 
+			target_idx = 0
+			
+		# Schedule note play
+		var play_note_callable := (func(step_idx: int, note: String, target_i: int) -> void:
+			if not _demo_active: return
+			_note_idx = step_idx
+			_build_notation()
+			_update_target_indicator()
+			
+			pitch_note.text   = note
+			pitch_status.text = "Demo: Tự động chơi..."
+			pitch_status.add_theme_color_override("font_color", C_GOLD)
+			
+			# Trigger visual board pluck
+			if _board:
+				_board.pluck(target_i)
+			# Advance highway cursor
+			if _highway and is_instance_valid(_highway):
+				_highway.advance_to(step_idx)
+			
+			# Play the synthesized note sound
+			_play_audio(target_i)
+		).bind(i, note_name, target_idx)
+		
+		_demo_tween.tween_callback(play_note_callable)
+		
+		# Add traditional uốn cần (vibrato/bend)
+		if _board:
+			_demo_tween.tween_property(_board, "_target_bend_offset", -16.0, 0.15)
+			_demo_tween.tween_property(_board, "_target_bend_offset", 0.0, 0.20)
+		
+		# Interval between notes
+		_demo_tween.tween_interval(0.50)
+		
+	_demo_tween.tween_callback(func() -> void:
+		_demo_active = false
+		_note_idx = 0
+		_build_notation()
+		_update_target_indicator()
+		_va_say("Hoàn thành bài demo. Bây giờ hãy thử tự gảy xem nhé!")
+	)
+
+func _stop_demo() -> void:
+	_demo_active = false
+	if _demo_tween:
+		_demo_tween.kill()
+		_demo_tween = null
 	if _board:
-		var dt := create_tween()
-		dt.tween_interval(0.35)
-		dt.tween_callback(func() -> void: _board.pluck(target_idx))
-		# visual rod bend demo
-		dt.tween_property(_board, "_bend_offset", -40.0, 0.3)
-		dt.tween_property(_board, "_bend_offset", 0.0, 0.25).set_delay(0.3)
+		_board._target_bend_offset = 0.0
+	# Stop Music Highway
+	if _highway and is_instance_valid(_highway):
+		_highway.stop_demo()
+	_note_idx = 0
+	_build_notation()
+	_update_target_indicator()
+	_va_say("Đã dừng chế độ chơi tự động.")
 
 func _simulate_tick() -> void:
 	var ni := randi() % NOTES_VN.size()
@@ -1175,24 +1289,25 @@ func _on_resized() -> void:
 		lesson_title.add_theme_font_size_override("font_size", 24)
 
 	# 2. Middle Content & Stats responsiveness
-	var notation_m := $Root/MiddleRow/MainContent/NotationArea/NotationM as MarginContainer
-	var pitch_note_lbl := $Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchNote as Label
-	var score_num_lbl := $Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreNum as Label
+	var notation_m := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM") as MarginContainer
 
 	if w < 600:
-		notation_m.add_theme_constant_override("margin_left", 12)
-		notation_m.add_theme_constant_override("margin_right", 12)
-		notation_m.add_theme_constant_override("margin_top", 8)
-		notation_m.add_theme_constant_override("margin_bottom", 8)
-		pitch_note_lbl.add_theme_font_size_override("font_size", 24)
-		score_num_lbl.add_theme_font_size_override("font_size", 26)
+		if notation_m:
+			notation_m.add_theme_constant_override("margin_left", 12)
+			notation_m.add_theme_constant_override("margin_right", 12)
+			notation_m.add_theme_constant_override("margin_top", 8)
+			notation_m.add_theme_constant_override("margin_bottom", 8)
+		pitch_note.add_theme_font_size_override("font_size", 18)
+		score_num.add_theme_font_size_override("font_size", 18)
 	else:
-		notation_m.add_theme_constant_override("margin_left", 32)
-		notation_m.add_theme_constant_override("margin_right", 32)
-		notation_m.add_theme_constant_override("margin_top", 18)
-		notation_m.add_theme_constant_override("margin_bottom", 18)
-		pitch_note_lbl.add_theme_font_size_override("font_size", 34)
-		score_num_lbl.add_theme_font_size_override("font_size", 38)
+		if notation_m:
+			notation_m.add_theme_constant_override("margin_left", 32)
+			notation_m.add_theme_constant_override("margin_right", 32)
+			notation_m.add_theme_constant_override("margin_top", 18)
+			notation_m.add_theme_constant_override("margin_bottom", 18)
+		pitch_note.add_theme_font_size_override("font_size", 18)
+		score_num.add_theme_font_size_override("font_size", 18)
+
 
 	# 3. Bottom Control Bar responsiveness
 	var record_m := $Root/RecordBar/RecordM as MarginContainer
