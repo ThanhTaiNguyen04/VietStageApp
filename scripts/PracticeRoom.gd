@@ -1011,7 +1011,7 @@ func _get_string_frequency(idx: int) -> float:
 		293.66, # Rê (D4)
 		329.63  # Mi (E4)
 	]
-	var octave = idx / 5
+	var octave = int(idx / 5.0)
 	var note_in_octave = idx % 5
 	return base_freqs[note_in_octave] * pow(2, octave)
 
@@ -2235,7 +2235,7 @@ func _get_average_score(scores: Array, default_val: float) -> float:
 func _play_backing_chord(measure: int) -> void:
 	var chord_indices = []
 	if measure < 20: # Intro
-		var step = measure / 2
+		var step = int(measure / 2.0)
 		if step == 0 or step == 1 or step == 3 or step == 4 or step == 9:
 			chord_indices = [0, 2, 4] # C
 		elif step == 2 or step == 7:

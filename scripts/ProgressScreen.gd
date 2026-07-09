@@ -339,8 +339,8 @@ func _make_button_bouncy(btn: Button) -> void:
 	)
 
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	var content_box := $Root/Content as BoxContainer
 	content_box.vertical = is_mobile
@@ -373,4 +373,3 @@ func _on_viewport_size_changed() -> void:
 		var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
 		back_btn.custom_minimum_size = Vector2(160, back_btn.custom_minimum_size.y)
 		($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_font_size_override("font_size", 32)
-

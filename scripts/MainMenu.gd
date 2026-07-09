@@ -496,7 +496,7 @@ func _build_top_bar() -> void:
 	xp_pill.add_theme_stylebox_override("panel", xp_s)
 	xp_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
-	var total_xp : int = 1240 + int(SecureDataManager.data.practice_time_seconds) / 6
+	var total_xp : int = 1240 + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
 	xp_label.text = str(total_xp) + " XP"
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
@@ -1009,8 +1009,8 @@ func _make_btn_bouncy(btn: Button) -> void:
 	)
 
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	sidebar.visible = not is_mobile
 	bottom_bar.visible = is_mobile

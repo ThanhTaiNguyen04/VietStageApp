@@ -179,9 +179,9 @@ func _update_media_progress() -> void:
 		progress_bar.value = 0.0
 		
 	# Time label
-	var cur_min := int(_time) / 60
+	var cur_min := int(int(_time) / 60.0)
 	var cur_sec := int(_time) % 60
-	var dur_min := int(_duration) / 60
+	var dur_min := int(int(_duration) / 60.0)
 	var dur_sec := int(_duration) % 60
 	time_label.text = "%d:%02d / %d:%02d" % [cur_min, cur_sec, dur_min, dur_sec]
 	

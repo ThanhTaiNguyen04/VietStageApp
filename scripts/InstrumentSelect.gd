@@ -591,8 +591,8 @@ func _animate_in() -> void:
 		delay += 0.13
 
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	# Cards scaling
 	var cards_hbox := $Root/CardsArea/CardsScroll/CardsHBox as HBoxContainer

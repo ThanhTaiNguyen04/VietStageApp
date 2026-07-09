@@ -1074,12 +1074,12 @@ func _make_button_bouncy(btn: Button) -> void:
 	)
 
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	var card := $Root/Card as PanelContainer
 	if is_mobile:
-		card.custom_minimum_size = Vector2(size.x - 32, 0)
+		card.custom_minimum_size = Vector2(viewport_size.x - 32, 0)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	else:
 		card.custom_minimum_size = Vector2(1000, 640)
