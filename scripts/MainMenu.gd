@@ -597,28 +597,28 @@ func _build_roadmap_cards() -> void:
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
 		
-		basic_title.text = "Nhập Môn Đàn Bầu"
-		basic_desc.text = "Học tư thế ngồi, cách cầm que gảy và gảy các âm bồi/hài âm cơ bản trên một dây."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 40% Hoàn Thành"
+		basic_title.text = "Căng Dây & Lên Dây"
+		basic_desc.text = "Học tư thế ngồi, cách sử dụng trục vặn để điều chỉnh độ căng của dây và lên dây đúng cao độ."
+		basic_details.text = "📖 1 Bài Học | ⭐ 6 Sao | 0% Hoàn Thành"
 		
-		ess_title.text = "Kỹ Thuật Uốn Cần"
-		ess_desc.text = "Luyện kỹ thuật uốn cần đàn luyến láy để thay đổi cao độ tiếng đàn ngân nga."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		ess_title.text = "Học Nốt Đô Hài Âm"
+		ess_desc.text = "Luyện chạm nhẹ rìa bàn tay phải vào điểm hài âm thứ nhất để tạo tiếng Đô vang tự nhiên."
+		ess_details.text = "📖 1 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
-		soloist_unlock_title.text = "Độc Tấu"
-		chords_unlock_title.text = "Đệm Hát"
+		soloist_unlock_title.text = "Nốt Rê & Mi"
+		chords_unlock_title.text = "Uốn Cần Đàn"
 		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
-		soloist_skills_bullets.text = "✓ Kỹ thuật Hài âm nâng cao\n✓ Rung cần tạo ngân rung sâu\n✓ Đọc nhạc phổ Độc huyền cầm"
+		soloist_skills_title.text = "Học Nốt Rê & Mi"
+		soloist_skills_bullets.text = "✓ Vị trí hài âm Rê và Mi\n✓ Gảy đúng cao độ chuẩn sắc\n✓ Luyện tai nghe chuẩn nhạc phổ"
 		
-		chords_skills_title.text = "Đệm Hát Đàn Bầu"
-		chords_skills_bullets.text = "✓ Cách uốn nốt theo lời ca\n✓ Đệm các làn điệu dân ca cổ\n✓ Kỹ thuật luyến láy lướt âm"
+		chords_skills_title.text = "Kỹ Thuật Uốn Vòi"
+		chords_skills_bullets.text = "✓ Căng cần nâng cao độ nốt\n✓ Trùng dây hạ thấp cao độ\n✓ Ngân rung cần đàn truyền thống"
 		
-		classical_title.text = "Nhạc Cổ Truyền"
-		classical_desc.text = "✓ Dạ Cổ Hoài Lang (Đàn Bầu)\n✓ Làn điệu cổ truyền Bắc Bộ\n✓ Độc tấu nhạc cổ điệu da diết"
+		classical_title.text = "Bài Mẫu Bèo Dạt"
+		classical_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Kết hợp hài âm và uốn cần\n✓ Độc tấu điệu nhạc da diết"
 		
 		pop_chords_title.text = "Đệm Hát Quê Hương"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Trống Cơm / Lý Kéo Chài\n✓ Nhạc quê hương & trữ tình sâu lắng"
+		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Luyện uốn cần luyến âm mượt\n✓ Đệm hát các làn điệu sâu lắng"
 	elif instrument == "sao_truc":
 		# Lộ trình Sáo Trúc
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -671,7 +671,7 @@ func _build_roadmap_cards() -> void:
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	if instrument == "dan_bau":
-		basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
+		basic_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
 	else:
 		if is_basic_completed:
 			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
@@ -688,7 +688,7 @@ func _build_roadmap_cards() -> void:
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
 		if instrument == "dan_bau":
-			ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
+			ess_details.text = "📖 1 Bài Học | 🔒 Cần hoàn thành bài trước"
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		card_essentials.add_theme_stylebox_override("panel", ess_sb)
@@ -697,7 +697,7 @@ func _build_roadmap_cards() -> void:
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 		if instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
-			ess_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
+			ess_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
 		else:
 			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
 			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
@@ -811,10 +811,8 @@ func _connect_buttons() -> void:
 				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
 				if not completed.has("dan_bau_coban_1_video"):
 					_play_dan_bau_video(0)
-				elif not completed.has("dan_bau_coban_2_video"):
-					_play_dan_bau_video(1)
 				else:
-					_play_dan_bau_practice(2)
+					_play_dan_bau_practice(1)
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
@@ -824,17 +822,13 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
 				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-				if not completed.has("dan_bau_coban_2_practice"):
-					_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Nhập Môn để mở khóa phần Kỹ Thuật Uốn Cần nhé!")
+				if not completed.has("dan_bau_coban_1_practice"):
+					_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Căng Dây & Lên Dây để mở khóa bài tiếp theo nhé!")
 					return
-				if not completed.has("dan_bau_coban_3_video"):
-					_play_dan_bau_video(2)
-				elif not completed.has("dan_bau_coban_3_practice"):
-					_play_dan_bau_practice(3)
-				elif not completed.has("dan_bau_coban_4_video"):
-					_play_dan_bau_video(3)
+				if not completed.has("dan_bau_coban_2_video"):
+					_play_dan_bau_video(1)
 				else:
-					_play_dan_bau_practice(4)
+					_play_dan_bau_practice(2)
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -854,13 +848,13 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-			if not completed.has("dan_bau_coban_4_practice"):
-				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Kỹ Thuật Uốn Cần để mở khóa phần Độc Tấu nhé!")
+			if not completed.has("dan_bau_coban_2_practice"):
+				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Học Nốt Đô Hài Âm để mở khóa bài tiếp theo nhé!")
 				return
-			if not completed.has("dan_bau_coban_5_video"):
-				_play_dan_bau_video(4)
+			if not completed.has("dan_bau_coban_3_video"):
+				_play_dan_bau_video(2)
 			else:
-				_play_dan_bau_practice(5)
+				_play_dan_bau_practice(3)
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)
@@ -868,15 +862,54 @@ func _connect_buttons() -> void:
 	_make_btn_bouncy(play_soloist)
 	
 	var play_chords := card_chords_skills.get_node("Margin/HBox/BtnPlay") as Button
-	play_chords.pressed.connect(_go_practice)
+	play_chords.pressed.connect(func() -> void:
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_2_practice"):
+				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Học Nốt Đô Hài Âm để mở khóa bài tiếp theo nhé!")
+				return
+			if not completed.has("dan_bau_coban_4_video"):
+				_play_dan_bau_video(3)
+			else:
+				_play_dan_bau_practice(4)
+		else:
+			_go_practice()
+	)
 	_make_btn_bouncy(play_chords)
 
 	var play_classical := card_classical.get_node("Margin/HBox/BtnPlay") as Button
-	play_classical.pressed.connect(_go_practice)
+	play_classical.pressed.connect(func() -> void:
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_3_practice"):
+				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành bài Học Nốt Rê & Mi để mở khóa bài tiếp theo nhé!")
+				return
+			if not completed.has("dan_bau_coban_5_video"):
+				_play_dan_bau_video(4)
+			else:
+				_play_dan_bau_practice(5)
+		else:
+			_go_practice()
+	)
 	_make_btn_bouncy(play_classical)
 	
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
-	play_pop.pressed.connect(_go_practice)
+	play_pop.pressed.connect(func() -> void:
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_4_practice"):
+				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành bài Kỹ Thuật Uốn Vòi để mở khóa bài tiếp theo nhé!")
+				return
+			if not completed.has("dan_bau_coban_5_video"):
+				_play_dan_bau_video(4)
+			else:
+				_play_dan_bau_practice(5)
+		else:
+			_go_practice()
+	)
 	_make_btn_bouncy(play_pop)
 
 	# Unlock Buttons -> Virtual Artist Mai popup
@@ -1143,14 +1176,15 @@ func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 	
 	var steps_to_check := []
 	if card_type == "basic":
-		steps_to_check = ["dan_bau_coban_1_video", "dan_bau_coban_2_video", "dan_bau_coban_2_practice"]
-		total_count = 3
+		steps_to_check = ["dan_bau_coban_1_video", "dan_bau_coban_1_practice"]
 	elif card_type == "essentials":
-		steps_to_check = ["dan_bau_coban_3_video", "dan_bau_coban_3_practice", "dan_bau_coban_4_video", "dan_bau_coban_4_practice"]
-		total_count = 4
+		steps_to_check = ["dan_bau_coban_2_video", "dan_bau_coban_2_practice"]
 	elif card_type == "soloist":
+		steps_to_check = ["dan_bau_coban_3_video", "dan_bau_coban_3_practice"]
+	elif card_type == "chords":
+		steps_to_check = ["dan_bau_coban_4_video", "dan_bau_coban_4_practice"]
+	elif card_type == "classical" or card_type == "pop_chords":
 		steps_to_check = ["dan_bau_coban_5_video", "dan_bau_coban_5_practice"]
-		total_count = 2
 		
 	for step in steps_to_check:
 		if completed.has(step):

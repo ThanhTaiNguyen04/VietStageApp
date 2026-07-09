@@ -106,11 +106,7 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		next_lesson_id = "Node5"
 	elif lesson_id.begins_with("dan_bau_coban_"):
 		if lesson_id.ends_with("_video"):
-			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_video", ""))
-			if idx == 1:
-				next_lesson_id = "dan_bau_coban_2_video"
-			else:
-				next_lesson_id = lesson_id.replace("_video", "_practice")
+			next_lesson_id = lesson_id.replace("_video", "_practice")
 		elif lesson_id.ends_with("_practice"):
 			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_practice", ""))
 			if idx < 5:
