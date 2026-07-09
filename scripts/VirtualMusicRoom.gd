@@ -927,6 +927,78 @@ func _draw_room_background() -> void:
 		var streak_a := 0.04 * sin(float(i) * 0.3 + _time * 0.1)
 		var streak_col := Color(0.92 + streak_a, 0.88, 0.80, 0.25)
 		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
+		
+	# ── 2b. Symmetrical Traditional Moon Windows (Cửa Sổ Nguyệt Môn) ──
+	var win_l_x := left_bound + (240.0 if not _is_mobile_layout else 180.0)
+	var win_r_x := right_bound - (240.0 if not _is_mobile_layout else 180.0)
+	var win_y := 120.0
+	var win_r := 70.0 if not _is_mobile_layout else 50.0
+	var stalk_color := Color(0.02, 0.04, 0.03)
+	
+	# Left Moon Window
+	var left_win_center := Vector2(win_l_x, win_y)
+	bg_canvas.draw_circle(left_win_center, win_r, Color(0.06, 0.16, 0.14)) # Jade night sky
+	bg_canvas.draw_circle(left_win_center, win_r * 0.85, Color(0.08, 0.22, 0.18))
+	bg_canvas.draw_circle(left_win_center + Vector2(0.0, 15.0), win_r * 0.7, Color(0.12, 0.28, 0.23)) # Misty hill
+	
+	# Vector Bamboo stalk 1 & 2
+	bg_canvas.draw_line(left_win_center + Vector2(-30, win_r), left_win_center + Vector2(-10, -win_r), stalk_color, 2.0, true)
+	bg_canvas.draw_line(left_win_center + Vector2(10, win_r), left_win_center + Vector2(25, -win_r), stalk_color, 1.5, true)
+	
+	# Bamboo leaves
+	var leaf1_pos := left_win_center + Vector2(-22, -10)
+	bg_canvas.draw_colored_polygon(PackedVector2Array([leaf1_pos, leaf1_pos + Vector2(-15, 12), leaf1_pos + Vector2(-8, 3)]), stalk_color)
+	bg_canvas.draw_colored_polygon(PackedVector2Array([leaf1_pos, leaf1_pos + Vector2(-18, 5), leaf1_pos + Vector2(-10, 0)]), stalk_color)
+	
+	var leaf2_pos := left_win_center + Vector2(18, 10)
+	bg_canvas.draw_colored_polygon(PackedVector2Array([leaf2_pos, leaf2_pos + Vector2(-12, 10), leaf2_pos + Vector2(-5, 2)]), stalk_color)
+	bg_canvas.draw_colored_polygon(PackedVector2Array([leaf2_pos, leaf2_pos + Vector2(15, 5), leaf2_pos + Vector2(8, 0)]), stalk_color)
+	
+	# Window dividers & frames
+	bg_canvas.draw_line(left_win_center - Vector2(win_r, 0), left_win_center + Vector2(win_r, 0), Color(0.24, 0.13, 0.08), 2.0)
+	bg_canvas.draw_line(left_win_center - Vector2(0, win_r), left_win_center + Vector2(0, win_r), Color(0.24, 0.13, 0.08), 2.0)
+	bg_canvas.draw_circle(left_win_center, win_r, Color(0.24, 0.13, 0.08), false, 4.0)
+	bg_canvas.draw_circle(left_win_center, win_r + 1.0, C_GOLD, false, 1.2)
+	
+	# Right Moon Window
+	var right_win_center := Vector2(win_r_x, win_y)
+	bg_canvas.draw_circle(right_win_center, win_r, Color(0.06, 0.16, 0.14)) # Jade night sky
+	bg_canvas.draw_circle(right_win_center, win_r * 0.85, Color(0.08, 0.22, 0.18))
+	bg_canvas.draw_circle(right_win_center + Vector2(0.0, 15.0), win_r * 0.7, Color(0.12, 0.28, 0.23)) # Misty hill
+	
+	# Vector Bamboo stalk 1 & 2 (Mirrored variant)
+	bg_canvas.draw_line(right_win_center + Vector2(-15, win_r), right_win_center + Vector2(-25, -win_r), stalk_color, 1.8, true)
+	bg_canvas.draw_line(right_win_center + Vector2(20, win_r), right_win_center + Vector2(10, -win_r), stalk_color, 2.2, true)
+	
+	# Bamboo leaves
+	var leaf3_pos := right_win_center + Vector2(-20, 5)
+	bg_canvas.draw_colored_polygon(PackedVector2Array([leaf3_pos, leaf3_pos + Vector2(14, 12), leaf3_pos + Vector2(7, 3)]), stalk_color)
+	
+	var leaf4_pos := right_win_center + Vector2(15, -15)
+	bg_canvas.draw_colored_polygon(PackedVector2Array([leaf4_pos, leaf4_pos + Vector2(-15, 8), leaf4_pos + Vector2(-8, 2)]), stalk_color)
+	
+	# Window dividers & frames
+	bg_canvas.draw_line(right_win_center - Vector2(win_r, 0), right_win_center + Vector2(win_r, 0), Color(0.24, 0.13, 0.08), 2.0)
+	bg_canvas.draw_line(right_win_center - Vector2(0, win_r), right_win_center + Vector2(0, win_r), Color(0.24, 0.13, 0.08), 2.0)
+	bg_canvas.draw_circle(right_win_center, win_r, Color(0.24, 0.13, 0.08), false, 4.0)
+	bg_canvas.draw_circle(right_win_center, win_r + 1.0, C_GOLD, false, 1.2)
+	
+	# ── 2c. Soft Ambient God Rays ──
+	var l_ray := PackedVector2Array([
+		left_win_center + Vector2(-win_r * 0.5, win_r * 0.5),
+		left_win_center + Vector2(win_r * 0.5, -win_r * 0.5),
+		left_win_center + Vector2(win_r * 0.5 + 240, wall_h + 120),
+		left_win_center + Vector2(-win_r * 0.5 + 160, wall_h + 120)
+	])
+	bg_canvas.draw_colored_polygon(l_ray, Color(1.0, 0.94, 0.76, 0.025))
+	
+	var r_ray := PackedVector2Array([
+		right_win_center + Vector2(-win_r * 0.5, -win_r * 0.5),
+		right_win_center + Vector2(win_r * 0.5, win_r * 0.5),
+		right_win_center + Vector2(win_r * 0.5 - 160, wall_h + 120),
+		right_win_center + Vector2(-win_r * 0.5 - 240, wall_h + 120)
+	])
+	bg_canvas.draw_colored_polygon(r_ray, Color(1.0, 0.94, 0.76, 0.025))
 	
 	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
 	var cornice_y := wall_h - 36.0
@@ -936,10 +1008,11 @@ func _draw_room_background() -> void:
 	bg_canvas.draw_line(Vector2(left_bound, cornice_y + 6), Vector2(right_bound, cornice_y + 6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 1.0)
 	bg_canvas.draw_line(Vector2(left_bound, wall_h - 3), Vector2(right_bound, wall_h - 3), C_GOLD, 3.0)
 	
-	# Cornice notches (repeating motif across bounds)
-	var start_notch : float = floor(left_bound / 80.0) * 80.0
-	for cx_n in range(start_notch, right_bound, 80.0):
-		bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
+	# Cornice notches (repeating motif across bounds - Ornate Grid Pattern)
+	var start_notch : float = floor(left_bound / 60.0) * 60.0
+	for cx_n in range(start_notch, right_bound, 60.0):
+		bg_canvas.draw_rect(Rect2(cx_n - 3, cornice_y + 14, 6, 8), C_GOLD_LIGHT)
+		bg_canvas.draw_line(Vector2(cx_n + 15, cornice_y + 18), Vector2(cx_n + 45, cornice_y + 18), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.5)
 	
 	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
 	var scroll_w := 160.0 if _is_mobile_layout else 220.0
@@ -948,6 +1021,8 @@ func _draw_room_background() -> void:
 	var scroll_y := 28.0
 	# Scroll background (aged silk)
 	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), Color(0.94, 0.89, 0.74))
+	# Traditional red double border
+	bg_canvas.draw_rect(Rect2(scroll_x + 12, scroll_y + 12, scroll_w - 24, scroll_h - 24), Color(0.48, 0.10, 0.09), false, 1.0)
 	# Decorative inner border
 	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(0.94, 0.89, 0.74), false)
 	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), false, 1.5)
@@ -971,9 +1046,9 @@ func _draw_room_background() -> void:
 	# Kanji/Chu Nom style vertical strokes (abstract decorative)
 	var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
 	if font:
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 44), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
+		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 44), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, Color(0.48, 0.10, 0.09))
 		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 90), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
+		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, Color(0.48, 0.10, 0.09))
 	# Thin horizontal separator lines
 	bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 60), Vector2(scroll_x + scroll_w - 20, scroll_y + 60), C_GOLD, 1.0)
 	bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
@@ -982,24 +1057,36 @@ func _draw_room_background() -> void:
 	bg_canvas.draw_circle(seal_pos, 24.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
 	bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
 	bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
+	# Authentic second seal at top right of scroll
+	var seal_tr := Vector2(scroll_x + scroll_w - 26, scroll_y + 24)
+	bg_canvas.draw_rect(Rect2(seal_tr.x - 5, seal_tr.y - 5, 10, 10), Color(0.48, 0.10, 0.09), true)
+	bg_canvas.draw_rect(Rect2(seal_tr.x - 5, seal_tr.y - 5, 10, 10), C_GOLD, false, 0.8)
 	
-	# ── 5. Side column pillars (deep jade green wood - Framed to Screen!) ──
+	# ── 5. Side column pillars (Sơn Son Thếp Vàng - Framed to Screen!) ──
 	for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
 		# Column base shadow
-		bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.25))
-		# Column body
-		bg_canvas.draw_rect(Rect2(col_x, 0, 20, wall_h), C_RED_SON) # Premium deep jade green body
+		bg_canvas.draw_rect(Rect2(col_x + 3, 0, 20, wall_h), Color(0, 0, 0, 0.22))
+		# Column body (Vermilion Red Lacquer)
+		bg_canvas.draw_rect(Rect2(col_x, 0, 20, wall_h), Color(0.48, 0.10, 0.09))
 		# Gold gilded edge
 		bg_canvas.draw_line(Vector2(col_x, 0), Vector2(col_x, wall_h), C_GOLD, 2.0)
 		bg_canvas.draw_line(Vector2(col_x + 20, 0), Vector2(col_x + 20, wall_h), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 1.0)
 		# Capital ornament at top
-		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_RED_SON)
+		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), Color(0.48, 0.10, 0.09))
 		bg_canvas.draw_rect(Rect2(col_x - 8, 0, 36, 16), C_GOLD, false, 1.5)
+		
+		# Vertical Gold Wave Motifs
+		for py in range(30, int(wall_h) - 20, 60):
+			bg_canvas.draw_arc(Vector2(col_x + 10, py), 5.0, -PI/2, PI/2, 8, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 1.2)
+			bg_canvas.draw_arc(Vector2(col_x + 10, py + 8), 3.0, PI/2, 1.5*PI, 8, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 1.2)
 		
 	# ── 6. Hanging lanterns (two golden silk lanterns either side) ──────────────────
 	var pulse := 0.08 * sin(_time * 1.8)
 	for lan_x in [_left_bound + 180.0, _right_bound - 200.0]:
 		var lan_y := 20.0
+		# Lantern soft radial light glow
+		bg_canvas.draw_circle(Vector2(lan_x, lan_y + 30.0), 45.0, Color(1.0, 0.85, 0.40, 0.08 + 0.02 * sin(_time * 1.8)))
+		
 		# Lantern string from ceiling
 		bg_canvas.draw_line(Vector2(lan_x, 0), Vector2(lan_x, lan_y + 12), Color(0.50, 0.35, 0.15), 2.0)
 		# Lantern body (oval) - soft warm gold/orange instead of red
@@ -1027,6 +1114,11 @@ func _draw_room_background() -> void:
 	])
 	bg_canvas.draw_colored_polygon(floor_pts, Color(0.16, 0.12, 0.09))  # muted dark teak wood
 	
+	# Polished wood floor reflections under the lanterns
+	for lan_x in [_left_bound + 180.0, _right_bound - 200.0]:
+		_draw_ellipse_poly(bg_canvas, Vector2(lan_x, wall_h + (bottom_bound - wall_h) * 0.35), 48.0, 110.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.055))
+		_draw_ellipse_poly(bg_canvas, Vector2(lan_x, wall_h + (bottom_bound - wall_h) * 0.25), 24.0, 70.0, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.045))
+
 	# Horizontal plank grain lines stretching across bounds
 	var plank_h := 26.0
 	for y_floor in range(int(wall_h), int(bottom_bound), int(plank_h)):
