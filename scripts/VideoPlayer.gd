@@ -251,9 +251,16 @@ func _build_theme() -> void:
 	var overlay_s := _flat(accent_color, accent_light, 44)
 	play_overlay.add_theme_stylebox_override("panel", overlay_s)
 
-	_apply_image_style(back_btn, "res://image/quaylai.png", 240.0, 160.0)
-	if complete_btn:
-		_apply_image_style(complete_btn, "res://image/videott.png", 240.0, 160.0)
+	var vp_size = get_viewport().size
+	var is_mobile = vp_size.x < vp_size.y or vp_size.x < 1000
+	if is_mobile:
+		_apply_image_style(back_btn, "res://image/quaylai.png", 360.0, 240.0)
+		if complete_btn:
+			_apply_image_style(complete_btn, "res://image/videott.png", 360.0, 240.0)
+	else:
+		_apply_image_style(back_btn, "res://image/quaylai.png", 240.0, 160.0)
+		if complete_btn:
+			_apply_image_style(complete_btn, "res://image/videott.png", 240.0, 160.0)
 
 func _build_up_next_overlay() -> void:
 	up_next_overlay = PanelContainer.new()
@@ -282,7 +289,7 @@ func _build_up_next_overlay() -> void:
 	
 	up_next_lbl = Label.new()
 	up_next_lbl.text = "Up Next:"
-	up_next_lbl.add_theme_font_size_override("font_size", 24)
+	up_next_lbl.add_theme_font_size_override("font_size", 48)
 	up_next_lbl.add_theme_color_override("font_color", Color(1, 1, 1))
 	up_next_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(up_next_lbl)
@@ -299,10 +306,10 @@ func _build_up_next_overlay() -> void:
 	vbox.add_child(black_panel)
 	
 	var pm := MarginContainer.new()
-	pm.add_theme_constant_override("margin_left", 48)
-	pm.add_theme_constant_override("margin_right", 48)
-	pm.add_theme_constant_override("margin_top", 28)
-	pm.add_theme_constant_override("margin_bottom", 28)
+	pm.add_theme_constant_override("margin_left", 80)
+	pm.add_theme_constant_override("margin_right", 80)
+	pm.add_theme_constant_override("margin_top", 48)
+	pm.add_theme_constant_override("margin_bottom", 48)
 	black_panel.add_child(pm)
 	
 	var inner_vbox := VBoxContainer.new()
@@ -311,7 +318,7 @@ func _build_up_next_overlay() -> void:
 	
 	question_lbl = Label.new()
 	question_lbl.text = "Bạn đã nắm rõ nội dung bài học chưa?"
-	question_lbl.add_theme_font_size_override("font_size", 20)
+	question_lbl.add_theme_font_size_override("font_size", 36)
 	question_lbl.add_theme_color_override("font_color", Color(1, 1, 1))
 	question_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	question_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -324,16 +331,16 @@ func _build_up_next_overlay() -> void:
 	
 	option_b_btn = Button.new()
 	option_b_btn.text = "Chưa rõ, xem lại"
-	option_b_btn.custom_minimum_size = Vector2(220, 46)
-	option_b_btn.add_theme_font_size_override("font_size", 16)
+	option_b_btn.custom_minimum_size = Vector2(360, 80)
+	option_b_btn.add_theme_font_size_override("font_size", 28)
 	options_hbox.add_child(option_b_btn)
 	option_b_btn.pressed.connect(_on_replay_current)
 	_make_button_bouncy(option_b_btn)
 	
 	option_a_btn = Button.new()
 	option_a_btn.text = "Đã rõ, tiếp tục!"
-	option_a_btn.custom_minimum_size = Vector2(220, 46)
-	option_a_btn.add_theme_font_size_override("font_size", 16)
+	option_a_btn.custom_minimum_size = Vector2(360, 80)
+	option_a_btn.add_theme_font_size_override("font_size", 28)
 	options_hbox.add_child(option_a_btn)
 	option_a_btn.pressed.connect(_on_complete)
 	_make_button_bouncy(option_a_btn)
@@ -369,9 +376,14 @@ func _on_viewport_size_changed() -> void:
 			top_row.move_child(back_btn, 0)
 
 	# Apply custom premium image button styling per user request (aspect ratio 1.5)
-	_apply_image_style(back_btn, "res://image/quaylai.png", 240.0, 160.0)
-	if complete_btn:
-		_apply_image_style(complete_btn, "res://image/videott.png", 240.0, 160.0)
+	if is_mobile:
+		_apply_image_style(back_btn, "res://image/quaylai.png", 360.0, 240.0)
+		if complete_btn:
+			_apply_image_style(complete_btn, "res://image/videott.png", 360.0, 240.0)
+	else:
+		_apply_image_style(back_btn, "res://image/quaylai.png", 240.0, 160.0)
+		if complete_btn:
+			_apply_image_style(complete_btn, "res://image/videott.png", 240.0, 160.0)
 
 	# Style Option B (Outlined, retry)
 	var ob_n := _flat(Color(0, 0, 0, 0.4), theme_color, 20)
@@ -484,7 +496,7 @@ func _on_complete() -> void:
 		_load_video(_current_video_idx + 1)
 	else:
 		video_stream_player.stop()
-		var inst := InstrumentSelect.selected_instrument
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		SecureDataManager.complete_lesson(inst, "Node1", 3) # Mark Intro completed securely!
 		SecureDataManager.video_completed = true
 		var t := create_tween()
