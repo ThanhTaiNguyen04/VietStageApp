@@ -430,7 +430,11 @@ func _on_complete() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		if lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
+		else:
+			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
 
 func _go_back() -> void:
