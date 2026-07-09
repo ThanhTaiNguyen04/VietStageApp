@@ -230,7 +230,7 @@ func _ready() -> void:
 	# Setup Back button to return to Main Menu (Icon button for mobile style)
 	btn_back.show()
 	btn_back.text = ""
-	btn_back.icon = load("res://assets/textures/back_icon.png") as Texture2D
+	btn_back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
 	btn_back.expand_icon = true
 	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# Add theme colors to modulate the icon to fit normal/hover/pressed states
@@ -2484,7 +2484,7 @@ func _setup_hud_shop_button() -> void:
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
 	btn_shop.text = ""
-	btn_shop.icon = load("res://assets/textures/shop_icon.png") as Texture2D
+	btn_shop.icon = load("res://icons8/icons8-store-16.png") as Texture2D
 	btn_shop.expand_icon = true
 	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	btn_shop.custom_minimum_size = Vector2(48, 48)

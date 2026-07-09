@@ -96,7 +96,14 @@ func _build_theme() -> void:
 	if f_title:
 		page_title.add_theme_font_override("font", f_title)
 		
-	back_btn.text = "Quay lại"
+	back_btn.text = ""
+	back_btn.icon = load("res://icons8/icons8-back-16.png") as Texture2D
+	back_btn.expand_icon = true
+	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back_btn.custom_minimum_size = Vector2(44, 44)
+	back_btn.add_theme_color_override("icon_normal_color", C_JADE)
+	back_btn.add_theme_color_override("icon_hover_color", C_GOLD)
+	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_btn_bouncy(back_btn)
 	

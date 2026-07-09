@@ -822,7 +822,7 @@ func _process(delta: float) -> void:
 
 
 func _set_labels() -> void:
-	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
+	# ($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
 	var diff := "Cơ bản"
 	if SecureDataManager.active_lesson_id == "Node3":
 		diff = "Trung bình"
@@ -890,6 +890,14 @@ func _build_theme() -> void:
 	_style_progress_bar(lesson_bar, C_JADE, Color(0, 0, 0, 0.08))
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
+	back.text = ""
+	back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
+	back.expand_icon = true
+	back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back.custom_minimum_size = Vector2(44, 44)
+	back.add_theme_color_override("icon_normal_color", C_TEXT)
+	back.add_theme_color_override("icon_hover_color", C_GOLD)
+	back.add_theme_color_override("icon_pressed_color", C_TEXT)
 	_style_text_btn(back, C_TEXT, C_GOLD)
 	
 	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
