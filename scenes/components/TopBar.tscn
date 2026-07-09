@@ -1,0 +1,83 @@
+[gd_scene load_steps=3 format=3 uid="uid://top_bar"]
+
+[ext_resource type="Script" path="res://scripts/TopBar.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="2_avatar"]
+
+[node name="TopBar" type="MarginContainer"]
+layout_mode = 3
+anchors_preset = 10
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_bottom = 116.0
+grow_vertical = 1
+theme_override_constants/margin_top = 44
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 0
+script = ExtResource("1_script")
+
+[node name="Inner" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="AvatarCircle" type="PanelContainer" parent="Inner"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+clip_contents = true
+
+[node name="AvatarThumb" type="TextureRect" parent="Inner/AvatarCircle"]
+layout_mode = 2
+texture = ExtResource("2_avatar")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GreetVBox" type="VBoxContainer" parent="Inner"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="GreetLabel" type="Label" parent="Inner/GreetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+
+[node name="SubLabel" type="Label" parent="Inner/GreetVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+
+[node name="StatRow" type="HBoxContainer" parent="Inner"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="StreakPill" type="PanelContainer" parent="Inner/StatRow"]
+layout_mode = 2
+
+[node name="StreakMargin" type="MarginContainer" parent="Inner/StatRow/StreakPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="StreakLabel" type="Label" parent="Inner/StatRow/StreakPill/StreakMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+
+[node name="XPPill" type="PanelContainer" parent="Inner/StatRow"]
+layout_mode = 2
+
+[node name="XPMargin" type="MarginContainer" parent="Inner/StatRow/XPPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="XPLabel" type="Label" parent="Inner/StatRow/XPPill/XPMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13

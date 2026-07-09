@@ -117,7 +117,7 @@ const LINH_TIPS := [
 	"Luyện tập hàng ngày giúp tai nghe nhạy bén và ngón tay linh hoạt hơn đó!",
 	"Hãy thử học một bài hát mới trong Kho Bài Hát để tích lũy thêm điểm XP nhé.",
 	"Sáo Trúc làm từ các ống tre, trúc già tự nhiên, mang hơi thở của sông núi làng quê Việt Nam.",
-	"Các nhạc cụ Đàn Bầu và Trống đang được các nghệ nhân chế tác tỉ mỉ, sẽ sớm ra mắt!"
+	"Hãy thử luyện tập Đàn Bầu hoặc Trống Chầu để khám phá các âm điệu mới nhé!"
 ]
 
 
@@ -205,8 +205,8 @@ func _ready() -> void:
 	
 	_setup_station_button(s_tranh, "tranh", "Đàn Tranh", _draw_tranh)
 	_setup_station_button(s_sao, "sao", "Sáo Trúc", _draw_sao)
-	_setup_station_button(s_bau, "bau", "Đàn Bầu (Sắp ra mắt)", _draw_bau)
-	_setup_station_button(s_trong, "trong", "Trống Chầu (Sắp ra mắt)", _draw_trong)
+	_setup_station_button(s_bau, "bau", "Đàn Bầu", _draw_bau)
+	_setup_station_button(s_trong, "trong", "Trống Chầu", _draw_trong)
 	
 	# Setup Linh Assist
 	char_linh.draw.connect(_draw_linh.bind(char_linh))
@@ -636,10 +636,10 @@ func _on_station_pressed(btn: Button, code_name: String) -> void:
 		SecureDataManager.save_data()
 		_fade_to("res://scenes/MainMenu.tscn")
 	elif code_name == "trong":
-		_show_dialogue("Trống Chầu đang được các nghệ nhân chế tác, sẽ sớm ra mắt học viên nhé!")
-		if _audio_manager and is_instance_valid(_audio_manager):
-			_audio_manager.audio_player.stop()
-			_audio_manager.speak_vietnamese("Trống Chầu đang được chế tác, sẽ sớm ra mắt học viên nhé")
+		InstrumentSelect.selected_instrument = "trong_chau"
+		SecureDataManager.data["selected_instrument"] = "trong_chau"
+		SecureDataManager.save_data()
+		_fade_to("res://scenes/MainMenu.tscn")
 
 
 
@@ -773,6 +773,11 @@ func _setup_focus_popup_controls() -> void:
 		elif _current_popup_instrument == "bau":
 			InstrumentSelect.selected_instrument = "dan_bau"
 			SecureDataManager.data["selected_instrument"] = "dan_bau"
+			SecureDataManager.save_data()
+			_fade_to("res://scenes/MainMenu.tscn")
+		elif _current_popup_instrument == "trong":
+			InstrumentSelect.selected_instrument = "trong_chau"
+			SecureDataManager.data["selected_instrument"] = "trong_chau"
 			SecureDataManager.save_data()
 			_fade_to("res://scenes/MainMenu.tscn")
 	)
@@ -2322,17 +2327,17 @@ func _spawn_decorations() -> void:
 		# Define sizes and positions for room layout
 		match item_id:
 			"painting":
-				ctrl.position = Vector2(170, 75)
-				ctrl.size = Vector2(100, 70)
+				ctrl.position = Vector2(180, 55)
+				ctrl.size = Vector2(80, 120)
 			"vase":
-				ctrl.position = Vector2(400, 420)
-				ctrl.size = Vector2(50, 90)
+				ctrl.position = Vector2(390, 420)
+				ctrl.size = Vector2(70, 90)
 			"bamboo":
-				ctrl.position = Vector2(60, 240)
-				ctrl.size = Vector2(60, 110)
+				ctrl.position = Vector2(50, 240)
+				ctrl.size = Vector2(80, 110)
 			"bronze_drum":
-				ctrl.position = Vector2(620, 680)
-				ctrl.size = Vector2(70, 50)
+				ctrl.position = Vector2(615, 665)
+				ctrl.size = Vector2(80, 65)
 				
 		room_content.add_child(ctrl)
 		ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id))
@@ -2365,127 +2370,323 @@ func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> v
 	
 	match item_id:
 		"painting":
-			var rect_w := 90.0 * size_scale
-			var rect_h := 60.0 * size_scale
-			var rect := Rect2(cx - rect_w/2, cy - rect_h/2, rect_w, rect_h)
-			c.draw_rect(rect, Color(0.24, 0.12, 0.04), true)
-			c.draw_rect(rect, C_GOLD, false, 1.5)
-			var canvas := Rect2(cx - rect_w/2 + 4, cy - rect_h/2 + 4, rect_w - 8, rect_h - 8)
-			c.draw_rect(canvas, Color(0.1, 0.02, 0.02), true)
-			c.draw_circle(canvas.position + Vector2(rect_w * 0.3, rect_h * 0.35), 8.0 * size_scale, Color(0.68, 0.15, 0.15))
-			var pts := PackedVector2Array([
-				canvas.position + Vector2(4, rect_h - 12),
-				canvas.position + Vector2(rect_w * 0.3, rect_h * 0.5),
-				canvas.position + Vector2(rect_w * 0.5, rect_h - 12)
+			var rect_w := 68.0 * size_scale
+			var rect_h := 110.0 * size_scale
+			var px := cx - rect_w/2
+			var py := cy - rect_h/2
+			
+			# Rollers at top and bottom (dark wood with gold caps)
+			var roller_color := Color(0.18, 0.10, 0.05)
+			c.draw_rect(Rect2(px - 6 * size_scale, py - 3 * size_scale, rect_w + 12 * size_scale, 6 * size_scale), roller_color, true)
+			c.draw_circle(Vector2(px - 6 * size_scale, py), 3 * size_scale, C_GOLD)
+			c.draw_circle(Vector2(px + rect_w + 6 * size_scale, py), 3 * size_scale, C_GOLD)
+			
+			c.draw_rect(Rect2(px - 6 * size_scale, py + rect_h - 3 * size_scale, rect_w + 12 * size_scale, 6 * size_scale), roller_color, true)
+			c.draw_circle(Vector2(px - 6 * size_scale, py + rect_h), 3 * size_scale, C_GOLD)
+			c.draw_circle(Vector2(px + rect_w + 6 * size_scale, py + rect_h), 3 * size_scale, C_GOLD)
+			
+			# Hanging string at top
+			c.draw_line(Vector2(px + rect_w*0.2, py - 3*size_scale), Vector2(cx, py - 15*size_scale), C_RED_SON, 1.5 * size_scale)
+			c.draw_line(Vector2(px + rect_w*0.8, py - 3*size_scale), Vector2(cx, py - 15*size_scale), C_RED_SON, 1.5 * size_scale)
+			
+			# Scroll background (aged silk paper)
+			var paper_rect := Rect2(px, py, rect_w, rect_h)
+			c.draw_rect(paper_rect, Color(0.94, 0.89, 0.74), true) # Aged silk
+			c.draw_rect(paper_rect, C_GOLD, false, 1.2 * size_scale) # Thin gold border
+			
+			# Inner thin border
+			c.draw_rect(Rect2(px + 4 * size_scale, py + 4 * size_scale, rect_w - 8 * size_scale, rect_h - 8 * size_scale), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.2), false, 0.8 * size_scale)
+			
+			# Painting Content: Traditional female musician playing a flute/zither
+			# 1. Stylized background: mountains (light gold-brown wash) & sun (red)
+			var bg_sun_c := Vector2(cx + 12 * size_scale, cy - 20 * size_scale)
+			c.draw_circle(bg_sun_c, 10.0 * size_scale, Color(0.68, 0.15, 0.15, 0.75)) # Red sun
+			
+			# Mountain silhouette
+			var mount_pts := PackedVector2Array([
+				Vector2(px + 6*size_scale, py + rect_h - 10*size_scale),
+				Vector2(px + rect_w*0.35, cy + 15*size_scale),
+				Vector2(px + rect_w*0.65, cy + 28*size_scale),
+				Vector2(px + rect_w - 6*size_scale, py + rect_h - 10*size_scale)
 			])
-			c.draw_colored_polygon(pts, Color(0.85, 0.68, 0.22, 0.75))
-			var pts2 := PackedVector2Array([
-				canvas.position + Vector2(rect_w * 0.4, rect_h - 12),
-				canvas.position + Vector2(rect_w * 0.75, rect_h * 0.4),
-				canvas.position + Vector2(rect_w - 12, rect_h - 12)
+			c.draw_colored_polygon(mount_pts, Color(0.77, 0.58, 0.15, 0.25))
+			
+			# 2. Female figure silhouette/drawing (stylized Ao Dai player)
+			var fig_x := cx - 8 * size_scale
+			var fig_y := cy + 15 * size_scale
+			# Ao Dai robe body (deep jade green / blue blend)
+			var body_pts := PackedVector2Array([
+				Vector2(fig_x - 10*size_scale, fig_y + 25*size_scale),
+				Vector2(fig_x + 12*size_scale, fig_y + 25*size_scale),
+				Vector2(fig_x + 4*size_scale, fig_y - 12*size_scale),
+				Vector2(fig_x - 4*size_scale, fig_y - 12*size_scale)
 			])
-			c.draw_colored_polygon(pts2, Color(0.77, 0.58, 0.15, 0.9))
+			c.draw_colored_polygon(body_pts, Color(0.09, 0.27, 0.18, 0.85)) # Jade Ao Dai
+			c.draw_polyline(body_pts, C_GOLD, 0.8 * size_scale, true)
+			
+			# Head & Turban
+			var head_c := Vector2(fig_x, fig_y - 20 * size_scale)
+			c.draw_circle(head_c, 7.0 * size_scale, C_CREAM) # face
+			c.draw_circle(head_c - Vector2(0, 2*size_scale), 7.5 * size_scale, Color(0.12, 0.12, 0.12)) # hair/turban
+			c.draw_circle(head_c - Vector2(0, 4*size_scale), 8.5 * size_scale, Color(0.77, 0.58, 0.15)) # golden turban outer
+			
+			# Hands & Flute
+			var flute_p1 := Vector2(fig_x - 14*size_scale, fig_y - 8*size_scale)
+			var flute_p2 := Vector2(fig_x + 16*size_scale, fig_y - 14*size_scale)
+			c.draw_line(flute_p1, flute_p2, Color(0.85, 0.65, 0.28), 2.2 * size_scale, true) # bamboo flute
+			c.draw_circle(Vector2(fig_x - 2*size_scale, fig_y - 10*size_scale), 2.5 * size_scale, C_CREAM) # hands
+			
+			# Red Calligraphy Seal
+			c.draw_rect(Rect2(px + 8*size_scale, py + rect_h - 22*size_scale, 8*size_scale, 8*size_scale), C_RED_SON, true)
+			c.draw_rect(Rect2(px + 8*size_scale, py + rect_h - 22*size_scale, 8*size_scale, 8*size_scale), C_GOLD, false, 0.5 * size_scale)
+			
+			# Calligraphy Text (vertical abstract Nom script strokes)
+			c.draw_line(Vector2(px + 10*size_scale, py + 12*size_scale), Vector2(px + 10*size_scale, py + 38*size_scale), Color(0.15, 0.12, 0.10, 0.85), 1.0 * size_scale)
+			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + 14*size_scale, py + 30*size_scale), Color(0.15, 0.12, 0.10, 0.75), 1.0 * size_scale)
 			
 		"vase":
-			var vh := 80.0 * size_scale
-			var vw := 32.0 * size_scale
-			c.draw_rect(Rect2(cx - vw * 0.6, cy + vh * 0.4, vw * 1.2, 8.0 * size_scale), Color(0.18, 0.09, 0.05), true)
+			var stand_w := 60.0 * size_scale
+			var stand_h := 82.0 * size_scale
+			var px := cx - stand_w / 2
+			var py := cy - stand_h / 2
 			
-			var body_pts := PackedVector2Array()
-			var steps := 20
-			for i in range(steps + 1):
-				var t := float(i) / steps
-				var r := vw * 0.3
-				if t < 0.25:
-					r = lerpf(vw * 0.35, vw * 0.22, t / 0.25)
-				elif t < 0.65:
-					r = lerpf(vw * 0.22, vw * 0.55, (t - 0.25) / 0.4)
-				else:
-					r = lerpf(vw * 0.55, vw * 0.35, (t - 0.65) / 0.35)
-				var py := cy - vh*0.4 + t * vh
-				body_pts.append(Vector2(cx - r, py))
-			for i in range(steps, -1, -1):
-				var t := float(i) / steps
-				var r := vw * 0.3
-				if t < 0.25:
-					r = lerpf(vw * 0.35, vw * 0.22, t / 0.25)
-				elif t < 0.65:
-					r = lerpf(vw * 0.22, vw * 0.55, (t - 0.25) / 0.4)
-				else:
-					r = lerpf(vw * 0.55, vw * 0.35, (t - 0.65) / 0.35)
-				var py := cy - vh*0.4 + t * vh
-				body_pts.append(Vector2(cx + r, py))
-				
-			c.draw_colored_polygon(body_pts, Color(0.97, 0.96, 0.93))
-			c.draw_polyline(body_pts, Color(0.85, 0.82, 0.76), 1.5, true)
+			# Bounding stand base
+			c.draw_rect(Rect2(px - 4*size_scale, py + stand_h - 8*size_scale, stand_w + 8*size_scale, 8*size_scale), Color(0.18, 0.10, 0.05), true)
+			c.draw_rect(Rect2(px - 4*size_scale, py + stand_h - 8*size_scale, stand_w + 8*size_scale, 8*size_scale), C_GOLD, false, 1.0 * size_scale)
 			
-			c.draw_circle(Vector2(cx, cy + vh * 0.1), vw * 0.4, Color(0.12, 0.32, 0.58, 0.6))
-			c.draw_circle(Vector2(cx, cy + vh * 0.1), vw * 0.28, Color.WHITE)
-			c.draw_line(Vector2(cx - vw*0.22, cy - vh*0.2), Vector2(cx + vw*0.22, cy - vh*0.2), Color(0.12, 0.32, 0.58, 0.85), 2.0)
-			c.draw_line(Vector2(cx - vw*0.35, cy + vh*0.3), Vector2(cx + vw*0.35, cy + vh*0.3), Color(0.12, 0.32, 0.58, 0.85), 2.0)
+			# Left and Right Pillars (dark mahogany wood)
+			var pillar_col := Color(0.24, 0.12, 0.06)
+			c.draw_rect(Rect2(px, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), pillar_col, true)
+			c.draw_rect(Rect2(px, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), C_GOLD, false, 0.8 * size_scale)
+			
+			c.draw_rect(Rect2(px + stand_w - 6*size_scale, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), pillar_col, true)
+			c.draw_rect(Rect2(px + stand_w - 6*size_scale, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), C_GOLD, false, 0.8 * size_scale)
+			
+			# Curved Top Beam (Pagoda roof style silhouette)
+			var roof_pts := PackedVector2Array([
+				Vector2(px - 8*size_scale, py + 16*size_scale),
+				Vector2(px, py + 6*size_scale),
+				Vector2(cx, py + 4*size_scale),
+				Vector2(px + stand_w, py + 6*size_scale),
+				Vector2(px + stand_w + 8*size_scale, py + 16*size_scale),
+				Vector2(px + stand_w + 2*size_scale, py + 16*size_scale),
+				Vector2(cx, py + 10*size_scale),
+				Vector2(px - 2*size_scale, py + 16*size_scale)
+			])
+			c.draw_colored_polygon(roof_pts, pillar_col)
+			c.draw_polyline(roof_pts, C_GOLD, 1.2 * size_scale, true)
+			
+			# Hanging cords (red)
+			var gong_center := Vector2(cx, py + stand_h * 0.52)
+			c.draw_line(Vector2(cx - 10*size_scale, py + 10*size_scale), gong_center - Vector2(6*size_scale, 16*size_scale), C_RED_SON, 1.5 * size_scale)
+			c.draw_line(Vector2(cx + 10*size_scale, py + 10*size_scale), gong_center + Vector2(6*size_scale, -16*size_scale), C_RED_SON, 1.5 * size_scale)
+			
+			# Bronze Gong (Chiêng Đồng)
+			var gong_r := 19.0 * size_scale
+			c.draw_circle(gong_center, gong_r, Color(0.68, 0.52, 0.22)) # Bronze body
+			
+			# Concentric rings & details on gong face
+			c.draw_circle(gong_center, gong_r * 0.95, Color(0.58, 0.44, 0.16)) # Darker outer band
+			c.draw_circle(gong_center, gong_r * 0.8, Color(0.68, 0.52, 0.22))
+			c.draw_circle(gong_center, gong_r * 0.45, Color(0.58, 0.44, 0.16)) # Darker inner ring
+			
+			# Center Boss (Núm chiêng - raised hub)
+			c.draw_circle(gong_center, gong_r * 0.24, Color(0.85, 0.68, 0.28)) # Bright gold center
+			c.draw_circle(gong_center - Vector2(1, 1)*size_scale, gong_r * 0.12, Color.WHITE) # Specular shine
+			
+			# Fine gold rim line
+			c.draw_arc(gong_center, gong_r - 0.5*size_scale, 0.0, TAU, 32, C_GOLD_LIGHT, 1.0 * size_scale)
+			c.draw_arc(gong_center, gong_r * 0.6, 0.0, TAU, 24, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 0.8 * size_scale)
+			
+			# Mallet resting against stand
+			var mallet_p1 := Vector2(cx + 14*size_scale, py + stand_h - 10*size_scale)
+			var mallet_p2 := Vector2(cx + 26*size_scale, py + stand_h * 0.45)
+			c.draw_line(mallet_p1, mallet_p2, Color(0.48, 0.32, 0.20), 2.2 * size_scale, true) # Stick
+			c.draw_circle(mallet_p2, 4.5 * size_scale, C_RED_SON) # Red head mallet
 
 		"bamboo":
-			var ph := 24.0 * size_scale
-			var pw := 50.0 * size_scale
-			c.draw_rect(Rect2(cx - pw/2, cy + 10, pw, ph), Color(0.15, 0.18, 0.16), true)
-			c.draw_rect(Rect2(cx - pw/2, cy + 10, pw, ph), C_GOLD, false, 1.2)
+			var rack_w := 70.0 * size_scale
+			var rack_h := 100.0 * size_scale
+			var px := cx - rack_w / 2
+			var py := cy - rack_h / 2
 			
-			var b_col := Color(0.18, 0.48, 0.28)
-			var offsets := [-14.0 * size_scale, 0.0, 12.0 * size_scale]
-			var heights := [80.0 * size_scale, 95.0 * size_scale, 75.0 * size_scale]
-			for idx in range(3):
-				var ox : float = offsets[idx]
-				var oh : float = heights[idx]
-				var sx := cx + ox
-				var sy_start := cy + 10
-				var sy_end := cy + 10 - oh
-				var segments := 5
-				var prev_pt := Vector2(sx, sy_start)
-				for seg in range(1, segments + 1):
-					var t := float(seg) / segments
-					var cur_x := sx + sin(t * 3.0 + idx) * 3.0 * size_scale
-					var cur_y := lerpf(sy_start, sy_end, t)
-					var cur_pt := Vector2(cur_x, cur_y)
-					c.draw_line(prev_pt, cur_pt, b_col, 3.5 * size_scale, true)
-					c.draw_circle(cur_pt, 2.5 * size_scale, Color(0.38, 0.65, 0.42))
-					if seg > 1:
-						var leaf_dir := Vector2(-8, -4).rotated(sin(float(seg) + idx) * 0.5) * size_scale
-						c.draw_line(cur_pt, cur_pt + leaf_dir, Color(0.24, 0.58, 0.35), 2.0 * size_scale, true)
-						var leaf_dir2 := Vector2(8, -4).rotated(cos(float(seg) + idx) * 0.5) * size_scale
-						c.draw_line(cur_pt, cur_pt + leaf_dir2, Color(0.24, 0.58, 0.35), 2.0 * size_scale, true)
-					prev_pt = cur_pt
+			# Stand base pot/wood mount
+			c.draw_rect(Rect2(px + 10*size_scale, py + rack_h - 10*size_scale, rack_w - 20*size_scale, 10*size_scale), Color(0.18, 0.14, 0.12), true)
+			c.draw_rect(Rect2(px + 10*size_scale, py + rack_h - 10*size_scale, rack_w - 20*size_scale, 10*size_scale), C_GOLD, false, 1.0 * size_scale)
+			
+			# Two vertical support posts (bamboo structure)
+			var post_col := Color(0.35, 0.22, 0.10)
+			c.draw_rect(Rect2(px + 20*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), post_col, true)
+			c.draw_rect(Rect2(px + 20*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), Color(0.50, 0.32, 0.16), false, 0.8 * size_scale)
+			
+			c.draw_rect(Rect2(px + rack_w - 26*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), post_col, true)
+			c.draw_rect(Rect2(px + rack_w - 26*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), Color(0.50, 0.32, 0.16), false, 0.8 * size_scale)
+			
+			# Ornate shelf headers
+			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + rack_w - 14*size_scale, py + 15*size_scale), post_col, 4.0 * size_scale)
+			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + rack_w - 14*size_scale, py + 15*size_scale), C_GOLD, 0.8 * size_scale)
+			
+			# Draw 3 horizontal flutes with different colors and sizes
+			var fl_colors := [
+				Color(0.85, 0.65, 0.28), # Yellow bamboo
+				Color(0.18, 0.44, 0.24), # Green fresh bamboo
+				Color(0.36, 0.18, 0.08)  # Aged dark wood/bamboo
+			]
+			
+			var fl_y_coords := [
+				py + 30.0 * size_scale,
+				py + 52.0 * size_scale,
+				py + 74.0 * size_scale
+			]
+			
+			var fl_widths := [
+				68.0 * size_scale,
+				58.0 * size_scale,
+				62.0 * size_scale
+			]
+			
+			var fl_thicknesses := [
+				5.5 * size_scale,
+				4.5 * size_scale,
+				5.0 * size_scale
+			]
+			
+			for i in range(3):
+				var f_w : float = fl_widths[i]
+				var f_y : float = fl_y_coords[i]
+				var f_th : float = fl_thicknesses[i]
+				var f_x1 := cx - f_w * 0.5
+				var f_x2 := cx + f_w * 0.5
+				
+				# 1. Flute Body
+				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x2, f_y), fl_colors[i], f_th, true)
+				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x2, f_y), Color(1, 1, 1, 0.22), 1.0 * size_scale) # specular line
+				
+				# 2. Red thread wraps at ends
+				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x1 + 4*size_scale, f_y), C_RED_SON, f_th + 0.5*size_scale)
+				c.draw_line(Vector2(f_x2 - 4*size_scale, f_y), Vector2(f_x2, f_y), C_RED_SON, f_th + 0.5*size_scale)
+				
+				# 3. Finger holes (tiny black dots)
+				for h_idx in range(6):
+					var hole_x = lerpf(f_x1 + f_w*0.3, f_x2 - f_w*0.2, float(h_idx)/5.0)
+					c.draw_circle(Vector2(hole_x, f_y), 1.2 * size_scale, Color.BLACK)
+				
+				# 4. Lively swaying red tassels hanging from left end
+				var sway := sin(_time * 2.5 + i * 1.2) * 6.0 * size_scale
+				var tassel_start := Vector2(f_x1 + 2*size_scale, f_y)
+				var tassel_end := tassel_start + Vector2(sway * 0.5, 18.0 * size_scale)
+				
+				c.draw_line(tassel_start, tassel_end, C_RED_SON, 1.2 * size_scale) # hanging string
+				c.draw_circle(tassel_end, 2.5 * size_scale, C_GOLD) # bead
+				
+				# Fringes body
+				var fringe_pts := PackedVector2Array([
+					tassel_end,
+					tassel_end + Vector2(sway - 2*size_scale, 14*size_scale),
+					tassel_end + Vector2(sway + 2*size_scale, 14*size_scale)
+				])
+				c.draw_colored_polygon(fringe_pts, C_RED_SON)
 
 		"bronze_drum":
-			var dr_r := 34.0 * size_scale
-			var dr_h := 36.0 * size_scale
-			var drum_base_y := cy + 15
-			c.draw_rect(Rect2(cx - dr_r * 1.1, drum_base_y, dr_r * 2.2, 10.0 * size_scale), Color(0.14, 0.07, 0.03), true)
+			var dr_r := 36.0 * size_scale
+			var dr_h := 50.0 * size_scale
+			var drum_base_y := cy + 18 * size_scale
 			
-			var drum_pts := PackedVector2Array()
-			var steps := 16
+			# Wooden base platform
+			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 10.0 * size_scale), Color(0.18, 0.10, 0.05), true)
+			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 10.0 * size_scale), C_GOLD, false, 1.2 * size_scale)
+			
+			# Drum Body polygon (typical flared top, curved middle waist, and wider base)
+			var body_pts := PackedVector2Array()
+			var steps := 24
 			for i in range(steps + 1):
 				var t := float(i) / steps
 				var py = drum_base_y - t * dr_h
 				var w_fac = 1.0
-				if t > 0.2 and t < 0.8:
-					w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
-				drum_pts.append(Vector2(cx - dr_r * w_fac, py))
+				if t < 0.28:
+					# Lower flare
+					w_fac = lerpf(0.95, 0.76, t / 0.28)
+				elif t < 0.72:
+					# Curved waist
+					var wt = (t - 0.28) / 0.44
+					w_fac = 0.76 + (1.0 - 0.76) * sin(wt * PI) * 0.15 # waist dip
+					if wt > 0.5:
+						w_fac = lerpf(0.76, 0.96, (wt - 0.5) * 2.0)
+				else:
+					# Top flare
+					w_fac = lerpf(0.96, 1.05, (t - 0.72) / 0.28)
+				body_pts.append(Vector2(cx - dr_r * w_fac, py))
 			for i in range(steps, -1, -1):
 				var t := float(i) / steps
 				var py = drum_base_y - t * dr_h
 				var w_fac = 1.0
-				if t > 0.2 and t < 0.8:
-					w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
-				drum_pts.append(Vector2(cx + dr_r * w_fac, py))
+				if t < 0.28:
+					w_fac = lerpf(0.95, 0.76, t / 0.28)
+				elif t < 0.72:
+					var wt = (t - 0.28) / 0.44
+					w_fac = 0.76 + (1.0 - 0.76) * sin(wt * PI) * 0.15
+					if wt > 0.5:
+						w_fac = lerpf(0.76, 0.96, (wt - 0.5) * 2.0)
+				else:
+					w_fac = lerpf(0.96, 1.05, (t - 0.72) / 0.28)
+				body_pts.append(Vector2(cx + dr_r * w_fac, py))
 				
-			c.draw_colored_polygon(drum_pts, Color(0.48, 0.36, 0.22))
-			c.draw_polyline(drum_pts, Color(0.36, 0.26, 0.15), 1.2, true)
-			c.draw_line(Vector2(cx - dr_r * 0.85, drum_base_y - dr_h * 0.3), Vector2(cx + dr_r * 0.85, drum_base_y - dr_h * 0.3), Color(0.68, 0.55, 0.35, 0.45), 1.5)
-			c.draw_line(Vector2(cx - dr_r * 0.85, drum_base_y - dr_h * 0.7), Vector2(cx + dr_r * 0.85, drum_base_y - dr_h * 0.7), Color(0.68, 0.55, 0.35, 0.45), 1.5)
+			c.draw_colored_polygon(body_pts, Color(0.48, 0.35, 0.20)) # Darker bronze base
+			c.draw_polyline(body_pts, C_GOLD, 1.0 * size_scale, true)
 			
-			_draw_ellipse_poly(c, Vector2(cx, drum_base_y - dr_h), dr_r, 4.0 * size_scale, Color(0.55, 0.42, 0.25))
-			_draw_ellipse_line(c, Vector2(cx, drum_base_y - dr_h), dr_r, 4.0 * size_scale, C_GOLD, 1.2)
-			c.draw_circle(Vector2(cx, drum_base_y - dr_h), 3.0 * size_scale, C_GOLD_LIGHT)
+			# Outer highlight / 3D shading
+			c.draw_polyline(body_pts, Color(0.68, 0.52, 0.32, 0.65), 2.2 * size_scale, true)
+			
+			# Horizontal decorative bands on drum barrel
+			for by_f in [0.22, 0.5, 0.78]:
+				var dy = drum_base_y - dr_h * by_f
+				c.draw_line(Vector2(cx - dr_r * 0.72, dy), Vector2(cx + dr_r * 0.72, dy), Color(0.68, 0.55, 0.35, 0.5), 1.5 * size_scale)
+				
+			# Side handles (2 pairs of double loops)
+			var h_color := C_GOLD
+			var h_y1 := drum_base_y - dr_h * 0.68
+			var h_y2 := drum_base_y - dr_h * 0.42
+			# Left double loops
+			c.draw_line(Vector2(cx - dr_r * 0.8, h_y1), Vector2(cx - dr_r * 0.98, h_y1 + 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx - dr_r * 0.8, h_y2), Vector2(cx - dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx - dr_r * 0.98, h_y1 + 4*size_scale), Vector2(cx - dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			
+			# Right double loops
+			c.draw_line(Vector2(cx + dr_r * 0.8, h_y1), Vector2(cx + dr_r * 0.98, h_y1 + 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx + dr_r * 0.8, h_y2), Vector2(cx + dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx + dr_r * 0.98, h_y1 + 4*size_scale), Vector2(cx + dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			
+			# Drumhead ellipse top
+			var dh_center := Vector2(cx, drum_base_y - dr_h)
+			var dh_rx := dr_r * 1.05
+			var dh_ry := 11.5 * size_scale
+			_draw_ellipse_poly(c, dh_center, dh_rx, dh_ry, Color(0.55, 0.42, 0.25))
+			_draw_ellipse_line(c, dh_center, dh_rx, dh_ry, C_GOLD, 1.5 * size_scale)
+			
+			# Concentric rings on drumhead
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.82, dh_ry * 0.82, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0.8 * size_scale)
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.52, dh_ry * 0.52, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0.8 * size_scale)
+			
+			# Abstract Chim Lạc flying bird icons (little golden arcs) in the middle ring
+			for deg in range(0, 360, 45):
+				var rad := float(deg) * PI / 180.0
+				var bird_pos := dh_center + Vector2(cos(rad) * dh_rx * 0.68, sin(rad) * dh_ry * 0.68)
+				c.draw_arc(bird_pos, 2.8 * size_scale, PI * 0.85, PI * 1.85, 8, C_GOLD_LIGHT, 0.8 * size_scale)
+			
+			# Star/Sun motif in center (12-pointed star)
+			var sun_glow_p := 0.25 + 0.15 * sin(_time * 4.0) # Pulsing glow value
+			c.draw_circle(dh_center, 6.5 * size_scale, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, sun_glow_p))
+			
+			# 12 Points of the Star/Sun
+			var star_pts := PackedVector2Array()
+			var star_inner_r := 3.2 * size_scale
+			var star_outer_r := 8.2 * size_scale
+			for step in range(24):
+				var angle := step * (TAU / 24.0)
+				var r := star_outer_r if step % 2 == 0 else star_inner_r
+				star_pts.append(dh_center + Vector2(cos(angle) * r, sin(angle) * r * (dh_ry / dh_rx)))
+			c.draw_colored_polygon(star_pts, C_GOLD_LIGHT)
+			c.draw_polyline(star_pts, Color.WHITE, 0.6 * size_scale, true)
 
 func _open_shop_popup() -> void:
 	if not shop_popup:
@@ -2565,10 +2766,10 @@ func _setup_shop_popup() -> void:
 	scroll_content.add_child(grid)
 	
 	var items = [
-		{"id": "painting", "name": "Tranh Sơn Mài Cổ", "cost": 3, "desc": "Tranh phong cảnh sơn dầu dát vàng truyền thống."},
-		{"id": "vase", "name": "Lộc Bình Bát Tràng", "cost": 5, "desc": "Bình gốm hoa lam men rạn Bát Tràng cao cấp."},
-		{"id": "bamboo", "name": "Trúc Quân Tử", "cost": 8, "desc": "Chậu trúc xanh mang ý nghĩa phong thủy tốt lành."},
-		{"id": "bronze_drum", "name": "Trống Đồng Đông Sơn", "cost": 12, "desc": "Trống đồng Đông Sơn mini trang trí tinh xảo."}
+		{"id": "painting", "name": "Tranh Tố Nữ Cổ Phong", "cost": 3, "desc": "Tranh dân gian Hàng Trống phác họa thiếu nữ chơi nhạc cụ truyền thống."},
+		{"id": "vase", "name": "Giá Treo Chiêng Đồng", "cost": 5, "desc": "Chiêng đồng cổ Tây Nguyên treo trên giá gỗ chạm khắc tinh xảo."},
+		{"id": "bamboo", "name": "Kệ Sáo Trúc Nhã Nhạc", "cost": 8, "desc": "Giá treo các loại sáo trúc, tiêu với tua rua đỏ đung đưa sinh động."},
+		{"id": "bronze_drum", "name": "Trống Đồng Đông Sơn", "cost": 12, "desc": "Báu vật âm nhạc cổ xưa với họa tiết mặt trời tỏa sáng linh thiêng."}
 	]
 	
 	for item in items:

@@ -153,7 +153,7 @@ func _process(delta: float) -> void:
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 				
 			# Add samples to history for visualization
-			var step = max(1, mono_samples.size() / 10)
+			var step = max(1, int(mono_samples.size() / 10.0))
 			for i in range(0, mono_samples.size(), step):
 				var val = mono_samples[i]
 				if _sample_history.size() > 0:
@@ -163,8 +163,8 @@ func _process(delta: float) -> void:
 			queue_redraw()
 
 func _detect_pitch_high_res(samples: PackedFloat32Array, sample_rate: float) -> float:
-	var size = samples.size()
-	if size < 512:
+	var sample_count = samples.size()
+	if sample_count < 512:
 		return 0.0
 		
 	var peak := 0.0
@@ -176,12 +176,12 @@ func _detect_pitch_high_res(samples: PackedFloat32Array, sample_rate: float) -> 
 		
 	var min_lag = int(sample_rate / max_frequency)
 	var max_lag = int(sample_rate / min_frequency)
-	max_lag = min(max_lag, size / 2)
+	max_lag = min(max_lag, int(sample_count / 2.0))
 	
 	var best_lag := -1
 	var best_correlation := -1e9
 	
-	var window_size = min(256, size - max_lag)
+	var window_size = min(256, sample_count - max_lag)
 	if window_size <= 0:
 		return 0.0
 		
@@ -330,16 +330,16 @@ func _calculate_peak_db_gdscript(samples: PackedFloat32Array) -> float:
 	return -80.0
 
 func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_threshold: float) -> PackedFloat32Array:
-	var size = samples.size()
+	var sample_count = samples.size()
 	var filtered := PackedFloat32Array()
-	filtered.resize(size)
+	filtered.resize(sample_count)
 	
 	var peak := 0.0
 	for val in samples:
 		peak = max(peak, abs(val))
 	if peak < noise_threshold:
 		# Quiet signal: noise gate closed
-		for i in range(size):
+		for i in range(sample_count):
 			filtered[i] = 0.0
 		return filtered
 		
@@ -348,7 +348,7 @@ func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_thresh
 	var x2 := 0.0
 	var y1 := 0.0
 	var y2 := 0.0
-	for i in range(size):
+	for i in range(sample_count):
 		var x0 = samples[i]
 		var y0 = 0.88 * (x0 - x2) + 0.75 * y1 - 0.25 * y2
 		filtered[i] = clamp(y0, -1.0, 1.0)
@@ -359,8 +359,8 @@ func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_thresh
 	return filtered
 
 func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float, threshold: float) -> float:
-	var size = samples.size()
-	var W = size / 2
+	var sample_count = samples.size()
+	var W = int(sample_count / 2.0)
 	if W < 128: return 0.0
 	
 	var min_period = int(sample_rate / max_frequency)
@@ -432,8 +432,8 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 	return 0.0
 
 func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
-	var size = samples.size()
-	if size < 128: return 0.0
+	var sample_count = samples.size()
+	if sample_count < 128: return 0.0
 	
 	var sum_sq := 0.0
 	for val in samples:
@@ -442,13 +442,13 @@ func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
 	
 	var max_corr := 0.0
 	var min_lag := 40
-	var max_lag = min(size / 2, 300)
+	var max_lag = min(int(sample_count / 2.0), 300)
 	
 	# Stride lag for speed
 	for lag in range(min_lag, max_lag, 3):
 		var corr := 0.0
 		var sum_sq_shifted := 0.0
-		for i in range(0, size - lag, 2):
+		for i in range(0, sample_count - lag, 2):
 			corr += samples[i] * samples[i + lag]
 			sum_sq_shifted += samples[i + lag] * samples[i + lag]
 		
@@ -460,16 +460,16 @@ func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
 	return clamp(max_corr * 100.0, 0.0, 100.0)
 
 func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
-	var size = samples.size()
-	if size < 256: return 0.0
+	var sample_count = samples.size()
+	if sample_count < 256: return 0.0
 	
 	var envelopes: Array[float] = []
 	var amplitude_sum := 0.0
 	var block_size := 64
 	
-	for i in range(0, size, block_size):
+	for i in range(0, sample_count, block_size):
 		var block_peak := 0.0
-		var limit = min(size, i + block_size)
+		var limit = min(sample_count, i + block_size)
 		for j in range(i, limit):
 			block_peak = max(block_peak, abs(samples[j]))
 		envelopes.append(block_peak)
@@ -488,7 +488,7 @@ func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
 	var residual_energy := 0.0
 	var total_energy := 0.0
 	var period := 80
-	for i in range(size - period):
+	for i in range(sample_count - period):
 		var periodic_diff = samples[i] - samples[i + period]
 		residual_energy += periodic_diff * periodic_diff
 		total_energy += samples[i] * samples[i]
@@ -498,4 +498,3 @@ func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
 		purity_factor = max(0.0, 1.0 - (residual_energy / total_energy))
 		
 	return clamp((0.7 * purity_factor + 0.3 * stability_factor) * 100.0, 0.0, 100.0)
-
