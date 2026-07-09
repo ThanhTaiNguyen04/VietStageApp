@@ -31,6 +31,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation="landscape"
 
+[dotnet]
+
+project/assembly_name="VietStage"
+
 [gui]
 
 theme/custom="res://assets/theme/global_theme.tres"

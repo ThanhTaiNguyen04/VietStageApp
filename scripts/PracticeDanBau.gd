@@ -97,10 +97,14 @@ func _ready() -> void:
 	elif SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
 		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
 		var idx := int(clean_id.replace("dan_bau_coban_", ""))
-		if idx >= 1 and idx <= 2:
+		if idx == 1 or idx == 2:
 			sheet_notes = ["Đô", "Đô", "Đô", "Đô"]
 		elif idx == 3:
-			sheet_notes = ["Đô", "Rê", "Mi", "Sol", "La", "Đô"]
+			sheet_notes = ["Đô", "Rê", "Mi", "Rê", "Mi", "Đô"]
+		elif idx == 4:
+			sheet_notes = ["Đô", "Rê", "Đô", "Rê"]
+		elif idx == 5:
+			sheet_notes = ["Đô", "Đô", "Rê", "Fa", "Fa", "Sol", "La", "Sol", "Fa", "Rê", "Đô"]
 	_generate_streams()
 	_set_labels()
 	_build_theme()
@@ -270,7 +274,25 @@ func _set_labels() -> void:
 	var sens := get_node_or_null("Root/RecordBar/RecordM/RecordH/SensitivityBtn") as Button
 	if sens: sens.text = "⧱ Chế độ Nhạy cao"
 
+=======
+	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Kéo/uốn cần đàn bên trái để đổi âm"
+	record_btn.text = "Bắt đầu luyện tập"
+	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
+>>>>>>> origin/Tien
 	speech_label.text = SPEECHES[0]
+	if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
+		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
+		var idx := int(clean_id.replace("dan_bau_coban_", ""))
+		if idx == 1:
+			speech_label.text = "Con hãy gảy nốt Đô và kiểm tra xem cao độ đã chuẩn âm chưa nhé. Nếu quá chùng, hãy vặn trục căng dây."
+		elif idx == 2:
+			speech_label.text = "Chào mừng con đến với Bài 2. Hãy chạm nhẹ tay phải ở hài âm 1 và gảy nốt Đô."
+		elif idx == 3:
+			speech_label.text = "Chào mừng con đến với Bài 3. Hãy luyện tập gảy nốt Đô, Rê, Mi đúng vị trí."
+		elif idx == 4:
+			speech_label.text = "Chào mừng con đến với Bài 4. Con gảy nốt Đô rồi uốn cần trái để đổi âm sang Rê nhé."
+		elif idx == 5:
+			speech_label.text = "Chào mừng con đến với Bài 5. Hãy hoàn thành bài mẫu Bèo Dạt Mây Trôi thật tốt!"
 
 
 
@@ -1158,7 +1180,7 @@ func _show_custom_result() -> void:
 		if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
 			var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
 			var idx := int(clean_id.replace("dan_bau_coban_", ""))
-			if idx < 3:
+			if idx < 5:
 				next_lesson_name = "Đàn Bầu Cơ Bản %d" % (idx + 1)
 			else:
 				next_lesson_name = "Độc Tấu Đàn Bầu"
