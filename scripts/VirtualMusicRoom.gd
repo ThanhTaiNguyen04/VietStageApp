@@ -1946,25 +1946,32 @@ func _setup_dialogue_box() -> void:
 	margin.add_child(hbox)
 	
 	var avatar_control := Control.new()
+	avatar_control.name = "Avatar"
 	avatar_control.custom_minimum_size = Vector2(100, 100)
 	avatar_control.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(avatar_control)
 	
 	avatar_control.draw.connect(func() -> void:
-		var center := Vector2(50, 50)
-		avatar_control.draw_circle(center, 46.0, C_GOLD)
-		avatar_control.draw_circle(center, 44.0, C_CREAM)
+		var sz_act := avatar_control.size
+		var center := sz_act * 0.5
+		var r_outer := center.x - 2.0
+		var r_inner := center.x - 4.0
+		avatar_control.draw_circle(center, r_outer, C_GOLD)
+		avatar_control.draw_circle(center, r_inner, C_CREAM)
 		if _tex_linh:
-			var rect := Rect2(center - Vector2(36, 36), Vector2(72, 72))
+			var r_w := r_inner * 2.0 * 0.8
+			var rect := Rect2(center - Vector2(r_w * 0.5, r_w * 0.5), Vector2(r_w, r_w))
 			avatar_control.draw_texture_rect_region(_tex_linh, rect, Rect2(380, 50, 260, 260))
 	)
 	
 	var vbox := VBoxContainer.new()
+	vbox.name = "DialogueVBox"
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_theme_constant_override("separation", 8)
 	hbox.add_child(vbox)
 	
 	var name_lbl := Label.new()
+	name_lbl.name = "NameLabel"
 	name_lbl.text = "Cô Mai"
 	if _font_body_bold:
 		name_lbl.add_theme_font_override("font", _font_body_bold)
@@ -1973,6 +1980,7 @@ func _setup_dialogue_box() -> void:
 	vbox.add_child(name_lbl)
 	
 	dialogue_lbl = Label.new()
+	dialogue_lbl.name = "DialogueLabel"
 	dialogue_lbl.text = "Xin chào học viên!"
 	if _font_body:
 		dialogue_lbl.add_theme_font_override("font", _font_body)
@@ -1983,6 +1991,7 @@ func _setup_dialogue_box() -> void:
 	vbox.add_child(dialogue_lbl)
 	
 	btn_dialogue_close = Button.new()
+	btn_dialogue_close.name = "CloseButton"
 	btn_dialogue_close.text = "TIẾP TỤC"
 	btn_dialogue_close.custom_minimum_size = Vector2(120, 36)
 	btn_dialogue_close.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -2001,19 +2010,32 @@ func _setup_dialogue_box() -> void:
 func _show_dialogue(text: String) -> void:
 	if not dialogue_box:
 		_setup_dialogue_box()
+	var size : Vector2 = get_viewport().get_visible_rect().size
 	_player_expression = "focused"
 	_typewriter_text = text
 	_typewriter_progress = 0.0
 	dialogue_lbl.text = ""
 	dialogue_box.visible = true
+	
+	# Compute new dialogue layout and targets
+	_update_dialogue_layout(size)
+	
+	var target_bottom := dialogue_box.offset_bottom
+	var target_top := dialogue_box.offset_top
+	
 	dialogue_box.modulate.a = 0.0
 	dialogue_box.offset_bottom = 0
-	dialogue_box.offset_top = -160
+	dialogue_box.offset_top = target_bottom - dialogue_box.size.y
 	
 	var t := create_tween().set_parallel(true)
 	t.tween_property(dialogue_box, "modulate:a", 1.0, 0.25)
-	t.tween_property(dialogue_box, "offset_bottom", -32, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(dialogue_box, "offset_top", -192, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(dialogue_box, "offset_bottom", target_bottom, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(dialogue_box, "offset_top", target_top, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	# Tween RoomContent scaling down to fit above the dialogue
+	var target_layout := _calculate_room_layout(size, true)
+	t.tween_property(room_content, "scale", target_layout.scale, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(room_content, "position", target_layout.position, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _close_dialogue() -> void:
 	if not dialogue_box or not dialogue_box.visible:
@@ -2025,11 +2047,23 @@ func _close_dialogue() -> void:
 		if _player_expression == "happy":
 			_player_expression = "normal"
 	)
+	
+	var target_top := -dialogue_box.size.y
 	var t := create_tween().set_parallel(true)
 	t.tween_property(dialogue_box, "modulate:a", 0.0, 0.2)
 	t.tween_property(dialogue_box, "offset_bottom", 0, 0.2)
-	t.tween_property(dialogue_box, "offset_top", -160, 0.2)
-	t.chain().tween_callback(func() -> void: dialogue_box.visible = false)
+	t.tween_property(dialogue_box, "offset_top", target_top, 0.2)
+	
+	# Tween RoomContent scaling back to normal
+	var size : Vector2 = get_viewport().get_visible_rect().size
+	var target_layout := _calculate_room_layout(size, false)
+	t.tween_property(room_content, "scale", target_layout.scale, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(room_content, "position", target_layout.position, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	
+	t.chain().tween_callback(func() -> void:
+		dialogue_box.visible = false
+		_on_viewport_size_changed() # Force alignment check
+	)
 
 # ─── Focus Mode Vector Custom Diagrams ─────────────────────────────────────────
 func _draw_popup_scroll(c: Control) -> void:
@@ -2139,12 +2173,8 @@ func _fade_to(path: String) -> void:
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
 
 # ─── Responsive Layout ────────────────────────────────────────────────────────
-func _on_viewport_size_changed() -> void:
-	var size : Vector2 = get_viewport().get_visible_rect().size
+func _calculate_room_layout(size: Vector2, dialogue_visible: bool) -> Dictionary:
 	var is_mobile := size.x < size.y or size.x < 768
-	_is_mobile_layout = is_mobile
-	
-	# Scale the 2.5D Room content container to fit inside screen boundaries
 	var margin_l : float = 8.0 if is_mobile else 0.0
 	var margin_r : float = 8.0 if is_mobile else 0.0
 	var margin_b : float = 8.0 if is_mobile else 0.0
@@ -2152,23 +2182,100 @@ func _on_viewport_size_changed() -> void:
 	var room_w : float = float(size.x) - margin_l - margin_r
 	var room_h : float = float(size.y) - margin_b
 	
-	# Base room scale
+	if dialogue_visible:
+		var dialog_h := minf(160.0, size.y * (0.35 if is_mobile else 0.28))
+		if size.y < 450:
+			dialog_h = minf(120.0, size.y * 0.3)
+		var margin_b_dialogue := 24.0 if size.y > 500 else 12.0
+		room_h -= (dialog_h + margin_b_dialogue + 8.0)
+		
 	var scale_factor := minf(room_w / 1200.0, room_h / 800.0)
 	if is_mobile:
 		scale_factor = minf(room_w / 760.0, room_h / 820.0)
 		
-	room_content.scale = Vector2(scale_factor, scale_factor)
-	room_content.position = Vector2(
-		margin_l + (room_w - 1200.0 * scale_factor) / 2.0,
-		(room_h - 800.0 * scale_factor) / 2.0
-	)
+	return {
+		"scale": Vector2(scale_factor, scale_factor),
+		"position": Vector2(
+			margin_l + (room_w - 1200.0 * scale_factor) / 2.0,
+			(room_h - 800.0 * scale_factor) / 2.0
+		)
+	}
+
+func _update_dialogue_layout(size: Vector2) -> void:
+	if not dialogue_box:
+		return
+	var is_mobile := size.x < size.y or size.x < 768
+	var is_compact := is_mobile or size.y < 500
+	
+	var dialog_w := minf(800.0, size.x - (32.0 if is_mobile else 64.0))
+	var dialog_h := minf(160.0, size.y * (0.35 if is_mobile else 0.28))
+	if size.y < 450:
+		dialog_h = minf(120.0, size.y * 0.3)
+	
+	dialogue_box.custom_minimum_size = Vector2(dialog_w, dialog_h)
+	dialogue_box.size = Vector2(dialog_w, dialog_h)
+	
+	var margin_b := 24.0 if size.y > 500 else 12.0
+	
+	if dialogue_box.visible:
+		dialogue_box.offset_bottom = -margin_b
+		dialogue_box.offset_top = -margin_b - dialog_h
+	else:
+		dialogue_box.offset_bottom = 0
+		dialogue_box.offset_top = -dialog_h
+		
+	dialogue_box.offset_left = -dialog_w * 0.5
+	dialogue_box.offset_right = dialog_w * 0.5
+	
+	# Responsive child nodes adjustments
+	var margin := dialogue_box.get_child(0) as MarginContainer
+	if margin:
+		var m_val := 12 if is_compact else 24
+		var m_top_bottom := 10 if is_compact else 16
+		margin.add_theme_constant_override("margin_left", m_val)
+		margin.add_theme_constant_override("margin_right", m_val)
+		margin.add_theme_constant_override("margin_top", m_top_bottom)
+		margin.add_theme_constant_override("margin_bottom", m_top_bottom)
+		
+		var hbox := margin.get_child(0) as HBoxContainer
+		if hbox:
+			hbox.add_theme_constant_override("separation", 12 if is_compact else 24)
+			
+			var avatar := hbox.find_child("Avatar") as Control
+			if avatar:
+				var av_sz := 64.0 if is_compact else 100.0
+				avatar.custom_minimum_size = Vector2(av_sz, av_sz)
+				avatar.size = Vector2(av_sz, av_sz)
+				avatar.queue_redraw()
+				
+			var vbox := hbox.find_child("DialogueVBox") as VBoxContainer
+			if vbox:
+				vbox.add_theme_constant_override("separation", 4 if is_compact else 8)
+				var name_lbl := vbox.find_child("NameLabel") as Label
+				if name_lbl:
+					name_lbl.add_theme_font_size_override("font_size", 14 if is_compact else 18)
+				if dialogue_lbl:
+					dialogue_lbl.add_theme_font_size_override("font_size", 13 if is_compact else 15)
+				var btn_close := vbox.find_child("CloseButton") as Button
+				if btn_close:
+					btn_close.custom_minimum_size = Vector2(100, 30) if is_compact else Vector2(120, 36)
+
+func _on_viewport_size_changed() -> void:
+	var size : Vector2 = get_viewport().get_visible_rect().size
+	var is_mobile := size.x < size.y or size.x < 768
+	_is_mobile_layout = is_mobile
+	
+	var layout := _calculate_room_layout(size, dialogue_box != null and dialogue_box.visible)
+	room_content.scale = layout.scale
+	room_content.position = layout.position
 	
 	var rx := room_content.position.x
+	var scale_factor := room_content.scale.x
 	_left_bound = -rx / scale_factor if scale_factor > 0.0 else 0.0
 	_right_bound = (size.x - rx) / scale_factor if scale_factor > 0.0 else 1200.0
 	var center_x := 600.0
 
-	var station_size := Vector2(360.0, 220.0) if is_mobile else Vector2(430.0, 260.0)
+	var station_size := Vector2(360.0, 220.0) if is_mobile else Vector2(290.0, 180.0)
 	for station in [s_tranh, s_sao, s_bau, s_trong]:
 		station.size = station_size
 		station.custom_minimum_size = station_size
@@ -2185,11 +2292,12 @@ func _on_viewport_size_changed() -> void:
 		char_linh.position.x = 500.0
 		char_linh.size = Vector2(210.0, 210.0)
 	else:
-		_station_base_positions["tranh"] = Vector2(clampf(70.0, _left_bound + 36.0, _right_bound - station_size.x - 36.0), 520.0)
-		_station_base_positions["sao"] = Vector2(clampf(705.0, _left_bound + 36.0, _right_bound - station_size.x - 36.0), 520.0)
-		_station_base_positions["bau"] = Vector2(clampf(225.0, _left_bound + 36.0, _right_bound - station_size.x - 36.0), 300.0)
-		_station_base_positions["trong"] = Vector2(clampf(560.0, _left_bound + 36.0, _right_bound - station_size.x - 36.0), 300.0)
-		_linh_base_y = 175.0 if not _linh_is_moving else _linh_base_y
+		# Symmetrical Arc Layout
+		_station_base_positions["tranh"] = Vector2(50.0, 470.0)
+		_station_base_positions["bau"] = Vector2(330.0, 430.0)
+		_station_base_positions["trong"] = Vector2(610.0, 430.0)
+		_station_base_positions["sao"] = Vector2(890.0, 470.0)
+		_linh_base_y = 160.0 if not _linh_is_moving else _linh_base_y
 		char_linh.position.x = 485.0
 		char_linh.size = Vector2(230.0, 230.0)
 
@@ -2204,6 +2312,9 @@ func _on_viewport_size_changed() -> void:
 			
 	if shop_popup and is_instance_valid(shop_popup):
 		_apply_popup_layout(shop_popup, is_mobile)
+		
+	if dialogue_box and is_instance_valid(dialogue_box):
+		_update_dialogue_layout(size)
 
 	btn_back.custom_minimum_size = Vector2(116, 42) if is_mobile else Vector2(160, 48)
 	btn_back.offset_left = 12.0 if is_mobile else 32.0
