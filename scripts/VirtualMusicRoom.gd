@@ -907,9 +907,9 @@ func _style_hud_icon_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("hover", _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), Color(0,0,0,0), 28))
 	btn.add_theme_stylebox_override("pressed", _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), Color(0,0,0,0), 28))
 	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
-	btn.add_theme_color_override("icon_normal_color", C_RED_SON)
+	btn.add_theme_color_override("icon_normal_color", Color(0.25, 0.18, 0.12)) # Warm bronze-brown
 	btn.add_theme_color_override("icon_hover_color", C_GOLD)
-	btn.add_theme_color_override("icon_pressed_color", C_RED_SON)
+	btn.add_theme_color_override("icon_pressed_color", Color(0.5, 0.4, 0.3))
 
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
@@ -931,14 +931,22 @@ func _draw_room_background() -> void:
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
 	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
 	
-	# ── 2. Wall: aged cream plaster (Stretched!) ──────────────────────
-	var wall_base := Color(0.95, 0.93, 0.89)  # warm cream-beige (#F3EFE3)
-	bg_canvas.draw_rect(Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound), wall_base)
+	# ── 2. Wall: aged cream plaster with soft lighting gradient (Stretched!) ──────
+	var steps := 32
+	var step_h := (wall_h - top_bound) / steps
+	var col_top := Color(0.92, 0.89, 0.83) # Warmer top shade
+	var col_bottom := Color(0.97, 0.95, 0.91) # Bright bottom cream
+	for s in range(steps):
+		var y1 = top_bound + s * step_h
+		var y2 = y1 + step_h
+		var t = float(s) / float(steps)
+		var col = col_top.lerp(col_bottom, t)
+		bg_canvas.draw_rect(Rect2(left_bound, y1, right_bound - left_bound, y2 - y1), col)
 	
 	# Subtle aged plaster texture — horizontal streaks stretching across bounds
 	for i in range(int(top_bound), int(wall_h), 8):
-		var streak_a := 0.04 * sin(float(i) * 0.3 + _time * 0.1)
-		var streak_col := Color(0.92 + streak_a, 0.88, 0.80, 0.25)
+		var streak_a := 0.02 * sin(float(i) * 0.3 + _time * 0.1)
+		var streak_col := Color(0.90 + streak_a, 0.85, 0.78, 0.12)
 		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
 	
 	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
@@ -2460,8 +2468,8 @@ func _setup_hud_shop_button() -> void:
 	hud_hbox.add_child(star_badge)
 	
 	var badge_s := StyleBoxFlat.new()
-	badge_s.bg_color = Color(0.08, 0.05, 0.03, 0.8) # Dark premium brown
-	badge_s.border_color = C_GOLD
+	badge_s.bg_color = Color(0.97, 0.95, 0.91, 0.85) # Elegant warm ivory
+	badge_s.border_color = Color(0.79, 0.60, 0.24, 0.5) # Soft gold border
 	badge_s.border_width_left = 2; badge_s.border_width_right = 2
 	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
 	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
@@ -2480,7 +2488,7 @@ func _setup_hud_shop_button() -> void:
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 15)
-	badge_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	badge_label.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12)) # Deep warm bronze-brown
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_margin.add_child(badge_label)
