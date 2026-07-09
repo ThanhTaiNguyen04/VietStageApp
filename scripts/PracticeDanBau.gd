@@ -1191,14 +1191,10 @@ func _show_custom_result() -> void:
 		)
 
 func _go_back() -> void:
-	var lesson_id := SecureDataManager.active_lesson_id
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if lesson_id.begins_with("dan_bau_coban_"):
-			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
-		else:
-			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
 
 # ─── Dynamic Helpers ──────────────────────────────────────────────────────────
