@@ -38,6 +38,7 @@ var _target_node_idx  := 0
 
 # Positions for drawing
 var _rod_start   := Vector2.ZERO
+var _rod_tip     := Vector2.ZERO
 var _rod_end     := Vector2.ZERO
 var _gourd_pos   := Vector2.ZERO
 var _string_end  := Vector2.ZERO
@@ -156,10 +157,11 @@ func _draw() -> void:
 	var h_right := H * 0.44
 
 	# Calculate key position points
-	_rod_start = Vector2(x_left, body_center_y)
-	_gourd_pos = Vector2(x_left - 75.0 + _bend_offset, body_center_y)
+	_rod_start = Vector2(x_left + 24.0, body_center_y - h_left * 0.4)
+	_rod_tip = Vector2(x_left - 32.0 + _bend_offset, body_center_y - 110.0)
+	_gourd_pos = _rod_tip
 	_rod_end = _gourd_pos
-	_string_end = Vector2(x_right + 15.0, body_center_y)
+	_string_end = Vector2(x_right + 12.0, body_center_y - 5.0)
 
 	# 1. Draw tapered body with cylindrical 3D wood shading
 	_draw_tapered_body(x_left, x_right, body_center_y, h_left, h_right)
@@ -167,16 +169,16 @@ func _draw() -> void:
 	# 2. Draw mother-of-pearl scroll patterns
 	_draw_mop_scrolls(x_left, x_right, body_center_y, h_left, h_right)
 
-	# 3. Draw brass collar socket
-	_draw_brass_collar(_rod_start, PI)
+	# 3. Draw brass collar socket (slanted upwards)
+	_draw_brass_collar(_rod_start, deg_to_rad(-70.0))
 
-	# 4. Draw tapered horn rod (Cần Đàn)
-	var rod_control := Vector2(x_left - 35.0 + _bend_offset * 0.5, body_center_y - 52.0)
+	# 4. Draw tapered horn rod (Cần Đàn curving tall upwards and left)
+	var rod_control := Vector2(x_left + 32.0 + _bend_offset * 0.4, body_center_y - 95.0)
 	var rod_pts := PackedVector2Array()
 	var steps := 20
 	for k in range(steps + 1):
 		var t := float(k) / float(steps)
-		var pt := (1.0-t)*(1.0-t)*_rod_start + 2.0*(1.0-t)*t*rod_control + t*t*_gourd_pos
+		var pt := (1.0-t)*(1.0-t)*_rod_start + 2.0*(1.0-t)*t*rod_control + t*t*_rod_tip
 		rod_pts.append(pt)
 
 	# Draw horn rod shadow
@@ -201,14 +203,14 @@ func _draw() -> void:
 		draw_line(rod_pts[k] - Vector2(0, thickness * 0.15), rod_pts[k+1] - Vector2(0, thickness * 0.15), specular_color, thickness * 0.28, true)
 
 	# 5. Draw pear-shaped gourd (Bầu) with radial 3D shading
-	_draw_shaded_gourd(_gourd_pos, (_gourd_pos - rod_control).normalized())
+	_draw_shaded_gourd(_gourd_pos, (_rod_tip - rod_control).normalized())
 
 	# 6. Draw string peg
 	_draw_peg(_string_end)
 
-	# 7. Draw single monochord string (with pluck vibration wave)
+	# 7. Draw single monochord string (with slanted pluck vibration wave)
 	var str_pts := PackedVector2Array()
-	str_pts.append(_gourd_pos)
+	str_pts.append(_rod_tip)
 	
 	if _pluck_amp > 0.005:
 		var spd := 85.0
@@ -216,7 +218,8 @@ func _draw() -> void:
 			var ratio := float(k) / 30.0
 			var decay := exp(-_pluck_time * 2.2)
 			var osc := sin(ratio * PI) * sin(ratio * PI * 4.0 - _pluck_time * spd) * _pluck_amp * 7.5 * decay
-			str_pts.append(Vector2(lerpf(_gourd_pos.x, _string_end.x, ratio), body_center_y + osc))
+			var base_y := lerpf(_rod_tip.y, _string_end.y, ratio)
+			str_pts.append(Vector2(lerpf(_rod_tip.x, _string_end.x, ratio), base_y + osc))
 	str_pts.append(_string_end)
 
 	# Draw string shadow
@@ -235,7 +238,7 @@ func _draw() -> void:
 		string_col = Color("#fc882b") # highlight bending
 	draw_polyline(str_pts, string_col, 1.8, true)
 
-	# 8. Draw 7 harmonic touch nodes exactly on the string path
+	# 8. Draw 7 harmonic touch nodes exactly on the slanted string path
 	var start_x := x_left + 45.0
 	var end_x   := x_right - 45.0
 	var step_x  := (end_x - start_x) / float(NODE_COUNT - 1)
@@ -244,24 +247,57 @@ func _draw() -> void:
 
 	for i in NODE_COUNT:
 		var nx := start_x + float(i) * step_x
-		var ny := body_center_y
+		var ratio := (nx - _rod_tip.x) / (_string_end.x - _rod_tip.x)
+		var ny := lerpf(_rod_tip.y, _string_end.y, ratio)
 		_draw_ivory_node(Vector2(nx, ny), i, _is_target[i] == 1, _hovered_node_idx == i, _glow_alpha[i], _pulse_phase, font)
 
-	# 9. Draw pitch bending gauge and calligraphic cents display
+	# 9. Draw pitch bending gauge and calligraphic cents display (floating above rod tip)
 	if _is_bending:
-		_draw_bend_gauge(Vector2(x_left - 75.0, body_center_y), 45.0, _bend_cents)
-		_draw_cents_readout(font, Vector2(x_left - 75.0, body_center_y - 65.0), _bend_cents)
+		_draw_bend_gauge(_rod_tip, 32.0, _bend_cents)
+		_draw_cents_readout(font, Vector2(_rod_tip.x, _rod_tip.y - 30.0), _bend_cents)
+
+	# 10. Draw plectrum (que gảy)
+	_draw_plectrum(W, H)
 
 func _draw_tapered_body(x_left: float, x_right: float, y_center: float, h_left: float, h_right: float) -> void:
-	# Calculate corners for main drop shadow
+	# Corners for the top face (mặt đàn)
 	var tl := Vector2(x_left, y_center - h_left / 2.0)
 	var bl := Vector2(x_left, y_center + h_left / 2.0)
 	var br := Vector2(x_right, y_center + h_right / 2.0)
 	var tr := Vector2(x_right, y_center - h_right / 2.0)
 	
-	# Rich deep 3D drop shadow
-	var shadow_offset := Vector2(0, 10.0)
-	draw_colored_polygon(PackedVector2Array([tl + shadow_offset, tr + shadow_offset, br + shadow_offset, bl + shadow_offset]), Color(0.02, 0.01, 0.005, 0.55))
+	# Corners for the 3D hông đàn (side face)
+	var thickness_l := h_left * 0.22
+	var thickness_r := h_right * 0.22
+	
+	# Rich deep 3D drop shadow underneath the side face
+	var sh_tl := tl + Vector2(0, thickness_l)
+	var sh_tr := tr + Vector2(0, thickness_r)
+	var sh_br := br + Vector2(0, thickness_r) + Vector2(0, 12.0)
+	var sh_bl := bl + Vector2(0, thickness_l) + Vector2(0, 10.0)
+	draw_colored_polygon(PackedVector2Array([sh_tl, sh_tr, sh_br, sh_bl]), Color(0.02, 0.01, 0.005, 0.65))
+
+	# Draw side face (Hông đàn) with rounded shading
+	var side_col_top := Color("#200a03")
+	var side_col_bottom := Color("#0c0401")
+	var side_steps := 8
+	for s in range(side_steps):
+		var t1 := float(s) / side_steps
+		var t2 := float(s + 1) / side_steps
+		var col := side_col_top.lerp(side_col_bottom, t1)
+		var y_l1 := bl.y + thickness_l * t1
+		var y_l2 := bl.y + thickness_l * t2
+		var y_r1 := br.y + thickness_r * t1
+		var y_r2 := br.y + thickness_r * t2
+		var side_pts := PackedVector2Array([
+			Vector2(x_left, y_l1),
+			Vector2(x_right, y_r1),
+			Vector2(x_right, y_r2),
+			Vector2(x_left, y_l2)
+		])
+		draw_colored_polygon(side_pts, col)
+	
+	draw_polyline(PackedVector2Array([bl + Vector2(0, thickness_l), br + Vector2(0, thickness_r)]), Color("#080301", 0.95), 2.2, true)
 
 	# Render horizontal cylindrical wood gradient layers to simulate 3D cylinder appearance
 	var steps := 22
@@ -619,6 +655,52 @@ func _draw_rivets(W: float, H: float) -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(W,H), Vector2(W,H-plate_size), Vector2(W-plate_size*0.6,H-plate_size*0.6), Vector2(W-plate_size,H)]), brass_col)
 	draw_circle(Vector2(W-plate_size*0.35, H-plate_size*0.35), 2.0, Color(0.2, 0.1, 0.0, 0.8))
 
+func _draw_plectrum(W: float, H: float) -> void:
+	var plectrum_color := Color("#dfb15b") # Warm Bamboo Yellow
+	var plectrum_shadow := Color(0, 0, 0, 0.35)
+	
+	var target_pos := Vector2.ZERO
+	var angle := 0.0
+	
+	var x_left := W * 0.18
+	var x_right := W * 0.94
+	var start_x := x_left + 45.0
+	var end_x   := x_right - 45.0
+	var step_x  := (end_x - start_x) / float(NODE_COUNT - 1)
+	
+	if _hovered_node_idx != -1:
+		var nx := start_x + float(_hovered_node_idx) * step_x
+		var ratio := (nx - _rod_tip.x) / (_string_end.x - _rod_tip.x)
+		var ny := lerpf(_rod_tip.y, _string_end.y, ratio)
+		target_pos = Vector2(nx, ny)
+		angle = -PI * 0.25 # Slanted 45 degrees
+	elif _last_plucked_idx != -1 and _pluck_amp > 0.1:
+		var nx := start_x + float(_last_plucked_idx) * step_x
+		var ratio := (nx - _rod_tip.x) / (_string_end.x - _rod_tip.x)
+		var ny := lerpf(_rod_tip.y, _string_end.y, ratio)
+		target_pos = Vector2(nx, ny)
+		angle = -PI * 0.25
+	else:
+		target_pos = _string_end + Vector2(-35.0, 16.0)
+		angle = -PI * 0.08 # Tilted slightly down
+		
+	# Draw plectrum shadow
+	var shadow_offset := Vector2(2.0, 4.0)
+	var tip_s := target_pos + shadow_offset
+	var base_s := tip_s + Vector2(cos(angle), sin(angle)) * 40.0
+	draw_line(tip_s, base_s, plectrum_shadow, 2.5, true)
+	
+	# Draw plectrum stick (3D tapered appearance)
+	var tip := target_pos
+	var base := tip + Vector2(cos(angle), sin(angle)) * 40.0
+	draw_line(tip, base, plectrum_color, 2.0, true)
+	
+	var handle_start := tip + Vector2(cos(angle), sin(angle)) * 14.0
+	draw_line(handle_start, base, Color("#8a5c1e"), 1.3, true)
+	
+	draw_circle(base, 1.8, Color("#5c3d13"))
+	draw_circle(tip, 0.8, plectrum_color)
+
 # ─── Input Logic ──────────────────────────────────────────────────────────────
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -675,6 +757,9 @@ func _get_node_at(pos: Vector2) -> int:
 	var x_right := W * 0.94
 	var body_center_y := H * 0.55
 	
+	var rod_tip := Vector2(x_left - 32.0 + _bend_offset, body_center_y - 110.0)
+	var string_end := Vector2(x_right + 12.0, body_center_y - 5.0)
+	
 	var start_x := x_left + 45.0
 	var end_x   := x_right - 45.0
 	var step_x  := (end_x - start_x) / float(NODE_COUNT - 1)
@@ -683,7 +768,8 @@ func _get_node_at(pos: Vector2) -> int:
 	
 	for i in NODE_COUNT:
 		var nx := start_x + float(i) * step_x
-		var ny := body_center_y
+		var ratio := (nx - rod_tip.x) / (string_end.x - rod_tip.x)
+		var ny := lerpf(rod_tip.y, string_end.y, ratio)
 		if pos.distance_to(Vector2(nx, ny)) <= click_radius:
 			return i
 	return -1
