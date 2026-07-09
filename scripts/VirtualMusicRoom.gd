@@ -227,8 +227,16 @@ func _ready() -> void:
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
 	
-	# Setup Back button to return to Main Menu
+	# Setup Back button to return to Main Menu (Icon button for mobile style)
 	btn_back.show()
+	btn_back.text = ""
+	btn_back.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
+	btn_back.expand_icon = true
+	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Add theme colors to modulate the icon to fit normal/hover/pressed states
+	btn_back.add_theme_color_override("icon_normal_color", C_CREAM)
+	btn_back.add_theme_color_override("icon_hover_color", C_GOLD_LIGHT)
+	btn_back.add_theme_color_override("icon_pressed_color", C_GOLD)
 	_style_popup_button(btn_back, true)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
@@ -943,7 +951,7 @@ func _draw_room_background() -> void:
 	
 	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
 	var scroll_w := 160.0 if _is_mobile_layout else 220.0
-	var scroll_h := 150.0 if _is_mobile_layout else 180.0
+	var scroll_h := 160.0 if _is_mobile_layout else 210.0
 	var scroll_x := (sz.x - scroll_w) / 2.0
 	var scroll_y := 12.0
 	# Scroll background (aged silk)
@@ -981,13 +989,13 @@ func _draw_room_background() -> void:
 		else:
 			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 40), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
 			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 76), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 104), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
 			# Thin horizontal separator lines
 			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 54), Vector2(scroll_x + scroll_w - 20, scroll_y + 54), C_GOLD, 1.0)
-			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 116), Vector2(scroll_x + scroll_w - 20, scroll_y + 116), C_GOLD, 1.0)
+			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
 	# Ink-wash lotus / seal decorative motif
 	var seal_radius := 16.0 if _is_mobile_layout else 20.0
-	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + (128 if _is_mobile_layout else 150))
+	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + (128 if _is_mobile_layout else 170))
 	bg_canvas.draw_circle(seal_pos, seal_radius, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
 	bg_canvas.draw_arc(seal_pos, seal_radius - 2.0, 0, TAU, 32, C_RED_SON, 1.5)
 	bg_canvas.draw_circle(seal_pos, 6.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
@@ -2297,7 +2305,7 @@ func _on_viewport_size_changed() -> void:
 		_station_base_positions["trong"] = Vector2(right_x, 275.0)
 		_station_base_positions["tranh"] = Vector2(left_x, 515.0)
 		_station_base_positions["sao"] = Vector2(right_x, 515.0)
-		_linh_base_y = 170.0 # Shift down to avoid scroll text overlap on mobile
+		_linh_base_y = 230.0 # Shift down to avoid scroll text overlap on mobile
 		char_linh.position.x = 500.0
 		char_linh.size = Vector2(210.0, 210.0)
 	else:
@@ -2306,7 +2314,7 @@ func _on_viewport_size_changed() -> void:
 		_station_base_positions["bau"] = Vector2(330.0, 430.0)
 		_station_base_positions["trong"] = Vector2(610.0, 430.0)
 		_station_base_positions["sao"] = Vector2(890.0, 470.0)
-		_linh_base_y = 220.0 if not _linh_is_moving else _linh_base_y # Shift down to avoid scroll text overlap on desktop
+		_linh_base_y = 310.0 if not _linh_is_moving else _linh_base_y # Shift down to avoid scroll text overlap on desktop
 		char_linh.position.x = 485.0
 		char_linh.size = Vector2(230.0, 230.0)
 
@@ -2325,12 +2333,11 @@ func _on_viewport_size_changed() -> void:
 	if dialogue_box and is_instance_valid(dialogue_box):
 		_update_dialogue_layout(size)
 
-	btn_back.custom_minimum_size = Vector2(116, 42) if is_mobile else Vector2(160, 48)
+	btn_back.custom_minimum_size = Vector2(42, 42) if is_mobile else Vector2(48, 48)
 	btn_back.offset_left = 12.0 if is_mobile else 32.0
 	btn_back.offset_top = 12.0 if is_mobile else 32.0
 	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
 	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
-	btn_back.add_theme_font_size_override("font_size", 12 if is_mobile else 14)
 	_update_hud_hbox_layout(is_mobile)
 
 func _apply_popup_layout(target_popup: Control, is_mobile: bool) -> void:
@@ -2377,7 +2384,7 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	hud_hbox.offset_top = 12 if is_mobile else 32
 	hud_hbox.offset_right = -12 if is_mobile else -32
-	hud_hbox.offset_left = -248 if is_mobile else -380
+	hud_hbox.offset_left = -142 if is_mobile else -204
 	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 48)
 	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
 	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
@@ -2388,8 +2395,7 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 			label.add_theme_font_size_override("font_size", 12 if is_mobile else 15)
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
-		btn_shop.custom_minimum_size = Vector2(128, 42) if is_mobile else Vector2(160, 48)
-		btn_shop.add_theme_font_size_override("font_size", 12 if is_mobile else 14)
+		btn_shop.custom_minimum_size = Vector2(42, 42) if is_mobile else Vector2(48, 48)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2474,11 +2480,18 @@ func _setup_hud_shop_button() -> void:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_margin.add_child(badge_label)
 
-	# Create Shop Button
+	# Create Shop Button (Icon button for mobile style)
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = "🎨 TRANG TRÍ"
-	btn_shop.custom_minimum_size = Vector2(160, 48)
+	btn_shop.text = ""
+	btn_shop.icon = load("res://assets/textures/lucide/palette.svg") as Texture2D
+	btn_shop.expand_icon = true
+	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn_shop.custom_minimum_size = Vector2(48, 48)
+	# Add theme colors to modulate the icon to fit normal/hover/pressed states
+	btn_shop.add_theme_color_override("icon_normal_color", C_CREAM)
+	btn_shop.add_theme_color_override("icon_hover_color", C_GOLD_LIGHT)
+	btn_shop.add_theme_color_override("icon_pressed_color", C_GOLD)
 	hud_hbox.add_child(btn_shop)
 	_style_popup_button(btn_shop, true)
 	_make_btn_bouncy(btn_shop)
