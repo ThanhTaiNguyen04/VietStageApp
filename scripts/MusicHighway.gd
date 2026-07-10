@@ -83,6 +83,22 @@ func _draw() -> void:
 
 	draw_rect(Rect2(0, 0, W, H), C_LANE_BG)
 
+	# 7 scale notes of Dan Bau
+	var NOTES_PITCHES : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+	var lane_count := 7
+	var lane_h := H / float(lane_count + 1)
+	
+	# Draw horizontal lane guide lines
+	var font := get_theme_font("font")
+	for i in lane_count:
+		var y := H - (i + 1) * lane_h
+		# Draw horizontal lane staff lines
+		draw_line(Vector2(0, y), Vector2(W, y), Color(C_CURSOR.r, C_CURSOR.g, C_CURSOR.b, 0.08), 1.0)
+		# Label each lane on the left
+		if font:
+			var name : String = NOTES_PITCHES[i]
+			draw_string(font, Vector2(12, y + 4), name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(C_TEXT.r, C_TEXT.g, C_TEXT.b, 0.28))
+
 	# Grid lines
 	var beat := NOTE_W + NOTE_GAP
 	var off  := fmod(_scroll_x, beat)
@@ -96,49 +112,56 @@ func _draw() -> void:
 	draw_line(Vector2(0, 0), Vector2(W, 0), C_CURSOR.darkened(0.4), 1.2)
 	draw_line(Vector2(0, H - 1), Vector2(W, H - 1), C_CURSOR.darkened(0.4), 1.2)
 
-	var cy := H * 0.5
-	var font := get_theme_font("font")
-
 	for i in _sheet.size():
 		var sx := _screen_x(i)
 		if sx + NOTE_W < -NOTE_W: continue
 		if sx > W + NOTE_W: break
 
-		var name  := _sheet[i]
+		var name : String = _sheet[i]
 		var is_cur  := (i == _note_idx)
 		var is_done := (i < _note_idx)
 		var is_next := (i == _note_idx + 1)
 
+		# Get vertical lane position for this note
+		var clean_name := name.replace("1","").replace("2","").replace("3","").replace("4","").strip_edges()
+		var lane_idx := NOTES_PITCHES.find(clean_name)
+		if lane_idx == -1: lane_idx = 0
+		var py := H - (lane_idx + 1) * lane_h
+
 		var col : Color
-		var ph := NOTE_H
+		# Scale size based on lane space
+		var pw := 52.0
+		var ph := 24.0
 		if is_cur:
-			col = C_ACT; ph = NOTE_H + 6.0 + sin(_pulse) * 2.5
+			col = C_ACT
+			ph = 28.0 + sin(_pulse) * 2.0
+			pw = 58.0 + sin(_pulse) * 2.0
 		elif is_done: col = C_DONE
 		elif is_next: col = C_NEXT
 		else:         col = C_IDLE
 
 		var pnr := ph * 0.5
-		var rect := Rect2(sx, cy - pnr, NOTE_W, ph)
+		var rect := Rect2(sx + (NOTE_W - pw) * 0.5, py - pnr, pw, ph)
 
 		if is_cur:
 			var gc := Color(col.r, col.g, col.b, 0.15 + sin(_pulse) * 0.05)
-			draw_rect(Rect2(rect.position - Vector2(10, 10), rect.size + Vector2(20, 20)), gc)
-			draw_rect(Rect2(rect.position - Vector2(5, 5),  rect.size + Vector2(10, 10)), Color(gc.r, gc.g, gc.b, gc.a * 1.8))
+			draw_rect(Rect2(rect.position - Vector2(8, 8), rect.size + Vector2(16, 16)), gc)
+			draw_rect(Rect2(rect.position - Vector2(4, 4),  rect.size + Vector2(8, 8)), Color(gc.r, gc.g, gc.b, gc.a * 1.8))
 
-		_pill(rect, 9.0, col)
+		_pill(rect, 8.0, col)
 		var border := C_CURSOR if is_cur else Color(0, 0, 0, 0.30)
-		_pill_outline(rect, 9.0, border, 1.4)
+		_pill_outline(rect, 8.0, border, 1.4)
 
 		if font:
-			var fs := 16 if is_cur else 13
+			var fs := 12 if is_cur else 10
 			var ts := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
 			var tc := C_TEXT if (is_cur or is_next) else Color(1.0, 1.0, 1.0, 0.50)
-			draw_string(font, Vector2(sx + (NOTE_W - ts.x) * 0.5, cy + ts.y * 0.38),
+			draw_string(font, Vector2(rect.position.x + (pw - ts.x) * 0.5, py + ts.y * 0.38),
 				name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tc)
 
 		if is_done and font:
-			draw_string(font, Vector2(sx + NOTE_W - 18, cy - NOTE_H * 0.5 + 13),
-				"✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.55, 1.0, 0.65, 0.9))
+			draw_string(font, Vector2(rect.end.x - 14, py - 4),
+				"✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.55, 1.0, 0.65, 0.9))
 
 	# ── Timing cursor ──────────────────────────────────────────────────────
 	var cx2 := W * CURSOR_FRAC

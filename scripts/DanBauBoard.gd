@@ -682,6 +682,8 @@ func _draw() -> void:
 	if _pluck_amp > 0.005:
 		draw_polyline(str_pts, Color(1.0, 0.85, 0.30, _pluck_amp * 0.25), 5.0, false)
 
+
+
 # Helper function to compute Bezier control t values
 func t_val(v: float) -> float:
 	return v

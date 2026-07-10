@@ -491,6 +491,7 @@ func _build_board() -> void:
 	_board.pitch_bent.connect(_on_pitch_bent)
 	_update_target_indicator()
 	# ── Simply Piano Music Highway: load sheet and set cursor to first note ──
+		
 	if _highway and is_instance_valid(_highway):
 		_highway.load_sheet(sheet_notes)
 		_highway.advance_to(0)
