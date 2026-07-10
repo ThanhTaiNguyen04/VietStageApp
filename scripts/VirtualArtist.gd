@@ -6,7 +6,8 @@ const C_WHITE_DIM := Color(0.13, 0.08, 0.05, 1.0)
 const C_BUBBLE_BG := Color(1.00, 1.00, 1.00, 0.98)
 const C_RED_SON    := Color(0.70, 0.12, 0.08, 1.0)
 
-const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "VirtualMusicRoom", "PracticeRoom", "PracticeSaoTruc", "PracticeDanBau"]
+const HIDDEN_SCENES := ["SplashScreen", "LoadingScreen", "LoginScreen", "InstrumentSelect", "VirtualMusicRoom", "MainMenu", "PracticeRoom", "PracticeSaoTruc", "PracticeDanBau"]
+const AUTO_GREET_SCENES := ["PracticeRoom", "PracticeSaoTruc", "MiniGame", "VideoPlayer"]
 
 const TIPS : Array[String] = [
 	"Thư giãn cổ tay khi gảy đàn nhé!",
@@ -47,9 +48,13 @@ func _on_scene_changed(scene_name: String) -> void:
 		_speech_bubble.visible = false
 	else:
 		_root.visible = true
-		get_tree().create_timer(1.2).timeout.connect(func() -> void:
-			greet(scene_name)
-		)
+		_speech_bubble.visible = false
+		_is_open = false
+		if scene_name in AUTO_GREET_SCENES:
+			get_tree().create_timer(1.2).timeout.connect(func() -> void:
+				if _get_scene_name() == scene_name:
+					greet(scene_name)
+			)
 
 func _build_ui() -> void:
 	_root = Control.new()
@@ -119,6 +124,7 @@ func _close_bubble() -> void:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 func show_tip(text: String, auto_hide_sec: float = 5.0) -> void:
+	_root.visible = true
 	_bubble_label.text = text
 	_is_open = true
 	_speech_bubble.modulate.a = 0.0

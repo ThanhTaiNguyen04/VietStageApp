@@ -1,7 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://main_menu_001"]
+[gd_scene load_steps=3 format=3 uid="uid://main_menu_001"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/bg_main_menu.png" id="2_bg"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
 
 [node name="MainMenu" type="Control"]
@@ -13,15 +12,12 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="BG" type="TextureRect" parent="."]
-visible = false
+[node name="BG" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-texture = ExtResource("2_bg")
-expand_mode = 1
-stretch_mode = 5
+color = Color(0.98, 0.97, 0.94, 1)
 
 [node name="BackgroundCanvas" type="Control" parent="."]
 layout_mode = 1
@@ -111,6 +107,7 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="AvatarCircle" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow"]
+visible = false
 custom_minimum_size = Vector2(68, 68)
 layout_mode = 2
 size_flags_vertical = 4
@@ -563,6 +560,7 @@ size_flags_vertical = 4
 flat = true
 
 [node name="BottomBar" type="PanelContainer" parent="Root/RightContent"]
+visible = false
 custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 
