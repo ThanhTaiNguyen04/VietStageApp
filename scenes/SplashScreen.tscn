@@ -1,9 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://splash_screen_001"]
+[gd_scene format=3 uid="uid://tmnqascupbo7"]
 
-[ext_resource type="Script"    path="res://scripts/SplashScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/logovuongtachnen.png" id="2_logo"]
+[ext_resource type="Script" uid="uid://cye0dsm4cxarg" path="res://scripts/SplashScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cc4csldnvu2db" path="res://assets/textures/logovuongtachnen.png" id="2_logo"]
 
-[node name="SplashScreen" type="Control"]
+[node name="SplashScreen" type="Control" unique_id=945561000]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,30 +12,32 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="BG" type="ColorRect" parent="."]
+[node name="BG" type="ColorRect" parent="." unique_id=733189907]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.984, 0.976, 0.957, 1.0)
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.984, 0.976, 0.957, 1)
 
-[node name="Center" type="VBoxContainer" parent="."]
+[node name="Center" type="VBoxContainer" parent="." unique_id=1370188983]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -280.0
+offset_right = 300.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
-offset_left = -300
-offset_top = -280
-offset_right = 300
-offset_bottom = 280
 theme_override_constants/separation = 18
 alignment = 1
 
-[node name="LogoRect" type="TextureRect" parent="Center"]
+[node name="LogoRect" type="TextureRect" parent="Center" unique_id=519147570]
 custom_minimum_size = Vector2(220, 220)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -43,35 +45,36 @@ texture = ExtResource("2_logo")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Gap1" type="Control" parent="Center"]
+[node name="Gap1" type="Control" parent="Center" unique_id=867683581]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="AppName" type="Label" parent="Center"]
+[node name="AppName" type="Label" parent="Center" unique_id=411604240]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Di sản nhạc cụ dân tộc trong tầm tay bạn"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Tagline" type="Label" parent="Center"]
+[node name="Tagline" type="Label" parent="Center" unique_id=812990657]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Học tập tương tác với Nghệ sĩ ảo và công nghệ phân tích âm thanh AI ngay trên điện thoại di động."
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="VersionLabel" type="Label" parent="."]
+[node name="VersionLabel" type="Label" parent="." unique_id=1020322783]
 layout_mode = 1
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -46.0
+offset_right = 200.0
+offset_bottom = -12.0
 grow_horizontal = 2
-offset_left = -200
-offset_top = -46
-offset_right = 200
-offset_bottom = -12
 theme_override_font_sizes/font_size = 15
 text = "v1.0.0"
 horizontal_alignment = 1

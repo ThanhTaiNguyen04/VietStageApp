@@ -16,7 +16,7 @@ static var data := {
 	"unlocked_lessons": {
 		"dan_tranh": ["Node1", "Node2"],
 		"sao_truc": ["Node1", "Node2"],
-		"dan_bau": ["Node1", "Node2", "dan_bau_coban_1_video"]
+		"dan_bau": ["Node1", "dan_bau_coban_1_video"]
 	},
 	"completed_lessons": {
 		"dan_tranh": [],
@@ -109,7 +109,7 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 			next_lesson_id = lesson_id.replace("_video", "_practice")
 		elif lesson_id.ends_with("_practice"):
 			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_practice", ""))
-			if idx < 3:
+			if idx < 5:
 				next_lesson_id = "dan_bau_coban_" + str(idx + 1) + "_video"
 		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
