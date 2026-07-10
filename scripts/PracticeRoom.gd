@@ -657,13 +657,8 @@ func _process(delta: float) -> void:
 				var target_note = sheet_notes[_note_idx]
 				var target_idx = NOTES_VN.find(target_note)
 				if target_idx != -1:
-					# Play audio only once via _play_zither_sound (board audio disabled in demo)
-					_play_zither_sound(target_idx)
 					if _board:
-						# Visual only — disable audio on board to avoid double playback & distortion
-						_board.audio_enabled = false
 						_board.pluck(target_idx)
-						_board.audio_enabled = false
 						
 			if _current_note_elapsed >= target_duration:
 				_current_note_elapsed = 0.0
@@ -813,7 +808,9 @@ func _set_labels() -> void:
 
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
+	var hint_btn_node = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("HintBtn") as Button
+	if hint_btn_node:
+		hint_btn_node.text = "Gợi ý"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
@@ -1445,9 +1442,6 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = false # Disable wait mode if demo is active
 		_update_wait_mode_ui()
 		_va_say("Đã bật Nghe mẫu. Hệ thống sẽ tự chơi giai điệu bài hát.")
-		# Board visual only — audio handled by _play_zither_sound to avoid double-play
-		if _board:
-			_board.audio_enabled = false
 		# Automatically start playing if not already playing
 		if not _recording:
 			_toggle_record()
@@ -1455,9 +1449,6 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = true
 		_update_wait_mode_ui()
 		_va_say("Đã tắt Nghe mẫu. Con hãy tự mình luyện tập nhé!")
-		# Restore board audio for manual play
-		if _board:
-			_board.audio_enabled = true
 		if _recording:
 			_toggle_record()
 	_update_demo_mode_ui()
