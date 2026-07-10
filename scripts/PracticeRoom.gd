@@ -873,7 +873,9 @@ func _set_labels() -> void:
 
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
+	var hint_btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("HintBtn") as Button
+	if hint_btn:
+		hint_btn.text = "Gợi ý"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
@@ -1043,8 +1045,6 @@ func _build_theme() -> void:
 	if ctrl_btns:
 		if "columns" in ctrl_btns:
 			ctrl_btns.columns = 1
-		elif "vertical" in ctrl_btns:
-			ctrl_btns.vertical = true
 			
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
 		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(bn) as Button
