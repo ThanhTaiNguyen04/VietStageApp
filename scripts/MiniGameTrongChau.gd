@@ -1,4 +1,4 @@
-extends "res://scripts/MiniGameBase.gd"
+extends MiniGameBase
 
 func get_instrument_id() -> String:
 	return "trong_chau"

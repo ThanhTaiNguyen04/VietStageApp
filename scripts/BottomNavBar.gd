@@ -91,7 +91,7 @@ func _build_tabs() -> void:
 
 func _refresh_tab(i: int) -> void:
 	var is_active := (i == _active_idx)
-	var col := DS.C_GOLD if is_active else DS.C_CREAM_DIM
+	var col: Color = DS.C_GOLD if is_active else DS.C_CREAM_DIM
 	_tab_labels[i].add_theme_color_override("font_color", col)
 	_icon_draws[i].queue_redraw()
 
@@ -99,7 +99,7 @@ func _refresh_tab(i: int) -> void:
 
 func _draw_icon(c: Control, icon_type: int) -> void:
 	var is_active := (icon_type == _active_idx)
-	var col := DS.C_GOLD if is_active else DS.C_CREAM_DIM
+	var col: Color = DS.C_GOLD if is_active else DS.C_CREAM_DIM
 	var sz  := c.size
 	var cx  := sz.x * 0.5
 	var cy  := sz.y * 0.5
