@@ -82,7 +82,7 @@ func _process(delta: float) -> void:
 	_time += delta
 
 func _set_labels() -> void:
-	($Root/TopBar/TopM/TopH/BackBtn as Button).text = "Quay lại"
+	# ($Root/TopBar/TopM/TopH/BackBtn as Button).text = "Quay lại"
 	
 	var diff := "Cơ bản"
 	if SecureDataManager.active_lesson_id == "Node3":
@@ -136,7 +136,16 @@ func _build_theme() -> void:
 	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 	_style_progress_bar(lesson_bar, C_RED_SON, Color("#ede7da"))
 
-	_style_text_btn($Root/TopBar/TopM/TopH/BackBtn as Button, C_RED_SON, C_RED_SON.lightened(0.15))
+	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
+	back_btn.text = ""
+	back_btn.icon = load("res://icons8/icons8-back-16.png") as Texture2D
+	back_btn.expand_icon = true
+	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back_btn.custom_minimum_size = Vector2(44, 44)
+	back_btn.add_theme_color_override("icon_normal_color", C_RED_SON)
+	back_btn.add_theme_color_override("icon_hover_color", C_GOLD)
+	back_btn.add_theme_color_override("icon_pressed_color", C_RED_SON)
+	_style_text_btn(back_btn, C_RED_SON, C_RED_SON.lightened(0.15))
 	
 	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
 	if menu_btn:
