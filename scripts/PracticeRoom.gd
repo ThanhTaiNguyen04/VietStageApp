@@ -983,8 +983,6 @@ func _build_theme() -> void:
 	if ctrl_btns:
 		if "columns" in ctrl_btns:
 			ctrl_btns.columns = 1
-		elif "vertical" in ctrl_btns:
-			ctrl_btns.vertical = true
 			
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
 		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(bn) as Button
@@ -2554,20 +2552,18 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 func _hide_header_delayed() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
-	_header_tween = create_tween().set_parallel(true)
-	_header_tween.tween_interval(3.0)
 	var record_fab = find_child("RecordFAB", true, false)
-	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
-	
-	_header_tween.chain().tween_callback(func(): 
-		if record_fab: record_fab.visible = false
-	)
+	if record_fab:
+		_header_tween = create_tween().set_parallel(true)
+		_header_tween.tween_interval(3.0)
+		_header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
+		_header_tween.chain().tween_callback(func(): record_fab.visible = false)
 
 func _show_header() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
 	var record_fab = find_child("RecordFAB", true, false)
-	if record_fab: record_fab.visible = true
-	
-	_header_tween = create_tween().set_parallel(true)
-	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)
+	if record_fab:
+		record_fab.visible = true
+		_header_tween = create_tween().set_parallel(true)
+		_header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)

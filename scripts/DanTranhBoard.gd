@@ -866,12 +866,15 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 func _handle_touch_end(finger_idx: int) -> void:
 	if not _active_touches.has(finger_idx): return
 	var touch_info = _active_touches[finger_idx]
-	if touch_info["interaction_type"] == "press":
-		var idx = touch_info["last_string_idx"]
-		if idx >= 0 and idx < STR_COUNT:
-			_is_pressed[idx] = 0
-			_update_press(idx)
-			queue_redraw()
+	
+	if typeof(touch_info) == TYPE_DICTIONARY:
+		if touch_info.get("interaction_type") == "press":
+			var idx = touch_info["last_string_idx"]
+			if idx >= 0 and idx < STR_COUNT:
+				_is_pressed[idx] = 0
+				_update_press(idx)
+				queue_redraw()
+				
 	_active_touches.erase(finger_idx)
 
 func _notification(what: int) -> void:
