@@ -111,6 +111,19 @@ func _process(delta: float) -> void:
 	_time += delta
 	bg_canvas.queue_redraw()
 	roadmap_content.queue_redraw()
+	
+	# Ép chặt tọa độ Y để các thẻ Đàn Bầu tạo thành một đường thẳng ngang hoàn hảo
+	# Cách này chống lại việc Godot tự reset vị trí layout sau hàm _ready
+	if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_bau":
+		card_soloist_skills.position.y = 275
+		card_chords_skills.position.y = 275
+		card_pop_chords.position.y = 275
+		
+		# Khóa luôn trục X sau 1s để không ảnh hưởng đến animation trượt vào lúc đầu
+		if _time > 1.0:
+			card_soloist_skills.position.x = 1060
+			card_chords_skills.position.x = 1570
+			card_pop_chords.position.x = 2080
 
 # ─── Drawing Callbacks ────────────────────────────────────────────────────────
 func _setup_drawing_callbacks() -> void:
@@ -254,21 +267,36 @@ func _draw_roadmap_paths() -> void:
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
 		
-	# Draw roadmap line segments connecting cards
-	# Basic Card -> Essentials Card -> Split point
-	_draw_thick_path(p_basic, p_ess)
-	
-	# Essentials split into Soloist and Chords paths
-	_draw_curved_path(p_ess, p_sol_un)
-	_draw_curved_path(p_ess, p_cho_un)
-	
-	# Top Path (Soloist): SoloistUnlock -> SoloistSkills -> Classical
-	_draw_thick_path(p_sol_un, p_sol_sk)
-	_draw_thick_path(p_sol_sk, p_class)
-	
-	# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
-	_draw_thick_path(p_cho_un, p_cho_sk)
-	_draw_thick_path(p_cho_sk, p_pop)
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "dan_bau":
+		# Ép tọa độ Y của các điểm neo bằng nhau để đường vàng vẽ thẳng tắp 100%
+		var straight_y = p_basic.y
+		p_ess.y = straight_y
+		p_sol_sk.y = straight_y
+		p_cho_sk.y = straight_y
+		p_pop.y = straight_y
+		
+		# Đường thẳng duy nhất nằm ngang cho Đàn Bầu
+		_draw_thick_path(p_basic, p_ess)
+		_draw_thick_path(p_ess, p_sol_sk)
+		_draw_thick_path(p_sol_sk, p_cho_sk)
+		_draw_thick_path(p_cho_sk, p_pop)
+	else:
+		# Draw roadmap line segments connecting cards
+		# Basic Card -> Essentials Card -> Split point
+		_draw_thick_path(p_basic, p_ess)
+		
+		# Essentials split into Soloist and Chords paths
+		_draw_curved_path(p_ess, p_sol_un)
+		_draw_curved_path(p_ess, p_cho_un)
+		
+		# Top Path (Soloist): SoloistUnlock -> SoloistSkills -> Classical
+		_draw_thick_path(p_sol_un, p_sol_sk)
+		_draw_thick_path(p_sol_sk, p_class)
+		
+		# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
+		_draw_thick_path(p_cho_un, p_cho_sk)
+		_draw_thick_path(p_cho_sk, p_pop)
 
 func _draw_thick_path(from: Vector2, to: Vector2) -> void:
 	roadmap_content.draw_line(from + Vector2(0, 3), to + Vector2(0, 3), C_PATH_SHADOW, 10.0, true)
@@ -565,6 +593,18 @@ func _build_roadmap_cards() -> void:
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
 
+	# Hiển thị lại các thẻ bị ẩn nếu chuyển về đàn tranh / sáo trúc
+	card_soloist_unlock.show()
+	card_chords_unlock.show()
+	card_classical.show()
+	path_soloist_title.show()
+	path_chords_title.show()
+	
+	# Khôi phục vị trí gốc cho các nhánh
+	card_soloist_skills.position = Vector2(1410, 95)
+	card_chords_skills.position = Vector2(1410, 455)
+	card_pop_chords.position = Vector2(1930, 455)
+
 	if instrument == "dan_tranh":
 		# Lộ trình Đàn Tranh
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -593,32 +633,41 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = "Đệm Hát Hiện Đại"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Đất Phương Nam (Đệm hát)\n✓ Nhạc Pop & Quê hương trữ tình"
 	elif instrument == "dan_bau":
+		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
+		card_soloist_unlock.hide()
+		card_chords_unlock.hide()
+		card_classical.hide()
+		path_soloist_title.hide()
+		path_chords_title.hide()
+		
+		# BẮT BUỘC ĐƯA CÁC THẺ VỀ CÙNG 1 ĐƯỜNG THẲNG NGANG (Y = 275)
+		card_soloist_skills.position = Vector2(1060, 275)
+		card_chords_skills.position = Vector2(1570, 275)
+		card_pop_chords.position = Vector2(2080, 275)
+		
 		# Lộ trình Đàn Bầu
-		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
-		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
+		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
+		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
+		basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
 		
-		basic_title.text = "Căng Dây & Lên Dây"
-		basic_desc.text = "Học tư thế ngồi, cách sử dụng trục vặn để điều chỉnh độ căng của dây và lên dây đúng cao độ."
-		basic_details.text = "📖 1 Bài Học | ⭐ 6 Sao | 0% Hoàn Thành"
+		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
+		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
+		ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
-		ess_title.text = "Học Nốt Đô Hài Âm"
-		ess_desc.text = "Luyện chạm nhẹ rìa bàn tay phải vào điểm hài âm thứ nhất để tạo tiếng Đô vang tự nhiên."
-		ess_details.text = "📖 1 Bài Học | 🔒 Cần hoàn thành bài trước"
+		soloist_unlock_title.text = "LEVEL 3"
+		chords_unlock_title.text = "LEVEL 4"
 		
-		soloist_unlock_title.text = "Nốt Rê & Mi"
-		chords_unlock_title.text = "Uốn Cần Đàn"
+		soloist_skills_title.text = "LEVEL 3: UYỂN CHUYỂN"
+		soloist_skills_bullets.text = "✓ Làm chủ kỹ thuật chùng dây\n✓ Đẩy cần đàn về phía thân người\n✓ Bài hát: Lý Cây Đa"
 		
-		soloist_skills_title.text = "Học Nốt Rê & Mi"
-		soloist_skills_bullets.text = "✓ Vị trí hài âm Rê và Mi\n✓ Gảy đúng cao độ chuẩn sắc\n✓ Luyện tai nghe chuẩn nhạc phổ"
+		chords_skills_title.text = "LEVEL 4: KỸ THUẬT LUYẾN ÂM"
+		chords_skills_bullets.text = "✓ Đánh các nốt luyến dài\n✓ Kỹ thuật Luyến 2 chiều\n✓ Bài hát: Cò Lả & Auld Lang Syne"
 		
-		chords_skills_title.text = "Kỹ Thuật Uốn Vòi"
-		chords_skills_bullets.text = "✓ Căng cần nâng cao độ nốt\n✓ Trùng dây hạ thấp cao độ\n✓ Ngân rung cần đàn truyền thống"
+		classical_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
+		classical_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Nghệ thuật Hòa tấu (Ensemble)\n✓ Boss Stage: Biểu diễn bằng tai"
 		
-		classical_title.text = "Bài Mẫu Bèo Dạt"
-		classical_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Kết hợp hài âm và uốn cần\n✓ Độc tấu điệu nhạc da diết"
-		
-		pop_chords_title.text = "Đệm Hát Quê Hương"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Luyện uốn cần luyến âm mượt\n✓ Đệm hát các làn điệu sâu lắng"
+		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
+		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
 	elif instrument == "sao_truc":
 		# Lộ trình Sáo Trúc
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -1152,7 +1201,10 @@ func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 			completed_count += 1
 		total_stars += stars_dict.get(step, 0)
 		
-	var pct := int((float(completed_count) / float(total_count)) * 100.0)
+	total_count = steps_to_check.size()
+	var pct = 0
+	if total_count > 0:
+		pct = int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
 
 func _play_dan_bau_video(lesson_idx: int) -> void:
