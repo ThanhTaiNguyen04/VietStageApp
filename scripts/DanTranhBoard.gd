@@ -759,6 +759,7 @@ func _gui_input(event: InputEvent) -> void:
 		var pos = _get_local_touch_pos(event.position)
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
+				_active_touches[-1] = pos
 				_handle_touch_start(-1, pos)
 			else:
 				if _active_touches.has(-1):
@@ -768,10 +769,12 @@ func _gui_input(event: InputEvent) -> void:
 		var pos = _get_local_touch_pos(event.position)
 		_hovered_idx = _row_at(pos.y)
 		if _active_touches.has(-1):
+			_active_touches[-1] = pos
 			_handle_touch_move(-1, pos)
 	elif event is InputEventScreenTouch:
 		var pos = _get_local_touch_pos(event.position)
 		if event.pressed:
+			_active_touches[event.index] = pos
 			_handle_touch_start(event.index, pos)
 		else:
 			_handle_touch_end(event.index)
@@ -828,22 +831,21 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 	var rh       := _row_h()
 	var cy       := _row_cy(idx)
 
-	var interaction_type = touch_info.get("interaction_type", "none")
-	if interaction_type == "pluck":
+	if touch_info["interaction_type"] == "pluck":
 		# String crossing check for glissando / swipe
-		if idx != touch_info.get("last_string_idx", -1):
+		if idx != touch_info["last_string_idx"]:
 			var pluck_hitbox_margin := 40.0
 			var bridge_hitbox := 30.0
 			if pos.x >= bridge_x + bridge_hitbox and pos.x <= str_r + pluck_hitbox_margin:
 				pluck(idx)
 				touch_info["last_string_idx"] = idx
-	elif interaction_type == "press":
+	elif touch_info["interaction_type"] == "press":
 		# Move bending point
 		_press_x[idx] = clamp(pos.x, str_l + 5.0, bridge_x - 30.0)
 		_press_y[idx] = clamp(pos.y, cy, cy + rh * 0.48)
 		_update_press(idx)
 		queue_redraw()
-	elif interaction_type == "move_bridge":
+	elif touch_info["interaction_type"] == "move_bridge":
 		# Điều chỉnh con nhạn (bridge)
 		var W_base := size.y * 1.1 if is_portrait_mode else size.x
 		var ix_base := 24.0
@@ -864,11 +866,8 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 func _handle_touch_end(finger_idx: int) -> void:
 	if not _active_touches.has(finger_idx): return
 	var touch_info = _active_touches[finger_idx]
-	if typeof(touch_info) != TYPE_DICTIONARY:
-		_active_touches.erase(finger_idx)
-		return
-	if touch_info.get("interaction_type", "none") == "press":
-		var idx = touch_info.get("last_string_idx", -1)
+	if touch_info["interaction_type"] == "press":
+		var idx = touch_info["last_string_idx"]
 		if idx >= 0 and idx < STR_COUNT:
 			_is_pressed[idx] = 0
 			_update_press(idx)
