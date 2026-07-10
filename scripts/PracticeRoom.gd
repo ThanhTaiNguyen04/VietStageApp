@@ -70,6 +70,7 @@ var _tone_scores : Array[float] = []
 
 var _string_streams: Array[AudioStreamWAV] = []
 var _rec_tween   : Tween
+var _header_tween : Tween
 var _detected_notes_history: Array[String] = []
 const HISTORY_SIZE := 8
 var _teacher_tip_timer := 0.0
@@ -99,22 +100,40 @@ var songs_list : Array = [
 		"durations": []
 	},
 	{
-		"title": "Dạ Cổ Hoài Lang",
-		"bpm": 70.0,
-		"sheet": ["Đô2","Đô2","Rê2","Đô2","Fa","Sol","La","Rê","Fa","Đô2","Đô"],
-		"durations": []
-	},
-	{
-		"title": "Lý Mỹ Hưng",
+		"title": "Lý Cây Đa",
 		"bpm": 85.0,
-		"sheet": ["Fa","Rê","Đô","Rê","Fa","Sol","Đô2","La","Sol","Fa","Đô"],
-		"durations": []
+		"sheet": [
+			"Đô3", "Rê3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3",
+			"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3",
+			"Mi3", "Mi3", "Rê3", "Rê3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "Sol2", "Đô3",
+			"Đô3", "Sol2", "Sol2", "Đô3", "Sol2", "Đô3", "La2", "Sol2", "Fa2", "La2", "Sol2", "La2", "Đô3", "La2",
+			"Sol2", "La2", "Sol2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "La2", "Sol2"
+		],
+		"durations": [
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5
+		]
 	},
 	{
-		"title": "Đất Phương Nam",
-		"bpm": 90.0,
-		"sheet": ["Đô","Fa","Sol","Đô2","La","Đô2","Sol","Fa","Rê","Đô","Đô"],
-		"durations": []
+		"title": "Lý Cây Bông",
+		"bpm": 80.0,
+		"sheet": [
+			"La2", "Sol2", "La2", "La2", "Sol2", "La2", "Đô3", "Mi3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3",
+			"La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "La2", "Sol2", "Mi3", "Sol3", "Mi3", "Sol3",
+			"La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "Rê3", "Mi3", "Sol3", "Mi3", "Rê3", "Đô3", "La2",
+			"Rê3", "Mi3", "Rê3", "Rê3", "Rê3", "Rê3", "Rê3", "Mi3", "Sol3",
+			"Mi3", "Rê3", "Đô3", "La2", "La2", "La2", "Đô3", "Rê3", "Mi3", "Rê3"
+		],
+		"durations": [
+			0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
+			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5
+		]
 	},
 	{
 		"title": "Giấc Mơ Trưa",
@@ -396,27 +415,40 @@ func _ready() -> void:
 		# Căn giữa các nút theo giao diện Sáo Trúc
 		record_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 		
-		# Style nút Bắt đầu luyện tập (RecordBtn)
+		# Convert Bắt đầu luyện tập (RecordBtn) to FAB
 		if record_btn:
+			record_btn.get_parent().remove_child(record_btn)
+			add_child(record_btn)
+			record_btn.name = "RecordFAB"
+			record_btn.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+			record_btn.anchor_left = 0.5; record_btn.anchor_right = 0.5
+			record_btn.anchor_top = 1.0; record_btn.anchor_bottom = 1.0
+			record_btn.offset_left = -35; record_btn.offset_right = 35
+			record_btn.offset_top = -90; record_btn.offset_bottom = -20
+			record_btn.text = ""
+			
+			var tex = load("res://assets/textures/lucide/play.svg")
+			if tex:
+				record_btn.icon = tex
+				record_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				if "vertical_icon_alignment" in record_btn:
+					record_btn.set("vertical_icon_alignment", 1) # CENTER
+				record_btn.expand_icon = true
+
 			var btn_s := StyleBoxFlat.new()
-			btn_s.bg_color = C_JADE
-			btn_s.corner_radius_top_left = 14; btn_s.corner_radius_top_right = 14
-			btn_s.corner_radius_bottom_left = 14; btn_s.corner_radius_bottom_right = 14
+			btn_s.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.6)
+			btn_s.corner_radius_top_left = 35; btn_s.corner_radius_top_right = 35
+			btn_s.corner_radius_bottom_left = 35; btn_s.corner_radius_bottom_right = 35
 			var btn_h := btn_s.duplicate()
-			btn_h.bg_color = C_JADE.lightened(0.12)
+			btn_h.bg_color = C_JADE
 			record_btn.add_theme_stylebox_override("normal", btn_s)
 			record_btn.add_theme_stylebox_override("hover", btn_h)
 			record_btn.add_theme_stylebox_override("pressed", btn_s)
-			record_btn.add_theme_color_override("font_color", C_CREAM)
-			record_btn.add_theme_color_override("font_hover_color", Color.WHITE)
+			record_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 			_make_button_bouncy(record_btn)
-			
-		# Style nút Làm lại (ResetBtn)
-		var reset_btn = record_hbox.get_node_or_null("ResetBtn") as Button
-		if reset_btn:
-			_style_outlined_btn(reset_btn)
-			_make_button_bouncy(reset_btn)
-			record_hbox.move_child(reset_btn, 0)
+
+		var record_bar = $Root.get_node_or_null("RecordBar")
+		if record_bar: record_bar.visible = false
 		
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
@@ -432,28 +464,113 @@ func _ready() -> void:
 	# Add Layout toggle button
 	var ctrl_btns = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns as Control
 	if ctrl_btns:
-		var layout_btn = Button.new()
-		layout_btn.name = "LayoutBtn"
-		layout_btn.text = "Giao diện ngang" # Initial state is LANDSCAPE
-		layout_btn.custom_minimum_size = Vector2(100, 36)
-		ctrl_btns.add_child(layout_btn)
-		_style_outlined_btn(layout_btn)
-		_make_button_bouncy(layout_btn)
-		_layout_btn = layout_btn
-		layout_btn.pressed.connect(toggle_orientation)
-
-		# Add Micro mode toggle button
+		# Remove HintBtn (Gợi ý kĩ thuật)
+		var hint_btn = ctrl_btns.get_node_or_null("HintBtn")
+		if hint_btn:
+			hint_btn.queue_free()
+			
+		# 1. Luyện tập (RecordBtn)
+		if record_btn:
+			record_btn.get_parent().remove_child(record_btn)
+			ctrl_btns.add_child(record_btn)
+			ctrl_btns.move_child(record_btn, 0)
+			record_btn.name = "RecordSidebarBtn"
+			record_btn.text = "\nLuyện tập"
+			record_btn.custom_minimum_size = Vector2(200, 70)
+			_style_sidebar_btn(record_btn)
+			_set_sidebar_icon(record_btn, "graduation-cap")
+			_make_button_bouncy(record_btn)
+			
+		# 1.5. Kết thúc luyện tập
+		var stop_record_btn = Button.new()
+		stop_record_btn.name = "StopRecordBtn"
+		stop_record_btn.text = "\nKết thúc luyện tập"
+		stop_record_btn.custom_minimum_size = Vector2(200, 70)
+		ctrl_btns.add_child(stop_record_btn)
+		ctrl_btns.move_child(stop_record_btn, 1)
+		_style_sidebar_btn(stop_record_btn)
+		_set_sidebar_icon(stop_record_btn, "pause")
+		_make_button_bouncy(stop_record_btn)
+		stop_record_btn.pressed.connect(func():
+			if _recording: _toggle_record()
+		)
+			
+		# 2. Làm lại (ResetBtn)
+		var reset_sidebar_btn = Button.new()
+		reset_sidebar_btn.name = "ResetSidebarBtn"
+		reset_sidebar_btn.text = "\nLàm lại"
+		reset_sidebar_btn.custom_minimum_size = Vector2(200, 70)
+		ctrl_btns.add_child(reset_sidebar_btn)
+		ctrl_btns.move_child(reset_sidebar_btn, 2)
+		_style_sidebar_btn(reset_sidebar_btn)
+		_set_sidebar_icon(reset_sidebar_btn, "rotate-cw")
+		_make_button_bouncy(reset_sidebar_btn)
+		reset_sidebar_btn.pressed.connect(_reset)
+		
+		# 3. Chờ nốt (SlowBtn in .tscn)
+		var slow_btn = ctrl_btns.get_node_or_null("SlowBtn")
+		if slow_btn:
+			ctrl_btns.move_child(slow_btn, 3)
+			
+		# 4. Micro (MicBtn)
 		var mic_btn = Button.new()
 		mic_btn.name = "MicBtn"
-		mic_btn.text = "Micro: Bật" if _mic_mode else "Micro: Tắt"
-		mic_btn.custom_minimum_size = Vector2(100, 36)
+		mic_btn.text = "\nMicro: Bật" if _mic_mode else "\nMicro: Tắt"
+		mic_btn.custom_minimum_size = Vector2(200, 70)
 		ctrl_btns.add_child(mic_btn)
-		_style_outlined_btn(mic_btn)
+		ctrl_btns.move_child(mic_btn, 4)
+		_style_sidebar_btn(mic_btn)
+		_set_sidebar_icon(mic_btn, "mic" if _mic_mode else "mic-off")
 		_make_button_bouncy(mic_btn)
 		mic_btn.pressed.connect(func():
 			_mic_mode = not _mic_mode
-			mic_btn.text = "Micro: Bật" if _mic_mode else "Micro: Tắt"
+			mic_btn.text = "\nMicro: Bật" if _mic_mode else "\nMicro: Tắt"
+			_set_sidebar_icon(mic_btn, "mic" if _mic_mode else "mic-off")
 		)
+		
+		# 5. Nghe mẫu (DemoBtn in .tscn)
+		var demo_btn = ctrl_btns.get_node_or_null("DemoBtn")
+		if demo_btn:
+			ctrl_btns.move_child(demo_btn, 5)
+			
+		# 6. Đàn ngang / Đàn dọc (LayoutBtn)
+		var layout_btn = Button.new()
+		layout_btn.name = "LayoutBtn"
+		layout_btn.text = "\nĐàn dọc" if _current_orientation == BoardOrientation.PORTRAIT else "\nĐàn ngang"
+		layout_btn.custom_minimum_size = Vector2(200, 70)
+		ctrl_btns.add_child(layout_btn)
+		ctrl_btns.move_child(layout_btn, 6)
+		_style_sidebar_btn(layout_btn)
+		_set_sidebar_icon(layout_btn, "rotate-cw")
+		_make_button_bouncy(layout_btn)
+		_layout_btn = layout_btn
+		layout_btn.pressed.connect(toggle_orientation)
+			
+		# Thêm spacer để đẩy nút Quay lại xuống dưới cùng
+		ctrl_btns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		var spacer = Control.new()
+		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		ctrl_btns.add_child(spacer)
+			
+		# 7. Quay lại (BackBtnSidebar)
+		var back_btn_sidebar = Button.new()
+		back_btn_sidebar.name = "BackBtnSidebar"
+		back_btn_sidebar.text = "\nQuay lại"
+		back_btn_sidebar.custom_minimum_size = Vector2(200, 70)
+		ctrl_btns.add_child(back_btn_sidebar)
+		# NOTE: No move_child called, so it stays at the very bottom!
+		_style_sidebar_btn(back_btn_sidebar)
+		_set_sidebar_icon(back_btn_sidebar, "arrow-left")
+		_make_button_bouncy(back_btn_sidebar)
+		back_btn_sidebar.pressed.connect(_go_back)
+		
+		# Finally, resize any other pre-existing buttons in ctrl_btns to the new mobile-friendly size
+		for child in ctrl_btns.get_children():
+			if child is Button:
+				child.custom_minimum_size = Vector2(200, 70)
+				# Ensure text format is stacked (add \n if not present)
+				var clean_text = child.text.replace("\n", "").strip_edges()
+				child.text = "\n" + clean_text
 
 	
 	if current_song_title == "":
@@ -508,7 +625,7 @@ func _ready() -> void:
 			
 		song_sel.selected = default_idx
 		settings_vbox.add_child(song_sel)
-		settings_vbox.move_child(song_sel, 2)
+		settings_vbox.move_child(song_sel, 1) # Put SongSelector right at the top (after title if any, or at index 1)
 		
 		song_sel.item_selected.connect(func(index: int) -> void:
 			_on_song_selected(index)
@@ -720,43 +837,164 @@ func _build_theme() -> void:
 	var bg_over := get_node_or_null("BGOverlay") as ColorRect
 	if bg_over:
 		bg_over.color = C_BG
+		
+	# Set Root panel background color to C_BG to match curriculum
+	var root_s := StyleBoxFlat.new()
+	root_s.bg_color = C_BG
+	var root_node = get_node_or_null("Root") as PanelContainer
+	if root_node:
+		root_node.add_theme_stylebox_override("panel", root_s)
 
-	# Top bar
-	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
-	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
-	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
+	var prog_vbox = $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox
+	if prog_vbox:
+		prog_vbox.visible = false
 
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).add_theme_color_override("font_color", C_TEXT)
-	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
-	_style_progress_bar(lesson_bar, C_RED_SON, Color(0,0,0,0.08))
+	var dots_box = $SettingsPanel/SettingsM/SettingsVBox/DotsHBox
+	if dots_box: dots_box.visible = false
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	_style_text_btn(back, C_RED_SON, C_RED_SON.lightened(0.15))
+	if back: back.visible = false # We moved it to sidebar
 	
+	var top_bar = $Root.get_node_or_null("TopBar")
+	if top_bar: top_bar.visible = false
+
+	# Transparent background + Top shadow gradient for StringsBoard
+	var strings_board = $Root.get_node_or_null("StringsBoard")
+	if strings_board:
+		var sb_style = StyleBoxEmpty.new()
+		if strings_board is PanelContainer:
+			strings_board.add_theme_stylebox_override("panel", sb_style)
+			
+		var shadow_rect = TextureRect.new()
+		shadow_rect.name = "TopShadow"
+		
+		var shadow_grad = Gradient.new()
+		shadow_grad.add_point(0.0, Color(0, 0, 0, 0.7)) # Black 70%
+		shadow_grad.add_point(1.0, Color(0, 0, 0, 0.0)) # Transparent
+		var shadow_grad_tex = GradientTexture2D.new()
+		shadow_grad_tex.gradient = shadow_grad
+		shadow_grad_tex.fill_from = Vector2(0, 0)
+		shadow_grad_tex.fill_to = Vector2(0, 1)
+		
+		shadow_rect.texture = shadow_grad_tex
+		shadow_rect.set_anchors_preset(Control.PRESET_TOP_WIDE)
+		shadow_rect.anchor_bottom = 0.0
+		shadow_rect.offset_bottom = 120 # Height of the gradient shadow
+		shadow_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		strings_board.add_child(shadow_rect)
+		strings_board.move_child(shadow_rect, 0)
+		
+	# Bỏ phần khung xám hai bên đàn và phía dưới đàn (remove margins from BoardM)
+	var board_m = $Root/StringsBoard.get_node_or_null("BoardM") as MarginContainer
+	if board_m:
+		board_m.add_theme_constant_override("margin_left", 0)
+		board_m.add_theme_constant_override("margin_right", 0)
+		board_m.add_theme_constant_override("margin_top", 0)
+		board_m.add_theme_constant_override("margin_bottom", 0)
+
+	var board_vbox = $Root/StringsBoard/BoardM/BoardVBox
+	var board_label = board_vbox.get_node_or_null("BoardLabel")
 	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
-	if menu_btn:
-		_style_text_btn(menu_btn, C_RED_SON, C_RED_SON.lightened(0.15))
+	
+	if menu_btn and board_label:
+		menu_btn.get_parent().remove_child(menu_btn)
+		
+		# Remove the top gray area labels
+		if board_label: board_label.visible = false
+		var target_label = board_vbox.get_node_or_null("TargetLabel") as Label
+		if target_label: target_label.visible = false
+		
+		# Setup MenuFAB on the left side of StringsBoard
+		_board.add_child(menu_btn)
+		menu_btn.name = "MenuFAB"
+		menu_btn.text = ""
+		menu_btn.custom_minimum_size = Vector2(40, 40)
+		menu_btn.size = Vector2(40, 40)
+		
+		# Dynamic position will be set in update_fabs
+		menu_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		
+		var tex = load("res://assets/textures/lucide/menu.svg")
+		if tex:
+			menu_btn.icon = tex
+			menu_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			if "vertical_icon_alignment" in menu_btn:
+				menu_btn.set("vertical_icon_alignment", 1) # CENTER
+			menu_btn.expand_icon = true
+			menu_btn.add_theme_color_override("icon_normal_color", Color(0.98, 0.97, 0.95))
+			menu_btn.add_theme_color_override("icon_hover_color", Color.WHITE)
+			menu_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
+		
+		var fab_s := StyleBoxFlat.new()
+		fab_s.bg_color = Color(1, 1, 1, 0.1)
+		fab_s.corner_radius_top_left = 12; fab_s.corner_radius_top_right = 12
+		fab_s.corner_radius_bottom_left = 12; fab_s.corner_radius_bottom_right = 12
+		var fab_h := fab_s.duplicate() as StyleBoxFlat
+		fab_h.bg_color = Color(1, 1, 1, 0.3)
+		menu_btn.add_theme_stylebox_override("normal", fab_s)
+		menu_btn.add_theme_stylebox_override("hover", fab_h)
+		menu_btn.add_theme_stylebox_override("pressed", fab_s)
+		menu_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+		menu_btn.modulate = Color(1, 1, 1, 0.8)
+		menu_btn.mouse_entered.connect(func(): menu_btn.modulate = Color.WHITE)
+		menu_btn.mouse_exited.connect(func(): menu_btn.modulate = Color(1, 1, 1, 0.8))
 		
 	var settings_panel := $SettingsPanel as PanelContainer
 	if settings_panel:
+		settings_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
+		settings_panel.custom_minimum_size.x = 240
+		settings_panel.size.x = 240
+		settings_panel.position.x = -260
+		settings_panel.visible = true
+		settings_panel.z_index = 100
+		
 		var sp_style := StyleBoxFlat.new()
-		sp_style.bg_color = C_CARD
-		sp_style.border_color = C_GOLD
-		sp_style.border_width_left = 2; sp_style.border_width_right = 2
-		sp_style.border_width_top = 2; sp_style.border_width_bottom = 2
-		sp_style.corner_radius_top_left = 14; sp_style.corner_radius_top_right = 14
-		sp_style.corner_radius_bottom_left = 14; sp_style.corner_radius_bottom_right = 14
-		sp_style.shadow_size = 10; sp_style.shadow_color = Color(0.2, 0.15, 0.1, 0.25)
+		sp_style.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+		sp_style.border_color = Color(0.8, 0.78, 0.73, 0.8)
+		sp_style.border_width_right = 2
 		settings_panel.add_theme_stylebox_override("panel", sp_style)
+		
+		# Add Blur Behind
+		var blur_mat = ShaderMaterial.new()
+		var blur_shader = Shader.new()
+		blur_shader.code = """
+		shader_type canvas_item;
+		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+		uniform float lod: hint_range(0.0, 5.0) = 2.0;
+		void fragment() {
+			COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+		}
+		"""
+		blur_mat.shader = blur_shader
+		var blur_rect = ColorRect.new()
+		blur_rect.material = blur_mat
+		blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blur_rect.show_behind_parent = true
+		settings_panel.add_child(blur_rect)
+		settings_panel.move_child(blur_rect, 0)
 		
 		var menu_title := $SettingsPanel/SettingsM/SettingsVBox/MenuTitle as Label
 		if menu_title:
-			menu_title.add_theme_color_override("font_color", C_TEXT)
+			menu_title.add_theme_color_override("font_color", Color(0.15, 0.25, 0.15))
 
+	var ctrl_btns = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns
+	if ctrl_btns:
+		if "columns" in ctrl_btns:
+			ctrl_btns.columns = 1
+		elif "vertical" in ctrl_btns:
+			ctrl_btns.vertical = true
+			
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
-		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node(bn) as Button
+		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(bn) as Button
 		if btn:
-			_style_outlined_btn(btn)
+			_style_sidebar_btn(btn)
+			
+	var hint_btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("HintBtn") as Button
+	if hint_btn:
+		hint_btn.text = "\nLuyện tập"
+		_set_sidebar_icon(hint_btn, "graduation-cap")
 
 	# Linh panel
 	var linh_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1), 0)
@@ -788,33 +1026,66 @@ func _build_theme() -> void:
 	score_num.add_theme_color_override("font_color", C_RED_SON)
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).add_theme_color_override("font_color", C_TEXT_MUTED)
 
-	# Strings board — deep rosewood background
-	var sb_s := StyleBoxFlat.new()
-	sb_s.bg_color = Color(0.11, 0.06, 0.02, 1.0)
-	sb_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
-	sb_s.border_width_top = 2; sb_s.border_width_bottom = 0
-	sb_s.border_width_left = 0; sb_s.border_width_right = 0
-	($Root/StringsBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).add_theme_color_override("font_color", Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75))
-	($Root/StringsBoard/BoardM/BoardVBox/TargetLabel as Label).add_theme_color_override("font_color", Color(1.0, 0.92, 0.70, 1.0))
+	# Removed the solid brown background here to allow the transparent/TopShadow effect.
 
-	# Record bar
-	var rec_bar_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
-	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0; rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
-	($Root/RecordBar as PanelContainer).add_theme_stylebox_override("panel", rec_bar_s)
+	# Setup RecordBtn as a small FAB floating on the left side (next to La 1 string)
+	if record_btn:
+		var parent = record_btn.get_parent()
+		if parent: parent.remove_child(record_btn)
+		if _board: _board.add_child(record_btn)
+		
+		record_btn.name = "RecordFAB"
+		record_btn.text = ""
+		record_btn.custom_minimum_size = Vector2(40, 40)
+		record_btn.size = Vector2(40, 40)
+		record_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		# Dynamic position will be set in update_fabs 
+		
+		var play_tex = load("res://assets/textures/lucide/play.svg")
+		if play_tex:
+			record_btn.icon = play_tex
+			record_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			if "vertical_icon_alignment" in record_btn:
+				record_btn.set("vertical_icon_alignment", 1) # CENTER
+			record_btn.expand_icon = true
+			record_btn.add_theme_color_override("icon_normal_color", Color(0.98, 0.97, 0.95))
+			record_btn.add_theme_color_override("icon_hover_color", Color.WHITE)
+			record_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
+		
+		# Same glassmorphic style as MenuFAB
+		var fab_s := StyleBoxFlat.new()
+		fab_s.bg_color = Color(1, 1, 1, 0.1)
+		fab_s.corner_radius_top_left = 12; fab_s.corner_radius_top_right = 12
+		fab_s.corner_radius_bottom_left = 12; fab_s.corner_radius_bottom_right = 12
+		var fab_h := fab_s.duplicate() as StyleBoxFlat
+		fab_h.bg_color = Color(1, 1, 1, 0.3)
+		record_btn.add_theme_stylebox_override("normal", fab_s)
+		record_btn.add_theme_stylebox_override("hover", fab_h)
+		record_btn.add_theme_stylebox_override("pressed", fab_s)
+		record_btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+		record_btn.modulate = Color(1, 1, 1, 0.8)
+		record_btn.mouse_entered.connect(func(): record_btn.modulate = Color.WHITE)
+		record_btn.mouse_exited.connect(func(): record_btn.modulate = Color(1, 1, 1, 0.8))
 
-	# Record button
-	var rn := _flat(C_RED_SON, Color(1.0, 0.4, 0.2, 0.4), 22)
-	rn.shadow_size = 10; rn.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.25)
-	var rh := _flat(C_RED_SON.lightened(0.12), Color(1.0, 0.4, 0.2, 0.6), 22)
-	rh.shadow_size = 14; rh.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.35)
-	record_btn.add_theme_stylebox_override("normal",  rn)
-	record_btn.add_theme_stylebox_override("hover",   rh)
-	record_btn.add_theme_stylebox_override("pressed", _flat(C_RED_SON.darkened(0.15), Color(0,0,0,0.15), 22))
-	record_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	record_btn.add_theme_color_override("font_color", Color(1,1,1,1))
-
-	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
+	# Hide RecordBar completely
+	var record_bar = $Root.get_node_or_null("RecordBar")
+	if record_bar: record_bar.visible = false
+	
+	# Dynamic positioning of FABs relative to strings
+	var update_fabs = func():
+		if not is_instance_valid(_board): return
+		var H = _board.size.y
+		var rh = (H - 20.0) / 17.0
+		var m_btn = _board.get_node_or_null("MenuFAB")
+		if m_btn:
+			var cy0 = 10.0 + rh * 0.5
+			var str_l0 = _board.get_str_l(0) if _board.has_method("get_str_l") else 60.0
+			m_btn.position = Vector2(str_l0 - 45.0, cy0 - 20.0)
+			
+	if _board and not _board.resized.is_connected(update_fabs):
+		_board.resized.connect(update_fabs)
+		# Call it slightly deferred to ensure size is initialized
+		get_tree().create_timer(0.05).timeout.connect(update_fabs)
 
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
@@ -1024,6 +1295,7 @@ func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 
 # ─── String Signal Handlers ───────────────────────────────────────────────────
 func _on_string_plucked(idx: int, plucked_note: String) -> void:
+	_show_header()
 	if _is_demo_mode:
 		return
 
@@ -1047,6 +1319,7 @@ func _on_string_plucked(idx: int, plucked_note: String) -> void:
 			_va_say("Xuất sắc! Gảy đúng nốt rồi.")
 
 func _on_string_pressed(idx: int, cents_offset: float) -> void:
+	_show_header()
 	if cents_offset > 5.0:
 		pitch_status.text = "Dây %d  —  Đang nhấn (+%d¢)" % [idx + 1, int(cents_offset)]
 		pitch_status.add_theme_color_override("font_color", C_GOLD)
@@ -1070,27 +1343,38 @@ func _start_float() -> void:
 # ─── Connections ──────────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
 	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button
-	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	var menu_btn := find_child("MenuFAB", true, false) as Button
+	if not menu_btn: menu_btn = $Root/TopBar/TopM/TopH/MenuBtn as Button
 	var hint_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button
 	var demo_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
 	var slow_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 
 	back_btn.pressed.connect(_go_back)
-	menu_btn.pressed.connect(func() -> void:
-		$SettingsPanel.visible = not $SettingsPanel.visible
-	)
-	hint_btn.pressed.connect(_show_custom_hint)
-	demo_btn.pressed.connect(_toggle_demo_mode)
-	slow_btn.pressed.connect(_toggle_wait_mode)
-	record_btn.pressed.connect(_toggle_record)
-	reset_btn.pressed.connect(_reset)
+	if menu_btn:
+		menu_btn.pressed.connect(func() -> void:
+			var target_x = 0.0 if $SettingsPanel.position.x < -10.0 else -260.0
+			var t = create_tween()
+			t.tween_property($SettingsPanel, "position:x", target_x, 0.4).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC)
+		)
+	if demo_btn: demo_btn.pressed.connect(_toggle_demo_mode)
+	if slow_btn: slow_btn.pressed.connect(_toggle_wait_mode)
+	if record_btn: 
+		for conn in record_btn.get_signal_connection_list("pressed"):
+			record_btn.pressed.disconnect(conn["callable"])
+		record_btn.pressed.connect(func():
+			if not _recording: 
+				_toggle_record()
+			else:
+				# Đang luyện tập, đóng sidebar để tiếp tục chơi đàn
+				create_tween().tween_property($SettingsPanel, "position:x", -260.0, 0.35).set_ease(Tween.EASE_OUT)
+		)
+	if reset_btn: reset_btn.pressed.connect(_reset)
 
-	_make_button_bouncy(back_btn)
-	_make_button_bouncy(menu_btn)
-	_make_button_bouncy(hint_btn)
-	_make_button_bouncy(demo_btn)
-	_make_button_bouncy(slow_btn)
+	if back_btn: _make_button_bouncy(back_btn)
+	if menu_btn: _make_button_bouncy(menu_btn)
+	if demo_btn: _make_button_bouncy(demo_btn)
+	if slow_btn: _make_button_bouncy(slow_btn)
 	_make_button_bouncy(record_btn)
 	_make_button_bouncy(reset_btn)
 
@@ -1099,7 +1383,10 @@ func _toggle_record() -> void:
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	_update_rec_pulse(_recording)
 	if _recording:
-		record_btn.text = "Dừng luyện tập"
+		# Auto-hide sidebar when starting practice
+		create_tween().tween_property($SettingsPanel, "position:x", -260.0, 0.35).set_ease(Tween.EASE_OUT)
+		
+		_hide_header_delayed()
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
 		if visualizer and _mic_mode: visualizer.visible = true
@@ -1115,7 +1402,7 @@ func _toggle_record() -> void:
 		for i in range(sheet_notes.size()):
 			_reference_onsets.append(1.0 + i * 1.5)
 	else:
-		record_btn.text = "Bắt đầu luyện tập"
+		_show_header()
 		if visualizer:
 			visualizer.add_practice_score(_score)
 		_show_custom_result()
@@ -1181,11 +1468,13 @@ func _update_demo_mode_ui() -> void:
 	var demo_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn as Button
 	if not demo_btn: return
 	if _is_demo_mode:
-		demo_btn.text = "Nghe mẫu: BẬT 🔊"
+		demo_btn.text = "\nNghe mẫu: BẬT"
 		demo_btn.modulate = Color("#76ba99") # Mint green
+		_set_sidebar_icon(demo_btn, "volume-2")
 	else:
-		demo_btn.text = "Nghe mẫu: TẮT 🔇"
+		demo_btn.text = "\nNghe mẫu: TẮT"
 		demo_btn.modulate = Color.WHITE
+		_set_sidebar_icon(demo_btn, "volume-x")
 
 func _toggle_wait_mode() -> void:
 	if _is_demo_mode:
@@ -1202,11 +1491,13 @@ func _update_wait_mode_ui() -> void:
 	var slow_btn := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	if not slow_btn: return
 	if _is_wait_mode:
-		slow_btn.text = "Chờ nốt: Bật ⏳"
+		slow_btn.text = "\nChờ nốt: Bật"
 		slow_btn.modulate = Color("#e5ba73") # Warm gold
+		_set_sidebar_icon(slow_btn, "hourglass")
 	else:
-		slow_btn.text = "Tự trôi: Bật 🌊"
+		slow_btn.text = "\nTự trôi: Bật"
 		slow_btn.modulate = Color("#76ba99") # Mint green
+		_set_sidebar_icon(slow_btn, "hourglass")
 
 func _simulate_tick() -> void:
 	var ni := randi() % NOTES_VN.size()
@@ -1563,12 +1854,12 @@ func toggle_orientation() -> void:
 		_board.queue_redraw()
 		
 		if _layout_btn:
-			_layout_btn.text = "Giao diện dọc"
+			_layout_btn.text = "\nĐàn dọc"
 	else:
 		# Switch to LANDSCAPE
 		_current_orientation = BoardOrientation.LANDSCAPE
 		if _layout_btn:
-			_layout_btn.text = "Giao diện ngang"
+			_layout_btn.text = "\nĐàn ngang"
 
 ## Pitch-detection stubs — replace with real implementation or plugin integration
 func _start_pitch_detection() -> void:
@@ -2037,6 +2328,41 @@ func _style_text_btn(btn: Button, col: Color, hover: Color) -> void:
 	btn.add_theme_color_override("font_hover_color",   hover)
 	btn.add_theme_color_override("font_pressed_color", col)
 
+func _style_sidebar_btn(btn: Button) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0)
+	var sb_hover := StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.1, 0.35, 0.2, 0.08) # Màu xanh rêu nhạt khi hover
+	
+	btn.custom_minimum_size.y = 60
+	btn.add_theme_stylebox_override("normal", sb)
+	btn.add_theme_stylebox_override("hover", sb_hover)
+	btn.add_theme_stylebox_override("pressed", sb)
+	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_color_override("font_color", Color(0.25, 0.22, 0.20)) # Màu xám nâu tối
+	btn.add_theme_color_override("font_hover_color", Color(0.1, 0.35, 0.2)) # Xanh rêu
+	
+	# Định dạng icon màu đen/tối tương tự giáo trình
+	btn.add_theme_color_override("icon_normal_color", Color(0.1, 0.1, 0.1))
+	btn.add_theme_color_override("icon_hover_color", Color(0.1, 0.35, 0.2))
+	btn.add_theme_color_override("icon_pressed_color", Color.BLACK)
+	
+	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	if f_body: btn.add_theme_font_override("font", f_body)
+	btn.add_theme_font_size_override("font_size", 16)
+	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	# Expand icon to make it slightly larger
+	btn.expand_icon = true
+
+func _set_sidebar_icon(btn: Button, icon_name: String) -> void:
+	var tex = load("res://assets/textures/lucide/" + icon_name + ".svg")
+	if tex:
+		btn.icon = tex
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if "vertical_icon_alignment" in btn:
+			btn.set("vertical_icon_alignment", 0) # VERTICAL_ALIGNMENT_TOP
+
 func _style_outlined_btn(btn: Button) -> void:
 	var bn := _flat(Color(0.16, 0.09, 0.03, 0.65), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 14)
 	var bh := _flat(Color(0.26, 0.15, 0.04, 0.85), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85), 14)
@@ -2224,3 +2550,24 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 	ft.tween_interval(1.5)
 	ft.tween_property(bp, "volume_db", -80.0, 0.4)
 	ft.tween_callback(bp.queue_free)
+
+func _hide_header_delayed() -> void:
+	if _header_tween and _header_tween.is_running():
+		_header_tween.kill()
+	_header_tween = create_tween().set_parallel(true)
+	_header_tween.tween_interval(3.0)
+	var record_fab = find_child("RecordFAB", true, false)
+	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
+	
+	_header_tween.chain().tween_callback(func(): 
+		if record_fab: record_fab.visible = false
+	)
+
+func _show_header() -> void:
+	if _header_tween and _header_tween.is_running():
+		_header_tween.kill()
+	var record_fab = find_child("RecordFAB", true, false)
+	if record_fab: record_fab.visible = true
+	
+	_header_tween = create_tween().set_parallel(true)
+	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)
