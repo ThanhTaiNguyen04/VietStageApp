@@ -32,37 +32,61 @@ const LESSONS = [
 	{
 		"id": "dan_bau_coban_1",
 		"title": "BÀI 1",
-		"note": "Nốt Đô",
-		"video": "Xem video thổi nốt đồ",
-		"practice": "Luyện thổi nốt trên Đàn bầu",
+		"note": "Căng dây",
+		"video": "Xem video hướng dẫn lên dây & căng dây",
+		"practice": "Luyện tập căng dây & lên dây",
 		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng bạn đến với Đàn Bầu Cơ Bản 1. Tôi là cô Mai."},
-			{"start": 2.5, "end": 6.0, "text": "Hôm nay, chúng ta sẽ học về nốt Đô trầm. Hãy gảy ở điểm hài âm thứ nhất nhé."},
-			{"start": 6.0, "end": 10.0, "text": "Lắng nghe độ vang tự nhiên của một dây đàn độc huyền cầm đặc trưng."}
+			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài học đầu tiên: Căng dây và lên dây Đàn Bầu."},
+			{"start": 2.5, "end": 6.5, "text": "Con hãy dùng trục vặn để điều chỉnh độ căng của dây sao cho đúng cao độ nốt Đô trầm nhé."},
+			{"start": 6.5, "end": 10.0, "text": "Dây đàn quá chùng sẽ làm âm hài âm bị tắt và không vang. Hãy cùng chỉnh dây nào."}
 		]
 	},
 	{
 		"id": "dan_bau_coban_2",
 		"title": "BÀI 2",
-		"note": "Nốt Rê",
-		"video": "Xem video thổi nốt rê",
-		"practice": "Luyện thổi nốt đồ trên Đàn bầu",
+		"note": "Nốt Đô",
+		"video": "Xem video hướng dẫn gảy nốt Đô",
+		"practice": "Luyện gảy nốt Đô hài âm",
 		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng bạn đến với Đàn Bầu Cơ Bản 2. Tôi là cô Mai."},
-			{"start": 2.5, "end": 6.0, "text": "Hôm nay, chúng ta làm quen nốt Rê. Hãy gảy hài âm nốt Rê tại vị trí tương ứng."},
-			{"start": 6.0, "end": 10.0, "text": "Rê nằm ngay trên nốt Đô cơ bản một chút trên mặt bầu."}
+			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài 2: Học gảy nốt Đô trên Đàn Bầu."},
+			{"start": 2.5, "end": 6.0, "text": "Hãy đặt nhẹ phần rìa bàn tay phải vào điểm hài âm số 1, sau đó gảy nhẹ dây đàn."},
+			{"start": 6.0, "end": 10.0, "text": "Nhấc nhẹ bàn tay ra ngay sau khi gảy để nốt Đô ngân vang tự nhiên nhất."}
 		]
 	},
 	{
 		"id": "dan_bau_coban_3",
 		"title": "BÀI 3",
-		"note": "Bài mẫu",
-		"video": "Xem video thổi bài mẫu",
-		"practice": "Luyện thổi trên Đàn bầu",
+		"note": "Nốt Rê & Mi",
+		"video": "Xem video hướng dẫn nốt Rê & Mi",
+		"practice": "Luyện gảy nốt Rê và Mi",
 		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng bạn đến với Đàn Bầu Cơ Bản 3. Cùng nghe bài nhạc mẫu ngắn."},
-			{"start": 3.0, "end": 6.5, "text": "Bài nhạc kết hợp các nốt Đô, Rê, Mi, Sol, La đơn giản."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy cố gắng liên kết các âm lại thật liền mạch nhé."}
+			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 3: Hài âm nốt Rê và Mi."},
+			{"start": 3.0, "end": 6.5, "text": "Vị trí hài âm nốt Rê và Mi nằm dịch về phía bên phải một chút so với nốt Đô."},
+			{"start": 6.5, "end": 10.0, "text": "Hãy chạm nhẹ và gảy chính xác để nghe âm vang của hai nốt nhạc này."}
+		]
+	},
+	{
+		"id": "dan_bau_coban_4",
+		"title": "BÀI 4",
+		"note": "Uốn vòi",
+		"video": "Xem video hướng dẫn uốn vòi đàn",
+		"practice": "Luyện uốn vòi đổi âm",
+		"subtitles": [
+			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 4: Học kỹ thuật Uốn vòi cần đàn Đàn Bầu."},
+			{"start": 3.0, "end": 6.5, "text": "Tay trái uốn cần đàn sang trái để kéo căng dây giúp nâng cao cao độ nốt nhạc."},
+			{"start": 6.5, "end": 10.0, "text": "Ngược lại, thả lỏng cần sang phải để giảm độ căng giúp hạ thấp cao độ."}
+		]
+	},
+	{
+		"id": "dan_bau_coban_5",
+		"title": "BÀI 5",
+		"note": "Bài mẫu",
+		"video": "Xem video hướng dẫn chơi bài mẫu",
+		"practice": "Luyện chơi bài Bèo Dạt Mây Trôi",
+		"subtitles": [
+			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 5: Luyện tập bài Bèo Dạt Mây Trôi."},
+			{"start": 3.0, "end": 6.5, "text": "Kết hợp kỹ thuật gảy hài âm nốt Đô, Rê, Mi và uốn cần nhịp nhàng."},
+			{"start": 6.5, "end": 10.0, "text": "Hãy cố gắng liên kết các âm vang mềm mại và đúng nhịp điệu bài học nhé."}
 		]
 	}
 ]

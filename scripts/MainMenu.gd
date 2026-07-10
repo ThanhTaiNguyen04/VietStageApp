@@ -25,6 +25,7 @@ var _time : float = 0.0
 var _sidebar_icons_cache := {}
 var btn_minigame : Button
 var btn_minigame_mob : Button
+const LESSON_DAN_BAU_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -90,6 +91,8 @@ func _ready() -> void:
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)
 	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
+
+	_prepare_clean_entry_state()
 	
 	_build_sidebar()
 	_build_bottom_bar()
@@ -97,20 +100,32 @@ func _ready() -> void:
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
-	_animate_in()
-	
-	modulate.a = 0.0
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.38)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-
-	avatar_circle.hide()
+	_animate_in()
 
 func _process(delta: float) -> void:
 	_time += delta
 	bg_canvas.queue_redraw()
 	roadmap_content.queue_redraw()
+
+func _prepare_clean_entry_state() -> void:
+	get_tree().paused = false
+	process_mode = Node.PROCESS_MODE_INHERIT
+	modulate = Color.WHITE
+	self_modulate = Color.WHITE
+	visible = true
+	avatar_circle.hide()
+	for node in [bg_canvas, sidebar, bottom_bar, top_bar, roadmap_scroll, roadmap_content]:
+		var canvas_item := node as CanvasItem
+		if canvas_item:
+			canvas_item.modulate = Color.WHITE
+			canvas_item.self_modulate = Color.WHITE
+	for popup_name in ["AIChatPopup", "AIChatPopupRoot", "CustomPopup", "DimBG", "OverlayBG", "IntroOverlay"]:
+		var popup: Node = get_tree().root.find_child(popup_name, true, false)
+		if popup and not is_ancestor_of(popup):
+			popup.queue_free()
 
 # ─── Drawing Callbacks ────────────────────────────────────────────────────────
 func _setup_drawing_callbacks() -> void:
@@ -130,25 +145,51 @@ func _setup_drawing_callbacks() -> void:
 		var r := 34.0
 		# Gray outer ring
 		vis_basic.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-		# Gold progress ring (60% master)
-		vis_basic.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + 0.6 * TAU, 32, C_GOLD_GLOW, 7.0, true)
+
+		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var pct := 0.0
+		if inst == "dan_bau":
+			var stats := _get_dan_bau_card_status("basic")
+			pct = float(stats["pct"])
+		elif SecureDataManager.is_lesson_completed(inst, "Node1"):
+			pct = 100.0
+
+		var angle_fill := (pct / 100.0) * TAU
+		if angle_fill > 0.001:
+			vis_basic.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
+
 		# Draw percentage text in the center
 		var font := vis_basic.get_theme_font("font")
-		vis_basic.draw_string(font, Vector2(cx - 18, cy + 6), "60%", HORIZONTAL_ALIGNMENT_CENTER, -1, 18, C_CREAM)
+		var pct_text := str(int(pct)) + "%"
+		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
+		vis_basic.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
 	)
 	
-	# Card Essentials Graphic
+	# Card Essentials Progress Ring in Gold
 	var vis_essentials := card_essentials.get_node("Margin/Row/Visual") as Control
 	vis_essentials.draw.connect(func() -> void:
 		var cx := vis_essentials.size.x / 2.0
 		var cy := vis_essentials.size.y / 2.0
 		var r := 34.0
 		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-		# Draw traditional flute/Sao Truc
-		vis_essentials.draw_line(Vector2(cx - 24, cy + 12), Vector2(cx + 24, cy - 12), C_GOLD, 4.0, true)
-		vis_essentials.draw_circle(Vector2(cx - 12, cy + 6), 3.0, C_CARD_BG_DK)
-		vis_essentials.draw_circle(Vector2(cx, cy), 3.0, C_CARD_BG_DK)
-		vis_essentials.draw_circle(Vector2(cx + 12, cy - 6), 3.0, C_CARD_BG_DK)
+
+		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var pct := 0.0
+		if inst == "dan_bau":
+			var stats := _get_dan_bau_card_status("essentials")
+			pct = float(stats["pct"])
+		else:
+			if SecureDataManager.is_lesson_completed(inst, "Node2"): pct += 50.0
+			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
+
+		var angle_fill := (pct / 100.0) * TAU
+		if angle_fill > 0.001:
+			vis_essentials.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
+
+		var font := vis_essentials.get_theme_font("font")
+		var pct_text := str(int(pct)) + "%"
+		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
+		vis_essentials.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
 	)
 	
 	# Lock Icons on Locked Cards
@@ -298,6 +339,22 @@ func _build_sidebar() -> void:
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
 
+	_style_side_icon_btn(btn_menu,     false)
+	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
+	_style_side_icon_btn(btn_songs,    false)
+	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_account,  false)
+
+	_attach_icon_draw(btn_menu,     0)
+	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
+	_attach_icon_draw(btn_songs,    2)
+	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_account,  5)
+
+	_active_side_btn = btn_courses
+
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
 	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
@@ -357,22 +414,6 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	ic.offset_top = 6;    ic.offset_bottom = 38
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
-
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_account,  false)
-
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_account,  5)
-
-	_active_side_btn = btn_courses
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
@@ -479,7 +520,7 @@ func _build_top_bar() -> void:
 	ring_draw.draw.connect(func() -> void:
 		var sz := ring_draw.size
 		var c  := sz / 2.0
-		var r  := minf(c.x, c.y) - 3.0
+		var r: float = minf(c.x, c.y) - 3.0
 		# Vòng nhẫn vàng ngoài cùng
 		ring_draw.draw_arc(c, r, 0, TAU, 64, C_GOLD, 3.0, true)
 		# Vòng nhẫn vàng nhạt phát sáng
@@ -501,11 +542,11 @@ func _build_top_bar() -> void:
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
 func _build_roadmap_cards() -> void:
-	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var instrument: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
 	
 	# Main labels styling
-	var font_title := load("res://assets/fonts/Lora-Bold.ttf")
+	var font_title: Font = load("res://assets/fonts/Lora-Bold.ttf") as Font
 	if font_title:
 		roadmap_guide.add_theme_font_override("font", font_title)
 		path_soloist_title.add_theme_font_override("font", font_title)
@@ -648,9 +689,37 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = "Tiết Tấu Hiện Đại"
 		pop_chords_desc.text = "✓ Hòa âm Trống Đồng Tây Nguyên\n✓ Đệm tiết tấu Pop nhẹ nhàng\n✓ Trống chầu phá cách cùng hòa tấu"
 
-	# Dynamic progression styling for Card Basic (Node1 Video)
-	var is_basic_completed := SecureDataManager.is_lesson_completed(instrument, "Node1")
-	var basic_stars: int = SecureDataManager.data.stars[instrument].get("Node1", 0)
+	if instrument == "dan_bau":
+		path_soloist_title.text = "DUONG DOC TAU (SOLOIST PATH)"
+		path_chords_title.text = "DUONG DEM HAT (CHORDS PATH)"
+		basic_title.text = "Cang Day & Len Day"
+		basic_desc.text = "Hoc tu the ngoi, cach su dung truc van de dieu chinh do cang cua day va len day dung cao do."
+		ess_title.text = "Hoc Not Do Hai Am"
+		ess_desc.text = "Luyen cham nhe ria ban tay phai vao diem hai am thu nhat de tao tieng Do vang tu nhien."
+		soloist_unlock_title.text = "Not Re & Mi"
+		chords_unlock_title.text = "Uon Can Dan"
+		soloist_skills_title.text = "Hoc Not Re & Mi"
+		soloist_skills_bullets.text = "✓ Vi tri hai am Re va Mi\n✓ Gay dung cao do chuan sac\n✓ Luyen tai nghe chuan nhac pho"
+		chords_skills_title.text = "Ky Thuat Uon Voi"
+		chords_skills_bullets.text = "✓ Cang can nang cao do not\n✓ Trung day ha thap cao do\n✓ Ngan rung can dan truyen thong"
+		classical_title.text = "Bai Mau Beo Dat"
+		classical_desc.text = "✓ Beo Dat May Troi\n✓ Ket hop hai am va uon can\n✓ Doc tau dieu nhac da diet"
+		pop_chords_title.text = "Dem Hat Que Huong"
+		pop_chords_desc.text = "✓ Beo Dat May Troi\n✓ Luyen uon can luyen am muot\n✓ Dem hat cac lan dieu sau lang"
+
+	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1)
+	var is_basic_completed := false
+	var basic_stars := 0
+	var basic_pct := 0
+	if instrument == "dan_bau":
+		var stats := _get_dan_bau_card_status("basic")
+		is_basic_completed = bool(stats["completed"])
+		basic_stars = int(stats["stars"])
+		basic_pct = int(stats["pct"])
+	else:
+		is_basic_completed = SecureDataManager.is_lesson_completed(instrument, "Node1")
+		basic_stars = SecureDataManager.data.stars[instrument].get("Node1", 0)
+		basic_pct = 100 if is_basic_completed else 0
 
 	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
 	basic_sb.border_width_left = 4; basic_sb.border_width_right = 4
@@ -660,15 +729,17 @@ func _build_roadmap_cards() -> void:
 	basic_title.add_theme_color_override("font_color", C_CREAM)
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
-	if instrument != "dan_bau":
+	if instrument == "dan_bau":
+		basic_details.text = "1 bai hoc | %d sao | %d%% hoan thanh" % [basic_stars, basic_pct]
+	else:
 		if is_basic_completed:
 			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
 		else:
 			basic_details.text = "📖 2 Bài Học | ⭐ 0 Sao | 0%% Hoàn Thành"
 
 	# Dynamic progression styling for Card Essentials
-	var is_ess_unlocked := is_basic_completed or instrument == "dan_bau"
-	if instrument != "dan_bau" and not is_ess_unlocked:
+	var is_ess_unlocked := is_basic_completed
+	if not is_ess_unlocked:
 		var ess_lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24)
 		card_essentials.add_theme_stylebox_override("panel", ess_lock_sb)
 		ess_title.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
@@ -789,18 +860,29 @@ func _connect_buttons() -> void:
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
-			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
-				_fade_to("res://scenes/LessonDanBau.tscn")
+				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+				if not completed.has("dan_bau_coban_1_video"):
+					_play_dan_bau_video(0)
+				else:
+					_play_dan_bau_practice(1)
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
-			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
-				_fade_to("res://scenes/LessonDanBau.tscn")
+				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+				if not completed.has("dan_bau_coban_1_practice"):
+					_virtual_artist_play_happy("Hay hoan thanh bai Cang Day & Len Day de mo khoa bai tiep theo nhe!")
+					return
+				if not completed.has("dan_bau_coban_2_video"):
+					_play_dan_bau_video(1)
+				else:
+					_play_dan_bau_practice(2)
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -817,21 +899,71 @@ func _connect_buttons() -> void:
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_soloist.pressed.connect(func() -> void:
-		SecureDataManager.active_lesson_id = "Node4"
-		_go_practice_room_for_node(4)
+		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_2_practice"):
+				_virtual_artist_play_happy("Hay hoan thanh bai Hoc Not Do Hai Am de mo khoa bai tiep theo nhe!")
+				return
+			if not completed.has("dan_bau_coban_3_video"):
+				_play_dan_bau_video(2)
+			else:
+				_play_dan_bau_practice(3)
+		else:
+			SecureDataManager.active_lesson_id = "Node4"
+			_go_practice_room_for_node(4)
 	)
 	_make_btn_bouncy(play_soloist)
 	
 	var play_chords := card_chords_skills.get_node("Margin/HBox/BtnPlay") as Button
-	play_chords.pressed.connect(_go_practice)
+	play_chords.pressed.connect(func() -> void:
+		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_2_practice"):
+				_virtual_artist_play_happy("Hay hoan thanh bai Hoc Not Do Hai Am de mo khoa bai tiep theo nhe!")
+				return
+			if not completed.has("dan_bau_coban_4_video"):
+				_play_dan_bau_video(3)
+			else:
+				_play_dan_bau_practice(4)
+		else:
+			_go_practice()
+	)
 	_make_btn_bouncy(play_chords)
 
 	var play_classical := card_classical.get_node("Margin/HBox/BtnPlay") as Button
-	play_classical.pressed.connect(_go_practice)
+	play_classical.pressed.connect(func() -> void:
+		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_3_practice"):
+				_virtual_artist_play_happy("Hay hoan thanh bai Hoc Not Re & Mi de mo khoa bai tiep theo nhe!")
+				return
+			if not completed.has("dan_bau_coban_5_video"):
+				_play_dan_bau_video(4)
+			else:
+				_play_dan_bau_practice(5)
+		else:
+			_go_practice()
+	)
 	_make_btn_bouncy(play_classical)
 	
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
-	play_pop.pressed.connect(_go_practice)
+	play_pop.pressed.connect(func() -> void:
+		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "dan_bau":
+			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+			if not completed.has("dan_bau_coban_4_practice"):
+				_virtual_artist_play_happy("Hay hoan thanh bai Ky Thuat Uon Voi de mo khoa bai tiep theo nhe!")
+				return
+			if not completed.has("dan_bau_coban_5_video"):
+				_play_dan_bau_video(4)
+			else:
+				_play_dan_bau_practice(5)
+		else:
+			_go_practice()
+	)
 	_make_btn_bouncy(play_pop)
 
 	# Unlock Buttons -> Virtual Artist Mai popup
@@ -895,7 +1027,7 @@ func _set_active_tab(active: Button) -> void:
 
 # ─── Navigation ────────────────────────────────────────────────────────────────
 func _virtual_artist_play_happy(text: String) -> void:
-	var artist := get_node_or_null("/root/VirtualArtist")
+	var artist: Node = get_node_or_null("/root/VirtualArtist")
 	if artist and artist.has_method("play_happy"):
 		artist.call("play_happy", text)
 
@@ -911,7 +1043,7 @@ func _go_practice() -> void:
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
 func _go_practice_room_for_node(node_index: int) -> void:
-	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	
 	if inst == "dan_tranh":
 		if node_index == 2:
@@ -1084,3 +1216,43 @@ func _on_viewport_size_changed() -> void:
 	
 	# Redraw to update paths
 	roadmap_content.queue_redraw()
+
+func _get_dan_bau_card_status(card_type: String) -> Dictionary:
+	var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+	var stars_dict : Dictionary = SecureDataManager.data.stars.get("dan_bau", {})
+	var steps_to_check: Array[String] = []
+	if card_type == "basic":
+		steps_to_check = ["dan_bau_coban_1_video", "dan_bau_coban_1_practice"]
+	elif card_type == "essentials":
+		steps_to_check = ["dan_bau_coban_2_video", "dan_bau_coban_2_practice"]
+	elif card_type == "soloist":
+		steps_to_check = ["dan_bau_coban_3_video", "dan_bau_coban_3_practice"]
+	elif card_type == "chords":
+		steps_to_check = ["dan_bau_coban_4_video", "dan_bau_coban_4_practice"]
+	elif card_type == "classical" or card_type == "pop_chords":
+		steps_to_check = ["dan_bau_coban_5_video", "dan_bau_coban_5_practice"]
+
+	var total_stars := 0
+	var completed_count := 0
+	for step in steps_to_check:
+		if completed.has(step):
+			completed_count += 1
+		total_stars += int(stars_dict.get(step, 0))
+
+	var total_count: int = max(1, steps_to_check.size())
+	var pct: int = int((float(completed_count) / float(total_count)) * 100.0)
+	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+
+func _play_dan_bau_video(lesson_idx: int) -> void:
+	var lessons_data: Array = LESSON_DAN_BAU_SCRIPT.LESSONS
+	if lesson_idx < 0 or lesson_idx >= lessons_data.size():
+		return
+	var ldata: Dictionary = lessons_data[lesson_idx]
+	SecureDataManager.active_lesson_id = str(ldata["id"]) + "_video"
+	VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
+	VideoPlayer.custom_subtitles = ldata["subtitles"]
+	_fade_to("res://scenes/VideoPlayer.tscn")
+
+func _play_dan_bau_practice(lesson_num: int) -> void:
+	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
+	_fade_to("res://scenes/PracticeDanBau.tscn")
