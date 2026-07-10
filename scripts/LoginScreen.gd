@@ -68,7 +68,7 @@ func _ready() -> void:
 
 # ── Setup extra UI elements (labels, forgot, eye toggle, welcome) ──────────────
 func _setup_extra_ui() -> void:
-	var vbox := get_node(FP) as VBoxContainer
+	var vbox := get_node("Center/Card/CardMargin/ContentVBox") as VBoxContainer
 	var font_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 
@@ -304,15 +304,15 @@ func _start_logo_float() -> void:
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
 func _on_viewport_size_changed() -> void:
-	var viewport_size = get_viewport().size
-	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
+	var size = get_viewport().size
+	var is_mobile = size.x < size.y or size.x < 768
 	
-	var content_vbox := get_node(FP) as VBoxContainer
+	var content_vbox := get_node("Center/Card/CardMargin/ContentVBox") as VBoxContainer
 	var card_margin := $Center/Card/CardMargin as MarginContainer
 	
 	if is_mobile:
 		content_vbox.custom_minimum_size = Vector2(0, content_vbox.custom_minimum_size.y)
-		card.custom_minimum_size = Vector2(viewport_size.x - 32, card.custom_minimum_size.y)
+		card.custom_minimum_size = Vector2(size.x - 32, card.custom_minimum_size.y)
 		card_margin.add_theme_constant_override("margin_left", 20)
 		card_margin.add_theme_constant_override("margin_right", 20)
 		card_margin.add_theme_constant_override("margin_top", 32)

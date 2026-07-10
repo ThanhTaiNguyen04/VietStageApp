@@ -1,17 +1,37 @@
 extends Control
 
-const C_JADE      := Color(0.09, 0.27, 0.18, 1.0)  # Brand deep jade green
-const C_GREY_DK   := Color(0.43, 0.38, 0.33, 1.0)  # Primary charcoal text
-const C_GREY_LT   := Color(0.43, 0.38, 0.33, 0.50) # Muted grey for version
+const C_RED       := Color(0.38, 0.0, 0.0, 1.0)
+const C_CHARCOAL  := Color(0.13, 0.08, 0.05, 0.70)
+const C_VER       := Color(0.13, 0.08, 0.05, 0.35)
 
 func _ready() -> void:
 	_style_text()
-	_animate()
+	_try_play_video()
+
+func _try_play_video() -> void:
+	var ogv_path := "res://assets/theme/introtong.ogv"
+	var stream = load(ogv_path) as VideoStream
+			
+	if stream:
+		$Center.visible = false
+		$VersionLabel.visible = false
+		
+		var video_player = VideoStreamPlayer.new()
+		video_player.set_anchors_preset(Control.PRESET_FULL_RECT)
+		video_player.expand = true
+		video_player.stream = stream
+		add_child(video_player)
+		
+		video_player.finished.connect(_go_loading)
+		video_player.play()
+	else:
+		# Fallback to the original animation if the video cannot be loaded
+		_animate()
 
 func _style_text() -> void:
-	($Center/AppName    as Label).add_theme_color_override("font_color", C_JADE)
-	($Center/Tagline    as Label).add_theme_color_override("font_color", C_GREY_DK)
-	($VersionLabel      as Label).add_theme_color_override("font_color", C_GREY_LT)
+	($Center/AppName    as Label).add_theme_color_override("font_color", C_RED)
+	($Center/Tagline    as Label).add_theme_color_override("font_color", C_CHARCOAL)
+	($VersionLabel      as Label).add_theme_color_override("font_color", C_VER)
 
 func _animate() -> void:
 	modulate.a = 0.0
