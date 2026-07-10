@@ -2,11 +2,11 @@ extends Control
 class_name PracticeDanBau
 
 # ─── Color Palette ─────────────────────────────────────────────────────────────
-const C_GOLD       := Color("#c99a3c") # Antique Gold
-const C_GOLD_LIGHT := Color("#fce8b3") # Light Golden highlight for dark overlays
+const C_GOLD       := Color("#d4af37") # Metallic gold accent
+const C_GOLD_LIGHT := Color("#f3d55b") # Light Golden highlight
 const C_GOLD_TEXT  := Color("#8c6613") # Dark Bronze Gold for labels
 const C_JADE       := Color("#0e3d26") # Deep Forest Green
-const C_RED_SON    := Color("#0e3d26") # Deep Forest Green primary accent
+const C_RED_SON    := Color("#b22222") # Deep lacquer red
 const C_CREAM      := Color("#faf6eb") # Warm Light Cream
 const C_CREAM_DIM  := Color("#ede7da") # Sidebar/Header Cream
 const C_GREEN_OK   := Color("#27ae60") # Rich Green for success states
@@ -16,8 +16,9 @@ const C_RED_ERR    := Color("#a82b2b") # Ruby Red for error states
 const C_BG         := Color("#faf6eb") # Main Background (Soft Cream)
 const C_BG_BAR     := Color("#ede7da") # Sidebar/Header/Footer (Darker Cream)
 const C_CARD       := Color("#f6f2e5") # Stats Panel Background (Warm Card Cream)
-const C_TEXT       := Color("#0e3d26") # Deep Forest Green text
-const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
+const C_TEXT       := Color("#2b2b2b") # Dark charcoal for text
+const C_TEXT_MUTED := Color("#595959") # Gray text
+const C_GREEN_JADE := Color("#2e8b57") # Jade green
 
 # ─── @onready ─────────────────────────────────────────────────────────────────
 @onready var linh_panel        : PanelContainer = $Root/MiddleRow/LinhPanel
@@ -28,14 +29,8 @@ const C_TEXT_MUTED := Color("#5c503e") # Warm Muted Charcoal-brown text
 @onready var pitch_note        : Label          = $Root/TopBar/TopM/TopH/PitchChip/PitchNote
 @onready var pitch_status      : Label          = $Root/TopBar/TopM/TopH/PitchChip/PitchStatus
 @onready var score_num         : Label          = $Root/TopBar/TopM/TopH/ScoreChip/ScoreNum
-# Highway & instruction strip
-@onready var _highway          : Control        = $Root/MiddleRow/MainContent/HighwayPanel/HighwayM/MusicHighway
-@onready var target_note_label : Label          = $Root/MiddleRow/MainContent/InstructionBar/InstructionM/InstructionH/TargetNoteLabel
-@onready var rhythm_acc        : Label          = $Root/MiddleRow/MainContent/InstructionBar/InstructionM/InstructionH/RhythmAcc
-# Notes scroll (hidden, kept for notation build logic)
-@onready var notes_hbox        : HBoxContainer  = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotesScroll/NotesHBox
-# StatsRow still exists (hidden) — rhythm_bars references it
-@onready var rhythm_bars       : HBoxContainer  = $Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmBars
+@onready var falling_notes : Control = $Root/MiddleRow/MainContent/FallingNotesLayer
+@onready var song_player : Node = $Root/MiddleRow/MainContent/SongPlayer
 @onready var target_label      : Label          = $Root/StringsBoard/BoardM/BoardHBox/BoardVBox/TargetLabel
 @onready var dots_hbox         : HBoxContainer  = $SettingsPanel/SettingsM/SettingsVBox/DotsHBox
 @onready var _board            : Control        = $Root/StringsBoard/BoardM/BoardHBox/BoardVBox/DanBauBoard
@@ -108,10 +103,9 @@ func _ready() -> void:
 	_generate_streams()
 	_set_labels()
 	_build_theme()
-	_build_notation()
 	_build_board()
 	_build_dots()
-	_build_rhythm_bars()
+	if falling_notes: falling_notes.note_hit.connect(_on_falling_note_hit)
 	_start_float()
 	_connect_buttons()
 	
@@ -254,14 +248,59 @@ func _set_labels() -> void:
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "40%" if current_song_title == "" else "100%"
 	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
-	($Root/MiddleRow/LinhPanel/LinhVBox/DemoBtn as Button).text = "🔊 Demo"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button).text = "x0.5"
+	# Style all sidebar buttons properly with icons
+	var ctrl_btns = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns
+	if ctrl_btns:
+		var hint_btn = ctrl_btns.get_node_or_null("HintBtn") as Button
+		if hint_btn:
+			hint_btn.text = "\nLuyện tập"
+			_style_sidebar_btn(hint_btn)
+			_set_sidebar_icon(hint_btn, "graduation-cap")
+			
+		var demo_btn = ctrl_btns.get_node_or_null("DemoBtn") as Button
+		if demo_btn:
+			demo_btn.text = "\nNghe mẫu: TẮT"
+			_style_sidebar_btn(demo_btn)
+			_set_sidebar_icon(demo_btn, "rotate-cw")
+			
+		var slow_btn = ctrl_btns.get_node_or_null("SlowBtn") as Button
+		if slow_btn:
+			slow_btn.text = "\nChờ nốt: Bật"
+			_style_sidebar_btn(slow_btn)
+			_set_sidebar_icon(slow_btn, "hourglass")
+			
+		var back_btn = Button.new()
+		back_btn.name = "BackBtnSidebar"
+		back_btn.text = "\nQuay lại"
+		ctrl_btns.add_child(back_btn)
+		_style_sidebar_btn(back_btn)
+		_set_sidebar_icon(back_btn, "arrow-left")
+		back_btn.pressed.connect(_go_back)
 
-	# Instruction bar (new Simply Piano layout)
-	if target_note_label: target_note_label.text = sheet_notes[0] if sheet_notes.size() > 0 else "Đô"
-	# Hidden notation area labels (safe access)
-	var nl := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel") as Label
-	if nl: nl.text = "BẢN NHẠC  —  Gảy theo dòng nốt"
+	# Setup Song Selector
+	var settings_vbox := $SettingsPanel/SettingsM/SettingsVBox as VBoxContainer
+	if settings_vbox:
+		var song_sel := OptionButton.new()
+		song_sel.name = "SongSelector"
+		song_sel.custom_minimum_size = Vector2(220, 44)
+		song_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+		var sb_normal := _flat(C_BG_BAR, C_GOLD, 8)
+		var sb_hover := _flat(C_BG_BAR, C_GOLD_LIGHT, 8)
+		var sb_pressed := _flat(C_GOLD, C_GOLD_LIGHT, 8)
+		song_sel.add_theme_stylebox_override("normal", sb_normal)
+		song_sel.add_theme_stylebox_override("hover", sb_hover)
+		song_sel.add_theme_stylebox_override("pressed", sb_pressed)
+		if f_body: song_sel.add_theme_font_override("font", f_body)
+		song_sel.add_theme_color_override("font_color", C_TEXT)
+		song_sel.add_theme_font_size_override("font_size", 16)
+		
+		song_sel.add_item("Sứ Thanh Hoa", 0)
+		song_sel.selected = 0
+		settings_vbox.add_child(song_sel)
+		settings_vbox.move_child(song_sel, 1)
+
 
 	var blbl := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/BoardVBox/BoardLabel") as Label
 	if blbl: blbl.text = "ĐỘC HUYỀN CẦM  —  Chạm các nút tròn hài âm để gảy  ·  Uốn vòi để đổi âm"
@@ -319,8 +358,7 @@ func _build_theme() -> void:
 		var btn_node := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(bn) as Button
 		if btn_node: _style_outlined_btn(btn_node)
 
-	var dm_btn := get_node_or_null("Root/MiddleRow/LinhPanel/LinhVBox/DemoBtn") as Button
-	if dm_btn: _style_outlined_btn(dm_btn)
+
 
 
 	var settings_panel := $SettingsPanel as PanelContainer
@@ -354,7 +392,6 @@ func _build_theme() -> void:
 	pitch_note.add_theme_color_override("font_color",   C_GOLD)
 	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
 	score_num.add_theme_color_override("font_color",    C_GOLD)
-	rhythm_acc.add_theme_color_override("font_color",   C_TEXT_MUTED)
 
 
 	var sb_s := StyleBoxFlat.new()
@@ -409,61 +446,6 @@ func _build_theme() -> void:
 
 
 # ─── Notation Track ───────────────────────────────────────────────────────────
-func _build_notation() -> void:
-	for c in notes_hbox.get_children(): c.queue_free()
-	
-	var scroll_container := notes_hbox.get_parent() as ScrollContainer
-	if scroll_container:
-		scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-		scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-
-	for i in sheet_notes.size():
-		var note     := sheet_notes[i]
-		var is_active := i == _note_idx
-		var is_done   := i < _note_idx
-
-		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(60, 60)
-		var cs := StyleBoxFlat.new()
-		cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
-		cs.corner_radius_top_left = 30; cs.corner_radius_top_right = 30
-		cs.corner_radius_bottom_left = 30; cs.corner_radius_bottom_right = 30
-		if is_active:
-			cs.bg_color     = C_GOLD
-			cs.border_color = Color(1.0, 0.9, 0.6, 1.0)
-			cs.shadow_size  = 12; cs.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-		elif is_done:
-			cs.bg_color     = C_JADE
-			cs.border_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.8)
-		else:
-			cs.bg_color     = Color(0.95, 0.93, 0.89, 1.0)
-			cs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.2)
-		card.add_theme_stylebox_override("panel", cs)
-
-		var lbl := Label.new()
-		lbl.text = note
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 17)
-		lbl.add_theme_color_override("font_color",
-			Color(1, 1, 1, 1) if (is_active or is_done) else C_TEXT_MUTED)
-		card.add_child(lbl)
-		notes_hbox.add_child(card)
-
-	# Scroll smoothly to center the active note
-	if scroll_container:
-		var separation := 4.0 # default HBox container separation
-		var active_x := 0.0
-		var active_w := 60.0
-		for j in range(_note_idx):
-			active_x += 60.0 + separation
-			
-		var viewport_w : float = scroll_container.size.x if scroll_container.size.x > 0 else 800.0
-		var target_scroll : float = active_x + (active_w / 2.0) - (viewport_w / 2.0)
-		
-		var tween = create_tween()
-		tween.tween_property(scroll_container, "scroll_horizontal", int(max(0.0, target_scroll)), 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-
 func _build_dots() -> void:
 	var total := 5
 	var done  := 2
@@ -472,16 +454,6 @@ func _build_dots() -> void:
 		if d:
 			d.color = C_GOLD if i < done else Color(0.85, 0.82, 0.75, 1.0)
 
-func _build_rhythm_bars() -> void:
-	for c in rhythm_bars.get_children(): c.queue_free()
-	for _i in range(14):
-		var bar := ColorRect.new()
-		bar.custom_minimum_size = Vector2(9, 10)
-		bar.color = Color(0.85, 0.82, 0.75, 1.0)
-		bar.size_flags_vertical = Control.SIZE_SHRINK_END
-		rhythm_bars.add_child(bar)
-
-# ─── Đàn Bầu Board ────────────────────────────────────────────────────────────
 func _build_board() -> void:
 	var freqs: Array[float] = []
 	for i in NOTES_VN.size():
@@ -490,11 +462,6 @@ func _build_board() -> void:
 	_board.string_plucked.connect(_on_string_plucked)
 	_board.pitch_bent.connect(_on_pitch_bent)
 	_update_target_indicator()
-	# ── Simply Piano Music Highway: load sheet and set cursor to first note ──
-		
-	if _highway and is_instance_valid(_highway):
-		_highway.load_sheet(sheet_notes)
-		_highway.advance_to(0)
 
 
 # ─── Sample-Based Audio (Real Dan Bau Recording) ─────────────────────────────
@@ -638,14 +605,10 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 
 	if note_name == sheet_notes[_note_idx]:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
-		_build_notation()
 		_update_target_indicator()
 		_score = clamp(_score + 4.0, 0, 100)
 		_refresh_score()
 		_va_say("Tuyệt vời! Gảy đúng nốt hài âm rồi.")
-		# Advance Music Highway cursor to next note
-		if _highway and is_instance_valid(_highway):
-			_highway.advance_to(_note_idx)
 
 
 func _on_pitch_bent(cents_offset: float) -> void:
@@ -724,11 +687,11 @@ func _play_audio(idx: int) -> void:
 	)
 
 func _update_target_indicator() -> void:
+	if sheet_notes.size() == 0: return
 	var target_note := sheet_notes[_note_idx]
 	var target_idx  := NOTES_VN.find(target_note)
 	if target_idx == -1: target_idx = 0
 	target_label.text      = "Nốt cần gảy: %s (Hài âm %d)" % [target_note, target_idx + 1]
-	target_note_label.text = target_note   # Simply Piano: just the note name
 	if _board: _board.set_target(target_idx)
 
 
@@ -746,14 +709,14 @@ func _start_float() -> void:
 func _connect_buttons() -> void:
 	var back_btn  := $Root/TopBar/TopM/TopH/BackBtn as Button
 	var hint_btn  := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button
-	var demo_btn  := $Root/MiddleRow/LinhPanel/LinhVBox/DemoBtn as Button
+	var demo_btn  := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn") as Button
 	var slow_btn  := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 	var menu_btn  := $Root/TopBar/TopM/TopH/MenuBtn as Button
 
 	back_btn.pressed.connect(_go_back)
 	hint_btn.pressed.connect(_show_custom_hint)
-	demo_btn.pressed.connect(_demo)
+	if demo_btn: demo_btn.pressed.connect(_demo)
 	slow_btn.pressed.connect(func() -> void: _va_say("Xem chậm x0.5 – dễ uốn nốt từng bước."))
 	record_btn.pressed.connect(_toggle_record)
 	reset_btn.pressed.connect(_reset)
@@ -766,7 +729,7 @@ func _connect_buttons() -> void:
 
 	_make_button_bouncy(back_btn)
 	_make_button_bouncy(hint_btn)
-	_make_button_bouncy(demo_btn)
+	if demo_btn: _make_button_bouncy(demo_btn)
 	_make_button_bouncy(slow_btn)
 	_make_button_bouncy(record_btn)
 	_make_button_bouncy(reset_btn)
@@ -801,81 +764,37 @@ func _demo() -> void:
 		return
 		
 	_demo_active = true
-	var song_name := current_song_title if current_song_title != "" else "Gió Đánh Đò Đưa"
+	var song_name := current_song_title if current_song_title != "" else "Sứ Thanh Hoa"
 	_va_say("Hãy lắng nghe bài nhạc mẫu: " + song_name)
 	
-	_note_idx = 0
-	_build_notation()
-	_update_target_indicator()
-	# Start Music Highway scrolling
-	if _highway and is_instance_valid(_highway):
-		_highway.load_sheet(sheet_notes)
-		_highway.advance_to(0)
-		_highway.play_demo()
-
+	var dm_btn := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn") as Button
+	if dm_btn: dm_btn.text = "Nghe mẫu: BẬT"
 	
-	_demo_tween = create_tween()
-	
-	for i in range(sheet_notes.size()):
-		var note_name := sheet_notes[i]
-		var target_idx := NOTES_VN.find(note_name)
-		if target_idx == -1: 
-			target_idx = 0
-			
-		# Schedule note play
-		var play_note_callable := (func(step_idx: int, note: String, target_i: int) -> void:
-			if not _demo_active: return
-			_note_idx = step_idx
-			_build_notation()
-			_update_target_indicator()
-			
-			pitch_note.text   = note
-			pitch_status.text = "Demo: Tự động chơi..."
-			pitch_status.add_theme_color_override("font_color", C_GOLD)
-			
-			# Trigger visual board pluck
-			if _board:
-				_board.pluck(target_i)
-			# Advance highway cursor
-			if _highway and is_instance_valid(_highway):
-				_highway.advance_to(step_idx)
-			
-			# Play the synthesized note sound
-			_play_audio(target_i)
-		).bind(i, note_name, target_idx)
-		
-		_demo_tween.tween_callback(play_note_callable)
-		
-		# Add traditional uốn cần (vibrato/bend)
-		if _board:
-			_demo_tween.tween_property(_board, "_target_bend_offset", -16.0, 0.15)
-			_demo_tween.tween_property(_board, "_target_bend_offset", 0.0, 0.20)
-		
-		# Interval between notes
-		_demo_tween.tween_interval(0.50)
-		
-	_demo_tween.tween_callback(func() -> void:
-		_demo_active = false
-		_note_idx = 0
-		_build_notation()
-		_update_target_indicator()
-		_va_say("Hoàn thành bài demo. Bây giờ hãy thử tự gảy xem nhé!")
-	)
+	if song_player:
+		song_player.play()
+	if falling_notes:
+		falling_notes.reset_hits()
 
 func _stop_demo() -> void:
 	_demo_active = false
-	if _demo_tween:
-		_demo_tween.kill()
-		_demo_tween = null
-	if _board:
-		_board._target_bend_offset = 0.0
-	# Stop Music Highway
-	if _highway and is_instance_valid(_highway):
-		_highway.stop_demo()
-	_note_idx = 0
-	_build_notation()
-	_update_target_indicator()
+	var dm_btn := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn") as Button
+	if dm_btn: dm_btn.text = "Nghe mẫu: TẮT"
+	
+	if song_player:
+		song_player.stop()
+	
 	_va_say("Đã dừng chế độ chơi tự động.")
+
+func _on_falling_note_hit(lane: int) -> void:
+	if _board:
+		_board.pluck(lane)
+	_play_audio(lane)
+	
+	# Try random uốn cần (bend)
+	if _board and randf() > 0.6:
+		var tw = create_tween()
+		tw.tween_property(_board, "_target_bend_offset", -16.0, 0.15)
+		tw.tween_property(_board, "_target_bend_offset", 0.0, 0.20)
 
 func _simulate_tick() -> void:
 	var ni := randi() % NOTES_VN.size()
@@ -897,12 +816,11 @@ func _simulate_tick() -> void:
 
 	if NOTES_VN[ni] == sheet_notes[_note_idx] and randf() > 0.5:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
-		_build_notation()
 		_update_target_indicator()
 
 	_score = clamp(_score + randf_range(-2.0, 4.0), 0, 100)
 	_refresh_score()
-	_update_rhythm()
+
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
 func _process_real_audio(delta: float) -> void:
@@ -971,7 +889,6 @@ func _process_real_audio(delta: float) -> void:
 				
 				# Advance note
 				_note_idx = (_note_idx + 1) % sheet_notes.size()
-				_build_notation()
 				_update_target_indicator()
 				
 				# Dynamic AI scoring
@@ -981,8 +898,8 @@ func _process_real_audio(delta: float) -> void:
 				
 				_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, avg_tone_score, 100.0)
 				_refresh_score()
-				_update_rhythm_real()
-				rhythm_acc.text = "Nhịp điệu: %d%% | Âm sắc: %d%%" % [int(rhythm_score), int(avg_tone_score)]
+			
+
 				
 				# Board interaction effect
 				if _board:
@@ -1018,41 +935,6 @@ func _process_real_audio(delta: float) -> void:
 		pitch_status.text = "Đang nghe..."
 		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
 		pitch_note.add_theme_color_override("font_color", C_RED_SON)
-
-func _update_rhythm_real() -> void:
-	var bars := rhythm_bars.get_children()
-	var ok := 0
-	for bar in bars:
-		var cr := bar as ColorRect
-		if randf() > 0.1:
-			ok += 1
-			var h := randf_range(16.0, 56.0)
-			var t := create_tween().set_parallel(true)
-			t.tween_property(cr, "custom_minimum_size:y", h, 0.08)
-			t.tween_property(cr, "color", C_JADE if randf() > 0.2 else C_GOLD, 0.07)
-			t.chain().parallel().tween_property(cr, "custom_minimum_size:y", 10.0, 0.36)
-			t.parallel().tween_property(cr, "color", Color(0.85, 0.82, 0.75, 1.0), 0.36)
-	var pct := int(float(ok) / float(bars.size()) * 100.0)
-	rhythm_acc.text = "Độ chính xác: %d%%" % pct
-	rhythm_acc.add_theme_color_override("font_color", C_GREEN_OK)
-
-func _update_rhythm() -> void:
-	var bars := rhythm_bars.get_children()
-	var ok   := 0
-	for bar in bars:
-		var cr := bar as ColorRect
-		if randf() > 0.3:
-			ok += 1
-			var h := randf_range(14.0, 52.0)
-			var t := create_tween().set_parallel(true)
-			t.tween_property(cr, "custom_minimum_size:y", h, 0.08)
-			t.tween_property(cr, "color", C_JADE if randf() > 0.2 else C_GOLD, 0.07)
-			t.chain().parallel().tween_property(cr, "custom_minimum_size:y", 10.0, 0.36)
-			t.parallel().tween_property(cr, "color", Color(0.85, 0.82, 0.75, 1.0), 0.36)
-	var pct := int(float(ok) / float(bars.size()) * 100.0)
-	rhythm_acc.text = "Độ chính xác: %d%%" % pct
-	rhythm_acc.add_theme_color_override("font_color",
-		C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
 
 func _hop_linh() -> void:
 	pass
@@ -1132,7 +1014,6 @@ func _update_linh_visibility() -> void:
 func _reset() -> void:
 	_score = 75.0; _recording = false; _note_idx = 0
 	_eval_cooldown = 0.0
-	_build_notation()
 	record_btn.text   = "Bắt đầu luyện tập"
 	_update_rec_pulse(false)
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
@@ -1141,7 +1022,7 @@ func _reset() -> void:
 	pitch_status.text = "Đang nghe..."
 	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
 	pitch_note.add_theme_color_override("font_color", C_RED_SON)
-	rhythm_acc.text   = "Đang nghe..."
+
 	_refresh_score()
 	_va_say("Cố gắng lên!\nChăm chỉ tập luyện để làm chủ tiếng đàn.")
 	
@@ -1435,3 +1316,36 @@ func _on_resized() -> void:
 		var visualizer := record_h.get_node_or_null("WaveformVisualizer") as Control
 		if visualizer:
 			visualizer.custom_minimum_size = Vector2(320, 62)
+
+
+func _style_sidebar_btn(btn: Button) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0)
+	var sb_hover := StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.1, 0.35, 0.2, 0.08)
+	
+	btn.custom_minimum_size.y = 60
+	btn.add_theme_stylebox_override("normal", sb)
+	btn.add_theme_stylebox_override("hover", sb_hover)
+	btn.add_theme_stylebox_override("pressed", sb)
+	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_color_override("font_color", Color(0.25, 0.22, 0.20))
+	btn.add_theme_color_override("font_hover_color", Color(0.1, 0.35, 0.2))
+	
+	btn.add_theme_color_override("icon_normal_color", Color(0.1, 0.1, 0.1))
+	btn.add_theme_color_override("icon_hover_color", Color(0.1, 0.35, 0.2))
+	btn.add_theme_color_override("icon_pressed_color", Color.BLACK)
+	
+	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	if f_body: btn.add_theme_font_override("font", f_body)
+	btn.add_theme_font_size_override("font_size", 16)
+	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.expand_icon = true
+
+func _set_sidebar_icon(btn: Button, icon_name: String) -> void:
+	var tex = load("res://assets/textures/lucide/" + icon_name + ".svg")
+	if tex:
+		btn.icon = tex
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if "vertical_icon_alignment" in btn:
+			btn.set("vertical_icon_alignment", 0)
