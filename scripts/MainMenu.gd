@@ -808,11 +808,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
-				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-				if not completed.has("dan_bau_coban_1_video"):
-					_play_dan_bau_video(0)
-				else:
-					_play_dan_bau_practice(1)
+				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
@@ -821,14 +817,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
-				var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-				if not completed.has("dan_bau_coban_1_practice"):
-					_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Căng Dây & Lên Dây để mở khóa bài tiếp theo nhé!")
-					return
-				if not completed.has("dan_bau_coban_2_video"):
-					_play_dan_bau_video(1)
-				else:
-					_play_dan_bau_practice(2)
+				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -847,14 +836,7 @@ func _connect_buttons() -> void:
 	play_soloist.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
-			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-			if not completed.has("dan_bau_coban_2_practice"):
-				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Học Nốt Đô Hài Âm để mở khóa bài tiếp theo nhé!")
-				return
-			if not completed.has("dan_bau_coban_3_video"):
-				_play_dan_bau_video(2)
-			else:
-				_play_dan_bau_practice(3)
+			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)
@@ -865,14 +847,7 @@ func _connect_buttons() -> void:
 	play_chords.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
-			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-			if not completed.has("dan_bau_coban_2_practice"):
-				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành phần Học Nốt Đô Hài Âm để mở khóa bài tiếp theo nhé!")
-				return
-			if not completed.has("dan_bau_coban_4_video"):
-				_play_dan_bau_video(3)
-			else:
-				_play_dan_bau_practice(4)
+			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
 			_go_practice()
 	)
@@ -882,14 +857,7 @@ func _connect_buttons() -> void:
 	play_classical.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
-			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-			if not completed.has("dan_bau_coban_3_practice"):
-				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành bài Học Nốt Rê & Mi để mở khóa bài tiếp theo nhé!")
-				return
-			if not completed.has("dan_bau_coban_5_video"):
-				_play_dan_bau_video(4)
-			else:
-				_play_dan_bau_practice(5)
+			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
 			_go_practice()
 	)
@@ -899,14 +867,7 @@ func _connect_buttons() -> void:
 	play_pop.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
-			var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-			if not completed.has("dan_bau_coban_4_practice"):
-				_virtual_artist_play_happy("Bạn ơi, hãy hoàn thành bài Kỹ Thuật Uốn Vòi để mở khóa bài tiếp theo nhé!")
-				return
-			if not completed.has("dan_bau_coban_5_video"):
-				_play_dan_bau_video(4)
-			else:
-				_play_dan_bau_practice(5)
+			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
 			_go_practice()
 	)
