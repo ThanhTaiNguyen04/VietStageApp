@@ -320,8 +320,8 @@ func _draw() -> void:
 	var GY := BCY
 	var GR := 54.0            # Gourd radius
 
-	var rod_start := Vector2(GX, GY + 32.0)    # Starts inside zither body (below the gourd)
-	var rod_ht := BH * 0.81                    # Length of the rod
+	var rod_start := Vector2(GX, GY - 8.0)     # Starts in the middle of the gourd body (for top-down 2.5D projection)
+	var rod_ht := BH * 0.81 + 40.0             # Length adjusted to keep the tip height perfectly preserved
 	var tip_deflect := _bend_offset * 0.90
 
 	# Construct rod coordinates: path integration along the curve to ensure length preservation
@@ -355,43 +355,11 @@ func _draw() -> void:
 		var p2 := rod_pts[s + 1] + Vector2(-6.0, 6.0)
 		var w := lerpf(24.0, 10.0, t1)
 		draw_line(p1, p2, Color(0, 0, 0, 0.22), w)
+		draw_circle(p1, w * 0.5, Color(0, 0, 0, 0.22)) # Round joints to prevent gaps
+	draw_circle(rod_end + Vector2(-6.0, 6.0), 10.0 * 0.5, Color(0, 0, 0, 0.22))
 
-	# Draw rod dark border (outer silhouette - tapered from 24px to 11px - black horn)
-	for s in 20:
-		var t1 := float(s) / 20.0
-		var w := lerpf(24.0, 11.0, t1)
-		draw_line(rod_pts[s], rod_pts[s + 1], Color("#090909"), w)
-
-	# Draw rod core (polished black - tapered from 17.0px to 7.0px)
-	for s in 20:
-		var t1 := float(s) / 20.0
-		var w := lerpf(17.0, 7.0, t1)
-		draw_line(rod_pts[s], rod_pts[s + 1], Color("#181818"), w)
-
-	# Draw rod core highlight (charcoal grey)
-	for s in 20:
-		var t1 := float(s) / 20.0
-		var w := lerpf(8.0, 3.0, t1)
-		draw_line(rod_pts[s], rod_pts[s + 1], Color("#2d2d2d"), w)
-
-	# Draw specular sheen line (sharp polished piano-black/horn sheen)
-	for s in 20:
-		var t1 := float(s) / 20.0
-		var w := lerpf(2.2, 0.8, t1)
-		var offset := Vector2(-1.5, 0.0)
-		draw_line(rod_pts[s] + offset, rod_pts[s + 1] + offset, Color("#ffffff", 0.52), w)
-
-	# Bamboo/horn joints (positioned above the gourd for a clean traditional look)
-	for jt_t in [0.35, 0.60]:
-		var idx := int(jt_t * 20)
-		var jp := rod_pts[idx]
-		var jt_w := lerpf(24.0, 11.0, jt_t)
-		draw_circle(jp, jt_w * 0.48, Color("#090909"))
-		draw_circle(jp, jt_w * 0.35, Color("#2d2d2d"))
-
-	# Decorative gold cap on tip
-	draw_circle(rod_end, 5.5, Color("#cca43b"))
-	draw_circle(rod_end, 2.5, Color("#090909"))
+	# Note: Rod body, joints, and tip cap are drawn later (after the gourd body is drawn)
+	# so that the rod base overlays the gourd shell in 2.5D perspective.
 
 	# ─── 4. Unified Turned Wooden Gourd Cup (Bầu đàn dáng chum tiện gỗ nguyên khối) ─
 	# Sits on top of the rod base, nested inside the zither body, oriented horizontally
@@ -513,10 +481,59 @@ func _draw() -> void:
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w + 3.0, rim_r_h + 3.0, Color("#cca43b")) # gold bracket outer
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w, rim_r_h, Color("#1a0802")) # gold bracket inner
 
-	# Collar connection neck (Cổ nối nhỏ phía trên quả bầu)
-	var collar_rect := Rect2(GX - 6.0, GY - GR - 5.0, 12.0, 5.0)
-	draw_rect(collar_rect, Color("#cca43b")) # gold/brass collar
-	draw_rect(collar_rect, Color("#1a0802"), false, 1.2)
+	# ─── 4.5 Thick Curved Bamboo Rod (Cần rung sừng trâu) drawn on top of gourd body ───
+	# Draw rod dark border (outer silhouette - tapered from 24px to 11px - black horn)
+	for s in 20:
+		var t1 := float(s) / 20.0
+		var w := lerpf(24.0, 11.0, t1)
+		draw_line(rod_pts[s], rod_pts[s + 1], Color("#090909"), w)
+		draw_circle(rod_pts[s], w * 0.5, Color("#090909"))
+	draw_circle(rod_end, 11.0 * 0.5, Color("#090909"))
+
+	# Draw rod core (polished black - tapered from 17.0px to 7.0px)
+	for s in 20:
+		var t1 := float(s) / 20.0
+		var w := lerpf(17.0, 7.0, t1)
+		draw_line(rod_pts[s], rod_pts[s + 1], Color("#181818"), w)
+		draw_circle(rod_pts[s], w * 0.5, Color("#181818"))
+	draw_circle(rod_end, 7.0 * 0.5, Color("#181818"))
+
+	# Draw rod core highlight (charcoal grey)
+	for s in 20:
+		var t1 := float(s) / 20.0
+		var w := lerpf(8.0, 3.0, t1)
+		draw_line(rod_pts[s], rod_pts[s + 1], Color("#2d2d2d"), w)
+		draw_circle(rod_pts[s], w * 0.5, Color("#2d2d2d"))
+	draw_circle(rod_end, 3.0 * 0.5, Color("#2d2d2d"))
+
+	# Draw specular sheen line (sharp polished piano-black/horn sheen)
+	for s in 20:
+		var t1 := float(s) / 20.0
+		var w := lerpf(2.2, 0.8, t1)
+		var offset := Vector2(-1.5, 0.0)
+		draw_line(rod_pts[s] + offset, rod_pts[s + 1] + offset, Color("#ffffff", 0.52), w)
+		draw_circle(rod_pts[s] + offset, w * 0.5, Color("#ffffff", 0.52))
+	draw_circle(rod_end + Vector2(-1.5, 0.0), 0.8 * 0.5, Color("#ffffff", 0.52))
+
+	# Bamboo/horn joints (positioned above the gourd for a clean traditional look)
+	for jt_t in [0.35, 0.60]:
+		var idx := int(jt_t * 20)
+		var jp := rod_pts[idx]
+		var jt_w := lerpf(24.0, 11.0, jt_t)
+		draw_circle(jp, jt_w * 0.48, Color("#090909"))
+		draw_circle(jp, jt_w * 0.35, Color("#2d2d2d"))
+
+	# Decorative gold cap on tip
+	draw_circle(rod_end, 5.5, Color("#cca43b"))
+	draw_circle(rod_end, 2.5, Color("#090909"))
+
+	# ─── 4.6 Collar socket (Cổ khớp nối cắm cần rung vào bầu) ───────────────────
+	# Aligned to the top-middle surface of the gourd at x = GX, y = GY - 10.0
+	var collar_y := GY - 10.0
+	var collar_center := Vector2(GX, collar_y)
+	draw_ellipse_like_cavity(collar_center, 12.0, 4.5, Color("#cca43b")) # gold rim outer
+	draw_ellipse_like_cavity(collar_center - Vector2(0, 0.5), 10.5, 3.5, Color("#1a0802")) # inner collar dark hole
+	draw_ellipse_like_cavity(collar_center - Vector2(0, 1.0), 9.0, 2.5, Color("#090909")) # center deep shadow
 
 	# Brass string rivet anchor (inside the flared cavity mouth)
 	var rivet_pos := Vector2(rim_x, GY)
