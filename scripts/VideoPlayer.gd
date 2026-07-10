@@ -411,7 +411,7 @@ func _va_success_prompt() -> void:
 
 func _on_complete() -> void:
 	video_stream_player.stop()
-	var inst := InstrumentSelect.selected_instrument
+	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
 	var lesson_id := SecureDataManager.active_lesson_id
 	SecureDataManager.complete_lesson(inst, lesson_id, 3) # Mark Intro completed with 3 stars securely!
 	SecureDataManager.video_completed = true

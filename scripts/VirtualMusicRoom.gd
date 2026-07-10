@@ -111,13 +111,22 @@ var _font_title : Font
 var _font_body : Font
 var _font_body_bold : Font
 
+var _is_mobile_layout : bool = false
+var _station_transitioning : bool = false
+var _station_base_positions := {
+	"tranh": Vector2(70.0, 520.0),
+	"sao": Vector2(810.0, 520.0),
+	"bau": Vector2(230.0, 330.0),
+	"trong": Vector2(650.0, 330.0),
+}
+
 
 const LINH_TIPS := [
 	"Bạn có biết: Đàn Tranh có nguồn gốc từ đàn Tranh cổ tự, nhưng được các nghệ nhân cải tiến với âm sắc thanh tao đặc trưng Việt Nam.",
 	"Luyện tập hàng ngày giúp tai nghe nhạy bén và ngón tay linh hoạt hơn đó!",
 	"Hãy thử học một bài hát mới trong Kho Bài Hát để tích lũy thêm điểm XP nhé.",
 	"Sáo Trúc làm từ các ống tre, trúc già tự nhiên, mang hơi thở của sông núi làng quê Việt Nam.",
-	"Các nhạc cụ Đàn Bầu và Trống đang được các nghệ nhân chế tác tỉ mỉ, sẽ sớm ra mắt!"
+	"Hãy thử luyện tập Đàn Bầu hoặc Trống Chầu để khám phá các âm điệu mới nhé!"
 ]
 
 
@@ -205,8 +214,8 @@ func _ready() -> void:
 	
 	_setup_station_button(s_tranh, "tranh", "Đàn Tranh", _draw_tranh)
 	_setup_station_button(s_sao, "sao", "Sáo Trúc", _draw_sao)
-	_setup_station_button(s_bau, "bau", "Đàn Bầu (Sắp ra mắt)", _draw_bau)
-	_setup_station_button(s_trong, "trong", "Trống Chầu (Sắp ra mắt)", _draw_trong)
+	_setup_station_button(s_bau, "bau", "Đàn Bầu", _draw_bau)
+	_setup_station_button(s_trong, "trong", "Trống Chầu", _draw_trong)
 	
 	# Setup Linh Assist
 	char_linh.draw.connect(_draw_linh.bind(char_linh))
@@ -218,9 +227,13 @@ func _ready() -> void:
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
 	
-	# Setup Back button to return to Main Menu
+	# Setup Back button to return to Main Menu (Icon button for mobile style)
 	btn_back.show()
-	_style_popup_button(btn_back, true)
+	btn_back.text = ""
+	btn_back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
+	btn_back.expand_icon = true
+	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_style_hud_icon_button(btn_back)
 	_make_btn_bouncy(btn_back)
 	btn_back.pressed.connect(func() -> void:
 		if _audio_manager:
@@ -339,11 +352,12 @@ func _process(delta: float) -> void:
 	# Update welcome bow timer
 	_welcome_bow_timer = maxf(0.0, _welcome_bow_timer - delta)
 
-	# Floating animation for pedestals/stations
-	s_tranh.position.y = 520.0 + sin(_time * 2.0) * 8.0
-	s_sao.position.y = 520.0 + sin(_time * 2.0 + PI/2.0) * 8.0
-	s_bau.position.y = 360.0 + sin(_time * 2.0 + PI) * 8.0
-	s_trong.position.y = 360.0 + sin(_time * 2.0 + 1.5*PI) * 8.0
+	# Floating animation for pedestals/stations, preserving responsive base positions.
+	var float_amp := 4.0 if _is_mobile_layout else 8.0
+	s_tranh.position = _station_base_positions["tranh"] + Vector2(0.0, sin(_time * 2.0) * float_amp)
+	s_sao.position = _station_base_positions["sao"] + Vector2(0.0, sin(_time * 2.0 + PI/2.0) * float_amp)
+	s_bau.position = _station_base_positions["bau"] + Vector2(0.0, sin(_time * 2.0 + PI) * float_amp)
+	s_trong.position = _station_base_positions["trong"] + Vector2(0.0, sin(_time * 2.0 + 1.5*PI) * float_amp)
 
 	# Keep Linh at base Y (procedural animations handled in _draw_linh canvas transform)
 	char_linh.position.y = _linh_base_y
@@ -523,12 +537,12 @@ func _process(delta: float) -> void:
 	if _linh_is_moving or _player_is_moving:
 		_sort_room_elements()
 	
-	# Occasional random talk from Linh if idle
-	_speech_timer += delta
-	if _speech_timer > 15.0:
-		_speech_timer = 0.0
-		if _hovered_station == "" and not is_ui_focused:
-			_show_dialogue(LINH_TIPS.pick_random())
+	# Occasional random talk from Linh if idle (Disabled per user request)
+	# _speech_timer += delta
+	# if _speech_timer > 15.0:
+	# 	_speech_timer = 0.0
+	# 	if _hovered_station == "" and not is_ui_focused:
+	# 		_show_dialogue(LINH_TIPS.pick_random())
 
 # ─── Tooltip & Affordance Interactive Stations ─────────────────────────────────
 func _setup_station_button(btn: Button, code_name: String, displayName: String, draw_func: Callable) -> void:
@@ -571,15 +585,16 @@ func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> 
 		
 		var lbl_y := sz.y - 12.0
 		if has_tex:
-			lbl_y = cy + 25.0
+			lbl_y = sz.y - 16.0
+		var label_font_size := 15 if _is_mobile_layout else 17
 		
 		# Shadow
 		btn.draw_string(font, Vector2(lbl_x + 1, lbl_y + 1), name_str,
-			HORIZONTAL_ALIGNMENT_CENTER, sz.x, 16, Color(0, 0, 0, 0.6))
+			HORIZONTAL_ALIGNMENT_CENTER, sz.x, label_font_size, Color(0, 0, 0, 0.70))
 		# Main text: gold when hovered, cream when normal
 		var text_col := C_GOLD_LIGHT if is_hov else C_CREAM
 		btn.draw_string(font, Vector2(lbl_x, lbl_y), name_str,
-			HORIZONTAL_ALIGNMENT_CENTER, sz.x, 16, text_col)
+			HORIZONTAL_ALIGNMENT_CENTER, sz.x, label_font_size, text_col)
 
 func _on_station_mouse_entered(btn: Button, code_name: String, displayName: String) -> void:
 	_hovered_station = code_name
@@ -614,12 +629,19 @@ func _on_station_mouse_exited(btn: Button, code_name: String) -> void:
 	tt_t.tween_callback(func() -> void: station_tooltip.visible = false)
 
 func _on_station_pressed(btn: Button, code_name: String) -> void:
+	if _station_transitioning:
+		return
+	_station_transitioning = true
+	_player_expression = "focused"
+
 	# Visual press feedback
 	var pt := create_tween()
 	pt.tween_property(btn, "scale", Vector2(0.92, 0.92), 0.08)
 	pt.tween_property(btn, "scale", Vector2(1.08, 1.08) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK)
 	
-	# Skip introduction popup and select instrument directly to enter MainMenu
+	_move_linh_to_station(code_name, false)
+
+func _select_instrument_and_enter(code_name: String) -> void:
 	if code_name == "tranh":
 		InstrumentSelect.selected_instrument = "dan_tranh"
 		SecureDataManager.data["selected_instrument"] = "dan_tranh"
@@ -636,10 +658,10 @@ func _on_station_pressed(btn: Button, code_name: String) -> void:
 		SecureDataManager.save_data()
 		_fade_to("res://scenes/MainMenu.tscn")
 	elif code_name == "trong":
-		_show_dialogue("Trống Chầu đang được các nghệ nhân chế tác, sẽ sớm ra mắt học viên nhé!")
-		if _audio_manager and is_instance_valid(_audio_manager):
-			_audio_manager.audio_player.stop()
-			_audio_manager.speak_vietnamese("Trống Chầu đang được chế tác, sẽ sớm ra mắt học viên nhé")
+		InstrumentSelect.selected_instrument = "trong_chau"
+		SecureDataManager.data["selected_instrument"] = "trong_chau"
+		SecureDataManager.save_data()
+		_fade_to("res://scenes/MainMenu.tscn")
 
 
 
@@ -660,21 +682,31 @@ func _get_player_feet() -> Vector2:
 		return _player_pos
 	return char_player.position + Vector2(80.0, 150.0)
 
+func _get_station_center(btn: Button) -> Vector2:
+	return btn.position + btn.size * 0.5
+
+func _get_station_floor_center(btn: Button) -> Vector2:
+	var floor_offset := 22.0 if _is_mobile_layout else 35.0
+	return _get_station_center(btn) + Vector2(0.0, floor_offset)
+
+func _get_linh_feet_offset() -> Vector2:
+	return Vector2(char_linh.size.x * 0.5, char_linh.size.y * 0.5 + 74.0)
+
 func _get_station_interact_spot(code_name: String) -> Vector2:
 	match code_name:
-		"tranh": return Vector2(s_tranh.position.x + 120.0, 700.0)
-		"sao": return Vector2(s_sao.position.x + 120.0, 700.0)
-		"bau": return Vector2(s_bau.position.x + 120.0, 540.0)
-		"trong": return Vector2(s_trong.position.x + 120.0, 540.0)
+		"tranh": return _get_station_floor_center(s_tranh) + Vector2(0.0, 45.0)
+		"sao": return _get_station_floor_center(s_sao) + Vector2(0.0, 45.0)
+		"bau": return _get_station_floor_center(s_bau) + Vector2(0.0, 45.0)
+		"trong": return _get_station_floor_center(s_trong) + Vector2(0.0, 45.0)
 	return Vector2(600, 480)
 
 func _get_closest_station() -> String:
 	var player_feet := _get_player_feet()
 	var stations := {
-		"tranh": Vector2(s_tranh.position.x + 120.0, 655.0),
-		"sao": Vector2(s_sao.position.x + 120.0, 655.0),
-		"bau": Vector2(s_bau.position.x + 120.0, 495.0),
-		"trong": Vector2(s_trong.position.x + 120.0, 495.0)
+		"tranh": _get_station_floor_center(s_tranh),
+		"sao": _get_station_floor_center(s_sao),
+		"bau": _get_station_floor_center(s_bau),
+		"trong": _get_station_floor_center(s_trong)
 	}
 	var closest := ""
 	var min_dist := _interact_range
@@ -697,7 +729,7 @@ func _on_floor_gui_input(event: InputEvent) -> void:
 		_interact_target_linh = false
 		_close_dialogue()
 
-func _move_linh_to_station(station_code: String) -> void:
+func _move_linh_to_station(station_code: String, show_popup_after_move: bool = true) -> void:
 	_linh_is_moving = true
 	if _linh_tween:
 		_linh_tween.kill()
@@ -705,13 +737,14 @@ func _move_linh_to_station(station_code: String) -> void:
 	var target_feet := Vector2(600, 370) # default starting feet position
 	
 	match station_code:
-		"tranh":       target_feet = Vector2(s_tranh.position.x + 120.0, 655.0)
-		"sao":         target_feet = Vector2(s_sao.position.x + 120.0, 655.0)
-		"bau":         target_feet = Vector2(s_bau.position.x + 120.0, 495.0)
-		"trong":       target_feet = Vector2(s_trong.position.x + 120.0, 495.0)
+		"tranh":       target_feet = _get_station_floor_center(s_tranh)
+		"sao":         target_feet = _get_station_floor_center(s_sao)
+		"bau":         target_feet = _get_station_floor_center(s_bau)
+		"trong":       target_feet = _get_station_floor_center(s_trong)
 	
-	var target_x := target_feet.x - 80.0
-	var target_y := target_feet.y - 150.0
+	var linh_feet_offset := _get_linh_feet_offset()
+	var target_x := target_feet.x - linh_feet_offset.x
+	var target_y := target_feet.y - linh_feet_offset.y
 	
 	_linh_tween = create_tween()
 	_linh_tween.set_parallel(true)
@@ -721,7 +754,10 @@ func _move_linh_to_station(station_code: String) -> void:
 	_linh_tween.set_parallel(false)
 	_linh_tween.tween_callback(func() -> void:
 		_linh_is_moving = false
-		_open_focus_mode_popup(station_code)
+		if show_popup_after_move:
+			_open_focus_mode_popup(station_code)
+		else:
+			_select_instrument_and_enter(station_code)
 	)
 
 func _linh_talk(_txt: String) -> void:
@@ -773,6 +809,11 @@ func _setup_focus_popup_controls() -> void:
 		elif _current_popup_instrument == "bau":
 			InstrumentSelect.selected_instrument = "dan_bau"
 			SecureDataManager.data["selected_instrument"] = "dan_bau"
+			SecureDataManager.save_data()
+			_fade_to("res://scenes/MainMenu.tscn")
+		elif _current_popup_instrument == "trong":
+			InstrumentSelect.selected_instrument = "trong_chau"
+			SecureDataManager.data["selected_instrument"] = "trong_chau"
 			SecureDataManager.save_data()
 			_fade_to("res://scenes/MainMenu.tscn")
 	)
@@ -861,6 +902,15 @@ func _style_popup_button(btn: Button, primary: bool) -> void:
 	btn.remove_theme_stylebox_override("disabled")
 	btn.remove_theme_color_override("font_disabled_color")
 
+func _style_hud_icon_button(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_stylebox_override("hover", _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), Color(0,0,0,0), 28))
+	btn.add_theme_stylebox_override("pressed", _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), Color(0,0,0,0), 28))
+	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_color_override("icon_normal_color", Color(0.25, 0.18, 0.12)) # Warm bronze-brown
+	btn.add_theme_color_override("icon_hover_color", C_GOLD)
+	btn.add_theme_color_override("icon_pressed_color", Color(0.5, 0.4, 0.3))
+
 # ─── Procedural 2.5D Room Drawing – Classical Vietnamese Style ─────────────────
 func _draw_room_background() -> void:
 	var viewport_size : Vector2 = get_viewport().get_visible_rect().size
@@ -870,7 +920,7 @@ func _draw_room_background() -> void:
 	# Set transform relative to room_content (1200x800 space)
 	bg_canvas.draw_set_transform(room_content.position, 0.0, room_content.scale)
 	var sz := Vector2(1200, 800)
-	var wall_h := 310.0
+	var wall_h := 260.0 if _is_mobile_layout else 310.0
 	
 	# Calculate visible screen boundaries in transformed coordinates to stretch room background
 	var rx := room_content.position.x
@@ -881,14 +931,22 @@ func _draw_room_background() -> void:
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
 	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
 	
-	# ── 2. Wall: aged cream plaster (Stretched!) ──────────────────────
-	var wall_base := Color(0.95, 0.93, 0.89)  # warm cream-beige (#F3EFE3)
-	bg_canvas.draw_rect(Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound), wall_base)
+	# ── 2. Wall: aged cream plaster with soft lighting gradient (Stretched!) ──────
+	var steps := 32
+	var step_h := (wall_h - top_bound) / steps
+	var col_top := Color(0.97, 0.96, 0.92) # Luminous light cream-white
+	var col_bottom := Color(0.99, 0.99, 0.96) # Luminous bright warm-white
+	for s in range(steps):
+		var y1 = top_bound + s * step_h
+		var y2 = y1 + step_h
+		var t = float(s) / float(steps)
+		var col = col_top.lerp(col_bottom, t)
+		bg_canvas.draw_rect(Rect2(left_bound, y1, right_bound - left_bound, y2 - y1), col)
 	
 	# Subtle aged plaster texture — horizontal streaks stretching across bounds
 	for i in range(int(top_bound), int(wall_h), 8):
-		var streak_a := 0.04 * sin(float(i) * 0.3 + _time * 0.1)
-		var streak_col := Color(0.92 + streak_a, 0.88, 0.80, 0.25)
+		var streak_a := 0.02 * sin(float(i) * 0.3 + _time * 0.1)
+		var streak_col := Color(0.95 + streak_a, 0.93, 0.88, 0.08) # Very subtle bright streaks
 		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
 	
 	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
@@ -905,10 +963,10 @@ func _draw_room_background() -> void:
 		bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
 	
 	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
-	var scroll_w := 220.0
-	var scroll_h := 230.0
+	var scroll_w := 160.0 if _is_mobile_layout else 220.0
+	var scroll_h := 160.0 if _is_mobile_layout else 210.0
 	var scroll_x := (sz.x - scroll_w) / 2.0
-	var scroll_y := 28.0
+	var scroll_y := 12.0
 	# Scroll background (aged silk)
 	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), Color(0.94, 0.89, 0.74))
 	# Decorative inner border
@@ -934,17 +992,26 @@ func _draw_room_background() -> void:
 	# Kanji/Chu Nom style vertical strokes (abstract decorative)
 	var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
 	if font:
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 44), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 90), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
-		bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
-	# Thin horizontal separator lines
-	bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 60), Vector2(scroll_x + scroll_w - 20, scroll_y + 60), C_GOLD, 1.0)
-	bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
+		if _is_mobile_layout:
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 36), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 20, C_RED_SON)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 70), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 12, C_RED_DK)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 92), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 14, C_RED_SON)
+			# Thin horizontal separator lines
+			bg_canvas.draw_line(Vector2(scroll_x + 16, scroll_y + 48), Vector2(scroll_x + scroll_w - 16, scroll_y + 48), C_GOLD, 1.0)
+			bg_canvas.draw_line(Vector2(scroll_x + 16, scroll_y + 104), Vector2(scroll_x + scroll_w - 16, scroll_y + 104), C_GOLD, 1.0)
+		else:
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 40), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 76), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
+			# Thin horizontal separator lines
+			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 54), Vector2(scroll_x + scroll_w - 20, scroll_y + 54), C_GOLD, 1.0)
+			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
 	# Ink-wash lotus / seal decorative motif
-	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + 175)
-	bg_canvas.draw_circle(seal_pos, 24.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
-	bg_canvas.draw_arc(seal_pos, 22.0, 0, TAU, 32, C_RED_SON, 1.5)
-	bg_canvas.draw_circle(seal_pos, 8.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
+	var seal_radius := 16.0 if _is_mobile_layout else 20.0
+	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + (128 if _is_mobile_layout else 170))
+	bg_canvas.draw_circle(seal_pos, seal_radius, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
+	bg_canvas.draw_arc(seal_pos, seal_radius - 2.0, 0, TAU, 32, C_RED_SON, 1.5)
+	bg_canvas.draw_circle(seal_pos, 6.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
 	# ── 5. Side column pillars (deep jade green wood - Framed to Screen!) ──
 	for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
@@ -988,7 +1055,7 @@ func _draw_room_background() -> void:
 		Vector2(left_bound, wall_h), Vector2(right_bound, wall_h),
 		Vector2(right_bound, bottom_bound), Vector2(left_bound, bottom_bound)
 	])
-	bg_canvas.draw_colored_polygon(floor_pts, Color(0.16, 0.12, 0.09))  # muted dark teak wood
+	bg_canvas.draw_colored_polygon(floor_pts, Color(0.42, 0.32, 0.22))  # warm golden-brown teak wood floor
 	
 	# Horizontal plank grain lines stretching across bounds
 	var plank_h := 26.0
@@ -1013,7 +1080,7 @@ func _draw_room_background() -> void:
 		bg_canvas.draw_circle(p.pos, 2.5 * p.scale, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, p.color.a * 0.15))
 
 func _draw_floor_canvas() -> void:
-	var shadow_col := Color(0.06, 0.03, 0.01, 0.55)
+	var shadow_col := Color(0.04, 0.02, 0.01, 0.18)
 	
 	# Draw teacher's floor reflection (Flipped vertical texture, soft jade blend)
 	if _tex_linh:
@@ -1040,45 +1107,39 @@ func _draw_floor_canvas() -> void:
 	
 	# Station data: [center_pos, name]
 	var stations := [
-		[Vector2(s_tranh.position.x + 120.0, 655.0), "Đàn Tranh"],
-		[Vector2(s_sao.position.x + 120.0, 655.0), "Sáo Trúc"],
-		[Vector2(s_bau.position.x + 120.0, 495.0), "Đàn Bầu"],
-		[Vector2(s_trong.position.x + 120.0, 495.0), "Trống Chầu"],
+		[_get_station_floor_center(s_tranh), "Đàn Tranh"],
+		[_get_station_floor_center(s_sao), "Sáo Trúc"],
+		[_get_station_floor_center(s_bau), "Đàn Bầu"],
+		[_get_station_floor_center(s_trong), "Trống Chầu"],
 	]
 	
 	for st in stations:
 		var pos : Vector2 = st[0]
 		
-		# 1. Floor drop shadow (ellipse)
-		floor_canvas.draw_arc(pos, 80.0, 0, TAU, 32, shadow_col, 14.0)
+		# 1. Soft floor shadow, kept low so instruments are not framed by dark rings.
+		_draw_ellipse_poly(floor_canvas, pos + Vector2(0.0, 16.0), 94.0, 22.0, shadow_col)
 		
-		# 2. Permanent warm spotlight glow halos on floor (Soften by 60%)
+		# 2. Permanent warm spotlight glow, subtle enough for mobile.
 		var halo_a := 0.04 + 0.02 * sin(_time * 1.2)
-		floor_canvas.draw_arc(pos, 96.0, 0, TAU, 32, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a * 0.5), 18.0)
-		floor_canvas.draw_arc(pos, 82.0, 0, TAU, 32, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 6.0)
-		floor_canvas.draw_arc(pos, 70.0, 0, TAU, 32, Color(1.0, 0.95, 0.80, halo_a * 0.6), 2.0)
+		_draw_ellipse_line(floor_canvas, pos + Vector2(0.0, 14.0), 108.0, 26.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 2.0)
+		_draw_ellipse_line(floor_canvas, pos + Vector2(0.0, 14.0), 78.0, 18.0, Color(1.0, 0.95, 0.80, halo_a * 0.8), 1.2)
 	
 	# 3. Pulsing yellow glow circle when hovering (Soften by 50%)
 	if _hovered_station != "":
 		var base_pos := Vector2.ZERO
 		
 		match _hovered_station:
-			"tranh":  base_pos = Vector2(s_tranh.position.x + 120.0, 655.0)
-			"sao":    base_pos = Vector2(s_sao.position.x + 120.0, 655.0)
-			"bau":    base_pos = Vector2(s_bau.position.x + 120.0, 495.0)
-			"trong":  base_pos = Vector2(s_trong.position.x + 120.0, 495.0)
+			"tranh":  base_pos = _get_station_floor_center(s_tranh)
+			"sao":    base_pos = _get_station_floor_center(s_sao)
+			"bau":    base_pos = _get_station_floor_center(s_bau)
+			"trong":  base_pos = _get_station_floor_center(s_trong)
 		
 		if base_pos != Vector2.ZERO:
 			var pulse := sin(_time * 7.0)
-			# Outer soft ring
-			floor_canvas.draw_arc(base_pos, 108.0 + pulse * 5.0, 0, TAU, 32,
-				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.08 + 0.04 * pulse), 14.0, true)
-			# Middle ring
-			floor_canvas.draw_arc(base_pos, 86.0, 0, TAU, 32,
-				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.28 + 0.08 * pulse), 8.0, true)
-			# Inner bright ring
-			floor_canvas.draw_arc(base_pos, 74.0, 0, TAU, 32,
-				Color(1.0, 0.97, 0.90, 0.45), 2.5, true)
+			_draw_ellipse_line(floor_canvas, base_pos + Vector2(0.0, 14.0), 118.0 + pulse * 5.0, 28.0 + pulse * 2.0,
+				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.22 + 0.06 * pulse), 3.0)
+			_draw_ellipse_line(floor_canvas, base_pos + Vector2(0.0, 14.0), 82.0, 19.0,
+				Color(1.0, 0.97, 0.90, 0.42), 1.5)
 
 				
 	# 5. Draw walking particles
@@ -1111,6 +1172,30 @@ func _sort_room_elements() -> void:
 	# FloorCanvas is at index 0, so move other children starting from index 1
 	for i in range(items.size()):
 		room_content.move_child(items[i], i + 1)
+
+func _draw_instrument_image(c: Button, tex: Texture2D, height_ratio: float = 0.74) -> void:
+	var sz := c.size
+	var cx := sz.x * 0.5
+	var cy := sz.y * 0.5
+	var is_hov := c.is_hovered()
+	var max_w := sz.x * (1.04 if _is_mobile_layout else 1.02)
+	var max_h := sz.y * height_ratio
+	var tex_ratio := tex.get_width() / float(tex.get_height())
+	var img_w := max_w
+	var img_h := img_w / tex_ratio
+	if img_h > max_h:
+		img_h = max_h
+		img_w = img_h * tex_ratio
+
+	var lift := 18.0 if is_hov else 10.0
+	var img_rect := Rect2(cx - img_w * 0.5, cy - img_h * 0.5 - lift, img_w, img_h)
+	var shadow_w := img_w * 0.78
+	var shadow_y := img_rect.position.y + img_h + 14.0
+	_draw_ellipse_poly(c, Vector2(cx, shadow_y), shadow_w * 0.5, 11.0, Color(0.0, 0.0, 0.0, 0.18))
+	if is_hov:
+		_draw_ellipse_line(c, Vector2(cx, shadow_y), shadow_w * 0.58, 14.0, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.32), 2.0)
+		c.draw_texture_rect(tex, img_rect.grow(7.0), false, Color(1.0, 0.86, 0.38, 0.22))
+	c.draw_texture_rect(tex, img_rect, false)
 	
 func _draw_tranh(c: Button) -> void:
 	var sz := c.size
@@ -1118,33 +1203,13 @@ func _draw_tranh(c: Button) -> void:
 	var cy := sz.y * 0.5
 	var is_hov := c.is_hovered()
 	
-	# Draw table stand with wooden joint detail & shadow
-	c.draw_line(Vector2(cx - 70, cy + 15), Vector2(cx - 75, cy + 65), Color(0.12, 0.06, 0.03), 6.0)
-	c.draw_line(Vector2(cx + 70, cy + 15), Vector2(cx + 75, cy + 65), Color(0.12, 0.06, 0.03), 6.0)
-	c.draw_line(Vector2(cx - 75, cy + 60), Vector2(cx + 75, cy + 60), Color(0.10, 0.05, 0.02), 3.5)
+	if not _tex_tranh:
+		c.draw_line(Vector2(cx - 70, cy + 15), Vector2(cx - 75, cy + 65), Color(0.12, 0.06, 0.03), 6.0)
+		c.draw_line(Vector2(cx + 70, cy + 15), Vector2(cx + 75, cy + 65), Color(0.12, 0.06, 0.03), 6.0)
+		c.draw_line(Vector2(cx - 75, cy + 60), Vector2(cx + 75, cy + 60), Color(0.10, 0.05, 0.02), 3.5)
 	
 	if _tex_tranh:
-		# Dimensions of the instrument image card
-		var img_w := 200.0
-		var img_h := 70.0
-		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
-		
-		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
-		
-		# Draw the loaded Dan Tranh image texture on top of the glass card
-		c.draw_texture_rect(_tex_tranh, img_rect, false)
+		_draw_instrument_image(c, _tex_tranh, 0.86)
 	else:
 		# Fallback if texture fails to load (original procedural rendering)
 		var zb_pts := PackedVector2Array([
@@ -1204,35 +1269,15 @@ func _draw_sao(c: Button) -> void:
 	var cy := sz.y * 0.5
 	var is_hov := c.is_hovered()
 	
-	# Stand base shadow & wood stand
-	c.draw_line(Vector2(cx - 30, cy + 25), Vector2(cx + 30, cy + 25), Color(0.18, 0.10, 0.05), 5.5)
-	c.draw_line(Vector2(cx - 20, cy + 25), Vector2(cx - 20, cy + 65), Color(0.18, 0.10, 0.05), 3.5)
-	c.draw_line(Vector2(cx + 20, cy + 25), Vector2(cx + 20, cy + 65), Color(0.18, 0.10, 0.05), 3.5)
-	c.draw_circle(Vector2(cx - 20, cy + 25), 3.5, C_GOLD)
-	c.draw_circle(Vector2(cx + 20, cy + 25), 3.5, C_GOLD)
+	if not _tex_sao:
+		c.draw_line(Vector2(cx - 30, cy + 25), Vector2(cx + 30, cy + 25), Color(0.18, 0.10, 0.05), 5.5)
+		c.draw_line(Vector2(cx - 20, cy + 25), Vector2(cx - 20, cy + 65), Color(0.18, 0.10, 0.05), 3.5)
+		c.draw_line(Vector2(cx + 20, cy + 25), Vector2(cx + 20, cy + 65), Color(0.18, 0.10, 0.05), 3.5)
+		c.draw_circle(Vector2(cx - 20, cy + 25), 3.5, C_GOLD)
+		c.draw_circle(Vector2(cx + 20, cy + 25), 3.5, C_GOLD)
 	
 	if _tex_sao:
-		# Dimensions of the instrument image card
-		var img_w := 200.0
-		var img_h := 70.0
-		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
-		
-		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
-		
-		# Draw the loaded Sao Truc image texture on top of the glass card
-		c.draw_texture_rect(_tex_sao, img_rect, false)
+		_draw_instrument_image(c, _tex_sao, 0.86)
 	else:
 		# Slanted Bamboo Flute body - Warm Golden Bamboo color (realistic)
 		var f_start := Vector2(cx - 90, cy + 10)
@@ -1281,32 +1326,12 @@ func _draw_bau(c: Button) -> void:
 	var cy := sz.y * 0.5
 	var is_hov := c.is_hovered()
 	
-	# Zither Base Stand
-	c.draw_line(Vector2(cx - 65, cy + 20), Vector2(cx - 70, cy + 65), Color(0.14, 0.08, 0.04), 5.5)
-	c.draw_line(Vector2(cx + 65, cy + 20), Vector2(cx + 70, cy + 65), Color(0.14, 0.08, 0.04), 5.5)
+	if not _tex_bau:
+		c.draw_line(Vector2(cx - 65, cy + 20), Vector2(cx - 70, cy + 65), Color(0.14, 0.08, 0.04), 5.5)
+		c.draw_line(Vector2(cx + 65, cy + 20), Vector2(cx + 70, cy + 65), Color(0.14, 0.08, 0.04), 5.5)
 	
 	if _tex_bau:
-		# Dimensions of the instrument image card
-		var img_w := 200.0
-		var img_h := 70.0
-		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
-		
-		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
-		
-		# Draw the loaded Dan Bau image texture on top of the glass card
-		c.draw_texture_rect(_tex_bau, img_rect, false)
+		_draw_instrument_image(c, _tex_bau, 0.88)
 	else:
 		# Monochord Zither Body with tapered profile (tapered mahogany wood)
 		# Left end is narrower (where the gourd is), right end is wider
@@ -1353,33 +1378,13 @@ func _draw_trong(c: Button) -> void:
 	var cy := sz.y * 0.5
 	var is_hov := c.is_hovered()
 	
-	# Wooden Stand
-	c.draw_line(Vector2(cx - 36, cy + 15), Vector2(cx - 56, cy + 65), Color(0.20, 0.12, 0.06), 6.0)
-	c.draw_line(Vector2(cx + 36, cy + 15), Vector2(cx + 56, cy + 65), Color(0.20, 0.12, 0.06), 6.0)
-	c.draw_line(Vector2(cx - 46, cy + 45), Vector2(cx + 46, cy + 45), Color(0.20, 0.12, 0.06), 4.5)
+	if not _tex_trong:
+		c.draw_line(Vector2(cx - 36, cy + 15), Vector2(cx - 56, cy + 65), Color(0.20, 0.12, 0.06), 6.0)
+		c.draw_line(Vector2(cx + 36, cy + 15), Vector2(cx + 56, cy + 65), Color(0.20, 0.12, 0.06), 6.0)
+		c.draw_line(Vector2(cx - 46, cy + 45), Vector2(cx + 46, cy + 45), Color(0.20, 0.12, 0.06), 4.5)
 	
 	if _tex_trong:
-		# Dimensions of the drum image card
-		var img_w := 200.0
-		var img_h := 70.0
-		var card_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, 100.0)
-		var img_rect := Rect2(cx - img_w / 2.0, cy - img_h / 2.0 - 15.0, img_w, img_h)
-		
-		# Draw a premium dark glassmorphism card background with gold border
-		var r_sb := StyleBoxFlat.new()
-		r_sb.bg_color = Color(0.05, 0.03, 0.02, 0.70) # Dark warm brown glass
-		r_sb.border_color = C_GOLD if not is_hov else C_GOLD_LIGHT
-		r_sb.border_width_left = 2; r_sb.border_width_right = 2
-		r_sb.border_width_top = 2; r_sb.border_width_bottom = 2
-		r_sb.corner_radius_top_left = 12; r_sb.corner_radius_top_right = 12
-		r_sb.corner_radius_bottom_left = 12; r_sb.corner_radius_bottom_right = 12
-		r_sb.shadow_size = 8
-		r_sb.shadow_color = Color(0, 0, 0, 0.3)
-		r_sb.shadow_offset = Vector2(0, 4)
-		c.draw_style_box(r_sb, card_rect)
-		
-		# Draw the loaded Trong image texture on top of the glass card
-		c.draw_texture_rect(_tex_trong, img_rect, false)
+		_draw_instrument_image(c, _tex_trong, 0.92)
 	else:
 		# Drum body (Realistic curved barrel staves)
 		var dc := Vector2(cx, cy - 4)
@@ -1971,25 +1976,32 @@ func _setup_dialogue_box() -> void:
 	margin.add_child(hbox)
 	
 	var avatar_control := Control.new()
+	avatar_control.name = "Avatar"
 	avatar_control.custom_minimum_size = Vector2(100, 100)
 	avatar_control.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(avatar_control)
 	
 	avatar_control.draw.connect(func() -> void:
-		var center := Vector2(50, 50)
-		avatar_control.draw_circle(center, 46.0, C_GOLD)
-		avatar_control.draw_circle(center, 44.0, C_CREAM)
+		var sz_act := avatar_control.size
+		var center := sz_act * 0.5
+		var r_outer := center.x - 2.0
+		var r_inner := center.x - 4.0
+		avatar_control.draw_circle(center, r_outer, C_GOLD)
+		avatar_control.draw_circle(center, r_inner, C_CREAM)
 		if _tex_linh:
-			var rect := Rect2(center - Vector2(36, 36), Vector2(72, 72))
+			var r_w := r_inner * 2.0 * 0.8
+			var rect := Rect2(center - Vector2(r_w * 0.5, r_w * 0.5), Vector2(r_w, r_w))
 			avatar_control.draw_texture_rect_region(_tex_linh, rect, Rect2(380, 50, 260, 260))
 	)
 	
 	var vbox := VBoxContainer.new()
+	vbox.name = "DialogueVBox"
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_theme_constant_override("separation", 8)
 	hbox.add_child(vbox)
 	
 	var name_lbl := Label.new()
+	name_lbl.name = "NameLabel"
 	name_lbl.text = "Cô Mai"
 	if _font_body_bold:
 		name_lbl.add_theme_font_override("font", _font_body_bold)
@@ -1998,6 +2010,7 @@ func _setup_dialogue_box() -> void:
 	vbox.add_child(name_lbl)
 	
 	dialogue_lbl = Label.new()
+	dialogue_lbl.name = "DialogueLabel"
 	dialogue_lbl.text = "Xin chào học viên!"
 	if _font_body:
 		dialogue_lbl.add_theme_font_override("font", _font_body)
@@ -2008,6 +2021,7 @@ func _setup_dialogue_box() -> void:
 	vbox.add_child(dialogue_lbl)
 	
 	btn_dialogue_close = Button.new()
+	btn_dialogue_close.name = "CloseButton"
 	btn_dialogue_close.text = "TIẾP TỤC"
 	btn_dialogue_close.custom_minimum_size = Vector2(120, 36)
 	btn_dialogue_close.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -2026,19 +2040,32 @@ func _setup_dialogue_box() -> void:
 func _show_dialogue(text: String) -> void:
 	if not dialogue_box:
 		_setup_dialogue_box()
+	var size : Vector2 = get_viewport().get_visible_rect().size
 	_player_expression = "focused"
 	_typewriter_text = text
 	_typewriter_progress = 0.0
 	dialogue_lbl.text = ""
 	dialogue_box.visible = true
+	
+	# Compute new dialogue layout and targets
+	_update_dialogue_layout(size)
+	
+	var target_bottom := dialogue_box.offset_bottom
+	var target_top := dialogue_box.offset_top
+	
 	dialogue_box.modulate.a = 0.0
 	dialogue_box.offset_bottom = 0
-	dialogue_box.offset_top = -160
+	dialogue_box.offset_top = target_bottom - dialogue_box.size.y
 	
 	var t := create_tween().set_parallel(true)
 	t.tween_property(dialogue_box, "modulate:a", 1.0, 0.25)
-	t.tween_property(dialogue_box, "offset_bottom", -32, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(dialogue_box, "offset_top", -192, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(dialogue_box, "offset_bottom", target_bottom, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(dialogue_box, "offset_top", target_top, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	# Tween RoomContent scaling down to fit above the dialogue
+	var target_layout := _calculate_room_layout(size, true)
+	t.tween_property(room_content, "scale", target_layout.scale, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(room_content, "position", target_layout.position, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _close_dialogue() -> void:
 	if not dialogue_box or not dialogue_box.visible:
@@ -2050,11 +2077,23 @@ func _close_dialogue() -> void:
 		if _player_expression == "happy":
 			_player_expression = "normal"
 	)
+	
+	var target_top := -dialogue_box.size.y
 	var t := create_tween().set_parallel(true)
 	t.tween_property(dialogue_box, "modulate:a", 0.0, 0.2)
 	t.tween_property(dialogue_box, "offset_bottom", 0, 0.2)
-	t.tween_property(dialogue_box, "offset_top", -160, 0.2)
-	t.chain().tween_callback(func() -> void: dialogue_box.visible = false)
+	t.tween_property(dialogue_box, "offset_top", target_top, 0.2)
+	
+	# Tween RoomContent scaling back to normal
+	var size : Vector2 = get_viewport().get_visible_rect().size
+	var target_layout := _calculate_room_layout(size, false)
+	t.tween_property(room_content, "scale", target_layout.scale, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(room_content, "position", target_layout.position, 0.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	
+	t.chain().tween_callback(func() -> void:
+		dialogue_box.visible = false
+		_on_viewport_size_changed() # Force alignment check
+	)
 
 # ─── Focus Mode Vector Custom Diagrams ─────────────────────────────────────────
 func _draw_popup_scroll(c: Control) -> void:
@@ -2164,51 +2203,212 @@ func _fade_to(path: String) -> void:
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
 
 # ─── Responsive Layout ────────────────────────────────────────────────────────
-func _on_viewport_size_changed() -> void:
-	var size : Vector2 = get_viewport().get_visible_rect().size
+func _calculate_room_layout(size: Vector2, dialogue_visible: bool) -> Dictionary:
 	var is_mobile := size.x < size.y or size.x < 768
-	
-	# Scale the 2.5D Room content container to fit inside screen boundaries
-	var margin_l : float = 0.0
-	var margin_r : float = 0.0
-	var margin_b : float = 0.0
+	var margin_l : float = 8.0 if is_mobile else 0.0
+	var margin_r : float = 8.0 if is_mobile else 0.0
+	var margin_b : float = 8.0 if is_mobile else 0.0
 	
 	var room_w : float = float(size.x) - margin_l - margin_r
 	var room_h : float = float(size.y) - margin_b
 	
-	# Base room scale
+	if dialogue_visible:
+		var dialog_h := minf(160.0, size.y * (0.35 if is_mobile else 0.28))
+		if size.y < 450:
+			dialog_h = minf(120.0, size.y * 0.3)
+		var margin_b_dialogue := 24.0 if size.y > 500 else 12.0
+		room_h -= (dialog_h + margin_b_dialogue + 8.0)
+		
 	var scale_factor := minf(room_w / 1200.0, room_h / 800.0)
 	if is_mobile:
-		scale_factor *= 1.15
+		scale_factor = minf(room_w / 760.0, room_h / 820.0)
 		
-	room_content.scale = Vector2(scale_factor, scale_factor)
-	room_content.position = Vector2(
-		margin_l + (room_w - 1200.0 * scale_factor) / 2.0,
-		(room_h - 800.0 * scale_factor) / 2.0
-	)
+	return {
+		"scale": Vector2(scale_factor, scale_factor),
+		"position": Vector2(
+			margin_l + (room_w - 1200.0 * scale_factor) / 2.0,
+			(room_h - 800.0 * scale_factor) / 2.0
+		)
+	}
+
+func _update_dialogue_layout(size: Vector2) -> void:
+	if not dialogue_box:
+		return
+	var is_mobile := size.x < size.y or size.x < 768
+	var is_compact := is_mobile or size.y < 500
+	
+	var dialog_w := minf(800.0, size.x - (32.0 if is_mobile else 64.0))
+	var dialog_h := minf(160.0, size.y * (0.35 if is_mobile else 0.28))
+	if size.y < 450:
+		dialog_h = minf(120.0, size.y * 0.3)
+	
+	dialogue_box.custom_minimum_size = Vector2(dialog_w, dialog_h)
+	dialogue_box.size = Vector2(dialog_w, dialog_h)
+	
+	var margin_b := 24.0 if size.y > 500 else 12.0
+	
+	if dialogue_box.visible:
+		dialogue_box.offset_bottom = -margin_b
+		dialogue_box.offset_top = -margin_b - dialog_h
+	else:
+		dialogue_box.offset_bottom = 0
+		dialogue_box.offset_top = -dialog_h
+		
+	dialogue_box.offset_left = -dialog_w * 0.5
+	dialogue_box.offset_right = dialog_w * 0.5
+	
+	# Responsive child nodes adjustments
+	var margin := dialogue_box.get_child(0) as MarginContainer
+	if margin:
+		var m_val := 12 if is_compact else 24
+		var m_top_bottom := 10 if is_compact else 16
+		margin.add_theme_constant_override("margin_left", m_val)
+		margin.add_theme_constant_override("margin_right", m_val)
+		margin.add_theme_constant_override("margin_top", m_top_bottom)
+		margin.add_theme_constant_override("margin_bottom", m_top_bottom)
+		
+		var hbox := margin.get_child(0) as HBoxContainer
+		if hbox:
+			hbox.add_theme_constant_override("separation", 12 if is_compact else 24)
+			
+			var avatar := hbox.find_child("Avatar") as Control
+			if avatar:
+				var av_sz := 64.0 if is_compact else 100.0
+				avatar.custom_minimum_size = Vector2(av_sz, av_sz)
+				avatar.size = Vector2(av_sz, av_sz)
+				avatar.queue_redraw()
+				
+			var vbox := hbox.find_child("DialogueVBox") as VBoxContainer
+			if vbox:
+				vbox.add_theme_constant_override("separation", 4 if is_compact else 8)
+				var name_lbl := vbox.find_child("NameLabel") as Label
+				if name_lbl:
+					name_lbl.add_theme_font_size_override("font_size", 14 if is_compact else 18)
+				if dialogue_lbl:
+					dialogue_lbl.add_theme_font_size_override("font_size", 13 if is_compact else 15)
+				var btn_close := vbox.find_child("CloseButton") as Button
+				if btn_close:
+					btn_close.custom_minimum_size = Vector2(100, 30) if is_compact else Vector2(120, 36)
+
+func _on_viewport_size_changed() -> void:
+	var size : Vector2 = get_viewport().get_visible_rect().size
+	var is_mobile := size.x < size.y or size.x < 768
+	_is_mobile_layout = is_mobile
+	
+	var layout := _calculate_room_layout(size, dialogue_box != null and dialogue_box.visible)
+	room_content.scale = layout.scale
+	room_content.position = layout.position
 	
 	var rx := room_content.position.x
+	var scale_factor := room_content.scale.x
 	_left_bound = -rx / scale_factor if scale_factor > 0.0 else 0.0
 	_right_bound = (size.x - rx) / scale_factor if scale_factor > 0.0 else 1200.0
 	var center_x := 600.0
 
-	s_tranh.position = Vector2(lerpf(center_x - 480.0, _left_bound + 120.0, 0.4), 520.0)
-	s_sao.position = Vector2(lerpf(center_x + 240.0, _right_bound - 360.0, 0.4), 520.0)
-	s_bau.position = Vector2(lerpf(center_x - 320.0, _left_bound + 280.0, 0.3), 360.0)
-	s_trong.position = Vector2(lerpf(center_x + 80.0, _right_bound - 520.0, 0.3), 360.0)
+	var station_size := Vector2(360.0, 220.0) if is_mobile else Vector2(290.0, 180.0)
+	for station in [s_tranh, s_sao, s_bau, s_trong]:
+		station.size = station_size
+		station.custom_minimum_size = station_size
+
+	if is_mobile:
+		var col_gap := 28.0
+		var left_x := center_x - station_size.x - col_gap * 0.5
+		var right_x := center_x + col_gap * 0.5
+		_station_base_positions["bau"] = Vector2(left_x, 275.0)
+		_station_base_positions["trong"] = Vector2(right_x, 275.0)
+		_station_base_positions["tranh"] = Vector2(left_x, 515.0)
+		_station_base_positions["sao"] = Vector2(right_x, 515.0)
+		_linh_base_y = 230.0 # Shift down to avoid scroll text overlap on mobile
+		char_linh.position.x = 500.0
+		char_linh.size = Vector2(210.0, 210.0)
+	else:
+		# Symmetrical Arc Layout
+		_station_base_positions["tranh"] = Vector2(50.0, 470.0)
+		_station_base_positions["bau"] = Vector2(330.0, 430.0)
+		_station_base_positions["trong"] = Vector2(610.0, 430.0)
+		_station_base_positions["sao"] = Vector2(890.0, 470.0)
+		_linh_base_y = 310.0 if not _linh_is_moving else _linh_base_y # Shift down to avoid scroll text overlap on desktop
+		char_linh.position.x = 485.0
+		char_linh.size = Vector2(230.0, 230.0)
+
+	s_tranh.position = _station_base_positions["tranh"]
+	s_sao.position = _station_base_positions["sao"]
+	s_bau.position = _station_base_positions["bau"]
+	s_trong.position = _station_base_positions["trong"]
 	
 	# Update popups to match the actual window size
 	if popup and is_instance_valid(popup):
-		popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var scroll_panel = popup.get_node_or_null("ScrollPanel")
-		if scroll_panel:
-			scroll_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		_apply_popup_layout(popup, is_mobile)
 			
 	if shop_popup and is_instance_valid(shop_popup):
-		shop_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var scroll_panel = shop_popup.get_node_or_null("ScrollPanel")
-		if scroll_panel:
-			scroll_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		_apply_popup_layout(shop_popup, is_mobile)
+		
+	if dialogue_box and is_instance_valid(dialogue_box):
+		_update_dialogue_layout(size)
+
+	btn_back.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
+	btn_back.offset_left = 12.0 if is_mobile else 32.0
+	btn_back.offset_top = 12.0 if is_mobile else 32.0
+	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
+	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
+	_update_hud_hbox_layout(is_mobile)
+
+func _apply_popup_layout(target_popup: Control, is_mobile: bool) -> void:
+	target_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var panel = target_popup.get_node_or_null("ScrollPanel") as Control
+	if not panel:
+		return
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	var panel_w := minf(920.0, viewport_size.x - (24.0 if is_mobile else 80.0))
+	var panel_h := minf(580.0, viewport_size.y - (24.0 if is_mobile else 80.0))
+	panel.size = Vector2(maxf(300.0, panel_w), maxf(300.0 if is_mobile else 480.0, panel_h))
+	panel.custom_minimum_size = panel.size
+	panel.position = (viewport_size - panel.size) * 0.5
+	var content = panel.get_node_or_null("ScrollContent") as Control
+	if content:
+		var side_margin := 20.0 if is_mobile else 80.0
+		var vertical_margin := 28.0 if is_mobile else 54.0
+		content.offset_left = side_margin
+		content.offset_top = vertical_margin
+		content.offset_right = -side_margin
+		content.offset_bottom = -vertical_margin
+	var tab_hbox = panel.get_node_or_null("ScrollContent/TabHBox") as HBoxContainer
+	if tab_hbox:
+		tab_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
+	for button_path in ["ScrollContent/TabHBox/BtnTabTheory", "ScrollContent/TabHBox/BtnTabFingering", "ScrollContent/ButtonHBox/BtnPopupPlay", "ScrollContent/ButtonHBox/BtnPopupClose"]:
+		var btn = panel.get_node_or_null(button_path) as Button
+		if btn:
+			btn.custom_minimum_size = Vector2(132, 40) if is_mobile else Vector2(180, 48)
+			btn.add_theme_font_size_override("font_size", 12 if is_mobile else 14)
+	var title = panel.get_node_or_null("ScrollContent/PopupTitle") as Label
+	if title:
+		title.add_theme_font_size_override("font_size", 22 if is_mobile else 28)
+	var grid = panel.get_node_or_null("ScrollContent/Grid") as GridContainer
+	if grid:
+		grid.columns = 1 if is_mobile else 2
+		grid.add_theme_constant_override("h_separation", 12 if is_mobile else 24)
+		grid.add_theme_constant_override("v_separation", 10 if is_mobile else 16)
+
+func _update_hud_hbox_layout(is_mobile: bool) -> void:
+	var hud_hbox = $HUD.get_node_or_null("HUDHBox") as HBoxContainer
+	if not hud_hbox:
+		return
+	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	hud_hbox.offset_top = 12 if is_mobile else 32
+	hud_hbox.offset_right = -12 if is_mobile else -32
+	hud_hbox.offset_left = -120 if is_mobile else -172
+	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 56)
+	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
+	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
+	if star_badge:
+		star_badge.custom_minimum_size = Vector2(64, 42) if is_mobile else Vector2(100, 48)
+		var label = star_badge.get_node_or_null("Margin/Label") as Label
+		if label:
+			label.add_theme_font_size_override("font_size", 12 if is_mobile else 15)
+	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
+	if btn_shop:
+		btn_shop.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2268,8 +2468,8 @@ func _setup_hud_shop_button() -> void:
 	hud_hbox.add_child(star_badge)
 	
 	var badge_s := StyleBoxFlat.new()
-	badge_s.bg_color = Color(0.08, 0.05, 0.03, 0.8) # Dark premium brown
-	badge_s.border_color = C_GOLD
+	badge_s.bg_color = Color(0.97, 0.95, 0.91, 0.85) # Elegant warm ivory
+	badge_s.border_color = Color(0.79, 0.60, 0.24, 0.5) # Soft gold border
 	badge_s.border_width_left = 2; badge_s.border_width_right = 2
 	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
 	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
@@ -2284,29 +2484,32 @@ func _setup_hud_shop_button() -> void:
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "⭐ %d SAO" % SecureDataManager.get_total_stars()
+	badge_label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 15)
-	badge_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	badge_label.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12)) # Deep warm bronze-brown
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_margin.add_child(badge_label)
 
-	# Create Shop Button
+	# Create Shop Button (Icon button for mobile style)
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = "🎨 TRANG TRÍ"
-	btn_shop.custom_minimum_size = Vector2(160, 48)
+	btn_shop.text = ""
+	btn_shop.icon = load("res://icons8/icons8-store-16.png") as Texture2D
+	btn_shop.expand_icon = true
+	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn_shop.custom_minimum_size = Vector2(56, 56)
 	hud_hbox.add_child(btn_shop)
-	_style_popup_button(btn_shop, true)
+	_style_hud_icon_button(btn_shop)
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
 
 func _update_star_badge() -> void:
 	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "⭐ %d SAO" % SecureDataManager.get_total_stars()
+		label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
@@ -2322,17 +2525,17 @@ func _spawn_decorations() -> void:
 		# Define sizes and positions for room layout
 		match item_id:
 			"painting":
-				ctrl.position = Vector2(170, 75)
-				ctrl.size = Vector2(100, 70)
+				ctrl.position = Vector2(180, 55)
+				ctrl.size = Vector2(80, 120)
 			"vase":
-				ctrl.position = Vector2(400, 420)
-				ctrl.size = Vector2(50, 90)
+				ctrl.position = Vector2(390, 420)
+				ctrl.size = Vector2(70, 90)
 			"bamboo":
-				ctrl.position = Vector2(60, 240)
-				ctrl.size = Vector2(60, 110)
+				ctrl.position = Vector2(50, 240)
+				ctrl.size = Vector2(80, 110)
 			"bronze_drum":
-				ctrl.position = Vector2(620, 680)
-				ctrl.size = Vector2(70, 50)
+				ctrl.position = Vector2(615, 665)
+				ctrl.size = Vector2(80, 65)
 				
 		room_content.add_child(ctrl)
 		ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id))
@@ -2365,132 +2568,329 @@ func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> v
 	
 	match item_id:
 		"painting":
-			var rect_w := 90.0 * size_scale
-			var rect_h := 60.0 * size_scale
-			var rect := Rect2(cx - rect_w/2, cy - rect_h/2, rect_w, rect_h)
-			c.draw_rect(rect, Color(0.24, 0.12, 0.04), true)
-			c.draw_rect(rect, C_GOLD, false, 1.5)
-			var canvas := Rect2(cx - rect_w/2 + 4, cy - rect_h/2 + 4, rect_w - 8, rect_h - 8)
-			c.draw_rect(canvas, Color(0.1, 0.02, 0.02), true)
-			c.draw_circle(canvas.position + Vector2(rect_w * 0.3, rect_h * 0.35), 8.0 * size_scale, Color(0.68, 0.15, 0.15))
-			var pts := PackedVector2Array([
-				canvas.position + Vector2(4, rect_h - 12),
-				canvas.position + Vector2(rect_w * 0.3, rect_h * 0.5),
-				canvas.position + Vector2(rect_w * 0.5, rect_h - 12)
+			var rect_w := 68.0 * size_scale
+			var rect_h := 110.0 * size_scale
+			var px := cx - rect_w/2
+			var py := cy - rect_h/2
+			
+			# Rollers at top and bottom (dark wood with gold caps)
+			var roller_color := Color(0.18, 0.10, 0.05)
+			c.draw_rect(Rect2(px - 6 * size_scale, py - 3 * size_scale, rect_w + 12 * size_scale, 6 * size_scale), roller_color, true)
+			c.draw_circle(Vector2(px - 6 * size_scale, py), 3 * size_scale, C_GOLD)
+			c.draw_circle(Vector2(px + rect_w + 6 * size_scale, py), 3 * size_scale, C_GOLD)
+			
+			c.draw_rect(Rect2(px - 6 * size_scale, py + rect_h - 3 * size_scale, rect_w + 12 * size_scale, 6 * size_scale), roller_color, true)
+			c.draw_circle(Vector2(px - 6 * size_scale, py + rect_h), 3 * size_scale, C_GOLD)
+			c.draw_circle(Vector2(px + rect_w + 6 * size_scale, py + rect_h), 3 * size_scale, C_GOLD)
+			
+			# Hanging string at top
+			c.draw_line(Vector2(px + rect_w*0.2, py - 3*size_scale), Vector2(cx, py - 15*size_scale), C_RED_SON, 1.5 * size_scale)
+			c.draw_line(Vector2(px + rect_w*0.8, py - 3*size_scale), Vector2(cx, py - 15*size_scale), C_RED_SON, 1.5 * size_scale)
+			
+			# Scroll background (aged silk paper)
+			var paper_rect := Rect2(px, py, rect_w, rect_h)
+			c.draw_rect(paper_rect, Color(0.94, 0.89, 0.74), true) # Aged silk
+			c.draw_rect(paper_rect, C_GOLD, false, 1.2 * size_scale) # Thin gold border
+			
+			# Inner thin border
+			c.draw_rect(Rect2(px + 4 * size_scale, py + 4 * size_scale, rect_w - 8 * size_scale, rect_h - 8 * size_scale), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.2), false, 0.8 * size_scale)
+			
+			# Painting Content: Traditional female musician playing a flute/zither
+			# 1. Stylized background: mountains (light gold-brown wash) & sun (red)
+			var bg_sun_c := Vector2(cx + 12 * size_scale, cy - 20 * size_scale)
+			c.draw_circle(bg_sun_c, 10.0 * size_scale, Color(0.68, 0.15, 0.15, 0.75)) # Red sun
+			
+			# Mountain silhouette
+			var mount_pts := PackedVector2Array([
+				Vector2(px + 6*size_scale, py + rect_h - 10*size_scale),
+				Vector2(px + rect_w*0.35, cy + 15*size_scale),
+				Vector2(px + rect_w*0.65, cy + 28*size_scale),
+				Vector2(px + rect_w - 6*size_scale, py + rect_h - 10*size_scale)
 			])
-			c.draw_colored_polygon(pts, Color(0.85, 0.68, 0.22, 0.75))
-			var pts2 := PackedVector2Array([
-				canvas.position + Vector2(rect_w * 0.4, rect_h - 12),
-				canvas.position + Vector2(rect_w * 0.75, rect_h * 0.4),
-				canvas.position + Vector2(rect_w - 12, rect_h - 12)
+			c.draw_colored_polygon(mount_pts, Color(0.77, 0.58, 0.15, 0.25))
+			
+			# 2. Female figure silhouette/drawing (stylized Ao Dai player)
+			var fig_x := cx - 8 * size_scale
+			var fig_y := cy + 15 * size_scale
+			# Ao Dai robe body (deep jade green / blue blend)
+			var body_pts := PackedVector2Array([
+				Vector2(fig_x - 10*size_scale, fig_y + 25*size_scale),
+				Vector2(fig_x + 12*size_scale, fig_y + 25*size_scale),
+				Vector2(fig_x + 4*size_scale, fig_y - 12*size_scale),
+				Vector2(fig_x - 4*size_scale, fig_y - 12*size_scale)
 			])
-			c.draw_colored_polygon(pts2, Color(0.77, 0.58, 0.15, 0.9))
+			c.draw_colored_polygon(body_pts, Color(0.09, 0.27, 0.18, 0.85)) # Jade Ao Dai
+			c.draw_polyline(body_pts, C_GOLD, 0.8 * size_scale, true)
+			
+			# Head & Turban
+			var head_c := Vector2(fig_x, fig_y - 20 * size_scale)
+			c.draw_circle(head_c, 7.0 * size_scale, C_CREAM) # face
+			c.draw_circle(head_c - Vector2(0, 2*size_scale), 7.5 * size_scale, Color(0.12, 0.12, 0.12)) # hair/turban
+			c.draw_circle(head_c - Vector2(0, 4*size_scale), 8.5 * size_scale, Color(0.77, 0.58, 0.15)) # golden turban outer
+			
+			# Hands & Flute
+			var flute_p1 := Vector2(fig_x - 14*size_scale, fig_y - 8*size_scale)
+			var flute_p2 := Vector2(fig_x + 16*size_scale, fig_y - 14*size_scale)
+			c.draw_line(flute_p1, flute_p2, Color(0.85, 0.65, 0.28), 2.2 * size_scale, true) # bamboo flute
+			c.draw_circle(Vector2(fig_x - 2*size_scale, fig_y - 10*size_scale), 2.5 * size_scale, C_CREAM) # hands
+			
+			# Red Calligraphy Seal
+			c.draw_rect(Rect2(px + 8*size_scale, py + rect_h - 22*size_scale, 8*size_scale, 8*size_scale), C_RED_SON, true)
+			c.draw_rect(Rect2(px + 8*size_scale, py + rect_h - 22*size_scale, 8*size_scale, 8*size_scale), C_GOLD, false, 0.5 * size_scale)
+			
+			# Calligraphy Text (vertical abstract Nom script strokes)
+			c.draw_line(Vector2(px + 10*size_scale, py + 12*size_scale), Vector2(px + 10*size_scale, py + 38*size_scale), Color(0.15, 0.12, 0.10, 0.85), 1.0 * size_scale)
+			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + 14*size_scale, py + 30*size_scale), Color(0.15, 0.12, 0.10, 0.75), 1.0 * size_scale)
 			
 		"vase":
-			var vh := 80.0 * size_scale
-			var vw := 32.0 * size_scale
-			c.draw_rect(Rect2(cx - vw * 0.6, cy + vh * 0.4, vw * 1.2, 8.0 * size_scale), Color(0.18, 0.09, 0.05), true)
+			var stand_w := 60.0 * size_scale
+			var stand_h := 82.0 * size_scale
+			var px := cx - stand_w / 2
+			var py := cy - stand_h / 2
 			
-			var body_pts := PackedVector2Array()
-			var steps := 20
-			for i in range(steps + 1):
-				var t := float(i) / steps
-				var r := vw * 0.3
-				if t < 0.25:
-					r = lerpf(vw * 0.35, vw * 0.22, t / 0.25)
-				elif t < 0.65:
-					r = lerpf(vw * 0.22, vw * 0.55, (t - 0.25) / 0.4)
-				else:
-					r = lerpf(vw * 0.55, vw * 0.35, (t - 0.65) / 0.35)
-				var py := cy - vh*0.4 + t * vh
-				body_pts.append(Vector2(cx - r, py))
-			for i in range(steps, -1, -1):
-				var t := float(i) / steps
-				var r := vw * 0.3
-				if t < 0.25:
-					r = lerpf(vw * 0.35, vw * 0.22, t / 0.25)
-				elif t < 0.65:
-					r = lerpf(vw * 0.22, vw * 0.55, (t - 0.25) / 0.4)
-				else:
-					r = lerpf(vw * 0.55, vw * 0.35, (t - 0.65) / 0.35)
-				var py := cy - vh*0.4 + t * vh
-				body_pts.append(Vector2(cx + r, py))
-				
-			c.draw_colored_polygon(body_pts, Color(0.97, 0.96, 0.93))
-			c.draw_polyline(body_pts, Color(0.85, 0.82, 0.76), 1.5, true)
+			# Bounding stand base
+			c.draw_rect(Rect2(px - 4*size_scale, py + stand_h - 8*size_scale, stand_w + 8*size_scale, 8*size_scale), Color(0.18, 0.10, 0.05), true)
+			c.draw_rect(Rect2(px - 4*size_scale, py + stand_h - 8*size_scale, stand_w + 8*size_scale, 8*size_scale), C_GOLD, false, 1.0 * size_scale)
 			
-			c.draw_circle(Vector2(cx, cy + vh * 0.1), vw * 0.4, Color(0.12, 0.32, 0.58, 0.6))
-			c.draw_circle(Vector2(cx, cy + vh * 0.1), vw * 0.28, Color.WHITE)
-			c.draw_line(Vector2(cx - vw*0.22, cy - vh*0.2), Vector2(cx + vw*0.22, cy - vh*0.2), Color(0.12, 0.32, 0.58, 0.85), 2.0)
-			c.draw_line(Vector2(cx - vw*0.35, cy + vh*0.3), Vector2(cx + vw*0.35, cy + vh*0.3), Color(0.12, 0.32, 0.58, 0.85), 2.0)
+			# Left and Right Pillars (dark mahogany wood)
+			var pillar_col := Color(0.24, 0.12, 0.06)
+			c.draw_rect(Rect2(px, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), pillar_col, true)
+			c.draw_rect(Rect2(px, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), C_GOLD, false, 0.8 * size_scale)
+			
+			c.draw_rect(Rect2(px + stand_w - 6*size_scale, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), pillar_col, true)
+			c.draw_rect(Rect2(px + stand_w - 6*size_scale, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), C_GOLD, false, 0.8 * size_scale)
+			
+			# Curved Top Beam (Pagoda roof style silhouette)
+			var roof_pts := PackedVector2Array([
+				Vector2(px - 8*size_scale, py + 16*size_scale),
+				Vector2(px, py + 6*size_scale),
+				Vector2(cx, py + 4*size_scale),
+				Vector2(px + stand_w, py + 6*size_scale),
+				Vector2(px + stand_w + 8*size_scale, py + 16*size_scale),
+				Vector2(px + stand_w + 2*size_scale, py + 16*size_scale),
+				Vector2(cx, py + 10*size_scale),
+				Vector2(px - 2*size_scale, py + 16*size_scale)
+			])
+			c.draw_colored_polygon(roof_pts, pillar_col)
+			c.draw_polyline(roof_pts, C_GOLD, 1.2 * size_scale, true)
+			
+			# Hanging cords (red)
+			var gong_center := Vector2(cx, py + stand_h * 0.52)
+			c.draw_line(Vector2(cx - 10*size_scale, py + 10*size_scale), gong_center - Vector2(6*size_scale, 16*size_scale), C_RED_SON, 1.5 * size_scale)
+			c.draw_line(Vector2(cx + 10*size_scale, py + 10*size_scale), gong_center + Vector2(6*size_scale, -16*size_scale), C_RED_SON, 1.5 * size_scale)
+			
+			# Bronze Gong (Chiêng Đồng)
+			var gong_r := 19.0 * size_scale
+			c.draw_circle(gong_center, gong_r, Color(0.68, 0.52, 0.22)) # Bronze body
+			
+			# Concentric rings & details on gong face
+			c.draw_circle(gong_center, gong_r * 0.95, Color(0.58, 0.44, 0.16)) # Darker outer band
+			c.draw_circle(gong_center, gong_r * 0.8, Color(0.68, 0.52, 0.22))
+			c.draw_circle(gong_center, gong_r * 0.45, Color(0.58, 0.44, 0.16)) # Darker inner ring
+			
+			# Center Boss (Núm chiêng - raised hub)
+			c.draw_circle(gong_center, gong_r * 0.24, Color(0.85, 0.68, 0.28)) # Bright gold center
+			c.draw_circle(gong_center - Vector2(1, 1)*size_scale, gong_r * 0.12, Color.WHITE) # Specular shine
+			
+			# Fine gold rim line
+			c.draw_arc(gong_center, gong_r - 0.5*size_scale, 0.0, TAU, 32, C_GOLD_LIGHT, 1.0 * size_scale)
+			c.draw_arc(gong_center, gong_r * 0.6, 0.0, TAU, 24, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 0.8 * size_scale)
+			
+			# Mallet resting against stand
+			var mallet_p1 := Vector2(cx + 14*size_scale, py + stand_h - 10*size_scale)
+			var mallet_p2 := Vector2(cx + 26*size_scale, py + stand_h * 0.45)
+			c.draw_line(mallet_p1, mallet_p2, Color(0.48, 0.32, 0.20), 2.2 * size_scale, true) # Stick
+			c.draw_circle(mallet_p2, 4.5 * size_scale, C_RED_SON) # Red head mallet
 
 		"bamboo":
-			var ph := 24.0 * size_scale
-			var pw := 50.0 * size_scale
-			c.draw_rect(Rect2(cx - pw/2, cy + 10, pw, ph), Color(0.15, 0.18, 0.16), true)
-			c.draw_rect(Rect2(cx - pw/2, cy + 10, pw, ph), C_GOLD, false, 1.2)
+			var rack_w := 70.0 * size_scale
+			var rack_h := 100.0 * size_scale
+			var px := cx - rack_w / 2
+			var py := cy - rack_h / 2
 			
-			var b_col := Color(0.18, 0.48, 0.28)
-			var offsets := [-14.0 * size_scale, 0.0, 12.0 * size_scale]
-			var heights := [80.0 * size_scale, 95.0 * size_scale, 75.0 * size_scale]
-			for idx in range(3):
-				var ox : float = offsets[idx]
-				var oh : float = heights[idx]
-				var sx := cx + ox
-				var sy_start := cy + 10
-				var sy_end := cy + 10 - oh
-				var segments := 5
-				var prev_pt := Vector2(sx, sy_start)
-				for seg in range(1, segments + 1):
-					var t := float(seg) / segments
-					var cur_x := sx + sin(t * 3.0 + idx) * 3.0 * size_scale
-					var cur_y := lerpf(sy_start, sy_end, t)
-					var cur_pt := Vector2(cur_x, cur_y)
-					c.draw_line(prev_pt, cur_pt, b_col, 3.5 * size_scale, true)
-					c.draw_circle(cur_pt, 2.5 * size_scale, Color(0.38, 0.65, 0.42))
-					if seg > 1:
-						var leaf_dir := Vector2(-8, -4).rotated(sin(float(seg) + idx) * 0.5) * size_scale
-						c.draw_line(cur_pt, cur_pt + leaf_dir, Color(0.24, 0.58, 0.35), 2.0 * size_scale, true)
-						var leaf_dir2 := Vector2(8, -4).rotated(cos(float(seg) + idx) * 0.5) * size_scale
-						c.draw_line(cur_pt, cur_pt + leaf_dir2, Color(0.24, 0.58, 0.35), 2.0 * size_scale, true)
-					prev_pt = cur_pt
+			# Stand base pot/wood mount
+			c.draw_rect(Rect2(px + 10*size_scale, py + rack_h - 10*size_scale, rack_w - 20*size_scale, 10*size_scale), Color(0.18, 0.14, 0.12), true)
+			c.draw_rect(Rect2(px + 10*size_scale, py + rack_h - 10*size_scale, rack_w - 20*size_scale, 10*size_scale), C_GOLD, false, 1.0 * size_scale)
+			
+			# Two vertical support posts (bamboo structure)
+			var post_col := Color(0.35, 0.22, 0.10)
+			c.draw_rect(Rect2(px + 20*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), post_col, true)
+			c.draw_rect(Rect2(px + 20*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), Color(0.50, 0.32, 0.16), false, 0.8 * size_scale)
+			
+			c.draw_rect(Rect2(px + rack_w - 26*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), post_col, true)
+			c.draw_rect(Rect2(px + rack_w - 26*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), Color(0.50, 0.32, 0.16), false, 0.8 * size_scale)
+			
+			# Ornate shelf headers
+			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + rack_w - 14*size_scale, py + 15*size_scale), post_col, 4.0 * size_scale)
+			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + rack_w - 14*size_scale, py + 15*size_scale), C_GOLD, 0.8 * size_scale)
+			
+			# Draw 3 horizontal flutes with different colors and sizes
+			var fl_colors := [
+				Color(0.85, 0.65, 0.28), # Yellow bamboo
+				Color(0.18, 0.44, 0.24), # Green fresh bamboo
+				Color(0.36, 0.18, 0.08)  # Aged dark wood/bamboo
+			]
+			
+			var fl_y_coords := [
+				py + 30.0 * size_scale,
+				py + 52.0 * size_scale,
+				py + 74.0 * size_scale
+			]
+			
+			var fl_widths := [
+				68.0 * size_scale,
+				58.0 * size_scale,
+				62.0 * size_scale
+			]
+			
+			var fl_thicknesses := [
+				5.5 * size_scale,
+				4.5 * size_scale,
+				5.0 * size_scale
+			]
+			
+			for i in range(3):
+				var f_w : float = fl_widths[i]
+				var f_y : float = fl_y_coords[i]
+				var f_th : float = fl_thicknesses[i]
+				var f_x1 := cx - f_w * 0.5
+				var f_x2 := cx + f_w * 0.5
+				
+				# 1. Flute Body
+				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x2, f_y), fl_colors[i], f_th, true)
+				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x2, f_y), Color(1, 1, 1, 0.22), 1.0 * size_scale) # specular line
+				
+				# 2. Red thread wraps at ends
+				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x1 + 4*size_scale, f_y), C_RED_SON, f_th + 0.5*size_scale)
+				c.draw_line(Vector2(f_x2 - 4*size_scale, f_y), Vector2(f_x2, f_y), C_RED_SON, f_th + 0.5*size_scale)
+				
+				# 3. Finger holes (tiny black dots)
+				for h_idx in range(6):
+					var hole_x = lerpf(f_x1 + f_w*0.3, f_x2 - f_w*0.2, float(h_idx)/5.0)
+					c.draw_circle(Vector2(hole_x, f_y), 1.2 * size_scale, Color.BLACK)
+				
+				# 4. Lively swaying red tassels hanging from left end
+				var sway := sin(_time * 2.5 + i * 1.2) * 6.0 * size_scale
+				var tassel_start := Vector2(f_x1 + 2*size_scale, f_y)
+				var tassel_end := tassel_start + Vector2(sway * 0.5, 18.0 * size_scale)
+				
+				c.draw_line(tassel_start, tassel_end, C_RED_SON, 1.2 * size_scale) # hanging string
+				c.draw_circle(tassel_end, 2.5 * size_scale, C_GOLD) # bead
+				
+				# Fringes body
+				var fringe_pts := PackedVector2Array([
+					tassel_end,
+					tassel_end + Vector2(sway - 2*size_scale, 14*size_scale),
+					tassel_end + Vector2(sway + 2*size_scale, 14*size_scale)
+				])
+				c.draw_colored_polygon(fringe_pts, C_RED_SON)
 
 		"bronze_drum":
-			var dr_r := 34.0 * size_scale
-			var dr_h := 36.0 * size_scale
-			var drum_base_y := cy + 15
-			c.draw_rect(Rect2(cx - dr_r * 1.1, drum_base_y, dr_r * 2.2, 10.0 * size_scale), Color(0.14, 0.07, 0.03), true)
+			var dr_r := 36.0 * size_scale
+			var dr_h := 50.0 * size_scale
+			var drum_base_y := cy + 18 * size_scale
 			
-			var drum_pts := PackedVector2Array()
-			var steps := 16
+			# Wooden base platform
+			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 10.0 * size_scale), Color(0.18, 0.10, 0.05), true)
+			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 10.0 * size_scale), C_GOLD, false, 1.2 * size_scale)
+			
+			# Drum Body polygon (typical flared top, curved middle waist, and wider base)
+			var body_pts := PackedVector2Array()
+			var steps := 24
 			for i in range(steps + 1):
 				var t := float(i) / steps
 				var py = drum_base_y - t * dr_h
 				var w_fac = 1.0
-				if t > 0.2 and t < 0.8:
-					w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
-				drum_pts.append(Vector2(cx - dr_r * w_fac, py))
+				if t < 0.28:
+					# Lower flare
+					w_fac = lerpf(0.95, 0.76, t / 0.28)
+				elif t < 0.72:
+					# Curved waist
+					var wt = (t - 0.28) / 0.44
+					w_fac = 0.76 + (1.0 - 0.76) * sin(wt * PI) * 0.15 # waist dip
+					if wt > 0.5:
+						w_fac = lerpf(0.76, 0.96, (wt - 0.5) * 2.0)
+				else:
+					# Top flare
+					w_fac = lerpf(0.96, 1.05, (t - 0.72) / 0.28)
+				body_pts.append(Vector2(cx - dr_r * w_fac, py))
 			for i in range(steps, -1, -1):
 				var t := float(i) / steps
 				var py = drum_base_y - t * dr_h
 				var w_fac = 1.0
-				if t > 0.2 and t < 0.8:
-					w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
-				drum_pts.append(Vector2(cx + dr_r * w_fac, py))
+				if t < 0.28:
+					w_fac = lerpf(0.95, 0.76, t / 0.28)
+				elif t < 0.72:
+					var wt = (t - 0.28) / 0.44
+					w_fac = 0.76 + (1.0 - 0.76) * sin(wt * PI) * 0.15
+					if wt > 0.5:
+						w_fac = lerpf(0.76, 0.96, (wt - 0.5) * 2.0)
+				else:
+					w_fac = lerpf(0.96, 1.05, (t - 0.72) / 0.28)
+				body_pts.append(Vector2(cx + dr_r * w_fac, py))
 				
-			c.draw_colored_polygon(drum_pts, Color(0.48, 0.36, 0.22))
-			c.draw_polyline(drum_pts, Color(0.36, 0.26, 0.15), 1.2, true)
-			c.draw_line(Vector2(cx - dr_r * 0.85, drum_base_y - dr_h * 0.3), Vector2(cx + dr_r * 0.85, drum_base_y - dr_h * 0.3), Color(0.68, 0.55, 0.35, 0.45), 1.5)
-			c.draw_line(Vector2(cx - dr_r * 0.85, drum_base_y - dr_h * 0.7), Vector2(cx + dr_r * 0.85, drum_base_y - dr_h * 0.7), Color(0.68, 0.55, 0.35, 0.45), 1.5)
+			c.draw_colored_polygon(body_pts, Color(0.48, 0.35, 0.20)) # Darker bronze base
+			c.draw_polyline(body_pts, C_GOLD, 1.0 * size_scale, true)
 			
-			_draw_ellipse_poly(c, Vector2(cx, drum_base_y - dr_h), dr_r, 4.0 * size_scale, Color(0.55, 0.42, 0.25))
-			_draw_ellipse_line(c, Vector2(cx, drum_base_y - dr_h), dr_r, 4.0 * size_scale, C_GOLD, 1.2)
-			c.draw_circle(Vector2(cx, drum_base_y - dr_h), 3.0 * size_scale, C_GOLD_LIGHT)
+			# Outer highlight / 3D shading
+			c.draw_polyline(body_pts, Color(0.68, 0.52, 0.32, 0.65), 2.2 * size_scale, true)
+			
+			# Horizontal decorative bands on drum barrel
+			for by_f in [0.22, 0.5, 0.78]:
+				var dy = drum_base_y - dr_h * by_f
+				c.draw_line(Vector2(cx - dr_r * 0.72, dy), Vector2(cx + dr_r * 0.72, dy), Color(0.68, 0.55, 0.35, 0.5), 1.5 * size_scale)
+				
+			# Side handles (2 pairs of double loops)
+			var h_color := C_GOLD
+			var h_y1 := drum_base_y - dr_h * 0.68
+			var h_y2 := drum_base_y - dr_h * 0.42
+			# Left double loops
+			c.draw_line(Vector2(cx - dr_r * 0.8, h_y1), Vector2(cx - dr_r * 0.98, h_y1 + 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx - dr_r * 0.8, h_y2), Vector2(cx - dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx - dr_r * 0.98, h_y1 + 4*size_scale), Vector2(cx - dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			
+			# Right double loops
+			c.draw_line(Vector2(cx + dr_r * 0.8, h_y1), Vector2(cx + dr_r * 0.98, h_y1 + 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx + dr_r * 0.8, h_y2), Vector2(cx + dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			c.draw_line(Vector2(cx + dr_r * 0.98, h_y1 + 4*size_scale), Vector2(cx + dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			
+			# Drumhead ellipse top
+			var dh_center := Vector2(cx, drum_base_y - dr_h)
+			var dh_rx := dr_r * 1.05
+			var dh_ry := 11.5 * size_scale
+			_draw_ellipse_poly(c, dh_center, dh_rx, dh_ry, Color(0.55, 0.42, 0.25))
+			_draw_ellipse_line(c, dh_center, dh_rx, dh_ry, C_GOLD, 1.5 * size_scale)
+			
+			# Concentric rings on drumhead
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.82, dh_ry * 0.82, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0.8 * size_scale)
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.52, dh_ry * 0.52, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0.8 * size_scale)
+			
+			# Abstract Chim Lạc flying bird icons (little golden arcs) in the middle ring
+			for deg in range(0, 360, 45):
+				var rad := float(deg) * PI / 180.0
+				var bird_pos := dh_center + Vector2(cos(rad) * dh_rx * 0.68, sin(rad) * dh_ry * 0.68)
+				c.draw_arc(bird_pos, 2.8 * size_scale, PI * 0.85, PI * 1.85, 8, C_GOLD_LIGHT, 0.8 * size_scale)
+			
+			# Star/Sun motif in center (12-pointed star)
+			var sun_glow_p := 0.25 + 0.15 * sin(_time * 4.0) # Pulsing glow value
+			c.draw_circle(dh_center, 6.5 * size_scale, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, sun_glow_p))
+			
+			# 12 Points of the Star/Sun
+			var star_pts := PackedVector2Array()
+			var star_inner_r := 3.2 * size_scale
+			var star_outer_r := 8.2 * size_scale
+			for step in range(24):
+				var angle := step * (TAU / 24.0)
+				var r := star_outer_r if step % 2 == 0 else star_inner_r
+				star_pts.append(dh_center + Vector2(cos(angle) * r, sin(angle) * r * (dh_ry / dh_rx)))
+			c.draw_colored_polygon(star_pts, C_GOLD_LIGHT)
+			c.draw_polyline(star_pts, Color.WHITE, 0.6 * size_scale, true)
 
 func _open_shop_popup() -> void:
 	if not shop_popup:
 		_setup_shop_popup()
 	_update_shop_items()
+	_apply_popup_layout(shop_popup, _is_mobile_layout)
 	_player_expression = "focused"
 	shop_popup.visible = true
 	shop_popup.modulate.a = 0.0
@@ -2565,10 +2965,10 @@ func _setup_shop_popup() -> void:
 	scroll_content.add_child(grid)
 	
 	var items = [
-		{"id": "painting", "name": "Tranh Sơn Mài Cổ", "cost": 3, "desc": "Tranh phong cảnh sơn dầu dát vàng truyền thống."},
-		{"id": "vase", "name": "Lộc Bình Bát Tràng", "cost": 5, "desc": "Bình gốm hoa lam men rạn Bát Tràng cao cấp."},
-		{"id": "bamboo", "name": "Trúc Quân Tử", "cost": 8, "desc": "Chậu trúc xanh mang ý nghĩa phong thủy tốt lành."},
-		{"id": "bronze_drum", "name": "Trống Đồng Đông Sơn", "cost": 12, "desc": "Trống đồng Đông Sơn mini trang trí tinh xảo."}
+		{"id": "painting", "name": "Tranh Tố Nữ Cổ Phong", "cost": 3, "desc": "Tranh dân gian Hàng Trống phác họa thiếu nữ chơi nhạc cụ truyền thống."},
+		{"id": "vase", "name": "Giá Treo Chiêng Đồng", "cost": 5, "desc": "Chiêng đồng cổ Tây Nguyên treo trên giá gỗ chạm khắc tinh xảo."},
+		{"id": "bamboo", "name": "Kệ Sáo Trúc Nhã Nhạc", "cost": 8, "desc": "Giá treo các loại sáo trúc, tiêu với tua rua đỏ đung đưa sinh động."},
+		{"id": "bronze_drum", "name": "Trống Đồng Đông Sơn", "cost": 12, "desc": "Báu vật âm nhạc cổ xưa với họa tiết mặt trời tỏa sáng linh thiêng."}
 	]
 	
 	for item in items:
