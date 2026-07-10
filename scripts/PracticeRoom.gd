@@ -853,14 +853,15 @@ func _process(delta: float) -> void:
 
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
-	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
-	
+	var back_btn_top := get_node_or_null("Root/TopBar/TopM/TopH/BackBtn") as Button
+	if back_btn_top: back_btn_top.text = "Quay lại"
+
 	var diff := "Cơ bản"
 	if SecureDataManager.active_lesson_id == "Node3":
 		diff = "Trung bình"
 	elif SecureDataManager.active_lesson_id == "Node4":
 		diff = "Nâng cao"
-		
+
 	var title_lbl := "Kỹ Thuật Nhấn Dây & Rung Âm"
 	if current_song_title != "":
 		title_lbl = current_song_title
@@ -871,25 +872,46 @@ func _set_labels() -> void:
 		elif SecureDataManager.active_lesson_id == "Node4":
 			title_lbl = "Kỹ Thuật Song Thanh"
 
-	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
-	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
+	var lesson_title_lbl := get_node_or_null("Root/TopBar/TopM/TopH/LessonTitle") as Label
+	if lesson_title_lbl: lesson_title_lbl.text = title_lbl
 
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
-	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
-	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
-	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
+	var pct_lbl := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel") as Label
+	if pct_lbl: pct_lbl.text = "60%" if current_song_title == "" else "100%"
 
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐÀN TRANH 16 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để nhấn rung"
-	record_btn.text = "Bắt đầu luyện tập"
-	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
+	var hint_btn := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn") as Button
+	if hint_btn: hint_btn.text = "Gợi ý"
 
-	speech_label.text = SPEECHES[0]
+	var notation_lbl := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel") as Label
+	if notation_lbl: notation_lbl.text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 
-	hint_dialog.title = "Gợi ý kỹ thuật"
-	hint_dialog.dialog_text = "Kỹ thuật gảy đàn tranh:\n\n🎵 GẢY DÂY: Chạm vào phần bên phải nhạn đàn (▲) để phát âm\n🎵 NHẤN RUNG: Giữ và kéo phần bên trái nhạn đàn để tạo rung âm\n\n• Dùng đầu ngón tay phải gảy nhẹ và dứt khoát\n• Ngón tay trái nhấn nhẹ phía trái nhạn đàn 2-3mm\n• Kéo và thả để tạo tiếng rung (vibrato)\n• Giữ cổ tay thả lỏng, ngón tay vuông góc với dây"
+	var target_note_lbl := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel") as Label
+	if target_note_lbl: target_note_lbl.text = "Nốt cần gảy: Đô"
+
+	var pitch_title := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle") as Label
+	if pitch_title: pitch_title.text = "CAO ĐỘ"
+
+	var rhythm_title := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle") as Label
+	if rhythm_title: rhythm_title.text = "NHỊP ĐIỆU"
+
+	var score_title := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle") as Label
+	if score_title: score_title.text = "ĐIỂM SỐ"
+
+	var score_sub := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub") as Label
+	if score_sub: score_sub.text = "Cao độ 82%  ·  Nhịp 71%"
+
+	var board_lbl := get_node_or_null("Root/StringsBoard/BoardM/BoardVBox/BoardLabel") as Label
+	if board_lbl: board_lbl.text = "ĐÀN TRANH 16 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để nhấn rung"
+
+	if record_btn: record_btn.text = "Bắt đầu luyện tập"
+
+	var reset_btn := get_node_or_null("Root/RecordBar/RecordM/RecordH/ResetBtn") as Button
+	if reset_btn: reset_btn.text = "Làm lại"
+
+	if speech_label: speech_label.text = SPEECHES[0]
+
+	if hint_dialog:
+		hint_dialog.title = "Gợi ý kỹ thuật"
+		hint_dialog.dialog_text = "Kỹ thuật gảy đàn tranh:\n\n🎵 GẢY DÂY: Chạm vào phần bên phải nhạn đàn (▲) để phát âm\n🎵 NHẤN RUNG: Giữ và kéo phần bên trái nhạn đàn để tạo rung âm\n\n• Dùng đầu ngón tay phải gảy nhẹ và dứt khoát\n• Ngón tay trái nhấn nhẹ phía trái nhạn đàn 2-3mm\n• Kéo và thả để tạo tiếng rung (vibrato)\n• Giữ cổ tay thả lỏng, ngón tay vuông góc với dây"
 
 # ─── Theme ────────────────────────────────────────────────────────────────────
 func _build_theme() -> void:
