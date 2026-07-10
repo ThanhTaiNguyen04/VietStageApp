@@ -1497,7 +1497,7 @@ func _play_zither_sound(string_idx: int, volume: float = -6.0) -> void:
 	_active_player = pl
 
 	# Natural fade-out — local capture prevents old tweens killing new player
-	var ft = create_tween()
+	var ft = pl.create_tween()
 	ft.tween_interval(2.5)
 	ft.tween_property(pl, "volume_db", -80.0, 0.8)
 	ft.tween_callback(func() -> void:
@@ -2327,7 +2327,7 @@ func _play_intro_zither_sound_briefly(string_idx: int, volume: float = -3.0) -> 
 	pl.play()
 	_active_player = pl
 
-	var ft = create_tween()
+	var ft = pl.create_tween()
 	ft.tween_interval(2.2)
 	ft.tween_property(pl, "volume_db", -80.0, 0.5)
 	ft.tween_callback(func() -> void:
@@ -2630,7 +2630,7 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 	add_child(bp)
 	bp.play()
 
-	var ft = create_tween()
+	var ft = bp.create_tween()
 	ft.tween_interval(1.5)
 	ft.tween_property(bp, "volume_db", -80.0, 0.4)
 	ft.tween_callback(bp.queue_free)
@@ -2638,20 +2638,24 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 func _hide_header_delayed() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
+	var record_fab = find_child("RecordFAB", true, false)
+	if not record_fab: return
+	
 	_header_tween = create_tween().set_parallel(true)
 	_header_tween.tween_interval(3.0)
-	var record_fab = find_child("RecordFAB", true, false)
-	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
+	_header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
 	
 	_header_tween.chain().tween_callback(func(): 
-		if record_fab: record_fab.visible = false
+		if is_instance_valid(record_fab):
+			record_fab.visible = false
 	)
 
 func _show_header() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
 	var record_fab = find_child("RecordFAB", true, false)
-	if record_fab: record_fab.visible = true
+	if not record_fab: return
 	
+	record_fab.visible = true
 	_header_tween = create_tween().set_parallel(true)
-	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)
+	_header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)
