@@ -919,8 +919,8 @@ func _set_labels() -> void:
 		current_chord = "Hợp âm: Em - Bm - D"
 	elif "Cây Trúc Xinh" in title_lbl:
 		current_chord = "Hợp âm: Am - G - Em"
-	elif "Nhật Ký Của Mẹ" in title_lbl:
-		current_chord = "Hợp âm: F - G - Em - Am"
+	elif "Gặp Mẹ Trong Mơ" in title_lbl:
+		current_chord = "Hợp âm: Am - F - C - G"
 	elif "Lý Hoài Nam" in title_lbl:
 		current_chord = "Hợp âm: Dm - F - Am"
 	elif "Xuân Về Bản Mèo" in title_lbl:
