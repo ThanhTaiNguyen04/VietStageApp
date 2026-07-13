@@ -38,6 +38,9 @@ var _is_recording := false
 var _recorded_stream: AudioStreamWAV = null
 var _playback_player: AudioStreamPlayer = null
 var bgm_player: AudioStreamPlayer
+var bgm_controls: HBoxContainer
+var bgm_slider: HSlider
+var bgm_toggle_btn: Button
 
 var complete_overlay: ColorRect
 var _holes : Array[Control] = []
@@ -231,6 +234,73 @@ func _ready():
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = -5.0
 	add_child(bgm_player)
+
+	bgm_controls = HBoxContainer.new()
+	bgm_controls.name = "BGMControls"
+	bgm_controls.add_theme_constant_override("separation", 15)
+	
+	var lbl = Label.new()
+	lbl.text = "Nhạc nền"
+	lbl.add_theme_font_size_override("font_size", 24)
+	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	bgm_controls.add_child(lbl)
+	
+	bgm_slider = HSlider.new()
+	bgm_slider.custom_minimum_size = Vector2(150, 40)
+	bgm_slider.min_value = -30
+	bgm_slider.max_value = 10
+	bgm_slider.value = -5
+	bgm_slider.step = 1.0
+	bgm_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bgm_controls.add_child(bgm_slider)
+	
+	bgm_toggle_btn = Button.new()
+	bgm_toggle_btn.text = " Tắt"
+	bgm_toggle_btn.icon = load("res://assets/textures/lucide/music.svg")
+	bgm_toggle_btn.expand_icon = true
+	bgm_toggle_btn.custom_minimum_size = Vector2(100, 40)
+	var sb_btn2 = StyleBoxFlat.new()
+	sb_btn2.bg_color = Color(0.85, 0.65, 0.25, 1.0)
+	sb_btn2.corner_radius_top_left = 10; sb_btn2.corner_radius_top_right = 10
+	sb_btn2.corner_radius_bottom_left = 10; sb_btn2.corner_radius_bottom_right = 10
+	bgm_toggle_btn.add_theme_stylebox_override("normal", sb_btn2)
+	bgm_toggle_btn.add_theme_stylebox_override("hover", sb_btn2)
+	bgm_controls.add_child(bgm_toggle_btn)
+	
+	add_child(bgm_controls)
+	
+	# Anchors and positioning
+	bgm_controls.anchor_left = 1.0
+	bgm_controls.anchor_right = 1.0
+	bgm_controls.anchor_top = 0.0
+	bgm_controls.anchor_bottom = 0.0
+	bgm_controls.offset_left = -450
+	bgm_controls.offset_right = -20
+	bgm_controls.offset_top = 20
+	bgm_controls.offset_bottom = 70
+	
+	if active_node_id == "Node42":
+		bgm_controls.visible = true
+	else:
+		bgm_controls.visible = false
+		
+	# Connect signals
+	bgm_toggle_btn.pressed.connect(func():
+		if bgm_player.volume_db <= -70.0:
+			bgm_player.volume_db = bgm_slider.value
+			bgm_toggle_btn.text = " Tắt"
+			bgm_toggle_btn.modulate = Color(1, 1, 1, 1)
+		else:
+			bgm_player.volume_db = -80.0
+			bgm_toggle_btn.text = " Bật"
+			bgm_toggle_btn.modulate = Color(0.5, 0.5, 0.5, 1)
+	)
+	
+	bgm_slider.value_changed.connect(func(val):
+		if bgm_player.volume_db > -70.0:
+			bgm_player.volume_db = val
+	)
+
 	
 	back_btn.pressed.connect(_on_back)
 	complete_btn.pressed.connect(_on_complete)
