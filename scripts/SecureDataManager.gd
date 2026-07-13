@@ -14,19 +14,24 @@ static var data := {
 	"selected_instrument": "dan_tranh",
 	"is_premium": false,
 	"unlocked_lessons": {
-		"dan_tranh": ["Node1", "Node2"],
-		"sao_truc": ["Node1", "Node2"],
-		"dan_bau": ["Node1", "dan_bau_coban_1_video"]
+
+		"dan_tranh": ["Node1"],
+		"sao_truc": ["Node1"],
+		"dan_bau": ["Node1", "dan_bau_coban_1_video"],
+		"trong_chau": ["Node1"]
+
 	},
 	"completed_lessons": {
 		"dan_tranh": [],
 		"sao_truc": [],
-		"dan_bau": []
+		"dan_bau": [],
+		"trong_chau": []
 	},
 	"stars": {
 		"dan_tranh": {},
 		"sao_truc": {},
-		"dan_bau": {}
+		"dan_bau": {},
+		"trong_chau": {}
 	},
 	"daily_streak": 1,
 	"last_practice_date": "",
@@ -132,6 +137,8 @@ static func is_instrument_unlocked(instrument: String) -> bool:
 		return is_lesson_completed("dan_tranh", "Node5")
 	elif instrument == "dan_bau":
 		return is_lesson_completed("sao_truc", "Node5")
+	elif instrument == "trong_chau":
+		return is_lesson_completed("dan_bau", "Node5")
 	return false
 
 static func get_total_stars() -> int:

@@ -657,13 +657,8 @@ func _process(delta: float) -> void:
 				var target_note = sheet_notes[_note_idx]
 				var target_idx = NOTES_VN.find(target_note)
 				if target_idx != -1:
-					# Play audio only once via _play_zither_sound (board audio disabled in demo)
-					_play_zither_sound(target_idx)
 					if _board:
-						# Visual only — disable audio on board to avoid double playback & distortion
-						_board.audio_enabled = false
 						_board.pluck(target_idx)
-						_board.audio_enabled = false
 						
 			if _current_note_elapsed >= target_duration:
 				_current_note_elapsed = 0.0
@@ -813,7 +808,9 @@ func _set_labels() -> void:
 
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
 	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
+	var hint_btn_node = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("HintBtn") as Button
+	if hint_btn_node:
+		hint_btn_node.text = "Gợi ý"
 
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
@@ -905,15 +902,17 @@ func _build_theme() -> void:
 		var target_label = board_vbox.get_node_or_null("TargetLabel") as Label
 		if target_label: target_label.visible = false
 		
-		# Setup MenuFAB on the left side of StringsBoard
-		_board.add_child(menu_btn)
+		# Keep the sidebar toggle in the screen overlay instead of inside the
+		# instrument. The board changes its logical size and drawing transform in
+		# portrait mode, which could move/clip child controls outside the viewport.
+		add_child(menu_btn)
 		menu_btn.name = "MenuFAB"
 		menu_btn.text = ""
 		menu_btn.custom_minimum_size = Vector2(40, 40)
 		menu_btn.size = Vector2(40, 40)
-		
-		# Dynamic position will be set in update_fabs
 		menu_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		menu_btn.position = Vector2(32.0, 12.0)
+		menu_btn.z_index = 90
 		
 		var tex = load("res://assets/textures/lucide/menu.svg")
 		if tex:
@@ -922,16 +921,16 @@ func _build_theme() -> void:
 			if "vertical_icon_alignment" in menu_btn:
 				menu_btn.set("vertical_icon_alignment", 1) # CENTER
 			menu_btn.expand_icon = true
-			menu_btn.add_theme_color_override("icon_normal_color", Color(0.98, 0.97, 0.95))
-			menu_btn.add_theme_color_override("icon_hover_color", Color.WHITE)
-			menu_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
+			menu_btn.add_theme_color_override("icon_normal_color", C_TEXT)
+			menu_btn.add_theme_color_override("icon_hover_color", C_JADE)
+			menu_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 		
 		var fab_s := StyleBoxFlat.new()
-		fab_s.bg_color = Color(1, 1, 1, 0.1)
+		fab_s.bg_color = Color(0.95, 0.93, 0.87, 0.55)
 		fab_s.corner_radius_top_left = 12; fab_s.corner_radius_top_right = 12
 		fab_s.corner_radius_bottom_left = 12; fab_s.corner_radius_bottom_right = 12
 		var fab_h := fab_s.duplicate() as StyleBoxFlat
-		fab_h.bg_color = Color(1, 1, 1, 0.3)
+		fab_h.bg_color = Color(0.95, 0.93, 0.87, 0.85)
 		menu_btn.add_theme_stylebox_override("normal", fab_s)
 		menu_btn.add_theme_stylebox_override("hover", fab_h)
 		menu_btn.add_theme_stylebox_override("pressed", fab_s)
@@ -983,8 +982,6 @@ func _build_theme() -> void:
 	if ctrl_btns:
 		if "columns" in ctrl_btns:
 			ctrl_btns.columns = 1
-		elif "vertical" in ctrl_btns:
-			ctrl_btns.vertical = true
 			
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
 		var btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(bn) as Button
@@ -1071,22 +1068,6 @@ func _build_theme() -> void:
 	var record_bar = $Root.get_node_or_null("RecordBar")
 	if record_bar: record_bar.visible = false
 	
-	# Dynamic positioning of FABs relative to strings
-	var update_fabs = func():
-		if not is_instance_valid(_board): return
-		var H = _board.size.y
-		var rh = (H - 20.0) / 17.0
-		var m_btn = _board.get_node_or_null("MenuFAB")
-		if m_btn:
-			var cy0 = 10.0 + rh * 0.5
-			var str_l0 = _board.get_str_l(0) if _board.has_method("get_str_l") else 60.0
-			m_btn.position = Vector2(str_l0 - 45.0, cy0 - 20.0)
-			
-	if _board and not _board.resized.is_connected(update_fabs):
-		_board.resized.connect(update_fabs)
-		# Call it slightly deferred to ensure size is initialized
-		get_tree().create_timer(0.05).timeout.connect(update_fabs)
-
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
 	_build_notation_track()
@@ -1447,9 +1428,6 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = false # Disable wait mode if demo is active
 		_update_wait_mode_ui()
 		_va_say("Đã bật Nghe mẫu. Hệ thống sẽ tự chơi giai điệu bài hát.")
-		# Board visual only — audio handled by _play_zither_sound to avoid double-play
-		if _board:
-			_board.audio_enabled = false
 		# Automatically start playing if not already playing
 		if not _recording:
 			_toggle_record()
@@ -1457,9 +1435,6 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = true
 		_update_wait_mode_ui()
 		_va_say("Đã tắt Nghe mẫu. Con hãy tự mình luyện tập nhé!")
-		# Restore board audio for manual play
-		if _board:
-			_board.audio_enabled = true
 		if _recording:
 			_toggle_record()
 	_update_demo_mode_ui()
@@ -2554,20 +2529,18 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 func _hide_header_delayed() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
-	_header_tween = create_tween().set_parallel(true)
-	_header_tween.tween_interval(3.0)
 	var record_fab = find_child("RecordFAB", true, false)
-	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
-	
-	_header_tween.chain().tween_callback(func(): 
-		if record_fab: record_fab.visible = false
-	)
+	if record_fab:
+		_header_tween = create_tween().set_parallel(true)
+		_header_tween.tween_interval(3.0)
+		_header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
+		_header_tween.chain().tween_callback(func(): record_fab.visible = false)
 
 func _show_header() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
 	var record_fab = find_child("RecordFAB", true, false)
-	if record_fab: record_fab.visible = true
-	
-	_header_tween = create_tween().set_parallel(true)
-	if record_fab: _header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)
+	if record_fab:
+		record_fab.visible = true
+		_header_tween = create_tween().set_parallel(true)
+		_header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)

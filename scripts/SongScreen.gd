@@ -176,6 +176,19 @@ const SONGS_DATA := [
 		"genre_label": "Dân ca",
 		"xp": 160,
 		"sheet": ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô","La"]
+	},
+	{
+		"id": "song_012",
+		"title": "Gió Đánh Đò Đưa",
+		"desc": "Làn điệu dân ca Quan họ Bắc Ninh vui tươi rộn rã, cực kỳ tình cảm khi ngân vang trên Đàn Bầu.",
+		"instrument": "dan_bau",
+		"instrument_label": "Đàn Bầu",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0), # Gold
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 180,
+		"sheet": ["Rê", "Rê", "Fa", "Sol", "Mi", "Sol", "Đô", "Đô", "Rê", "Mi", "Rê", "Đô", "Đô", "Rê", "Mi", "Rê", "Rê", "Đô", "La", "Sol", "La", "Đô", "Rê", "Đô", "La", "Sol", "Mi", "Sol", "La", "Sol", "Mi", "Mi", "Mi", "Sol", "La", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "La", "Đô", "Rê", "Đô"]
 	}
 ]
 
@@ -528,8 +541,8 @@ func _populate_songs() -> void:
 			first_song = song
 
 	# Auto-select first song on desktop if available
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	if not is_mobile and first_card != null:
 		# Wait for card to be ready in tree before modifying styles
 		_select_song(first_song, first_card)
@@ -566,8 +579,8 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	card.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			var size = get_viewport().size
-			var is_mobile = size.x < size.y or size.x < 768
+			var viewport_size = get_viewport().size
+			var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 			if is_mobile:
 				_on_play_song(song)
 			else:
@@ -772,8 +785,8 @@ func _animate_in() -> void:
 
 # ─── Responsive Layout ────────────────────────────────────────────────────────
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	bottom_bar.visible = is_mobile
 	songs_grid.columns = 1 if is_mobile else 2

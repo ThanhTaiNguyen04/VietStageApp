@@ -66,6 +66,13 @@ const SUBTITLES_DAN_BAU := [
 	{"start": 6.5,  "end": 8.0,  "text": "Tuyệt vời! Bây giờ hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và vào phòng tập luyện thực hành ngay thôi!"}
 ]
 
+const SUBTITLES_TRONG_CHAU := [
+	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là cô Mai, người hướng dẫn nhịp điệu Trống Chầu truyền thống tại VietStage."},
+	{"start": 2.5,  "end": 5.5,  "text": "Hôm nay, chúng ta sẽ học cách cầm dùi chầu, tư thế ngồi thẳng và cách gõ âm Tịch cơ bản trên mặt trống."},
+	{"start": 5.5,  "end": 8.0,  "text": "Hãy thả lỏng khớp cổ tay, gõ dùi dứt khoát vào tâm trống để tạo tiếng trầm ấm vang vọng tự nhiên."},
+	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và bắt đầu luyện tập thực tế ngay!"}
+]
+
 static var custom_video_path := ""
 static var custom_subtitles : Array = []
 
@@ -83,6 +90,9 @@ func _ready() -> void:
 		elif inst == "dan_bau":
 			video_stream_player.stream = load("res://Video/coMai_danBau.ogv")
 			active_subtitles = SUBTITLES_DAN_BAU
+		elif inst == "trong_chau":
+			video_stream_player.stream = load("res://Video/coMai_danBau.ogv")
+			active_subtitles = SUBTITLES_TRONG_CHAU
 		else:
 			video_stream_player.stream = load("res://Video/giang_vien_dan_tranh_1942.ogv")
 			active_subtitles = SUBTITLES_DAN_TRANH
@@ -169,9 +179,9 @@ func _update_media_progress() -> void:
 		progress_bar.value = 0.0
 		
 	# Time label
-	var cur_min := int(_time) / 60
+	var cur_min := int(int(_time) / 60.0)
 	var cur_sec := int(_time) % 60
-	var dur_min := int(_duration) / 60
+	var dur_min := int(int(_duration) / 60.0)
 	var dur_sec := int(_duration) % 60
 	time_label.text = "%d:%02d / %d:%02d" % [cur_min, cur_sec, dur_min, dur_sec]
 	

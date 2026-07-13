@@ -14,8 +14,8 @@ extends Control
 signal string_plucked(idx: int, note_name: String)
 signal pitch_bent(cents_offset: float)
 
-const NODE_COUNT := 7
-const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+const NODE_COUNT := 6
+const NOTES_VN : Array[String] = ["Đố", "Sol", "Mi", "Đô", "Sol", "Đồ"]
 
 # - State Variables -------------------
 var _note_names : Array[String]      = []
@@ -158,7 +158,7 @@ func _draw() -> void:
 	var W := size.x; var H := size.y
 	if W < 50.0 or H < 20.0: return
 
-	# â”€â”€â”€ 1. Core Geometry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 1. Core Geometry ──────────────────────────────────────────────────
 	var BL := W * 0.16        # soundboard left edge starts after gourd area
 	var BR := W * 0.98        # soundboard right edge
 	var BW := BR - BL
@@ -172,7 +172,7 @@ func _draw() -> void:
 	_str_y = BCY
 	_bend_zone_x = BL
 
-	# â”€â”€â”€ 2. Soundboard Body with Resonance Depth (Há»™p cá»™ng hÆ°á»Ÿng 2.5D) â”€â”€â”€â”€â”€
+	# ─── 2. Soundboard Body with Resonance Depth (Hộp cộng hưởng 2.5D) ─────
 	var sb_pts := PackedVector2Array()
 	var segs := 16
 	# Top-left corner rounded
@@ -188,7 +188,7 @@ func _draw() -> void:
 		var ang := PI * 0.5 + float(s) * (PI * 0.5) / float(segs)
 		sb_pts.append(Vector2(BL + CR, BB - CR) + Vector2(cos(ang), sin(ang)) * CR)
 
-	# Zither side-wall thickness/depth polygon (ThÃ¢n há»™p cá»™ng hÆ°á»Ÿng)
+	# Zither side-wall thickness/depth polygon (Thân hộp cộng hưởng)
 	var depth_offset := 14.0
 	var depth_pts := PackedVector2Array()
 	# Top edge: Curve from left-vertical to bottom-horizontal, then to BR
@@ -196,7 +196,7 @@ func _draw() -> void:
 		var ang := PI * 0.5 + float(s) * (PI * 0.5) / float(segs)
 		depth_pts.append(Vector2(BL + CR, BB - CR) + Vector2(cos(ang), sin(ang)) * CR)
 	depth_pts.append(Vector2(BR, BB))
-
+	
 	# Bottom edge: Down to depth bottom edge at BR, then trace back left with depth_offset
 	depth_pts.append(Vector2(BR, BB + depth_offset))
 	for s in range(segs + 1):
@@ -232,7 +232,7 @@ func _draw() -> void:
 	shade_cols.append(Color(0.12, 0.05, 0.01, 0.0))
 	draw_polygon(shade_pts, shade_cols)
 
-	# Decorative dark wood borders along top and bottom edges (Náº¹p gá»— nÃ¢u sáº«m chá»‰ vÃ ng)
+	# Decorative dark wood borders along top and bottom edges (Nẹp gỗ nâu sẫm chỉ vàng)
 	# Top wood border band
 	var top_border_rect := Rect2(BL + CR * 0.4, BT + 4.0, BR - BL - CR * 0.4 - 5.0, 7.0)
 	draw_rect(top_border_rect, Color("#1a0802"))
@@ -243,20 +243,20 @@ func _draw() -> void:
 	draw_line(Vector2(BL + CR * 0.4, BB - 11.0), Vector2(BR - 5.0, BB - 11.0), Color("#cca43b", 0.50), 1.0)
 
 	# Spruce top panel (White/yellow wood resonance board) recessed inside the borders and starting at BL + 110.0
-	# Drawing with an elegant traditional bottle-neck / vase scroll contour (hoa vÄƒn uá»‘n lÆ°á»£n)
+	# Drawing with an elegant traditional bottle-neck / vase scroll contour (hoa văn uốn lượn)
 	var spruce_pts := PackedVector2Array()
-
+	
 	# Top edge (straight from BL + 190.0 to BR - 6.0)
 	spruce_pts.append(Vector2(BL + 190.0, BT + 11.0))
 	spruce_pts.append(Vector2(BR - 6.0, BT + 11.0))
 	# Bottom edge (straight from BR - 6.0 to BL + 190.0)
 	spruce_pts.append(Vector2(BR - 6.0, BB - 11.0))
 	spruce_pts.append(Vector2(BL + 190.0, BB - 11.0))
-
+	
 	# Trace traditional vase/scroll left boundary contour (going from bottom-left to top-left)
 	var div_pts := PackedVector2Array()
 	var X_start := BL + 110.0
-
+	
 	# Symmetrical contour points from bottom BB - 11.0 to top BT + 11.0 (recessing to BL + 110.0 at center)
 	div_pts.append(Vector2(BL + 190.0, BB - 11.0))
 	div_pts.append(Vector2(X_start + 70.0, BCY + 26.0))
@@ -269,7 +269,7 @@ func _draw() -> void:
 	div_pts.append(Vector2(X_start + 50.0, BCY - 32.0))
 	div_pts.append(Vector2(X_start + 70.0, BCY - 26.0))
 	div_pts.append(Vector2(BL + 190.0, BT + 11.0))
-
+	
 	for p in div_pts:
 		spruce_pts.append(p)
 
@@ -285,7 +285,7 @@ func _draw() -> void:
 	# Gold divider border between the dark mun headblock and the yellow spruce wood panel
 	draw_polyline(div_pts, Color("#cca43b", 0.85), 2.2, true)
 
-	# Traditional Vietnamese cloud/wave inlay pattern on the right tailpiece (Hoa vÄƒn vÃ¢n mÃ¢y cá»• bay bá»•ng)
+	# Traditional Vietnamese cloud/wave inlay pattern on the right tailpiece (Hoa văn vân mây cổ bay bổng)
 	var pat_x := BR - 85.0
 	var pat_y := BCY
 	# Main large swirl
@@ -314,7 +314,7 @@ func _draw() -> void:
 	sheen_pts.append(Vector2(BR, BT + 1.5))
 	draw_polyline(sheen_pts, Color(1.0, 1.0, 1.0, 0.40), 1.5, false)
 
-	# â”€â”€â”€ 3. Thick Curved Bamboo Rod (Cáº§n rung sá»«ng trÃ¢u) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 3. Thick Curved Bamboo Rod (Cần rung sừng trâu) ─────────────────────
 	# Passing vertically through the gourd body, straight base (60% length), and horizontal curve leftwards at tip
 	var GX := BL - 10.0       # Nested close inside the zither body (as requested!)
 	var GY := BCY
@@ -329,7 +329,7 @@ func _draw() -> void:
 	var current_pos := rod_start
 	var seg_len := rod_ht / 20.0
 	rod_pts.append(current_pos)
-
+	
 	for s in range(1, 21):
 		var t := float(s) / 20.0
 		var seg_angle := -deg_to_rad(5.0) # Base tilt
@@ -337,11 +337,11 @@ func _draw() -> void:
 			# Curves smoothly from -5 degrees to -90 degrees (horizontal pointing left)
 			var curve_t := (t - 0.58) / 0.42
 			seg_angle += -deg_to_rad(85.0) * pow(curve_t, 1.8)
-
+			
 		var dir := Vector2(sin(seg_angle), -cos(seg_angle))
 		current_pos += dir * seg_len
-
-		# Apply dynamic player bending deflection (uá»‘n cáº§n) to the final coordinates
+		
+		# Apply dynamic player bending deflection (uốn cần) to the final coordinates
 		var p_pos := current_pos
 		p_pos.x += tip_deflect * (t * t)
 		rod_pts.append(p_pos)
@@ -361,7 +361,7 @@ func _draw() -> void:
 	# Note: Rod body, joints, and tip cap are drawn later (after the gourd body is drawn)
 	# so that the rod base overlays the gourd shell in 2.5D perspective.
 
-	# â”€â”€â”€ 4. Unified Turned Wooden Gourd Cup (Báº§u Ä‘Ã n dÃ¡ng chum tiá»‡n gá»— nguyÃªn khá»‘i) â”€
+	# ─── 4. Unified Turned Wooden Gourd Cup (Bầu đàn dáng chum tiện gỗ nguyên khối) ─
 	# Sits on top of the rod base, nested inside the zither body, oriented horizontally
 	var rim_x := GX + GR * 1.15
 	var rim_r_w := 6.0
@@ -370,7 +370,7 @@ func _draw() -> void:
 	# Generate single closed contour for the entire turned wood gourd cup
 	var gourd_pts := PackedVector2Array()
 	var g_steps := 32
-
+	
 	# Top edge (left to right)
 	for i in g_steps + 1:
 		var t: float = float(i) / float(g_steps)
@@ -389,7 +389,7 @@ func _draw() -> void:
 			var nt := (t - 0.78) / 0.22
 			w = lerpf(0.48, 0.65, nt * nt)
 		gourd_pts.append(Vector2(x, GY - w * GR))
-
+		
 	# Bottom edge (right to left)
 	for i in range(g_steps, -1, -1):
 		var t: float = float(i) / float(g_steps)
@@ -464,7 +464,7 @@ func _draw() -> void:
 		gourd_sheen_pts.append(Vector2(x, GY - w * GR * 0.72))
 	draw_polyline(gourd_sheen_pts, Color(1.0, 1.0, 1.0, 0.16), 2.5, false)
 
-	# 4.3 Draw gold/brass decorative cap on the left tip (cÃ¡i nÃºm nhá»n Ä‘áº§u báº§u)
+	# 4.3 Draw gold/brass decorative cap on the left tip (cái núm nhọn đầu bầu)
 	var cap_pts := PackedVector2Array([
 		Vector2(GX - GR + 1.0, GY - 7.5),
 		Vector2(GX - GR - 12.0, GY),
@@ -475,13 +475,13 @@ func _draw() -> void:
 
 	# 4.4 Draw gold rim cavity at the right flared mouth
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w - 2.0, rim_r_h - 3.0, Color("#cca43b"))
-	draw_ellipse_like_cavity(Vector2(rim_x, GY), 2.5, rim_r_h - 4.0, Color("#0c0401")) # dark inner hole
+	draw_ellipse_like_cavity(Vector2(rim_x, GY), 2.5, rim_r_h - 4.0, Color("#0c0401")) # dark inner hole 
 
 	# 4.4 Draw brass/gold mounting bracket frame at the slot interface (on top of soundboard)
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w + 3.0, rim_r_h + 3.0, Color("#cca43b")) # gold bracket outer
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w, rim_r_h, Color("#1a0802")) # gold bracket inner
 
-	# â”€â”€â”€ 4.5 Thick Curved Bamboo Rod (Cáº§n rung sá»«ng trÃ¢u) drawn on top of gourd body â”€â”€â”€
+	# ─── 4.5 Thick Curved Bamboo Rod (Cần rung sừng trâu) drawn on top of gourd body ───
 	# Draw rod dark border (outer silhouette - tapered from 24px to 11px - black horn)
 	for s in 20:
 		var t1 := float(s) / 20.0
@@ -527,7 +527,7 @@ func _draw() -> void:
 	draw_circle(rod_end, 5.5, Color("#cca43b"))
 	draw_circle(rod_end, 2.5, Color("#090909"))
 
-	# â”€â”€â”€ 4.6 Collar socket (Cá»• khá»›p ná»‘i cáº¯m cáº§n rung vÃ o báº§u) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 4.6 Collar socket (Cổ khớp nối cắm cần rung vào bầu) ───────────────────
 	# Aligned to the top-middle surface of the gourd at x = GX, y = GY - 10.0
 	var collar_y := GY - 10.0
 	var collar_center := Vector2(GX, collar_y)
@@ -540,7 +540,7 @@ func _draw() -> void:
 	draw_circle(rivet_pos, 3.0, Color("#cca43b"))
 	draw_circle(rivet_pos, 1.2, Color("#1a0802"))
 
-	# â”€â”€â”€ 5. String (Silver steel wire passing to BR) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 5. String (Silver steel wire passing to BR) ──────────────────────────
 	# Starts at the anchor point on the right of the gourd, runs horizontally to BR
 	var SE := Vector2(BR, BCY)
 	var SS := rivet_pos # string exits from the rivet anchor (exactly at Y=BCY)
@@ -567,18 +567,18 @@ func _draw() -> void:
 	draw_polyline(str_pts, Color("#d1d5db"), 1.2, false) # metal core (light silver core)
 	draw_polyline(str_pts, Color("#ffffff", 0.80), 0.5, false) # shiny metallic sheen
 
-	# â”€â”€â”€ 6. Concentric Harmonic Nodes (Jade-wood-brass rivets) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	# Cache node positions
-	var NODE_AREA_L := BL + 215.0
-	var NODE_AREA_R := BR - 95.0
-	var NODE_AW     := NODE_AREA_R - NODE_AREA_L
+	# ─── 6. Concentric Harmonic Nodes (Jade-wood-brass rivets) ───────────────
+	# Harmonic node positions based on string fraction (traditional Dan Bau)
+	# Fractions from gourd (SS) to bridge (SE): 1/8, 1/6, 1/5, 1/4, 1/3, 1/2
+	var harmonic_fractions : Array[float] = [1.0/8.0, 1.0/6.0, 1.0/5.0, 1.0/4.0, 1.0/3.0, 1.0/2.0]
+	var string_length := SE.x - SS.x
 
 	if _node_xs.size() != NODE_COUNT:
 		_node_xs.resize(NODE_COUNT)
 		_node_ys.resize(NODE_COUNT)
 	for i in NODE_COUNT:
-		var t := float(i) / float(NODE_COUNT - 1)
-		_node_xs[i] = NODE_AREA_L + t * NODE_AW
+		var frac : float = harmonic_fractions[i] if i < harmonic_fractions.size() else 0.5
+		_node_xs[i] = SS.x + frac * string_length
 		_node_ys[i] = BCY
 
 	# Node visible radius
@@ -594,14 +594,14 @@ func _draw() -> void:
 		var press_w := _press_weights[i] if _press_weights.size() > i else 0.0
 		var tgt_w := _target_weights[i] if _target_weights.size() > i else 0.0
 
-		# â”€â”€ Active target golden glowing concentric ripple rings â”€â”€
+		# ── Active target golden glowing concentric ripple rings ──
 		if tgt_w > 0.01:
 			var osc := 0.5 + 0.5 * sin(_pulse_phase * 2.2)
 			var r1 := NODE_VR + 5.0 + osc * 4.0
 			var r2 := r1 + 8.0 + osc * 2.0
 			draw_arc(pos, r1, 0, TAU, 32, Color("#ffd25c", tgt_w * 0.22), 1.2)
 			draw_arc(pos, r2, 0, TAU, 32, Color("#ffd25c", tgt_w * 0.09), 0.8)
-
+			
 			# Golden core radial glow (soft golden glow)
 			draw_circle(pos, NODE_VR + 2.0, Color("#cca43b", tgt_w * 0.12))
 
@@ -610,7 +610,7 @@ func _draw() -> void:
 			draw_circle(pos, NODE_VR + 12.0 * glow_a, Color(1.0, 0.90, 0.45, glow_a * 0.30))
 		if press_w > 0.0:
 			draw_circle(pos, NODE_VR + 16.0 * press_w, Color(1.0, 0.92, 0.55, press_w * 0.20))
-
+		
 		# Completed node soft green glow
 		if is_completed:
 			draw_circle(pos, NODE_VR + 4.0, Color("#a7f3d0", 0.15))
@@ -618,22 +618,22 @@ func _draw() -> void:
 		# Concentric layered node body:
 		# 1. Shadow
 		draw_circle(pos, NODE_VR + 1.5, Color(0, 0, 0, 0.15))
-
-		# 2. Outer brass/gold ring (VÃ²ng Ä‘á»“ng vÃ ng)
+		
+		# 2. Outer brass/gold ring (Vòng đồng vàng)
 		draw_circle(pos, NODE_VR, Color("#cca43b"))
-
-		# 3. Center - Ivory/Cream color (TÃ¢m mÃ u ngÃ ) or Soft Light Green color if completed
+		
+		# 3. Center - Ivory/Cream color (Tâm màu ngà) or Soft Light Green color if completed
 		var center_col := Color("#ede7da")
 		if is_completed:
 			center_col = Color("#a7f3d0") # Soft light green
 		elif is_tgt:
 			center_col = Color("#fcd34d") # Slightly warmer yellow/gold for current target
-
+		
 		draw_circle(pos, NODE_VR - 3.5, center_col)
-
+		
 		# 4. Center small bronze rivet pin (no thick black border)
 		draw_circle(pos, 2.5, Color("#8c6827"))
-
+		
 		# 5. Specular highlight dot
 		draw_circle(pos - Vector2(3.5, 3.5), 1.5, Color(1, 1, 1, 0.6))
 
@@ -643,11 +643,11 @@ func _draw() -> void:
 			draw_circle(pos, NODE_VR - 8.0, Color(1.0, 0.82, 0.20, tgt_w * pulse_val))
 			draw_circle(pos, 6.0, Color(1.0, 1.0, 0.90, tgt_w * pulse_val))
 
-		# â”€â”€â”€ 7. Vertical Pin Lines & Label Tags â”€â”€â”€
+		# ─── 7. Vertical Pin Lines & Label Tags ───
 		# Vertical dashed guide pin line going up to node label
 		var line_start_y := pos.y - NODE_VR - 3.0
 		var line_end_y := pos.y - 56.0
-
+		
 		# Draw clean vertical dashed pin line
 		var dy := line_start_y
 		var step := 5.0
@@ -668,16 +668,16 @@ func _draw() -> void:
 			var pad_y := 6.0
 			var tw := ts.x + pad_x * 2.0
 			var th := ts.y + pad_y * 2.0
-
+			
 			var rect_x := pos.x - tw * 0.5
 			var rect_y := line_end_y - th + 2.0
 			var label_rect := Rect2(rect_x, rect_y, tw, th)
-
+			
 			# Choose label colors
 			var tag_bg := Color("#1a1a1a") # Dark background tag matching reference
 			var tag_border := Color("#cca43b", 0.45) # Gold border outline
 			var tag_text := Color("#ffffff")
-
+			
 			if is_tgt:
 				tag_bg = Color("#cca43b") # Active note gets a golden background tag
 				tag_border = Color("#ffffff", 0.8)
@@ -686,11 +686,11 @@ func _draw() -> void:
 				tag_bg = Color("#3a200e")
 				tag_border = Color("#cca43b", 0.75)
 				tag_text = Color("#ffdca0")
-
+			
 			# Draw label rounded tag box (8px radius)
 			_draw_rrect(label_rect, 6.0, tag_bg)
 			_draw_rrect_outline(label_rect, 6.0, tag_border, 1.2)
-
+			
 			# Draw note text
 			var text_pos := Vector2(rect_x + pad_x, rect_y + pad_y + ts.y * 0.75)
 			draw_string(font, text_pos, label_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tag_text)
@@ -758,9 +758,9 @@ func _draw_rrect_outline(rect: Rect2, radius: float, col: Color, w: float) -> vo
 
 
 
-#
+# 
 #  INPUT HANDLING & DESKTOP FALLBACK
-#
+# 
 func _unhandled_input(ev: InputEvent) -> void:
 	if ev is InputEventKey:
 		var ek := ev as InputEventKey
@@ -802,7 +802,7 @@ func _on_move(pos: Vector2) -> void:
 		mouse_default_cursor_shape = CURSOR_POINTING_HAND
 	else:
 		mouse_default_cursor_shape = CURSOR_ARROW
-
+		
 	if _is_bending:
 		if not _bend_active:
 			if abs(pos.y - _bend_start_y) > 5.0:

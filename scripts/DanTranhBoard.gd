@@ -4,6 +4,9 @@ signal string_plucked(idx: int, note_name: String)
 signal string_pressed(idx: int, pitch_cents_offset: float)
 
 const STR_COUNT := 17
+const LANDSCAPE_BRIDGE_START_PCT := 0.26
+const LANDSCAPE_BRIDGE_END_PCT := 0.88
+const PORTRAIT_BRIDGE_PCT := 0.39
 
 var _note_names  : Array[String]      = []
 var _streams     : Array              = []
@@ -116,15 +119,19 @@ func get_bridge_x(idx: int) -> float:
 	var W := size.y * 1.1 if is_portrait_mode else size.x
 	var ix := 24.0
 	var iw := W - 60.0
-	var t := float(idx) / float(STR_COUNT - 1)
-	# Straight diagonal line representing real Đàn Tranh nhạn arrangement
-	var start_pct := 0.26
-	var end_pct := 0.88
-	var pct := lerpf(start_pct, end_pct, t)
+	var pct := _get_bridge_pct(idx)
 	var offset := 0.0
 	if _bridge_offsets.size() > idx:
 		offset = _bridge_offsets[idx]
 	return ix + iw * pct + offset
+
+func _get_bridge_pct(idx: int) -> float:
+	# The portrait drawing is rotated 90 degrees. A shared logical X position
+	# therefore becomes the horizontal row of bridges shown in the reference.
+	if is_portrait_mode:
+		return PORTRAIT_BRIDGE_PCT
+	var t := float(idx) / float(STR_COUNT - 1)
+	return lerpf(LANDSCAPE_BRIDGE_START_PCT, LANDSCAPE_BRIDGE_END_PCT, t)
 
 func get_str_l(idx: int) -> float:
 	var W := size.y * 1.1 if is_portrait_mode else size.x
@@ -850,8 +857,7 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 		var W_base := size.y * 1.1 if is_portrait_mode else size.x
 		var ix_base := 24.0
 		var iw_base := W_base - 60.0
-		var t_base := float(idx) / float(STR_COUNT - 1)
-		var pct_base := lerpf(0.26, 0.88, t_base)
+		var pct_base := _get_bridge_pct(idx)
 		var base_bridge_x := ix_base + iw_base * pct_base
 		
 		# Giới hạn không cho nhạn kéo quá sát 2 đầu
@@ -866,12 +872,15 @@ func _handle_touch_move(finger_idx: int, pos: Vector2) -> void:
 func _handle_touch_end(finger_idx: int) -> void:
 	if not _active_touches.has(finger_idx): return
 	var touch_info = _active_touches[finger_idx]
-	if touch_info["interaction_type"] == "press":
-		var idx = touch_info["last_string_idx"]
-		if idx >= 0 and idx < STR_COUNT:
-			_is_pressed[idx] = 0
-			_update_press(idx)
-			queue_redraw()
+	
+	if typeof(touch_info) == TYPE_DICTIONARY:
+		if touch_info.get("interaction_type") == "press":
+			var idx = touch_info["last_string_idx"]
+			if idx >= 0 and idx < STR_COUNT:
+				_is_pressed[idx] = 0
+				_update_press(idx)
+				queue_redraw()
+				
 	_active_touches.erase(finger_idx)
 
 func _notification(what: int) -> void:

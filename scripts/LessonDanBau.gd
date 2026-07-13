@@ -32,25 +32,25 @@ const LESSONS = [
 	{
 		"id": "dan_bau_coban_1",
 		"title": "BÀI 1",
-		"note": "Căng dây",
-		"video": "Xem video hướng dẫn lên dây & căng dây",
-		"practice": "Luyện tập căng dây & lên dây",
+		"note": "Khám phá \"Độc Huyền Cầm\"",
+		"video": "Video hướng dẫn: Giảng viên giới thiệu cấu tạo (Bầu vang, cần đàn, dây, que gảy), tư thế ngồi và cách cầm que gảy tay phải.",
+		"practice": "Thực hành (Tạm thời ở phòng luyện Đàn Bầu ảo): Chế độ \"Exploration\". Người dùng làm quen giao diện màn hình: chạm vào dây đàn ảo để nghe âm thanh dây buông.",
 		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài học đầu tiên: Căng dây và lên dây Đàn Bầu."},
-			{"start": 2.5, "end": 6.5, "text": "Con hãy dùng trục vặn để điều chỉnh độ căng của dây sao cho đúng cao độ nốt Đô trầm nhé."},
-			{"start": 6.5, "end": 10.0, "text": "Dây đàn quá chùng sẽ làm âm hài âm bị tắt và không vang. Hãy cùng chỉnh dây nào."}
+			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài học đầu tiên: Khám phá Độc Huyền Cầm."},
+			{"start": 2.5, "end": 6.5, "text": "Đàn Bầu gồm Bầu vang, cần đàn, dây, que gảy. Hãy lưu ý tư thế ngồi và cách cầm que gảy tay phải."},
+			{"start": 6.5, "end": 10.0, "text": "Hãy sẵn sàng để bước vào thế giới của Độc Huyền Cầm nhé."}
 		]
 	},
 	{
 		"id": "dan_bau_coban_2",
 		"title": "BÀI 2",
-		"note": "Nốt Đô",
-		"video": "Xem video hướng dẫn gảy nốt Đô",
-		"practice": "Luyện gảy nốt Đô hài âm",
+		"note": "Kỹ thuật tạo Bồi Âm",
+		"video": "Video hướng dẫn: Bí quyết dùng cạnh bàn tay phải chặn nhẹ lên dây và gảy để tạo ra các bồi âm (Harmonics) ở các vị trí nốt khác nhau.",
+		"practice": "Thực hành (Tạm thời ở phòng luyện Đàn Bầu ảo): Mini-game \"Dò đúng nốt\". Ứng dụng chia dây đàn ảo thành các vạch điểm chạm (Nodes). Chạm đúng vạch sáng trên màn hình.",
 		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài 2: Học gảy nốt Đô trên Đàn Bầu."},
-			{"start": 2.5, "end": 6.0, "text": "Hãy đặt nhẹ phần rìa bàn tay phải vào điểm hài âm số 1, sau đó gảy nhẹ dây đàn."},
-			{"start": 6.0, "end": 10.0, "text": "Nhấc nhẹ bàn tay ra ngay sau khi gảy để nốt Đô ngân vang tự nhiên nhất."}
+			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài 2: Kỹ thuật tạo Bồi Âm."},
+			{"start": 2.5, "end": 6.0, "text": "Bí quyết là dùng cạnh bàn tay phải chặn nhẹ lên dây và gảy."},
+			{"start": 6.0, "end": 10.0, "text": "Điều này sẽ tạo ra các bồi âm ở các vị trí nốt khác nhau. Cùng thử nhé."}
 		]
 	},
 	{
@@ -120,7 +120,14 @@ func _build_theme() -> void:
 	if f_title:
 		page_title.add_theme_font_override("font", f_title)
 		
-	back_btn.text = "Quay lại"
+	back_btn.text = ""
+	back_btn.icon = load("res://icons8/icons8-back-16.png") as Texture2D
+	back_btn.expand_icon = true
+	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back_btn.custom_minimum_size = Vector2(44, 44)
+	back_btn.add_theme_color_override("icon_normal_color", C_JADE)
+	back_btn.add_theme_color_override("icon_hover_color", C_GOLD)
+	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_btn_bouncy(back_btn)
 	

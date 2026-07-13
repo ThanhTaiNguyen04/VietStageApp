@@ -11,17 +11,17 @@ func _ready() -> void:
 func _try_play_video() -> void:
 	var ogv_path := "res://assets/theme/introtong.ogv"
 	var stream = load(ogv_path) as VideoStream
-			
+
 	if stream:
 		$Center.visible = false
 		$VersionLabel.visible = false
-		
+
 		var video_player = VideoStreamPlayer.new()
 		video_player.set_anchors_preset(Control.PRESET_FULL_RECT)
 		video_player.expand = true
 		video_player.stream = stream
 		add_child(video_player)
-		
+
 		video_player.finished.connect(_go_loading)
 		video_player.play()
 	else:
