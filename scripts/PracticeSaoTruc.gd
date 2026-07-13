@@ -685,9 +685,6 @@ func _ready() -> void:
 	pass
 
 	_setup_fullscreen_video_practice("res://image/saotruc.png")
-	
-	# Tự động kích hoạt trạng thái luyện tập (thu âm micro) ngay khi nạp trang!
-	_toggle_record()
 
 
 func _process(delta: float) -> void:
@@ -1475,6 +1472,7 @@ func _toggle_record() -> void:
 			_reference_onsets.append(1.0 + i * 1.5)
 	else:
 		record_btn.text = "Bắt đầu luyện tập"
+		_current_note_elapsed = 0.0
 		if visualizer:
 			visualizer.add_practice_score(_score)
 		_show_custom_result()
@@ -3282,5 +3280,5 @@ func _setup_fullscreen_video_practice(guide_path: String) -> void:
 	if stats_row:
 		stats_row.visible = false
 		
-	# 9. Auto-start recording
-	_toggle_record()
+	# 9. Wait for user to tap Start
+	pass
