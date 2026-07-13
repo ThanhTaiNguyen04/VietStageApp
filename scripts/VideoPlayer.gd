@@ -430,7 +430,10 @@ func _on_complete() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
+		if lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeRoom.tscn")
+		elif lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
 			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
 		else:
@@ -444,7 +447,8 @@ func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		var target := "res://scenes/LessonDanTranh.tscn" if SecureDataManager.active_lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
+		get_tree().change_scene_to_file(target)
 	)
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:

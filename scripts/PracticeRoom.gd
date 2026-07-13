@@ -1791,7 +1791,9 @@ func _show_custom_result() -> void:
 func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	t.tween_callback(func() -> void:
+		var target := "res://scenes/LessonDanTranh.tscn" if SecureDataManager.active_lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
+		get_tree().change_scene_to_file(target))
 
 func reset_layout_transforms() -> void:
 	if not _board: return

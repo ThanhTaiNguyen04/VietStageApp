@@ -30,7 +30,8 @@ func _init():
 		"res://scenes/ProgressScreen.tscn",
 		"res://scenes/VideoPlayer.tscn",
 		"res://scenes/CustomPopup.tscn",
-		"res://scenes/LessonDanBau.tscn"
+		"res://scenes/LessonDanBau.tscn",
+		"res://scenes/LessonDanTranh.tscn"
 	]
 	
 	var has_error = false

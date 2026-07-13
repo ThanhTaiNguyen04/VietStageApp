@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://lesson_dan_bau_001"]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/LessonDanBau.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/LessonDanTranh.gd" id="1_script"]
 
-[node name="LessonDanBau" type="Control"]
+[node name="LessonDanTranh" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -16,7 +16,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.98, 0.97, 0.94, 1.0)
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.98, 0.97, 0.94, 1)
 
 [node name="Root" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -106,37 +108,45 @@ layout_mode = 2
 size_flags_vertical = 4
 flat = true
 
-[node name="PageTitle" type="Label" parent="Root/RightContent/TopBar/TopM/TopH"]
+[node name="TitleVBox" type="VBoxContainer" parent="Root/RightContent/TopBar/TopM/TopH"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 28
-text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
-vertical_alignment = 1
+theme_override_constants/separation = 2
+
+[node name="PageTitle" type="Label" parent="Root/RightContent/TopBar/TopM/TopH/TitleVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 25
+text = "LEVEL 1 · ĐÀN TRANH"
+
+[node name="Objective" type="Label" parent="Root/RightContent/TopBar/TopM/TopH/TitleVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Mục tiêu khóa học"
+autowrap_mode = 2
 
 [node name="ChangeCourseBtn" type="Button" parent="Root/RightContent/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(180, 48)
+custom_minimum_size = Vector2(164, 50)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 18
-text = "Đổi khóa học"
+text = "Đổi Level"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Root/RightContent"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 2
-vertical_scroll_mode = 0
+vertical_scroll_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="Root/RightContent/ScrollContainer"]
+[node name="ContentMargin" type="MarginContainer" parent="Root/RightContent/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/margin_left = 64
-theme_override_constants/margin_right = 64
-theme_override_constants/margin_top = 32
-theme_override_constants/margin_bottom = 32
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_bottom = 36
 
-[node name="LessonsHBox" type="HBoxContainer" parent="Root/RightContent/ScrollContainer/MarginContainer"]
+[node name="LessonsHBox" type="HBoxContainer" parent="Root/RightContent/ScrollContainer/ContentMargin"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 40
+theme_override_constants/separation = 32
