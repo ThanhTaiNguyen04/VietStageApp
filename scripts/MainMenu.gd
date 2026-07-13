@@ -75,6 +75,9 @@ const LESSON_DAN_BAU_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 var card_adv_tech: PanelContainer
 var card_pro_perf: PanelContainer
+var _is_dragging_roadmap := false
+var _drag_start_pos := Vector2()
+var _scroll_start_x := 0
 
 func _ready() -> void:
 	SecureDataManager.load_data()
@@ -111,6 +114,7 @@ func _ready() -> void:
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.38)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	# roadmap_scroll.gui_input.connect(_on_roadmap_scroll_gui_input)
 	_on_viewport_size_changed()
 
 	avatar_circle.hide()
@@ -1161,3 +1165,16 @@ func _on_classical_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
 		_show_course_detail("Làn Điệu Quê Hương", 12, 3)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_is_dragging_roadmap = true
+				_drag_start_pos = event.global_position
+				_scroll_start_x = roadmap_scroll.scroll_horizontal
+			else:
+				_is_dragging_roadmap = false
+	elif event is InputEventMouseMotion and _is_dragging_roadmap:
+		var dx = event.global_position.x - _drag_start_pos.x
+		roadmap_scroll.scroll_horizontal = _scroll_start_x - int(dx)
