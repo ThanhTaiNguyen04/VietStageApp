@@ -231,7 +231,7 @@ func _build_lessons() -> void:
 		if ls and ls.LESSON_NOTES.has("Node" + str(node_id)):
 			var data = ls.LESSON_NOTES["Node" + str(node_id)]
 			var n = data["note"]
-			title_text = "Nốt " + n
+			title_text = data.get("title", "Nốt " + n)
 			desc_text = data["desc"]
 			if "Thi Đấu" in data["desc"]:
 				title_text = data["desc"]
@@ -349,116 +349,74 @@ func _on_lesson_selected(node_id: int) -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	
 	if inst == "sao_truc":
-		# Dynamically load lesson data
-		if node_id == 19:
-			PracticeSaoTruc.current_song_title = "Trống Cơm - Phân đoạn 1"
-			PracticeSaoTruc.current_song_sheet = [
-				"Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol", 
-				"Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
-				"Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol"
-			]
-			PracticeSaoTruc.current_song_durations = [
-				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
-				1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 
-				1.0, 1.0, 2.0, 1.0, 0.5, 2.0
-			]
-		elif node_id == 20:
-			PracticeSaoTruc.current_song_title = "Trống Cơm - Phân đoạn 2"
-			PracticeSaoTruc.current_song_sheet = [
-				"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
-				"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
-				"Mi2", "Mi2", "Sol2", "Sol", "La", "Sol", "La", "Sol", "La", "Sol", "La", "Đô2", "Đô2", "Đô2", "La", "Sol", "La", "Đô2", "Sol", 
-				"Sol", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "La", "Sol", "La", "Đô2", "Sol", 
-				"Sol", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "La", "Sol", "La", "Đô2"
-			]
-			PracticeSaoTruc.current_song_durations = [
-				1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
-				1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
-				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
-				1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0, 
-				1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 2.0
-			]
-		elif node_id == 21:
-			PracticeSaoTruc.current_song_title = "Trống Cơm - Hoàn thành"
-			PracticeSaoTruc.current_song_sheet = [
-				"Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol", 
-				"Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
-				"Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
-				"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
-				"Mi2", "Mi2", "Sol2", "Sol", "La", "Sol", "La", "Sol", "La", "Sol", "La", "Đô2", "Đô2", "Đô2", "La", "Sol", "La", "Đô2", "Sol"
-			]
-			PracticeSaoTruc.current_song_durations = [
-				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
-				1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 
-				1.0, 1.0, 2.0, 1.0, 0.5, 2.0, 
-				1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
-				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0
-			]
-		elif node_id == 22:
+		# Dynamically load song data for PracticeRoom
+		# Nodes 19-28 are Trống Cơm sequence lessons inside LessonSaoTruc.tscn,
+		# so they do not need PracticeRoom initialization here.
+		if node_id == 29:
 			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Luyến ngón"
 			PracticeSaoTruc.current_song_sheet = ["Mi", "Sol", "La", "Sol", "Mi"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 2.0, 1.0, 2.0]
-		elif node_id == 23:
+		elif node_id == 30:
 			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Vuốt ngón"
 			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 3.0]
-		elif node_id == 24:
+		elif node_id == 31:
 			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["Đô", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Mi", "Rê", "Đô", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 25:
+		elif node_id == 32:
 			PracticeSaoTruc.current_song_title = "Cây Trúc Xinh - Mở đầu"
 			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "La", "Sol", "Mi"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 26:
+		elif node_id == 33:
 			PracticeSaoTruc.current_song_title = "Cây Trúc Xinh - Phân đoạn 2"
 			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Sol", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 27:
+		elif node_id == 34:
 			PracticeSaoTruc.current_song_title = "Cây Trúc Xinh - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "La", "Sol", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 28:
+		elif node_id == 35:
 			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Phân đoạn 1"
 			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Sol", "La", "Si"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 29:
+		elif node_id == 36:
 			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Phân đoạn 2"
 			PracticeSaoTruc.current_song_sheet = ["Đô2", "Si", "La", "Sol", "Mi"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 30:
+		elif node_id == 37:
 			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Sol", "La", "Si", "Đô2", "Si", "La", "Sol", "Mi"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 31:
+		elif node_id == 38:
 			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Flutter 1"
 			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 32:
+		elif node_id == 39:
 			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Flutter 2"
 			PracticeSaoTruc.current_song_sheet = ["Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 33:
+		elif node_id == 40:
 			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 34:
+		elif node_id == 41:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 1"
 			PracticeSaoTruc.current_song_sheet = ["Mi2", "Rê2", "Đô2", "La", "Đô2"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 35:
+		elif node_id == 42:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 2"
 			PracticeSaoTruc.current_song_sheet = ["Mi2", "Sol2", "Mi2", "Rê2", "Mi2"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 36:
+		elif node_id == 43:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 3"
 			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "Rê2", "Mi2", "Rê2"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 37:
+		elif node_id == 44:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 4"
 			PracticeSaoTruc.current_song_sheet = ["Rê2", "Đô2", "La", "Sol", "La"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 38:
+		elif node_id == 45:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["Mi2", "Rê2", "Đô2", "La", "Đô2", "Mi2", "Sol2", "Mi2", "Rê2", "Mi2", "La", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La", "Sol", "La"]
 			PracticeSaoTruc.current_song_durations = [0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.0]
@@ -466,7 +424,7 @@ func _on_lesson_selected(node_id: int) -> void:
 			PracticeSaoTruc.current_song_title = ""
 			PracticeSaoTruc.current_song_sheet.clear()
 			PracticeSaoTruc.current_song_durations.clear()
-
+	
 	var t = create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.25)
 	t.tween_callback(func() -> void: 
@@ -480,7 +438,7 @@ func _on_lesson_selected(node_id: int) -> void:
 			elif inst == "trong_chau":
 				get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn")
 			else:
-				if node_id < 19:
+				if node_id <= 28:
 					get_tree().change_scene_to_file("res://scenes/LessonSaoTruc.tscn")
 				else:
 					get_tree().change_scene_to_file("res://scenes/PracticeSaoTruc.tscn")

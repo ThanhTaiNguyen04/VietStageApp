@@ -863,6 +863,68 @@ func _generate_melody(target_note_key: String) -> Array:
 			for n in notes3:
 				var dur = 1.0 if n == "Rê" else 0.5
 				seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node19":
+		# Tập nốt Đô2
+		for i in range(4):
+			seq.append({"note": "Đô2", "time": time, "duration": 1.0}); time += 1.5
+	elif target_note_key == "Node20":
+		# Tập nốt Rê2
+		for i in range(4):
+			seq.append({"note": "Rê2", "time": time, "duration": 1.0}); time += 1.5
+	elif target_note_key == "Node21":
+		# Chuyển ngón Đô2-Rê2
+		seq.append({"note": "Đô2", "time": time, "duration": 1.0}); time += 1.5
+		seq.append({"note": "Rê2", "time": time, "duration": 1.0}); time += 1.5
+		seq.append({"note": "Đô2", "time": time, "duration": 1.0}); time += 1.5
+		seq.append({"note": "Rê2", "time": time, "duration": 1.5}); time += 2.0
+	elif target_note_key == "Node22":
+		# Tập nốt Sol
+		for i in range(4):
+			seq.append({"note": "Sol", "time": time, "duration": 1.0}); time += 1.5
+	elif target_note_key == "Node23":
+		# Mở đầu Trống Cơm (Câu 1)
+		var notes = ["Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol"]
+		for n in notes:
+			var dur = 1.5 if n == "Sol" and notes.find(n, 4) != -1 else 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node24":
+		# Tập nốt Fa
+		for i in range(4):
+			seq.append({"note": "Fa", "time": time, "duration": 1.0}); time += 1.5
+	elif target_note_key == "Node25":
+		# Khen ai khéo vỗ (Câu 2)
+		var notes = ["Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol"]
+		for n in notes:
+			var dur = 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node26":
+		# Hoàn thành Đoạn 1
+		var notes = [
+			"Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol", 
+			"Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
+			"Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol"
+		]
+		for n in notes:
+			var dur = 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node27":
+		# Tang tình con sít
+		var notes = ["Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", "Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2"]
+		for n in notes:
+			var dur = 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node28":
+		# Thi Đấu Trống Cơm
+		var notes = [
+			"Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol", 
+			"Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
+			"Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
+			"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
+			"Mi2", "Mi2", "Sol2", "Sol", "La", "Sol", "La", "Sol", "La", "Sol", "La", "Đô2", "Đô2", "Đô2", "La", "Sol", "La", "Đô2", "Sol"
+		]
+		for n in notes:
+			var dur = 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.2
 	elif target_note_key == "Node18":
 		# Đàn Gà Con hoàn chỉnh (Khúc Nhạc Vui)
 		var parts = [

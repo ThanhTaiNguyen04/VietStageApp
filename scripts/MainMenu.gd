@@ -1216,7 +1216,7 @@ func _play_dan_bau_practice(lesson_num: int) -> void:
 func _on_adv_tech_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 3: Bèo Dạt Mây Trôi", 22, 3)
+		_show_course_detail("Bài 3: Bèo Dạt Mây Trôi", 29, 3)
 
 func _on_pro_perf_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1226,7 +1226,7 @@ func _on_pro_perf_pressed() -> void:
 func _on_classical_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 2: Trống Cơm", 19, 3)
+		_show_course_detail("Bài 2: Trống Cơm", 19, 10)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -1245,19 +1245,19 @@ func _input(event: InputEvent) -> void:
 func _on_m1_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 4: Lý Hoài Nam", 31, 3)
+		_show_course_detail("Bài 4: Lý Hoài Nam", 38, 3)
 
 func _on_m2_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 34, 5)
+		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 41, 5)
 
 func _on_chords_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Hòa Tấu 1: Cây Trúc Xinh", 25, 3)
+		_show_course_detail("Hòa Tấu 1: Cây Trúc Xinh", 32, 3)
 
 func _on_pop_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Hòa Tấu 2: Nhật Ký Của Mẹ", 28, 3)
+		_show_course_detail("Hòa Tấu 2: Nhật Ký Của Mẹ", 35, 3)
