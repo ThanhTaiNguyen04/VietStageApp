@@ -7,6 +7,11 @@ const C_LIGHT_GREY = Color(0.5, 0.5, 0.5, 1.0)
 const C_LOCKED_TXT = Color(0.7, 0.7, 0.7, 1.0)
 
 var _lessons_box: HBoxContainer
+var _is_dragging_scroll := false
+var _drag_start_x := 0.0
+var _scroll_start_x := 0
+var _scroll_node: ScrollContainer
+
 
 func _ready() -> void:
 	# 1. Background (No modulate, keep it bright)
@@ -97,11 +102,13 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(140, 50)
 	header.add_child(spacer)
 	
-	# Scroll area
+		# Scroll area
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	vbox.add_child(scroll)
+	_scroll_node = scroll
+	scroll.gui_input.connect(_on_scroll_gui_input)
 	
 	var scroll_margin = MarginContainer.new()
 	scroll_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -137,11 +144,13 @@ func _build_lessons() -> void:
 		
 		# Wrapper (to align vertically begin/top to shift up)
 		var card_wrapper = Control.new()
+		card_wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
 		card_wrapper.custom_minimum_size = Vector2(530, 700)
 		card_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		
 		# Build Ornate Card using card.png
 		var card = PanelContainer.new()
+		card.mouse_filter = Control.MOUSE_FILTER_PASS
 		card.set_anchors_preset(Control.PRESET_FULL_RECT)
 		
 		var sb_card = StyleBoxTexture.new()
@@ -156,6 +165,7 @@ func _build_lessons() -> void:
 		card_wrapper.add_child(card)
 		
 		var card_vbox = VBoxContainer.new()
+		card_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 		card_vbox.add_theme_constant_override("separation", 15)
 		card.add_child(card_vbox)
 		
@@ -184,6 +194,7 @@ func _build_lessons() -> void:
 		# Thumbnail Image (Circular)
 		var thumb_container = MarginContainer.new()
 		var thumb_panel = PanelContainer.new()
+		thumb_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 		var thumb_sb = StyleBoxFlat.new()
 		# Circular clip
 		thumb_sb.corner_radius_top_left = 120; thumb_sb.corner_radius_top_right = 120
@@ -194,6 +205,7 @@ func _build_lessons() -> void:
 		thumb_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		var thumb_tex = TextureRect.new()
+		thumb_tex.mouse_filter = Control.MOUSE_FILTER_PASS
 		thumb_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		thumb_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		thumb_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -207,6 +219,7 @@ func _build_lessons() -> void:
 		
 		# Title & Desc
 		var texts_vbox = VBoxContainer.new()
+		texts_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 		texts_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		texts_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 		texts_vbox.add_theme_constant_override("separation", 6)
@@ -264,6 +277,7 @@ func _build_lessons() -> void:
 			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Biểu diễn Sáo Trúc Đương Đại"
 		
 		var lbl_title = Label.new()
+		lbl_title.mouse_filter = Control.MOUSE_FILTER_PASS
 		lbl_title.text = title_text
 		lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl_title.add_theme_font_size_override("font_size", 28)
@@ -274,6 +288,7 @@ func _build_lessons() -> void:
 		texts_vbox.add_child(lbl_title)
 		
 		var lbl_desc = Label.new()
+		lbl_desc.mouse_filter = Control.MOUSE_FILTER_PASS
 		lbl_desc.text = desc_text
 		lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl_desc.add_theme_font_size_override("font_size", 18)
@@ -443,3 +458,17 @@ func _on_back_pressed() -> void:
 	var t = create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.25)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+
+func _on_scroll_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_is_dragging_scroll = true
+				_drag_start_x = event.global_position.x
+				_scroll_start_x = _scroll_node.scroll_horizontal
+			else:
+				_is_dragging_scroll = false
+	elif event is InputEventMouseMotion:
+		if _is_dragging_scroll:
+			var diff = event.global_position.x - _drag_start_x
+			_scroll_node.scroll_horizontal = _scroll_start_x - int(diff)
