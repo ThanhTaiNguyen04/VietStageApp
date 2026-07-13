@@ -73,6 +73,9 @@ const LESSON_DAN_BAU_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 @onready var card_pop_chords: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
+var card_adv_tech: PanelContainer
+var card_pro_perf: PanelContainer
+
 func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
@@ -266,6 +269,9 @@ func _draw_roadmap_paths() -> void:
 	# Top Path (Soloist): SoloistUnlock -> SoloistSkills -> Classical
 	_draw_thick_path(p_sol_un, p_sol_sk)
 	_draw_thick_path(p_sol_sk, p_class)
+	if card_adv_tech and card_adv_tech.visible:
+		_draw_thick_path(p_class, card_adv_tech.position + card_adv_tech.size/2.0)
+		_draw_thick_path(card_adv_tech.position + card_adv_tech.size/2.0, card_pro_perf.position + card_pro_perf.size/2.0)
 	
 	# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
 	_draw_thick_path(p_cho_un, p_cho_sk)
@@ -582,7 +588,29 @@ func _build_roadmap_cards() -> void:
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
 
+	if not card_adv_tech:
+		card_adv_tech = card_classical.duplicate()
+		roadmap_content.add_child(card_adv_tech)
+		card_adv_tech.position = Vector2(2460, 95)
+		roadmap_content.custom_minimum_size.x = 3600
+	
+	if not card_pro_perf:
+		card_pro_perf = card_classical.duplicate()
+		roadmap_content.add_child(card_pro_perf)
+		card_pro_perf.position = Vector2(2990, 95)
+		
+	var adv_title := card_adv_tech.get_node("Margin/HBox/TextV/Title") as Label
+	var adv_desc := card_adv_tech.get_node("Margin/HBox/TextV/BulletList") as Label
+	var adv_btn := card_adv_tech.get_node("Margin/HBox/BtnPlay") as Button
+	
+	var pro_title := card_pro_perf.get_node("Margin/HBox/TextV/Title") as Label
+	var pro_desc := card_pro_perf.get_node("Margin/HBox/TextV/BulletList") as Label
+	var pro_btn := card_pro_perf.get_node("Margin/HBox/BtnPlay") as Button
+
+
 	if instrument == "dan_tranh":
+		card_adv_tech.hide()
+		card_pro_perf.hide()
 		# Lộ trình Đàn Tranh
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
@@ -610,6 +638,8 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = "Đệm Hát Hiện Đại"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Đất Phương Nam (Đệm hát)\n✓ Nhạc Pop & Quê hương trữ tình"
 	elif instrument == "dan_bau":
+		card_adv_tech.hide()
+		card_pro_perf.hide()
 		# Lộ trình Đàn Bầu
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
@@ -893,8 +923,12 @@ func _set_active_tab(active: Button) -> void:
 func _go_practice() -> void:
 	var instrument : String = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	if instrument == "dan_tranh":
+		card_adv_tech.hide()
+		card_pro_perf.hide()
 		_fade_to("res://scenes/PracticeRoom.tscn")
 	elif instrument == "dan_bau":
+		card_adv_tech.hide()
+		card_pro_perf.hide()
 		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
@@ -1112,3 +1146,18 @@ func _play_dan_bau_video(lesson_idx: int) -> void:
 func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
 	_fade_to("res://scenes/PracticeDanBau.tscn")
+
+func _on_adv_tech_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Kỹ Thuật Nâng Cao", 12, 3)
+
+func _on_pro_perf_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Biểu Diễn Chuyên Nghiệp", 15, 3)
+
+func _on_classical_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Làn Điệu Quê Hương", 12, 3)
