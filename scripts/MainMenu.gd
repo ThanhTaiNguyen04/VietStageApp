@@ -1251,3 +1251,13 @@ func _on_m2_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
 		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 34, 5)
+
+func _on_chords_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Hòa Tấu 1: Cây Trúc Xinh", 25, 3)
+
+func _on_pop_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Hòa Tấu 2: Nhật Ký Của Mẹ", 28, 3)
