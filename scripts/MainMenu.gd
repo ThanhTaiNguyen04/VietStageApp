@@ -601,8 +601,8 @@ func _build_roadmap_cards() -> void:
 		card_adv_tech = card_classical.duplicate()
 		roadmap_content.add_child(card_adv_tech)
 		card_adv_tech.position = Vector2(2460, 95)
-		roadmap_content.custom_minimum_size.x = 3600
-		roadmap_content.size.x = 3600
+		roadmap_content.custom_minimum_size.x = 6000
+		roadmap_content.size.x = 6000
 		roadmap_content.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	
 	if not card_pro_perf:
