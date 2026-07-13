@@ -198,6 +198,34 @@ func _build_lessons() -> void:
 		elif node_id == 7: title_text = "Nốt Rê"; desc_text = "Cảm nhận âm sắc nốt Rê"
 		elif node_id == 8: title_text = "Nốt Đô"; desc_text = "Ôn tập và hoàn thành nốt Đô"
 		
+		var course_name = SecureDataManager.active_course_title
+		if "Trống Cơm" in course_name:
+			if i == 0: title_text = "Lấy hơi nhanh"; desc_text = "Kỹ thuật ngắt hơi"
+			elif i == 1: title_text = "Nhịp điệu dân ca"; desc_text = "Thổi đúng nhịp 2/4"
+			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Ghép toàn bộ bài Trống Cơm"
+		elif "Bèo Dạt Mây Trôi" in course_name:
+			if i == 0: title_text = "Luyến ngón"; desc_text = "Tạo độ mềm mại cho nốt"
+			elif i == 1: title_text = "Vuốt ngón (Glissando)"; desc_text = "Vuốt mượt mà giữa 2 nốt"
+			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Thể hiện trọn vẹn cảm xúc"
+		elif "Lý Hoài Nam" in course_name:
+			if i == 0: title_text = "Đánh rưỡi cơ bản"; desc_text = "Kỹ thuật rung lưỡi (Flutter)"
+			elif i == 1: title_text = "Đánh rưỡi liên tục"; desc_text = "Kết hợp luồng hơi mạnh"
+			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Biểu diễn Lý Hoài Nam"
+		elif "Xuân Về Bản Mèo" in course_name:
+			if i == 0: title_text = "Reo lưỡi kép"; desc_text = "T-K T-K"
+			elif i == 1: title_text = "Phi yến"; desc_text = "Vút ngón nhanh"
+			elif i == 2: title_text = "Tiết tấu Tây Bắc"; desc_text = "Nhịp điệu đặc trưng"
+			elif i == 3: title_text = "Tốc độ cao"; desc_text = "Rèn luyện ngón bấm nhanh"
+			elif i == 4: title_text = "Hoàn thành tác phẩm"; desc_text = "Biểu diễn chuyên nghiệp"
+		elif "Cây Trúc Xinh" in course_name:
+			if i == 0: title_text = "Nhịp phách cơ bản"; desc_text = "Nghe và theo nhịp trống"
+			elif i == 1: title_text = "Thổi đệm"; desc_text = "Phối hợp với ca sĩ"
+			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Biểu diễn Hòa Tấu"
+		elif "Nhật Ký Của Mẹ" in course_name:
+			if i == 0: title_text = "Cảm âm beat"; desc_text = "Lắng nghe hòa âm"
+			elif i == 1: title_text = "Giai điệu da diết"; desc_text = "Ngân dài và luyến nốt"
+			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Biểu diễn Sáo Trúc Đương Đại"
+		
 		var lbl_title = Label.new()
 		lbl_title.text = title_text
 		lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
