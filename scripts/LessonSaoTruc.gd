@@ -279,7 +279,7 @@ func _ready():
 	bgm_controls.offset_top = 20
 	bgm_controls.offset_bottom = 70
 	
-	if active_node_id == "Node42":
+	if SecureDataManager.active_lesson_id == "Node42":
 		bgm_controls.visible = true
 	else:
 		bgm_controls.visible = false
