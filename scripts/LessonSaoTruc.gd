@@ -242,7 +242,7 @@ func _ready():
 	var lbl = Label.new()
 	lbl.text = "Nhạc nền"
 	lbl.add_theme_font_size_override("font_size", 24)
-	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	lbl.add_theme_color_override("font_color", Color(0.2, 0.2, 0.2, 1))
 	bgm_controls.add_child(lbl)
 	
 	bgm_slider = HSlider.new()
@@ -275,9 +275,9 @@ func _ready():
 	bgm_controls.anchor_top = 0.0
 	bgm_controls.anchor_bottom = 0.0
 	bgm_controls.offset_left = -450
-	bgm_controls.offset_right = -20
-	bgm_controls.offset_top = 20
-	bgm_controls.offset_bottom = 70
+	bgm_controls.offset_right = -30
+	bgm_controls.offset_top = 130
+	bgm_controls.offset_bottom = 180
 	
 	if SecureDataManager.active_lesson_id == "Node42":
 		bgm_controls.visible = true
