@@ -137,7 +137,7 @@ func _build_lessons() -> void:
 		
 		# Wrapper to allow floating badge
 		var card_wrapper = Control.new()
-		card_wrapper.custom_minimum_size = Vector2(360, 580)
+		card_wrapper.custom_minimum_size = Vector2(530, 750)
 		card_wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		
 		# Build Ornate Card using card.png
@@ -147,30 +147,30 @@ func _build_lessons() -> void:
 		var sb_card = StyleBoxTexture.new()
 		if ResourceLoader.exists("res://image/card.png"):
 			sb_card.texture = load("res://image/card.png")
-			# Texture margins set to fit content inside the ornate border of card.png
-			sb_card.texture_margin_left = 50
-			sb_card.texture_margin_right = 50
-			sb_card.texture_margin_top = 65
-			sb_card.texture_margin_bottom = 55
+			# Adjusted for the 530x750 size
+			sb_card.texture_margin_left = 90
+			sb_card.texture_margin_right = 90
+			sb_card.texture_margin_top = 110
+			sb_card.texture_margin_bottom = 90
 		
 		card.add_theme_stylebox_override("panel", sb_card)
 		card_wrapper.add_child(card)
 		
 		var card_vbox = VBoxContainer.new()
-		card_vbox.add_theme_constant_override("separation", 12)
+		card_vbox.add_theme_constant_override("separation", 20)
 		card.add_child(card_vbox)
 		
 		# Thumbnail Image (Circular)
 		var thumb_container = MarginContainer.new()
-		thumb_container.add_theme_constant_override("margin_top", 10)
+		thumb_container.add_theme_constant_override("margin_top", 15)
 		var thumb_panel = PanelContainer.new()
 		var thumb_sb = StyleBoxFlat.new()
 		# Circular clip
-		thumb_sb.corner_radius_top_left = 100; thumb_sb.corner_radius_top_right = 100
-		thumb_sb.corner_radius_bottom_left = 100; thumb_sb.corner_radius_bottom_right = 100
+		thumb_sb.corner_radius_top_left = 140; thumb_sb.corner_radius_top_right = 140
+		thumb_sb.corner_radius_bottom_left = 140; thumb_sb.corner_radius_bottom_right = 140
 		thumb_panel.add_theme_stylebox_override("panel", thumb_sb)
 		thumb_panel.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
-		thumb_panel.custom_minimum_size = Vector2(190, 190)
+		thumb_panel.custom_minimum_size = Vector2(260, 260)
 		thumb_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		var thumb_tex = TextureRect.new()
@@ -189,7 +189,7 @@ func _build_lessons() -> void:
 		var texts_vbox = VBoxContainer.new()
 		texts_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		texts_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		texts_vbox.add_theme_constant_override("separation", 6)
+		texts_vbox.add_theme_constant_override("separation", 8)
 		
 		var title_text = "Bài Học"
 		var desc_text = "Khúc nhạc mới"
@@ -246,7 +246,7 @@ func _build_lessons() -> void:
 		var lbl_title = Label.new()
 		lbl_title.text = title_text
 		lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_title.add_theme_font_size_override("font_size", 24)
+		lbl_title.add_theme_font_size_override("font_size", 30)
 		lbl_title.add_theme_color_override("font_color", C_DARK_BROWN if not is_locked else C_LOCKED_TXT)
 		lbl_title.autowrap_mode = TextServer.AUTOWRAP_WORD
 		var title_sb = StyleBoxEmpty.new()
@@ -256,7 +256,7 @@ func _build_lessons() -> void:
 		var lbl_desc = Label.new()
 		lbl_desc.text = desc_text
 		lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_desc.add_theme_font_size_override("font_size", 16)
+		lbl_desc.add_theme_font_size_override("font_size", 20)
 		lbl_desc.add_theme_color_override("font_color", C_LIGHT_GREY if not is_locked else C_LOCKED_TXT)
 		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 		texts_vbox.add_child(lbl_desc)
@@ -265,28 +265,28 @@ func _build_lessons() -> void:
 		
 		# Bottom Action
 		var bottom_margin = MarginContainer.new()
-		bottom_margin.add_theme_constant_override("margin_left", 15)
-		bottom_margin.add_theme_constant_override("margin_right", 15)
-		bottom_margin.add_theme_constant_override("margin_bottom", 10)
+		bottom_margin.add_theme_constant_override("margin_left", 20)
+		bottom_margin.add_theme_constant_override("margin_right", 20)
+		bottom_margin.add_theme_constant_override("margin_bottom", 15)
 		
 		if is_locked:
 			var lock_hb = HBoxContainer.new()
 			lock_hb.alignment = BoxContainer.ALIGNMENT_CENTER
 			var lock_lbl = Label.new()
 			lock_lbl.text = "🔒 Hoàn thành Bài " + str(i) + " để mở khóa"
-			lock_lbl.add_theme_font_size_override("font_size", 14)
+			lock_lbl.add_theme_font_size_override("font_size", 16)
 			lock_lbl.add_theme_color_override("font_color", C_LOCKED_TXT)
 			lock_hb.add_child(lock_lbl)
 			bottom_margin.add_child(lock_hb)
 		else:
 			var btn_start = Button.new()
 			btn_start.text = "Bắt đầu ►" if not is_completed else "Ôn lại ►"
-			btn_start.custom_minimum_size = Vector2(0, 48)
+			btn_start.custom_minimum_size = Vector2(0, 60)
 			btn_start.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			
 			var sb_btn = StyleBoxFlat.new()
-			sb_btn.corner_radius_top_left = 24; sb_btn.corner_radius_top_right = 24
-			sb_btn.corner_radius_bottom_left = 24; sb_btn.corner_radius_bottom_right = 24
+			sb_btn.corner_radius_top_left = 30; sb_btn.corner_radius_top_right = 30
+			sb_btn.corner_radius_bottom_left = 30; sb_btn.corner_radius_bottom_right = 30
 			sb_btn.bg_color = C_GOLD
 			btn_start.add_theme_color_override("font_color", Color.WHITE)
 				
@@ -296,7 +296,7 @@ func _build_lessons() -> void:
 			btn_start.add_theme_stylebox_override("hover", sb_btn_hover)
 			btn_start.add_theme_stylebox_override("pressed", sb_btn)
 			btn_start.add_theme_stylebox_override("focus", sb_btn)
-			btn_start.add_theme_font_size_override("font_size", 18)
+			btn_start.add_theme_font_size_override("font_size", 22)
 			
 			btn_start.pressed.connect(func():
 				_on_lesson_selected(node_id)
@@ -312,14 +312,14 @@ func _build_lessons() -> void:
 		badge_sb.border_width_left = 2; badge_sb.border_width_right = 2
 		badge_sb.border_width_top = 2; badge_sb.border_width_bottom = 2
 		badge_sb.border_color = C_GOLD
-		badge_sb.corner_radius_top_left = 30; badge_sb.corner_radius_top_right = 30
-		badge_sb.corner_radius_bottom_left = 30; badge_sb.corner_radius_bottom_right = 30
+		badge_sb.corner_radius_top_left = 36; badge_sb.corner_radius_top_right = 36
+		badge_sb.corner_radius_bottom_left = 36; badge_sb.corner_radius_bottom_right = 36
 		badge_panel.add_theme_stylebox_override("panel", badge_sb)
-		badge_panel.custom_minimum_size = Vector2(56, 56)
+		badge_panel.custom_minimum_size = Vector2(72, 72)
 		
 		var badge = Label.new()
 		badge.text = "%02d" % (i + 1)
-		badge.add_theme_font_size_override("font_size", 20)
+		badge.add_theme_font_size_override("font_size", 26)
 		badge.add_theme_color_override("font_color", C_DARK_BROWN)
 		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -329,7 +329,7 @@ func _build_lessons() -> void:
 		badge_floater.set_anchors_preset(Control.PRESET_CENTER_TOP)
 		badge_floater.add_child(badge_panel)
 		badge_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-		badge_panel.position = Vector2(-28, -20) # perfectly centered and floating
+		badge_panel.position = Vector2(-36, -20) # perfectly centered and floating
 		
 		card_wrapper.add_child(badge_floater)
 		
