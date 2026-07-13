@@ -910,15 +910,15 @@ func _connect_buttons() -> void:
 	_make_btn_bouncy(play_soloist)
 	
 	var play_chords := card_chords_skills.get_node("Margin/HBox/BtnPlay") as Button
-	play_chords.pressed.connect(_go_practice)
+	play_chords.pressed.connect(_on_chords_pressed)
 	_make_btn_bouncy(play_chords)
 
 	var play_classical := card_classical.get_node("Margin/HBox/BtnPlay") as Button
-	play_classical.pressed.connect(_go_practice)
+	play_classical.pressed.connect(_on_classical_pressed)
 	_make_btn_bouncy(play_classical)
 	
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
-	play_pop.pressed.connect(_go_practice)
+	play_pop.pressed.connect(_on_pop_pressed)
 	_make_btn_bouncy(play_pop)
 
 	# Unlock Buttons -> Virtual Artist Mai popup
@@ -1216,7 +1216,7 @@ func _play_dan_bau_practice(lesson_num: int) -> void:
 func _on_adv_tech_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 3: Bèo Dạt Mây Trôi", 12, 3)
+		_show_course_detail("Bài 3: Bèo Dạt Mây Trôi", 22, 3)
 
 func _on_pro_perf_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1226,7 +1226,7 @@ func _on_pro_perf_pressed() -> void:
 func _on_classical_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 2: Trống Cơm", 12, 3)
+		_show_course_detail("Bài 2: Trống Cơm", 19, 3)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -1245,9 +1245,9 @@ func _input(event: InputEvent) -> void:
 func _on_m1_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 4: Lý Hoài Nam", 18, 3)
+		_show_course_detail("Bài 4: Lý Hoài Nam", 31, 3)
 
 func _on_m2_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 21, 5)
+		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 34, 5)

@@ -904,7 +904,27 @@ func _set_labels() -> void:
 	_update_wait_mode_ui()
 	_update_demo_mode_ui()
 
-	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/NotationLabel as Label).text = "BẢN NHẠC  —  Thổi theo dòng nốt"
+		var diff := "Cơ bản"
+	var current_chord := ""
+	
+	if "Trống Cơm" in title_lbl:
+		current_chord = "Hợp âm: C - F - G"
+	elif "Bèo Dạt Mây Trôi" in title_lbl:
+		current_chord = "Hợp âm: Em - Bm - D"
+	elif "Cây Trúc Xinh" in title_lbl:
+		current_chord = "Hợp âm: Am - G - Em"
+	elif "Nhật Ký Của Mẹ" in title_lbl:
+		current_chord = "Hợp âm: F - G - Em - Am"
+	elif "Lý Hoài Nam" in title_lbl:
+		current_chord = "Hợp âm: Dm - F - Am"
+	elif "Xuân Về Bản Mèo" in title_lbl:
+		current_chord = "Hợp âm: Am - C - D"
+		
+	if current_chord != "":
+		($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/NotationLabel as Label).text = "BẢN NHẠC  —  " + current_chord
+	else:
+		($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/NotationLabel as Label).text = "BẢN NHẠC  —  Thổi theo dòng nốt"
+
 	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/TargetNoteLabel as Label).text = "Nốt cần thổi: La" if current_song_title == "" else "Nốt cần thổi: " + sheet_notes[0]
 	($Root/MiddleRow/MainContent/StatsRow/StatsM/StatsHBox/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
 	($Root/MiddleRow/MainContent/StatsRow/StatsM/StatsHBox/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
