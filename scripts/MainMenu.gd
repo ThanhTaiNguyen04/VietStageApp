@@ -75,6 +75,8 @@ const LESSON_DAN_BAU_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 var card_adv_tech: PanelContainer
 var card_pro_perf: PanelContainer
+var card_mastery1: PanelContainer
+var card_mastery2: PanelContainer
 var _is_dragging_roadmap := false
 var _drag_start_pos := Vector2()
 var _scroll_start_x := 0
