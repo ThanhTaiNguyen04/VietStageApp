@@ -14,7 +14,9 @@ func _ready() -> void:
 	bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	if ResourceLoader.exists("res://assets/textures/bg_practice_room.png"):
+	if ResourceLoader.exists("res://image/imagesao.png"):
+		bg_tex.texture = load("res://image/imagesao.png")
+	elif ResourceLoader.exists("res://assets/textures/bg_practice_room.png"):
 		bg_tex.texture = load("res://assets/textures/bg_practice_room.png")
 	add_child(bg_tex)
 	
