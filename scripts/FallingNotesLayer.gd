@@ -60,10 +60,10 @@ func _draw() -> void:
 	var target_local_y = target_global_y - global_position.y
 	
 	var font = get_theme_font("font")
-	var lane_names = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+	var lane_names = ["Đố", "Sol", "Mi", "Đô", "Sol", "Đồ"]
 	
 	# Draw elegant lane threads (golden silk threads)
-	for i in 7:
+	for i in 6:
 		if i >= _board._node_xs.size(): break
 		var lx = (_board.global_position.x + _board._node_xs[i]) - global_position.x
 		draw_line(Vector2(lx, 0), Vector2(lx, target_local_y), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 1.0)

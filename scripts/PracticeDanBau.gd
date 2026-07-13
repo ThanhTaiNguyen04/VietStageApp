@@ -72,11 +72,11 @@ var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
 
-const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+const NOTES_VN : Array[String] = ["Đố", "Sol", "Mi", "Đô", "Sol", "Đồ"]
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
 
-var sheet_notes : Array[String] = ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô"]
+var sheet_notes : Array[String] = ["Đồ","Sol","Đồ","Đô","Sol","Đô","Mi","Đô","Sol","Sol","Đô","Mi","Đô","Sol","Đồ","Đô","Đồ"]
 const SPEECHES : Array[String] = [
 	"Gảy vào nốt hài âm trên dây,\nnhấn cần đàn trái để uốn cao độ.",
 	"Rất tốt!\nUốn cần đàn đều tay hơn nữa.",
@@ -93,13 +93,13 @@ func _ready() -> void:
 		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
 		var idx := int(clean_id.replace("dan_bau_coban_", ""))
 		if idx == 1 or idx == 2:
-			sheet_notes = ["Đô", "Đô", "Đô", "Đô"]
+			sheet_notes = ["Đồ", "Đồ", "Đồ", "Đồ"]
 		elif idx == 3:
-			sheet_notes = ["Đô", "Rê", "Mi", "Rê", "Mi", "Đô"]
+			sheet_notes = ["Đồ", "Đô", "Mi", "Đô", "Mi", "Đồ"]
 		elif idx == 4:
-			sheet_notes = ["Đô", "Rê", "Đô", "Rê"]
+			sheet_notes = ["Đồ", "Đô", "Đồ", "Đô"]
 		elif idx == 5:
-			sheet_notes = ["Đô", "Đô", "Rê", "Fa", "Fa", "Sol", "La", "Sol", "Fa", "Rê", "Đô"]
+			sheet_notes = ["Đồ", "Đô", "Mi", "Sol", "Sol", "Mi", "Đô", "Sol", "Mi", "Đô", "Đồ"]
 	_generate_streams()
 	_set_labels()
 	_build_theme()
@@ -228,7 +228,7 @@ func _set_labels() -> void:
 		var idx := int(clean_id.replace("dan_bau_coban_", ""))
 		diff = "Bài %d" % idx
 		
-	var title_lbl := "Hài Âm Cơ Bản & Uốn Vòi Đàn"
+	var title_lbl := "Lòng Mẹ - Y Vân"
 	if current_song_title != "":
 		title_lbl = current_song_title
 		diff = "Bài hát"
@@ -261,7 +261,7 @@ func _set_labels() -> void:
 		if demo_btn:
 			demo_btn.text = "\nNghe mẫu: TẮT"
 			_style_sidebar_btn(demo_btn)
-			_set_sidebar_icon(demo_btn, "rotate-cw")
+			_set_sidebar_icon(demo_btn, "volume-x")
 			
 		var slow_btn = ctrl_btns.get_node_or_null("SlowBtn") as Button
 		if slow_btn:
@@ -296,10 +296,27 @@ func _set_labels() -> void:
 		song_sel.add_theme_color_override("font_color", C_TEXT)
 		song_sel.add_theme_font_size_override("font_size", 16)
 		
-		song_sel.add_item("Sứ Thanh Hoa", 0)
+		song_sel.add_item("Lòng Mẹ - Y Vân", 0)
+		song_sel.add_item("Sứ Thanh Hoa", 1)
 		song_sel.selected = 0
 		settings_vbox.add_child(song_sel)
 		settings_vbox.move_child(song_sel, 1)
+		
+		song_sel.item_selected.connect(func(idx: int) -> void:
+			if idx == 0:
+				current_song_title = ""
+				sheet_notes = ["Đồ","Sol","Đồ","Đô","Sol","Đô","Mi","Đô","Sol","Sol","Đô","Mi","Đô","Sol","Đồ","Đô","Đồ"]
+				if song_player: song_player.load_song("long_me")
+				($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Lòng Mẹ - Y Vân"
+			elif idx == 1:
+				current_song_title = "Sứ Thanh Hoa"
+				sheet_notes = ["Đồ","Đô","Sol","Đô","Đô","Sol","Đô","Đô","Sol","Đô","Sol","Sol"]
+				if song_player: song_player.load_song("su_thanh_hoa")
+				($Root/TopBar/TopM/TopH/LessonTitle as Label).text = "Sứ Thanh Hoa"
+			_note_idx = 0
+			_update_target_indicator()
+			if _demo_active: _stop_demo()
+		)
 
 
 	var blbl := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/BoardVBox/BoardLabel") as Label
@@ -466,29 +483,51 @@ func _build_board() -> void:
 
 # ─── Sample-Based Audio (Real Dan Bau Recording) ─────────────────────────────
 func _generate_streams() -> void:
-	# Load the real Dan Bau WAV recording as the base sample
-	_base_wav = load("res://assets/audio/dan_bau.wav") as AudioStreamWAV
-	if _base_wav == null:
-		# Fallback to KSE synthesis if WAV missing
-		_string_streams.resize(NOTES_VN.size())
-		for i in NOTES_VN.size():
-			_string_streams[i] = _generate_pluck_stream(_get_node_frequency(i))
-		return
-	# Fill array with the base wav (same stream for all notes; pitch done in _play_audio)
 	_string_streams.resize(NOTES_VN.size())
+	
+	# Mảng chứa tên file kỳ vọng cho 6 nốt (Đố, Sol, Mi, Đô, Sol, Đồ)
+	var file_names = [
+		"res://assets/audio/dan_bau_do6.wav",
+		"res://assets/audio/dan_bau_sol5.wav",
+		"res://assets/audio/dan_bau_mi5.wav",
+		"res://assets/audio/dan_bau_do5.wav",
+		"res://assets/audio/dan_bau_sol4.wav",
+		"res://assets/audio/dan_bau_do4.wav"
+	]
+	
+	var all_files_found = true
 	for i in NOTES_VN.size():
-		_string_streams[i] = _base_wav
+		var wav = load(file_names[i]) as AudioStreamWAV
+		if wav == null:
+			all_files_found = false
+			break
+		_string_streams[i] = wav
+		
+	if all_files_found:
+		print("Đã load thành công Multi-samples Đàn Bầu từ ổ cứng!")
+		_base_wav = null # Đánh dấu là đang dùng multi-sample
+	else:
+		print("Chưa có file Multi-samples. Tiến hành tự động tạo 6 file .wav chất lượng cao...")
+		_base_wav = null
+		for i in NOTES_VN.size():
+			var freq = _get_node_frequency(i)
+			var generated_wav = _generate_pluck_stream(freq)
+			_string_streams[i] = generated_wav
+			# Lưu thẳng file ra ổ cứng để lần sau dùng luôn (áp dụng đúng chuẩn đồ án)
+			generated_wav.save_to_wav(file_names[i])
+			print("- Đã tạo file: ", file_names[i])
+		print("Hoàn tất tạo Multi-samples!")
 
 func _get_node_frequency(idx: int) -> float:
-	# Standard frequencies starting at C4 (Đô)
+	# Harmonic frequencies for traditional Dan Bau (from gourd to bridge)
+	# Based on fundamental C4 = 261.63 Hz and string harmonic nodes
 	var base_freqs = [
-		261.63, # Đô  (C4)
-		293.66, # Rê  (D4)
-		329.63, # Mi  (E4)
-		349.23, # Fa  (F4)
-		392.00, # Sol (G4)
-		440.00, # La  (A4)
-		493.88  # Si  (B4)
+		1046.50, # Đố  (C6) - 1/8 string - 8th harmonic
+		783.99,  # Sol (G5) - 1/6 string - 6th harmonic
+		659.25,  # Mi  (E5) - 1/5 string - 5th harmonic
+		523.25,  # Đô  (C5) - 1/4 string - 4th harmonic
+		392.00,  # Sol (G4) - 1/3 string - 3rd harmonic
+		261.63   # Đồ  (C4) - 1/2 string - 2nd harmonic (octave)
 	]
 	if idx >= 0 and idx < base_freqs.size():
 		return base_freqs[idx]
@@ -621,9 +660,13 @@ func _on_pitch_bent(cents_offset: float) -> void:
 	if _active_player and is_instance_valid(_active_player) and _active_player.playing:
 		var target_scale := bend_mult
 		if _base_wav != null:
-			# Use _current_playing_idx (not stream.find) because all streams share the same WAV object
+			# Chế độ 1 file: cần ép pitch cho đúng nốt
 			var note_freq: float = _get_node_frequency(_current_playing_idx)
 			target_scale = (note_freq / BASE_SAMPLE_FREQ) * bend_mult
+		else:
+			# Chế độ Multi-sample hoặc Synthesis: chỉ áp dụng uốn cần
+			target_scale = bend_mult
+		
 		# Smoothly slide pitch scale to simulate natural uốn cần
 		var tween := create_tween()
 		tween.tween_property(_active_player, "pitch_scale", target_scale, 0.04)
@@ -663,13 +706,13 @@ func _play_audio(idx: int) -> void:
 
 	_current_playing_idx = idx  # remember which note is active
 	if _base_wav != null:
-		# Sample-based: pitch-shift the real recording to the target note
+		# Chế độ 1 file dự phòng: Pitch-shift
 		var target_freq: float = _get_node_frequency(idx)
 		var note_scale: float  = target_freq / BASE_SAMPLE_FREQ
 		var bend_scale: float  = pow(2.0, _current_bend_cents / 1200.0)
 		pl.pitch_scale = note_scale * bend_scale
 	else:
-		# KSE fallback: stream is already at the correct pitch
+		# Multi-sample chuẩn: File đã đúng cao độ, chỉ cần tính uốn cần
 		pl.pitch_scale = pow(2.0, _current_bend_cents / 1200.0)
 
 	pl.volume_db = -1.0   # slightly louder than before (WAV is normalized)
@@ -764,13 +807,17 @@ func _demo() -> void:
 		return
 		
 	_demo_active = true
-	var song_name := current_song_title if current_song_title != "" else "Sứ Thanh Hoa"
+	var song_name := current_song_title if current_song_title != "" else "Lòng Mẹ"
 	_va_say("Hãy lắng nghe bài nhạc mẫu: " + song_name)
 	
 	var dm_btn := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn") as Button
 	if dm_btn: dm_btn.text = "Nghe mẫu: BẬT"
 	
 	if song_player:
+		var song_id := "long_me"
+		if current_song_title == "Sứ Thanh Hoa":
+			song_id = "su_thanh_hoa"
+		song_player.load_song(song_id)
 		song_player.play()
 	if falling_notes:
 		falling_notes.reset_hits()

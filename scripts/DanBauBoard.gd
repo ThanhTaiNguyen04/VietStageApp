@@ -14,8 +14,8 @@ extends Control
 signal string_plucked(idx: int, note_name: String)
 signal pitch_bent(cents_offset: float)
 
-const NODE_COUNT := 7
-const NOTES_VN : Array[String] = ["ÄÃ´", "RÃª", "Mi", "Fa", "Sol", "La", "Si"]
+const NODE_COUNT := 6
+const NOTES_VN : Array[String] = ["Đố", "Sol", "Mi", "Đô", "Sol", "Đồ"]
 
 # - State Variables -------------------
 var _note_names : Array[String]      = []
@@ -568,17 +568,17 @@ func _draw() -> void:
 	draw_polyline(str_pts, Color("#ffffff", 0.80), 0.5, false) # shiny metallic sheen
 
 	# ─── 6. Concentric Harmonic Nodes (Jade-wood-brass rivets) ───────────────
-	# Cache node positions
-	var NODE_AREA_L := BL + 215.0
-	var NODE_AREA_R := BR - 95.0
-	var NODE_AW     := NODE_AREA_R - NODE_AREA_L
+	# Harmonic node positions based on string fraction (traditional Dan Bau)
+	# Fractions from gourd (SS) to bridge (SE): 1/8, 1/6, 1/5, 1/4, 1/3, 1/2
+	var harmonic_fractions : Array[float] = [1.0/8.0, 1.0/6.0, 1.0/5.0, 1.0/4.0, 1.0/3.0, 1.0/2.0]
+	var string_length := SE.x - SS.x
 
 	if _node_xs.size() != NODE_COUNT:
 		_node_xs.resize(NODE_COUNT)
 		_node_ys.resize(NODE_COUNT)
 	for i in NODE_COUNT:
-		var t := float(i) / float(NODE_COUNT - 1)
-		_node_xs[i] = NODE_AREA_L + t * NODE_AW
+		var frac : float = harmonic_fractions[i] if i < harmonic_fractions.size() else 0.5
+		_node_xs[i] = SS.x + frac * string_length
 		_node_ys[i] = BCY
 
 	# Node visible radius
