@@ -105,7 +105,7 @@ func _ready() -> void:
 	
 	var scroll_margin = MarginContainer.new()
 	scroll_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll_margin.add_theme_constant_override("margin_top", 10)
+	scroll_margin.add_theme_constant_override("margin_top", 0)
 	scroll_margin.add_theme_constant_override("margin_bottom", 20)
 	scroll.add_child(scroll_margin)
 	
@@ -135,10 +135,10 @@ func _build_lessons() -> void:
 		var is_completed = (node_id < unlocked_up_to)
 		var is_active = (node_id == unlocked_up_to)
 		
-		# Wrapper to allow floating badge
+		# Wrapper (to align vertically begin/top to shift up)
 		var card_wrapper = Control.new()
-		card_wrapper.custom_minimum_size = Vector2(530, 750)
-		card_wrapper.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		card_wrapper.custom_minimum_size = Vector2(530, 700)
+		card_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		
 		# Build Ornate Card using card.png
 		var card = PanelContainer.new()
@@ -147,30 +147,50 @@ func _build_lessons() -> void:
 		var sb_card = StyleBoxTexture.new()
 		if ResourceLoader.exists("res://image/card.png"):
 			sb_card.texture = load("res://image/card.png")
-			# Adjusted for the 530x750 size
 			sb_card.texture_margin_left = 90
 			sb_card.texture_margin_right = 90
-			sb_card.texture_margin_top = 110
-			sb_card.texture_margin_bottom = 90
+			sb_card.texture_margin_top = 100
+			sb_card.texture_margin_bottom = 85
 		
 		card.add_theme_stylebox_override("panel", sb_card)
 		card_wrapper.add_child(card)
 		
 		var card_vbox = VBoxContainer.new()
-		card_vbox.add_theme_constant_override("separation", 10)
+		card_vbox.add_theme_constant_override("separation", 15)
 		card.add_child(card_vbox)
+		
+		# Badge Top (Now placed INSIDE the card at the top of the VBox)
+		var badge_panel = PanelContainer.new()
+		var badge_sb = StyleBoxFlat.new()
+		badge_sb.bg_color = C_CREAM
+		badge_sb.border_width_left = 2; badge_sb.border_width_right = 2
+		badge_sb.border_width_top = 2; badge_sb.border_width_bottom = 2
+		badge_sb.border_color = C_GOLD
+		badge_sb.corner_radius_top_left = 32; badge_sb.corner_radius_top_right = 32
+		badge_sb.corner_radius_bottom_left = 32; badge_sb.corner_radius_bottom_right = 32
+		badge_panel.add_theme_stylebox_override("panel", badge_sb)
+		badge_panel.custom_minimum_size = Vector2(64, 64)
+		badge_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		
+		var badge = Label.new()
+		badge.text = "%02d" % (i + 1)
+		badge.add_theme_font_size_override("font_size", 24)
+		badge.add_theme_color_override("font_color", C_DARK_BROWN)
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge_panel.add_child(badge)
+		card_vbox.add_child(badge_panel)
 		
 		# Thumbnail Image (Circular)
 		var thumb_container = MarginContainer.new()
-		thumb_container.add_theme_constant_override("margin_top", 15)
 		var thumb_panel = PanelContainer.new()
 		var thumb_sb = StyleBoxFlat.new()
 		# Circular clip
-		thumb_sb.corner_radius_top_left = 140; thumb_sb.corner_radius_top_right = 140
-		thumb_sb.corner_radius_bottom_left = 140; thumb_sb.corner_radius_bottom_right = 140
+		thumb_sb.corner_radius_top_left = 120; thumb_sb.corner_radius_top_right = 120
+		thumb_sb.corner_radius_bottom_left = 120; thumb_sb.corner_radius_bottom_right = 120
 		thumb_panel.add_theme_stylebox_override("panel", thumb_sb)
 		thumb_panel.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
-		thumb_panel.custom_minimum_size = Vector2(260, 260)
+		thumb_panel.custom_minimum_size = Vector2(230, 230)
 		thumb_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		var thumb_tex = TextureRect.new()
@@ -189,7 +209,7 @@ func _build_lessons() -> void:
 		var texts_vbox = VBoxContainer.new()
 		texts_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		texts_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		texts_vbox.add_theme_constant_override("separation", 8)
+		texts_vbox.add_theme_constant_override("separation", 6)
 		
 		var title_text = "Bài Học"
 		var desc_text = "Khúc nhạc mới"
@@ -246,7 +266,7 @@ func _build_lessons() -> void:
 		var lbl_title = Label.new()
 		lbl_title.text = title_text
 		lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_title.add_theme_font_size_override("font_size", 30)
+		lbl_title.add_theme_font_size_override("font_size", 28)
 		lbl_title.add_theme_color_override("font_color", C_DARK_BROWN if not is_locked else C_LOCKED_TXT)
 		lbl_title.autowrap_mode = TextServer.AUTOWRAP_WORD
 		var title_sb = StyleBoxEmpty.new()
@@ -256,7 +276,7 @@ func _build_lessons() -> void:
 		var lbl_desc = Label.new()
 		lbl_desc.text = desc_text
 		lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_desc.add_theme_font_size_override("font_size", 20)
+		lbl_desc.add_theme_font_size_override("font_size", 18)
 		lbl_desc.add_theme_color_override("font_color", C_LIGHT_GREY if not is_locked else C_LOCKED_TXT)
 		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 		texts_vbox.add_child(lbl_desc)
@@ -267,7 +287,7 @@ func _build_lessons() -> void:
 		var bottom_margin = MarginContainer.new()
 		bottom_margin.add_theme_constant_override("margin_left", 20)
 		bottom_margin.add_theme_constant_override("margin_right", 20)
-		bottom_margin.add_theme_constant_override("margin_bottom", 15)
+		bottom_margin.add_theme_constant_override("margin_bottom", 10)
 		
 		if is_locked:
 			var lock_hb = HBoxContainer.new()
@@ -281,12 +301,12 @@ func _build_lessons() -> void:
 		else:
 			var btn_start = Button.new()
 			btn_start.text = "Bắt đầu ►" if not is_completed else "Ôn lại ►"
-			btn_start.custom_minimum_size = Vector2(0, 60)
+			btn_start.custom_minimum_size = Vector2(0, 56)
 			btn_start.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			
 			var sb_btn = StyleBoxFlat.new()
-			sb_btn.corner_radius_top_left = 30; sb_btn.corner_radius_top_right = 30
-			sb_btn.corner_radius_bottom_left = 30; sb_btn.corner_radius_bottom_right = 30
+			sb_btn.corner_radius_top_left = 28; sb_btn.corner_radius_top_right = 28
+			sb_btn.corner_radius_bottom_left = 28; sb_btn.corner_radius_bottom_right = 28
 			sb_btn.bg_color = C_GOLD
 			btn_start.add_theme_color_override("font_color", Color.WHITE)
 				
@@ -296,7 +316,7 @@ func _build_lessons() -> void:
 			btn_start.add_theme_stylebox_override("hover", sb_btn_hover)
 			btn_start.add_theme_stylebox_override("pressed", sb_btn)
 			btn_start.add_theme_stylebox_override("focus", sb_btn)
-			btn_start.add_theme_font_size_override("font_size", 22)
+			btn_start.add_theme_font_size_override("font_size", 20)
 			
 			btn_start.pressed.connect(func():
 				_on_lesson_selected(node_id)
@@ -304,35 +324,6 @@ func _build_lessons() -> void:
 			bottom_margin.add_child(btn_start)
 			
 		card_vbox.add_child(bottom_margin)
-		
-		# Badge Top (Floating overlapping top edge)
-		var badge_panel = PanelContainer.new()
-		var badge_sb = StyleBoxFlat.new()
-		badge_sb.bg_color = C_CREAM
-		badge_sb.border_width_left = 2; badge_sb.border_width_right = 2
-		badge_sb.border_width_top = 2; badge_sb.border_width_bottom = 2
-		badge_sb.border_color = C_GOLD
-		badge_sb.corner_radius_top_left = 36; badge_sb.corner_radius_top_right = 36
-		badge_sb.corner_radius_bottom_left = 36; badge_sb.corner_radius_bottom_right = 36
-		badge_panel.add_theme_stylebox_override("panel", badge_sb)
-		badge_panel.custom_minimum_size = Vector2(72, 72)
-		
-		var badge = Label.new()
-		badge.text = "%02d" % (i + 1)
-		badge.add_theme_font_size_override("font_size", 26)
-		badge.add_theme_color_override("font_color", C_DARK_BROWN)
-		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		badge_panel.add_child(badge)
-		
-		var badge_floater = Control.new()
-		badge_floater.set_anchors_preset(Control.PRESET_CENTER_TOP)
-		badge_floater.add_child(badge_panel)
-		badge_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-		badge_panel.position = Vector2(-36, -20) # perfectly centered and floating
-		
-		card_wrapper.add_child(badge_floater)
-		
 		_lessons_box.add_child(card_wrapper)
 
 func _get_max_unlocked_node(inst: String) -> int:
