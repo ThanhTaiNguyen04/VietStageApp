@@ -1231,3 +1231,14 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _is_dragging_roadmap:
 		var dx = event.global_position.x - _drag_start_pos.x
 		roadmap_scroll.scroll_horizontal = _scroll_start_x - int(dx)
+
+
+func _on_m1_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Tuyệt Kỹ Cổ Điển", 18, 3)
+
+func _on_m2_pressed() -> void:
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "sao_truc":
+		_show_course_detail("Nghệ Sĩ Ưu Tú", 21, 5)
