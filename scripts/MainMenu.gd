@@ -42,6 +42,7 @@ var _time : float = 0.0
 var _sidebar_icons_cache := {}
 var btn_minigame : Button
 var btn_minigame_mob : Button
+const LESSON_DAN_BAU_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
