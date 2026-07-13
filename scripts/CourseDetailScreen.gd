@@ -143,6 +143,10 @@ func _build_lessons() -> void:
 		var sb_card = StyleBoxTexture.new()
 		if ResourceLoader.exists("res://image/card.png"):
 			sb_card.texture = load("res://image/card.png")
+			sb_card.texture_margin_left = 40
+			sb_card.texture_margin_right = 40
+			sb_card.texture_margin_top = 45
+			sb_card.texture_margin_bottom = 35
 		else:
 			# Fallback if image not found or moved
 			sb_card = StyleBoxFlat.new()
@@ -194,7 +198,7 @@ func _build_lessons() -> void:
 		thumb_sb.corner_radius_top_left = 100; thumb_sb.corner_radius_top_right = 100
 		thumb_sb.corner_radius_bottom_left = 100; thumb_sb.corner_radius_bottom_right = 100
 		thumb_panel.add_theme_stylebox_override("panel", thumb_sb)
-		thumb_panel.clip_contents = true
+		thumb_panel.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 		thumb_panel.custom_minimum_size = Vector2(280, 280)
 		
 		var thumb_tex = TextureRect.new()
