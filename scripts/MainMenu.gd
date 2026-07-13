@@ -1117,6 +1117,11 @@ func _on_viewport_size_changed() -> void:
 	var y_bot := 320.0 if is_mobile else 455.0
 	var roadmap_h := 520.0 if is_mobile else 760.0
 	
+		if card_mastery2 != null and card_mastery2.visible:
+		total_w = max(total_w, card_mastery2.position.x + card_w + 80.0)
+	elif card_pro_perf != null and card_pro_perf.visible:
+		total_w = max(total_w, card_pro_perf.position.x + card_w + 80.0)
+		
 	roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 	
 	card_basic.position = Vector2(x_basic, y_mid)
