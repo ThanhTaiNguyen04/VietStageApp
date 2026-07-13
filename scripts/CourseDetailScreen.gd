@@ -1,26 +1,21 @@
 extends Control
 
-const C_GOLD = Color(0.85, 0.65, 0.35, 1.0)
-const C_CREAM = Color(0.95, 0.90, 0.80, 1.0)
-const C_TERRACOTTA = Color(0.76, 0.42, 0.23, 1.0)
-const C_WOOD_BG = Color(0.12, 0.09, 0.06, 1.0)
-const C_LOCKED_TXT = Color(0.5, 0.45, 0.4, 1.0)
+const C_GOLD = Color(0.83, 0.68, 0.21, 1.0)
+const C_CREAM = Color(0.99, 0.97, 0.91, 1.0)
+const C_DARK_BROWN = Color(0.29, 0.23, 0.19, 1.0)
+const C_LIGHT_GREY = Color(0.5, 0.5, 0.5, 1.0)
+const C_LOCKED_TXT = Color(0.7, 0.7, 0.7, 1.0)
 
 var _lessons_box: HBoxContainer
 
 func _ready() -> void:
-	# 1. Background
+	# 1. Background (No modulate, keep it bright)
 	var bg_tex = TextureRect.new()
 	bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	# Load a premium background if available, else fallback
-	if ResourceLoader.exists("res://assets/textures/bg_main_menu.png"):
-		bg_tex.texture = load("res://assets/textures/bg_main_menu.png")
-	elif ResourceLoader.exists("res://assets/textures/bg_practice_room.png"):
+	if ResourceLoader.exists("res://assets/textures/bg_practice_room.png"):
 		bg_tex.texture = load("res://assets/textures/bg_practice_room.png")
-	# Darken the background
-	bg_tex.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	add_child(bg_tex)
 	
 	var margin = MarginContainer.new()
@@ -40,23 +35,23 @@ func _ready() -> void:
 	header.add_theme_constant_override("separation", 20)
 	vbox.add_child(header)
 	
-	# Back Button
+	# Back Button (Cream style)
 	var btn_back = Button.new()
 	btn_back.text = "< Quay Lại"
 	btn_back.custom_minimum_size = Vector2(140, 50)
 	var sb_back = StyleBoxFlat.new()
-	sb_back.bg_color = Color(0,0,0,0)
+	sb_back.bg_color = C_CREAM
 	sb_back.border_width_left = 2; sb_back.border_width_right = 2
 	sb_back.border_width_top = 2; sb_back.border_width_bottom = 2
 	sb_back.border_color = C_GOLD
-	sb_back.corner_radius_top_left = 25; sb_back.corner_radius_top_right = 25
-	sb_back.corner_radius_bottom_left = 25; sb_back.corner_radius_bottom_right = 25
+	sb_back.corner_radius_top_left = 15; sb_back.corner_radius_top_right = 15
+	sb_back.corner_radius_bottom_left = 15; sb_back.corner_radius_bottom_right = 15
 	btn_back.add_theme_stylebox_override("normal", sb_back)
 	btn_back.add_theme_stylebox_override("hover", sb_back)
 	btn_back.add_theme_stylebox_override("pressed", sb_back)
 	btn_back.add_theme_stylebox_override("focus", sb_back)
-	btn_back.add_theme_color_override("font_color", C_CREAM)
-	btn_back.add_theme_color_override("font_hover_color", C_TERRACOTTA)
+	btn_back.add_theme_color_override("font_color", C_DARK_BROWN)
+	btn_back.add_theme_color_override("font_hover_color", C_GOLD)
 	btn_back.add_theme_font_size_override("font_size", 18)
 	btn_back.pressed.connect(_on_back_pressed)
 	header.add_child(btn_back)
@@ -68,6 +63,7 @@ func _ready() -> void:
 	
 	var title_label = Label.new()
 	title_label.text = SecureDataManager.active_course_title
+	if title_label.text == "": title_label.text = "Bấm Ngón & Lấy Hơi"
 	title_label.add_theme_font_size_override("font_size", 48)
 	title_label.add_theme_color_override("font_color", C_GOLD)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -76,7 +72,7 @@ func _ready() -> void:
 	var subtitle = Label.new()
 	subtitle.text = "◈ Hành trình chinh phục sáo trúc ◈"
 	subtitle.add_theme_font_size_override("font_size", 20)
-	subtitle.add_theme_color_override("font_color", C_CREAM)
+	subtitle.add_theme_color_override("font_color", C_DARK_BROWN)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	titles_vbox.add_child(subtitle)
 	
@@ -123,50 +119,87 @@ func _build_lessons() -> void:
 	var start_node = SecureDataManager.active_course_start_node
 	var lesson_count = SecureDataManager.active_course_node_count
 	
+	var thumbs = [
+		"res://assets/textures/lessons/thumb_flute_base.jpg",
+		"res://assets/textures/lessons/thumb_flute_hands.jpg",
+		"res://assets/textures/lessons/thumb_flute_notes.jpg",
+		"res://assets/textures/lessons/thumb_flute_wind.jpg",
+		"res://assets/textures/lessons/thumb_flute_magic.jpg"
+	]
+	
 	for i in range(lesson_count):
 		var node_id = start_node + i
 		var is_locked = (node_id > unlocked_up_to)
 		var is_completed = (node_id < unlocked_up_to)
 		var is_active = (node_id == unlocked_up_to)
 		
-		# Build Premium Card
+		# Build Ornate Card
 		var card = PanelContainer.new()
-		card.custom_minimum_size = Vector2(360, 580)
+		card.custom_minimum_size = Vector2(280, 500)
 		card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var sb_card = StyleBoxFlat.new()
-		sb_card.bg_color = C_WOOD_BG
-		sb_card.corner_radius_top_left = 30; sb_card.corner_radius_top_right = 30
-		sb_card.corner_radius_bottom_left = 30; sb_card.corner_radius_bottom_right = 30
-		sb_card.border_width_left = 3; sb_card.border_width_right = 3
-		sb_card.border_width_top = 3; sb_card.border_width_bottom = 3
-		sb_card.border_color = Color(0.25, 0.2, 0.15, 1.0)
-		
-		if is_active:
-			sb_card.border_color = C_GOLD
-			sb_card.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
-			sb_card.shadow_size = 25
-			sb_card.bg_color = Color(0.18, 0.13, 0.08, 1.0)
+		sb_card.bg_color = C_CREAM
+		sb_card.corner_radius_top_left = 15; sb_card.corner_radius_top_right = 15
+		sb_card.corner_radius_bottom_left = 15; sb_card.corner_radius_bottom_right = 15
+		sb_card.border_width_left = 2; sb_card.border_width_right = 2
+		sb_card.border_width_top = 2; sb_card.border_width_bottom = 2
+		sb_card.border_color = C_GOLD
 		
 		card.add_theme_stylebox_override("panel", sb_card)
 		
 		var card_vbox = VBoxContainer.new()
+		card_vbox.add_theme_constant_override("separation", 15)
 		card.add_child(card_vbox)
 		
 		# Badge Top (e.g. 01)
+		var badge_panel = PanelContainer.new()
+		var badge_sb = StyleBoxFlat.new()
+		badge_sb.bg_color = C_CREAM
+		badge_sb.border_width_left = 2; badge_sb.border_width_right = 2
+		badge_sb.border_width_top = 2; badge_sb.border_width_bottom = 2
+		badge_sb.border_color = C_GOLD
+		badge_sb.corner_radius_top_left = 30; badge_sb.corner_radius_top_right = 30
+		badge_sb.corner_radius_bottom_left = 30; badge_sb.corner_radius_bottom_right = 30
+		badge_panel.add_theme_stylebox_override("panel", badge_sb)
+		badge_panel.custom_minimum_size = Vector2(60, 60)
+		badge_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		
 		var badge_margin = MarginContainer.new()
 		badge_margin.add_theme_constant_override("margin_top", 15)
+		badge_margin.add_child(badge_panel)
+		
 		var badge = Label.new()
 		badge.text = "%02d" % (i + 1)
-		badge.add_theme_font_size_override("font_size", 36)
-		badge.add_theme_color_override("font_color", C_GOLD if is_active else C_LOCKED_TXT)
+		badge.add_theme_font_size_override("font_size", 24)
+		badge.add_theme_color_override("font_color", C_DARK_BROWN)
 		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		badge_margin.add_child(badge)
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge_panel.add_child(badge)
 		card_vbox.add_child(badge_margin)
 		
-		# Icon or Spacer instead of Image
-		var spacer = Control.new()
-		spacer.custom_minimum_size = Vector2(0, 10)
-		card_vbox.add_child(spacer)
+		# Thumbnail Image (Circular)
+		var thumb_container = MarginContainer.new()
+		thumb_container.add_theme_constant_override("margin_left", 30)
+		thumb_container.add_theme_constant_override("margin_right", 30)
+		var thumb_panel = PanelContainer.new()
+		var thumb_sb = StyleBoxFlat.new()
+		thumb_sb.corner_radius_top_left = 100; thumb_sb.corner_radius_top_right = 100
+		thumb_sb.corner_radius_bottom_left = 100; thumb_sb.corner_radius_bottom_right = 100
+		thumb_panel.add_theme_stylebox_override("panel", thumb_sb)
+		thumb_panel.clip_contents = true
+		thumb_panel.custom_minimum_size = Vector2(200, 200)
+		
+		var thumb_tex = TextureRect.new()
+		thumb_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		thumb_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		thumb_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+		var tex_path = thumbs[i % thumbs.size()]
+		if ResourceLoader.exists(tex_path):
+			thumb_tex.texture = load(tex_path)
+		
+		thumb_panel.add_child(thumb_tex)
+		thumb_container.add_child(thumb_panel)
+		card_vbox.add_child(thumb_container)
 		
 		# Title & Desc
 		var texts_vbox = VBoxContainer.new()
@@ -182,7 +215,6 @@ func _build_lessons() -> void:
 			var n = data["note"]
 			title_text = "Nốt " + n
 			desc_text = data["desc"]
-			
 			if "Thi Đấu" in data["desc"]:
 				title_text = data["desc"]
 				desc_text = "Rhythm Game"
@@ -229,16 +261,18 @@ func _build_lessons() -> void:
 		var lbl_title = Label.new()
 		lbl_title.text = title_text
 		lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_title.add_theme_font_size_override("font_size", 32)
-		lbl_title.add_theme_color_override("font_color", C_CREAM if not is_locked else C_LOCKED_TXT)
+		lbl_title.add_theme_font_size_override("font_size", 28)
+		lbl_title.add_theme_color_override("font_color", C_DARK_BROWN if not is_locked else C_LOCKED_TXT)
 		lbl_title.autowrap_mode = TextServer.AUTOWRAP_WORD
+		var title_sb = StyleBoxEmpty.new()
+		lbl_title.add_theme_stylebox_override("normal", title_sb)
 		texts_vbox.add_child(lbl_title)
 		
 		var lbl_desc = Label.new()
 		lbl_desc.text = desc_text
 		lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_desc.add_theme_font_size_override("font_size", 22)
-		lbl_desc.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0) if not is_locked else C_LOCKED_TXT)
+		lbl_desc.add_theme_font_size_override("font_size", 18)
+		lbl_desc.add_theme_color_override("font_color", C_LIGHT_GREY if not is_locked else C_LOCKED_TXT)
 		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 		texts_vbox.add_child(lbl_desc)
 		
@@ -246,8 +280,8 @@ func _build_lessons() -> void:
 		
 		# Bottom Action
 		var bottom_margin = MarginContainer.new()
-		bottom_margin.add_theme_constant_override("margin_left", 20)
-		bottom_margin.add_theme_constant_override("margin_right", 20)
+		bottom_margin.add_theme_constant_override("margin_left", 30)
+		bottom_margin.add_theme_constant_override("margin_right", 30)
 		bottom_margin.add_theme_constant_override("margin_bottom", 25)
 		
 		if is_locked:
@@ -255,27 +289,21 @@ func _build_lessons() -> void:
 			lock_hb.alignment = BoxContainer.ALIGNMENT_CENTER
 			var lock_lbl = Label.new()
 			lock_lbl.text = "🔒 Hoàn thành Bài " + str(i) + " để mở khóa"
-			lock_lbl.add_theme_font_size_override("font_size", 20)
+			lock_lbl.add_theme_font_size_override("font_size", 16)
 			lock_lbl.add_theme_color_override("font_color", C_LOCKED_TXT)
 			lock_hb.add_child(lock_lbl)
 			bottom_margin.add_child(lock_hb)
 		else:
 			var btn_start = Button.new()
 			btn_start.text = "Bắt đầu ►" if not is_completed else "Ôn lại ►"
-			btn_start.custom_minimum_size = Vector2(0, 60)
+			btn_start.custom_minimum_size = Vector2(0, 50)
 			btn_start.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			
 			var sb_btn = StyleBoxFlat.new()
-			sb_btn.corner_radius_top_left = 15; sb_btn.corner_radius_top_right = 15
-			sb_btn.corner_radius_bottom_left = 15; sb_btn.corner_radius_bottom_right = 15
-			if is_active:
-				sb_btn.bg_color = C_GOLD
-				btn_start.add_theme_color_override("font_color", C_WOOD_BG)
-				sb_btn.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5)
-				sb_btn.shadow_size = 20
-			else:
-				sb_btn.bg_color = Color(0.3, 0.3, 0.3, 1.0)
-				btn_start.add_theme_color_override("font_color", C_CREAM)
+			sb_btn.corner_radius_top_left = 25; sb_btn.corner_radius_top_right = 25
+			sb_btn.corner_radius_bottom_left = 25; sb_btn.corner_radius_bottom_right = 25
+			sb_btn.bg_color = C_GOLD
+			btn_start.add_theme_color_override("font_color", Color.WHITE)
 				
 			btn_start.add_theme_stylebox_override("normal", sb_btn)
 			var sb_btn_hover = sb_btn.duplicate() as StyleBoxFlat
@@ -283,7 +311,7 @@ func _build_lessons() -> void:
 			btn_start.add_theme_stylebox_override("hover", sb_btn_hover)
 			btn_start.add_theme_stylebox_override("pressed", sb_btn)
 			btn_start.add_theme_stylebox_override("focus", sb_btn)
-			btn_start.add_theme_font_size_override("font_size", 26)
+			btn_start.add_theme_font_size_override("font_size", 22)
 			
 			btn_start.pressed.connect(func():
 				_on_lesson_selected(node_id)
@@ -298,19 +326,109 @@ func _get_max_unlocked_node(inst: String) -> int:
 
 func _on_lesson_selected(node_id: int) -> void:
 	SecureDataManager.active_lesson_id = "Node" + str(node_id)
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	
+	if inst == "sao_truc":
+		# Dynamically load lesson data
+		if node_id == 19:
+			PracticeSaoTruc.current_song_title = "Trống Cơm - Phân đoạn 1"
+			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Si", "Sol", "La"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 20:
+			PracticeSaoTruc.current_song_title = "Trống Cơm - Phân đoạn 2"
+			PracticeSaoTruc.current_song_sheet = ["Sol", "Fa", "Mi", "Rê", "Mi", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 21:
+			PracticeSaoTruc.current_song_title = "Trống Cơm - Hoàn thành"
+			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Si", "Sol", "La", "Sol", "Fa", "Mi", "Rê", "Mi", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 22:
+			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Luyến ngón"
+			PracticeSaoTruc.current_song_sheet = ["Mi", "Sol", "La", "Sol", "Mi"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 2.0, 1.0, 2.0]
+		elif node_id == 23:
+			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Vuốt ngón"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Rê", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 3.0]
+		elif node_id == 24:
+			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Toàn bài"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Mi", "Rê", "Đô", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 25:
+			PracticeSaoTruc.current_song_title = "Cây Trúc Xinh - Mở đầu"
+			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "La", "Sol", "Mi"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 26:
+			PracticeSaoTruc.current_song_title = "Cây Trúc Xinh - Phân đoạn 2"
+			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Sol", "Mi", "Rê", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 27:
+			PracticeSaoTruc.current_song_title = "Cây Trúc Xinh - Toàn bài"
+			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "La", "Sol", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 28:
+			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Phân đoạn 1"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Sol", "La", "Si"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 29:
+			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Phân đoạn 2"
+			PracticeSaoTruc.current_song_sheet = ["Đô2", "Si", "La", "Sol", "Mi"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 30:
+			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Toàn bài"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Sol", "La", "Si", "Đô2", "Si", "La", "Sol", "Mi"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 31:
+			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Flutter 1"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 32:
+			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Flutter 2"
+			PracticeSaoTruc.current_song_sheet = ["Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 33:
+			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Toàn bài"
+			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 34:
+			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 1"
+			PracticeSaoTruc.current_song_sheet = ["Mi2", "Rê2", "Đô2", "La", "Đô2"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 35:
+			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 2"
+			PracticeSaoTruc.current_song_sheet = ["Mi2", "Sol2", "Mi2", "Rê2", "Mi2"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 36:
+			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 3"
+			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "Rê2", "Mi2", "Rê2"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 37:
+			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 4"
+			PracticeSaoTruc.current_song_sheet = ["Rê2", "Đô2", "La", "Sol", "La"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 38:
+			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Toàn bài"
+			PracticeSaoTruc.current_song_sheet = ["Mi2", "Rê2", "Đô2", "La", "Đô2", "Mi2", "Sol2", "Mi2", "Rê2", "Mi2", "La", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La", "Sol", "La"]
+			PracticeSaoTruc.current_song_durations = [0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.0]
+		else:
+			PracticeSaoTruc.current_song_title = ""
+			PracticeSaoTruc.current_song_sheet.clear()
+			PracticeSaoTruc.current_song_durations.clear()
+
 	var t = create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.25)
 	t.tween_callback(func() -> void: 
 		if node_id == 1:
 			get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn")
 		else:
-			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				get_tree().change_scene_to_file("res://scenes/PracticeRoom.tscn")
 			elif inst == "dan_bau":
 				get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
+			elif inst == "trong_chau":
+				get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn")
 			else:
-				get_tree().change_scene_to_file("res://scenes/LessonSaoTruc.tscn")
+				get_tree().change_scene_to_file("res://scenes/PracticeSaoTruc.tscn")
 	)
 
 func _on_back_pressed() -> void:
