@@ -463,7 +463,7 @@ func _on_lesson_selected(node_id: int) -> void:
 			elif inst == "trong_chau":
 				get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn")
 			else:
-				if node_id <= 28:
+				if node_id <= 28 or (node_id >= 35 and node_id <= 42):
 					get_tree().change_scene_to_file("res://scenes/LessonSaoTruc.tscn")
 				else:
 					get_tree().change_scene_to_file("res://scenes/PracticeSaoTruc.tscn")

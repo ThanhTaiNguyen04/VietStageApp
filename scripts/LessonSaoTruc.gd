@@ -973,6 +973,70 @@ func _generate_melody(target_note_key: String) -> Array:
 		for n in notes:
 			var dur = 0.5
 			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.2
+	elif target_note_key == "Node35":
+		var notes = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Mi", "Mi", "Mi", "Mi", "Fa", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node36":
+		var notes = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Đô2", "Đô2", "Đô2", "Đô2", "Rê2", "La"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node37":
+		var notes = ["La", "La", "Rê2", "Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node38":
+		var notes = ["Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node39":
+		var notes = ["La", "La", "La", "La", "Fa2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node40":
+		var notes = ["Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node41":
+		var notes = ["Rê", "Fa", "Sol", "La", "Đô2", "Sol", "La", "Rê", "Fa", "La", "Sol", "La", "Fa", "Rê", "Rê2", "La", "Fa2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "La", "Rê", "Fa", "La", "Sol", "La", "Fa", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.5}); time += 0.8
+	elif target_note_key == "Node42":
+		var notes = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Mi", "Mi", "Mi", "Mi", "Fa", "Rê", "Rê", "Rê", "Rê", "La", "Sol", "Đô2", "Đô2", "Đô2", "Đô2", "Rê2", "La", "La", "La", "Rê2", "Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol", "Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê", "La", "La", "La", "La", "Fa2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol", "Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "La", "Rê2"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.5}); time += 0.7
+	elif target_note_key == "Node35":
+		var notes = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Mi", "Mi", "Mi", "Mi", "Fa", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node36":
+		var notes = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Đô2", "Đô2", "Đô2", "Đô2", "Rê2", "La"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node37":
+		var notes = ["La", "La", "Rê2", "Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node38":
+		var notes = ["Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node39":
+		var notes = ["La", "La", "La", "La", "Fa2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node40":
+		var notes = ["Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.6}); time += 0.9
+	elif target_note_key == "Node41":
+		var notes = ["Rê", "Fa", "Sol", "La", "Đô2", "Sol", "La", "Rê", "Fa", "La", "Sol", "La", "Fa", "Rê", "Rê2", "La", "Fa2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "La", "Rê", "Fa", "La", "Sol", "La", "Fa", "Rê"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.5}); time += 0.8
+	elif target_note_key == "Node42":
+		var notes = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Mi", "Mi", "Mi", "Mi", "Fa", "Rê", "Rê", "Rê", "Rê", "La", "Sol", "Đô2", "Đô2", "Đô2", "Đô2", "Rê2", "La", "La", "La", "Rê2", "Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol", "Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê", "La", "La", "La", "La", "Fa2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol", "Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "La", "Rê2"]
+		for n in notes:
+			seq.append({"note": n, "time": time, "duration": 0.5}); time += 0.7
 	elif target_note_key == "Node18":
 		# Đàn Gà Con hoàn chỉnh (Khúc Nhạc Vui)
 		var parts = [
