@@ -377,46 +377,66 @@ func _on_lesson_selected(node_id: int) -> void:
 			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "La", "Sol", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 		elif node_id == 35:
-			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Phân đoạn 1"
-			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Sol", "La", "Si"]
-			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Câu 1"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Mi", "Mi", "Mi", "Mi", "Fa", "Rê"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 		elif node_id == 36:
-			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Phân đoạn 2"
-			PracticeSaoTruc.current_song_sheet = ["Đô2", "Si", "La", "Sol", "Mi"]
-			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Câu 2"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Đô2", "Đô2", "Đô2", "Đô2", "Rê2", "La"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 		elif node_id == 37:
-			PracticeSaoTruc.current_song_title = "Nhật Ký Của Mẹ - Toàn bài"
-			PracticeSaoTruc.current_song_sheet = ["Rê", "Mi", "Sol", "La", "Si", "Đô2", "Si", "La", "Sol", "Mi"]
-			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Câu 3"
+			PracticeSaoTruc.current_song_sheet = ["La", "La", "Rê2", "Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 		elif node_id == 38:
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Câu 4"
+			PracticeSaoTruc.current_song_sheet = ["Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 39:
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Điệp khúc 1"
+			PracticeSaoTruc.current_song_sheet = ["La", "La", "La", "La", "Fa2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 40:
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Điệp khúc 2"
+			PracticeSaoTruc.current_song_sheet = ["Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê"]
+			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+		elif node_id == 41:
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Dạo nhạc"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Fa", "Sol", "La", "Đô2", "Sol", "La", "Rê", "Fa", "La", "Sol", "La", "Fa", "Rê", "Rê2", "La", "Fa2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "La", "Rê", "Fa", "La", "Sol", "La", "Fa", "Rê"]
+			PracticeSaoTruc.current_song_durations = [0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 1.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 0.5, 1.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 2.0]
+		elif node_id == 42:
+			PracticeSaoTruc.current_song_title = "Gặp Mẹ Trong Mơ - Toàn bài"
+			PracticeSaoTruc.current_song_sheet = ["Rê", "Rê", "Rê", "Rê", "La", "Sol", "Mi", "Mi", "Mi", "Mi", "Fa", "Rê", "Rê", "Rê", "Rê", "La", "Sol", "Đô2", "Đô2", "Đô2", "Đô2", "Rê2", "La", "La", "La", "Rê2", "Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol", "Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê", "La", "La", "La", "La", "Fa2", "Rê2", "Đô2", "Rê2", "Đô2", "La", "Sol", "Fa", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "Sol", "La", "Rê", "Fa", "Fa", "Fa", "Đô2", "La", "Đô2", "Sol", "La", "Rê2"]
+			PracticeSaoTruc.current_song_durations = [0.5, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 1.0, 0.5, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0, 1.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 1.0, 2.0]
+		elif node_id == 43:
 			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Flutter 1"
 			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 39:
+		elif node_id == 44:
 			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Flutter 2"
 			PracticeSaoTruc.current_song_sheet = ["Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 40:
+		elif node_id == 45:
 			PracticeSaoTruc.current_song_title = "Lý Hoài Nam - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 41:
+		elif node_id == 46:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 1"
 			PracticeSaoTruc.current_song_sheet = ["Mi2", "Rê2", "Đô2", "La", "Đô2"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 42:
+		elif node_id == 47:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 2"
 			PracticeSaoTruc.current_song_sheet = ["Mi2", "Sol2", "Mi2", "Rê2", "Mi2"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 43:
+		elif node_id == 48:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 3"
 			PracticeSaoTruc.current_song_sheet = ["La", "Đô2", "Rê2", "Mi2", "Rê2"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 44:
+		elif node_id == 49:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Phân đoạn 4"
 			PracticeSaoTruc.current_song_sheet = ["Rê2", "Đô2", "La", "Sol", "La"]
 			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
-		elif node_id == 45:
+		elif node_id == 50:
 			PracticeSaoTruc.current_song_title = "Xuân Về Bản Mèo - Toàn bài"
 			PracticeSaoTruc.current_song_sheet = ["Mi2", "Rê2", "Đô2", "La", "Đô2", "Mi2", "Sol2", "Mi2", "Rê2", "Mi2", "La", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La", "Sol", "La"]
 			PracticeSaoTruc.current_song_durations = [0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 1.0]

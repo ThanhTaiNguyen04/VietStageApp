@@ -724,8 +724,8 @@ func _build_roadmap_cards() -> void:
 		classical_title.text = "Bài 2: Trống Cơm"
 		classical_desc.text = "✓ Làn điệu dân ca Bắc Bộ\n✓ Kỹ thuật lấy hơi nhịp nhàng\n✓ Tăng tốc độ thổi sáo"
 		
-		pop_chords_title.text = "Hòa Tấu 2: Nhật Ký Của Mẹ"
-		pop_chords_desc.text = "✓ Thổi trên nền nhạc Beat hiện đại\n✓ Cảm xúc sâu lắng (Gặp Mẹ Trong Mơ)\n✓ Nhạc trẻ kết hợp truyền thống"
+		pop_chords_title.text = "Hòa Tấu 2: Gặp Mẹ Trong Mơ"
+		pop_chords_desc.text = "✓ Giai điệu Gặp Mẹ Trong Mơ\n✓ Kỹ thuật thổi đệm biểu cảm\n✓ Nhịp điệu hòa tấu truyền cảm"
 
 		card_adv_tech.show()
 		card_pro_perf.show()
@@ -1245,12 +1245,12 @@ func _input(event: InputEvent) -> void:
 func _on_m1_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 4: Lý Hoài Nam", 38, 3)
+		_show_course_detail("Bài 4: Lý Hoài Nam", 43, 3)
 
 func _on_m2_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 41, 5)
+		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 46, 5)
 
 func _on_chords_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1260,4 +1260,4 @@ func _on_chords_pressed() -> void:
 func _on_pop_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Hòa Tấu 2: Nhật Ký Của Mẹ", 35, 3)
+		_show_course_detail("Hòa Tấu 2: Gặp Mẹ Trong Mơ", 35, 8)
