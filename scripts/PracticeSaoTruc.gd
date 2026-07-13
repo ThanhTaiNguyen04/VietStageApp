@@ -904,7 +904,6 @@ func _set_labels() -> void:
 	_update_wait_mode_ui()
 	_update_demo_mode_ui()
 
-		var diff := "Cơ bản"
 	var current_chord := ""
 	
 	if "Trống Cơm" in title_lbl:
