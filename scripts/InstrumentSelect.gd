@@ -52,6 +52,10 @@ func _ready() -> void:
 	db_btn.pressed.connect(_go_practice_bau)
 	_make_bouncy(db_btn)
 
+	var tc_btn := $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox/TCBtn as Button
+	tc_btn.pressed.connect(_go_practice_trong)
+	_make_bouncy(tc_btn)
+
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
 
@@ -88,6 +92,16 @@ func _setup_images() -> void:
 			"kind":   "dan_bau",
 			"tag":    "Nhạc cụ dây",
 		},
+		{
+			"img":    $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCImageArea/TCImage,
+			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCImageArea,
+			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox,
+			"path":   "res://assets/textures/trong_chau_asset.png",
+			"bg":     Color(0.96, 0.88, 0.88, 1.0), # soft red/pink cream
+			"accent": Color(0.85, 0.18, 0.12, 1.0), # vermilion red accent
+			"kind":   "trong_chau",
+			"tag":    "Nhạc cụ gõ",
+		},
 	]
 	for d in cards:
 		_setup_card_image(d["img"], d["area"], d["cvbox"],
@@ -111,9 +125,11 @@ func _setup_card_image(img: TextureRect, area: Control, cvbox: VBoxContainer,
 		illus.set_anchors_preset(Control.PRESET_FULL_RECT)
 		illus.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		match kind:
-			"dan_tranh": illus.draw.connect(func() -> void: _draw_dan_tranh(illus, accent))
-			"sao_truc":  illus.draw.connect(func() -> void: _draw_sao_truc(illus, accent))
-			_:           illus.draw.connect(func() -> void: _draw_dan_bau(illus, accent))
+			"dan_tranh":  illus.draw.connect(func() -> void: _draw_dan_tranh(illus, accent))
+			"sao_truc":   illus.draw.connect(func() -> void: _draw_sao_truc(illus, accent))
+			"dan_bau":    illus.draw.connect(func() -> void: _draw_dan_bau(illus, accent))
+			"trong_chau": illus.draw.connect(func() -> void: _draw_trong_chau(illus, accent))
+			_:            illus.draw.connect(func() -> void: _draw_dan_bau(illus, accent))
 		area.add_child(illus)
 
 	# ── Gradient fade at bottom of image area ────────────────────────────────
@@ -449,6 +465,13 @@ func _build_theme() -> void:
 	_update_card_ui(db_card, db_vbox, db_progress, db_unlocked, C_GOLD, C_PRIMARY,
 		Color(0.169, 0.094, 0.047, 1.0), "DBBar", "DBBtn", "DBPct", "Bắt đầu")
 
+	# Trống Chầu
+	var tc_card := $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau
+	var tc_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox
+	var tc_progress := SecureDataManager.get_course_progress("trong_chau")
+	var tc_unlocked := SecureDataManager.is_instrument_unlocked("trong_chau")
+	_update_card_ui(tc_card, tc_vbox, tc_progress, tc_unlocked, Color(0.85, 0.18, 0.12, 1.0), Color(0.85, 0.18, 0.12, 1.0), "TCBar", "TCBtn", "TCPct", "Bắt đầu")
+
 	# Custom scrollbar styling
 	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
 	if scroll:
@@ -604,8 +627,8 @@ func _animate_in() -> void:
 		delay += 0.13
 
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	# Cards scaling
 	var cards_hbox := $Root/CardsArea/CardsScroll/CardsHBox as HBoxContainer
@@ -661,8 +684,71 @@ func _go_practice_bau() -> void:
 	SecureDataManager.save_data()
 	_fade_to("res://scenes/MainMenu.tscn")
 
+func _go_practice_trong() -> void:
+	selected_instrument = "trong_chau"
+	SecureDataManager.data["selected_instrument"] = "trong_chau"
+	SecureDataManager.save_data()
+	_fade_to("res://scenes/MainMenu.tscn")
+
 func _go_back() -> void:
 	_fade_to("res://scenes/LoginScreen.tscn")
+
+func _draw_trong_chau(c: Control, ac: Color) -> void:
+	var w := c.size.x;  var h := c.size.y
+	var cx := w * 0.50; var cy := h * 0.50
+
+	# Ambient glow
+	for i in range(5):
+		var r := h * (0.55 - i * 0.07)
+		c.draw_circle(Vector2(cx, cy), r, Color(ac.r, ac.g, ac.b, 0.018))
+
+	# Shadow
+	for i in range(3):
+		c.draw_circle(Vector2(cx, cy + h*0.28 + i*4),
+			w * (0.28 - i*0.04), Color(0, 0, 0, 0.18))
+
+	# Stand base line
+	c.draw_line(Vector2(cx - w*0.2, cy + h*0.25), Vector2(cx + w*0.2, cy + h*0.25), Color(0.24, 0.14, 0.06), 6.0)
+
+	# Drum Body (Flared ellipse barrel)
+	var dr_r := w * 0.22
+	var dr_h := h * 0.28
+	var dc := Vector2(cx, cy - h*0.02)
+	
+	var drum_pts := PackedVector2Array()
+	var steps := 24
+	for i in range(steps + 1):
+		var t := float(i) / steps
+		var py = dc.y + dr_h * 0.5 - t * dr_h
+		var w_fac = 1.0
+		if t > 0.2 and t < 0.8:
+			w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
+		drum_pts.append(Vector2(cx - dr_r * w_fac, py))
+	for i in range(steps, -1, -1):
+		var t := float(i) / steps
+		var py = dc.y + dr_h * 0.5 - t * dr_h
+		var w_fac = 1.0
+		if t > 0.2 and t < 0.8:
+			w_fac = 0.8 + 0.2 * absf(t - 0.5) / 0.3
+		drum_pts.append(Vector2(cx + dr_r * w_fac, py))
+		
+	c.draw_colored_polygon(drum_pts, Color(0.28, 0.16, 0.10)) # Wood brown drum body
+	c.draw_polyline(drum_pts, ac, 2.0, true)
+
+	# Drum skin (Leather top head)
+	var top_pts := PackedVector2Array()
+	var trx := dr_r * 1.0
+	var try := h * 0.075
+	var tc := dc - Vector2(0, dr_h * 0.5)
+	for step in range(24):
+		var a := float(step) * (TAU / 24.0)
+		top_pts.append(tc + Vector2(cos(a) * trx, sin(a) * try))
+	c.draw_colored_polygon(top_pts, Color(0.93, 0.85, 0.72))
+	c.draw_polyline(top_pts, Color(0.75, 0.60, 0.40), 2.0, true)
+
+	# Drumsticks
+	c.draw_line(Vector2(cx - w*0.14, cy + h*0.1), Vector2(cx + w*0.12, cy - h*0.15), Color(0.92, 0.84, 0.72), 4.5, true)
+	c.draw_line(Vector2(cx + w*0.14, cy + h*0.1), Vector2(cx - w*0.12, cy - h*0.15), Color(0.92, 0.84, 0.72), 4.5, true)
 
 func _fade_to(scene: String) -> void:
 	var t := create_tween()

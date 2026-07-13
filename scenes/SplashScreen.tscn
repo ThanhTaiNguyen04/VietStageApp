@@ -1,9 +1,9 @@
-[gd_scene format=3 uid="uid://cpl2o4bs3udar"]
+[gd_scene format=3 uid="uid://tmnqascupbo7"]
 
 [ext_resource type="Script" uid="uid://cye0dsm4cxarg" path="res://scripts/SplashScreen.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://cc4csldnvu2db" path="res://assets/textures/logovuongtachnen.png" id="2_logo"]
 
-[node name="SplashScreen" type="Control" unique_id=1690842254]
+[node name="SplashScreen" type="Control" unique_id=945561000]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,16 +12,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="BG" type="ColorRect" parent="." unique_id=1851719673]
+[node name="BG" type="ColorRect" parent="." unique_id=733189907]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.98, 0.97, 0.94, 1)
+color = Color(0.984, 0.976, 0.957, 1)
 
-[node name="Center" type="VBoxContainer" parent="." unique_id=1820109208]
+[node name="Center" type="VBoxContainer" parent="." unique_id=1370188983]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -37,7 +37,7 @@ grow_vertical = 2
 theme_override_constants/separation = 18
 alignment = 1
 
-[node name="LogoRect" type="TextureRect" parent="Center" unique_id=992887708]
+[node name="LogoRect" type="TextureRect" parent="Center" unique_id=519147570]
 custom_minimum_size = Vector2(220, 220)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -45,23 +45,25 @@ texture = ExtResource("2_logo")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Gap1" type="Control" parent="Center" unique_id=794663267]
+[node name="Gap1" type="Control" parent="Center" unique_id=867683581]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="AppName" type="Label" parent="Center" unique_id=1772764725]
+[node name="AppName" type="Label" parent="Center" unique_id=411604240]
 layout_mode = 2
-theme_override_font_sizes/font_size = 76
-text = "VietStage"
+theme_override_font_sizes/font_size = 28
+text = "Di sản nhạc cụ dân tộc trong tầm tay bạn"
 horizontal_alignment = 1
+autowrap_mode = 3
 
-[node name="Tagline" type="Label" parent="Center" unique_id=1274813505]
+[node name="Tagline" type="Label" parent="Center" unique_id=812990657]
 layout_mode = 2
-theme_override_font_sizes/font_size = 21
-text = "Học nhạc cụ dân tộc · Mọi lúc · Mọi nơi"
+theme_override_font_sizes/font_size = 16
+text = "Học tập tương tác với Nghệ sĩ ảo và công nghệ phân tích âm thanh AI ngay trên điện thoại di động."
 horizontal_alignment = 1
+autowrap_mode = 3
 
-[node name="VersionLabel" type="Label" parent="." unique_id=1986543022]
+[node name="VersionLabel" type="Label" parent="." unique_id=1020322783]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5

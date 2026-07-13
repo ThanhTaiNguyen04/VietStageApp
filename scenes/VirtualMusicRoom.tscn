@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://virtual_music_room_001"]
+[gd_scene format=3 uid="uid://bovdcl4ca565w"]
 
-[ext_resource type="Script" path="res://scripts/VirtualMusicRoom.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://djq6uma0b2gql" path="res://scripts/VirtualMusicRoom.gd" id="1_script"]
 
-[node name="VirtualMusicRoom" type="Control"]
+[node name="VirtualMusicRoom" type="Control" unique_id=571984935]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="BGCanvas" type="Control" parent="."]
+[node name="BGCanvas" type="Control" parent="." unique_id=512235761]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,7 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="RoomContent" type="Control" parent="."]
+[node name="RoomContent" type="Control" parent="." unique_id=633498835]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -33,7 +33,7 @@ offset_bottom = 400.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="FloorCanvas" type="Control" parent="RoomContent"]
+[node name="FloorCanvas" type="Control" parent="RoomContent" unique_id=1787977889]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -41,7 +41,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="StationTranh" type="Button" parent="RoomContent"]
+[node name="StationTranh" type="Button" parent="RoomContent" unique_id=1719791882]
 layout_mode = 0
 offset_left = 120.0
 offset_top = 400.0
@@ -49,7 +49,7 @@ offset_right = 360.0
 offset_bottom = 540.0
 flat = true
 
-[node name="StationSao" type="Button" parent="RoomContent"]
+[node name="StationSao" type="Button" parent="RoomContent" unique_id=146474428]
 layout_mode = 0
 offset_left = 840.0
 offset_top = 400.0
@@ -57,7 +57,7 @@ offset_right = 1080.0
 offset_bottom = 540.0
 flat = true
 
-[node name="StationBau" type="Button" parent="RoomContent"]
+[node name="StationBau" type="Button" parent="RoomContent" unique_id=446513420]
 layout_mode = 0
 offset_left = 280.0
 offset_top = 540.0
@@ -65,7 +65,7 @@ offset_right = 520.0
 offset_bottom = 680.0
 flat = true
 
-[node name="StationTrong" type="Button" parent="RoomContent"]
+[node name="StationTrong" type="Button" parent="RoomContent" unique_id=1745943673]
 layout_mode = 0
 offset_left = 680.0
 offset_top = 540.0
@@ -73,16 +73,14 @@ offset_right = 920.0
 offset_bottom = 680.0
 flat = true
 
-
-[node name="CharLinh" type="Control" parent="RoomContent"]
-layout_mode = 0
+[node name="CharLinh" type="Control" parent="RoomContent" unique_id=1228023573]
+anchors_preset = 0
 offset_left = 520.0
 offset_top = 220.0
 offset_right = 680.0
 offset_bottom = 380.0
 
-
-[node name="InteractPrompt" type="PanelContainer" parent="RoomContent"]
+[node name="InteractPrompt" type="PanelContainer" parent="RoomContent" unique_id=1478299159]
 visible = false
 layout_mode = 0
 offset_left = 540.0
@@ -90,45 +88,42 @@ offset_top = 400.0
 offset_right = 740.0
 offset_bottom = 440.0
 
-[node name="Margin" type="MarginContainer" parent="RoomContent/InteractPrompt"]
+[node name="Margin" type="MarginContainer" parent="RoomContent/InteractPrompt" unique_id=1893594032]
 layout_mode = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_right = 12
 theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 6
 
-[node name="Label" type="Label" parent="RoomContent/InteractPrompt/Margin"]
+[node name="Label" type="Label" parent="RoomContent/InteractPrompt/Margin" unique_id=1517236163]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Ấn [E] để tương tác"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-
-[node name="StationTooltip" type="PanelContainer" parent="RoomContent"]
+[node name="StationTooltip" type="PanelContainer" parent="RoomContent" unique_id=2051267612]
 visible = false
 layout_mode = 0
 offset_right = 150.0
 offset_bottom = 38.0
 
-[node name="Margin" type="MarginContainer" parent="RoomContent/StationTooltip"]
+[node name="Margin" type="MarginContainer" parent="RoomContent/StationTooltip" unique_id=1083486652]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_right = 12
 
-[node name="Label" type="Label" parent="RoomContent/StationTooltip/Margin"]
+[node name="Label" type="Label" parent="RoomContent/StationTooltip/Margin" unique_id=463399986]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Đàn Tranh"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=259083162]
 
-[node name="BtnBack" type="Button" parent="HUD"]
+[node name="BtnBack" type="Button" parent="HUD" unique_id=1127516209]
 custom_minimum_size = Vector2(160, 48)
-layout_mode = 3
-anchors_preset = 0
 offset_left = 32.0
 offset_top = 32.0
 offset_right = 192.0
@@ -136,9 +131,7 @@ offset_bottom = 80.0
 theme_override_font_sizes/font_size = 14
 text = "< QUAY LẠI"
 
-
-
-[node name="FocusModePopup" type="Control" parent="HUD"]
+[node name="FocusModePopup" type="Control" parent="HUD" unique_id=2057784283]
 visible = false
 layout_mode = 3
 anchors_preset = 15
@@ -147,7 +140,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="OverlayBG" type="ColorRect" parent="HUD/FocusModePopup"]
+[node name="OverlayBG" type="ColorRect" parent="HUD/FocusModePopup" unique_id=1072063458]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -156,7 +149,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.06, 0.04, 0.02, 0.75)
 
-[node name="ScrollPanel" type="Control" parent="HUD/FocusModePopup"]
+[node name="ScrollPanel" type="Control" parent="HUD/FocusModePopup" unique_id=1758875913]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -170,7 +163,7 @@ offset_bottom = 290.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ScrollDraw" type="Control" parent="HUD/FocusModePopup/ScrollPanel"]
+[node name="ScrollDraw" type="Control" parent="HUD/FocusModePopup/ScrollPanel" unique_id=807087614]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -178,7 +171,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ScrollContent" type="VBoxContainer" parent="HUD/FocusModePopup/ScrollPanel"]
+[node name="ScrollContent" type="VBoxContainer" parent="HUD/FocusModePopup/ScrollPanel" unique_id=1880208827]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -191,32 +184,32 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
 
-[node name="PopupTitle" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent"]
+[node name="PopupTitle" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent" unique_id=1036296526]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Giới Thiệu Nhạc Cụ"
 horizontal_alignment = 1
 
-[node name="TabHBox" type="HBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent"]
+[node name="TabHBox" type="HBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent" unique_id=1904373150]
 layout_mode = 2
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="BtnTabTheory" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/TabHBox"]
+[node name="BtnTabTheory" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/TabHBox" unique_id=259471636]
 custom_minimum_size = Vector2(180, 42)
 layout_mode = 2
 text = "Nhạc lý cổ truyền"
 
-[node name="BtnTabFingering" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/TabHBox"]
+[node name="BtnTabFingering" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/TabHBox" unique_id=117863085]
 custom_minimum_size = Vector2(180, 42)
 layout_mode = 2
 text = "Thế bấm ngón"
 
-[node name="ContentArea" type="Control" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent"]
+[node name="ContentArea" type="Control" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent" unique_id=2122668399]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="TheoryPanel" type="VBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea"]
+[node name="TheoryPanel" type="VBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea" unique_id=2036355775]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -225,17 +218,17 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="DiagramTheory" type="Control" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/TheoryPanel"]
+[node name="DiagramTheory" type="Control" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/TheoryPanel" unique_id=534371409]
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 
-[node name="TextTheory" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/TheoryPanel"]
+[node name="TextTheory" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/TheoryPanel" unique_id=1865481868]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Đàn Tranh sử dụng hệ ngũ âm cổ truyền Việt Nam."
 autowrap_mode = 3
 
-[node name="FingeringPanel" type="VBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea"]
+[node name="FingeringPanel" type="VBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea" unique_id=973420437]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -245,27 +238,27 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="DiagramFingering" type="Control" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/FingeringPanel"]
+[node name="DiagramFingering" type="Control" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/FingeringPanel" unique_id=910017190]
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 
-[node name="TextFingering" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/FingeringPanel"]
+[node name="TextFingering" type="Label" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ContentArea/FingeringPanel" unique_id=514504582]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Ngón tay gảy đàn Tranh."
 autowrap_mode = 3
 
-[node name="ButtonHBox" type="HBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent"]
+[node name="ButtonHBox" type="HBoxContainer" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent" unique_id=1944753979]
 layout_mode = 2
 theme_override_constants/separation = 24
 alignment = 1
 
-[node name="BtnPopupPlay" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ButtonHBox"]
+[node name="BtnPopupPlay" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ButtonHBox" unique_id=1992257217]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 text = "LUYỆN TẬP"
 
-[node name="BtnPopupClose" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ButtonHBox"]
+[node name="BtnPopupClose" type="Button" parent="HUD/FocusModePopup/ScrollPanel/ScrollContent/ButtonHBox" unique_id=1586644723]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 text = "ĐÓNG"

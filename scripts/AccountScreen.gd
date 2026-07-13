@@ -58,7 +58,7 @@ func _populate_data() -> void:
 	# Stats
 	var streak : int   = int(SecureDataManager.data.get("daily_streak", 1))
 	var psecs  : int   = int(SecureDataManager.data.get("practice_time_seconds", 0))
-	var xp     : int   = 1240 + psecs / 6
+	var xp     : int   = 1240 + int(psecs / 6.0)
 	var inst   : String = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var prog   : float  = SecureDataManager.get_course_progress(inst)
 	var join   : String = SecureDataManager.data.get("join_date", "")

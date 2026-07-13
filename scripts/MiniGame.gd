@@ -203,6 +203,11 @@ func _show_mode_selection_menu() -> void:
 			rhythm_desc = "Thổi hơi Sáo Trúc theo nhịp điệu khi vạch quét di chuyển qua các điểm nhịp."
 			note_desc = "Lắng nghe âm sắc Sáo Trúc và đoán tên nốt nhạc ngũ cung tương ứng."
 			melody_desc = "Lắng nghe chuỗi ngũ cung Sáo Trúc và tìm nốt nhạc còn thiếu [?] trong giai điệu."
+		"trong_chau":
+			inst_title = "TRỐNG CHẦU"
+			rhythm_desc = "Gõ mặt/vành Trống Chầu theo nhịp điệu khi vạch quét di chuyển qua các điểm nhịp."
+			note_desc = "Lắng nghe âm sắc Trống Chầu (Tịch/Cắc) và đoán âm tương ứng."
+			melody_desc = "Lắng nghe chuỗi tiết tấu Trống Chầu và tìm âm còn thiếu [?] trong chuỗi."
 		"dan_bau", _:
 			inst_title = "ĐÀN BẦU"
 			rhythm_desc = "Uốn cần Đàn Bầu theo nhịp điệu khi vạch quét di chuyển qua các điểm nhịp."
@@ -366,18 +371,21 @@ func _start_note_round() -> void:
 			inst_lbl = "gảy Đàn Tranh cổ truyền"
 		"sao_truc":
 			inst_lbl = "réo rắt của Sáo Trúc"
+		"trong_chau":
+			inst_lbl = "tiếng gõ Trống Chầu dân tộc"
 		"dan_bau", _:
 			inst_lbl = "âm bồi sâu lắng của Đàn Bầu"
 			
 	prompt_label.text = "Lắng nghe âm sắc %s và nhận diện xem đó là nốt nhạc dân tộc nào:" % inst_lbl
 	
-	correct_note = NOTES[randi() % NOTES.size()]
+	var note_pool = ["Tịch", "Cắc", "Tùng", "Cộc"] if inst == "trong_chau" else NOTES
+	correct_note = note_pool[randi() % note_pool.size()]
 	
 	options.clear()
 	options.append(correct_note)
 	
 	while options.size() < 4:
-		var extra = NOTES[randi() % NOTES.size()]
+		var extra = note_pool[randi() % note_pool.size()]
 		if not options.has(extra):
 			options.append(extra)
 			
@@ -511,6 +519,9 @@ func _start_rhythm_round() -> void:
 		"sao_truc":
 			action_text = "Thổi Sáo Trúc"
 			btn_text = "💨 THỔI SÁO TRÚC (TAP)"
+		"trong_chau":
+			action_text = "Gõ Trống Chầu"
+			btn_text = "🥁 GÕ TRỐNG CHẦU (TAP)"
 		"dan_bau", _:
 			action_text = "Uốn cần Đàn Bầu"
 			btn_text = "🎸 UỐN CẦN ĐÀN BẦU (TAP)"
@@ -565,6 +576,9 @@ func _draw_rhythm_timeline() -> void:
 func _on_drum_pressed() -> void:
 	if not rhythm_active: return
 	
+	SecureDataManager.load_data()
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	
 	var min_diff := 999.0
 	var closest_idx := -1
 	
@@ -581,15 +595,15 @@ func _on_drum_pressed() -> void:
 			if min_diff < 0.04:
 				score += 150
 				_show_rhythm_feedback("🎯 PERFECT! (+150)", C_GOLD)
-				_play_synth_note(587.33)
+				_play_synth_note(1000.0 if inst == "trong_chau" else 587.33)
 			elif min_diff < 0.08:
 				score += 80
 				_show_rhythm_feedback("✨ GREAT! (+80)", C_JADE_LIGHT)
-				_play_synth_note(523.25)
+				_play_synth_note(150.0 if inst == "trong_chau" else 523.25)
 			else:
 				score += 40
 				_show_rhythm_feedback("👍 GOOD! (+40)", C_TEXT)
-				_play_synth_note(392.00)
+				_play_synth_note(100.0 if inst == "trong_chau" else 392.00)
 		else:
 			_show_rhythm_feedback("Gõ trùng nhịp!", C_TEXT_MUTED)
 	else:
@@ -653,12 +667,23 @@ func _start_melody_round() -> void:
 			inst_name = "Đàn Tranh"
 		"sao_truc":
 			inst_name = "Sáo Trúc"
+		"trong_chau":
+			inst_name = "Trống Chầu"
 		"dan_bau", _:
 			inst_name = "Đàn Bầu"
 			
 	prompt_label.text = "Giai điệu ngũ cung của %s dưới đây đang khuyết một nốt nhạc. Nhấn nút Loa phát giai điệu rồi tìm nốt còn thiếu [?]:" % inst_name
 	
-	var raw_mel = MELODIES[randi() % MELODIES.size()]
+	var melodies_pool = [
+		["Tịch", "Cắc", "Tùng", "Cắc", "Tịch"],
+		["Tùng", "Tịch", "Cắc", "Tịch", "Tùng"],
+		["Cắc", "Tùng", "Tịch", "Tùng", "Cắc"],
+		["Tịch", "Tùng", "Cắc", "Tịch", "Cắc"],
+		["Tùng", "Cắc", "Tịch", "Cắc", "Tùng"]
+	] if inst == "trong_chau" else MELODIES
+	var note_pool = ["Tịch", "Cắc", "Tùng", "Cộc"] if inst == "trong_chau" else NOTES
+	
+	var raw_mel = melodies_pool[randi() % melodies_pool.size()]
 	melody_notes.clear()
 	for n in raw_mel:
 		melody_notes.append(n)
@@ -695,7 +720,7 @@ func _start_melody_round() -> void:
 	options.clear()
 	options.append(correct_note)
 	while options.size() < 4:
-		var extra = NOTES[randi() % NOTES.size()]
+		var extra = note_pool[randi() % note_pool.size()]
 		if not options.has(extra):
 			options.append(extra)
 	options.shuffle()
@@ -775,12 +800,23 @@ func _on_melody_timer_timeout() -> void:
 		t.tween_property(card, "scale", Vector2(1.15, 1.15), 0.1)
 		t.tween_property(card, "scale", Vector2.ONE, 0.12)
 		
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var drum_freqs = {
+		"Tịch": 100.0,
+		"Cắc": 1000.0,
+		"Tùng": 150.0,
+		"Cộc": 800.0
+	}
 	if current_play_index != missing_idx:
 		var note_name = melody_notes[current_play_index]
-		if FREQS.has(note_name):
-			_play_synth_note(FREQS[note_name])
+		if inst == "trong_chau":
+			if drum_freqs.has(note_name):
+				_play_synth_note(drum_freqs[note_name])
+		else:
+			if FREQS.has(note_name):
+				_play_synth_note(FREQS[note_name])
 	else:
-		_play_synth_note(150.0)
+		_play_synth_note(150.0 if inst != "trong_chau" else 100.0)
 		
 	current_play_index += 1
 
@@ -841,8 +877,19 @@ func _submit_melody_answer(ans: String, btn: Button) -> void:
 
 # ─── Sound Synthesis ─────────────────────────────────────────────────────────
 func _play_correct_sound() -> void:
-	if not FREQS.has(correct_note): return
-	_play_synth_note(FREQS[correct_note])
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var drum_freqs = {
+		"Tịch": 100.0,
+		"Cắc": 1000.0,
+		"Tùng": 150.0,
+		"Cộc": 800.0
+	}
+	if inst == "trong_chau":
+		if drum_freqs.has(correct_note):
+			_play_synth_note(drum_freqs[correct_note])
+	else:
+		if not FREQS.has(correct_note): return
+		_play_synth_note(FREQS[correct_note])
 
 func _play_synth_note(freq: float) -> void:
 	SecureDataManager.load_data()
@@ -897,6 +944,30 @@ func _play_synth_note(freq: float) -> void:
 					# Add very light noise to simulate breath/air blowing
 					var noise = (randf() * 2.0 - 1.0) * 0.02
 					sample = (sample * 0.25) + noise
+					
+				"trong_chau":
+					# Drum synthesis based on incoming frequency parameter
+					if freq == 100.0: # Tịch
+						amplitude_envelope = exp(-t * 12.0)
+						sample = sin(playback_phase)
+						if t < 0.02:
+							sample += (randf() * 2.0 - 1.0) * 0.4
+					elif freq == 1000.0: # Cắc
+						amplitude_envelope = exp(-t * 26.0)
+						sample = sin(playback_phase)
+						if t < 0.015:
+							sample += (randf() * 2.0 - 1.0) * 0.5
+					elif freq == 150.0: # Tùng
+						amplitude_envelope = exp(-t * 6.0)
+						sample = sin(playback_phase)
+						if t < 0.03:
+							sample += (randf() * 2.0 - 1.0) * 0.3
+					else: # Cộc
+						amplitude_envelope = exp(-t * 18.0)
+						sample = sin(playback_phase)
+						if t < 0.02:
+							sample += (randf() * 2.0 - 1.0) * 0.4
+					sample *= 0.35
 					
 				"dan_bau", _:
 					# Dan Bau: pitch slide-up at start and deep 5Hz vibrato (uốn cần)
@@ -1003,12 +1074,12 @@ func _make_button_bouncy(btn: Button) -> void:
 	)
 
 func _on_viewport_size_changed() -> void:
-	var size = get_viewport().size
-	var is_mobile = size.x < size.y or size.x < 768
+	var viewport_size = get_viewport().size
+	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
 	
 	var card := $Root/Card as PanelContainer
 	if is_mobile:
-		card.custom_minimum_size = Vector2(size.x - 32, 0)
+		card.custom_minimum_size = Vector2(viewport_size.x - 32, 0)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	else:
 		card.custom_minimum_size = Vector2(1000, 640)

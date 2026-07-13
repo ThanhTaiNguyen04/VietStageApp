@@ -1,9 +1,16 @@
 extends SceneTree
 
 func _init():
-	print("--- Headless Verification for All Scenes ---")
+	var log_file := FileAccess.open("res://scenes_check_results.log", FileAccess.WRITE)
+	if not log_file:
+		printerr("Cannot open log file")
+		quit(1)
+		return
+		
+	log_file.store_line("--- Headless Verification for All Scenes ---")
 	
 	var scenes = [
+		"res://scenes/PracticeTrongChau.tscn",
 		"res://scenes/SplashScreen.tscn",
 		"res://scenes/LoadingScreen.tscn",
 		"res://scenes/LoginScreen.tscn",
@@ -17,11 +24,13 @@ func _init():
 		"res://scenes/MiniGameDanTranh.tscn",
 		"res://scenes/MiniGameSaoTruc.tscn",
 		"res://scenes/MiniGameDanBau.tscn",
+		"res://scenes/MiniGameTrongChau.tscn",
 		"res://scenes/SongScreen.tscn",
 		"res://scenes/AccountScreen.tscn",
 		"res://scenes/ProgressScreen.tscn",
 		"res://scenes/VideoPlayer.tscn",
-		"res://scenes/CustomPopup.tscn"
+		"res://scenes/CustomPopup.tscn",
+		"res://scenes/LessonDanBau.tscn"
 	]
 	
 	var has_error = false
@@ -29,17 +38,18 @@ func _init():
 	for path in scenes:
 		var scene = load(path)
 		if scene == null:
-			print("  [ERROR] FAILED to load: ", path)
+			log_file.store_line("  [ERROR] FAILED to load: " + path)
 			has_error = true
 		else:
-			print("  [OK] Loaded: ", path)
+			log_file.store_line("  [OK] Loaded: " + path)
 			var instance = scene.instantiate()
 			if instance == null:
-				print("  [ERROR] FAILED to instantiate: ", path)
+				log_file.store_line("  [ERROR] FAILED to instantiate: " + path)
 				has_error = true
 			else:
-				print("  [OK] Instantiated: ", path)
+				log_file.store_line("  [OK] Instantiated: " + path)
 				instance.queue_free()
 
-	print("--- Verification Complete (has_error = ", has_error, ") ---")
+	log_file.store_line("--- Verification Complete (has_error = " + str(has_error) + ") ---")
+	log_file.close()
 	quit(1 if has_error else 0)

@@ -812,7 +812,7 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_show_course_detail("Kỹ Thuật Nhấn Rung", 2, 7)
 			elif inst == "dan_bau":
-				_show_course_detail("Kỹ Thuật Uốn Cần", 2, 7)
+				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
 				_show_course_detail("Bấm Ngón & Lấy Hơi", 2, 7)
 	)
@@ -823,6 +823,8 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "sao_truc":
 			_show_course_detail("Kỹ Năng Độc Tấu", 9, 10)
+		elif inst == "dan_bau":
+			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
 			_show_course_detail("Kỹ Năng Độc Tấu", 4, 3)
 	)
@@ -1082,3 +1084,43 @@ func _show_course_detail(title: String, start_node: int, count: int) -> void:
 	SecureDataManager.active_course_start_node = start_node
 	SecureDataManager.active_course_node_count = count
 	_fade_to("res://scenes/CourseDetailScreen.tscn")
+
+func _get_dan_bau_card_status(card_type: String) -> Dictionary:
+	var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
+	var stars_dict : Dictionary = SecureDataManager.data.stars.get("dan_bau", {})
+	var steps_to_check: Array[String] = []
+	if card_type == "basic":
+		steps_to_check = ["dan_bau_coban_1_video", "dan_bau_coban_1_practice"]
+	elif card_type == "essentials":
+		steps_to_check = ["dan_bau_coban_2_video", "dan_bau_coban_2_practice"]
+	elif card_type == "soloist":
+		steps_to_check = ["dan_bau_coban_3_video", "dan_bau_coban_3_practice"]
+	elif card_type == "chords":
+		steps_to_check = ["dan_bau_coban_4_video", "dan_bau_coban_4_practice"]
+	elif card_type == "classical" or card_type == "pop_chords":
+		steps_to_check = ["dan_bau_coban_5_video", "dan_bau_coban_5_practice"]
+
+	var total_stars := 0
+	var completed_count := 0
+	for step in steps_to_check:
+		if completed.has(step):
+			completed_count += 1
+		total_stars += int(stars_dict.get(step, 0))
+
+	var total_count: int = max(1, steps_to_check.size())
+	var pct: int = int((float(completed_count) / float(total_count)) * 100.0)
+	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+
+func _play_dan_bau_video(lesson_idx: int) -> void:
+	var lessons_data: Array = LESSON_DAN_BAU_SCRIPT.LESSONS
+	if lesson_idx < 0 or lesson_idx >= lessons_data.size():
+		return
+	var ldata: Dictionary = lessons_data[lesson_idx]
+	SecureDataManager.active_lesson_id = str(ldata["id"]) + "_video"
+	VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
+	VideoPlayer.custom_subtitles = ldata["subtitles"]
+	_fade_to("res://scenes/VideoPlayer.tscn")
+
+func _play_dan_bau_practice(lesson_num: int) -> void:
+	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
+	_fade_to("res://scenes/PracticeDanBau.tscn")
