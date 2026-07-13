@@ -644,7 +644,7 @@ func _play_current_sample():
 		var stream = load("res://image/gmtm.mp3")
 		if stream:
 			bgm_player.stream = stream
-			bgm_player.play(21.5)
+			bgm_player.play(21.0)
 
 	if not sample_player:
 		_setup_sample_player()
@@ -1428,7 +1428,7 @@ func _start_rhythm_game():
 		var stream = load("res://image/gmtm.mp3")
 		if stream:
 			bgm_player.stream = stream
-			bgm_player.play(21.5)
+			bgm_player.play(21.0)
 	
 	rhythm_time = -2.0 # 2 seconds delay
 	spawned_notes = 0
