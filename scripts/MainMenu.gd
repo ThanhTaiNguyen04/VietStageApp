@@ -1,41 +1,28 @@
 extends Control
 
-# ─── Color Palette — Skill §4: Dark Warm Vietnamese Premium
-# Background
-const C_BG_DARK     := Color(0.102, 0.071, 0.031, 1.0) # #1A1208 Deep Mahogany
-const C_BG_DARKER   := Color(0.169, 0.122, 0.055, 1.0) # #2B1F0E Rich Walnut
-const C_BG_PANEL    := Color(0.102, 0.071, 0.031, 0.96) # sidebar/bottombar glass
-
-# Animated waves — subtle warm glow on dark bg
-const C_WAVE_COLOR  := Color(0.753, 0.329, 0.102, 0.07) # terracotta wave
-const C_WAVE_COLOR2 := Color(0.961, 0.784, 0.259, 0.05) # amber wave
-
-# Card backgrounds
-const C_CARD_BG     := Color(0.059, 0.180, 0.118, 1.0) # #0F2E1E deep jade (active card)
-const C_CARD_BG_DK  := Color(0.169, 0.122, 0.055, 1.0) # #2B1F0E walnut (essentials card)
-const C_CARD_LOCKED := Color(0.130, 0.094, 0.047, 0.80) # dark muted (locked card)
-
-# Primary — Warm Terracotta #C0541A
+# ─── Color Palette (Traditional Vietnamese Lacquer Red & Gold - Light Cream Theme)
+const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige for sidebar
+const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
+const C_BG_PANEL    := Color(0.95, 0.93, 0.89, 0.96) # sidebar/bottombar glass
+const C_WAVE_COLOR  := Color(0.92, 0.88, 0.80, 0.45) # soft warm gray wave
+const C_WAVE_COLOR2 := Color(0.95, 0.85, 0.60, 0.22) # soft warm gold wave
+const C_CARD_BG     := Color(0.09, 0.27, 0.18, 1.0) # C_RED_SON - premium deep jade green
+const C_CARD_BG_DK  := Color(0.28, 0.16, 0.10, 1.0) # deep warm brown wood
+const C_CARD_LOCKED := Color(0.92, 0.90, 0.86, 0.70) # light warm gray-cream
 const C_PRIMARY     := Color(0.753, 0.329, 0.102, 1.0)
-const C_PRIMARY_LT  := Color(0.831, 0.388, 0.122, 1.0) # #D4631F button gradient top
-const C_PRIMARY_DK  := Color(0.620, 0.247, 0.063, 1.0) # #9E3F10 button gradient bottom
-
-# Accent — Golden Amber #F5C842
-const C_GOLD        := Color(0.961, 0.784, 0.259, 1.0) # #F5C842
-const C_GOLD_GLOW   := Color(0.961, 0.784, 0.259, 1.0) # progress ring
-const C_GOLD_LIGHT  := Color(0.961, 0.784, 0.259, 1.0)
-const C_GOLD_DARK   := Color(0.655, 0.510, 0.118, 1.0)
-const C_PATH_LINE   := Color(0.961, 0.784, 0.259, 0.70)
-const C_PATH_SHADOW := Color(0.961, 0.784, 0.259, 0.15)
-
-# Secondary — Deep Jade #2E6E4E (used for dark card bg, kept as alias)
-const C_RED_SON     := Color(0.059, 0.180, 0.118, 1.0) # historical alias → deep jade card
-const C_RED_DK      := Color(0.039, 0.118, 0.078, 0.96)
-
-# Text
-const C_CREAM       := Color(0.941, 0.871, 0.706, 1.0) # #F0DEB4 Warm Ivory
-const C_CREAM_DIM   := Color(0.659, 0.565, 0.439, 1.0) # #A89070 Muted Sand
-const C_TEXT_DIS    := Color(0.353, 0.290, 0.220, 1.0) # #5A4A38 Disabled
+const C_PRIMARY_LT  := Color(0.831, 0.388, 0.122, 1.0)
+const C_PRIMARY_DK  := Color(0.620, 0.247, 0.063, 1.0)
+const C_GOLD_GLOW   := Color(0.77, 0.58, 0.15, 1.0) # C_GOLD - glowing gold progress ring
+const C_PATH_LINE   := Color(0.77, 0.58, 0.15, 0.80) # gold path line
+const C_PATH_SHADOW := Color(0.90, 0.86, 0.78, 0.40) # soft gold/beige shadow
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_DK      := Color(0.05, 0.16, 0.11, 0.96)
+const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0)
+const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
+const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
+const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
+const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
+const C_TEXT_DIS    := Color(0.353, 0.290, 0.220, 1.0)
 
 var _active_side_btn : Button = null
 var _time : float = 0.0
