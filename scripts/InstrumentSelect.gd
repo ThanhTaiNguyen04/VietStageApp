@@ -470,7 +470,7 @@ func _build_theme() -> void:
 	var tc_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox
 	var tc_progress := SecureDataManager.get_course_progress("trong_chau")
 	var tc_unlocked := SecureDataManager.is_instrument_unlocked("trong_chau")
-	_update_card_ui(tc_card, tc_vbox, tc_progress, tc_unlocked, Color(0.85, 0.18, 0.12, 1.0), Color(0.85, 0.18, 0.12, 1.0), "TCBar", "TCBtn", "TCPct", "Bắt đầu")
+	_update_card_ui(tc_card, tc_vbox, tc_progress, tc_unlocked, Color(0.85, 0.18, 0.12, 1.0), Color(0.85, 0.18, 0.12, 1.0), Color(0.169, 0.094, 0.047, 1.0), "TCBar", "TCBtn", "TCPct", "Bắt đầu")
 
 	# Custom scrollbar styling
 	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
