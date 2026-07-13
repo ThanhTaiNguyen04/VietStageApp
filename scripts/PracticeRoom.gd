@@ -902,15 +902,17 @@ func _build_theme() -> void:
 		var target_label = board_vbox.get_node_or_null("TargetLabel") as Label
 		if target_label: target_label.visible = false
 		
-		# Setup MenuFAB on the left side of StringsBoard
-		_board.add_child(menu_btn)
+		# Keep the sidebar toggle in the screen overlay instead of inside the
+		# instrument. The board changes its logical size and drawing transform in
+		# portrait mode, which could move/clip child controls outside the viewport.
+		add_child(menu_btn)
 		menu_btn.name = "MenuFAB"
 		menu_btn.text = ""
 		menu_btn.custom_minimum_size = Vector2(40, 40)
 		menu_btn.size = Vector2(40, 40)
-		
-		# Dynamic position will be set in update_fabs
 		menu_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		menu_btn.position = Vector2(32.0, 12.0)
+		menu_btn.z_index = 90
 		
 		var tex = load("res://assets/textures/lucide/menu.svg")
 		if tex:
@@ -919,16 +921,16 @@ func _build_theme() -> void:
 			if "vertical_icon_alignment" in menu_btn:
 				menu_btn.set("vertical_icon_alignment", 1) # CENTER
 			menu_btn.expand_icon = true
-			menu_btn.add_theme_color_override("icon_normal_color", Color(0.98, 0.97, 0.95))
-			menu_btn.add_theme_color_override("icon_hover_color", Color.WHITE)
-			menu_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
+			menu_btn.add_theme_color_override("icon_normal_color", C_TEXT)
+			menu_btn.add_theme_color_override("icon_hover_color", C_JADE)
+			menu_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 		
 		var fab_s := StyleBoxFlat.new()
-		fab_s.bg_color = Color(1, 1, 1, 0.1)
+		fab_s.bg_color = Color(0.95, 0.93, 0.87, 0.55)
 		fab_s.corner_radius_top_left = 12; fab_s.corner_radius_top_right = 12
 		fab_s.corner_radius_bottom_left = 12; fab_s.corner_radius_bottom_right = 12
 		var fab_h := fab_s.duplicate() as StyleBoxFlat
-		fab_h.bg_color = Color(1, 1, 1, 0.3)
+		fab_h.bg_color = Color(0.95, 0.93, 0.87, 0.85)
 		menu_btn.add_theme_stylebox_override("normal", fab_s)
 		menu_btn.add_theme_stylebox_override("hover", fab_h)
 		menu_btn.add_theme_stylebox_override("pressed", fab_s)
@@ -1066,22 +1068,6 @@ func _build_theme() -> void:
 	var record_bar = $Root.get_node_or_null("RecordBar")
 	if record_bar: record_bar.visible = false
 	
-	# Dynamic positioning of FABs relative to strings
-	var update_fabs = func():
-		if not is_instance_valid(_board): return
-		var H = _board.size.y
-		var rh = (H - 20.0) / 17.0
-		var m_btn = _board.get_node_or_null("MenuFAB")
-		if m_btn:
-			var cy0 = 10.0 + rh * 0.5
-			var str_l0 = _board.get_str_l(0) if _board.has_method("get_str_l") else 60.0
-			m_btn.position = Vector2(str_l0 - 45.0, cy0 - 20.0)
-			
-	if _board and not _board.resized.is_connected(update_fabs):
-		_board.resized.connect(update_fabs)
-		# Call it slightly deferred to ensure size is initialized
-		get_tree().create_timer(0.05).timeout.connect(update_fabs)
-
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
 	_build_notation_track()
