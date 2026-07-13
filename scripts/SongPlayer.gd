@@ -1,6 +1,8 @@
 extends Node
 class_name SongPlayer
 
+signal demo_bend_updated(cents: float)
+
 class NoteData:
 	var lane: int
 	var hit_time: float
@@ -13,9 +15,17 @@ class NoteData:
 		duration = _duration
 		type = _type
 
+class BendData:
+	var time: float
+	var cents: float
+	func _init(_t: float, _c: float):
+		time = _t
+		cents = _c
+
 var current_song_time: float = 0.0
 var demo_active: bool = false
 var notes: Array = [] # Array of NoteData
+var bend_track: Array = [] # Array of BendData (biểu đồ uốn cần)
 var _is_playing: bool = false
 
 # Song catalog
@@ -35,6 +45,7 @@ func _ready() -> void:
 func load_song(song_id: String) -> void:
 	current_song_id = song_id
 	notes.clear()
+	bend_track.clear()
 	match song_id:
 		"long_me":
 			_load_long_me()
@@ -81,9 +92,20 @@ func _load_long_me() -> void:
 		for note_info in section:
 			var lane: int = note_info[0]
 			var dur: float = note_info[1] * beat
-			notes.append(NoteData.new(lane, t, 0.0, 0))
+			notes.append(NoteData.new(lane, t, dur, 0))
+			
+			# Thêm độ uốn cần nhẹ (Vibrato / Luyến) để âm thanh mượt mà như hát ru
+			# Uốn lên +50 cents ở giữa nốt rồi nhả về
+			bend_track.append(BendData.new(t, 0.0))
+			bend_track.append(BendData.new(t + dur * 0.4, 60.0)) # Nhấn cần nhẹ
+			bend_track.append(BendData.new(t + dur * 0.8, -20.0)) # Thả ra hơi sâu
+			bend_track.append(BendData.new(t + dur, 0.0))
+			
 			t += dur
 		t += beat # Nghỉ giữa các câu
+		
+	# Đảm bảo nốt kết có track uốn về 0
+	bend_track.append(BendData.new(t + 2.0, 0.0))
 
 func _load_su_thanh_hoa() -> void:
 	# "Sứ Thanh Hoa" - phiên bản Đàn Bầu
@@ -129,3 +151,21 @@ func stop() -> void:
 func _process(delta: float) -> void:
 	if _is_playing:
 		current_song_time += delta
+		_process_bends()
+
+func _process_bends() -> void:
+	if bend_track.size() == 0: return
+	
+	var current_cents = 0.0
+	for i in range(bend_track.size() - 1):
+		var b1 = bend_track[i]
+		var b2 = bend_track[i+1]
+		if current_song_time >= b1.time and current_song_time < b2.time:
+			var t_ratio = (current_song_time - b1.time) / max(0.001, b2.time - b1.time)
+			current_cents = lerpf(b1.cents, b2.cents, t_ratio)
+			break
+	
+	if current_song_time >= bend_track[bend_track.size()-1].time:
+		current_cents = bend_track[bend_track.size()-1].cents
+		
+	demo_bend_updated.emit(current_cents)

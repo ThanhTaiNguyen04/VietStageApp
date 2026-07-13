@@ -3,7 +3,7 @@ extends Control
 signal note_hit(lane: int)
 
 # ── Palette ────────────────────────────────────────────────────────────────
-const C_JADE       := Color("#0e3d26") # Deep Forest Green
+const C_RED_SON    := Color("#a63628") # Đỏ son đặc trưng đàn bầu
 const C_GOLD       := Color("#d4af37") # Metallic gold
 const C_GOLD_GLOW  := Color(0.83, 0.68, 0.22, 0.4) # Transparent gold glow
 const C_TEXT       := Color("#faf6eb") # Cream text
@@ -100,34 +100,19 @@ func _draw() -> void:
 			# Glow halo
 			draw_circle(Vector2(lx, current_y), nw * 0.9, Color(C_GOLD_GLOW.r, C_GOLD_GLOW.g, C_GOLD_GLOW.b, 0.5 * alpha))
 		
-		# Draw Diamond (Ngọc Bội)
-		var diamond_pts = PackedVector2Array([
-			Vector2(lx, current_y - nh*0.5),
-			Vector2(lx + nw*0.5, current_y),
-			Vector2(lx, current_y + nh*0.5),
-			Vector2(lx - nw*0.5, current_y)
-		])
-		
-		# Jade Fill
-		var fill_col = C_JADE if is_active else Color(0.8, 0.8, 0.8)
-		draw_colored_polygon(diamond_pts, Color(fill_col.r, fill_col.g, fill_col.b, alpha))
-		
-		# Gold Border
+		# ── Vẽ Nốt Rơi Hình Tròn (Đồng Tiền Vàng / Ngọc Tròn) ──
+		var fill_col = C_RED_SON if is_active else Color(0.8, 0.8, 0.8)
 		var border_col = C_GOLD if is_active else Color(0.5, 0.5, 0.5)
-		diamond_pts.append(diamond_pts[0]) # close path
-		draw_polyline(diamond_pts, Color(border_col.r, border_col.g, border_col.b, alpha), 2.0, true)
 		
-		# Inner Gold Decoration (small diamond)
-		var inner_nw = nw * 0.7
-		var inner_nh = nh * 0.7
-		var inner_pts = PackedVector2Array([
-			Vector2(lx, current_y - inner_nh*0.5),
-			Vector2(lx + inner_nw*0.5, current_y),
-			Vector2(lx, current_y + inner_nh*0.5),
-			Vector2(lx - inner_nw*0.5, current_y),
-			Vector2(lx, current_y - inner_nh*0.5)
-		])
-		draw_polyline(inner_pts, Color(border_col.r, border_col.g, border_col.b, alpha * 0.4), 1.0, true)
+		var radius = nw * 0.45
+		# Nền tròn
+		draw_circle(Vector2(lx, current_y), radius, Color(fill_col.r, fill_col.g, fill_col.b, alpha))
+		
+		# Viền vàng ngoài
+		draw_arc(Vector2(lx, current_y), radius, 0, TAU, 32, Color(border_col.r, border_col.g, border_col.b, alpha), 2.0, true)
+		
+		# Viền trang trí bên trong (vòng tròn đồng tâm)
+		draw_arc(Vector2(lx, current_y), radius * 0.7, 0, TAU, 24, Color(border_col.r, border_col.g, border_col.b, alpha * 0.5), 1.0, true)
 		
 		if font:
 			var fs = 13
