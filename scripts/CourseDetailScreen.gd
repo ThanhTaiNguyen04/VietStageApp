@@ -271,10 +271,15 @@ func _build_lessons() -> void:
 			if i == 0: title_text = "Nhịp phách cơ bản"; desc_text = "Nghe và theo nhịp trống"
 			elif i == 1: title_text = "Thổi đệm"; desc_text = "Phối hợp với ca sĩ"
 			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Biểu diễn Hòa Tấu"
-		elif "Nhật Ký Của Mẹ" in course_name:
-			if i == 0: title_text = "Cảm âm beat"; desc_text = "Lắng nghe hòa âm"
-			elif i == 1: title_text = "Giai điệu da diết"; desc_text = "Ngân dài và luyến nốt"
-			elif i == 2: title_text = "Hoàn thành bài"; desc_text = "Biểu diễn Sáo Trúc Đương Đại"
+		elif "Gặp Mẹ Trong Mơ" in course_name:
+			if i == 0: title_text = "Câu A1 (Thấp)"; desc_text = "re re re re la sol..."
+			elif i == 1: title_text = "Câu A2 (Rê2)"; desc_text = "re re re re la sol, do2..."
+			elif i == 2: title_text = "Câu B1 (Trung)"; desc_text = "la la re2 do2 re2..."
+			elif i == 3: title_text = "Câu B2 (Mẹ dịu hiền)"; desc_text = "fa fa fa fa do2 la..."
+			elif i == 4: title_text = "Điệp khúc C1 (Cao)"; desc_text = "la la la la fa2 re2..."
+			elif i == 5: title_text = "Điệp khúc C2"; desc_text = "fa fa fa fa do2 la..."
+			elif i == 6: title_text = "Dạo nhạc (Gian tấu)"; desc_text = "re fa sol la do2 sol-la..."
+			elif i == 7: title_text = "Hòa tấu trọn vẹn"; desc_text = "Ghép toàn bộ bài Gặp Mẹ Trong Mơ"
 		
 		var lbl_title = Label.new()
 		lbl_title.mouse_filter = Control.MOUSE_FILTER_PASS
