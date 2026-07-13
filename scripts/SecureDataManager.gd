@@ -9,6 +9,11 @@ const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLe
 static var video_completed := false
 static var active_lesson_id := "Node2"
 
+# Course Detail State
+static var active_course_title: String = ""
+static var active_course_start_node: int = 1
+static var active_course_node_count: int = 1
+
 # Default player state synchronized across all scenes
 static var data := {
 	"selected_instrument": "dan_tranh",
@@ -101,10 +106,16 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		next_lesson_id = "Node4"
 	elif lesson_id == "Node4":
 		next_lesson_id = "Node5"
-		
+	elif lesson_id == "Node5":
+		next_lesson_id = "Node6"
+	elif lesson_id == "Node6":
+		next_lesson_id = "Node7"
+	elif lesson_id == "Node7":
+		next_lesson_id = "Node8"
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
-		save_data()
+		
+	save_data()
 
 static func get_course_progress(instrument: String) -> float:
 	var completed := 0

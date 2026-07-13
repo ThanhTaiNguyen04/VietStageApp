@@ -28,6 +28,16 @@ var current_state = State.INTRO
 
 var active_note := "Si"
 var active_node_id := "Node2"
+
+var record_btn: Button
+var playback_btn: Button
+var retry_btn: Button
+var understood_btn: Button
+var sample_btn: Button
+var _is_recording := false
+var _recorded_stream: AudioStreamWAV = null
+var _playback_player: AudioStreamPlayer = null
+
 var complete_overlay: ColorRect
 var _holes : Array[Control] = []
 var _lanes : Array[ColorRect] = []
@@ -42,6 +52,14 @@ var REQUIRED_HOLD_TIME := 1.0 # 1 second of correct note to pass
 var rhythm_time := 0.0
 var spawned_notes := 0
 var active_falling_notes := []
+var _practice_note_node
+var _practice_sequence = []
+var _current_practice_idx = 0
+var _practice_time: float = 0.0
+var total_rhythm_duration: float = 0.0
+var correct_rhythm_duration: float = 0.0
+var has_rhythm_completed: bool = false
+
 const FALL_SPEED := 90.0 # Tốc độ rơi cực chậm để dễ chơi hơn (trước là 150.0)
 const HIT_WINDOW := 0.5 # Nới lỏng thời gian chấm điểm thêm nữa
 
@@ -60,37 +78,87 @@ const LESSON_NOTES = {
 	"Node5": {"note": "Fa", "desc": "Bấm ngón tay vào 3 lỗ", "fingers": [true, true, true, false, false, false]},
 	"Node6": {"note": "Mi", "desc": "Bấm ngón tay vào 4 lỗ", "fingers": [true, true, true, true, false, false]},
 	"Node7": {"note": "Rê", "desc": "Bấm ngón tay vào 5 lỗ", "fingers": [true, true, true, true, true, false]},
-	"Node8": {"note": "Đô", "desc": "Bấm cả 6 lỗ và thổi nhẹ", "fingers": [true, true, true, true, true, true]}
+	"Node8": {"note": "Đô", "desc": "Bấm cả 6 lỗ và thổi nhẹ", "fingers": [true, true, true, true, true, true]},
+		"Node9": {"note": "Đô", "desc": "Tập thổi nốt Đô", "fingers": [true, true, true, true, true, true]},
+	"Node10": {"note": "Sol", "desc": "Tập thổi nốt Sol", "fingers": [true, true, false, false, false, false]},
+	"Node11": {"note": "Đô", "desc": "Ghép Đô và Sol", "fingers": [true, true, true, true, true, true]},
+	"Node12": {"note": "La", "desc": "Tập thổi nốt La", "fingers": [true, false, false, false, false, false]},
+	"Node13": {"note": "Đô", "desc": "Câu nhạc 1", "fingers": [true, true, true, true, true, true]},
+	"Node14": {"note": "Fa", "desc": "Tập thổi nốt Fa", "fingers": [true, true, true, false, false, false]},
+	"Node15": {"note": "Mi", "desc": "Tập thổi nốt Mi", "fingers": [true, true, true, true, false, false]},
+	"Node16": {"note": "Rê", "desc": "Tập thổi nốt Rê", "fingers": [true, true, true, true, true, false]},
+	"Node17": {"note": "Fa", "desc": "Câu nhạc 2", "fingers": [true, true, true, false, false, false]},
+	"Node18": {"note": "Đô", "desc": "Thi Đậu Khúc Nhạc Vui", "fingers": [true, true, true, true, true, true]}
 }
 
 const LESSON_DIALOGUES = {
-	"Si": {
-		"intro": "Chào bạn! Đây là bài học Sáo Trúc đầu tiên. Nốt Si là nốt cơ bản nhất, âm thanh thanh thoát và nhẹ nhàng. Để thổi nốt Si, bạn chỉ cần mở toàn bộ 6 lỗ, không che lỗ nào. Hãy cầm sáo lên và thổi một luồng hơi êm dịu nhé!",
+	"Node2": {
+		"intro": "Chào bạn! Đây là bài học Sáo Trúc đầu tiên. Nốt Si là nốt cơ bản nhất, âm thanh thanh thoát và nhẹ nhàng. Để thổi nốt Si, bạn chỉ cần mở toàn bộ 6 lỗ, không che lỗ nào. Hãy cầm sáo lên và thổi một luồng hơi ấm dịu nhé!",
 		"mid": "Tuyệt vời! Bạn có thấy âm thanh nốt Si thật trong trẻo không? Bây giờ, hãy cùng chơi một bản nhạc nhỏ để làm quen với nhịp điệu nhé!"
 	},
-	"La": {
+	"Node3": {
 		"intro": "Chào mừng bạn trở lại! Hôm nay chúng ta sẽ chinh phục nốt La. Nốt La có âm sắc trầm hơn nốt Si một chút. Bấm ngón tay trỏ tay trái vào lỗ đầu tiên thật kín và thổi nhẹ nào!",
 		"mid": "Rất tốt! Âm La nghe rất vang và ấm đúng không? Bây giờ hãy thử kết hợp nốt La với nốt Si vừa học trong một thử thách nhịp điệu nhé!"
 	},
-	"Sol": {
+	"Node4": {
 		"intro": "Bạn tiến bộ nhanh lắm! Nốt tiếp theo là nốt Sol. Hãy dùng hai ngón tay che kín 2 lỗ đầu tiên. Nhớ là các ngón tay phải bịt thật kín mặt lỗ để âm thanh không bị xì nhé!",
 		"mid": "Xuất sắc! Việc chuyển ngón giữa các nốt Si, La, Sol là nền tảng của rất nhiều bài nhạc hay. Chúng ta cùng tập ghép chúng lại nào!"
 	},
-	"Fa": {
+	"Node5": {
 		"intro": "Hôm nay chúng ta học nốt Fa! Âm Fa mang lại cảm giác hơi man mác buồn. Bịt kín 3 lỗ đầu tiên nhé. Cẩn thận ngón áp út tay trái thường hay hở nhất đấy!",
 		"mid": "Hay lắm! Càng bịt nhiều lỗ, hơi thổi của bạn cần phải đều đặn hơn. Hãy sẵn sàng cho thử thách bấm thả liên tục nhé!"
 	},
-	"Mi": {
+	"Node6": {
 		"intro": "Chào bạn! Đã đến lúc dùng đến bàn tay phải rồi. Để thổi nốt Mi, bạn che 4 lỗ đầu. Hãy thả lỏng cổ tay phải và đặt ngón trỏ thật tự nhiên nhé!",
 		"mid": "Thật tuyệt vời! Bạn đã điều khiển được bàn tay phải rồi đó. Hãy cùng chơi một giai điệu để kết hợp cả hai tay nhé!"
 	},
-	"Rê": {
+	"Node7": {
 		"intro": "Sắp chinh phục được toàn bộ các nốt cơ bản rồi! Nốt Rê yêu cầu bạn bịt 5 lỗ. Cột hơi bây giờ cần phải sâu và nén tốt hơn. Hãy hít một hơi thật sâu nào!",
 		"mid": "Giỏi lắm! Âm Rê rung lên rất êm ái. Chơi tốt nốt này chứng tỏ kỹ năng kiểm soát hơi của bạn đã tiến bộ vượt bậc!"
 	},
-	"Đô": {
+	"Node8": {
 		"intro": "Chúc mừng bạn đã đến với nốt trầm nhất của cây sáo: Nốt Đô! Bịt kín toàn bộ 6 lỗ. Hãy thổi thật khẽ và ấm, vì nếu thổi mạnh nó sẽ vút lên nốt cao đấy!",
 		"mid": "Hoàn hảo! Cảm nhận độ rung của thân sáo khi thổi nốt Đô thật thích đúng không? Giờ là lúc kết hợp toàn bộ 6 nốt để tạo nên phép màu!"
+	},
+		"Node9": {
+		"intro": "Chào mừng bạn đến với Hành Trình Khúc Nhạc Vui! Bài hát đầu tiên của chúng ta rất dễ thương. Bắt đầu bằng nốt Đô nhé.",
+		"mid": "Tốt lắm! Nốt Đô là nốt trầm ấm. Hãy chuẩn bị bắt nhịp để thổi nốt Đô theo nhạc rơi nhé!"
+	},
+	"Node10": {
+		"intro": "Tiếp theo, chúng ta học nốt Sol. Bấm 2 lỗ đầu tiên. Nốt Sol trong trẻo và vang vọng.",
+		"mid": "Giỏi lắm! Giờ hãy thổi nốt Sol theo nhịp điệu rơi xuống nhé!"
+	},
+	"Node11": {
+		"intro": "Bây giờ chúng ta ghép 2 nốt Đô và Sol với nhau nhé! Luyện tập chuyển ngón thật nhanh.",
+		"mid": "Tay bạn đã bắt đầu dẻo dai rồi. Sẵn sàng cho thử thách rơi nốt Đô và Sol chưa?"
+	},
+	"Node12": {
+		"intro": "Nốt La! Bấm 1 lỗ duy nhất. Đây là nốt cao nhất trong câu đầu tiên của bài hát.",
+		"mid": "Tuyệt vời! Bây giờ luyện tập thổi nốt La theo nhịp điệu nhé."
+	},
+	"Node13": {
+		"intro": "Lắp ráp câu nhạc 1: Đô Đô Sol Sol La La Sol. Bạn hãy chú ý nhịp điệu nhẹ nhàng và tươi vui nhé!",
+		"mid": "Hoàn hảo! Tay và hơi của bạn đã sẵn sàng. Cùng thổi câu 1 nào!"
+	},
+	"Node14": {
+		"intro": "Học tiếp nửa bài sau nhé. Bắt đầu với nốt Fa. Bấm 3 lỗ, âm thanh hơi trầm buồn một chút.",
+		"mid": "Fa rất tốt! Cùng luyện tập nhịp điệu nốt Fa nhé."
+	},
+	"Node15": {
+		"intro": "Thêm nốt Mi. Bấm 4 lỗ. Đừng quên giữ hơi thật đều để nốt không bị chênh phô nhé.",
+		"mid": "Rất êm ái! Giờ hãy theo dõi nốt rơi và thổi nốt Mi."
+	},
+	"Node16": {
+		"intro": "Nốt Rê! Bấm 5 lỗ. Gần như kín hết các lỗ rồi, hãy thổi hơi sâu hơn một chút.",
+		"mid": "Kiểm soát hơi rất tốt! Chuẩn bị thổi nốt Rê theo nhịp nhé."
+	},
+	"Node17": {
+		"intro": "Ghép câu nhạc 2: Fa Fa Mi Mi Rê Rê Đô. Các nốt đi dần xuống trầm, hãy thả lỏng tay.",
+		"mid": "Tuyệt vời, bạn đã thuộc hết các nốt! Hãy thổi đoạn nhạc này nhé."
+	},
+	"Node18": {
+		"intro": "Thử Thách Cuối Cùng! Thi Đậu Bài Hát Khúc Nhạc Vui trọn vẹn. Bạn cần đạt trên 75% độ chính xác để qua ván này!",
+		"mid": "Sẵn sàng chưa? Khúc Nhạc Vui xin được phép bắt đầu!"
 	}
 }
 
@@ -121,6 +189,73 @@ func _ready():
 	real_mode_btn.add_theme_stylebox_override("normal", sb_btn)
 	real_mode_btn.add_theme_stylebox_override("hover", sb_btn)
 	
+	var btn_vbox = VBoxContainer.new()
+	btn_vbox.add_theme_constant_override("separation", 15)
+	
+	sample_btn = Button.new()
+	sample_btn.text = "   Nghe Mẫu   "
+	sample_btn.custom_minimum_size = Vector2(200, 65)
+	sample_btn.add_theme_font_size_override("font_size", 28)
+	sample_btn.add_theme_color_override("font_color", Color.BLACK)
+	sample_btn.add_theme_stylebox_override("normal", sb_btn)
+	sample_btn.add_theme_stylebox_override("hover", sb_btn)
+	btn_vbox.add_child(sample_btn)
+	
+	record_btn = Button.new()
+	record_btn.text = "   Thu Âm   "
+	record_btn.custom_minimum_size = Vector2(200, 65)
+	record_btn.add_theme_font_size_override("font_size", 28)
+	record_btn.add_theme_color_override("font_color", Color.BLACK)
+	record_btn.add_theme_stylebox_override("normal", sb_btn)
+	record_btn.add_theme_stylebox_override("hover", sb_btn)
+	record_btn.visible = not is_virtual_mode
+	btn_vbox.add_child(record_btn)
+	
+	playback_btn = Button.new()
+	playback_btn.text = "   Nghe Lại   "
+	playback_btn.custom_minimum_size = Vector2(200, 65)
+	playback_btn.add_theme_font_size_override("font_size", 28)
+	playback_btn.add_theme_color_override("font_color", Color.BLACK)
+	playback_btn.add_theme_stylebox_override("normal", sb_btn)
+	playback_btn.add_theme_stylebox_override("hover", sb_btn)
+	playback_btn.visible = not is_virtual_mode
+	playback_btn.disabled = true
+	btn_vbox.add_child(playback_btn)
+	
+	retry_btn = Button.new()
+	retry_btn.text = " 🔄 Làm Lại "
+	retry_btn.custom_minimum_size = Vector2(200, 65)
+	retry_btn.add_theme_font_size_override("font_size", 28)
+	retry_btn.add_theme_color_override("font_color", Color.BLACK)
+	retry_btn.add_theme_stylebox_override("normal", sb_btn)
+	retry_btn.add_theme_stylebox_override("hover", sb_btn)
+	retry_btn.visible = false
+	btn_vbox.add_child(retry_btn)
+	
+	understood_btn = Button.new()
+	understood_btn.text = " ✔️ Đã Hiểu "
+	understood_btn.custom_minimum_size = Vector2(200, 65)
+	understood_btn.add_theme_font_size_override("font_size", 28)
+	understood_btn.add_theme_color_override("font_color", Color.BLACK)
+	understood_btn.add_theme_stylebox_override("normal", sb_btn)
+	understood_btn.add_theme_stylebox_override("hover", sb_btn)
+	understood_btn.visible = false
+	btn_vbox.add_child(understood_btn)
+	
+	var btn_margin = MarginContainer.new()
+	btn_margin.add_theme_constant_override("margin_top", 30)
+	btn_margin.add_theme_constant_override("margin_right", 30)
+	btn_margin.add_child(btn_vbox)
+	add_child(btn_margin)
+	btn_margin.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	
+	sample_btn.pressed.connect(func(): _play_current_sample())
+	record_btn.pressed.connect(func(): _toggle_recording())
+	playback_btn.pressed.connect(func(): _play_recording())
+	retry_btn.pressed.connect(func(): get_tree().reload_current_scene())
+	understood_btn.pressed.connect(func(): _show_completion_modal())
+
+	
 	_build_complete_overlay()
 	_build_flute()
 	
@@ -146,8 +281,8 @@ func _ready():
 		
 		# Setup Intro Speech
 		var txt = ""
-		if LESSON_DIALOGUES.has(active_note):
-			txt = LESSON_DIALOGUES[active_note]["intro"]
+		if LESSON_DIALOGUES.has(active_node_id):
+			txt = LESSON_DIALOGUES[active_node_id]["intro"]
 		else:
 			txt = "Chào mừng bạn đến bài học! Hôm nay chúng ta sẽ làm quen với nốt " + active_note + ", để thổi nốt " + active_note + " bạn " + lesson_info["desc"].to_lower() + ". Nào cùng thử nhé!"
 			
@@ -167,6 +302,8 @@ func _ready():
 
 func _start_virtual():
 	is_virtual_mode = true
+	if record_btn: record_btn.visible = false
+	if playback_btn: playback_btn.visible = false
 	# Reset holes to invisible so user can press them
 	for h in _holes:
 		h.visible = false
@@ -175,6 +312,8 @@ func _start_virtual():
 
 func _start_real():
 	is_virtual_mode = false
+	if record_btn: record_btn.visible = true
+	if playback_btn: playback_btn.visible = true
 	if LESSON_NOTES.has(active_node_id):
 		_show_fingers(LESSON_NOTES[active_node_id]["fingers"])
 	_start_practice()
@@ -188,107 +327,224 @@ func _start_practice():
 	teacher_area.visible = false
 	feedback_area.visible = true
 	analyzer.visible = true
-	mic_status.text = "Đang chờ âm thanh..."
+	
+	if _practice_note_node:
+		_practice_note_node.queue_free()
+		_practice_note_node = null
+		
+	# Populate practice sequence
+	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		_practice_sequence = [{"note": active_note, "duration": REQUIRED_HOLD_TIME, "time": 0.0}]
+	else:
+		_practice_sequence = _generate_melody(active_node_id)
+		if _practice_sequence.is_empty():
+			_practice_sequence.append({"note": active_note, "duration": REQUIRED_HOLD_TIME, "time": 0.0})
+			
+	_current_practice_idx = 0
+	_practice_time = -1.5 # Reset thời gian và cho 1.5s chuẩn bị
+	_spawn_all_practice_notes()
+	_update_practice_fingers()
+
+func _update_practice_fingers():
+	var current_note_name = _practice_sequence[_current_practice_idx]["note"]
+	var req = []
+	for k in LESSON_NOTES.keys():
+		if LESSON_NOTES[k]["note"] == current_note_name:
+			req = LESSON_NOTES[k]["fingers"]
+			break
+			
+	if req.is_empty(): return
+	
+	# Hướng dẫn bấm ngón cho sáo thật
+	if not is_virtual_mode:
+		for i in range(HOLES):
+			_holes[i].get_child(0).visible = req[i]
+			_holes[i].get_child(0).modulate = Color(0.2, 0.8, 0.2, 0.6)
+	else:
+		for i in range(HOLES):
+			_holes[i].get_child(0).visible = virtual_holes_state[i]
+			_holes[i].get_child(0).modulate = Color(1, 1, 1, 1)
+
+	mic_status.text = "Hãy bấm nốt " + current_note_name + " và thổi..."
 	mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 
-func _build_flute():
-	var body_tex = TextureRect.new()
-	if ResourceLoader.exists("res://image/saotruc.png"):
-		body_tex.texture = load("res://image/saotruc.png")
-	body_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	body_tex.stretch_mode = TextureRect.STRETCH_SCALE
-	flute_body.add_child(body_tex)
+func _spawn_all_practice_notes():
+	var container = Control.new()
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.clip_contents = true
+	_practice_note_node = container
 	
-	for i in range(HOLES):
-		var cover = Control.new()
-		cover.custom_minimum_size = Vector2(100, 100)
-		cover.size = Vector2(100, 100)
-		cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		
-		var sb = StyleBoxFlat.new()
-		sb.bg_color = C_GOLD
-		sb.corner_radius_top_left = 18; sb.corner_radius_top_right = 18
-		sb.corner_radius_bottom_left = 18; sb.corner_radius_bottom_right = 18
-		var pnl = Panel.new()
-		pnl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		pnl.add_theme_stylebox_override("panel", sb)
-		pnl.custom_minimum_size = Vector2(36, 36)
-		pnl.set_anchors_preset(Control.PRESET_CENTER)
-		pnl.visible = false
-		cover.add_child(pnl)
-		
-		holes_overlay.add_child(cover)
-		_holes.append(cover)
-		
-		var lane = ColorRect.new()
-		lane.color = Color(1.0, 1.0, 1.0, 0.15)
-		lane.visible = true
-		rhythm_area.add_child(lane)
-		_lanes.append(lane)
-
-# Biến lưu trữ các điểm chạm trên màn hình
-var active_touches = {}
-
-func _input(event):
-	if (current_state != State.PRACTICE and current_state != State.RHYTHM_GAME) or not is_virtual_mode:
-		return
-		
-	var is_touch_event = event is InputEventScreenTouch or event is InputEventScreenDrag
-	var is_mouse_event = event is InputEventMouseButton or event is InputEventMouseMotion
+	var rect = holes_overlay.get_global_rect()
+	var target_y = rect.position.y + rect.size.y * HOLE_PROP_Y + 140
 	
-	if is_touch_event:
-		if event is InputEventScreenTouch:
-			if event.pressed:
-				active_touches[event.index] = event.position
-			else:
-				active_touches.erase(event.index)
-		elif event is InputEventScreenDrag:
-			active_touches[event.index] = event.position
-	elif is_mouse_event:
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			active_touches[-1] = event.position
-		else:
-			active_touches.erase(-1)
-			
-	# Update holes state based on all active touches
-	for i in range(HOLES):
-		var hole_center = _holes[i].global_position + Vector2(50, 50) # 50 is half of 100x100
-		var is_covered = false
-		for touch_pos in active_touches.values():
-			if touch_pos.distance_to(hole_center) < 70.0: # Bán kính siêu rộng 70px
-				is_covered = true
+	container.position = Vector2.ZERO
+	container.size = Vector2(get_viewport_rect().size.x, target_y)
+	
+	var scroll_node = Control.new()
+	scroll_node.name = "ScrollNode"
+	container.add_child(scroll_node)
+	
+	for note_idx in range(_practice_sequence.size()):
+		var note_data = _practice_sequence[note_idx]
+		var note_name = note_data["note"]
+		var n_time = note_data["time"]
+		var n_dur = note_data.get("duration", 1.0)
+		
+		var req = []
+		for k in LESSON_NOTES.keys():
+			if LESSON_NOTES[k]["note"] == note_name:
+				req = LESSON_NOTES[k]["fingers"]
 				break
-		virtual_holes_state[i] = is_covered
-		_holes[i].get_child(0).visible = is_covered
-
-func _show_fingers(fingers: Array):
-	for i in range(HOLES):
-		if i < fingers.size():
-			_holes[i].get_child(0).visible = fingers[i]
-
-func _get_flute_draw_rect() -> Rect2:
-	var img_aspect = 1369.0 / 131.0
-	var avail_w = flute_body.size.x
-	var avail_h = flute_body.size.y
-	if avail_h == 0: return Rect2()
-	var container_aspect = avail_w / avail_h
-	
-	var w = 0.0
-	var h = 0.0
-	if container_aspect > img_aspect:
-		h = avail_h
-		w = h * img_aspect
-	else:
-		w = avail_w
-		h = w / img_aspect
+				
+		var group = Control.new()
+		group.name = "NoteGroup_" + str(note_idx)
 		
-	var x = (avail_w - w) / 2.0
-	var y = avail_h - h - 50.0
-	if y < 0: y = 0
+		var visual_length = n_dur * FALL_SPEED
+		var base_y = target_y - (n_time * FALL_SPEED) - visual_length
+		group.position = Vector2(0, base_y)
+		scroll_node.add_child(group)
+		
+		var blow_bar = ColorRect.new()
+		blow_bar.color = Color(1.0, 1.0, 1.0, 0.1)
+		blow_bar.size = Vector2(rect.size.x, visual_length)
+		blow_bar.position = Vector2(rect.position.x, 0)
+		blow_bar.name = "BlowBar"
+		group.add_child(blow_bar)
+		
+		for i in range(HOLES):
+			if i < req.size() and req[i]:
+				var block = ColorRect.new()
+				block.color = Color(0.9, 0.7, 0.2)
+				var hx = rect.position.x + rect.size.x * HOLE_PROPS_X[i]
+				block.size = Vector2(60, visual_length)
+				block.position = Vector2(hx - 30, 0)
+				
+				var sb = StyleBoxFlat.new()
+				sb.bg_color = block.color
+				sb.corner_radius_top_left = 30; sb.corner_radius_top_right = 30
+				sb.corner_radius_bottom_left = 30; sb.corner_radius_bottom_right = 30
+				
+				var p = Panel.new()
+				p.add_theme_stylebox_override("panel", sb)
+				p.size = block.size
+				p.position = block.position
+				p.name = "Block_" + str(i)
+				group.add_child(p)
+				
+		var lbl = Label.new()
+		lbl.text = note_name
+		lbl.add_theme_font_size_override("font_size", 24)
+		lbl.add_theme_color_override("font_color", Color(1, 1, 1))
+		lbl.position = Vector2(rect.position.x - 60, visual_length - 42)
+		lbl.name = "Label"
+		group.add_child(lbl)
+		
+	rhythm_area.add_child(container)
+
+var sample_player: AudioStreamPlayer
+var sample_playback: AudioStreamGeneratorPlayback
+var sample_active := false
+var sample_phase := 0.0
+var sample_hz := 440.0
+var sample_melody := []
+var sample_melody_time := 0.0
+
+func _setup_sample_player():
+	sample_player = AudioStreamPlayer.new()
+	var stream = AudioStreamGenerator.new()
+	stream.mix_rate = 44100
+	stream.buffer_length = 0.2
+	sample_player.stream = stream
+	add_child(sample_player)
+
+func _play_current_sample():
+	if not sample_player:
+		_setup_sample_player()
 	
-	return Rect2(x, y, w, h)
+	if current_state == State.PRACTICE:
+		_start_practice()
+	
+	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		sample_melody = [{"note": active_note, "time": 1.0, "duration": REQUIRED_HOLD_TIME}]
+	else:
+		sample_melody = _generate_melody(active_node_id)
+		if sample_melody.is_empty():
+			sample_melody.append({"note": active_note, "time": 1.0, "duration": REQUIRED_HOLD_TIME})
+			
+	sample_melody_time = 0.0
+	sample_phase = 0.0
+	sample_hz = 0.0
+	sample_player.play()
+	sample_playback = sample_player.get_stream_playback()
+	sample_active = true
+
+func _process_sample(delta):
+	if not sample_active or not sample_playback: return
+	
+	sample_melody_time += delta
+	var current_hz = 0.0
+	var note_time_elapsed = 0.0
+	var note_duration = 1.0
+	
+	var note_freqs = {
+		"Đô": 523.25, "Rê": 587.33, "Mi": 659.25, "Fa": 698.46,
+		"Sol": 783.99, "La": 880.00, "Si": 987.77, "Đô2": 1046.50
+	}
+	
+	for note_data in sample_melody:
+		var n_time = note_data["time"]
+		var duration = note_data.get("duration", 1.0)
+		if sample_melody_time >= n_time and sample_melody_time <= n_time + duration:
+			var note_name = note_data["note"]
+			if note_freqs.has(note_name):
+				current_hz = note_freqs[note_name]
+			note_time_elapsed = sample_melody_time - n_time
+			note_duration = duration
+			break
+			
+	if current_hz > 0.0:
+		sample_hz = current_hz
+	else:
+		sample_hz = 0.0
+		
+	var frames = sample_playback.get_frames_available()
+	var increment = sample_hz / 44100.0
+	
+	for i in range(frames):
+		var val = 0.0
+		if sample_hz > 0.0:
+			var env = 1.0
+			if note_time_elapsed < 0.05:
+				env = note_time_elapsed / 0.05
+			elif note_time_elapsed > note_duration - 0.05:
+				env = (note_duration - note_time_elapsed) / 0.05
+			env = clamp(env, 0.0, 1.0)
+			
+			var fund = sin(sample_phase * TAU)
+			var h2 = sin(sample_phase * 2.0 * TAU) * 0.3
+			var h3 = sin(sample_phase * 3.0 * TAU) * 0.1
+			var noise = (randf() * 2.0 - 1.0) * 0.03
+			
+			val = (fund + h2 + h3 + noise) * 0.2 * env
+			
+			sample_phase = fmod(sample_phase + increment, 1.0)
+			note_time_elapsed += 1.0 / 44100.0
+			
+		sample_playback.push_frame(Vector2(val, val))
+		
+	if sample_melody.size() > 0:
+		var last_note = sample_melody[sample_melody.size() - 1]
+		var end_time = last_note["time"] + last_note.get("duration", 1.0)
+		if sample_melody_time > end_time + 0.5:
+			sample_active = false
+			sample_player.stop()
+			if current_state == State.PRACTICE:
+				_start_practice()
+			return
 
 func _process(delta):
+	_process_sample(delta)
+
 	var rect = _get_flute_draw_rect()
 	if rect.size.x == 0: return
 	
@@ -308,20 +564,36 @@ func _process(delta):
 		_lanes[i].size = Vector2(4, target_y)
 		
 	if current_state == State.PRACTICE:
-		if is_virtual_mode:
-			_process_virtual(delta)
+		if _practice_note_node:
+			var scroll = _practice_note_node.get_node_or_null("ScrollNode")
+			if scroll:
+				scroll.position.y = _practice_time * FALL_SPEED
+					
+		if sample_active:
+			mic_status.text = "Đang phát nhạc mẫu..."
+			mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+			
+			_practice_time = sample_melody_time
+			_check_auto_advance()
 		else:
-			_process_real(delta)
+			if is_virtual_mode:
+				_process_virtual(delta)
+			else:
+				_process_real(delta)
 	elif current_state == State.RHYTHM_GAME:
 		_process_rhythm(delta, rect)
 
 func _process_rhythm(delta, rect):
+	if has_rhythm_completed: return
+	
 	var amp = analyzer.current_amplitude_db
 	var hz = analyzer.current_pitch
 	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
-	volume_bar.value = vol_ratio
+	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
 	
-	# Determine if there is a note currently overlapping the hit window
+	# Determine if we should advance time
+	var time_delta = delta
+	
 	var current_overlapping_note = null
 	for note_data in active_falling_notes:
 		var target_time = note_data["time"]
@@ -331,10 +603,8 @@ func _process_rhythm(delta, rect):
 			current_overlapping_note = note_data
 			break
 			
-	var time_delta = delta
-	
 	if current_overlapping_note != null:
-		var is_blowing = amp > -40.0
+		var is_blowing = amp > -25.0
 		var is_correct = false
 		
 		if is_virtual_mode:
@@ -347,18 +617,19 @@ func _process_rhythm(delta, rect):
 						break
 				is_correct = matched
 		else:
-			if is_blowing and hz > 100.0:
+			if is_blowing and hz > 350.0 and analyzer.current_tone_quality > 65.0:
 				var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
 				if abs(hz - target_hz_note) < 25.0:
 					is_correct = true
 					
 		if is_correct:
 			time_delta = delta
+			correct_rhythm_duration += delta
 			current_overlapping_note["node"].modulate = Color(0.2, 1.0, 0.2)
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
-			time_delta = -delta * 1.5 # Tua lùi nhanh gấp rưỡi
+			time_delta = -delta * 1.5 # Tua lại nhanh gấp rưỡi nếu sai
 			current_overlapping_note["node"].modulate = Color(1.0, 0.2, 0.2)
 			if is_blowing:
 				mic_status.text = "Sai ngón! Thổi lại..."
@@ -405,6 +676,7 @@ func _process_rhythm(delta, rect):
 		active_falling_notes.erase(r)
 		
 	if spawned_notes >= melody_sequence.size() and active_falling_notes.is_empty():
+		has_rhythm_completed = true
 		_complete_lesson()
 
 func _spawn_falling_note(note_data, rect):
@@ -422,7 +694,8 @@ func _spawn_falling_note(note_data, rect):
 	if fingers.is_empty(): return
 	
 	var container = Control.new()
-	container.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	var blow_bar = ColorRect.new()
 	blow_bar.color = Color(1.0, 1.0, 1.0, 0.1)
@@ -434,14 +707,14 @@ func _spawn_falling_note(note_data, rect):
 		if i < fingers.size() and fingers[i]:
 			var block = ColorRect.new()
 			block.color = Color(0.3, 0.8, 0.9, 0.9)
-			block.size = Vector2(30, length)
+			block.size = Vector2(60, length)
 			var hx = rect.position.x + rect.size.x * HOLE_PROPS_X[i]
-			block.position = Vector2(hx - 15, -length)
+			block.position = Vector2(hx - 30, -length)
 			
 			var sb = StyleBoxFlat.new()
 			sb.bg_color = block.color
-			sb.corner_radius_top_left = 15; sb.corner_radius_top_right = 15
-			sb.corner_radius_bottom_left = 15; sb.corner_radius_bottom_right = 15
+			sb.corner_radius_top_left = 30; sb.corner_radius_top_right = 30
+			sb.corner_radius_bottom_left = 30; sb.corner_radius_bottom_right = 30
 			var pnl = Panel.new()
 			pnl.add_theme_stylebox_override("panel", sb)
 			pnl.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -472,108 +745,233 @@ func _spawn_falling_note(note_data, rect):
 	})
 
 func _generate_melody(target_note_key: String) -> Array:
-	var keys_order = ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
-	var target_idx = keys_order.find(target_note_key)
-	if target_idx == -1: target_idx = 0
-	
 	var seq = []
 	var time = 1.0
 	
-	if target_idx == 0:
-		# Only Si
-		seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.5}); time += 2.0
-		seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.0}); time += 1.5
-		seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 2.0}); time += 2.5
+	if target_note_key == "Node9":
+		# Đô, Sol
+		for i in range(2):
+			seq.append({"note": "Đô", "time": time, "duration": 1.0}); time += 1.5
+		for i in range(2):
+			seq.append({"note": "Sol", "time": time, "duration": 1.0}); time += 1.5
+	elif target_note_key == "Node10":
+		# La
+		for i in range(3):
+			seq.append({"note": "La", "time": time, "duration": 0.8}); time += 1.2
+	elif target_note_key == "Node11":
+		# Câu 1: Đô Đô Sol Sol La La Sol
+		seq.append({"note": "Đô", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Đô", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Sol", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Sol", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "La", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "La", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Sol", "time": time, "duration": 1.5}); time += 2.0
+	elif target_note_key == "Node12":
+		# Fa, Mi
+		for i in range(2):
+			seq.append({"note": "Fa", "time": time, "duration": 1.0}); time += 1.5
+		for i in range(2):
+			seq.append({"note": "Mi", "time": time, "duration": 1.0}); time += 1.5
+	elif target_note_key == "Node13":
+		# Rê
+		for i in range(3):
+			seq.append({"note": "Rê", "time": time, "duration": 0.8}); time += 1.2
+	elif target_note_key == "Node14":
+		# Câu 2: Fa Fa Mi Mi Rê Rê Đô
+		seq.append({"note": "Fa", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Fa", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Mi", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Mi", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Rê", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Rê", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Đô", "time": time, "duration": 1.5}); time += 2.0
+	elif target_note_key == "Node15":
+		# Câu 3: Sol Sol Fa Fa Mi Mi Rê
+		seq.append({"note": "Sol", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Sol", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Fa", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Fa", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Mi", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Mi", "time": time, "duration": 0.5}); time += 0.8
+		seq.append({"note": "Rê", "time": time, "duration": 1.5}); time += 2.0
+	elif target_note_key == "Node16":
+		# Ghép nửa bài (Câu 1 & Câu 2)
+		var notes1 = ["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol"]
+		for n in notes1:
+			var dur = 1.0 if n == "Sol" and notes1.find(n, 4) != -1 else 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+		var notes2 = ["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô"]
+		for n in notes2:
+			var dur = 1.0 if n == "Đô" else 0.5
+			seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node17":
+		# Tập nửa bài nhạc cuối (Câu 3 x2)
+		var notes3 = ["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê"]
+		for i in range(2):
+			for n in notes3:
+				var dur = 1.0 if n == "Rê" else 0.5
+				seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.3
+	elif target_note_key == "Node18":
+		# Đàn Gà Con hoàn chỉnh (Khúc Nhạc Vui)
+		var parts = [
+			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
+			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5],
+			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
+			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
+			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
+			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5]
+		]
+		for p in parts:
+			for i in range(7):
+				var n = p[i]
+				var dur = p[7] if i == 6 else 0.5
+				seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.2
+			time += 0.5
 	else:
-		# Walk down
-		for i in range(target_idx + 1):
-			var note_name = LESSON_NOTES[keys_order[i]]["note"]
-			seq.append({"note": note_name, "time": time, "duration": 1.0})
-			time += 1.5
+		var keys_order = ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
+		var target_idx = keys_order.find(target_note_key)
+		if target_idx == -1: target_idx = 0
+		
+		if target_idx == 0:
+			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.5}); time += 2.0
+			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.0}); time += 1.5
+			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 2.0}); time += 2.5
+		else:
+			for i in range(target_idx + 1):
+				var note_name = LESSON_NOTES[keys_order[i]]["note"]
+				seq.append({"note": note_name, "time": time, "duration": 1.0})
+				time += 1.5
+				
+			var prev_note = LESSON_NOTES[keys_order[target_idx - 1]]["note"]
+			var new_note = LESSON_NOTES[keys_order[target_idx]]["note"]
 			
-		# Do a little pattern at the end with the new note and the previous note
-		var prev_note = LESSON_NOTES[keys_order[target_idx - 1]]["note"]
-		var new_note = LESSON_NOTES[keys_order[target_idx]]["note"]
-		
-		seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
-		seq.append({"note": new_note,  "time": time, "duration": 0.5}); time += 1.0
-		seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
-		seq.append({"note": new_note,  "time": time, "duration": 2.0}); time += 2.5
-		
+			seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
+			seq.append({"note": new_note,  "time": time, "duration": 0.5}); time += 1.0
+			seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
+			seq.append({"note": new_note,  "time": time, "duration": 2.0}); time += 2.5
+			
 	return seq
+
+func _check_auto_advance():
+	if _current_practice_idx >= _practice_sequence.size(): return
+	var note_data = _practice_sequence[_current_practice_idx]
+	var end_time = note_data["time"] + note_data.get("duration", 1.0)
+	if _practice_time >= end_time:
+		_advance_practice_note(true)
+
+func _set_note_color(color: Color):
+	if _practice_note_node:
+		var scroll = _practice_note_node.get_node_or_null("ScrollNode")
+		if scroll:
+			var active_group = scroll.get_node_or_null("NoteGroup_" + str(_current_practice_idx))
+			if active_group:
+				for i in range(HOLES):
+					var block = active_group.get_node_or_null("Block_" + str(i))
+					if block:
+						var sb = block.get_theme_stylebox("panel")
+						if sb is StyleBoxFlat:
+							sb.bg_color = color
+
+func _check_advance(delta: float, is_correct: bool):
+	if _current_practice_idx >= _practice_sequence.size(): return
+	var note_data = _practice_sequence[_current_practice_idx]
+	var start_time = note_data["time"]
+	var end_time = start_time + note_data.get("duration", 1.0)
+	
+	if _practice_time < start_time:
+		_practice_time += delta
+		mic_status.text = "Chuẩn bị..."
+		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
+	else:
+		if is_correct:
+			_practice_time += delta
+			_set_note_color(Color(0.2, 0.8, 0.2)) # Xanh lá
+			var time_left = max(0, step_decimals(end_time - _practice_time))
+			mic_status.text = "Thổi tốt! Giữ thêm " + str(time_left) + "s..."
+			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+			
+			if _practice_time >= end_time:
+				_advance_practice_note()
+		else:
+			# Lùi thời gian về lại vị trí bắt đầu nốt (rewind)
+			_practice_time = max(start_time, _practice_time - delta * 2.5)
+			_set_note_color(Color(0.9, 0.2, 0.2)) # Đỏ
+			mic_status.text = "Sai nốt rồi! Hãy sửa lại."
+			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 
 func _process_virtual(delta):
 	var amp = analyzer.current_amplitude_db
 	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
-	volume_bar.value = vol_ratio
+	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
 	
-	if amp > -40.0:
-		# Check if fingers match exactly
-		var req = LESSON_NOTES[active_node_id]["fingers"]
-		var matched = true
-		for i in range(HOLES):
-			if virtual_holes_state[i] != req[i]:
-				matched = false
-				break
-				
-		if matched:
-			time_correct += delta
-			var time_left = max(0, step_decimals(REQUIRED_HOLD_TIME - time_correct))
-			mic_status.text = "Thổi tốt! Giữ nguyên tay " + str(time_left) + "s..."
-			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+	if _current_practice_idx >= _practice_sequence.size(): return
+	
+	var current_note_name = _practice_sequence[_current_practice_idx]["note"]
+	var req = []
+	for k in LESSON_NOTES.keys():
+		if LESSON_NOTES[k]["note"] == current_note_name:
+			req = LESSON_NOTES[k]["fingers"]
+			break
 			
-			if time_correct >= REQUIRED_HOLD_TIME:
-				_hit_note()
-		else:
-			time_correct = 0.0
-			mic_status.text = "Bấm sai lỗ sáo rồi! Hãy kiểm tra lại tay."
-			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+	var matched = true
+	var is_pressing_anything = false
+	for i in range(HOLES):
+		if virtual_holes_state[i]:
+			is_pressing_anything = true
+		if virtual_holes_state[i] != req[i]:
+			matched = false
+			
+	if matched:
+		_check_advance(delta, 1)
+	elif is_pressing_anything:
+		_check_advance(delta, -1)
 	else:
-		time_correct = 0.0
-		mic_status.text = "Bấm các lỗ và thổi vào Microphone..."
-		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		_check_advance(delta, 0)
+
+func _advance_practice_note(is_auto: bool = false):
+	_current_practice_idx += 1
+	
+	if _current_practice_idx >= _practice_sequence.size():
+		if not is_auto:
+			_hit_note()
+	else:
+		_update_practice_fingers()
+		# The container will naturally continue scrolling down via _practice_time.
+		# Fade out the finished note block
+		if _practice_note_node:
+			var prev_group = _practice_note_node.get_node_or_null("NoteGroup_" + str(_current_practice_idx - 1))
+			if prev_group:
+				var tween = create_tween()
+				tween.tween_property(prev_group, "modulate:a", 0.0, 0.3)
+				tween.tween_callback(prev_group.queue_free)
 
 func _process_real(delta):
 	var amp = analyzer.current_amplitude_db
 	var hz = analyzer.current_pitch
-	
-	# Update volume bar (assuming -60db to 0db range)
 	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
-	volume_bar.value = vol_ratio
+	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
 	
-	if amp > -40.0 and hz > 100.0:
-		# User is blowing!
-		var diff = abs(hz - target_hz)
-		
-		if diff < 25.0:
-			# CORRECT!
-			time_correct += delta
-			var time_left = max(0, step_decimals(REQUIRED_HOLD_TIME - time_correct))
-			mic_status.text = "Thổi đúng! Giữ thêm " + str(time_left) + "s..."
-			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+	if _current_practice_idx >= _practice_sequence.size(): return
+	
+	if amp > -40.0 and hz > 0:
+		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
+		var target_hz = 0.0
+		var note_freqs = {
+			"Đô": 523.25, "Rê": 587.33, "Mi": 659.25, "Fa": 698.46,
+			"Sol": 783.99, "La": 880.00, "Si": 987.77, "Đô2": 1046.50
+		}
+		if note_freqs.has(current_note_name):
+			target_hz = note_freqs[current_note_name]
 			
-			if time_correct >= REQUIRED_HOLD_TIME:
-				_hit_note()
+		var matched = abs(hz - target_hz) < 30.0
+		if matched:
+			_check_advance(delta, 1)
 		else:
-			# INCORRECT! Find closest note
-			time_correct = 0.0
-			var closest_n = ""
-			var min_d = 9999.0
-			for n in NOTE_FREQS.keys():
-				var d = abs(NOTE_FREQS[n] - hz)
-				if d < min_d:
-					min_d = d
-					closest_n = n
-			
-			mic_status.text = "Sai nốt rồi, nốt bạn thổi là " + closest_n + ". (Yêu cầu: " + active_note + ")"
-			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+			_check_advance(delta, -1)
 	else:
-		time_correct = 0.0
-		mic_status.text = "Hãy thổi vào Microphone..."
-		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-
-func step_decimals(val: float) -> float:
-	return round(val * 10.0) / 10.0
+		_check_advance(delta, 0)
 
 func _hit_note():
 	if current_state == State.PRACTICE:
@@ -602,8 +1000,8 @@ func _hit_note():
 		start_rhythm_btn.pressed.connect(_start_rhythm_game)
 		
 		var txt = ""
-		if LESSON_DIALOGUES.has(active_note):
-			txt = LESSON_DIALOGUES[active_note]["mid"]
+		if LESSON_DIALOGUES.has(active_node_id):
+			txt = LESSON_DIALOGUES[active_node_id]["mid"]
 		else:
 			txt = "Tốt lắm! Bạn đã biết cách thổi nốt " + active_note + ". Bây giờ chúng ta cùng thử thổi một đoạn nhạc kết hợp nhé!"
 			
@@ -630,6 +1028,12 @@ func _start_rhythm_game():
 	rhythm_time = -2.0 # 2 seconds delay
 	spawned_notes = 0
 	active_falling_notes.clear()
+	total_rhythm_duration = 0.0
+	correct_rhythm_duration = 0.0
+	has_rhythm_completed = false
+	for note in melody_sequence:
+		total_rhythm_duration += note.get("duration", 1.0)
+
 
 func _complete_lesson():
 	current_state = State.COMPLETED
@@ -642,26 +1046,35 @@ func _complete_lesson():
 	instruction_lbl.visible = false
 	sub_instruction_lbl.visible = false
 	
+	if sample_btn: sample_btn.visible = false
+	if record_btn: record_btn.visible = false
+	if playback_btn: playback_btn.visible = false
+	
+	if retry_btn: retry_btn.visible = true
+	if understood_btn: understood_btn.visible = true
+
+func _show_completion_modal():
+	if retry_btn: retry_btn.visible = false
+	if understood_btn: understood_btn.visible = false
+	
+	var acc = 0.0
+	if total_rhythm_duration > 0.0:
+		acc = correct_rhythm_duration / total_rhythm_duration
+		
 	if complete_overlay:
 		complete_overlay.visible = true
-	
-	if ResourceLoader.exists("res://assets/sounds/success.ogg"):
-		var audio = AudioStreamPlayer.new()
-		audio.stream = load("res://assets/sounds/success.ogg")
-		add_child(audio)
-		audio.play()
-
-func _on_back():
-	get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
-
-func _on_retry():
-	get_tree().reload_current_scene()
-
-func _on_complete():
-	var idx = LESSON_NOTES.keys().find(active_node_id)
-	if idx != -1:
-		SecureDataManager.complete_lesson(SecureDataManager.data.get("selected_instrument", "sao_truc"), active_node_id, 3)
-	get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
+		if total_rhythm_duration > 0.0:
+			var vbox = complete_overlay.get_node_or_null("MarginContainer/VBoxContainer")
+			if vbox:
+				var pct_lbl = vbox.get_node_or_null("AccuracyLbl")
+				if not pct_lbl:
+					pct_lbl = Label.new()
+					pct_lbl.name = "AccuracyLbl"
+					pct_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					pct_lbl.add_theme_font_size_override("font_size", 42)
+					pct_lbl.add_theme_color_override("font_color", C_GOLD)
+					vbox.add_child(pct_lbl)
+				pct_lbl.text = "Độ chính xác: %d%%" % int(acc * 100)
 
 func _build_complete_overlay():
 	complete_overlay = ColorRect.new()
@@ -799,3 +1212,147 @@ func _build_complete_overlay():
 	vbox.add_child(hbox)
 	
 	add_child(complete_overlay)
+
+
+# RESTORED FUNCTIONS
+func _build_flute():
+	var body_tex = TextureRect.new()
+	if ResourceLoader.exists("res://image/saotruc.png"):
+		body_tex.texture = load("res://image/saotruc.png")
+	body_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	body_tex.stretch_mode = TextureRect.STRETCH_SCALE
+	flute_body.add_child(body_tex)
+	
+	for i in range(HOLES):
+		var cover = Control.new()
+		cover.custom_minimum_size = Vector2(100, 100)
+		cover.size = Vector2(100, 100)
+		cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = C_GOLD
+		sb.corner_radius_top_left = 18; sb.corner_radius_top_right = 18
+		sb.corner_radius_bottom_left = 18; sb.corner_radius_bottom_right = 18
+		var pnl = Panel.new()
+		pnl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pnl.add_theme_stylebox_override("panel", sb)
+		pnl.custom_minimum_size = Vector2(36, 36)
+		pnl.set_anchors_preset(Control.PRESET_CENTER)
+		pnl.visible = false
+		cover.add_child(pnl)
+		
+		holes_overlay.add_child(cover)
+		_holes.append(cover)
+		
+		var lane = ColorRect.new()
+		lane.color = Color(1.0, 1.0, 1.0, 0.15)
+		lane.visible = true
+		rhythm_area.add_child(lane)
+		_lanes.append(lane)
+
+# Biáº¿n lÆ°u trá»_ cA¡c Ä`iá»ƒm cháº¡m trAªn mA n hA¬nh
+var active_touches = {}
+
+func _input(event):
+	if (current_state != State.PRACTICE and current_state != State.RHYTHM_GAME) or not is_virtual_mode:
+		return
+		
+	var is_touch_event = event is InputEventScreenTouch or event is InputEventScreenDrag
+	var is_mouse_event = event is InputEventMouseButton or event is InputEventMouseMotion
+	
+	if is_touch_event:
+		if event is InputEventScreenTouch:
+			if event.pressed:
+				active_touches[event.index] = event.position
+			else:
+				active_touches.erase(event.index)
+		elif event is InputEventScreenDrag:
+			active_touches[event.index] = event.position
+	elif is_mouse_event:
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			active_touches[-1] = event.position
+		else:
+			active_touches.erase(-1)
+			
+	# Update holes state based on all active touches
+	for i in range(HOLES):
+		var hole_center = _holes[i].global_position + Vector2(50, 50) # 50 is half of 100x100
+		var is_covered = false
+		for touch_pos in active_touches.values():
+			if touch_pos.distance_to(hole_center) < 70.0: # BA¡n kA-nh siAªu rá»Tng 70px
+				is_covered = true
+				break
+		virtual_holes_state[i] = is_covered
+		_holes[i].get_child(0).visible = is_covered
+
+func _show_fingers(fingers: Array):
+	for i in range(HOLES):
+		if i < fingers.size():
+			_holes[i].get_child(0).visible = fingers[i]
+
+func _get_flute_draw_rect() -> Rect2:
+	var img_aspect = 1369.0 / 131.0
+	var avail_w = flute_body.size.x
+	var avail_h = flute_body.size.y
+	if avail_h == 0: return Rect2()
+	var container_aspect = avail_w / avail_h
+	
+	var w = 0.0
+	var h = 0.0
+	if container_aspect > img_aspect:
+		h = avail_h
+		w = h * img_aspect
+	else:
+		w = avail_w
+		h = w / img_aspect
+		
+	var x = (avail_w - w) / 2.0
+	var y = avail_h - h - 50.0
+	if y < 0: y = 0
+	
+	return Rect2(x, y, w, h)
+
+
+
+func step_decimals(val: float) -> float:
+	return round(val * 10.0) / 10.0
+
+
+
+
+func _toggle_recording():
+	if _is_recording:
+		_recorded_stream = analyzer.stop_recording()
+		_is_recording = false
+		record_btn.text = "   Thu Âm   "
+		record_btn.add_theme_color_override("font_color", Color.BLACK)
+		if _recorded_stream:
+			playback_btn.disabled = false
+	else:
+		if analyzer.start_recording():
+			_is_recording = true
+			record_btn.text = " Đang Thu... "
+			record_btn.add_theme_color_override("font_color", Color(0.8, 0.1, 0.1))
+			playback_btn.disabled = true
+
+func _play_recording():
+	if not _playback_player:
+		_playback_player = AudioStreamPlayer.new()
+		add_child(_playback_player)
+	
+	if _recorded_stream:
+		# Optionally, set the playback stream mix rate to match the recording
+		# (AudioEffectRecord automatically records at the bus mix rate)
+		_playback_player.stream = _recorded_stream
+		_playback_player.play()
+
+func _on_back():
+	get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
+
+func _on_complete():
+	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
+	SecureDataManager.complete_lesson(inst, active_node_id, 3)
+	get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
+
+func _on_retry():
+	get_tree().reload_current_scene()

@@ -145,13 +145,19 @@ func _setup_drawing_callbacks() -> void:
 		var cx := vis_basic.size.x / 2.0
 		var cy := vis_basic.size.y / 2.0
 		var r := 34.0
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var is_completed = SecureDataManager.is_lesson_completed(inst, "Node1")
+		var pct = 1.0 if is_completed else 0.0
+		var pct_str = "100%" if is_completed else "0%"
+		
 		# Gray outer ring
 		vis_basic.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-		# Gold progress ring (60% master)
-		vis_basic.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + 0.6 * TAU, 32, C_GOLD_GLOW, 7.0, true)
+		# Gold progress ring
+		if pct > 0:
+			vis_basic.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + pct * TAU, 32, C_GOLD_GLOW, 7.0, true)
 		# Draw percentage text in the center
 		var font := vis_basic.get_theme_font("font")
-		vis_basic.draw_string(font, Vector2(cx - 18, cy + 6), "60%", HORIZONTAL_ALIGNMENT_CENTER, -1, 18, C_CREAM)
+		vis_basic.draw_string(font, Vector2(cx - 22 if is_completed else cx - 12, cy + 6), pct_str, HORIZONTAL_ALIGNMENT_CENTER, -1, 18, C_CREAM)
 	)
 	
 	# Card Essentials Graphic
@@ -595,11 +601,11 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "Nhập Môn Đàn Tranh"
 		basic_desc.text = "Học tư thế ngồi, cách đeo móng gảy và gảy các âm cơ bản trên dây tranh."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 60% Hoàn Thành"
+		basic_details.text = "📖 Lý Thuyết | ⭐ 5 Sao | 100% Hoàn Thành" if SecureDataManager.is_lesson_completed(instrument, "Node1") else "📖 Lý Thuyết | ⭐ 0 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "Kỹ Thuật Nhấn Rung"
 		ess_desc.text = "Luyện nhấn dây (nhấn 1/2 âm, 1 âm) và rung dây bằng tay trái tạo hồn cho nhạc."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		ess_details.text = "📖 3 Bài Học | 🔒 Mở khóa sau khi hoàn thành Nhập Môn" if not SecureDataManager.is_lesson_completed(instrument, "Node1") else "📖 3 Bài Học | Mở Khóa"
 		
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Hợp Âm"
@@ -622,11 +628,11 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "Nhập Môn Đàn Bầu"
 		basic_desc.text = "Học tư thế ngồi, cách cầm que gảy và gảy các âm bồi/hài âm cơ bản trên một dây."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 40% Hoàn Thành"
+		basic_details.text = "📖 Lý Thuyết | ⭐ 5 Sao | 100% Hoàn Thành" if SecureDataManager.is_lesson_completed(instrument, "Node1") else "📖 Lý Thuyết | ⭐ 0 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "Kỹ Thuật Uốn Cần"
 		ess_desc.text = "Luyện kỹ thuật uốn cần đàn luyến láy để thay đổi cao độ tiếng đàn ngân nga."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		ess_details.text = "📖 3 Bài Học | 🔒 Mở khóa sau khi hoàn thành Nhập Môn" if not SecureDataManager.is_lesson_completed(instrument, "Node1") else "📖 3 Bài Học | Mở Khóa"
 		
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Đệm Hát"
@@ -649,26 +655,26 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "Nhập Môn Sáo Trúc"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 60% Hoàn Thành"
+		basic_details.text = "📖 Lý Thuyết | ⭐ 5 Sao | 100% Hoàn Thành" if SecureDataManager.is_lesson_completed(instrument, "Node1") else "📖 Lý Thuyết | ⭐ 0 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "Bấm Ngón & Lấy Hơi"
 		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		ess_details.text = "📖 3 Bài Học | 🔒 Mở khóa sau khi hoàn thành Nhập Môn" if not SecureDataManager.is_lesson_completed(instrument, "Node1") else "📖 3 Bài Học | Mở Khóa"
 		
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Hòa Tấu"
 		
 		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
-		soloist_skills_bullets.text = "✓ Kỹ thuật Láy ngón, Rung ngón\n✓ Kỹ thuật Réo rắt, Vuốt sáo\n✓ Đọc sáo phổ Ngũ cung"
+		soloist_skills_bullets.text = "✓ Hành trình bài hát Khúc Nhạc Vui\n✓ Luyện tập từng nốt nhạc cơ bản\n✓ Thử thách kết hợp (Rhythm Game)"
 		
-		chords_skills_title.text = "Kỹ Năng Hòa Tấu"
-		chords_skills_bullets.text = "✓ Thổi bè hòa âm phụ họa\n✓ Hòa tấu cùng các nhạc cụ dân tộc\n✓ Kỹ thuật thổi đệm bè nâng cao"
+		chords_skills_title.text = "Kỹ Năng Đệm & Hòa Tấu"
+		chords_skills_bullets.text = "✓ Kỹ thuật thổi đệm theo ca sĩ\n✓ Hòa tấu cùng nhạc cụ dân tộc\n✓ Kỹ thuật bè đuổi, bè hòa âm"
 		
 		classical_title.text = "Làn Điệu Quê Hương"
-		classical_desc.text = "✓ Lý Hoài Nam (Dân ca)\n✓ Lòng Mẹ (Sáo độc tấu)\n✓ Thổi sáo truyền cảm cổ truyền"
+		classical_desc.text = "✓ Lý Hoài Nam (Dân ca Trung Bộ)\n✓ Xuân Về Bản Mèo (Độc tấu)\n✓ Nhạc lý Sáo Trúc dân gian"
 		
-		pop_chords_title.text = "Sáo Trúc Pop"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
+		pop_chords_title.text = "Sáo Trúc Đương Đại"
+		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc trẻ)\n✓ Thổi Sáo trên nền Beat nhạc"
 
 	# ── Style Card Basic — deep jade, gold border, warm glow ─────────────────
 	var basic_sb := _flat(C_CARD_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 20)
@@ -803,19 +809,22 @@ func _connect_buttons() -> void:
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-			if SecureDataManager.is_lesson_completed(inst, "Node2"):
-				SecureDataManager.active_lesson_id = "Node3"
-				_go_practice_room_for_node(3)
+			if inst == "dan_tranh":
+				_show_course_detail("Kỹ Thuật Nhấn Rung", 2, 7)
+			elif inst == "dan_bau":
+				_show_course_detail("Kỹ Thuật Uốn Cần", 2, 7)
 			else:
-				SecureDataManager.active_lesson_id = "Node2"
-				_go_practice_room_for_node(2)
+				_show_course_detail("Bấm Ngón & Lấy Hơi", 2, 7)
 	)
 	
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_soloist.pressed.connect(func() -> void:
-		SecureDataManager.active_lesson_id = "Node4"
-		_go_practice_room_for_node(4)
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		if inst == "sao_truc":
+			_show_course_detail("Kỹ Năng Độc Tấu", 9, 10)
+		else:
+			_show_course_detail("Kỹ Năng Độc Tấu", 4, 3)
 	)
 	_make_btn_bouncy(play_soloist)
 	
@@ -834,13 +843,13 @@ func _connect_buttons() -> void:
 	# Unlock Buttons -> Virtual Artist Mai popup
 	var unlock_sol := card_soloist_unlock.get_node("Margin/VBox/BtnUnlock") as Button
 	unlock_sol.pressed.connect(func() -> void:
-		VirtualArtist.play_happy("Chúc mừng! Bạn đã tích lũy đủ XP để mở khóa con đường Độc Tấu.")
+		pass
 	)
 	_make_btn_bouncy(unlock_sol)
 
 	var unlock_cho := card_chords_unlock.get_node("Margin/VBox/BtnUnlock") as Button
 	unlock_cho.pressed.connect(func() -> void:
-		VirtualArtist.play_happy("Chúc mừng! Bạn đã sẵn sàng mở khóa con đường Hợp Âm.")
+		pass
 	)
 	_make_btn_bouncy(unlock_cho)
 
@@ -1059,3 +1068,17 @@ func _on_viewport_size_changed() -> void:
 	
 	# Redraw to update paths
 	roadmap_content.queue_redraw()
+
+# ─── Course Detail Popup ───────────────────────────────────────────────────────
+func _get_max_unlocked_node(inst: String) -> int:
+	if SecureDataManager.is_lesson_completed(inst, "Node4"): return 5
+	if SecureDataManager.is_lesson_completed(inst, "Node3"): return 4
+	if SecureDataManager.is_lesson_completed(inst, "Node2"): return 3
+	if SecureDataManager.is_lesson_completed(inst, "Node1"): return 2
+	return 1
+
+func _show_course_detail(title: String, start_node: int, count: int) -> void:
+	SecureDataManager.active_course_title = title
+	SecureDataManager.active_course_start_node = start_node
+	SecureDataManager.active_course_node_count = count
+	_fade_to("res://scenes/CourseDetailScreen.tscn")

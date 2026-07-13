@@ -9,6 +9,7 @@ const C_GOLD_LIGHT  := Color(1.00, 0.87, 0.45, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 
 var _effect: AudioEffectCapture
+var _record_effect: AudioEffectRecord
 var _bus_index := -1
 var _sample_history := PackedFloat32Array()
 const MAX_SAMPLES := 180
@@ -25,9 +26,9 @@ var _analyzer: RefCounted = null
 var _sliding_window := PackedFloat32Array()
 
 # Dynamic configurations for pitch detection and noise gating
-var min_frequency := 200.0
-var max_frequency := 2200.0
-var volume_threshold_db := -30.0
+var min_frequency := 400.0
+var max_frequency := 2500.0
+var volume_threshold_db := -20.0
 
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
@@ -69,6 +70,19 @@ func _setup_audio_bus() -> void:
 		AudioServer.add_bus_effect(_bus_index, _effect, 0)
 	else:
 		_effect = AudioServer.get_bus_effect(_bus_index, effect_index) as AudioEffectCapture
+		
+	# Add AudioEffectRecord for user recording
+	var rec_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectRecord:
+			rec_idx = i
+			break
+			
+	if rec_idx == -1:
+		_record_effect = AudioEffectRecord.new()
+		AudioServer.add_bus_effect(_bus_index, _record_effect)
+	else:
+		_record_effect = AudioServer.get_bus_effect(_bus_index, rec_idx) as AudioEffectRecord
 
 	# Setup microphone input player dynamically
 	_mic_player = AudioStreamPlayer.new()
@@ -105,7 +119,7 @@ func _process(delta: float) -> void:
 				current_amplitude_db = _analyzer.calculate_peak_db(mono_samples)
 				
 				if current_amplitude_db > volume_threshold_db:
-					var detected_pitch = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.15, min_frequency, max_frequency)
+					var detected_pitch = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.08, min_frequency, max_frequency)
 					if detected_pitch > 0.0:
 						current_pitch = lerp(current_pitch, detected_pitch, 0.70)
 					else:
@@ -126,7 +140,7 @@ func _process(delta: float) -> void:
 					if _time_since_last_pitch >= 0.03:
 						_time_since_last_pitch = 0.0
 						if _analysis_buffer.size() >= 512:
-							var detected_pitch = _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.15)
+							var detected_pitch = _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
 							if detected_pitch > 0.0:
 								current_pitch = lerp(current_pitch, detected_pitch, 0.70)
 							else:
@@ -488,3 +502,16 @@ func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
 		
 	return clamp((0.7 * purity_factor + 0.3 * stability_factor) * 100.0, 0.0, 100.0)
 
+
+
+func start_recording() -> bool:
+	if _record_effect:
+		_record_effect.set_recording_active(true)
+		return true
+	return false
+	
+func stop_recording() -> AudioStreamWAV:
+	if _record_effect:
+		_record_effect.set_recording_active(false)
+		return _record_effect.get_recording()
+	return null
