@@ -25,11 +25,11 @@ func _ready() -> void:
 	margin.add_theme_constant_override("margin_left", 40)
 	margin.add_theme_constant_override("margin_right", 40)
 	margin.add_theme_constant_override("margin_top", 40)
-	margin.add_theme_constant_override("margin_bottom", 40)
+	margin.add_theme_constant_override("margin_bottom", 20)
 	add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 20)
+	vbox.add_theme_constant_override("separation", 10)
 	margin.add_child(vbox)
 	
 	# Header HBox
@@ -105,8 +105,8 @@ func _ready() -> void:
 	
 	var scroll_margin = MarginContainer.new()
 	scroll_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll_margin.add_theme_constant_override("margin_top", 40)
-	scroll_margin.add_theme_constant_override("margin_bottom", 40)
+	scroll_margin.add_theme_constant_override("margin_top", 10)
+	scroll_margin.add_theme_constant_override("margin_bottom", 20)
 	scroll.add_child(scroll_margin)
 	
 	_lessons_box = HBoxContainer.new()
@@ -157,7 +157,7 @@ func _build_lessons() -> void:
 		card_wrapper.add_child(card)
 		
 		var card_vbox = VBoxContainer.new()
-		card_vbox.add_theme_constant_override("separation", 20)
+		card_vbox.add_theme_constant_override("separation", 10)
 		card.add_child(card_vbox)
 		
 		# Thumbnail Image (Circular)
