@@ -421,7 +421,7 @@ func _va_success_prompt() -> void:
 
 func _on_complete() -> void:
 	video_stream_player.stop()
-	var inst := InstrumentSelect.selected_instrument
+	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
 	var lesson_id := SecureDataManager.active_lesson_id
 	SecureDataManager.complete_lesson(inst, lesson_id, 3) # Mark Intro completed with 3 stars securely!
 	SecureDataManager.video_completed = true
@@ -430,8 +430,9 @@ func _on_complete() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if lesson_id.begins_with("dan_bau_coban_"):
-			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
+		if lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
 		else:
 			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
@@ -443,10 +444,7 @@ func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
-			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
-		else:
-			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:

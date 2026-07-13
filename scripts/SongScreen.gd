@@ -176,6 +176,19 @@ const SONGS_DATA := [
 		"genre_label": "Dân ca",
 		"xp": 160,
 		"sheet": ["Đô","Mi","Fa","La","Si","La","Fa","Mi","Rê","Đô","La"]
+	},
+	{
+		"id": "song_012",
+		"title": "Gió Đánh Đò Đưa",
+		"desc": "Làn điệu dân ca Quan họ Bắc Ninh vui tươi rộn rã, cực kỳ tình cảm khi ngân vang trên Đàn Bầu.",
+		"instrument": "dan_bau",
+		"instrument_label": "Đàn Bầu",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0), # Gold
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 180,
+		"sheet": ["Rê", "Rê", "Fa", "Sol", "Mi", "Sol", "Đô", "Đô", "Rê", "Mi", "Rê", "Đô", "Đô", "Rê", "Mi", "Rê", "Rê", "Đô", "La", "Sol", "La", "Đô", "Rê", "Đô", "La", "Sol", "Mi", "Sol", "La", "Sol", "Mi", "Mi", "Mi", "Sol", "La", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "La", "Đô", "Rê", "Đô"]
 	}
 ]
 

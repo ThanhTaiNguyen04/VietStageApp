@@ -1190,12 +1190,12 @@ func _play_flute_sound(note: String) -> void:
 		
 	_active_player = AudioStreamPlayer.new()
 	_active_player.stream = _flute_streams[note]
-	_active_player.volume_db = -80.0 if _recording else -3.0
+	_active_player.volume_db = -80.0 if (_recording and _mic_mode) else -3.0
 	add_child(_active_player)
 	_active_player.play()
 
 func _play_preview_or_sound() -> void:
-	if _recording: return
+	if _recording and _mic_mode: return
 	var current_note = _get_current_note()
 	_play_flute_sound(current_note)
 	if not _recording:

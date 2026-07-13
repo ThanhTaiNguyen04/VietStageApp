@@ -25,7 +25,6 @@ var _time : float = 0.0
 var _sidebar_icons_cache := {}
 var btn_minigame : Button
 var btn_minigame_mob : Button
-const LESSON_DAN_BAU_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -91,8 +90,6 @@ func _ready() -> void:
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)
 	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
-
-	_prepare_clean_entry_state()
 	
 	_build_sidebar()
 	_build_bottom_bar()
@@ -100,32 +97,33 @@ func _ready() -> void:
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
+	_animate_in()
+	
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.38)
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_on_viewport_size_changed()
-	_animate_in()
+
+	avatar_circle.hide()
 
 func _process(delta: float) -> void:
 	_time += delta
 	bg_canvas.queue_redraw()
 	roadmap_content.queue_redraw()
-
-func _prepare_clean_entry_state() -> void:
-	get_tree().paused = false
-	process_mode = Node.PROCESS_MODE_INHERIT
-	modulate = Color.WHITE
-	self_modulate = Color.WHITE
-	visible = true
-	avatar_circle.hide()
-	for node in [bg_canvas, sidebar, bottom_bar, top_bar, roadmap_scroll, roadmap_content]:
-		var canvas_item := node as CanvasItem
-		if canvas_item:
-			canvas_item.modulate = Color.WHITE
-			canvas_item.self_modulate = Color.WHITE
-	for popup_name in ["AIChatPopup", "AIChatPopupRoot", "CustomPopup", "DimBG", "OverlayBG", "IntroOverlay"]:
-		var popup: Node = get_tree().root.find_child(popup_name, true, false)
-		if popup and not is_ancestor_of(popup):
-			popup.queue_free()
+	
+	# Ép chặt tọa độ Y để các thẻ Đàn Bầu tạo thành một đường thẳng ngang hoàn hảo
+	# Cách này chống lại việc Godot tự reset vị trí layout sau hàm _ready
+	if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_bau":
+		card_soloist_skills.position.y = 275
+		card_chords_skills.position.y = 275
+		card_pop_chords.position.y = 275
+		
+		# Khóa luôn trục X sau 1s để không ảnh hưởng đến animation trượt vào lúc đầu
+		if _time > 1.0:
+			card_soloist_skills.position.x = 1060
+			card_chords_skills.position.x = 1570
+			card_pop_chords.position.x = 2080
 
 # ─── Drawing Callbacks ────────────────────────────────────────────────────────
 func _setup_drawing_callbacks() -> void:
@@ -145,19 +143,19 @@ func _setup_drawing_callbacks() -> void:
 		var r := 34.0
 		# Gray outer ring
 		vis_basic.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-
-		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		var pct := 0.0
 		if inst == "dan_bau":
 			var stats := _get_dan_bau_card_status("basic")
-			pct = float(stats["pct"])
-		elif SecureDataManager.is_lesson_completed(inst, "Node1"):
-			pct = 100.0
-
+			pct = stats["pct"]
+		else:
+			if SecureDataManager.is_lesson_completed(inst, "Node1"):
+				pct = 100.0
+		
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_basic.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
-
 		# Draw percentage text in the center
 		var font := vis_basic.get_theme_font("font")
 		var pct_text := str(int(pct)) + "%"
@@ -172,20 +170,20 @@ func _setup_drawing_callbacks() -> void:
 		var cy := vis_essentials.size.y / 2.0
 		var r := 34.0
 		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-
-		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		var pct := 0.0
 		if inst == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
-			pct = float(stats["pct"])
+			pct = stats["pct"]
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node2"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
-
+			
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_essentials.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
-
+		# Draw percentage text in the center
 		var font := vis_essentials.get_theme_font("font")
 		var pct_text := str(int(pct)) + "%"
 		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
@@ -269,21 +267,36 @@ func _draw_roadmap_paths() -> void:
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
 		
-	# Draw roadmap line segments connecting cards
-	# Basic Card -> Essentials Card -> Split point
-	_draw_thick_path(p_basic, p_ess)
-	
-	# Essentials split into Soloist and Chords paths
-	_draw_curved_path(p_ess, p_sol_un)
-	_draw_curved_path(p_ess, p_cho_un)
-	
-	# Top Path (Soloist): SoloistUnlock -> SoloistSkills -> Classical
-	_draw_thick_path(p_sol_un, p_sol_sk)
-	_draw_thick_path(p_sol_sk, p_class)
-	
-	# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
-	_draw_thick_path(p_cho_un, p_cho_sk)
-	_draw_thick_path(p_cho_sk, p_pop)
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "dan_bau":
+		# Ép tọa độ Y của các điểm neo bằng nhau để đường vàng vẽ thẳng tắp 100%
+		var straight_y = p_basic.y
+		p_ess.y = straight_y
+		p_sol_sk.y = straight_y
+		p_cho_sk.y = straight_y
+		p_pop.y = straight_y
+		
+		# Đường thẳng duy nhất nằm ngang cho Đàn Bầu
+		_draw_thick_path(p_basic, p_ess)
+		_draw_thick_path(p_ess, p_sol_sk)
+		_draw_thick_path(p_sol_sk, p_cho_sk)
+		_draw_thick_path(p_cho_sk, p_pop)
+	else:
+		# Draw roadmap line segments connecting cards
+		# Basic Card -> Essentials Card -> Split point
+		_draw_thick_path(p_basic, p_ess)
+		
+		# Essentials split into Soloist and Chords paths
+		_draw_curved_path(p_ess, p_sol_un)
+		_draw_curved_path(p_ess, p_cho_un)
+		
+		# Top Path (Soloist): SoloistUnlock -> SoloistSkills -> Classical
+		_draw_thick_path(p_sol_un, p_sol_sk)
+		_draw_thick_path(p_sol_sk, p_class)
+		
+		# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
+		_draw_thick_path(p_cho_un, p_cho_sk)
+		_draw_thick_path(p_cho_sk, p_pop)
 
 func _draw_thick_path(from: Vector2, to: Vector2) -> void:
 	roadmap_content.draw_line(from + Vector2(0, 3), to + Vector2(0, 3), C_PATH_SHADOW, 10.0, true)
@@ -338,22 +351,6 @@ func _build_sidebar() -> void:
 	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
-
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_account,  false)
-
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_account,  5)
-
-	_active_side_btn = btn_courses
 
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
@@ -414,6 +411,22 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	ic.offset_top = 6;    ic.offset_bottom = 38
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
+
+	_style_side_icon_btn(btn_menu,     false)
+	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
+	_style_side_icon_btn(btn_songs,    false)
+	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_account,  false)
+
+	_attach_icon_draw(btn_menu,     0)
+	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
+	_attach_icon_draw(btn_songs,    2)
+	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_account,  5)
+
+	_active_side_btn = btn_courses
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
@@ -520,7 +533,7 @@ func _build_top_bar() -> void:
 	ring_draw.draw.connect(func() -> void:
 		var sz := ring_draw.size
 		var c  := sz / 2.0
-		var r: float = minf(c.x, c.y) - 3.0
+		var r  := minf(c.x, c.y) - 3.0
 		# Vòng nhẫn vàng ngoài cùng
 		ring_draw.draw_arc(c, r, 0, TAU, 64, C_GOLD, 3.0, true)
 		# Vòng nhẫn vàng nhạt phát sáng
@@ -542,11 +555,11 @@ func _build_top_bar() -> void:
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
 func _build_roadmap_cards() -> void:
-	var instrument: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
 	
 	# Main labels styling
-	var font_title: Font = load("res://assets/fonts/Lora-Bold.ttf") as Font
+	var font_title := load("res://assets/fonts/Lora-Bold.ttf")
 	if font_title:
 		roadmap_guide.add_theme_font_override("font", font_title)
 		path_soloist_title.add_theme_font_override("font", font_title)
@@ -580,6 +593,18 @@ func _build_roadmap_cards() -> void:
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
 
+	# Hiển thị lại các thẻ bị ẩn nếu chuyển về đàn tranh / sáo trúc
+	card_soloist_unlock.show()
+	card_chords_unlock.show()
+	card_classical.show()
+	path_soloist_title.show()
+	path_chords_title.show()
+	
+	# Khôi phục vị trí gốc cho các nhánh
+	card_soloist_skills.position = Vector2(1410, 95)
+	card_chords_skills.position = Vector2(1410, 455)
+	card_pop_chords.position = Vector2(1930, 455)
+
 	if instrument == "dan_tranh":
 		# Lộ trình Đàn Tranh
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -608,32 +633,41 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = "Đệm Hát Hiện Đại"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Đất Phương Nam (Đệm hát)\n✓ Nhạc Pop & Quê hương trữ tình"
 	elif instrument == "dan_bau":
+		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
+		card_soloist_unlock.hide()
+		card_chords_unlock.hide()
+		card_classical.hide()
+		path_soloist_title.hide()
+		path_chords_title.hide()
+		
+		# BẮT BUỘC ĐƯA CÁC THẺ VỀ CÙNG 1 ĐƯỜNG THẲNG NGANG (Y = 275)
+		card_soloist_skills.position = Vector2(1060, 275)
+		card_chords_skills.position = Vector2(1570, 275)
+		card_pop_chords.position = Vector2(2080, 275)
+		
 		# Lộ trình Đàn Bầu
-		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
-		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
+		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
+		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
+		basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
 		
-		basic_title.text = "Nhập Môn Đàn Bầu"
-		basic_desc.text = "Học tư thế ngồi, cách cầm que gảy và gảy các âm bồi/hài âm cơ bản trên một dây."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 40% Hoàn Thành"
+		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
+		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
+		ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
-		ess_title.text = "Kỹ Thuật Uốn Cần"
-		ess_desc.text = "Luyện kỹ thuật uốn cần đàn luyến láy để thay đổi cao độ tiếng đàn ngân nga."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		soloist_unlock_title.text = "LEVEL 3"
+		chords_unlock_title.text = "LEVEL 4"
 		
-		soloist_unlock_title.text = "Độc Tấu"
-		chords_unlock_title.text = "Đệm Hát"
+		soloist_skills_title.text = "LEVEL 3: UYỂN CHUYỂN"
+		soloist_skills_bullets.text = "✓ Làm chủ kỹ thuật chùng dây\n✓ Đẩy cần đàn về phía thân người\n✓ Bài hát: Lý Cây Đa"
 		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
-		soloist_skills_bullets.text = "✓ Kỹ thuật Hài âm nâng cao\n✓ Rung cần tạo ngân rung sâu\n✓ Đọc nhạc phổ Độc huyền cầm"
+		chords_skills_title.text = "LEVEL 4: KỸ THUẬT LUYẾN ÂM"
+		chords_skills_bullets.text = "✓ Đánh các nốt luyến dài\n✓ Kỹ thuật Luyến 2 chiều\n✓ Bài hát: Cò Lả & Auld Lang Syne"
 		
-		chords_skills_title.text = "Đệm Hát Đàn Bầu"
-		chords_skills_bullets.text = "✓ Cách uốn nốt theo lời ca\n✓ Đệm các làn điệu dân ca cổ\n✓ Kỹ thuật luyến láy lướt âm"
+		classical_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
+		classical_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Nghệ thuật Hòa tấu (Ensemble)\n✓ Boss Stage: Biểu diễn bằng tai"
 		
-		classical_title.text = "Nhạc Cổ Truyền"
-		classical_desc.text = "✓ Dạ Cổ Hoài Lang (Đàn Bầu)\n✓ Làn điệu cổ truyền Bắc Bộ\n✓ Độc tấu nhạc cổ điệu da diết"
-		
-		pop_chords_title.text = "Đệm Hát Quê Hương"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Trống Cơm / Lý Kéo Chài\n✓ Nhạc quê hương & trữ tình sâu lắng"
+		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
+		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
 	elif instrument == "sao_truc":
 		# Lộ trình Sáo Trúc
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -657,65 +691,21 @@ func _build_roadmap_cards() -> void:
 		chords_skills_bullets.text = "✓ Thổi bè hòa âm phụ họa\n✓ Hòa tấu cùng các nhạc cụ dân tộc\n✓ Kỹ thuật thổi đệm bè nâng cao"
 		
 		classical_title.text = "Làn Điệu Quê Hương"
+		classical_title.text = "Làn Điệu Quê Hương"
 		classical_desc.text = "✓ Lý Hoài Nam (Dân ca)\n✓ Lòng Mẹ (Sáo độc tấu)\n✓ Thổi sáo truyền cảm cổ truyền"
 		
 		pop_chords_title.text = "Sáo Trúc Pop"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
-	else:
-		# Lộ trình Trống Chầu
-		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
-		path_chords_title.text = "🥁 ĐƯỜNG TIẾT TẤU (RHYTHM PATH)"
-		
-		basic_title.text = "Nhập Môn Trống Chầu"
-		basic_desc.text = "Học cách cầm dùi chầu, tư thế ngồi gõ và gõ các âm sắc cơ bản trên mặt trống."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 0% Hoàn Thành"
-		
-		ess_title.text = "Nhịp Điệu Cơ Bản"
-		ess_desc.text = "Luyện các làn điệu trống cơ bản và cách gõ vào tâm mặt trống tạo tiếng Tịch trầm sâu."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
-		
-		soloist_unlock_title.text = "Độc Tấu"
-		chords_unlock_title.text = "Đệm Làn Điệu"
-		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
-		soloist_skills_bullets.text = "✓ Tiếng Cắc vang dội trên vành\n✓ Gõ song đúp giữ nhịp rộn ràng\n✓ Đọc nhịp phổ Trống hát chèo cổ"
-		
-		chords_skills_title.text = "Đệm Làn Điệu Trống"
-		chords_skills_bullets.text = "✓ Cách đánh nhịp dẫn lối chèo\n✓ Đệm trống cho đào nương Ca trù\n✓ Kỹ thuật đổi làn điệu linh hoạt"
-		
-		classical_title.text = "Nhạc Cổ Truyền"
-		classical_desc.text = "✓ Điệu Trống Chiến (Độc tấu)\n✓ Nhịp đệm Ca trù cổ truyền\n✓ Điệu trống chèo mừng hội xuân"
-		
-		pop_chords_title.text = "Tiết Tấu Hiện Đại"
-		pop_chords_desc.text = "✓ Hòa âm Trống Đồng Tây Nguyên\n✓ Đệm tiết tấu Pop nhẹ nhàng\n✓ Trống chầu phá cách cùng hòa tấu"
 
-	if instrument == "dan_bau":
-		path_soloist_title.text = "DUONG DOC TAU (SOLOIST PATH)"
-		path_chords_title.text = "DUONG DEM HAT (CHORDS PATH)"
-		basic_title.text = "Cang Day & Len Day"
-		basic_desc.text = "Hoc tu the ngoi, cach su dung truc van de dieu chinh do cang cua day va len day dung cao do."
-		ess_title.text = "Hoc Not Do Hai Am"
-		ess_desc.text = "Luyen cham nhe ria ban tay phai vao diem hai am thu nhat de tao tieng Do vang tu nhien."
-		soloist_unlock_title.text = "Not Re & Mi"
-		chords_unlock_title.text = "Uon Can Dan"
-		soloist_skills_title.text = "Hoc Not Re & Mi"
-		soloist_skills_bullets.text = "✓ Vi tri hai am Re va Mi\n✓ Gay dung cao do chuan sac\n✓ Luyen tai nghe chuan nhac pho"
-		chords_skills_title.text = "Ky Thuat Uon Voi"
-		chords_skills_bullets.text = "✓ Cang can nang cao do not\n✓ Trung day ha thap cao do\n✓ Ngan rung can dan truyen thong"
-		classical_title.text = "Bai Mau Beo Dat"
-		classical_desc.text = "✓ Beo Dat May Troi\n✓ Ket hop hai am va uon can\n✓ Doc tau dieu nhac da diet"
-		pop_chords_title.text = "Dem Hat Que Huong"
-		pop_chords_desc.text = "✓ Beo Dat May Troi\n✓ Luyen uon can luyen am muot\n✓ Dem hat cac lan dieu sau lang"
-
-	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1)
+	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
 	var is_basic_completed := false
 	var basic_stars := 0
 	var basic_pct := 0
 	if instrument == "dan_bau":
 		var stats := _get_dan_bau_card_status("basic")
-		is_basic_completed = bool(stats["completed"])
-		basic_stars = int(stats["stars"])
-		basic_pct = int(stats["pct"])
+		is_basic_completed = stats["completed"]
+		basic_stars = stats["stars"]
+		basic_pct = stats["pct"]
 	else:
 		is_basic_completed = SecureDataManager.is_lesson_completed(instrument, "Node1")
 		basic_stars = SecureDataManager.data.stars[instrument].get("Node1", 0)
@@ -730,7 +720,7 @@ func _build_roadmap_cards() -> void:
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	if instrument == "dan_bau":
-		basic_details.text = "1 bai hoc | %d sao | %d%% hoan thanh" % [basic_stars, basic_pct]
+		basic_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
 	else:
 		if is_basic_completed:
 			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
@@ -746,13 +736,18 @@ func _build_roadmap_cards() -> void:
 		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		if instrument == "dan_bau":
+			ess_details.text = "📖 1 Bài Học | 🔒 Cần hoàn thành bài trước"
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		card_essentials.add_theme_stylebox_override("panel", ess_sb)
 		ess_title.add_theme_color_override("font_color", C_CREAM)
 		ess_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
-		if instrument != "dan_bau":
+		if instrument == "dan_bau":
+			var stats := _get_dan_bau_card_status("essentials")
+			ess_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
+		else:
 			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
 			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
 			var total_stars = stars_n2 + stars_n3
@@ -860,7 +855,7 @@ func _connect_buttons() -> void:
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
-			var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
@@ -869,7 +864,7 @@ func _connect_buttons() -> void:
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed:
-			var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			else:
@@ -888,7 +883,7 @@ func _connect_buttons() -> void:
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_soloist.pressed.connect(func() -> void:
-		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
@@ -899,7 +894,7 @@ func _connect_buttons() -> void:
 	
 	var play_chords := card_chords_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_chords.pressed.connect(func() -> void:
-		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
@@ -909,7 +904,7 @@ func _connect_buttons() -> void:
 
 	var play_classical := card_classical.get_node("Margin/HBox/BtnPlay") as Button
 	play_classical.pressed.connect(func() -> void:
-		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
@@ -919,7 +914,7 @@ func _connect_buttons() -> void:
 	
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
 	play_pop.pressed.connect(func() -> void:
-		var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
@@ -988,7 +983,7 @@ func _set_active_tab(active: Button) -> void:
 
 # ─── Navigation ────────────────────────────────────────────────────────────────
 func _virtual_artist_play_happy(text: String) -> void:
-	var artist: Node = get_node_or_null("/root/VirtualArtist")
+	var artist := get_node_or_null("/root/VirtualArtist")
 	if artist and artist.has_method("play_happy"):
 		artist.call("play_happy", text)
 
@@ -1004,7 +999,7 @@ func _go_practice() -> void:
 		_fade_to("res://scenes/PracticeSaoTruc.tscn")
 
 func _go_practice_room_for_node(node_index: int) -> void:
-	var inst: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	
 	if inst == "dan_tranh":
 		if node_index == 2:
@@ -1178,10 +1173,18 @@ func _on_viewport_size_changed() -> void:
 	# Redraw to update paths
 	roadmap_content.queue_redraw()
 
+# ─── Dan Bau Custom Progression & Content Handling ─────────────────────────────
+const LESSON_SCRIPT = preload("res://scripts/LessonDanBau.gd")
+
 func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 	var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
 	var stars_dict : Dictionary = SecureDataManager.data.stars.get("dan_bau", {})
-	var steps_to_check: Array[String] = []
+	
+	var total_stars := 0
+	var completed_count := 0
+	var total_count := 2
+	
+	var steps_to_check := []
 	if card_type == "basic":
 		steps_to_check = ["dan_bau_coban_1_video", "dan_bau_coban_1_practice"]
 	elif card_type == "essentials":
@@ -1192,27 +1195,26 @@ func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 		steps_to_check = ["dan_bau_coban_4_video", "dan_bau_coban_4_practice"]
 	elif card_type == "classical" or card_type == "pop_chords":
 		steps_to_check = ["dan_bau_coban_5_video", "dan_bau_coban_5_practice"]
-
-	var total_stars := 0
-	var completed_count := 0
+		
 	for step in steps_to_check:
 		if completed.has(step):
 			completed_count += 1
-		total_stars += int(stars_dict.get(step, 0))
-
-	var total_count: int = max(1, steps_to_check.size())
-	var pct: int = int((float(completed_count) / float(total_count)) * 100.0)
+		total_stars += stars_dict.get(step, 0)
+		
+	total_count = steps_to_check.size()
+	var pct = 0
+	if total_count > 0:
+		pct = int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
 
 func _play_dan_bau_video(lesson_idx: int) -> void:
-	var lessons_data: Array = LESSON_DAN_BAU_SCRIPT.LESSONS
-	if lesson_idx < 0 or lesson_idx >= lessons_data.size():
-		return
-	var ldata: Dictionary = lessons_data[lesson_idx]
-	SecureDataManager.active_lesson_id = str(ldata["id"]) + "_video"
-	VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
-	VideoPlayer.custom_subtitles = ldata["subtitles"]
-	_fade_to("res://scenes/VideoPlayer.tscn")
+	var lessons_data = LESSON_SCRIPT.LESSONS
+	if lesson_idx >= 0 and lesson_idx < lessons_data.size():
+		var ldata = lessons_data[lesson_idx]
+		SecureDataManager.active_lesson_id = ldata["id"] + "_video"
+		VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
+		VideoPlayer.custom_subtitles = ldata["subtitles"]
+		_fade_to("res://scenes/VideoPlayer.tscn")
 
 func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
