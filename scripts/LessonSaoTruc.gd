@@ -1275,7 +1275,7 @@ func _set_note_color(color: Color):
 						if sb is StyleBoxFlat:
 							sb.bg_color = color
 
-func _check_advance(delta: float, is_correct: bool):
+func _check_advance(delta: float, state: int):
 	if _current_practice_idx >= _practice_sequence.size(): return
 	var note_data = _practice_sequence[_current_practice_idx]
 	var start_time = note_data["time"]
@@ -1287,7 +1287,7 @@ func _check_advance(delta: float, is_correct: bool):
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
 	else:
-		if is_correct:
+		if state == 1:
 			_practice_time += delta
 			_set_note_color(Color(0.2, 0.8, 0.2)) # Xanh lá
 			var time_left = max(0, step_decimals(end_time - _practice_time))
@@ -1296,12 +1296,18 @@ func _check_advance(delta: float, is_correct: bool):
 			
 			if _practice_time >= end_time:
 				_advance_practice_note()
-		else:
+		elif state == -1:
 			# Lùi thời gian về lại vị trí bắt đầu nốt (rewind)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
 			_set_note_color(Color(0.9, 0.2, 0.2)) # Đỏ
 			mic_status.text = "Sai nốt rồi! Hãy sửa lại."
 			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+		else:
+			# state == 0 (idle)
+			_practice_time = max(start_time, _practice_time - delta * 2.5)
+			_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
+			mic_status.text = "Đang chờ nốt " + note_data["note"] + "..."
+			mic_status.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
 
 func _process_virtual(delta):
 	var amp = analyzer.current_amplitude_db
