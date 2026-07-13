@@ -657,7 +657,7 @@ func _build_roadmap_cards() -> void:
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Hợp Âm"
 		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
+		soloist_skills_title.text = "Bài 1: Khúc Nhạc Vui"
 		soloist_skills_bullets.text = "✓ Kỹ thuật Song Thanh, Vê dây\n✓ Kỹ thuật Á vuốt, Vuốt dây\n✓ Đọc nhạc phổ Ngũ cung cổ"
 		
 		chords_skills_title.text = "Hợp Âm Đàn Tranh"
@@ -688,7 +688,7 @@ func _build_roadmap_cards() -> void:
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Đệm Hát"
 		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
+		soloist_skills_title.text = "Bài 1: Khúc Nhạc Vui"
 		soloist_skills_bullets.text = "✓ Kỹ thuật Hài âm nâng cao\n✓ Rung cần tạo ngân rung sâu\n✓ Đọc nhạc phổ Độc huyền cầm"
 		
 		chords_skills_title.text = "Đệm Hát Đàn Bầu"
@@ -715,23 +715,25 @@ func _build_roadmap_cards() -> void:
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Hòa Tấu"
 		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
-		soloist_skills_bullets.text = "✓ Hành trình bài hát Khúc Nhạc Vui\n✓ Luyện tập từng nốt nhạc cơ bản\n✓ Thử thách kết hợp (Rhythm Game)"
+		soloist_skills_title.text = "Bài 1: Khúc Nhạc Vui"
+		soloist_skills_bullets.text = "✓ Làm quen nốt nhạc cơ bản\n✓ Thử thách nhịp điệu (Rhythm)\n✓ Tự tin thổi bài đầu tiên"
 		
-		chords_skills_title.text = "Kỹ Năng Đệm & Hòa Tấu"
-		chords_skills_bullets.text = "✓ Kỹ thuật thổi đệm theo ca sĩ\n✓ Hòa tấu cùng nhạc cụ dân tộc\n✓ Kỹ thuật bè đuổi, bè hòa âm"
+		chords_skills_title.text = "Hòa Tấu 1: Cây Trúc Xinh"
+		chords_skills_bullets.text = "✓ Hòa tấu cùng trống và đàn\n✓ Kỹ thuật thổi đệm theo giai điệu\n✓ Phối hợp nhịp nhàng"
 		
-		classical_title.text = "Làn Điệu Quê Hương"
-		classical_desc.text = "✓ Lý Hoài Nam (Dân ca Trung Bộ)\n✓ Xuân Về Bản Mèo (Độc tấu)\n✓ Nhạc lý Sáo Trúc dân gian"
+		classical_title.text = "Bài 2: Trống Cơm"
+		classical_desc.text = "✓ Làn điệu dân ca Bắc Bộ\n✓ Kỹ thuật lấy hơi nhịp nhàng\n✓ Tăng tốc độ thổi sáo"
 		
-		pop_chords_title.text = "Sáo Trúc Đương Đại"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc trẻ)\n✓ Thổi Sáo trên nền Beat nhạc"
+		pop_chords_title.text = "Hòa Tấu 2: Nhật Ký Của Mẹ"
+		pop_chords_desc.text = "✓ Thổi trên nền nhạc Beat hiện đại\n✓ Cảm xúc sâu lắng (Gặp Mẹ Trong Mơ)\n✓ Nhạc trẻ kết hợp truyền thống"
 
 		card_adv_tech.show()
 		card_pro_perf.show()
 		
-		adv_title.text = "Kỹ Thuật Nâng Cao"
-		adv_desc.text = "✓ Đánh rưỡi (Flutter tonguing)\n✓ Vuốt ngón (Glissando)\n✓ Reo lưỡi kép"
+		adv_title.text = "Bài 3: Bèo Dạt Mây Trôi"
+		adv_desc.text = "✓ Dân ca trữ tình đồng bằng
+✓ Kỹ thuật vuốt ngón cơ bản
+✓ Truyền cảm xúc vào tiếng sáo"
 		
 		pro_title.text = "Biểu Diễn Chuyên Nghiệp"
 		pro_desc.text = "✓ Bèo Dạt Mây Trôi\n✓ Lý Cây Bông\n✓ Nhạc Trẻ Cover"
@@ -739,11 +741,13 @@ func _build_roadmap_cards() -> void:
 		card_mastery1.show()
 		card_mastery2.show()
 		
-		m1_title.text = "Tuyệt Kỹ Cổ Điển"
+		m1_title.text = "Bài 4: Lý Hoài Nam"
 		m1_desc.text = "✓ Thổi luyến ngũ cung mượt mà\n✓ Kỹ thuật phi yến\n✓ Hơi dài và nhịp điệu tự do"
 		
-		m2_title.text = "Nghệ Sĩ Ưu Tú"
-		m2_desc.text = "✓ Thử thách Sáo Trúc bậc thầy\n✓ Biểu diễn sân khấu lớn\n✓ Nhạc kịch dân gian"
+		m2_title.text = "Bài 5: Xuân Về Bản Mèo"
+		m2_desc.text = "✓ Tác phẩm sáo trúc kinh điển
+✓ Reo lưỡi kép, phi yến
+✓ Biểu diễn như nghệ sĩ"
 
 	# ── Style Card Basic — deep jade, gold border, warm glow ─────────────────
 	var basic_sb := _flat(C_CARD_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 20)
@@ -897,7 +901,7 @@ func _connect_buttons() -> void:
 	play_soloist.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "sao_truc":
-			_show_course_detail("Kỹ Năng Độc Tấu", 9, 10)
+			_show_course_detail("Bài 1: Khúc Nhạc Vui", 9, 10)
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		else:
@@ -1212,7 +1216,7 @@ func _play_dan_bau_practice(lesson_num: int) -> void:
 func _on_adv_tech_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Kỹ Thuật Nâng Cao", 12, 3)
+		_show_course_detail("Bài 3: Bèo Dạt Mây Trôi", 12, 3)
 
 func _on_pro_perf_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1222,7 +1226,7 @@ func _on_pro_perf_pressed() -> void:
 func _on_classical_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Làn Điệu Quê Hương", 12, 3)
+		_show_course_detail("Bài 2: Trống Cơm", 12, 3)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -1241,9 +1245,9 @@ func _input(event: InputEvent) -> void:
 func _on_m1_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Tuyệt Kỹ Cổ Điển", 18, 3)
+		_show_course_detail("Bài 4: Lý Hoài Nam", 18, 3)
 
 func _on_m2_pressed() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "sao_truc":
-		_show_course_detail("Nghệ Sĩ Ưu Tú", 21, 5)
+		_show_course_detail("Bài 5: Xuân Về Bản Mèo", 21, 5)
