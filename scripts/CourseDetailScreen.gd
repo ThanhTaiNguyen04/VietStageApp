@@ -285,9 +285,9 @@ func _build_lessons() -> void:
 		
 		# Bottom Action
 		var bottom_margin = MarginContainer.new()
-		bottom_margin.add_theme_constant_override("margin_left", 20)
-		bottom_margin.add_theme_constant_override("margin_right", 20)
-		bottom_margin.add_theme_constant_override("margin_bottom", 10)
+		bottom_margin.add_theme_constant_override("margin_left", 70)
+		bottom_margin.add_theme_constant_override("margin_right", 70)
+		bottom_margin.add_theme_constant_override("margin_bottom", 15)
 		
 		if is_locked:
 			var lock_hb = HBoxContainer.new()
