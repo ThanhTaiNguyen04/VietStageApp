@@ -88,7 +88,17 @@ const LESSON_NOTES = {
 	"Node15": {"note": "Mi", "desc": "Tập thổi nốt Mi", "fingers": [true, true, true, true, false, false]},
 	"Node16": {"note": "Rê", "desc": "Tập thổi nốt Rê", "fingers": [true, true, true, true, true, false]},
 	"Node17": {"note": "Fa", "desc": "Câu nhạc 2", "fingers": [true, true, true, false, false, false]},
-	"Node18": {"note": "Đô", "desc": "Thi Đậu Khúc Nhạc Vui", "fingers": [true, true, true, true, true, true]}
+	"Node18": {"note": "Đô", "desc": "Thi Đậu Khúc Nhạc Vui", "fingers": [true, true, true, true, true, true]},
+	"Node19": {"note": "Đô2", "desc": "Tập thổi nốt Đô2 (C6)", "fingers": [true, true, true, true, true, true], "title": "Tập nốt Đô2"},
+	"Node20": {"note": "Rê2", "desc": "Tập thổi nốt Rê2 (D6)", "fingers": [true, true, true, true, true, false], "title": "Tập nốt Rê2"},
+	"Node21": {"note": "Đô2", "desc": "Luyện chuyển ngón Đô2 - Rê2", "fingers": [true, true, true, true, true, true], "title": "Chuyển ngón C6-D6"},
+	"Node22": {"note": "Sol", "desc": "Tập thổi nốt Sol trầm (G5)", "fingers": [true, true, false, false, false, false], "title": "Tập nốt Sol"},
+	"Node23": {"note": "Đô2", "desc": "Thổi câu nhạc mở đầu bài Trống Cơm", "fingers": [true, true, true, true, true, true], "title": "Mở đầu Trống Cơm"},
+	"Node24": {"note": "Fa", "desc": "Tập thổi nốt Fa trầm (F5)", "fingers": [true, true, true, false, false, false], "title": "Tập nốt Fa"},
+	"Node25": {"note": "Đô2", "desc": "Khen ai khéo vỗ mấy bông", "fingers": [true, true, true, true, true, true], "title": "Câu nhạc 2"},
+	"Node26": {"note": "Đô2", "desc": "Ghép toàn bộ Đoạn 1 hoàn chỉnh", "fingers": [true, true, true, true, true, true], "title": "Hoàn thành Đoạn 1"},
+	"Node27": {"note": "Mi2", "desc": "Một vầy tang tình con sít", "fingers": [true, true, true, true, false, false], "title": "Học Đoạn 2"},
+	"Node28": {"note": "Đô2", "desc": "Thổi trọn vẹn bài Trống Cơm với nhạc đệm", "fingers": [true, true, true, true, true, true], "title": "Thi Đấu Trống Cơm"}
 }
 
 const LESSON_DIALOGUES = {
@@ -159,6 +169,46 @@ const LESSON_DIALOGUES = {
 	"Node18": {
 		"intro": "Thử Thách Cuối Cùng! Thi Đậu Bài Hát Khúc Nhạc Vui trọn vẹn. Bạn cần đạt trên 75% độ chính xác để qua ván này!",
 		"mid": "Sẵn sàng chưa? Khúc Nhạc Vui xin được phép bắt đầu!"
+	},
+	"Node19": {
+		"intro": "Chào bạn! Bắt đầu học Trống Cơm nhé. Nốt Đô2 (C6) là nốt khá cao, hãy thổi hơi tập trung và bịt kín cả 6 lỗ nhé!",
+		"mid": "Rất tốt! Cùng luyện tập nhịp điệu nốt Đô2 nào!"
+	},
+	"Node20": {
+		"intro": "Học nốt Rê2. Che 5 lỗ đầu tiên và hé lỗ cuối. Thổi hơi sâu để nốt bay cao nhé!",
+		"mid": "Tuyệt vời, Rê2 nghe rất vang. Thổi theo nhịp nào!"
+	},
+	"Node21": {
+		"intro": "Bây giờ hãy tập ghép Đô2 và Rê2 nhé. Di chuyển ngón út thật linh hoạt!",
+		"mid": "Sắp được rồi! Sẵn sàng chơi theo nhịp rơi Đô2 và Rê2 chưa?"
+	},
+	"Node22": {
+		"intro": "Luyện lại nốt Sol trầm để chuẩn bị vào bài. Che 2 lỗ đầu tiên.",
+		"mid": "Tốt lắm! Thổi nốt Sol thật ấm nhé."
+	},
+	"Node23": {
+		"intro": "Học câu nhạc 1 của Trống Cơm: Sol Sol Đô2 Đô2 Rê2 Đô2 Sol. Giai điệu mở đầu siêu quen thuộc!",
+		"mid": "Tuyệt lắm! Cùng chinh phục câu nhạc mở đầu nhé!"
+	},
+	"Node24": {
+		"intro": "Ôn lại nốt Fa để chuẩn bị cho câu tiếp theo. Che 3 lỗ đầu tiên.",
+		"mid": "Rất chuẩn! Thổi nốt Fa theo nhịp nào."
+	},
+	"Node25": {
+		"intro": "Học câu nhạc 2: Khen ai khéo vỗ... Sol Fa Sol Đô2 Sol Đô2 Đô2 Đô2 Sol Sol Fa Sol. Hãy chú ý các nốt luyến!",
+		"mid": "Hay lắm! Chuẩn bị thổi theo nhịp nào!"
+	},
+	"Node26": {
+		"intro": "Ghép toàn bộ Đoạn 1 bài Trống Cơm! Nhịp điệu dồn dập, tươi vui và đầy sức sống.",
+		"mid": "Chuẩn bị nhạc đệm. Cố gắng đạt độ chính xác cao nhé!"
+	},
+	"Node27": {
+		"intro": "Bắt đầu Đoạn 2: Một vầy tang tình con sít... Đô2 Đô2 Rê2 Đô2 Rê2 Mi2. Chú ý nốt Mi2 cao nhé!",
+		"mid": "Tốt lắm! Luyện tập câu sít lội sông nào!"
+	},
+	"Node28": {
+		"intro": "Đã đến lúc Biểu Diễn Trống Cơm! Hãy thổi trọn vẹn bản nhạc dân ca Bắc Ninh đầy tự hào này nhé!",
+		"mid": "Sẵn sàng chưa? Khúc nhạc Trống Cơm bắt đầu!"
 	}
 }
 
