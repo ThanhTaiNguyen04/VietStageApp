@@ -276,6 +276,9 @@ func _draw_roadmap_paths() -> void:
 	if card_adv_tech and card_adv_tech.visible:
 		_draw_thick_path(p_class, card_adv_tech.position + card_adv_tech.size/2.0)
 		_draw_thick_path(card_adv_tech.position + card_adv_tech.size/2.0, card_pro_perf.position + card_pro_perf.size/2.0)
+	if card_mastery1 and card_mastery1.visible:
+		_draw_thick_path(card_pro_perf.position + card_pro_perf.size/2.0, card_mastery1.position + card_mastery1.size/2.0)
+		_draw_thick_path(card_mastery1.position + card_mastery1.size/2.0, card_mastery2.position + card_mastery2.size/2.0)
 	
 	# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
 	_draw_thick_path(p_cho_un, p_cho_sk)
@@ -605,6 +608,16 @@ func _build_roadmap_cards() -> void:
 		roadmap_content.add_child(card_pro_perf)
 		card_pro_perf.position = Vector2(2990, 95)
 		
+	if not card_mastery1:
+		card_mastery1 = card_classical.duplicate()
+		roadmap_content.add_child(card_mastery1)
+		card_mastery1.position = Vector2(3520, 95)
+		
+	if not card_mastery2:
+		card_mastery2 = card_classical.duplicate()
+		roadmap_content.add_child(card_mastery2)
+		card_mastery2.position = Vector2(4050, 95)
+		
 	var adv_title := card_adv_tech.get_node("Margin/HBox/TextV/Title") as Label
 	var adv_desc := card_adv_tech.get_node("Margin/HBox/TextV/BulletList") as Label
 	var adv_btn := card_adv_tech.get_node("Margin/HBox/BtnPlay") as Button
@@ -612,11 +625,21 @@ func _build_roadmap_cards() -> void:
 	var pro_title := card_pro_perf.get_node("Margin/HBox/TextV/Title") as Label
 	var pro_desc := card_pro_perf.get_node("Margin/HBox/TextV/BulletList") as Label
 	var pro_btn := card_pro_perf.get_node("Margin/HBox/BtnPlay") as Button
+	
+	var m1_title := card_mastery1.get_node("Margin/HBox/TextV/Title") as Label
+	var m1_desc := card_mastery1.get_node("Margin/HBox/TextV/BulletList") as Label
+	var m1_btn := card_mastery1.get_node("Margin/HBox/BtnPlay") as Button
+	
+	var m2_title := card_mastery2.get_node("Margin/HBox/TextV/Title") as Label
+	var m2_desc := card_mastery2.get_node("Margin/HBox/TextV/BulletList") as Label
+	var m2_btn := card_mastery2.get_node("Margin/HBox/BtnPlay") as Button
 
 
 	if instrument == "dan_tranh":
 		card_adv_tech.hide()
 		card_pro_perf.hide()
+		card_mastery1.hide()
+		card_mastery2.hide()
 		# Lộ trình Đàn Tranh
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
@@ -646,6 +669,8 @@ func _build_roadmap_cards() -> void:
 	elif instrument == "dan_bau":
 		card_adv_tech.hide()
 		card_pro_perf.hide()
+		card_mastery1.hide()
+		card_mastery2.hide()
 		# Lộ trình Đàn Bầu
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎸 ĐƯỜNG ĐỆM HÁT (CHORDS PATH)"
@@ -708,6 +733,15 @@ func _build_roadmap_cards() -> void:
 		
 		pro_title.text = "Biểu Diễn Chuyên Nghiệp"
 		pro_desc.text = "✓ Bèo Dạt Mây Trôi\n✓ Lý Cây Bông\n✓ Nhạc Trẻ Cover"
+		
+		card_mastery1.show()
+		card_mastery2.show()
+		
+		m1_title.text = "Tuyệt Kỹ Cổ Điển"
+		m1_desc.text = "✓ Thổi luyến ngũ cung mượt mà\n✓ Kỹ thuật phi yến\n✓ Hơi dài và nhịp điệu tự do"
+		
+		m2_title.text = "Nghệ Sĩ Ưu Tú"
+		m2_desc.text = "✓ Thử thách Sáo Trúc bậc thầy\n✓ Biểu diễn sân khấu lớn\n✓ Nhạc kịch dân gian"
 
 	# ── Style Card Basic — deep jade, gold border, warm glow ─────────────────
 	var basic_sb := _flat(C_CARD_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 20)
@@ -760,7 +794,13 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_top = 2; skills_sb.border_width_bottom = 2
 	skills_sb.shadow_size = 18; skills_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.14)
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
+		
+	if not adv_btn.pressed.is_connected(_on_adv_tech_pressed):
+		adv_btn.pressed.connect(_on_adv_tech_pressed)
+		pro_btn.pressed.connect(_on_pro_perf_pressed)
+		m1_btn.pressed.connect(_on_m1_pressed)
+		m2_btn.pressed.connect(_on_m2_pressed)
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords, card_adv_tech, card_pro_perf, card_mastery1, card_mastery2]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
