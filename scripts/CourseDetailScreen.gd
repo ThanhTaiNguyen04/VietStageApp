@@ -133,18 +133,24 @@ func _build_lessons() -> void:
 		var is_completed = (node_id < unlocked_up_to)
 		var is_active = (node_id == unlocked_up_to)
 		
-		# Build Ornate Card
+		# Build Ornate Card using card.png
 		var card = PanelContainer.new()
 		card.custom_minimum_size = Vector2(280, 500)
 		card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		var sb_card = StyleBoxFlat.new()
-		sb_card.bg_color = C_CREAM
-		sb_card.corner_radius_top_left = 15; sb_card.corner_radius_top_right = 15
-		sb_card.corner_radius_bottom_left = 15; sb_card.corner_radius_bottom_right = 15
-		sb_card.border_width_left = 2; sb_card.border_width_right = 2
-		sb_card.border_width_top = 2; sb_card.border_width_bottom = 2
-		sb_card.border_color = C_GOLD
 		
+		var sb_card = StyleBoxTexture.new()
+		if ResourceLoader.exists("res://image/card.png"):
+			sb_card.texture = load("res://image/card.png")
+		else:
+			# Fallback if image not found or moved
+			sb_card = StyleBoxFlat.new()
+			sb_card.bg_color = C_CREAM
+			sb_card.corner_radius_top_left = 15; sb_card.corner_radius_top_right = 15
+			sb_card.corner_radius_bottom_left = 15; sb_card.corner_radius_bottom_right = 15
+			sb_card.border_width_left = 2; sb_card.border_width_right = 2
+			sb_card.border_width_top = 2; sb_card.border_width_bottom = 2
+			sb_card.border_color = C_GOLD
+			
 		card.add_theme_stylebox_override("panel", sb_card)
 		
 		var card_vbox = VBoxContainer.new()
