@@ -352,16 +352,48 @@ func _on_lesson_selected(node_id: int) -> void:
 		# Dynamically load lesson data
 		if node_id == 19:
 			PracticeSaoTruc.current_song_title = "Trống Cơm - Phân đoạn 1"
-			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Si", "Sol", "La"]
-			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 2.0]
+			PracticeSaoTruc.current_song_sheet = [
+				"Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol", 
+				"Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
+				"Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol"
+			]
+			PracticeSaoTruc.current_song_durations = [
+				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
+				1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 
+				1.0, 1.0, 2.0, 1.0, 0.5, 2.0
+			]
 		elif node_id == 20:
 			PracticeSaoTruc.current_song_title = "Trống Cơm - Phân đoạn 2"
-			PracticeSaoTruc.current_song_sheet = ["Sol", "Fa", "Mi", "Rê", "Mi", "Đô"]
-			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+			PracticeSaoTruc.current_song_sheet = [
+				"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
+				"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
+				"Mi2", "Mi2", "Sol2", "Sol", "La", "Sol", "La", "Sol", "La", "Sol", "La", "Đô2", "Đô2", "Đô2", "La", "Sol", "La", "Đô2", "Sol", 
+				"Sol", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "La", "Sol", "La", "Đô2", "Sol", 
+				"Sol", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "La", "Sol", "La", "Đô2"
+			]
+			PracticeSaoTruc.current_song_durations = [
+				1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
+				1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
+				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
+				1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0, 
+				1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 2.0
+			]
 		elif node_id == 21:
 			PracticeSaoTruc.current_song_title = "Trống Cơm - Hoàn thành"
-			PracticeSaoTruc.current_song_sheet = ["Sol", "La", "Si", "Sol", "La", "Sol", "Fa", "Mi", "Rê", "Mi", "Đô"]
-			PracticeSaoTruc.current_song_durations = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+			PracticeSaoTruc.current_song_sheet = [
+				"Sol", "Sol", "Đô2", "Đô2", "Rê2", "Đô2", "Sol", 
+				"Sol", "Fa", "Sol", "Đô2", "Sol", "Đô2", "Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
+				"Đô2", "Đô2", "Sol", "Sol", "Fa", "Sol", 
+				"Đô2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", 
+				"Mi2", "Mi2", "Sol2", "Sol", "La", "Sol", "La", "Sol", "La", "Sol", "La", "Đô2", "Đô2", "Đô2", "La", "Sol", "La", "Đô2", "Sol"
+			]
+			PracticeSaoTruc.current_song_durations = [
+				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
+				1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 
+				1.0, 1.0, 2.0, 1.0, 0.5, 2.0, 
+				1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 
+				1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0
+			]
 		elif node_id == 22:
 			PracticeSaoTruc.current_song_title = "Bèo Dạt Mây Trôi - Luyến ngón"
 			PracticeSaoTruc.current_song_sheet = ["Mi", "Sol", "La", "Sol", "Mi"]
