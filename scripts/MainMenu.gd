@@ -597,6 +597,8 @@ func _build_roadmap_cards() -> void:
 		roadmap_content.add_child(card_adv_tech)
 		card_adv_tech.position = Vector2(2460, 95)
 		roadmap_content.custom_minimum_size.x = 3600
+		roadmap_content.size.x = 3600
+		roadmap_content.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	
 	if not card_pro_perf:
 		card_pro_perf = card_classical.duplicate()
@@ -697,6 +699,15 @@ func _build_roadmap_cards() -> void:
 		
 		pop_chords_title.text = "Sáo Trúc Đương Đại"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc trẻ)\n✓ Thổi Sáo trên nền Beat nhạc"
+
+		card_adv_tech.show()
+		card_pro_perf.show()
+		
+		adv_title.text = "Kỹ Thuật Nâng Cao"
+		adv_desc.text = "✓ Đánh rưỡi (Flutter tonguing)\n✓ Vuốt ngón (Glissando)\n✓ Reo lưỡi kép"
+		
+		pro_title.text = "Biểu Diễn Chuyên Nghiệp"
+		pro_desc.text = "✓ Bèo Dạt Mây Trôi\n✓ Lý Cây Bông\n✓ Nhạc Trẻ Cover"
 
 	# ── Style Card Basic — deep jade, gold border, warm glow ─────────────────
 	var basic_sb := _flat(C_CARD_BG, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 20)
