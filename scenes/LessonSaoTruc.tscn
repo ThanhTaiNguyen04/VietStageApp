@@ -33,7 +33,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.04, 0.02, 0.008, 0.95)
+color = Color(0.95, 0.93, 0.89, 0.95)
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -50,14 +50,14 @@ alignment = 1
 
 [node name="InstructionLabel" type="Label" parent="Root/TopMargin"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.960784, 0.784314, 0.258824, 1)
+theme_override_colors/font_color = Color(0.77, 0.58, 0.15, 1.0)
 theme_override_font_sizes/font_size = 48
 text = "Đang tải bài học..."
 horizontal_alignment = 1
 
 [node name="SubInstructionLabel" type="Label" parent="Root/TopMargin"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_color = Color(0.28, 0.16, 0.10, 1.0)
 theme_override_font_sizes/font_size = 28
 text = "Hãy chú ý cách bấm ngón và làm theo"
 horizontal_alignment = 1
@@ -229,7 +229,7 @@ alignment = 1
 
 [node name="MicStatus" type="Label" parent="FeedbackArea"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_colors/font_color = Color(0.28, 0.16, 0.10, 1.0)
 theme_override_font_sizes/font_size = 28
 text = "Đang chờ âm thanh..."
 horizontal_alignment = 1
