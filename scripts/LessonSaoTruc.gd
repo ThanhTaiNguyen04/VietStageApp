@@ -219,7 +219,11 @@ const NOTE_FREQS = {
 	"Fa": 698.46,
 	"Sol": 783.99,
 	"La": 880.00,
-	"Si": 987.77
+	"Si": 987.77,
+	"Đô2": 1046.50,
+	"Rê2": 1174.66,
+	"Mi2": 1318.51,
+	"Sol2": 1567.98
 }
 
 func _ready():
@@ -587,18 +591,12 @@ func _process_sample(delta):
 	var note_time_elapsed = 0.0
 	var note_duration = 1.0
 	
-	var note_freqs = {
-		"Đô": 523.25, "Rê": 587.33, "Mi": 659.25, "Fa": 698.46,
-		"Sol": 783.99, "La": 880.00, "Si": 987.77, "Đô2": 1046.50
-	}
-	
 	for note_data in sample_melody:
 		var n_time = note_data["time"]
 		var duration = note_data.get("duration", 1.0)
 		if sample_melody_time >= n_time and sample_melody_time <= n_time + duration:
 			var note_name = note_data["note"]
-			if note_freqs.has(note_name):
-				current_hz = note_freqs[note_name]
+			current_hz = NOTE_FREQS.get(note_name, 0.0)
 			note_time_elapsed = sample_melody_time - n_time
 			note_duration = duration
 			break
@@ -1078,6 +1076,9 @@ func _process_virtual(delta):
 			req = LESSON_NOTES[k]["fingers"]
 			break
 			
+	if req.size() < HOLES:
+		req = [false, false, false, false, false, false]
+			
 	var matched = true
 	var is_pressing_anything = false
 	for i in range(HOLES):
@@ -1120,13 +1121,7 @@ func _process_real(delta):
 	
 	if amp > -40.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
-		var target_hz = 0.0
-		var note_freqs = {
-			"Đô": 523.25, "Rê": 587.33, "Mi": 659.25, "Fa": 698.46,
-			"Sol": 783.99, "La": 880.00, "Si": 987.77, "Đô2": 1046.50
-		}
-		if note_freqs.has(current_note_name):
-			target_hz = note_freqs[current_note_name]
+		var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
 			
 		var matched = abs(hz - target_hz) < 30.0
 		if matched:
