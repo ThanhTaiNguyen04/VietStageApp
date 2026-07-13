@@ -20,7 +20,7 @@ func _ready() -> void:
 	elif ResourceLoader.exists("res://assets/textures/bg_practice_room.png"):
 		bg_tex.texture = load("res://assets/textures/bg_practice_room.png")
 	# Darken the background
-	bg_tex.modulate = Color(0.3, 0.2, 0.1, 1.0)
+	bg_tex.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	add_child(bg_tex)
 	
 	var margin = MarginContainer.new()
