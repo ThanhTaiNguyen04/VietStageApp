@@ -37,6 +37,7 @@ var sample_btn: Button
 var _is_recording := false
 var _recorded_stream: AudioStreamWAV = null
 var _playback_player: AudioStreamPlayer = null
+var bgm_player: AudioStreamPlayer
 
 var complete_overlay: ColorRect
 var _holes : Array[Control] = []
@@ -227,6 +228,10 @@ const NOTE_FREQS = {
 }
 
 func _ready():
+	bgm_player = AudioStreamPlayer.new()
+	bgm_player.volume_db = -5.0
+	add_child(bgm_player)
+	
 	back_btn.pressed.connect(_on_back)
 	complete_btn.pressed.connect(_on_complete)
 	virtual_mode_btn.pressed.connect(_start_virtual)
@@ -563,6 +568,14 @@ func _setup_sample_player():
 	add_child(sample_player)
 
 func _play_current_sample():
+	if bgm_player: bgm_player.stop()
+	
+	if active_node_id == "Node42":
+		var stream = load("res://image/gmtm.mp3")
+		if stream:
+			bgm_player.stream = stream
+			bgm_player.play(21.5)
+
 	if not sample_player:
 		_setup_sample_player()
 	
@@ -637,6 +650,7 @@ func _process_sample(delta):
 		if sample_melody_time > end_time + 0.5:
 			sample_active = false
 			sample_player.stop()
+			if bgm_player: bgm_player.stop()
 			if current_state == State.PRACTICE:
 				_start_practice()
 			return
@@ -683,7 +697,9 @@ func _process(delta):
 		_process_rhythm(delta, rect)
 
 func _process_rhythm(delta, rect):
-	if has_rhythm_completed: return
+	if has_rhythm_completed:
+		bgm_player.stop()
+		return
 	
 	var amp = analyzer.current_amplitude_db
 	var hz = analyzer.current_pitch
@@ -740,6 +756,13 @@ func _process_rhythm(delta, rect):
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		
 	rhythm_time += time_delta
+	
+	if active_node_id == "Node42" and bgm_player.stream != null:
+		if time_delta <= 0:
+			bgm_player.stream_paused = true
+		else:
+			bgm_player.stream_paused = false
+
 	
 	# Clamp time when rewinding so note stops at holes
 	if current_overlapping_note != null:
@@ -976,10 +999,10 @@ func _generate_melody(target_note_key: String) -> Array:
 	elif target_note_key == "Node35":
 		# Format: ["Tên nốt", thời_gian_ngân, khoảng_nghỉ_sau]
 		var notes = [
-			["Rê", 0.5, 0.1], ["Rê", 0.5, 0.1], ["Rê", 0.5, 0.1], ["Rê", 0.5, 0.15],
-			["La", 1.0, 0.15], ["Sol", 2.0, 0.4],
-			["Mi", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.5, 0.15],
-			["Fa", 1.0, 0.15], ["Rê", 2.0, 0.5]
+			["Rê", 0.5, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.5, 0.1],
+			["La", 0.5, 0.1], ["Sol", 1.25, 0.5],
+			["Sol", 0.25, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.25, 0.1], ["Mi", 0.5, 0.1],
+			["Fa", 0.5, 0.1], ["Rê", 1.5, 0.5]
 		]
 		for n in notes:
 			seq.append({"note": n[0], "time": time, "duration": n[1]}); time += n[1] + n[2]
@@ -1050,42 +1073,75 @@ func _generate_melody(target_note_key: String) -> Array:
 	elif target_note_key == "Node42":
 		# Format: ["Tên nốt", thời_gian_ngân, khoảng_nghỉ_sau]
 		var notes = [
-			# --- Câu A1 ---
-			["Rê", 0.5, 0.1], ["Rê", 0.5, 0.1], ["Rê", 0.5, 0.1], ["Rê", 0.5, 0.15],
-			["La", 1.0, 0.15], ["Sol", 2.0, 0.4],
-			["Mi", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.5, 0.15],
-			["Fa", 1.0, 0.15], ["Rê", 2.0, 0.5],
-			# --- Câu A2 ---
-			["Rê", 0.5, 0.1], ["Rê", 0.5, 0.1], ["Rê", 0.5, 0.1], ["Rê", 0.5, 0.15],
-			["La", 1.0, 0.15], ["Sol", 2.0, 0.4],
-			["Đô2", 0.5, 0.1], ["Đô2", 0.5, 0.1], ["Đô2", 0.5, 0.1], ["Đô2", 0.5, 0.15],
-			["Rê2", 1.0, 0.15], ["La", 2.0, 0.5],
-			# --- Câu B1 ---
-			["La", 0.5, 0.1], ["La", 0.5, 0.15],
-			["Rê2", 1.0, 0.1], ["Đô2", 1.0, 0.1], ["Rê2", 0.5, 0.05], ["Rê2", 1.5, 0.2],
-			["Đô2", 0.5, 0.1], ["Rê2", 0.5, 0.1],
-			["Đô2", 1.0, 0.1], ["La", 1.0, 0.15], ["Sol", 2.0, 0.5],
-			# --- Câu B2 ---
-			["Fa", 0.5, 0.1], ["Fa", 0.5, 0.1], ["Fa", 1.0, 0.1], ["Fa", 1.0, 0.15],
-			["Đô2", 0.5, 0.1], ["La", 1.0, 0.1], ["Đô2", 1.0, 0.2],
-			["Sol", 0.5, 0.1], ["Sol", 0.5, 0.15],
-			["La", 1.0, 0.15], ["Rê", 2.0, 0.5],
-			# --- Điệp khúc C1 ---
-			["La", 0.5, 0.1], ["La", 0.5, 0.1], ["La", 1.0, 0.1], ["La", 1.0, 0.15],
-			["Fa2", 0.5, 0.1], ["Rê2", 1.5, 0.2],
-			["Đô2", 0.5, 0.1], ["Rê2", 0.5, 0.1],
-			["Đô2", 1.0, 0.1], ["La", 1.0, 0.15], ["Sol", 2.0, 0.5],
-			# --- Điệp khúc C2 ---
-			["Fa", 0.5, 0.1], ["Fa", 0.5, 0.1], ["Fa", 1.0, 0.1], ["Fa", 1.0, 0.15],
-			["Đô2", 0.5, 0.1], ["La", 1.0, 0.1], ["Đô2", 1.0, 0.2],
-			["Sol", 0.5, 0.1], ["Sol", 0.5, 0.15],
-			["La", 1.0, 0.15], ["Rê", 2.0, 0.5],
-			# --- Gian tấu / Kết ---
-			["Rê", 0.5, 0.1], ["Fa", 0.5, 0.1], ["Sol", 1.0, 0.1], ["La", 1.0, 0.1],
-			["Đô2", 0.5, 0.1], ["Sol", 1.0, 0.1], ["La", 2.0, 0.3],
-			["Rê", 0.5, 0.1], ["Fa", 0.5, 0.1], ["La", 1.0, 0.1], ["Sol", 1.0, 0.1],
-			["La", 0.5, 0.1], ["Fa", 1.0, 0.1], ["Rê", 2.0, 0.5]
-		]
+	# Này bầu trời rộng lớn ơi
+	["Rê", 0.5, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.5, 0.1],
+	["La", 0.5, 0.1], ["Sol", 1.25, 0.4],
+
+	# Có nghe chăng tiếng em gọi
+	["Sol", 0.25, 0.1],
+	["Mi", 0.25, 0.1], ["Mi", 0.5, 0.1],
+	["Fa", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Rê", 1, 0.4],
+
+	# Mẹ giờ này ở chốn nao
+	["Rê", 0.5, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.5, 0.1],
+	["La", 0.5, 0.1], ["Sol", 1, 0.4],
+
+	# Con đang mong nhớ về mẹ
+	["Đô2", 0.5, 0.1], ["Đô2", 0.25, 0.1], ["Đô2", 0.25, 0.1],
+	["Rê2", 0.75, 0.1], ["La", 0.25, 0.1], ["La", 1, 0.4],
+
+	# Mẹ ở phương trời xa xôi
+	["La", 0.5, 0.1], ["La", 0.25, 0.1],
+	["Rê2", 0.5, 0.1], ["Đô2", 0.5, 0.1],
+	["Rê2", 0.25, 0.1], ["Rê2", 1.0, 0.4],
+
+	# Hay sao sáng trên bầu trời
+	["Rê2", 0.25, 0.1], ["Đô2", 0.5, 0.1], ["Rê2", 0.5, 0.1],
+	["Đô2", 0.5, 0.1], ["La", 0.5, 0.1],
+	["Sol", 1.5, 0.4],
+
+	# Mẹ dịu hiền về với con nhé, con nhớ mẹ
+	["Fa", 0.5, 0.1], ["Fa", 0.25, 0.1],
+	["Fa", 0.5, 0.1], ["Fa", 0.25, 0.1],
+	["Đô2", 0.5, 0.1], ["La", 0.25, 0.1],
+	["Đô2", 0.5, 0.1], ["Sol", 0.25, 0.1],
+	["La", 0.25, 0.1], ["Rê", 1.5, 1.5],
+
+	# ===== ĐIỆP KHÚC =====
+
+	# Lời nguyện cầu từ chốn xa
+	["La", 0.25, 0.1], ["La", 0.25, 0.1],
+	["La", 0.25, 0.1], ["La", 0.25, 0.1],
+	["Fa2", 0.25, 0.1], ["Rê2", 1.0, 0.2],
+
+	# Mong ước con yên bình
+	["Đô2", 0.5, 0.1], ["Rê2", 0.5, 0.1],
+	["Đô2", 0.5, 0.1], ["La", 0.5, 0.1],
+	["Sol", 1.5, 0.6],
+
+	# Mẹ thật hiền tựa nắng mai ấp ôm con tháng ngày
+	["Fa", 0.5, 0.1], ["Fa", 0.25, 0.1],
+	["Fa", 0.25, 0.1], ["Fa", 0.25, 0.1],
+	["Đô2", 0.5, 0.1], ["La", 0.5, 0.1],
+	["Đô2", 0.5, 0.1],
+	["Sol", 0.25, 0.1], ["Sol", 0.25, 0.1],
+	["La", 0.5, 0.1], ["Rê", 1.5, 0.8],
+	
+	
+	# Mẹ giờ này ở chốn rất xa
+	["Rê", 0.5, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.5, 0.1],
+	["La", 0.25, 0.1], ["La", 0.25, 0.1], ["Sol", 2, 0.6],
+	
+	
+	# trông mơ con đã thấy mẹ
+	["Fa", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.5, 0.1], ["Mi", 0.25, 0.1],
+	["Mi", 0.25, 0.1], ["Fa", 0.5, 0.1], ["Rê", 2, 0.6],
+	
+	# trông mơ con đã thấy mẹ
+	["Rê", 0.5, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.25, 0.1], ["La", 0.25, 0.1],
+	["La", 0.5, 0.1], ["Sol", 1, 0.1], ["Đô2", 0.5, 0.1], ["Đô2", 0.25, 0.1], 
+	["Đô2", 0.75, 0.1], ["La", 0.25, 0.1], ["La", 0.5, 0.1],
+]
 		for n in notes:
 			seq.append({"note": n[0], "time": time, "duration": n[1]}); time += n[1] + n[2]
 	elif target_note_key == "Node18":
@@ -1297,6 +1353,12 @@ func _start_rhythm_game():
 	analyzer.visible = true
 	mic_status.text = "Chuẩn bị..."
 	mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	
+	if active_node_id == "Node42":
+		var stream = load("res://image/gmtm.mp3")
+		if stream:
+			bgm_player.stream = stream
+			bgm_player.play(21.5)
 	
 	rhythm_time = -2.0 # 2 seconds delay
 	spawned_notes = 0
