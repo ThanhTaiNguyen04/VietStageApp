@@ -26,6 +26,9 @@ var current_state = State.INTRO
 @onready var mic_status = $FeedbackArea/MicStatus
 @onready var volume_bar = $FeedbackArea/VolumeBar
 
+var bgm_toggle_btn: Button
+var staff_display: Control
+
 var active_note := "Si"
 var active_node_id := "Node2"
 
@@ -479,6 +482,22 @@ func _ready():
 	feedback_area.visible = false
 	analyzer.visible = false
 	current_state = State.INTRO
+	
+	# Setup Staff Display
+	staff_display = load("res://scripts/StaffDisplay.gd").new()
+	staff_display.name = "StaffDisplay"
+	staff_display.custom_minimum_size = Vector2(0, 300)
+	staff_display.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	staff_display.offset_top = 150
+	staff_display.offset_bottom = 450
+	add_child(staff_display)
+	move_child(staff_display, get_node("Root").get_index() + 1)
+	
+	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		staff_display.set_note(active_note)
+		staff_display.visible = true
+	else:
+		staff_display.visible = false
 
 func _start_virtual():
 	is_virtual_mode = true
@@ -507,6 +526,7 @@ func _start_practice():
 	teacher_area.visible = false
 	feedback_area.visible = true
 	analyzer.visible = true
+	if staff_display: staff_display.visible = false
 	
 	if _practice_note_node:
 		_practice_note_node.queue_free()
