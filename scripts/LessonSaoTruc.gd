@@ -26,7 +26,6 @@ var current_state = State.INTRO
 @onready var mic_status = $FeedbackArea/MicStatus
 @onready var volume_bar = $FeedbackArea/VolumeBar
 
-var bgm_toggle_btn: Button
 var staff_display: Control
 
 var active_note := "Si"
