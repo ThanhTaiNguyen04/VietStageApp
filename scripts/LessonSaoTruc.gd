@@ -18,7 +18,6 @@ var current_state = State.INTRO
 
 @onready var teacher_area = $TeacherArea
 @onready var speech_text = $TeacherArea/DialogBox/M/V/SpeechText
-@onready var virtual_mode_btn = $TeacherArea/DialogBox/M/V/ModeButtons/VirtualModeBtn
 @onready var real_mode_btn = $TeacherArea/DialogBox/M/V/ModeButtons/RealModeBtn
 
 @onready var analyzer = $Analyzer
@@ -306,17 +305,16 @@ func _ready():
 	
 	back_btn.pressed.connect(_on_back)
 	complete_btn.pressed.connect(_on_complete)
-	virtual_mode_btn.pressed.connect(_start_virtual)
 	real_mode_btn.pressed.connect(_start_real)
 	
 	var sb_btn = StyleBoxFlat.new()
 	sb_btn.bg_color = C_GOLD
 	sb_btn.corner_radius_top_left = 15; sb_btn.corner_radius_top_right = 15
 	sb_btn.corner_radius_bottom_left = 15; sb_btn.corner_radius_bottom_right = 15
+	real_mode_btn.text = "  Thực Hành Ngay  "
+	
 	complete_btn.add_theme_stylebox_override("normal", sb_btn)
 	complete_btn.add_theme_stylebox_override("hover", sb_btn)
-	virtual_mode_btn.add_theme_stylebox_override("normal", sb_btn)
-	virtual_mode_btn.add_theme_stylebox_override("hover", sb_btn)
 	real_mode_btn.add_theme_stylebox_override("normal", sb_btn)
 	real_mode_btn.add_theme_stylebox_override("hover", sb_btn)
 	
@@ -497,16 +495,6 @@ func _ready():
 		staff_display.visible = true
 	else:
 		staff_display.visible = false
-
-func _start_virtual():
-	is_virtual_mode = true
-	if record_btn: record_btn.visible = false
-	if playback_btn: playback_btn.visible = false
-	# Reset holes to invisible so user can press them
-	for h in _holes:
-		h.visible = false
-	virtual_holes_state = [false, false, false, false, false, false]
-	_start_practice()
 
 func _start_real():
 	is_virtual_mode = false
@@ -778,10 +766,7 @@ func _process(delta):
 			_practice_time = sample_melody_time
 			_check_auto_advance()
 		else:
-			if is_virtual_mode:
-				_process_virtual(delta)
-			else:
-				_process_real(delta)
+			_process_real(delta)
 	elif current_state == State.RHYTHM_GAME:
 		_process_rhythm(delta, rect)
 
@@ -811,20 +796,10 @@ func _process_rhythm(delta, rect):
 		var is_blowing = amp > -25.0
 		var is_correct = false
 		
-		if is_virtual_mode:
-			if is_blowing:
-				var req = current_overlapping_note["fingers"]
-				var matched = true
-				for i in range(HOLES):
-					if virtual_holes_state[i] != req[i]:
-						matched = false
-						break
-				is_correct = matched
-		else:
-			if is_blowing and hz > 350.0 and analyzer.current_tone_quality > 65.0:
-				var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
-				if abs(hz - target_hz_note) < 25.0:
-					is_correct = true
+		if is_blowing and hz > 350.0 and analyzer.current_tone_quality > 65.0:
+			var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
+			if abs(hz - target_hz_note) < 25.0:
+				is_correct = true
 					
 		if is_correct:
 			time_delta = delta
@@ -1328,37 +1303,6 @@ func _check_advance(delta: float, state: int):
 			mic_status.text = "Đang chờ nốt " + note_data["note"] + "..."
 			mic_status.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
 
-func _process_virtual(delta):
-	var amp = analyzer.current_amplitude_db
-	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
-	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
-	
-	if _current_practice_idx >= _practice_sequence.size(): return
-	
-	var current_note_name = _practice_sequence[_current_practice_idx]["note"]
-	var req = []
-	for k in LESSON_NOTES.keys():
-		if LESSON_NOTES[k]["note"] == current_note_name:
-			req = LESSON_NOTES[k]["fingers"]
-			break
-			
-	if req.size() < HOLES:
-		req = [false, false, false, false, false, false]
-			
-	var matched = true
-	var is_pressing_anything = false
-	for i in range(HOLES):
-		if virtual_holes_state[i]:
-			is_pressing_anything = true
-		if virtual_holes_state[i] != req[i]:
-			matched = false
-			
-	if matched:
-		_check_advance(delta, 1)
-	elif is_pressing_anything:
-		_check_advance(delta, -1)
-	else:
-		_check_advance(delta, 0)
 
 func _advance_practice_note(is_auto: bool = false):
 	_current_practice_idx += 1
@@ -1403,11 +1347,10 @@ func _hit_note():
 		feedback_area.visible = false
 		analyzer.visible = false
 		teacher_area.visible = true
-		virtual_mode_btn.visible = false
 		real_mode_btn.visible = false
 		
 		# Clear old layout to add new button
-		for c in virtual_mode_btn.get_parent().get_children():
+		for c in real_mode_btn.get_parent().get_children():
 			c.queue_free()
 			
 		var start_rhythm_btn = Button.new()
@@ -1680,40 +1623,6 @@ func _build_flute():
 		rhythm_area.add_child(lane)
 		_lanes.append(lane)
 
-# Biáº¿n lÆ°u trá»_ cA¡c Ä`iá»ƒm cháº¡m trAªn mA n hA¬nh
-var active_touches = {}
-
-func _input(event):
-	if (current_state != State.PRACTICE and current_state != State.RHYTHM_GAME) or not is_virtual_mode:
-		return
-		
-	var is_touch_event = event is InputEventScreenTouch or event is InputEventScreenDrag
-	var is_mouse_event = event is InputEventMouseButton or event is InputEventMouseMotion
-	
-	if is_touch_event:
-		if event is InputEventScreenTouch:
-			if event.pressed:
-				active_touches[event.index] = event.position
-			else:
-				active_touches.erase(event.index)
-		elif event is InputEventScreenDrag:
-			active_touches[event.index] = event.position
-	elif is_mouse_event:
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			active_touches[-1] = event.position
-		else:
-			active_touches.erase(-1)
-			
-	# Update holes state based on all active touches
-	for i in range(HOLES):
-		var hole_center = _holes[i].global_position + Vector2(50, 50) # 50 is half of 100x100
-		var is_covered = false
-		for touch_pos in active_touches.values():
-			if touch_pos.distance_to(hole_center) < 70.0: # BA¡n kA-nh siAªu rá»Tng 70px
-				is_covered = true
-				break
-		virtual_holes_state[i] = is_covered
-		_holes[i].get_child(0).visible = is_covered
 
 func _show_fingers(fingers: Array):
 	for i in range(HOLES):
