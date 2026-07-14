@@ -15,7 +15,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 40.0
+var line_spacing = 60.0
 var clef_tex: Texture2D
 
 func _ready():

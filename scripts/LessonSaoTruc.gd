@@ -232,6 +232,7 @@ const NOTE_FREQS = {
 }
 
 func _ready():
+	volume_bar.visible = false
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = -5.0
 	add_child(bgm_player)
@@ -580,7 +581,6 @@ func _process_rhythm(delta, rect):
 	var amp = analyzer.current_amplitude_db
 	var hz = analyzer.current_pitch
 	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
-	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
 	
 	var time_delta = delta
 	
@@ -1044,7 +1044,6 @@ func _process_real(delta):
 	var amp = analyzer.current_amplitude_db
 	var hz = analyzer.current_pitch
 	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
-	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
 	
 	if _current_practice_idx >= _practice_sequence.size(): return
 	
