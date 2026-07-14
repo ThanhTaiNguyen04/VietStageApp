@@ -15,7 +15,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 24.0
+var line_spacing = 40.0
 var clef_tex: Texture2D
 
 func _ready():
@@ -71,30 +71,34 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var pos_idx = NOTE_POSITIONS[note_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
 	
+	var note_width = line_spacing * 1.2
+	var note_height = line_spacing * 0.85
+
 	# Draw ledger lines if outside staff
 	if pos_idx < 0:
 		var ledgers = int(floor(-pos_idx))
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 + i) * line_spacing
-			draw_line(Vector2(note_x - 30, ly), Vector2(note_x + 30, ly), line_color, 2.0, true)
+			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
 	elif pos_idx > 4:
 		var ledgers = int(floor(pos_idx - 4))
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 - 4 - i) * line_spacing
-			draw_line(Vector2(note_x - 30, ly), Vector2(note_x + 30, ly), line_color, 2.0, true)
+			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
 			
 	# Draw note head (rotated ellipse)
-	var note_rect = Rect2(note_x - 14, note_y - 10, 28, 20)
+	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
 	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
 	
 	# Draw stem
 	var stem_len = line_spacing * 3.0
+	var stem_w = max(2.0, line_spacing * 0.1)
 	if pos_idx < 2.0:
-		var stem_x = note_x + 12
-		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y - stem_len), note_color, 3.0, true)
+		var stem_x = note_x + note_width/2.0 - 2.0
+		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y - stem_len), note_color, stem_w, true)
 	else:
-		var stem_x = note_x - 12
-		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y + stem_len), note_color, 3.0, true)
+		var stem_x = note_x - note_width/2.0 + 2.0
+		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y + stem_len), note_color, stem_w, true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()

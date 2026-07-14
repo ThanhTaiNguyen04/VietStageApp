@@ -614,7 +614,7 @@ func _process_rhythm(delta, rect):
 			if is_blowing:
 				mic_status.text = "Sai ngón! Thổi lại..."
 			else:
-				mic_status.text = "Đang chờ nốt " + current_overlapping_note["note_name"] + "..."
+				mic_status.text = ""
 			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 	else:
 		mic_status.text = "Chuẩn bị..."
@@ -1020,8 +1020,7 @@ func _check_advance(delta: float, state: int):
 			# state == 0 (idle)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
 			_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
-			mic_status.text = "Đang chờ nốt " + note_data["note"] + "..."
-			mic_status.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2))
+			mic_status.text = ""
 
 
 func _advance_practice_note(is_auto: bool = false):
