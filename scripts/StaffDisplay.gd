@@ -15,7 +15,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 60.0
+var line_spacing = 85.0
 var clef_tex: Texture2D
 var bg_tex: Texture2D
 
