@@ -65,7 +65,7 @@ var total_rhythm_duration: float = 0.0
 var correct_rhythm_duration: float = 0.0
 var has_rhythm_completed: bool = false
 
-const FALL_SPEED := 90.0 # Tốc độ rơi cực chậm để dễ chơi hơn (trước là 150.0)
+var _current_note_color: Color = Color(0.1, 0.1, 0.1)
 const HIT_WINDOW := 0.5 # Nới lỏng thời gian chấm điểm thêm nữa
 
 var melody_sequence = []
@@ -407,7 +407,6 @@ func _start_practice():
 			
 	_current_practice_idx = 0
 	_practice_time = -1.5 # Reset thời gian và cho 1.5s chuẩn bị
-	_spawn_all_practice_notes()
 	_update_practice_fingers()
 
 func _update_practice_fingers():
@@ -421,90 +420,12 @@ func _update_practice_fingers():
 	if req.is_empty(): return
 	
 	# Hướng dẫn bấm ngón cho sáo thật
-	if not is_virtual_mode:
-		for i in range(HOLES):
-			_holes[i].get_child(0).visible = req[i]
-			_holes[i].get_child(0).modulate = Color(0.2, 0.8, 0.2, 0.6)
-	else:
-		for i in range(HOLES):
-			_holes[i].get_child(0).visible = virtual_holes_state[i]
-			_holes[i].get_child(0).modulate = Color(1, 1, 1, 1)
+	for i in range(HOLES):
+		_holes[i].get_child(0).visible = req[i]
+		_holes[i].get_child(0).modulate = Color(0.2, 0.8, 0.2, 0.6)
 
 	mic_status.text = "Hãy bấm nốt " + current_note_name + " và thổi..."
 	mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-
-func _spawn_all_practice_notes():
-	var container = Control.new()
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.clip_contents = true
-	_practice_note_node = container
-	
-	var rect = holes_overlay.get_global_rect()
-	var target_y = rect.position.y + rect.size.y * HOLE_PROP_Y + 140
-	
-	container.position = Vector2.ZERO
-	container.size = Vector2(get_viewport_rect().size.x, target_y)
-	
-	var scroll_node = Control.new()
-	scroll_node.name = "ScrollNode"
-	container.add_child(scroll_node)
-	
-	for note_idx in range(_practice_sequence.size()):
-		var note_data = _practice_sequence[note_idx]
-		var note_name = note_data["note"]
-		var n_time = note_data["time"]
-		var n_dur = note_data.get("duration", 1.0)
-		
-		var req = []
-		for k in LESSON_NOTES.keys():
-			if LESSON_NOTES[k]["note"] == note_name:
-				req = LESSON_NOTES[k]["fingers"]
-				break
-				
-		var group = Control.new()
-		group.name = "NoteGroup_" + str(note_idx)
-		
-		var visual_length = n_dur * FALL_SPEED
-		var base_y = target_y - (n_time * FALL_SPEED) - visual_length
-		group.position = Vector2(0, base_y)
-		scroll_node.add_child(group)
-		
-		var blow_bar = ColorRect.new()
-		blow_bar.color = Color(1.0, 1.0, 1.0, 0.1)
-		blow_bar.size = Vector2(rect.size.x, visual_length)
-		blow_bar.position = Vector2(rect.position.x, 0)
-		blow_bar.name = "BlowBar"
-		group.add_child(blow_bar)
-		
-		for i in range(HOLES):
-			if i < req.size() and req[i]:
-				var block = ColorRect.new()
-				block.color = Color(0.9, 0.7, 0.2)
-				var hx = rect.position.x + rect.size.x * HOLE_PROPS_X[i]
-				block.size = Vector2(60, visual_length)
-				block.position = Vector2(hx - 30, 0)
-				
-				var sb = StyleBoxFlat.new()
-				sb.bg_color = block.color
-				sb.corner_radius_top_left = 30; sb.corner_radius_top_right = 30
-				sb.corner_radius_bottom_left = 30; sb.corner_radius_bottom_right = 30
-				
-				var p = Panel.new()
-				p.add_theme_stylebox_override("panel", sb)
-				p.size = block.size
-				p.position = block.position
-				p.name = "Block_" + str(i)
-				group.add_child(p)
-				
-		var lbl = Label.new()
-		lbl.text = note_name
-		lbl.add_theme_font_size_override("font_size", 24)
-		lbl.add_theme_color_override("font_color", Color(1, 1, 1))
-		lbl.position = Vector2(rect.position.x - 60, visual_length - 42)
-		lbl.name = "Label"
-		group.add_child(lbl)
-		
-	rhythm_area.add_child(container)
 
 var sample_player: AudioStreamPlayer
 var sample_playback: AudioStreamGeneratorPlayback
@@ -627,15 +548,18 @@ func _process(delta):
 		var hy = rect.position.y + rect.size.y * HOLE_PROP_Y
 		_holes[i].position = Vector2(hx - 50, hy - 50)
 		
-		var target_y = rect.position.y + rect.size.y * HOLE_PROP_Y
-		_lanes[i].position = Vector2(hx - 2, 0)
-		_lanes[i].size = Vector2(4, target_y)
-		
 	if current_state == State.PRACTICE:
-		if _practice_note_node:
-			var scroll = _practice_note_node.get_node_or_null("ScrollNode")
-			if scroll:
-				scroll.position.y = _practice_time * FALL_SPEED
+		if staff_display:
+			var hit_x = staff_display.hit_line_x
+			var notes = []
+			for note_data in _practice_sequence:
+				var time_diff = note_data["time"] - _practice_time
+				var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
+				var color = Color(0.1, 0.1, 0.1)
+				if _practice_time >= note_data["time"]:
+					color = _current_note_color
+				notes.append({"note": note_data["note"], "x": note_x, "color": color})
+			staff_display.set_notes(notes)
 					
 		if sample_active:
 			mic_status.text = "Đang phát nhạc mẫu..."
@@ -658,7 +582,6 @@ func _process_rhythm(delta, rect):
 	var vol_ratio = clamp((amp + 60.0) / 60.0, 0.0, 1.0)
 	volume_bar.value = lerp(volume_bar.value, vol_ratio, 15.0 * delta)
 	
-	# Determine if we should advance time
 	var time_delta = delta
 	
 	var current_overlapping_note = null
@@ -682,12 +605,12 @@ func _process_rhythm(delta, rect):
 		if is_correct:
 			time_delta = delta
 			correct_rhythm_duration += delta
-			current_overlapping_note["node"].modulate = Color(0.2, 1.0, 0.2)
+			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
-			time_delta = -delta * 1.5 # Tua lại nhanh gấp rưỡi nếu sai
-			current_overlapping_note["node"].modulate = Color(1.0, 0.2, 0.2)
+			time_delta = -delta * 1.5
+			current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
 			if is_blowing:
 				mic_status.text = "Sai ngón! Thổi lại..."
 			else:
@@ -704,42 +627,35 @@ func _process_rhythm(delta, rect):
 			bgm_player.stream_paused = true
 		else:
 			bgm_player.stream_paused = false
-
 	
-	# Clamp time when rewinding so note stops at holes
 	if current_overlapping_note != null:
 		var target_time = current_overlapping_note["time"]
 		if rhythm_time < target_time:
 			rhythm_time = target_time
 			
-	if spawned_notes < melody_sequence.size():
-		var next_note = melody_sequence[spawned_notes]
-		var target_y = rect.position.y + rect.size.y * HOLE_PROP_Y
-		var spawn_time = next_note["time"] - (target_y / FALL_SPEED)
-		
-		if rhythm_time >= spawn_time:
-			_spawn_falling_note(next_note, rect)
-			spawned_notes += 1
-			
 	var to_remove = []
+	var hit_x = staff_display.hit_line_x if staff_display else 300.0
+	var notes_for_staff = []
+	
 	for note_data in active_falling_notes:
-		var node = note_data["node"]
 		var target_time = note_data["time"]
-		
 		var time_diff = target_time - rhythm_time
-		var target_y = rect.position.y + rect.size.y * HOLE_PROP_Y
-		var current_y = target_y - (time_diff * FALL_SPEED)
-		node.position.y = current_y
-		
 		var duration = note_data.get("duration", 1.0)
+		
+		var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
+		
+		if note_x < get_viewport_rect().size.x + 200 and note_x > -200:
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.1, 0.1, 0.1))})
+		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
-			node.queue_free()
+			
+	if staff_display: staff_display.set_notes(notes_for_staff)
 			
 	for r in to_remove:
 		active_falling_notes.erase(r)
 		
-	if spawned_notes >= melody_sequence.size() and active_falling_notes.is_empty():
+	if active_falling_notes.is_empty():
 		has_rhythm_completed = true
 		_complete_lesson()
 
@@ -1135,17 +1051,7 @@ func _check_auto_advance():
 		_advance_practice_note(true)
 
 func _set_note_color(color: Color):
-	if _practice_note_node:
-		var scroll = _practice_note_node.get_node_or_null("ScrollNode")
-		if scroll:
-			var active_group = scroll.get_node_or_null("NoteGroup_" + str(_current_practice_idx))
-			if active_group:
-				for i in range(HOLES):
-					var block = active_group.get_node_or_null("Block_" + str(i))
-					if block:
-						var sb = block.get_theme_stylebox("panel")
-						if sb is StyleBoxFlat:
-							sb.bg_color = color
+	_current_note_color = color
 
 func _check_advance(delta: float, state: int):
 	if _current_practice_idx >= _practice_sequence.size(): return
@@ -1278,6 +1184,17 @@ func _start_rhythm_game():
 	rhythm_time = -2.0 # 2 seconds delay
 	spawned_notes = 0
 	active_falling_notes.clear()
+	
+	for note in melody_sequence:
+		active_falling_notes.append({
+			"time": note["time"],
+			"duration": note.get("duration", 1.0),
+			"note_name": note["note"],
+			"color": Color(0.1, 0.1, 0.1),
+			"hit": false,
+			"failed": false
+		})
+		
 	total_rhythm_duration = 0.0
 	correct_rhythm_duration = 0.0
 	has_rhythm_completed = false

@@ -23,68 +23,78 @@ func _ready():
 		clef_tex = load("res://assets/textures/treble_clef.svg")
 	resized.connect(queue_redraw)
 
+var notes_to_draw: Array = []
+var hit_line_x: float = 300.0 # Will be updated in _draw
+
 func set_note(note_name: String):
 	active_note = note_name
 	queue_redraw()
 
+func set_notes(notes: Array):
+	notes_to_draw = notes
+	queue_redraw()
+
 func _draw():
 	var center_y = size.y / 2.0
-	# Staff has 5 lines, centered.
-	# Line 3 (middle line) is at center_y.
-	# Line 1 (bottom) is at center_y + 2 * line_spacing
-	# Line 5 (top) is at center_y - 2 * line_spacing
 	
-	var staff_width = size.x * 0.8
-	var start_x = (size.x - staff_width) / 2.0
-	var end_x = start_x + staff_width
+	var start_x = 0.0
+	var end_x = size.x
+	hit_line_x = size.x * 0.25 # Hit line at 25% of screen
 	
 	var line_color = Color(0.1, 0.1, 0.1, 1.0)
-	var note_color = Color(0.1, 0.1, 0.1, 1.0)
 	
 	# Draw 5 lines (0 is bottom line, 4 is top line)
 	for i in range(5):
 		var y = center_y + (2 - i) * line_spacing
 		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 2.0, true)
 		
+	# Draw hit line
+	draw_line(Vector2(hit_line_x, center_y - 3 * line_spacing), Vector2(hit_line_x, center_y + 3 * line_spacing), Color(0.2, 0.8, 0.2, 0.5), 4.0, true)
+		
 	# Draw treble clef
 	if clef_tex:
-		# Position it on the left side of the staff
 		var clef_w = line_spacing * 3.5
 		var clef_h = line_spacing * 7.5
 		var clef_y = center_y - clef_h * 0.45
-		draw_texture_rect(clef_tex, Rect2(start_x + 20, clef_y, clef_w, clef_h), false)
+		# Draw clef near the left edge, before hit line
+		draw_texture_rect(clef_tex, Rect2(hit_line_x - clef_w - 20, clef_y, clef_w, clef_h), false)
 		
-	# Draw note
-	if NOTE_POSITIONS.has(active_note):
-		var pos_idx = NOTE_POSITIONS[active_note]
-		var note_x = size.x / 2.0
-		# pos_idx = 0 is bottom line (i=0) -> center_y + 2 * line_spacing
-		var note_y = center_y + (2 - pos_idx) * line_spacing
-		
-		# Draw ledger lines if outside staff
-		if pos_idx < 0:
-			var ledgers = int(floor(-pos_idx))
-			for i in range(1, ledgers + 1):
-				var ly = center_y + (2 + i) * line_spacing
-				draw_line(Vector2(note_x - 30, ly), Vector2(note_x + 30, ly), line_color, 2.0, true)
-		elif pos_idx > 4:
-			var ledgers = int(floor(pos_idx - 4))
-			for i in range(1, ledgers + 1):
-				var ly = center_y + (2 - 4 - i) * line_spacing
-				draw_line(Vector2(note_x - 30, ly), Vector2(note_x + 30, ly), line_color, 2.0, true)
-				
-		# Draw note head (rotated ellipse)
-		var note_rect = Rect2(note_x - 14, note_y - 10, 28, 20)
-		_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
-		
-		# Draw stem
-		var stem_len = line_spacing * 3.0
-		if pos_idx < 2.0:
-			var stem_x = note_x + 12
-			draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y - stem_len), note_color, 3.0, true)
-		else:
-			var stem_x = note_x - 12
-			draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y + stem_len), note_color, 3.0, true)
+	# Draw all notes
+	for note_data in notes_to_draw:
+		var n_name = note_data.get("note", "Đô")
+		var n_x = note_data.get("x", size.x / 2.0)
+		var n_color = note_data.get("color", Color(0.1, 0.1, 0.1, 1.0))
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color)
+
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color):
+	if not NOTE_POSITIONS.has(note_name): return
+	var pos_idx = NOTE_POSITIONS[note_name]
+	var note_y = center_y + (2 - pos_idx) * line_spacing
+	
+	# Draw ledger lines if outside staff
+	if pos_idx < 0:
+		var ledgers = int(floor(-pos_idx))
+		for i in range(1, ledgers + 1):
+			var ly = center_y + (2 + i) * line_spacing
+			draw_line(Vector2(note_x - 30, ly), Vector2(note_x + 30, ly), line_color, 2.0, true)
+	elif pos_idx > 4:
+		var ledgers = int(floor(pos_idx - 4))
+		for i in range(1, ledgers + 1):
+			var ly = center_y + (2 - 4 - i) * line_spacing
+			draw_line(Vector2(note_x - 30, ly), Vector2(note_x + 30, ly), line_color, 2.0, true)
+			
+	# Draw note head (rotated ellipse)
+	var note_rect = Rect2(note_x - 14, note_y - 10, 28, 20)
+	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
+	
+	# Draw stem
+	var stem_len = line_spacing * 3.0
+	if pos_idx < 2.0:
+		var stem_x = note_x + 12
+		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y - stem_len), note_color, 3.0, true)
+	else:
+		var stem_x = note_x - 12
+		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y + stem_len), note_color, 3.0, true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()
