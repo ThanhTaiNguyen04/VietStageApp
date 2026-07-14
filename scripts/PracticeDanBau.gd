@@ -142,16 +142,16 @@ func _ready() -> void:
 		record_hbox.move_child(visualizer, 1)
 		
 		# Programmatic Mode Toggle Button
+		var ctrl_btns = get_node_or_null("../SettingsPanel/SettingsM/SettingsVBox/CtrlBtns")
 		var mode_btn := Button.new()
 		mode_btn.name = "ModeToggleBtn"
 		mode_btn.text = "Chế độ: Micro 🎙️"
-		mode_btn.custom_minimum_size = Vector2(170, 44)
-		mode_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		record_hbox.add_child(mode_btn)
-		record_hbox.move_child(mode_btn, 0)
-		_style_outlined_btn(mode_btn)
-		_make_button_bouncy(mode_btn)
-		
+		mode_btn.custom_minimum_size = Vector2(0, 48)
+		if ctrl_btns:
+			ctrl_btns.add_child(mode_btn)
+			_style_sidebar_btn(mode_btn)
+			_make_button_bouncy(mode_btn)
+			
 		mode_btn.pressed.connect(func() -> void:
 			_mic_mode = not _mic_mode
 			if _mic_mode:
@@ -246,8 +246,6 @@ func _set_labels() -> void:
 
 	($Root/TopBar/TopM/TopH/LessonTag  as Label).text  = "ĐÀN BẦU  ·  KỸ THUẬT  ·  %s" % diff.to_upper()
 	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
-	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "40%" if current_song_title == "" else "100%"
-	($SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn as Button).text = "Gợi ý"
 	# Style all sidebar buttons properly with icons
 	var ctrl_btns = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns
 	if ctrl_btns:
@@ -380,18 +378,55 @@ func _build_theme() -> void:
 
 	var settings_panel := $SettingsPanel as PanelContainer
 	if settings_panel:
+		# Neo sidebar sang bên trái, chiều cao toàn màn hình
+		settings_panel.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+		settings_panel.custom_minimum_size = Vector2(250, 0)
+		settings_panel.offset_left = 0
+		settings_panel.offset_top = 0
+		settings_panel.offset_right = 250
+		settings_panel.offset_bottom = 0
+		
+		# Style glass-morphism cho sidebar giống Đàn Tranh
 		var sp_style := StyleBoxFlat.new()
-		sp_style.bg_color = C_CARD
-		sp_style.border_color = C_GOLD
-		sp_style.border_width_left = 2; sp_style.border_width_right = 2
-		sp_style.border_width_top = 2; sp_style.border_width_bottom = 2
-		sp_style.corner_radius_top_left = 14; sp_style.corner_radius_top_right = 14
-		sp_style.corner_radius_bottom_left = 14; sp_style.corner_radius_bottom_right = 14
-		sp_style.shadow_size = 10; sp_style.shadow_color = Color(0.2, 0.15, 0.1, 0.25)
+		sp_style.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+		sp_style.border_color = Color(0.8, 0.78, 0.73, 0.8)
+		sp_style.border_width_right = 2
 		settings_panel.add_theme_stylebox_override("panel", sp_style)
+		
+		# Thêm hiệu ứng blur background
+		var blur_mat = ShaderMaterial.new()
+		var blur_shader = Shader.new()
+		blur_shader.code = """
+		shader_type canvas_item;
+		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+		uniform float lod: hint_range(0.0, 5.0) = 2.0;
+		void fragment() {
+			COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+		}
+		"""
+		blur_mat.shader = blur_shader
+		var blur_bg = ColorRect.new()
+		blur_bg.material = blur_mat
+		blur_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		settings_panel.add_child(blur_bg)
+		settings_panel.move_child(blur_bg, 0)
+		
 		var menu_title := $SettingsPanel/SettingsM/SettingsVBox/MenuTitle as Label
 		if menu_title:
-			menu_title.add_theme_color_override("font_color", C_TEXT)
+			menu_title.text = "CÀI ĐẶT LUYỆN TẬP"
+			var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+			if f_body: menu_title.add_theme_font_override("font", f_body)
+			menu_title.add_theme_color_override("font_color", Color(0.25, 0.22, 0.20))
+
+		# Ẩn các phần tử không cần thiết (Progress, Dots)
+		var prog = get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/ProgressVBox")
+		if prog: prog.visible = false
+		var dots = get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/DotsHBox")
+		if dots: dots.visible = false
+		
+		# Ẩn thanh RecordBar bên dưới vì đã chuyển nút vào sidebar
+		var rec_bar = get_node_or_null("Root/RecordBar")
+		if rec_bar: rec_bar.visible = false
 
 	# Linh panel
 	var linh_s := StyleBoxEmpty.new()
@@ -428,7 +463,6 @@ func _build_theme() -> void:
 	var guide_panel := get_node_or_null("Root/StringsBoard/BoardM/BoardHBox/LeftGuide") as PanelContainer
 	if guide_panel:
 		var guide_style := StyleBoxFlat.new()
-		guide_style.bg_color = Color(0, 0, 0, 0)
 		guide_style.border_width_left = 0; guide_style.border_width_right = 0
 		guide_style.border_width_top = 0; guide_style.border_width_bottom = 0
 		guide_panel.add_theme_stylebox_override("panel", guide_style)
@@ -756,9 +790,69 @@ func _connect_buttons() -> void:
 	var slow_btn  := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn as Button
 	var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
 	var menu_btn  := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	
+	var ctrl_btns = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns
+	if ctrl_btns and reset_btn:
+		reset_btn.get_parent().remove_child(reset_btn)
+		ctrl_btns.add_child(reset_btn)
+		reset_btn.text = "\nLàm lại"
+		_style_sidebar_btn(reset_btn)
+		_set_sidebar_icon(reset_btn, "rotate-ccw")
+		_make_button_bouncy(reset_btn)
 
-	back_btn.pressed.connect(_go_back)
-	hint_btn.pressed.connect(_show_custom_hint)
+	# Ẩn nút Quay lại cũ trên TopBar (do dùng sidebar)
+	if back_btn: back_btn.visible = false
+
+	# Nút Kết thúc luyện tập
+	var end_btn := Button.new()
+	end_btn.name = "EndBtn"
+	end_btn.text = "\nKết thúc luyện tập"
+	end_btn.custom_minimum_size = Vector2(0, 48)
+	end_btn.visible = false
+	if ctrl_btns:
+		ctrl_btns.add_child(end_btn)
+		_style_sidebar_btn(end_btn)
+		_set_sidebar_icon(end_btn, "pause")
+		_make_button_bouncy(end_btn)
+		end_btn.pressed.connect(func():
+			_toggle_record()
+		)
+		
+	# Mode Toggle Button
+	var mode_btn = ctrl_btns.get_node_or_null("ModeToggleBtn")
+	if mode_btn:
+		mode_btn.text = "\nMicro: Bật" if _mic_mode else "\nMicro: Tắt"
+		_set_sidebar_icon(mode_btn, "mic" if _mic_mode else "mic-off")
+		
+	# Sound Mode Button
+	var sound_btn = ctrl_btns.get_node_or_null("SoundModeBtn")
+	if sound_btn:
+		sound_btn.text = "\nÂm Đàn bầu"
+		_set_sidebar_icon(sound_btn, "music")
+		
+	# Setup order theo chuẩn Đàn Tranh
+	if ctrl_btns:
+		var order := ["HintBtn", "EndBtn", "DemoBtn", "SlowBtn", "ResetBtn", "SoundModeBtn", "ModeToggleBtn"]
+		for i in range(order.size()):
+			var node = ctrl_btns.get_node_or_null(order[i])
+			if node:
+				ctrl_btns.move_child(node, i)
+				
+		# Spacer đẩy các nút cuối xuống
+		ctrl_btns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		var spacer = Control.new()
+		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		ctrl_btns.add_child(spacer)
+		
+		# Đưa nút Quay lại xuống dưới cùng (sau spacer)
+		var back_node = ctrl_btns.get_node_or_null("BackBtnSidebar")
+		if back_node:
+			ctrl_btns.move_child(back_node, -1)
+
+	# Bắt đầu luyện tập
+	hint_btn.pressed.connect(func():
+		_toggle_record()
+	)
 	if demo_btn: demo_btn.pressed.connect(_demo)
 	slow_btn.pressed.connect(func() -> void: _va_say("Xem chậm x0.5 – dễ uốn nốt từng bước."))
 	record_btn.pressed.connect(_toggle_record)
@@ -779,13 +873,13 @@ func _connect_buttons() -> void:
 
 func _toggle_record() -> void:
 	_recording = not _recording
-	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
-	_update_rec_pulse(_recording)
+	var hint_btn = get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn") as Button
+	var end_btn  = get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/EndBtn") as Button
+	
 	if _recording:
-		record_btn.text = "Dừng luyện tập"
+		if hint_btn: hint_btn.visible = false
+		if end_btn: end_btn.visible = true
 		_va_say(SPEECHES[0])
-		if visualizer and _mic_mode: visualizer.visible = true
-		
 		# Reset AI tracking
 		_practice_time = 0.0
 		_detected_onsets.clear()
@@ -794,12 +888,12 @@ func _toggle_record() -> void:
 		_reference_onsets = PackedFloat32Array()
 		for i in range(sheet_notes.size()):
 			_reference_onsets.append(1.0 + i * 1.5)
+			
+		$SettingsPanel.visible = false # Tự động đóng sidebar khi bắt đầu
 	else:
-		record_btn.text = "Bắt đầu luyện tập"
-		if visualizer:
-			visualizer.add_practice_score(_score)
+		if hint_btn: hint_btn.visible = true
+		if end_btn: end_btn.visible = false
 		_show_custom_result()
-		if visualizer: visualizer.visible = false
 
 func _demo() -> void:
 	if _demo_active:

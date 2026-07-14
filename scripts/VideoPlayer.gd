@@ -136,6 +136,10 @@ func _ready() -> void:
 	_connect_buttons()
 	_update_play_state()
 	
+	if inst == "dan_bau":
+		_setup_simply_piano_layout()
+
+	
 	# Determine duration dynamically
 	if video_stream_player.stream:
 		var stream_len := video_stream_player.get_stream_length()
@@ -383,7 +387,14 @@ func _on_zoom_pressed() -> void:
 
 func _update_play_state() -> void:
 	if _playing:
-		play_btn.text = "⏸"
+		if play_btn.has_node("VBoxContainer/LabelTxt"):
+			var lbl = play_btn.get_node("VBoxContainer/LabelTxt") as Label
+			var irect = play_btn.get_node("VBoxContainer/IconRect") as TextureRect
+			lbl.text = "Pause"
+			var tex = _get_white_lucide_icon("pause")
+			if tex: irect.texture = tex
+		else:
+			play_btn.text = "⏸"
 		play_overlay.visible = false
 		linh_rect.visible = false
 		video_stream_player.visible = true
@@ -392,7 +403,14 @@ func _update_play_state() -> void:
 		else:
 			video_stream_player.play()
 	else:
-		play_btn.text = "▶"
+		if play_btn.has_node("VBoxContainer/LabelTxt"):
+			var lbl = play_btn.get_node("VBoxContainer/LabelTxt") as Label
+			var irect = play_btn.get_node("VBoxContainer/IconRect") as TextureRect
+			lbl.text = "Play"
+			var tex = _get_white_lucide_icon("play")
+			if tex: irect.texture = tex
+		else:
+			play_btn.text = "▶"
 		play_overlay.visible = true
 		if video_stream_player.is_playing() and not video_stream_player.paused:
 			video_stream_player.paused = true
@@ -421,7 +439,7 @@ func _va_success_prompt() -> void:
 
 func _on_complete() -> void:
 	video_stream_player.stop()
-	var inst := InstrumentSelect.selected_instrument
+	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
 	var lesson_id := SecureDataManager.active_lesson_id
 	SecureDataManager.complete_lesson(inst, lesson_id, 3) # Mark Intro completed with 3 stars securely!
 	SecureDataManager.video_completed = true
@@ -486,5 +504,140 @@ func _make_button_bouncy(btn: Button) -> void:
 	)
 	btn.button_up.connect(func() -> void:
 		var t := create_tween()
-		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _setup_simply_piano_layout() -> void:
+	# Hide default rows
+	if top_row: top_row.visible = false
+	var control_row := player_vbox.get_node_or_null("ControlRow")
+	if control_row: control_row.visible = false
+	if footer_row: footer_row.visible = false
+	if sub_panel: sub_panel.visible = false
+	
+	# Loại bỏ viền trắng để video tràn màn hình
+	if card_m:
+		card_m.add_theme_constant_override("margin_left", 0)
+		card_m.add_theme_constant_override("margin_right", 0)
+		card_m.add_theme_constant_override("margin_top", 0)
+		card_m.add_theme_constant_override("margin_bottom", 0)
+	player_card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	if video_frame:
+		video_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		
+	# Chuyển nền tổng thành đen để không lộ viền trắng khi video có letterbox
+	var bg_node := get_node_or_null("BG") as ColorRect
+	if bg_node:
+		bg_node.color = Color.BLACK
+	
+	# Create overlay container on video_frame
+	var overlay = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	video_frame.add_child(overlay)
+	
+	# 1. Top Left Buttons (Play, Restart, Exit)
+	var tl_hbox = HBoxContainer.new()
+	tl_hbox.add_theme_constant_override("separation", 15)
+	tl_hbox.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	tl_hbox.position = Vector2(30, 30)
+	overlay.add_child(tl_hbox)
+	
+	var create_sp_btn = func(icon_name: String, lbl_txt: String, cb: Callable) -> Button:
+		var btn = Button.new()
+		btn.custom_minimum_size = Vector2(72, 72)
+		var sb = _flat(Color(1, 1, 1, 0.25), Color(1, 1, 1, 0.4), 16)
+		var sb_h = _flat(Color(1, 1, 1, 0.4), Color(1, 1, 1, 0.6), 16)
+		btn.add_theme_stylebox_override("normal", sb)
+		btn.add_theme_stylebox_override("hover", sb_h)
+		btn.add_theme_stylebox_override("pressed", sb_h)
+		btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		btn.pressed.connect(cb)
+		
+		# Dùng VBoxContainer để căn giữa cả icon và text hoàn hảo
+		var vbox = VBoxContainer.new()
+		vbox.name = "VBoxContainer"
+		vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		vbox.add_theme_constant_override("separation", 2)
+		vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(vbox)
+		
+		var icon_rect = TextureRect.new()
+		icon_rect.name = "IconRect"
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var tex = _get_white_lucide_icon(icon_name)
+		if tex: icon_rect.texture = tex
+		vbox.add_child(icon_rect)
+		
+		var lbl = Label.new()
+		lbl.name = "LabelTxt"
+		lbl.text = lbl_txt
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", Color.WHITE)
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(lbl)
+		
+		_make_button_bouncy(btn)
+		tl_hbox.add_child(btn)
+		return btn
+		
+	var sp_play = create_sp_btn.call("play", "Play", _toggle_play)
+	# Cập nhật Play text reference cho update_play_state
+	play_btn = sp_play 
+	var sp_restart = create_sp_btn.call("rotate-ccw", "Restart", func():
+		_time = 0.0
+		video_stream_player.stream_position = 0.0
+	)
+	var sp_exit = create_sp_btn.call("log-out", "Exit", _go_back)
+	
+	# 2. Skip Button at Bottom Right
+	var sp_skip = Button.new()
+	sp_skip.text = "SKIP"
+	sp_skip.add_theme_font_size_override("font_size", 20)
+	var skip_sb = StyleBoxEmpty.new()
+	sp_skip.add_theme_stylebox_override("normal", skip_sb)
+	sp_skip.add_theme_stylebox_override("hover", skip_sb)
+	sp_skip.add_theme_stylebox_override("pressed", skip_sb)
+	sp_skip.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	sp_skip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	sp_skip.position = Vector2(-120, -60)
+	sp_skip.pressed.connect(_on_complete)
+	_make_button_bouncy(sp_skip)
+	overlay.add_child(sp_skip)
+	
+	# 3. Subtitles at Bottom Center
+	var sub_cont = PanelContainer.new()
+	var sub_sb = _flat(Color(0,0,0,0.5), Color(0,0,0,0), 8)
+	sub_cont.add_theme_stylebox_override("panel", sub_sb)
+	sub_cont.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	sub_cont.position = Vector2(-300, -80)
+	sub_cont.custom_minimum_size = Vector2(600, 40)
+	
+	var new_sub_lbl = Label.new()
+	new_sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	new_sub_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	new_sub_lbl.add_theme_font_size_override("font_size", 18)
+	new_sub_lbl.add_theme_color_override("font_color", Color.WHITE)
+	new_sub_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub_cont.add_child(new_sub_lbl)
+	overlay.add_child(sub_cont)
+	
+	# Override sub_label reference so subtitle updates work
+	sub_label = new_sub_lbl
+
+func _get_white_lucide_icon(icon_name: String) -> Texture2D:
+	var path = "res://assets/textures/lucide/" + icon_name + ".svg"
+	if not FileAccess.file_exists(path):
+		return null
+	var svg_str = FileAccess.get_file_as_string(path)
+	if svg_str.is_empty():
+		return null
+	svg_str = svg_str.replace("currentColor", "#FFFFFF")
+	svg_str = svg_str.replace("stroke-width=\"2\"", "stroke-width=\"1.5\"")
+	var img = Image.new()
+	var err = img.load_svg_from_string(svg_str, 1.25)
+	if err == OK:
+		return ImageTexture.create_from_image(img)
+	return null

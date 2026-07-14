@@ -278,78 +278,18 @@ func _ready() -> void:
 	if scroll_container:
 		scroll_container.visible = false
 
-	# Fully collapse MiddleRow: hide NotationArea, StatsRow, and LinhPanel
-	# so StringsBoard takes full vertical space
+	# Hide NotationArea entirely and collapse MiddleRow to make Dan Tranh zither full screen
 	var notation_area := $Root/MiddleRow/MainContent/NotationArea as PanelContainer
 	if notation_area:
 		notation_area.visible = false
-
-	# Hide StatsRow — stats will be shown as compact overlay in TopBar
-	var stats_row := $Root/MiddleRow/MainContent/StatsRow as HBoxContainer
-	if stats_row:
-		stats_row.visible = false
-
-	# Hide LinhPanel (AI teacher panel) — collapse MiddleRow entirely
-	var linh_panel_node := $Root/MiddleRow/LinhPanel as PanelContainer
-	if linh_panel_node:
-		linh_panel_node.visible = false
-
 	var middle_row := $Root/MiddleRow as HBoxContainer
 	if middle_row:
 		middle_row.custom_minimum_size.y = 0
-		middle_row.visible = false  # Fully collapse since all children are hidden
-
-	# Inject compact stats HBox into TopBar (right side of TopH)
-	var top_h := $Root/TopBar/TopM/TopH as HBoxContainer
-	if top_h:
-		var stats_compact := HBoxContainer.new()
-		stats_compact.name = "TopStatsCompact"
-		stats_compact.size_flags_horizontal = Control.SIZE_SHRINK_END
-		stats_compact.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
-		stats_compact.add_theme_constant_override("separation", 0)
-
-		# Helper to create a mini stat pill
-		var _make_stat_pill = func(title_str: String, val_node_name: String) -> Control:
-			var pill := PanelContainer.new()
-			var pill_m := MarginContainer.new()
-			pill_m.add_theme_constant_override("margin_left",   10)
-			pill_m.add_theme_constant_override("margin_right",  10)
-			pill_m.add_theme_constant_override("margin_top",     2)
-			pill_m.add_theme_constant_override("margin_bottom",  2)
-			var pill_v := VBoxContainer.new()
-			pill_v.add_theme_constant_override("separation", 1)
-			pill_v.alignment = BoxContainer.ALIGNMENT_CENTER
-			var t_lbl := Label.new()
-			t_lbl.text = title_str
-			t_lbl.add_theme_font_size_override("font_size", 9)
-			t_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			t_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
-			var v_lbl := Label.new()
-			v_lbl.name = val_node_name
-			v_lbl.text = "-"
-			v_lbl.add_theme_font_size_override("font_size", 15)
-			v_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			v_lbl.add_theme_color_override("font_color", C_RED_SON)
-			pill_v.add_child(t_lbl)
-			pill_v.add_child(v_lbl)
-			pill_m.add_child(pill_v)
-			pill.add_child(pill_m)
-			var pill_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 8)
-			pill.add_theme_stylebox_override("panel", pill_s)
-			return pill
-
-		var pitch_pill := _make_stat_pill.call("CAO ĐỘ", "TopPitchVal") as Control
-		var rhythm_pill := _make_stat_pill.call("NHỊP ĐIỆU", "TopRhythmVal") as Control
-		var score_pill := _make_stat_pill.call("ĐIỂM SỐ", "TopScoreVal") as Control
-
-		# Add pills to compact HBox and inject into TopBar
-		stats_compact.add_child(pitch_pill)
-		stats_compact.add_child(rhythm_pill)
-		stats_compact.add_child(score_pill)
-
-		# Insert before MenuBtn (last child)
-		top_h.add_child(stats_compact)
-		top_h.move_child(stats_compact, top_h.get_child_count() - 2)
+		
+	# Ẩn StatsRow để tối ưu không gian hiển thị trên mobile (Giống giao diện Sáo Trúc)
+	var stats_row = $Root/MiddleRow/MainContent/StatsRow
+	if stats_row:
+		stats_row.visible = false
 
 
 	# Create and style the NoteTrackPanel
@@ -717,13 +657,8 @@ func _process(delta: float) -> void:
 				var target_note = sheet_notes[_note_idx]
 				var target_idx = NOTES_VN.find(target_note)
 				if target_idx != -1:
-					# Play audio only once via _play_zither_sound (board audio disabled in demo)
-					_play_zither_sound(target_idx)
 					if _board:
-						# Visual only — disable audio on board to avoid double playback & distortion
-						_board.audio_enabled = false
 						_board.pluck(target_idx)
-						_board.audio_enabled = false
 						
 			if _current_note_elapsed >= target_duration:
 				_current_note_elapsed = 0.0
@@ -853,15 +788,14 @@ func _process(delta: float) -> void:
 
 # ─── Labels ───────────────────────────────────────────────────────────────────
 func _set_labels() -> void:
-	var back_btn_top := get_node_or_null("Root/TopBar/TopM/TopH/BackBtn") as Button
-	if back_btn_top: back_btn_top.text = "Quay lại"
-
+	($Root/TopBar/TopM/TopH/BackBtn    as Button).text = "Quay lại"
+	
 	var diff := "Cơ bản"
 	if SecureDataManager.active_lesson_id == "Node3":
 		diff = "Trung bình"
 	elif SecureDataManager.active_lesson_id == "Node4":
 		diff = "Nâng cao"
-
+		
 	var title_lbl := "Kỹ Thuật Nhấn Dây & Rung Âm"
 	if current_song_title != "":
 		title_lbl = current_song_title
@@ -872,46 +806,27 @@ func _set_labels() -> void:
 		elif SecureDataManager.active_lesson_id == "Node4":
 			title_lbl = "Kỹ Thuật Song Thanh"
 
-	var lesson_title_lbl := get_node_or_null("Root/TopBar/TopM/TopH/LessonTitle") as Label
-	if lesson_title_lbl: lesson_title_lbl.text = title_lbl
+	($Root/TopBar/TopM/TopH/LessonTitle as Label).text = title_lbl
+	($SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label).text = "60%" if current_song_title == "" else "100%"
+	var hint_btn_node = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("HintBtn") as Button
+	if hint_btn_node:
+		hint_btn_node.text = "Gợi ý"
 
-	var pct_lbl := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel") as Label
-	if pct_lbl: pct_lbl.text = "60%" if current_song_title == "" else "100%"
+	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel as Label).text = "BẢN NHẠC  —  Gảy theo dòng nốt"
+	($Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel as Label).text = "Nốt cần gảy: Đô"
+	($Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle   as Label).text = "CAO ĐỘ"
+	($Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle as Label).text = "NHỊP ĐIỆU"
+	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
+	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
 
-	var hint_btn := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/HintBtn") as Button
-	if hint_btn: hint_btn.text = "Gợi ý"
+	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐÀN TRANH 16 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để nhấn rung"
+	record_btn.text = "Bắt đầu luyện tập"
+	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
 
-	var notation_lbl := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/NotationLabel") as Label
-	if notation_lbl: notation_lbl.text = "BẢN NHẠC  —  Gảy theo dòng nốt"
+	speech_label.text = SPEECHES[0]
 
-	var target_note_lbl := get_node_or_null("Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TargetNoteLabel") as Label
-	if target_note_lbl: target_note_lbl.text = "Nốt cần gảy: Đô"
-
-	var pitch_title := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/PitchPanel/PitchM/PitchV/PitchTitle") as Label
-	if pitch_title: pitch_title.text = "CAO ĐỘ"
-
-	var rhythm_title := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/RhythmPanel/RhythmM/RhythmV/RhythmTitle") as Label
-	if rhythm_title: rhythm_title.text = "NHỊP ĐIỆU"
-
-	var score_title := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle") as Label
-	if score_title: score_title.text = "ĐIỂM SỐ"
-
-	var score_sub := get_node_or_null("Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub") as Label
-	if score_sub: score_sub.text = "Cao độ 82%  ·  Nhịp 71%"
-
-	var board_lbl := get_node_or_null("Root/StringsBoard/BoardM/BoardVBox/BoardLabel") as Label
-	if board_lbl: board_lbl.text = "ĐÀN TRANH 16 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để nhấn rung"
-
-	if record_btn: record_btn.text = "Bắt đầu luyện tập"
-
-	var reset_btn := get_node_or_null("Root/RecordBar/RecordM/RecordH/ResetBtn") as Button
-	if reset_btn: reset_btn.text = "Làm lại"
-
-	if speech_label: speech_label.text = SPEECHES[0]
-
-	if hint_dialog:
-		hint_dialog.title = "Gợi ý kỹ thuật"
-		hint_dialog.dialog_text = "Kỹ thuật gảy đàn tranh:\n\n🎵 GẢY DÂY: Chạm vào phần bên phải nhạn đàn (▲) để phát âm\n🎵 NHẤN RUNG: Giữ và kéo phần bên trái nhạn đàn để tạo rung âm\n\n• Dùng đầu ngón tay phải gảy nhẹ và dứt khoát\n• Ngón tay trái nhấn nhẹ phía trái nhạn đàn 2-3mm\n• Kéo và thả để tạo tiếng rung (vibrato)\n• Giữ cổ tay thả lỏng, ngón tay vuông góc với dây"
+	hint_dialog.title = "Gợi ý kỹ thuật"
+	hint_dialog.dialog_text = "Kỹ thuật gảy đàn tranh:\n\n🎵 GẢY DÂY: Chạm vào phần bên phải nhạn đàn (▲) để phát âm\n🎵 NHẤN RUNG: Giữ và kéo phần bên trái nhạn đàn để tạo rung âm\n\n• Dùng đầu ngón tay phải gảy nhẹ và dứt khoát\n• Ngón tay trái nhấn nhẹ phía trái nhạn đàn 2-3mm\n• Kéo và thả để tạo tiếng rung (vibrato)\n• Giữ cổ tay thả lỏng, ngón tay vuông góc với dây"
 
 # ─── Theme ────────────────────────────────────────────────────────────────────
 func _build_theme() -> void:
@@ -987,15 +902,17 @@ func _build_theme() -> void:
 		var target_label = board_vbox.get_node_or_null("TargetLabel") as Label
 		if target_label: target_label.visible = false
 		
-		# Setup MenuFAB on the left side of StringsBoard
-		_board.add_child(menu_btn)
+		# Keep the sidebar toggle in the screen overlay instead of inside the
+		# instrument. The board changes its logical size and drawing transform in
+		# portrait mode, which could move/clip child controls outside the viewport.
+		add_child(menu_btn)
 		menu_btn.name = "MenuFAB"
 		menu_btn.text = ""
 		menu_btn.custom_minimum_size = Vector2(40, 40)
 		menu_btn.size = Vector2(40, 40)
-		
-		# Dynamic position will be set in update_fabs
 		menu_btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		menu_btn.position = Vector2(32.0, 12.0)
+		menu_btn.z_index = 90
 		
 		var tex = load("res://assets/textures/lucide/menu.svg")
 		if tex:
@@ -1004,16 +921,16 @@ func _build_theme() -> void:
 			if "vertical_icon_alignment" in menu_btn:
 				menu_btn.set("vertical_icon_alignment", 1) # CENTER
 			menu_btn.expand_icon = true
-			menu_btn.add_theme_color_override("icon_normal_color", Color(0.98, 0.97, 0.95))
-			menu_btn.add_theme_color_override("icon_hover_color", Color.WHITE)
-			menu_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
+			menu_btn.add_theme_color_override("icon_normal_color", C_TEXT)
+			menu_btn.add_theme_color_override("icon_hover_color", C_JADE)
+			menu_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 		
 		var fab_s := StyleBoxFlat.new()
-		fab_s.bg_color = Color(1, 1, 1, 0.1)
+		fab_s.bg_color = Color(0.95, 0.93, 0.87, 0.55)
 		fab_s.corner_radius_top_left = 12; fab_s.corner_radius_top_right = 12
 		fab_s.corner_radius_bottom_left = 12; fab_s.corner_radius_bottom_right = 12
 		var fab_h := fab_s.duplicate() as StyleBoxFlat
-		fab_h.bg_color = Color(1, 1, 1, 0.3)
+		fab_h.bg_color = Color(0.95, 0.93, 0.87, 0.85)
 		menu_btn.add_theme_stylebox_override("normal", fab_s)
 		menu_btn.add_theme_stylebox_override("hover", fab_h)
 		menu_btn.add_theme_stylebox_override("pressed", fab_s)
@@ -1151,22 +1068,6 @@ func _build_theme() -> void:
 	var record_bar = $Root.get_node_or_null("RecordBar")
 	if record_bar: record_bar.visible = false
 	
-	# Dynamic positioning of FABs relative to strings
-	var update_fabs = func():
-		if not is_instance_valid(_board): return
-		var H = _board.size.y
-		var rh = (H - 20.0) / 17.0
-		var m_btn = _board.get_node_or_null("MenuFAB")
-		if m_btn:
-			var cy0 = 10.0 + rh * 0.5
-			var str_l0 = _board.get_str_l(0) if _board.has_method("get_str_l") else 60.0
-			m_btn.position = Vector2(str_l0 - 45.0, cy0 - 20.0)
-			
-	if _board and not _board.resized.is_connected(update_fabs):
-		_board.resized.connect(update_fabs)
-		# Call it slightly deferred to ensure size is initialized
-		get_tree().create_timer(0.05).timeout.connect(update_fabs)
-
 # ─── Notation Track ───────────────────────────────────────────────────────────
 func _build_notation() -> void:
 	_build_notation_track()
@@ -1302,7 +1203,7 @@ func _get_string_frequency(idx: int) -> float:
 		293.66, # Rê (D4)
 		329.63  # Mi (E4)
 	]
-	var octave = int(idx / 5.0)
+	var octave = idx / 5
 	var note_in_octave = idx % 5
 	return base_freqs[note_in_octave] * pow(2, octave)
 
@@ -1383,13 +1284,6 @@ func _on_string_plucked(idx: int, plucked_note: String) -> void:
 	pitch_status.text = "Dây %d  —  Vừa gảy" % (idx + 1)
 	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
-	# Mirror to compact TopBar pitch pill
-	var top_stats := get_node_or_null("Root/TopBar/TopM/TopH/TopStatsCompact")
-	if top_stats:
-		var pv := top_stats.find_child("TopPitchVal", true, false)
-		if pv is Label:
-			pv.text = plucked_note
-			pv.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
 	if plucked_note == sheet_notes[_note_idx]:
 		if not _is_wait_mode:
@@ -1517,7 +1411,7 @@ func _play_zither_sound(string_idx: int, volume: float = -6.0) -> void:
 	_active_player = pl
 
 	# Natural fade-out — local capture prevents old tweens killing new player
-	var ft = pl.create_tween()
+	var ft = create_tween()
 	ft.tween_interval(2.5)
 	ft.tween_property(pl, "volume_db", -80.0, 0.8)
 	ft.tween_callback(func() -> void:
@@ -1534,9 +1428,6 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = false # Disable wait mode if demo is active
 		_update_wait_mode_ui()
 		_va_say("Đã bật Nghe mẫu. Hệ thống sẽ tự chơi giai điệu bài hát.")
-		# Board visual only — audio handled by _play_zither_sound to avoid double-play
-		if _board:
-			_board.audio_enabled = false
 		# Automatically start playing if not already playing
 		if not _recording:
 			_toggle_record()
@@ -1544,9 +1435,6 @@ func _toggle_demo_mode() -> void:
 		_is_wait_mode = true
 		_update_wait_mode_ui()
 		_va_say("Đã tắt Nghe mẫu. Con hãy tự mình luyện tập nhé!")
-		# Restore board audio for manual play
-		if _board:
-			_board.audio_enabled = true
 		if _recording:
 			_toggle_record()
 	_update_demo_mode_ui()
@@ -1738,15 +1626,6 @@ func _refresh_score() -> void:
 	if _score >= 85.0:   score_num.add_theme_color_override("font_color", C_GREEN_OK)
 	elif _score >= 70.0: score_num.add_theme_color_override("font_color", C_GOLD)
 	else:                score_num.add_theme_color_override("font_color", C_RED_ERR)
-	# Mirror to compact TopBar score pill
-	var top_score := get_node_or_null("Root/TopBar/TopM/TopH/TopStatsCompact")
-	if top_score:
-		var sv := top_score.find_child("TopScoreVal", true, false)
-		if sv is Label:
-			sv.text = str(int(_score))
-			if _score >= 85.0:   sv.add_theme_color_override("font_color", C_GREEN_OK)
-			elif _score >= 70.0: sv.add_theme_color_override("font_color", C_GOLD)
-			else:                sv.add_theme_color_override("font_color", C_RED_ERR)
 
 func _update_rhythm() -> void:
 	var bars := rhythm_bars.get_children()
@@ -1765,14 +1644,6 @@ func _update_rhythm() -> void:
 	rhythm_acc.text = "Độ chính xác: %d%%" % pct
 	rhythm_acc.add_theme_color_override("font_color",
 		C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
-	# Mirror to compact TopBar rhythm pill
-	var top_stats := get_node_or_null("Root/TopBar/TopM/TopH/TopStatsCompact")
-	if top_stats:
-		var rv := top_stats.find_child("TopRhythmVal", true, false)
-		if rv is Label:
-			rv.text = "%d%%" % pct
-			rv.add_theme_color_override("font_color",
-				C_GREEN_OK if pct >= 80 else (C_WARN if pct >= 60 else C_RED_ERR))
 
 func _va_say(text: String) -> void:
 	speech_label.text = text
@@ -2347,7 +2218,7 @@ func _play_intro_zither_sound_briefly(string_idx: int, volume: float = -3.0) -> 
 	pl.play()
 	_active_player = pl
 
-	var ft = pl.create_tween()
+	var ft = create_tween()
 	ft.tween_interval(2.2)
 	ft.tween_property(pl, "volume_db", -80.0, 0.5)
 	ft.tween_callback(func() -> void:
@@ -2581,7 +2452,7 @@ func _get_average_score(scores: Array, default_val: float) -> float:
 func _play_backing_chord(measure: int) -> void:
 	var chord_indices = []
 	if measure < 20: # Intro
-		var step = int(measure / 2.0)
+		var step = measure / 2
 		if step == 0 or step == 1 or step == 3 or step == 4 or step == 9:
 			chord_indices = [0, 2, 4] # C
 		elif step == 2 or step == 7:
@@ -2650,7 +2521,7 @@ func _play_backing_note(string_idx: int, volume: float) -> void:
 	add_child(bp)
 	bp.play()
 
-	var ft = bp.create_tween()
+	var ft = create_tween()
 	ft.tween_interval(1.5)
 	ft.tween_property(bp, "volume_db", -80.0, 0.4)
 	ft.tween_callback(bp.queue_free)
@@ -2659,23 +2530,17 @@ func _hide_header_delayed() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
 	var record_fab = find_child("RecordFAB", true, false)
-	if not record_fab: return
-	
-	_header_tween = create_tween().set_parallel(true)
-	_header_tween.tween_interval(3.0)
-	_header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
-	
-	_header_tween.chain().tween_callback(func(): 
-		if is_instance_valid(record_fab):
-			record_fab.visible = false
-	)
+	if record_fab:
+		_header_tween = create_tween().set_parallel(true)
+		_header_tween.tween_interval(3.0)
+		_header_tween.parallel().tween_property(record_fab, "modulate:a", 0.0, 0.5)
+		_header_tween.chain().tween_callback(func(): record_fab.visible = false)
 
 func _show_header() -> void:
 	if _header_tween and _header_tween.is_running():
 		_header_tween.kill()
 	var record_fab = find_child("RecordFAB", true, false)
-	if not record_fab: return
-	
-	record_fab.visible = true
-	_header_tween = create_tween().set_parallel(true)
-	_header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)
+	if record_fab:
+		record_fab.visible = true
+		_header_tween = create_tween().set_parallel(true)
+		_header_tween.parallel().tween_property(record_fab, "modulate:a", 1.0, 0.2)

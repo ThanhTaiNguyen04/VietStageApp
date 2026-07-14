@@ -14,10 +14,12 @@ static var data := {
 	"selected_instrument": "dan_tranh",
 	"is_premium": false,
 	"unlocked_lessons": {
+
 		"dan_tranh": ["Node1"],
 		"sao_truc": ["Node1"],
 		"dan_bau": ["Node1", "dan_bau_coban_1_video"],
 		"trong_chau": ["Node1"]
+
 	},
 	"completed_lessons": {
 		"dan_tranh": [],
@@ -89,6 +91,9 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		data.completed_lessons[instrument] = []
 	if not data.completed_lessons[instrument].has(lesson_id):
 		data.completed_lessons[instrument].append(lesson_id)
+
+	if not data.unlocked_lessons.has(instrument):
+		data.unlocked_lessons[instrument] = []
 		
 	if not data.stars.has(instrument):
 		data.stars[instrument] = {}
@@ -121,7 +126,8 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
-		save_data()
+
+	save_data()
 
 static func get_course_progress(instrument: String) -> float:
 	var completed := 0
