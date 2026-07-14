@@ -21,6 +21,7 @@ var clef_tex: Texture2D
 func _ready():
 	if ResourceLoader.exists("res://assets/textures/treble_clef.svg"):
 		clef_tex = load("res://assets/textures/treble_clef.svg")
+	resized.connect(queue_redraw)
 
 func set_note(note_name: String):
 	active_note = note_name
