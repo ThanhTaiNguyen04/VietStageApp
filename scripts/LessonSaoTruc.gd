@@ -317,123 +317,6 @@ func _ready():
 	complete_btn.add_theme_stylebox_override("hover", sb_btn)
 	real_mode_btn.add_theme_stylebox_override("normal", sb_btn)
 	real_mode_btn.add_theme_stylebox_override("hover", sb_btn)
-	
-	var btn_vbox = VBoxContainer.new()
-	btn_vbox.add_theme_constant_override("separation", 20)
-	
-	# Style cho nút Vàng (Nghe Mẫu, Thu Âm)
-	var sb_gold = StyleBoxFlat.new()
-	sb_gold.bg_color = Color(0.85, 0.65, 0.25, 1.0) # Gold
-	sb_gold.border_width_left = 2; sb_gold.border_width_right = 2
-	sb_gold.border_width_top = 2; sb_gold.border_width_bottom = 2
-	sb_gold.border_color = Color(0.95, 0.85, 0.45, 1.0) # Lighter gold for border
-	sb_gold.corner_radius_top_left = 20; sb_gold.corner_radius_top_right = 20
-	sb_gold.corner_radius_bottom_left = 20; sb_gold.corner_radius_bottom_right = 20
-	sb_gold.shadow_color = Color(0, 0, 0, 0.3)
-	sb_gold.shadow_size = 4
-	
-	var sb_gold_hover = sb_gold.duplicate()
-	sb_gold_hover.bg_color = Color(0.95, 0.75, 0.35, 1.0)
-	
-	# Style cho nút Tối (Nghe Lại)
-	var sb_dark = StyleBoxFlat.new()
-	sb_dark.bg_color = Color(0.2, 0.15, 0.1, 1.0) # Dark brown/black
-	sb_dark.border_width_left = 2; sb_dark.border_width_right = 2
-	sb_dark.border_width_top = 2; sb_dark.border_width_bottom = 2
-	sb_dark.border_color = Color(0.5, 0.4, 0.2, 1.0) # Dark gold border
-	sb_dark.corner_radius_top_left = 20; sb_dark.corner_radius_top_right = 20
-	sb_dark.corner_radius_bottom_left = 20; sb_dark.corner_radius_bottom_right = 20
-	sb_dark.shadow_color = Color(0, 0, 0, 0.3)
-	sb_dark.shadow_size = 4
-	
-	var sb_dark_hover = sb_dark.duplicate()
-	sb_dark_hover.bg_color = Color(0.3, 0.2, 0.15, 1.0)
-
-	var icon_size = 32
-
-	sample_btn = Button.new()
-	sample_btn.text = " Nghe Mẫu"
-	sample_btn.icon = load("res://assets/textures/lucide/music.svg")
-	sample_btn.expand_icon = true
-	sample_btn.custom_minimum_size = Vector2(250, 75)
-	sample_btn.add_theme_font_size_override("font_size", 28)
-	sample_btn.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
-	sample_btn.add_theme_color_override("font_hover_color", Color(0.1, 0.1, 0.1, 1.0))
-	sample_btn.add_theme_color_override("icon_normal_color", Color(0.1, 0.1, 0.1, 1.0))
-	sample_btn.add_theme_stylebox_override("normal", sb_gold)
-	sample_btn.add_theme_stylebox_override("hover", sb_gold_hover)
-	btn_vbox.add_child(sample_btn)
-	
-	record_btn = Button.new()
-	record_btn.text = " Thu Âm"
-	record_btn.icon = load("res://assets/textures/lucide/mic.svg")
-	record_btn.expand_icon = true
-	record_btn.custom_minimum_size = Vector2(250, 75)
-	record_btn.add_theme_font_size_override("font_size", 28)
-	record_btn.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
-	record_btn.add_theme_color_override("font_hover_color", Color(0.1, 0.1, 0.1, 1.0))
-	record_btn.add_theme_color_override("icon_normal_color", Color(0.1, 0.1, 0.1, 1.0))
-	record_btn.add_theme_stylebox_override("normal", sb_gold)
-	record_btn.add_theme_stylebox_override("hover", sb_gold_hover)
-	record_btn.visible = not is_virtual_mode
-	btn_vbox.add_child(record_btn)
-	
-	playback_btn = Button.new()
-	playback_btn.text = " Nghe Lại"
-	playback_btn.icon = load("res://assets/textures/lucide/play.svg")
-	playback_btn.expand_icon = true
-	playback_btn.custom_minimum_size = Vector2(250, 75)
-	playback_btn.add_theme_font_size_override("font_size", 28)
-	playback_btn.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7, 1.0))
-	playback_btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 0.9, 1.0))
-	playback_btn.add_theme_color_override("icon_normal_color", Color(0.9, 0.85, 0.7, 1.0))
-	playback_btn.add_theme_stylebox_override("normal", sb_dark)
-	playback_btn.add_theme_stylebox_override("hover", sb_dark_hover)
-	playback_btn.visible = not is_virtual_mode
-	playback_btn.disabled = true
-	btn_vbox.add_child(playback_btn)
-	
-	# For all buttons, adjust icon size and separation
-	for b in [sample_btn, record_btn, playback_btn]:
-		# Add a margin to the icon so it's not sticking to the left edge
-		# Godot 4 doesn't have an easy "icon margin" without custom themes, 
-		# but we can use alignment and separation
-		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		b.add_theme_constant_override("h_separation", 15)
-		b.add_theme_constant_override("icon_max_width", 32)
-	
-	retry_btn = Button.new()
-	retry_btn.text = "   Làm Lại   "
-	retry_btn.custom_minimum_size = Vector2(250, 75)
-	retry_btn.add_theme_font_size_override("font_size", 28)
-	retry_btn.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
-	retry_btn.add_theme_stylebox_override("normal", sb_gold)
-	retry_btn.add_theme_stylebox_override("hover", sb_gold_hover)
-	retry_btn.visible = false
-	btn_vbox.add_child(retry_btn)
-	
-	understood_btn = Button.new()
-	understood_btn.text = "   Đã Hiểu   "
-	understood_btn.custom_minimum_size = Vector2(250, 75)
-	understood_btn.add_theme_font_size_override("font_size", 28)
-	understood_btn.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
-	understood_btn.add_theme_stylebox_override("normal", sb_gold)
-	understood_btn.add_theme_stylebox_override("hover", sb_gold_hover)
-	understood_btn.visible = false
-	btn_vbox.add_child(understood_btn)
-	
-	var btn_margin = MarginContainer.new()
-	btn_margin.add_theme_constant_override("margin_top", 30)
-	btn_margin.add_theme_constant_override("margin_right", 30)
-	btn_margin.add_child(btn_vbox)
-	add_child(btn_margin)
-	btn_margin.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	
-	sample_btn.pressed.connect(func(): _play_current_sample())
-	record_btn.pressed.connect(func(): _toggle_recording())
-	playback_btn.pressed.connect(func(): _play_recording())
-	retry_btn.pressed.connect(func(): get_tree().reload_current_scene())
-	understood_btn.pressed.connect(func(): _show_completion_modal())
 
 	
 	_build_complete_overlay()
@@ -497,9 +380,6 @@ func _ready():
 		staff_display.visible = false
 
 func _start_real():
-	is_virtual_mode = false
-	if record_btn: record_btn.visible = true
-	if playback_btn: playback_btn.visible = true
 	if LESSON_NOTES.has(active_node_id):
 		_show_fingers(LESSON_NOTES[active_node_id]["fingers"])
 	_start_practice()
@@ -512,7 +392,6 @@ func _start_practice():
 	current_state = State.PRACTICE
 	teacher_area.visible = false
 	feedback_area.visible = true
-	analyzer.visible = true
 	
 	if _practice_note_node:
 		_practice_note_node.queue_free()
@@ -1344,7 +1223,6 @@ func _hit_note():
 	if current_state == State.PRACTICE:
 		current_state = State.MID_INTRO
 		feedback_area.visible = false
-		analyzer.visible = false
 		teacher_area.visible = true
 		real_mode_btn.visible = false
 		
