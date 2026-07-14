@@ -111,6 +111,13 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_practice", ""))
 			if idx < 5:
 				next_lesson_id = "dan_bau_coban_" + str(idx + 1) + "_video"
+	elif lesson_id.begins_with("trong_chau_coban_"):
+		if lesson_id.ends_with("_video"):
+			next_lesson_id = lesson_id.replace("_video", "_practice")
+		elif lesson_id.ends_with("_practice"):
+			var idx := int(lesson_id.replace("trong_chau_coban_", "").replace("_practice", ""))
+			if idx < 5:
+				next_lesson_id = "trong_chau_coban_" + str(idx + 1) + "_video"
 		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)

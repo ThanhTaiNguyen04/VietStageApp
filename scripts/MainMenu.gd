@@ -617,6 +617,18 @@ func _build_roadmap_cards() -> void:
 		ess_title.text = "Kỹ Thuật Nhấn Rung"
 		ess_desc.text = "Luyện nhấn dây (nhấn 1/2 âm, 1 âm) và rung dây bằng tay trái tạo hồn cho nhạc."
 		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+	elif instrument == "trong_chau":
+		# Lộ trình Trống Chầu
+		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
+		path_chords_title.text = "🥁 ĐƯỜNG ĐỆM HÁT (RHYTHM PATH)"
+		
+		basic_title.text = "Nhập Môn Trống Chầu"
+		basic_desc.text = "Học tư thế cầm dùi, vị trí mặt da, vành trống và các âm Tịch, Cắc cơ bản."
+		basic_details.text = "📖 5 Bài Học | 🔒 Mở khoá ngay"
+		
+		ess_title.text = "Kỹ Thuật Gõ Nâng Cao"
+		ess_desc.text = "Luyện kỹ thuật đập Vành, trống cuộn (Roll) và nhịp Múa Lân."
+		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
 		soloist_unlock_title.text = "Độc Tấu"
 		chords_unlock_title.text = "Hợp Âm"
@@ -858,6 +870,8 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/LessonTrongChau.tscn")
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
@@ -867,6 +881,8 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/LessonTrongChau.tscn")
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -886,6 +902,8 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)

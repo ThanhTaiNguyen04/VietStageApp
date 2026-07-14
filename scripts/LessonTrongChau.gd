@@ -1,0 +1,526 @@
+extends Control
+
+# ─── Color Palette (Synchronized Jade Green & Gold Lacquer Cream Theme)
+const C_BG           := Color(0.98, 0.97, 0.94, 1.0) # Warm cream background matching the project
+const C_GOLD         := Color(0.77, 0.58, 0.15, 1.0) # Lacquer gold
+const C_GOLD_LIGHT   := Color(0.92, 0.76, 0.30, 1.0) # Lighter gold
+const C_JADE         := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green
+const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for active path borders
+const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
+const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
+
+# ─── @onready Refs
+@onready var bg_rect           : ColorRect      = $BG
+@onready var top_bar           : PanelContainer = $Root/RightContent/TopBar
+@onready var back_btn          : Button         = $Root/RightContent/TopBar/TopM/TopH/BackBtn
+@onready var page_title        : Label          = $Root/RightContent/TopBar/TopM/TopH/PageTitle
+@onready var change_course_btn : Button         = $Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
+@onready var lessons_hbox      : HBoxContainer  = $Root/RightContent/ScrollContainer/MarginContainer/LessonsHBox
+
+# ─── Sidebar @onready Refs
+@onready var sidebar           : PanelContainer = $Root/Sidebar
+@onready var btn_menu          : Button         = $Root/Sidebar/SideM/SideV/BtnMenu
+@onready var btn_courses       : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
+@onready var btn_room          : Button         = $Root/Sidebar/SideM/SideV/BtnRoom
+@onready var btn_songs         : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
+@onready var btn_account       : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
+
+var _sidebar_icons_cache := {}
+
+# ─── Dynamic Lesson Data (3 Lessons Course)
+const LESSONS = [
+	{
+		"id": "trong_chau_coban_1",
+		"title": "BÀI 1",
+		"note": "Tâm mặt trống (Tịch)",
+		"video": "Video hướng dẫn: Giảng viên giới thiệu cấu tạo trống chầu, tư thế cầm dùi và vị trí gõ Tâm mặt trống (Tịch).",
+		"practice": "Thực hành gõ Tịch",
+		"subtitles": []
+	},
+	{
+		"id": "trong_chau_coban_2",
+		"title": "BÀI 2",
+		"note": "Cạnh mặt da (Cắc)",
+		"video": "Video hướng dẫn: Cách nhận biết và gõ vào vùng Cạnh mặt da trống để tạo ra âm thanh Cắc.",
+		"practice": "Thực hành gõ Cắc",
+		"subtitles": []
+	},
+	{
+		"id": "trong_chau_coban_3",
+		"title": "BÀI 3",
+		"note": "Kỹ thuật đập Vành",
+		"video": "Video hướng dẫn: Kỹ thuật đặc biệt của Trống Chầu - vuốt/quẹt cạnh gỗ thân trống (Rim).",
+		"practice": "Thực hành gõ Vành",
+		"subtitles": []
+	},
+	{
+		"id": "trong_chau_coban_4",
+		"title": "BÀI 4",
+		"note": "Trống cuộn (Roll)",
+		"video": "Video hướng dẫn: Kỹ thuật dồn dùi liên tục (Drum Roll) tạo hiệu ứng cao trào.",
+		"practice": "Thực hành Trống dồn",
+		"subtitles": []
+	},
+	{
+		"id": "trong_chau_coban_5",
+		"title": "BÀI 5",
+		"note": "Bài mẫu Múa Lân",
+		"video": "Xem video hướng dẫn chơi bài mẫu Múa Lân cơ bản, kết hợp Tâm, Cạnh và Vành.",
+		"practice": "Luyện chơi nhịp Múa Lân",
+		"subtitles": []
+	}
+]
+
+func _ready() -> void:
+	SecureDataManager.load_data()
+	_build_theme()
+	_connect_buttons()
+	_build_lesson_list()
+	_build_sidebar()
+	
+	# Connect draw callback on horizontal container to render background path lines
+	lessons_hbox.draw.connect(_draw_connecting_lines)
+	lessons_hbox.sort_children.connect(func():
+		lessons_hbox.queue_redraw()
+	)
+	
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.3)
+
+func _build_theme() -> void:
+	bg_rect.color = C_BG
+	
+	var top_s := StyleBoxEmpty.new()
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	page_title.text = "GIÁO TRÌNH TRỐNG CHẦU CƠ BẢN"
+	page_title.add_theme_color_override("font_color", C_JADE)
+	
+	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
+	if f_title:
+		page_title.add_theme_font_override("font", f_title)
+		
+	back_btn.text = ""
+	back_btn.icon = load("res://icons8/icons8-back-16.png") as Texture2D
+	back_btn.expand_icon = true
+	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back_btn.custom_minimum_size = Vector2(44, 44)
+	back_btn.add_theme_color_override("icon_normal_color", C_JADE)
+	back_btn.add_theme_color_override("icon_hover_color", C_GOLD)
+	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
+	_style_text_btn(back_btn, C_JADE, C_GOLD)
+	_make_btn_bouncy(back_btn)
+	
+	# Outlined style for ChangeCourseBtn
+	var s_outline := StyleBoxFlat.new()
+	s_outline.bg_color = Color(0, 0, 0, 0)
+	s_outline.border_color = C_JADE
+	s_outline.border_width_left = 3
+	s_outline.border_width_right = 3
+	s_outline.border_width_top = 3
+	s_outline.border_width_bottom = 3
+	s_outline.corner_radius_top_left = 24
+	s_outline.corner_radius_top_right = 24
+	s_outline.corner_radius_bottom_left = 24
+	s_outline.corner_radius_bottom_right = 24
+	
+	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
+	s_outline_hover.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08)
+	
+	change_course_btn.text = "Đổi khóa học"
+	change_course_btn.add_theme_stylebox_override("normal", s_outline)
+	change_course_btn.add_theme_stylebox_override("hover", s_outline_hover)
+	change_course_btn.add_theme_stylebox_override("pressed", s_outline)
+	change_course_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	change_course_btn.add_theme_color_override("font_color", C_JADE)
+	change_course_btn.add_theme_color_override("font_hover_color", C_GOLD)
+	_make_btn_bouncy(change_course_btn)
+
+func _connect_buttons() -> void:
+	back_btn.pressed.connect(func() -> void:
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	)
+	
+	change_course_btn.pressed.connect(func() -> void:
+		var t := create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	)
+
+func _build_sidebar() -> void:
+	# Sidebar panel background
+	var side_s := StyleBoxFlat.new()
+	side_s.bg_color = Color(0.95, 0.93, 0.89, 1.0) # beige sidebar matching MainMenu
+	side_s.border_width_right = 1
+	side_s.border_color = Color(0.85, 0.82, 0.78, 1.0)
+	sidebar.add_theme_stylebox_override("panel", side_s)
+	
+	# Style buttons
+	_style_side_icon_btn(btn_menu,     false)
+	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
+	_style_side_icon_btn(btn_songs,    false)
+	_style_side_icon_btn(btn_account,  false)
+	
+	# Attach drawings
+	_attach_icon_draw(btn_menu,     0)
+	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
+	_attach_icon_draw(btn_songs,    2)
+	_attach_icon_draw(btn_account,  5)
+	
+	# Connect actions
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_account]:
+		_make_btn_bouncy(b)
+		
+	btn_menu.pressed.connect(func() -> void:
+		_fade_to_scene("res://scenes/MainMenu.tscn")
+	)
+	btn_room.pressed.connect(func() -> void:
+		_fade_to_scene("res://scenes/VirtualMusicRoom.tscn")
+	)
+	btn_songs.pressed.connect(func() -> void:
+		_fade_to_scene("res://scenes/SongScreen.tscn")
+	)
+	btn_account.pressed.connect(func() -> void:
+		_fade_to_scene("res://scenes/MainMenu.tscn") # returns to main screen where account profile resides
+	)
+
+func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
+	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.12), Color(0, 0, 0, 0), 18)
+	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
+
+	bg_n.content_margin_top = 96
+	bg_n.content_margin_bottom = 8
+	bg_h.content_margin_top = 96
+	bg_h.content_margin_bottom = 8
+	bg_p.content_margin_top = 96
+	bg_p.content_margin_bottom = 8
+
+	if is_active:
+		bg_n.border_width_left = 6
+		bg_n.border_width_right = 0; bg_n.border_width_top = 0; bg_n.border_width_bottom = 0
+		bg_n.border_color = C_GOLD
+
+	btn.add_theme_stylebox_override("normal",  bg_n)
+	btn.add_theme_stylebox_override("hover",   bg_h)
+	btn.add_theme_stylebox_override("pressed", bg_p)
+	btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
+	btn.add_theme_color_override("font_color",         C_JADE if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
+	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_pressed_color", C_JADE if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	
+	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if f_bold:
+		btn.add_theme_font_override("font", f_bold)
+	btn.add_theme_font_size_override("font_size", 20)
+
+func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
+	var ic := Control.new()
+	ic.name = "IconDraw"
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ic.layout_mode = 1
+	ic.anchors_preset = Control.PRESET_CENTER_TOP
+	ic.anchor_left = 0.5; ic.anchor_right = 0.5
+	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
+	ic.offset_left = -40; ic.offset_right = 40
+	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
+	btn.add_child(ic)
+
+func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
+	var sz := c.size
+	var cx := sz.x * 0.5
+	var cy := sz.y * 0.5
+	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
+
+	var tex_name := ""
+	match t:
+		0: tex_name = "menu"
+		1: tex_name = "course"
+		2: tex_name = "songs"
+		3: tex_name = "game"
+		4: tex_name = "progress"
+		5: tex_name = "account"
+		6: tex_name = "room"
+	
+	var texture : Texture2D = null
+	if _sidebar_icons_cache.has(t):
+		texture = _sidebar_icons_cache[t]
+	elif tex_name != "":
+		texture = load("res://assets/textures/icons8/" + tex_name + ".png") as Texture2D
+		_sidebar_icons_cache[t] = texture
+	
+	if texture:
+		var icon_sz := Vector2(36, 36)
+		if t == 0:
+			icon_sz = Vector2(28, 28)
+		var rect := Rect2(Vector2(cx - icon_sz.x/2, cy - icon_sz.y/2), icon_sz)
+		c.draw_texture_rect(texture, rect, false, col)
+
+func _fade_to_scene(path: String) -> void:
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.22)
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
+
+func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.corner_radius_top_left = radius
+	s.corner_radius_top_right = radius
+	s.corner_radius_bottom_left = radius
+	s.corner_radius_bottom_right = radius
+	return s
+
+func _build_lesson_list() -> void:
+	lessons_hbox.add_theme_constant_override("separation", 120)
+	# Clear existing children
+	for child in lessons_hbox.get_children():
+		child.queue_free()
+		
+	var inst := "trong_chau"
+	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["trong_chau_coban_1_video"])
+	
+	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	
+	for i in range(LESSONS.size()):
+		var lesson_item : Dictionary = LESSONS[i]
+		var id := lesson_item["id"] as String
+		
+		# Define task status keys
+		var v_id := id + "_video"
+		var p_id := id + "_practice"
+		
+		# Unlocking checks
+		var is_v_unlocked := false
+		if i == 0:
+			is_v_unlocked = true
+		else:
+			var prev_id := LESSONS[i - 1]["id"] as String
+			is_v_unlocked = unlocked_lessons.has(v_id) or completed_lessons.has(prev_id + "_practice")
+			
+		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(v_id) or unlocked_lessons.has(p_id))
+		
+		var is_v_completed := completed_lessons.has(v_id)
+		var is_p_completed := completed_lessons.has(p_id)
+		
+		# Column layout for each lesson
+		var col := VBoxContainer.new()
+		col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.add_theme_constant_override("separation", 24)
+		
+		# Top: Lesson Title Label
+		var title_lbl := Label.new()
+		title_lbl.text = lesson_item["title"]
+		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_lbl.add_theme_color_override("font_color", C_TEXT if is_v_unlocked else C_TEXT_MUTED)
+		title_lbl.add_theme_font_size_override("font_size", 20)
+		if f_bold:
+			title_lbl.add_theme_font_override("font", f_bold)
+		col.add_child(title_lbl)
+		
+		# Center: Row of circles connected horizontally
+		var row := HBoxContainer.new()
+		row.name = "Row"
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 90)
+		col.add_child(row)
+		
+		# 1. Hướng Dẫn Button (Left circle)
+		var v_btn := Button.new()
+		v_btn.name = "VideoBtn"
+		v_btn.custom_minimum_size = Vector2(180, 180)
+		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		v_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		
+		if is_v_completed:
+			v_btn.text = "🎬\nHướng dẫn\n✓"
+		elif not is_v_unlocked:
+			v_btn.text = "🔒"
+		else:
+			v_btn.text = "🎬\nHướng dẫn\n(%s)" % lesson_item["note"]
+			
+		_style_circle_btn(v_btn, is_v_unlocked, is_v_completed)
+		_make_btn_bouncy(v_btn)
+		row.add_child(v_btn)
+		
+		v_btn.pressed.connect(_on_video_pressed.bind(v_id, lesson_item["subtitles"], is_v_unlocked))
+		
+		# 2. Thực Hành Button (Right circle)
+		var p_btn := Button.new()
+		p_btn.name = "PracticeBtn"
+		p_btn.custom_minimum_size = Vector2(180, 180)
+		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		p_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		
+		if is_p_completed:
+			p_btn.text = "🎵\nThực hành\n✓"
+		elif not is_p_unlocked:
+			p_btn.text = "🔒"
+		else:
+			p_btn.text = "🎵\nThực hành\n(%s)" % lesson_item["note"]
+			
+		_style_circle_btn(p_btn, is_p_unlocked, is_p_completed)
+		_make_btn_bouncy(p_btn)
+		row.add_child(p_btn)
+		
+		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
+		
+		lessons_hbox.add_child(col)
+
+func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
+	if not is_unlocked: return
+	SecureDataManager.active_lesson_id = v_id
+	VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
+	VideoPlayer.custom_subtitles = subtitles
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.22)
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn"))
+
+func _on_practice_pressed(p_id: String, is_unlocked: bool) -> void:
+	if not is_unlocked: return
+	SecureDataManager.active_lesson_id = p_id
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.22)
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn"))
+
+func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> void:
+	# Jade Green & Gold Traditional Lacquer Theme
+	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Light warm gray-cream for locked
+	var border_color := Color(0.85, 0.82, 0.78, 1.0) # Gray border for locked
+	var text_color := C_TEXT_MUTED # Translucent charcoal text for locked
+	
+	if is_completed:
+		bg_color = C_JADE # Solid Jade Green for completed
+		border_color = C_GOLD # Gold border
+		text_color = Color.WHITE # White checkmark/text inside
+	elif is_unlocked:
+		bg_color = Color.WHITE # Solid white for active
+		border_color = C_JADE_LIGHT # Jade border
+		text_color = C_TEXT # Dark charcoal text
+		
+	var s_normal := StyleBoxFlat.new()
+	s_normal.bg_color = bg_color
+	s_normal.border_color = border_color
+	s_normal.border_width_left = 6; s_normal.border_width_right = 6
+	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
+	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
+	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	
+	# Glow effect for active step (using softer, wider gold shadow)
+	if is_unlocked and not is_completed:
+		s_normal.shadow_size = 24
+		s_normal.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+		
+	var s_hover := s_normal.duplicate() as StyleBoxFlat
+	if is_unlocked:
+		if is_completed:
+			s_hover.bg_color = bg_color.lightened(0.1)
+		else:
+			s_hover.bg_color = Color(0.97, 0.97, 0.97, 1.0)
+		
+	btn.add_theme_stylebox_override("normal", s_normal)
+	btn.add_theme_stylebox_override("hover", s_hover)
+	btn.add_theme_stylebox_override("pressed", s_normal)
+	btn.add_theme_stylebox_override("disabled", s_normal)
+	btn.add_theme_color_override("font_color", text_color)
+	btn.add_theme_color_override("font_hover_color", C_JADE if (is_unlocked and not is_completed) else text_color)
+	btn.add_theme_color_override("font_pressed_color", text_color)
+	btn.add_theme_color_override("font_disabled_color", text_color)
+	
+	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if f_bold:
+		btn.add_theme_font_override("font", f_bold)
+	btn.add_theme_font_size_override("font_size", 18)
+	
+	btn.disabled = not is_unlocked
+
+func _draw_connecting_lines() -> void:
+	var inst := "trong_chau"
+	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["trong_chau_coban_1_video"])
+
+	var centers : Array[Vector2] = []
+	var node_unlocked : Array[bool] = []
+
+	var cols := lessons_hbox.get_children()
+	for i in range(cols.size()):
+		var col := cols[i] as VBoxContainer
+		if not col: continue
+		var row := col.get_node_or_null("Row") as HBoxContainer
+		if not row: continue
+		
+		var v_btn := row.get_node_or_null("VideoBtn") as Button
+		var p_btn := row.get_node_or_null("PracticeBtn") as Button
+		if not v_btn or not p_btn: continue
+		
+		# Compute centers in HBox local coordinates
+		var v_center := col.position + row.position + v_btn.position + v_btn.size / 2.0
+		var p_center := col.position + row.position + p_btn.position + p_btn.size / 2.0
+		
+		centers.append(v_center)
+		centers.append(p_center)
+		
+		var lesson_id := LESSONS[i]["id"] as String
+		var p_id := lesson_id + "_practice"
+		var is_v_unlocked := false
+		if i == 0:
+			is_v_unlocked = true
+		else:
+			var prev_id := LESSONS[i - 1]["id"] as String
+			is_v_unlocked = unlocked_lessons.has(lesson_id + "_video") or completed_lessons.has(prev_id + "_practice")
+			
+		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(lesson_id + "_video") or unlocked_lessons.has(p_id))
+		
+		node_unlocked.append(is_v_unlocked)
+		node_unlocked.append(is_p_unlocked)
+
+	# Draw lines between nodes
+	for idx in range(centers.size() - 1):
+		var p1 := centers[idx]
+		var p2 := centers[idx + 1]
+		
+		var active := node_unlocked[idx + 1]
+		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.08)
+		var line_thickness := 14.0 if active else 7.0
+		
+		lessons_hbox.draw_line(p1, p2, line_color, line_thickness, true)
+
+# ─── Helper Functions ─────────────────────────────────────────────────────────
+func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
+	btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	btn.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	btn.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.add_theme_color_override("font_color", normal_color)
+	btn.add_theme_color_override("font_hover_color", hover_color)
+	btn.add_theme_color_override("font_pressed_color", hover_color.darkened(0.15))
+
+func _make_btn_bouncy(btn: Button) -> void:
+	btn.pivot_offset = btn.size / 2.0
+	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
+	btn.mouse_entered.connect(func() -> void:
+		if not btn.disabled:
+			create_tween().tween_property(btn, "scale", Vector2(1.05, 1.05), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	btn.mouse_exited.connect(func() -> void:
+		if not btn.disabled:
+			create_tween().tween_property(btn, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	btn.button_down.connect(func() -> void:
+		if not btn.disabled:
+			create_tween().tween_property(btn, "scale", Vector2(0.95, 0.95), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	)
+	btn.button_up.connect(func() -> void:
+		if not btn.disabled:
+			var target := Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE
+			create_tween().tween_property(btn, "scale", target, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)

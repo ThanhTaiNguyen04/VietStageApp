@@ -433,6 +433,9 @@ func _on_complete() -> void:
 		if lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
 			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
+		elif lesson_id.begins_with("trong_chau_coban_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn")
 		else:
 			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
