@@ -17,13 +17,10 @@ const NOTE_POSITIONS = {
 var active_note = "Đô"
 var line_spacing = 70.0
 var clef_tex: Texture2D
-var bg_tex: Texture2D
 
 func _ready():
-	if ResourceLoader.exists("res://image/khung nhav.png"):
-		bg_tex = load("res://image/khung nhav.png")
-	elif ResourceLoader.exists("res://assets/textures/treble_clef.svg"):
-		clef_tex = load("res://assets/textures/treble_clef.svg")
+	if ResourceLoader.exists("res://image/khungnhac.png"):
+		clef_tex = load("res://image/khungnhac.png")
 	resized.connect(queue_redraw)
 
 var notes_to_draw: Array = []
@@ -46,20 +43,10 @@ func _draw():
 	
 	var line_color = Color(0.1, 0.1, 0.1, 1.0)
 	
-	if bg_tex:
-		# Calculate scale so that the image's line spacing (44.5) matches our target line_spacing (60.0)
-		var s = line_spacing / 44.5
-		var w = bg_tex.get_width() * s
-		var h = bg_tex.get_height() * s
-		# The center line of the staff in the image is at Y=435
-		var dest_x = (size.x - w) / 2.0
-		var dest_y = center_y - (435.0 * s)
-		draw_texture_rect(bg_tex, Rect2(dest_x, dest_y, w, h), false)
-	else:
-		# Draw 5 lines (0 is bottom line, 4 is top line)
-		for i in range(5):
-			var y = center_y + (2 - i) * line_spacing
-			draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 2.0, true)
+	# Draw 5 lines (0 is bottom line, 4 is top line)
+	for i in range(5):
+		var y = center_y + (2 - i) * line_spacing
+		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 2.0, true)
 			
 		# Draw treble clef
 		if clef_tex:
