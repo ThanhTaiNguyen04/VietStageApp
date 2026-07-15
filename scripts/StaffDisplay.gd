@@ -64,9 +64,10 @@ func _draw():
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x / 2.0)
 		var n_color = note_data.get("color", Color(0.1, 0.1, 0.1, 1.0))
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color)
+		var n_tail = note_data.get("tail", 0.0)
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0):
 	if not NOTE_POSITIONS.has(note_name): return
 	var pos_idx = NOTE_POSITIONS[note_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
@@ -85,6 +86,15 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 - 4 - i) * line_spacing
 			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
+			
+	# Draw duration tail
+	if tail_w > 0.0:
+		var tail_rect = Rect2(note_x, note_y - note_height/4.0, tail_w, note_height/2.0)
+		var tail_color = note_color
+		tail_color.a = 0.4
+		draw_rect(tail_rect, tail_color, true)
+		# Draw end marker
+		draw_line(Vector2(note_x + tail_w, note_y - note_height/2.0), Vector2(note_x + tail_w, note_y + note_height/2.0), note_color, 4.0, true)
 			
 	# Draw note head (rotated ellipse)
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)

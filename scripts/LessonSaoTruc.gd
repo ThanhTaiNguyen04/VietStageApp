@@ -564,10 +564,12 @@ func _process(delta):
 			for note_data in _practice_sequence:
 				var time_diff = note_data["time"] - _practice_time
 				var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
+				var duration = note_data.get("duration", 1.0)
+				var tail_w = duration * 300.0
 				var color = Color(0.1, 0.1, 0.1)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
-				notes.append({"note": note_data["note"], "x": note_x, "color": color})
+				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w})
 			staff_display.set_notes(notes)
 					
 		if sample_active:
@@ -651,9 +653,10 @@ func _process_rhythm(delta, rect):
 		var duration = note_data.get("duration", 1.0)
 		
 		var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
+		var tail_w = duration * 300.0
 		
-		if note_x < get_viewport_rect().size.x + 200 and note_x > -200:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.1, 0.1, 0.1))})
+		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.1, 0.1, 0.1)), "tail": tail_w})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
