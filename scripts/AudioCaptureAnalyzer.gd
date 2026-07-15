@@ -165,7 +165,7 @@ func _process(delta: float) -> void:
 								best_hz = hz + 5.0
 							hz += 10.0
 							
-						if best_hz > 0.0 and max_mag > 0.005:
+						if best_hz > 0.0:
 							var refine_hz = max(min_frequency, best_hz - 15.0)
 							var end_hz = min(max_frequency, best_hz + 15.0)
 							max_mag = 0.0

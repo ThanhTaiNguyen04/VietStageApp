@@ -516,6 +516,8 @@ func _process_sample(delta):
 				env = note_time_elapsed / 0.05
 			elif note_time_elapsed > note_duration - 0.05:
 				env = (note_duration - note_time_elapsed) / 0.05
+			else:
+				env = 1.0
 			env = clamp(env, 0.0, 1.0)
 			
 			var fund = sin(sample_phase * TAU)
@@ -1070,6 +1072,8 @@ func _process_real(delta):
 			else:
 				# Sai nốt -> Lùi lại (nhưng không lùi quá vị trí bắt đầu)
 				_check_advance(delta, -1)
+		else:
+			_check_advance(delta, 0)
 	else:
 		_check_advance(delta, 0)
 
