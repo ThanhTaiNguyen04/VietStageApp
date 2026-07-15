@@ -43,6 +43,7 @@ var bgm_controls: HBoxContainer
 var bgm_slider: HSlider
 var bgm_toggle_btn: Button
 
+var intro_overlay: ColorRect
 var complete_overlay: ColorRect
 var _holes : Array[Control] = []
 var _lanes : Array[ColorRect] = []
@@ -372,7 +373,13 @@ func _ready():
 	
 	staff_display.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	staff_display.offset_top = 0
-	staff_display.offset_bottom = 500
+	staff_display.offset_bottom = 700
+	
+	intro_overlay = ColorRect.new()
+	intro_overlay.color = Color(0, 0, 0, 0.5)
+	intro_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(intro_overlay)
+	move_child(intro_overlay, get_node("Root").get_index())
 	
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		staff_display.set_note(active_note)
@@ -393,6 +400,7 @@ func _start_practice():
 	current_state = State.PRACTICE
 	teacher_area.visible = false
 	feedback_area.visible = true
+	if intro_overlay: intro_overlay.visible = false
 	
 	if _practice_note_node:
 		_practice_note_node.queue_free()
