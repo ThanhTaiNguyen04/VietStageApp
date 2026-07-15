@@ -607,7 +607,7 @@ func _process_rhythm(delta, rect):
 			break
 			
 	if current_overlapping_note != null:
-		var is_blowing = amp > -45.0 # Lenient volume threshold
+		var is_blowing = amp > -55.0 # Lenient volume threshold
 		var is_correct = false
 		
 		if is_blowing and hz > 150.0:
@@ -1063,7 +1063,7 @@ func _process_real(delta):
 	
 	if _current_practice_idx >= _practice_sequence.size(): return
 	
-	if amp > -45.0 and hz > 0:
+	if amp > -55.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
 		if hz > 150.0:
 			var target_hz = NOTE_FREQS.get(current_note_name, 0.0)

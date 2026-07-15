@@ -29,7 +29,7 @@ var _sliding_window := PackedFloat32Array()
 # Dynamic configurations for pitch detection and noise gating
 var min_frequency := 200.0
 var max_frequency := 2500.0
-var volume_threshold_db := -45.0
+var volume_threshold_db := -55.0
 
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
@@ -168,9 +168,9 @@ func _process(delta: float) -> void:
 							
 						var best_hz = 0.0
 						if max_mag > 0.0:
-							# Find the lowest frequency that has at least 30% of the peak magnitude (Fundamental)
+							# Find the lowest frequency that has at least 15% of the peak magnitude (Fundamental)
 							for m in magnitudes:
-								if m["mag"] >= max_mag * 0.3:
+								if m["mag"] >= max_mag * 0.15:
 									best_hz = m["hz"]
 									break
 									
