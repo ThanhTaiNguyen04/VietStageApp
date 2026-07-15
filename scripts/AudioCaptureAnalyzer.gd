@@ -29,7 +29,7 @@ var _sliding_window := PackedFloat32Array()
 # Dynamic configurations for pitch detection and noise gating
 var min_frequency := 200.0
 var max_frequency := 2500.0
-var volume_threshold_db := -20.0
+var volume_threshold_db := -30.0
 
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
