@@ -89,12 +89,15 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			
 	# Draw duration tail
 	if tail_w > 0.0:
-		var tail_rect = Rect2(note_x, note_y - note_height/4.0, tail_w, note_height/2.0)
-		var tail_color = note_color
-		tail_color.a = 0.4
-		draw_rect(tail_rect, tail_color, true)
-		# Draw end marker
-		draw_line(Vector2(note_x + tail_w, note_y - note_height/2.0), Vector2(note_x + tail_w, note_y + note_height/2.0), note_color, 4.0, true)
+		var tail_start = note_x + note_width / 2.0 - 5.0 # slightly inside to avoid gaps
+		var actual_tail_w = max(0.0, tail_w - (note_width / 2.0))
+		if actual_tail_w > 0.0:
+			var tail_rect = Rect2(tail_start, note_y - note_height/6.0, actual_tail_w + 5.0, note_height/3.0)
+			var tail_color = note_color
+			tail_color.a = 0.4
+			draw_rect(tail_rect, tail_color, true)
+			# Draw end marker
+			draw_line(Vector2(tail_start + actual_tail_w + 5.0, note_y - note_height/2.0), Vector2(tail_start + actual_tail_w + 5.0, note_y + note_height/2.0), note_color, 4.0, true)
 			
 	# Draw note head (rotated ellipse)
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
