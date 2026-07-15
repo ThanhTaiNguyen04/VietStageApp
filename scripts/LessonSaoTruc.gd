@@ -371,8 +371,8 @@ func _ready():
 	move_child(staff_display, get_node("Root").get_index())
 	
 	staff_display.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	staff_display.offset_top = 150
-	staff_display.offset_bottom = 450
+	staff_display.offset_top = 250
+	staff_display.offset_bottom = 750
 	
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		staff_display.set_note(active_note)
