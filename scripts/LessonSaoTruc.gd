@@ -63,7 +63,7 @@ var _practice_sequence = []
 var _current_practice_idx = 0
 var _practice_time: float = 0.0
 var total_rhythm_duration: float = 0.0
-var correct_rhythm_duration: float = 0.0
+var wrong_rhythm_duration: float = 0.0
 var has_rhythm_completed: bool = false
 
 var _current_note_color: Color = Color(0.1, 0.1, 0.1)
@@ -619,12 +619,12 @@ func _process_rhythm(delta, rect):
 					
 		if is_correct:
 			time_delta = delta
-			correct_rhythm_duration += delta
 			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
 			time_delta = -delta * 1.5
+			wrong_rhythm_duration += delta
 			current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
 			if is_blowing:
 				mic_status.text = "Sai ngón! Thổi lại..."
@@ -1153,7 +1153,7 @@ func _start_rhythm_game():
 		})
 		
 	total_rhythm_duration = 0.0
-	correct_rhythm_duration = 0.0
+	wrong_rhythm_duration = 0.0
 	has_rhythm_completed = false
 	for note in melody_sequence:
 		total_rhythm_duration += note.get("duration", 1.0)
@@ -1179,9 +1179,9 @@ func _show_completion_modal():
 	if retry_btn: retry_btn.visible = false
 	if understood_btn: understood_btn.visible = false
 	
-	var acc = 0.0
+	var acc = 1.0
 	if total_rhythm_duration > 0.0:
-		acc = correct_rhythm_duration / total_rhythm_duration
+		acc = clamp(1.0 - (wrong_rhythm_duration / (total_rhythm_duration * 3.0)), 0.0, 1.0)
 		
 	if complete_overlay:
 		complete_overlay.visible = true
