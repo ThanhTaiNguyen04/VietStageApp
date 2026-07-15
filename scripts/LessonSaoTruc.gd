@@ -371,8 +371,8 @@ func _ready():
 	move_child(staff_display, get_node("Root").get_index())
 	
 	staff_display.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	staff_display.offset_top = 50
-	staff_display.offset_bottom = 550
+	staff_display.offset_top = 0
+	staff_display.offset_bottom = 500
 	
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		staff_display.set_note(active_note)
@@ -1374,7 +1374,7 @@ func _get_flute_draw_rect() -> Rect2:
 		h = w / img_aspect
 		
 	var x = (avail_w - w) / 2.0
-	var y = avail_h - h
+	var y = avail_h - h + 20
 	if y < 0: y = 0
 	
 	return Rect2(x, y, w, h)
