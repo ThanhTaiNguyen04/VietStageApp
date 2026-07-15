@@ -196,29 +196,29 @@ text = "  Dùng Sáo Thật  "
 [node name="Analyzer" type="Control" parent="."]
 visible = false
 layout_mode = 1
-anchors_preset = 6
+anchors_preset = 1
 anchor_left = 1.0
-anchor_top = 0.5
+anchor_top = 0.0
 anchor_right = 1.0
-anchor_bottom = 0.5
+anchor_bottom = 0.0
 offset_left = -300.0
-offset_top = -100.0
+offset_top = 20.0
 offset_right = -50.0
-offset_bottom = 100.0
+offset_bottom = 220.0
 grow_horizontal = 0
-grow_vertical = 2
+grow_vertical = 1
 script = ExtResource("5_analyzer")
 
 [node name="FeedbackArea" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 50.0
-offset_top = -75.0
-offset_right = 350.0
-offset_bottom = 75.0
-grow_vertical = 2
+anchors_preset = 0
+anchor_top = 0.0
+anchor_bottom = 0.0
+offset_left = 200.0
+offset_top = 20.0
+offset_right = 600.0
+offset_bottom = 120.0
+grow_vertical = 1
 alignment = 1
 
 [node name="MicStatus" type="Label" parent="FeedbackArea"]
