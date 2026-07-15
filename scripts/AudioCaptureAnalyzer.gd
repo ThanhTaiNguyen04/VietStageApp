@@ -10,6 +10,7 @@ const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 
 var _effect: AudioEffectCapture
 var _record_effect: AudioEffectRecord
+var _spectrum: AudioEffectSpectrumAnalyzerInstance
 var _bus_index := -1
 var _sample_history := PackedFloat32Array()
 const MAX_SAMPLES := 180
@@ -83,6 +84,23 @@ func _setup_audio_bus() -> void:
 		AudioServer.add_bus_effect(_bus_index, _record_effect)
 	else:
 		_record_effect = AudioServer.get_bus_effect(_bus_index, rec_idx) as AudioEffectRecord
+		
+	# Add AudioEffectSpectrumAnalyzer for C++ high-precision pitch analysis
+	var spec_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectSpectrumAnalyzer:
+			spec_idx = i
+			break
+			
+	if spec_idx == -1:
+		var spectrum_effect = AudioEffectSpectrumAnalyzer.new()
+		spectrum_effect.buffer_length = 0.2
+		spectrum_effect.tap_back_pos = 0.05
+		spectrum_effect.fft_size = AudioEffectSpectrumAnalyzer.FFT_SIZE_4096
+		AudioServer.add_bus_effect(_bus_index, spectrum_effect)
+		spec_idx = AudioServer.get_bus_effect_count(_bus_index) - 1
+		
+	_spectrum = AudioServer.get_bus_effect_instance(_bus_index, spec_idx) as AudioEffectSpectrumAnalyzerInstance
 
 	# Setup microphone input player dynamically
 	_mic_player = AudioStreamPlayer.new()
@@ -136,20 +154,38 @@ func _process(delta: float) -> void:
 				current_amplitude_db = _calculate_peak_db_gdscript(mono_samples)
 				
 				if current_amplitude_db > volume_threshold_db:
-					# Run analysis 33 times a second (every 0.03s) for responsive real-time feedback
+					if _spectrum:
+						var max_mag = 0.0
+						var best_hz = 0.0
+						var hz = min_frequency
+						while hz <= max_frequency:
+							var mag = _spectrum.get_magnitude_for_frequency_range(hz, hz + 10.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
+							if mag > max_mag:
+								max_mag = mag
+								best_hz = hz + 5.0
+							hz += 10.0
+							
+						if best_hz > 0.0 and max_mag > 0.005:
+							var refine_hz = max(min_frequency, best_hz - 15.0)
+							var end_hz = min(max_frequency, best_hz + 15.0)
+							max_mag = 0.0
+							while refine_hz <= end_hz:
+								var mag = _spectrum.get_magnitude_for_frequency_range(refine_hz, refine_hz + 2.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
+								if mag > max_mag:
+									max_mag = mag
+									best_hz = refine_hz + 1.0
+								refine_hz += 2.0
+								
+							current_pitch = lerp(current_pitch, best_hz, 0.8)
+						else:
+							current_pitch = lerp(current_pitch, 0.0, 0.5)
+							
+					# Compute other metrics
 					if _time_since_last_pitch >= 0.03:
 						_time_since_last_pitch = 0.0
 						if _analysis_buffer.size() >= 512:
-							var detected_pitch = _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
-							if detected_pitch > 0.0:
-								current_pitch = lerp(current_pitch, detected_pitch, 0.70)
-							else:
-								current_pitch = lerp(current_pitch, 0.0, 0.5)
-							
 							current_tone_quality = _evaluate_tone_quality_gdscript(_analysis_buffer)
 							current_breath_purity = _analyze_breath_pattern_gdscript(_analysis_buffer)
-						else:
-							current_pitch = lerp(current_pitch, 0.0, 0.70)
 				else:
 					current_pitch = lerp(current_pitch, 0.0, 0.5)
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
