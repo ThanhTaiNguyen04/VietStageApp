@@ -384,11 +384,9 @@ func _ready():
 	add_child(intro_overlay)
 	move_child(intro_overlay, get_node("Root").get_index())
 	
+	staff_display.visible = true
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		staff_display.set_note(active_note)
-		staff_display.visible = true
-	else:
-		staff_display.visible = false
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):
