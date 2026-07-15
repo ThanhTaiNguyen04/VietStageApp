@@ -608,10 +608,10 @@ func _process_rhythm(delta, rect):
 		var is_blowing = amp > -35.0 # More lenient volume threshold
 		var is_correct = false
 		
-		if is_blowing and hz > 300.0:
+		if is_blowing and hz > 150.0:
 			var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
-			# Lenient tolerance: 45 Hz difference allowed, no strict tone quality check
-			if abs(hz - target_hz_note) < 45.0:
+			# Lenient tolerance: 45 Hz difference allowed. Allow octaves (e.g. overblowing)
+			if abs(hz - target_hz_note) < 45.0 or abs(hz / 2.0 - target_hz_note) < 30.0 or abs(hz * 2.0 - target_hz_note) < 60.0:
 				is_correct = true
 					
 		if is_correct:
@@ -1062,13 +1062,14 @@ func _process_real(delta):
 	
 	if amp > -45.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
-		var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
-			
-		var matched = abs(hz - target_hz) < 45.0
-		if matched:
-			_check_advance(delta, 1)
-		else:
-			_check_advance(delta, -1)
+		if hz > 150.0:
+			var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
+			if abs(hz - target_hz) < 45.0 or abs(hz / 2.0 - target_hz) < 30.0 or abs(hz * 2.0 - target_hz) < 60.0:
+				# Đúng nốt -> Tiến lên
+				_check_advance(delta, 1)
+			else:
+				# Sai nốt -> Lùi lại (nhưng không lùi quá vị trí bắt đầu)
+				_check_advance(delta, -1)
 	else:
 		_check_advance(delta, 0)
 
