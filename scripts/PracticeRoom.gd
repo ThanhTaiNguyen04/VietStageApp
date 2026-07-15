@@ -87,6 +87,67 @@ const NOTES_VN : Array[String] = [
 	"Sol4", "La4" 
 ]
 
+const LEVEL1_LESSON1_ID := "dan_tranh_level_1_bai_1_practice"
+const LEVEL1_LESSON2_ID := "dan_tranh_level_1_bai_2_practice"
+const LEVEL1_LESSON3_ID := "dan_tranh_level_1_bai_3_practice"
+const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
+const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
+const LEVEL1_CONFIGS := {
+	LEVEL1_LESSON1_ID: {
+		"lesson": 1, "title": "Làm quen 5 nốt cơ bản", "mode": "guided_song", "input": "micro",
+		"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "active_strings": [0, 1, 2, 3, 4],
+		"instruction": "Nghe câu nhạc chậm. Khi nhạc dừng, hãy gảy lần lượt Sol – La – Đô – Rê – Mi trên đàn thật.",
+		"bpm": 56.0, "pass_score": 80.0
+	},
+	LEVEL1_LESSON2_ID: {
+		"lesson": 2, "title": "Điền nốt vào giai điệu", "mode": "guided_song", "input": "micro",
+		"sheet": ["Sol1", "La1", "Đô2", "La1", "Sol1", "Rê2", "Mi2", "Rê2", "Đô2", "La1", "Sol1", "Đô2"],
+		"instruction": "Nghe giai điệu. Khi nhạc dừng ở vạch vàng, hãy gảy đúng nốt còn thiếu để nhạc phát tiếp.",
+		"active_strings": [0, 1, 2, 3, 4], "bpm": 72.0, "pass_score": 80.0
+	},
+	LEVEL1_LESSON3_ID: {
+		"lesson": 3, "title": "Hoàn thiện giai điệu", "mode": "guided_song", "input": "micro",
+		"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1",
+			"Sol1", "Đô2", "Mi2", "Rê2", "Đô2", "La1", "Sol1", "La1",
+			"Đô2", "Rê2", "Mi2", "Đô2"],
+		"instruction": "Hoàn thiện đoạn nhạc dài hơn. Quan sát nốt kế tiếp, nghe nhịp và gảy đúng mỗi khi nhạc dừng.",
+		"active_strings": [0, 1, 2, 3, 4], "bpm": 84.0, "pass_score": 80.0
+	}
+}
+
+var _level1_lesson1_mode := false
+var _level1_mode := false
+var _level1_config: Dictionary = {}
+var _level1_state := "preview"
+var _level1_countdown := 0.0
+var _level1_round := 0
+var _level1_speed := 0.8
+var _level1_total_attempts := 0
+var _level1_correct_count := 0
+var _level1_consecutive_misses := 0
+var _level1_timing_scores: Array[float] = []
+var _level1_high_errors := 0
+var _level1_low_errors := 0
+var _level1_early_errors := 0
+var _level1_late_errors := 0
+var _level1_result_shown := false
+var _level1_instruction: Label = null
+var _level1_progress_label: Label = null
+var _level1_compact_panel: PanelContainer = null
+var _level1_speed_buttons: Array[Button] = []
+var _level1_completed: Array[bool] = [false, false, false, false, false]
+var _level1_note_buttons: Array[Button] = []
+var _level1_status_label: Label = null
+var _level1_start_button: Button = null
+var _level1_pitch_hold := 0.0
+var _level1_wait_for_silence := false
+var _level1_silence_time := 0.0
+const LEVEL1_GUIDED_LEAD_BEATS: float = 1.5
+var _level1_waiting_for_note: bool = false
+var _level1_backing_timer: float = 0.0
+var _level1_backing_step: int = 0
+var _level1_backing_players: Array[AudioStreamPlayer] = []
+
 const LANES : Array[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 static var current_song_title := ""
@@ -216,6 +277,16 @@ const SPEECHES : Array[String] = [
 ]
 
 func _ready() -> void:
+	_level1_mode = LEVEL1_CONFIGS.has(SecureDataManager.active_lesson_id)
+	_level1_lesson1_mode = false
+	if _level1_mode:
+		_level1_config = LEVEL1_CONFIGS[SecureDataManager.active_lesson_id].duplicate(true)
+		_level1_lesson1_mode = str(_level1_config.get("mode", "")) == "explore"
+		current_song_title = str(_level1_config["title"])
+		current_song_sheet.clear()
+		current_song_sheet.assign(_level1_config["sheet"])
+		_song_bpm = float(_level1_config["bpm"])
+
 	for song in songs_list:
 		if song["durations"].is_empty():
 			for note in song["sheet"]:
@@ -264,8 +335,10 @@ func _ready() -> void:
 				_song_bpm = song.get("bpm", 80.0)
 				song_found = true
 				break
-	if not song_found:
+	if not song_found and not _level1_mode:
 		_song_bpm = 80.0
+	elif _level1_mode:
+		_song_bpm = float(_level1_config["bpm"])
 		
 	_generate_streams()
 	_set_labels()
@@ -386,7 +459,7 @@ func _ready() -> void:
 	_setup_collapsible_linh()
 	
 	# Check mic permission/driver state
-	if not ProjectSettings.get_setting("audio/driver/enable_input"):
+	if not ProjectSettings.get_setting("audio/driver/enable_input") and (not _level1_mode or str(_level1_config.get("input", "micro")) == "micro"):
 		var mic_dialog := AcceptDialog.new()
 		mic_dialog.title = "Cảnh Báo Thiết Bị"
 		mic_dialog.dialog_text = "Ứng dụng chưa được cấp quyền truy cập Microphone hoặc tính năng Audio Input bị vô hiệu hóa trong cài đặt.\n\nVui lòng kiểm tra lại thiết bị thu âm để thực hiện bài học."
@@ -533,19 +606,6 @@ func _ready() -> void:
 		if demo_btn:
 			ctrl_btns.move_child(demo_btn, 5)
 			
-		# 6. Đàn ngang / Đàn dọc (LayoutBtn)
-		var layout_btn = Button.new()
-		layout_btn.name = "LayoutBtn"
-		layout_btn.text = "\nĐàn dọc" if _current_orientation == BoardOrientation.PORTRAIT else "\nĐàn ngang"
-		layout_btn.custom_minimum_size = Vector2(200, 70)
-		ctrl_btns.add_child(layout_btn)
-		ctrl_btns.move_child(layout_btn, 6)
-		_style_sidebar_btn(layout_btn)
-		_set_sidebar_icon(layout_btn, "rotate-cw")
-		_make_button_bouncy(layout_btn)
-		_layout_btn = layout_btn
-		layout_btn.pressed.connect(toggle_orientation)
-			
 		# Thêm spacer để đẩy nút Quay lại xuống dưới cùng
 		ctrl_btns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		var spacer = Control.new()
@@ -631,8 +691,902 @@ func _ready() -> void:
 			_on_song_selected(index)
 		)
 
+	if _level1_lesson1_mode:
+		_setup_level1_lesson1_exercise()
+	elif _level1_mode:
+		_setup_level1_sequence_exercise()
+	if _level1_mode:
+		_setup_level1_focus_ui()
+
+
+func _setup_level1_lesson1_exercise() -> void:
+	_note_idx = 0
+	_score = 0.0
+	_is_wait_mode = true
+	_mic_mode = true
+	if _board:
+		_board.simplify_note_labels = true
+		_board.clear_feedback_details()
+		_board.set_target(0)
+
+	var song_selector := $SettingsPanel/SettingsM/SettingsVBox.get_node_or_null("SongSelector")
+	if song_selector:
+		song_selector.visible = false
+	for button_name in ["DemoBtn", "SlowBtn"]:
+		var sidebar_button := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null(button_name)
+		if sidebar_button:
+			sidebar_button.visible = false
+	if record_btn:
+		record_btn.text = "\nBắt đầu nhận diện"
+
+	var panel := PanelContainer.new()
+	panel.name = "Level1Lesson1Exercise"
+	panel.custom_minimum_size = Vector2(0.0, 150.0)
+	panel.add_theme_stylebox_override("panel", _flat(Color("#fffaf0"), Color("#c99a3c"), 16))
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	panel.add_child(margin)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	margin.add_child(content)
+
+	var heading := Label.new()
+	heading.text = "BÀI 1 · LÀM QUEN 5 NỐT CƠ BẢN"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_color_override("font_color", C_JADE)
+	heading.add_theme_font_size_override("font_size", 20)
+	content.add_child(heading)
+
+	var instruction := Label.new()
+	instruction.text = "Bấm từng nốt để nghe mẫu, sau đó gảy nốt tương ứng trên đàn thật. Micro sẽ phân tích cao độ và chỉ cho qua khi nốt đúng."
+	instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	instruction.add_theme_color_override("font_color", C_TEXT_MUTED)
+	instruction.add_theme_font_size_override("font_size", 14)
+	content.add_child(instruction)
+
+	var notes_row := HBoxContainer.new()
+	notes_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	notes_row.add_theme_constant_override("separation", 12)
+	content.add_child(notes_row)
+	_level1_note_buttons.clear()
+	for i in LEVEL1_LESSON1_LABELS.size():
+		var note_button := Button.new()
+		note_button.custom_minimum_size = Vector2(92.0, 42.0)
+		note_button.text = LEVEL1_LESSON1_LABELS[i]
+		note_button.tooltip_text = "Nghe mẫu nốt %s" % LEVEL1_LESSON1_LABELS[i]
+		note_button.pressed.connect(_preview_level1_lesson1_note.bind(i))
+		notes_row.add_child(note_button)
+		_level1_note_buttons.append(note_button)
+
+	var action_row := HBoxContainer.new()
+	action_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	action_row.add_theme_constant_override("separation", 16)
+	content.add_child(action_row)
+
+	_level1_status_label = Label.new()
+	_level1_status_label.custom_minimum_size.x = 520.0
+	_level1_status_label.text = "Hãy nghe mẫu 5 nốt, sau đó bấm Bắt đầu nhận diện."
+	_level1_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level1_status_label.add_theme_color_override("font_color", C_TEXT)
+	_level1_status_label.add_theme_font_size_override("font_size", 15)
+	action_row.add_child(_level1_status_label)
+
+	_level1_start_button = Button.new()
+	_level1_start_button.custom_minimum_size = Vector2(190.0, 40.0)
+	_level1_start_button.text = "Bắt đầu nhận diện"
+	_level1_start_button.add_theme_stylebox_override("normal", _flat(C_JADE, C_GOLD, 12))
+	_level1_start_button.add_theme_stylebox_override("hover", _flat(C_JADE.lightened(0.08), C_GOLD_LIGHT, 12))
+	_level1_start_button.add_theme_color_override("font_color", Color.WHITE)
+	_level1_start_button.pressed.connect(_toggle_record)
+	action_row.add_child(_level1_start_button)
+
+	$Root.add_child(panel)
+	$Root.move_child(panel, 1)
+	_update_level1_lesson1_ui()
+	_va_say("Hãy nghe và gảy lại lần lượt năm nốt Sol, La, Đô, Rê, Mi trên đàn thật nhé!")
+
+func _preview_level1_lesson1_note(index: int) -> void:
+	if index < 0 or index >= LEVEL1_LESSON1_NOTES.size():
+		return
+	if _board:
+		_board.pluck(index)
+	_set_level1_status("Đang phát mẫu nốt %s · Hãy ghi nhớ rồi gảy lại trên đàn thật." % LEVEL1_LESSON1_LABELS[index], C_GOLD_TEXT)
+
+func _update_level1_lesson1_ui() -> void:
+	for i in _level1_note_buttons.size():
+		var button := _level1_note_buttons[i]
+		var style := StyleBoxFlat.new()
+		style.set_corner_radius_all(12)
+		style.set_border_width_all(2)
+		if _level1_completed[i]:
+			style.bg_color = Color("#27965a")
+			style.border_color = Color("#70d99a")
+			button.text = "✓ %s" % LEVEL1_LESSON1_LABELS[i]
+			button.add_theme_color_override("font_color", Color.WHITE)
+		elif i == _note_idx and _note_idx < LEVEL1_LESSON1_NOTES.size():
+			style.bg_color = Color("#f5dfaa")
+			style.border_color = C_GOLD
+			button.text = "▶ %s" % LEVEL1_LESSON1_LABELS[i]
+			button.add_theme_color_override("font_color", C_JADE)
+		else:
+			style.bg_color = Color("#f3eee1")
+			style.border_color = Color("#d5c8aa")
+			button.text = LEVEL1_LESSON1_LABELS[i]
+			button.add_theme_color_override("font_color", C_TEXT_MUTED)
+		button.add_theme_stylebox_override("normal", style)
+		var hover := style.duplicate() as StyleBoxFlat
+		hover.bg_color = hover.bg_color.lightened(0.06)
+		button.add_theme_stylebox_override("hover", hover)
+	lesson_bar.value = _score
+	var progress_label := $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label
+	if progress_label:
+		progress_label.text = "%d%%" % int(_score)
+	if target_label:
+		target_label.text = "Nốt cần gảy: %s" % LEVEL1_LESSON1_LABELS[_note_idx] if _note_idx < LEVEL1_LESSON1_LABELS.size() else "Hoàn thành 5 nốt"
+	_update_level1_progress()
+
+func _set_level1_status(text: String, color: Color) -> void:
+	if _level1_status_label:
+		_level1_status_label.text = text
+		_level1_status_label.add_theme_color_override("font_color", color)
+
+func _toggle_level1_lesson1_listening() -> void:
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if _recording:
+		_recording = false
+		if visualizer:
+			visualizer.visible = false
+		if _level1_start_button:
+			_level1_start_button.text = "Tiếp tục nhận diện"
+		if record_btn:
+			record_btn.text = "\nTiếp tục nhận diện"
+		_set_level1_status("Đã tạm dừng. Bấm Tiếp tục khi bạn sẵn sàng.", C_WARN)
+		_set_level1_controls(false)
+		return
+	if not ProjectSettings.get_setting("audio/driver/enable_input"):
+		_set_level1_status("Không thể bắt đầu: ứng dụng chưa được cấp quyền Microphone.", C_RED_ERR)
+		return
+
+	_recording = true
+	_level1_pitch_hold = 0.0
+	_level1_wait_for_silence = false
+	if visualizer:
+		visualizer.visible = true
+	if _level1_start_button:
+		_level1_start_button.text = "Tạm dừng"
+	if record_btn:
+		record_btn.text = "\nTạm dừng"
+	create_tween().tween_property($SettingsPanel, "position:x", -260.0, 0.3).set_ease(Tween.EASE_OUT)
+	_set_level1_status("Đang nghe · Hãy gảy nốt %s trên đàn thật." % LEVEL1_LESSON1_LABELS[_note_idx], C_JADE)
+	if _board:
+		_board.set_target(_note_idx)
+	_set_level1_controls(true)
+
+func _process_level1_lesson1_audio(delta: float) -> void:
+	if _note_idx >= LEVEL1_LESSON1_NOTES.size():
+		return
+	if not _mic_mode:
+		_set_level1_status("Micro đang tắt · Hãy bật Micro trong thanh công cụ.", C_WARN)
+		return
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if not visualizer:
+		_set_level1_status("Không tìm thấy bộ phân tích âm thanh.", C_RED_ERR)
+		return
+
+	var amplitude_db: float = visualizer.current_amplitude_db
+	var pitch: float = visualizer.current_pitch
+	if amplitude_db <= -45.0 or pitch <= 50.0:
+		_level1_pitch_hold = 0.0
+		if _level1_wait_for_silence:
+			_level1_silence_time += delta
+			if _level1_silence_time >= 0.12:
+				_level1_wait_for_silence = false
+				_level1_silence_time = 0.0
+				if _board:
+					_board.set_target(_note_idx)
+		_set_level1_status("Đang nghe · Hãy gảy nốt %s trên đàn thật." % LEVEL1_LESSON1_LABELS[_note_idx], C_JADE)
+		return
+	_level1_silence_time = 0.0
+	if _level1_wait_for_silence:
+		_set_level1_status("Thả âm vừa gảy, rồi chuẩn bị cho nốt %s." % LEVEL1_LESSON1_LABELS[_note_idx], C_WARN)
+		return
+
+	var closest_index := 0
+	var closest_cents := INF
+	for i in LEVEL1_LESSON1_NOTES.size():
+		var frequency := _get_string_frequency(i)
+		var cents_distance: float = absf(1200.0 * log(pitch / frequency) / log(2.0))
+		if cents_distance < closest_cents:
+			closest_cents = cents_distance
+			closest_index = i
+
+	var expected_frequency := _get_string_frequency(_note_idx)
+	var expected_cents: float = 1200.0 * log(pitch / expected_frequency) / log(2.0)
+	pitch_note.text = LEVEL1_LESSON1_LABELS[closest_index]
+	if closest_index == _note_idx and absf(expected_cents) <= 35.0:
+		if _board:
+			_board.set_feedback_detail(_note_idx, "✓ %s" % LEVEL1_LESSON1_LABELS[_note_idx], 0)
+		_level1_pitch_hold += delta
+		var hold_percent := mini(100, int((_level1_pitch_hold / 0.35) * 100.0))
+		_set_level1_status("Đúng nốt %s · Giữ âm ổn định %d%%" % [LEVEL1_LESSON1_LABELS[_note_idx], hold_percent], C_GREEN_OK)
+		if _level1_pitch_hold >= 0.35:
+			_complete_level1_lesson1_note()
+		return
+
+	_level1_pitch_hold = 0.0
+	if closest_index == _note_idx:
+		var direction := "cao" if expected_cents > 0.0 else "thấp"
+		if _board:
+			_board.set_feedback_detail(_note_idx, "%s %d¢" % ["↓" if expected_cents > 0.0 else "↑", int(absf(expected_cents))], 2)
+		_set_level1_status("Đúng dây nhưng hơi %s (%d cent) · Hãy chỉnh cao độ nốt %s." % [direction, int(absf(expected_cents)), LEVEL1_LESSON1_LABELS[_note_idx]], C_RED_ERR)
+	else:
+		if _board:
+			_board.set_feedback_detail(_note_idx, "✕ %s" % LEVEL1_LESSON1_LABELS[closest_index], 2)
+		_set_level1_status("Chưa đúng: nhận diện %s · Nốt cần gảy là %s." % [LEVEL1_LESSON1_LABELS[closest_index], LEVEL1_LESSON1_LABELS[_note_idx]], C_RED_ERR)
+
+func _complete_level1_lesson1_note() -> void:
+	var completed_index := _note_idx
+	_level1_completed[completed_index] = true
+	if _board:
+		_board.set_feedback_detail(completed_index, "✓ %s" % LEVEL1_LESSON1_LABELS[completed_index], 1)
+	_note_idx += 1
+	_score = float(_note_idx) / float(LEVEL1_LESSON1_NOTES.size()) * 100.0
+	_refresh_score()
+	_update_level1_lesson1_ui()
+	_level1_pitch_hold = 0.0
+	_level1_wait_for_silence = true
+
+	if _note_idx >= LEVEL1_LESSON1_NOTES.size():
+		_finish_level1_lesson1_exercise()
+		return
+	if _board:
+		_board.set_target(_note_idx)
+	_set_level1_status("Chính xác nốt %s! Tiếp theo: gảy nốt %s." % [LEVEL1_LESSON1_LABELS[completed_index], LEVEL1_LESSON1_LABELS[_note_idx]], C_GREEN_OK)
+	_va_say("Đúng rồi! Tiếp theo con hãy gảy nốt %s." % LEVEL1_LESSON1_LABELS[_note_idx])
+
+func _finish_level1_lesson1_exercise() -> void:
+	_recording = false
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if visualizer:
+		visualizer.visible = false
+	if _board:
+		_board.set_target(-1)
+	_set_level1_controls(false)
+	if _level1_start_button:
+		_level1_start_button.text = "Đã hoàn thành"
+		_level1_start_button.disabled = true
+	if record_btn:
+		record_btn.text = "\nĐã hoàn thành"
+		record_btn.disabled = true
+	_set_level1_status("Hoàn thành! Bạn đã nhận diện đúng Sol · La · Đô · Rê · Mi.", C_GREEN_OK)
+	SecureDataManager.complete_lesson("dan_tranh", LEVEL1_LESSON1_ID, 3)
+	_va_say("Xuất sắc! Con đã nhận diện đúng cả năm nốt Sol, La, Đô, Rê và Mi.")
+
+func _reset_level1_lesson1_exercise() -> void:
+	_recording = false
+	_note_idx = 0
+	_score = 0.0
+	_level1_pitch_hold = 0.0
+	_level1_wait_for_silence = false
+	_level1_silence_time = 0.0
+	for i in _level1_completed.size():
+		_level1_completed[i] = false
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if visualizer:
+		visualizer.visible = false
+	if _board:
+		_board.clear_feedback_details()
+		_board.set_target(0)
+	if _level1_start_button:
+		_level1_start_button.disabled = false
+		_level1_start_button.text = "Bắt đầu nhận diện"
+	if record_btn:
+		record_btn.disabled = false
+		record_btn.text = "\nBắt đầu nhận diện"
+	_update_level1_lesson1_ui()
+	_set_level1_status("Hãy nghe mẫu 5 nốt, sau đó bấm Bắt đầu nhận diện.", C_TEXT)
+	_refresh_score()
+
+
+func _setup_level1_focus_ui() -> void:
+	var active: Array[int] = []
+	for value in _level1_config.get("active_strings", []):
+		active.append(int(value))
+	if _board:
+		_board.simplify_note_labels = true
+		_board.set_active_strings(active)
+		var focus_mode: String = str(_level1_config.get("mode", ""))
+		var uses_right_playhead: bool = focus_mode == "catch" or focus_mode == "guided_song"
+		_board.set_playhead_ratio(0.82 if uses_right_playhead else 0.25)
+		_board.set_note_travel_direction(uses_right_playhead)
+		_board.audio_enabled = focus_mode != "guided_song"
+		_board.note_cues = _level1_config.get("cues", [])
+	var board_label := $Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label
+	if str(_level1_config.get("mode", "")) == "guided_song":
+		board_label.text = "ĐIỀN NỐT VÀO GIAI ĐIỆU · %d nốt · BPM %d · Nhạc dừng ở vạch vàng" % [sheet_notes.size(), int(_level1_config["bpm"])]
+	else:
+		board_label.text = "ĐÀN TRANH 17 DÂY · Vàng: nốt cần gảy · Xanh: đúng · Cam/đỏ: cần chỉnh"
+	var controls := $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns as VBoxContainer
+	for button_name in ["StopRecordBtn", "SlowBtn", "DemoBtn"]:
+		var extra_button := controls.get_node_or_null(button_name)
+		if extra_button:
+			extra_button.visible = false
+	var mic_button := controls.get_node_or_null("MicBtn")
+	if mic_button:
+		mic_button.visible = str(_level1_config.get("input", "")) == "micro"
+	var dots := $SettingsPanel/SettingsM/SettingsVBox/DotsHBox as HBoxContainer
+	if dots:
+		dots.visible = false
+	var sidebar_progress := $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox as VBoxContainer
+	if sidebar_progress:
+		sidebar_progress.visible = false
+	for child in controls.get_children():
+		if child is Button:
+			child.custom_minimum_size = Vector2(200.0, 54.0)
+	var top_h := $Root/TopBar/TopM/TopH as HBoxContainer
+	_level1_progress_label = Label.new()
+	_level1_progress_label.name = "Level1Progress"
+	_level1_progress_label.custom_minimum_size.x = 120.0
+	_level1_progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level1_progress_label.add_theme_color_override("font_color", C_GOLD_TEXT)
+	_level1_progress_label.add_theme_font_size_override("font_size", 15)
+	top_h.add_child(_level1_progress_label)
+	top_h.move_child(_level1_progress_label, top_h.get_child_count() - 2)
+	var pause_button := Button.new()
+	pause_button.name = "Level1PauseBtn"
+	pause_button.text = "Tạm dừng"
+	pause_button.custom_minimum_size = Vector2(104.0, 40.0)
+	pause_button.visible = false
+	pause_button.pressed.connect(func() -> void:
+		if _level1_lesson1_mode:
+			_toggle_level1_lesson1_listening()
+		else:
+			_toggle_level1_sequence()
+	)
+	top_h.add_child(pause_button)
+	top_h.move_child(pause_button, top_h.get_child_count() - 2)
+	_update_level1_progress()
+
+func _setup_level1_sequence_exercise() -> void:
+	_note_idx = 0
+	_score = 0.0
+	_level1_state = "preview"
+	_mic_mode = str(_level1_config["input"]) == "micro"
+	_reset_level1_metrics()
+	var song_selector := $SettingsPanel/SettingsM/SettingsVBox.get_node_or_null("SongSelector")
+	if song_selector:
+		song_selector.visible = false
+	var panel := PanelContainer.new()
+	panel.name = "Level1SequenceExercise"
+	panel.custom_minimum_size = Vector2(0.0, 118.0)
+	panel.add_theme_stylebox_override("panel", _flat(Color("#fffaf0"), C_GOLD, 14))
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	panel.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 6)
+	margin.add_child(content)
+	var heading := Label.new()
+	heading.text = "BÀI %d · %s" % [int(_level1_config["lesson"]), str(_level1_config["title"]).to_upper()]
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_color_override("font_color", C_JADE)
+	heading.add_theme_font_size_override("font_size", 19)
+	content.add_child(heading)
+	_level1_instruction = Label.new()
+	var exercise_mode: String = str(_level1_config["mode"])
+	if exercise_mode == "guided_song":
+		_level1_instruction.text = str(_level1_config.get("instruction", "Gảy đúng nốt còn thiếu trên đàn thật để nhạc phát tiếp."))
+	elif exercise_mode == "catch":
+		_level1_instruction.text = "Chạm đúng ba dây Đô – Rê – Mi theo ký hiệu N1/N2."
+	else:
+		_level1_instruction.text = "Gảy đàn thật theo chuỗi nốt ở BPM 60; micro đánh giá cao độ và thời điểm."
+	_level1_instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level1_instruction.add_theme_color_override("font_color", C_TEXT_MUTED)
+	_level1_instruction.add_theme_font_size_override("font_size", 14)
+	content.add_child(_level1_instruction)
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 12)
+	content.add_child(actions)
+	_level1_status_label = Label.new()
+	_level1_status_label.custom_minimum_size.x = 500.0
+	_level1_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level1_status_label.text = "Sẵn sàng · Bấm Bắt đầu khi bạn đã đặt đàn đúng vị trí."
+	_level1_status_label.add_theme_color_override("font_color", C_TEXT)
+	actions.add_child(_level1_status_label)
+	if str(_level1_config["mode"]) == "rhythm":
+		for speed_value in [0.6, 0.8, 1.0]:
+			var speed_button := Button.new()
+			speed_button.text = "%d%%" % int(speed_value * 100.0)
+			speed_button.custom_minimum_size = Vector2(62.0, 38.0)
+			speed_button.pressed.connect(_set_level1_speed.bind(speed_value))
+			actions.add_child(speed_button)
+			_level1_speed_buttons.append(speed_button)
+	_level1_start_button = Button.new()
+	_level1_start_button.text = "Bắt đầu"
+	_level1_start_button.custom_minimum_size = Vector2(150.0, 40.0)
+	_level1_start_button.add_theme_stylebox_override("normal", _flat(C_JADE, C_GOLD, 12))
+	_level1_start_button.add_theme_color_override("font_color", Color.WHITE)
+	_level1_start_button.pressed.connect(_toggle_level1_sequence)
+	actions.add_child(_level1_start_button)
+	$Root.add_child(panel)
+	$Root.move_child(panel, 1)
+	_level1_compact_panel = panel
+	_set_level1_speed(_level1_speed)
+	_reset_level1_sequence()
+
+func _set_level1_speed(value: float) -> void:
+	if _level1_state == "playing" or _level1_state == "countdown":
+		return
+	_level1_speed = value
+	for button in _level1_speed_buttons:
+		var selected := button.text == "%d%%" % int(value * 100.0)
+		button.modulate = C_GOLD_LIGHT if selected else Color.WHITE
+
+func _toggle_level1_sequence() -> void:
+	if _level1_state == "playing" or _level1_state == "countdown":
+		_level1_state = "paused"
+		_recording = false
+		if str(_level1_config.get("mode", "")) == "guided_song":
+			_level1_waiting_for_note = false
+			_current_note_elapsed = 0.0
+			_current_time_beats = float(_note_idx) - LEVEL1_GUIDED_LEAD_BEATS
+			_stop_level1_backing()
+		_set_level1_status("Đã tạm dừng · Bấm Tiếp tục khi sẵn sàng.", C_WARN)
+		_set_level1_controls(false)
+		return
+	if _level1_state == "result":
+		_reset_level1_sequence()
+	if str(_level1_config.get("input", "")) == "micro" and not ProjectSettings.get_setting("audio/driver/enable_input"):
+		_set_level1_status("Không thể bắt đầu: ứng dụng chưa được cấp quyền Microphone.", C_RED_ERR)
+		return
+	_level1_state = "countdown"
+	_level1_countdown = 3.0
+	_recording = false
+	if str(_level1_config.get("mode", "")) == "guided_song":
+		_level1_waiting_for_note = false
+		_current_note_elapsed = 0.0
+		_current_time_beats = float(_note_idx) - LEVEL1_GUIDED_LEAD_BEATS
+		_level1_backing_timer = 0.0
+	_level1_silence_time = 0.0
+	_level1_result_shown = false
+	if _level1_instruction:
+		_level1_instruction.visible = false
+	if _level1_compact_panel:
+		_level1_compact_panel.custom_minimum_size.y = 64.0
+	_set_level1_controls(true)
+	_set_level1_status("Chuẩn bị · 3", C_GOLD_TEXT)
+	_sync_level1_board()
+
+func _set_level1_controls(running: bool) -> void:
+	if _level1_start_button:
+		_level1_start_button.text = "Tạm dừng" if running else "Tiếp tục"
+	var pause_button := get_node_or_null("Root/TopBar/TopM/TopH/Level1PauseBtn") as Button
+	if pause_button:
+		pause_button.visible = running
+	if record_btn:
+		record_btn.text = "\nTạm dừng" if running else "\nTiếp tục"
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if visualizer:
+		visualizer.visible = running and _mic_mode and str(_level1_config.get("input", "")) == "micro"
+	if running:
+		linh_panel.visible = false
+		if linh_mini_btn:
+			linh_mini_btn.visible = false
+	else:
+		_update_linh_visibility()
+
+func _reset_level1_metrics() -> void:
+	_level1_total_attempts = 0
+	_level1_correct_count = 0
+	_level1_consecutive_misses = 0
+	_level1_timing_scores.clear()
+	_level1_high_errors = 0
+	_level1_low_errors = 0
+	_level1_early_errors = 0
+	_level1_late_errors = 0
+
+func _reset_level1_sequence() -> void:
+	_recording = false
+	_stop_level1_backing()
+	_level1_state = "preview"
+	_level1_round = 0
+	_note_idx = 0
+	_current_note_elapsed = 0.0
+	_current_time_beats = -LEVEL1_GUIDED_LEAD_BEATS if str(_level1_config.get("mode", "")) == "guided_song" else 0.0
+	_score = 0.0
+	_level1_wait_for_silence = false
+	_level1_silence_time = 0.0
+	_level1_waiting_for_note = false
+	_level1_backing_timer = 0.0
+	_level1_backing_step = 0
+	_level1_result_shown = false
+	_reset_level1_metrics()
+	note_statuses.clear()
+	for _i in sheet_notes.size():
+		note_statuses.append("unplayed")
+	if _board:
+		_board.clear_feedback_details()
+	if _level1_instruction:
+		_level1_instruction.visible = true
+	if _level1_compact_panel:
+		_level1_compact_panel.custom_minimum_size.y = 118.0
+	if _level1_start_button:
+		_level1_start_button.disabled = false
+		_level1_start_button.text = "Bắt đầu"
+	if str(_level1_config.get("mode", "")) == "guided_song":
+		_set_level1_status("Sẵn sàng · Bật micro và chuẩn bị gảy Sol – La – Đô – Rê – Mi.", C_TEXT)
+	else:
+		_set_level1_status("Sẵn sàng · Bấm Bắt đầu khi bạn đã đặt đàn đúng vị trí.", C_TEXT)
+	_set_level1_target()
+	_sync_level1_board()
+	_update_level1_progress()
+
+func _set_level1_target() -> void:
+	if not _board or _note_idx < 0 or _note_idx >= sheet_notes.size():
+		return
+	var target_idx := NOTES_VN.find(sheet_notes[_note_idx])
+	_board.set_target(target_idx)
+	if target_label:
+		target_label.text = "Nốt cần gảy: %s" % sheet_notes[_note_idx].rstrip("0123456789")
+
+func _sync_level1_board() -> void:
+	if not _board:
+		return
+	_board.sheet_notes = sheet_notes
+	_board.sheet_durations = sheet_durations
+	_board.note_statuses = note_statuses
+	_board.note_cues = _level1_config.get("cues", [])
+	_board.current_note_idx = _note_idx
+	_board.current_time_beats = _current_time_beats
+	_board.is_active = _level1_state == "countdown" or _level1_state == "playing"
+	_board.queue_redraw()
+
+func _update_level1_progress() -> void:
+	if not _level1_progress_label:
+		return
+	var total := sheet_notes.size()
+	var current := mini(_note_idx + 1, total)
+	var prefix := "Lượt %d/3 · " % (_level1_round + 1) if str(_level1_config.get("mode", "")) == "catch" else ""
+	_level1_progress_label.text = "%s%d/%d · %d%%" % [prefix, current, total, int(_score)]
+	lesson_bar.value = _score
+
+func _process_level1_sequence(delta: float) -> void:
+	if _level1_state == "countdown":
+		_level1_countdown -= delta
+		_set_level1_status("Chuẩn bị · %d" % maxi(1, ceili(_level1_countdown)), C_GOLD_TEXT)
+		if _level1_countdown <= 0.0:
+			_level1_state = "playing"
+			_recording = true
+			_current_note_elapsed = 0.0
+			if str(_level1_config.get("mode", "")) == "guided_song":
+				_current_time_beats = float(_note_idx) - LEVEL1_GUIDED_LEAD_BEATS
+				_level1_waiting_for_note = false
+				_level1_backing_timer = 0.0
+				_set_level1_status("♪ Nhạc đang phát · Chuẩn bị nốt còn thiếu", C_JADE)
+			else:
+				_set_level1_status("Bắt đầu!", C_JADE)
+			_set_level1_target()
+		_sync_level1_board()
+		return
+	if _level1_state != "playing":
+		return
+	_practice_time += delta
+	_current_note_elapsed += delta
+	if str(_level1_config.get("mode", "")) == "guided_song":
+		_process_level1_guided_song(delta)
+		_sync_level1_board()
+		return
+	var speed: float = float([0.75, 0.9, 1.0][_level1_round]) if str(_level1_config["mode"]) == "catch" else _level1_speed
+	var seconds_per_note: float = 60.0 / (float(_level1_config["bpm"]) * speed)
+	_current_time_beats = float(_note_idx) + clampf(_current_note_elapsed / seconds_per_note, 0.0, 1.0)
+	if str(_level1_config["mode"]) == "rhythm":
+		_process_level1_rhythm_audio(delta, seconds_per_note)
+	if _level1_state == "playing" and _current_note_elapsed >= seconds_per_note:
+		_register_level1_miss("missed")
+	_sync_level1_board()
+
+func _process_level1_guided_song(delta: float) -> void:
+	if _note_idx >= sheet_notes.size():
+		return
+	var seconds_per_beat: float = 60.0 / float(_level1_config["bpm"])
+	if not _level1_waiting_for_note:
+		_current_time_beats = float(_note_idx) - LEVEL1_GUIDED_LEAD_BEATS + (_current_note_elapsed / seconds_per_beat)
+		_level1_backing_timer -= delta
+		if _level1_backing_timer <= 0.0:
+			_play_level1_backing_pulse()
+			_level1_backing_timer = seconds_per_beat * 0.5
+		if _current_time_beats >= float(_note_idx):
+			_current_time_beats = float(_note_idx)
+			_current_note_elapsed = 0.0
+			_level1_waiting_for_note = true
+			_level1_pitch_hold = 0.0
+			_stop_level1_backing()
+			var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
+			_set_level1_status("NHẠC ĐANG DỪNG · Gảy nốt %s để tiếp tục" % target_name, C_GOLD_TEXT)
+		return
+	_process_level1_guided_song_audio(delta)
+
+func _play_level1_backing_pulse() -> void:
+	if _string_streams.is_empty():
+		return
+	var accompaniment: Array[int] = [5, 7, 9, 7, 10, 7, 9, 6]
+	var string_idx: int = accompaniment[_level1_backing_step % accompaniment.size()]
+	_level1_backing_step += 1
+	if string_idx < 0 or string_idx >= _string_streams.size():
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = _string_streams[string_idx]
+	player.volume_db = -19.0
+	player.bus = "Master"
+	add_child(player)
+	_level1_backing_players.append(player)
+	player.play()
+	var release_timer := get_tree().create_timer(0.42)
+	release_timer.timeout.connect(func() -> void:
+		if is_instance_valid(player):
+			_level1_backing_players.erase(player)
+			player.stop()
+			player.queue_free()
+	)
+
+func _stop_level1_backing() -> void:
+	for player in _level1_backing_players:
+		if is_instance_valid(player):
+			player.stop()
+			player.queue_free()
+	_level1_backing_players.clear()
+
+func _process_level1_guided_song_audio(delta: float) -> void:
+	if not _mic_mode:
+		_set_level1_status("NHẠC ĐANG DỪNG · Micro đang tắt", C_WARN)
+		return
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if not visualizer or _note_idx >= sheet_notes.size():
+		return
+	var amplitude_db: float = visualizer.current_amplitude_db
+	var pitch: float = visualizer.current_pitch
+	var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
+	if amplitude_db <= -45.0 or pitch <= 50.0:
+		_level1_pitch_hold = 0.0
+		if _level1_wait_for_silence:
+			_level1_silence_time += delta
+			if _level1_silence_time >= 0.12:
+				_level1_wait_for_silence = false
+				_level1_silence_time = 0.0
+				_set_level1_status("NHẠC ĐANG DỪNG · Gảy đúng nốt %s để tiếp tục" % target_name, C_GOLD_TEXT)
+		return
+	_level1_silence_time = 0.0
+	if _level1_wait_for_silence:
+		return
+
+	var closest_idx: int = 0
+	var closest_cents: float = INF
+	for i in 5:
+		var candidate_frequency: float = _get_string_frequency(i)
+		var cents_distance: float = absf(1200.0 * log(pitch / candidate_frequency) / log(2.0))
+		if cents_distance < closest_cents:
+			closest_cents = cents_distance
+			closest_idx = i
+	var target_idx: int = NOTES_VN.find(sheet_notes[_note_idx])
+	if target_idx < 0:
+		return
+	var target_frequency: float = _get_string_frequency(target_idx)
+	var target_cents: float = 1200.0 * log(pitch / target_frequency) / log(2.0)
+	var detected_name: String = NOTES_VN[closest_idx].rstrip("0123456789")
+	pitch_note.text = detected_name
+
+	if closest_idx == target_idx and absf(target_cents) <= 35.0:
+		_level1_pitch_hold += delta
+		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
+		pitch_status.text = "Đúng nốt · Nhạc sắp phát tiếp"
+		pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+		if _board:
+			_board.set_feedback_detail(target_idx, "✓ %s" % target_name, 1)
+		var hold_percent: int = mini(100, int((_level1_pitch_hold / 0.18) * 100.0))
+		_set_level1_status("ĐÚNG NỐT %s · %d%%" % [target_name, hold_percent], C_GREEN_OK)
+		if _level1_pitch_hold >= 0.18:
+			_level1_total_attempts += 1
+			_level1_wait_for_silence = true
+			_level1_waiting_for_note = false
+			_register_level1_correct("✓ %s · Nhạc tiếp tục" % target_name)
+		return
+
+	_level1_pitch_hold = 0.0
+	_level1_total_attempts += 1
+	_level1_consecutive_misses += 1
+	_level1_wait_for_silence = true
+	note_statuses[_note_idx] = "missed"
+	pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+	pitch_status.text = "Sai nốt · Cần gảy %s" % target_name
+	pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+	if target_cents > 0.0:
+		_level1_high_errors += 1
+	else:
+		_level1_low_errors += 1
+	var correction: String = "↓" if target_cents > 0.0 else "↑"
+	if _board:
+		_board.set_feedback_detail(target_idx, "✕ %s · cần %s" % [detected_name, target_name], 2)
+	_set_level1_status("SAI NỐT · Nghe thấy %s %s%d¢ · Hãy gảy lại %s" % [detected_name, correction, int(absf(target_cents)), target_name], C_RED_ERR)
+	_update_level1_score()
+
+func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void:
+	if not _mic_mode:
+		_set_level1_status("Micro đang tắt · Hãy bật Micro trong thanh công cụ.", C_WARN)
+		return
+	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if not visualizer or _note_idx >= sheet_notes.size():
+		return
+	var db: float = visualizer.current_amplitude_db
+	var pitch: float = visualizer.current_pitch
+	if db <= -45.0 or pitch <= 50.0:
+		if _level1_wait_for_silence:
+			_level1_silence_time += delta
+			if _level1_silence_time >= 0.12:
+				_level1_wait_for_silence = false
+				_level1_silence_time = 0.0
+		return
+	_level1_silence_time = 0.0
+	if _level1_wait_for_silence:
+		return
+	_level1_wait_for_silence = true
+	var closest_idx := 0
+	var closest_cents := INF
+	for i in NOTES_VN.size():
+		var frequency := _get_string_frequency(i)
+		var distance := absf(1200.0 * log(pitch / frequency) / log(2.0))
+		if distance < closest_cents:
+			closest_cents = distance
+			closest_idx = i
+	var target_idx := NOTES_VN.find(sheet_notes[_note_idx])
+	var target_frequency := _get_string_frequency(target_idx)
+	var cents := 1200.0 * log(pitch / target_frequency) / log(2.0)
+	_level1_total_attempts += 1
+	if closest_idx == target_idx and absf(cents) <= 35.0:
+		var timing := clampf(100.0 - absf(_current_note_elapsed - seconds_per_note * 0.35) / seconds_per_note * 130.0, 0.0, 100.0)
+		_level1_timing_scores.append(timing)
+		if _current_note_elapsed < seconds_per_note * 0.18:
+			_level1_early_errors += 1
+		elif _current_note_elapsed > seconds_per_note * 0.72:
+			_level1_late_errors += 1
+		_register_level1_correct("✓ %s" % sheet_notes[_note_idx].rstrip("0123456789"))
+	else:
+		if cents > 0.0:
+			_level1_high_errors += 1
+		else:
+			_level1_low_errors += 1
+		var arrow := "↓" if cents > 0.0 else "↑"
+		_register_level1_miss("✕ %s %s%d¢" % [NOTES_VN[closest_idx].rstrip("0123456789"), arrow, int(absf(cents))])
+
+func _register_level1_correct(detail: String) -> void:
+	if _note_idx >= sheet_notes.size():
+		return
+	var idx := NOTES_VN.find(sheet_notes[_note_idx])
+	note_statuses[_note_idx] = "correct"
+	_level1_correct_count += 1
+	_level1_consecutive_misses = 0
+	if _board:
+		_board.set_feedback_detail(idx, detail, 1)
+	_set_level1_status("Chính xác · %s" % detail, C_GREEN_OK)
+	_advance_level1_note()
+
+func _register_level1_miss(detail: String) -> void:
+	if _note_idx >= sheet_notes.size():
+		return
+	var idx := NOTES_VN.find(sheet_notes[_note_idx])
+	if detail == "missed":
+		_level1_total_attempts += 1
+		detail = "✕ Nhỡ nhịp"
+	note_statuses[_note_idx] = "missed"
+	_level1_consecutive_misses += 1
+	if _board:
+		_board.set_feedback_detail(idx, detail, 2)
+	_set_level1_status("Chưa đúng · %s" % detail, C_RED_ERR)
+	if str(_level1_config["mode"]) == "rhythm" and _level1_consecutive_misses >= 3:
+		var phrase_start := int(_note_idx / 4) * 4
+		for i in range(phrase_start, mini(phrase_start + 4, note_statuses.size())):
+			note_statuses[i] = "unplayed"
+		_note_idx = phrase_start
+		_current_note_elapsed = 0.0
+		_current_time_beats = float(_note_idx)
+		_level1_consecutive_misses = 0
+		_set_level1_status("Hãy thử lại cụm %d–%d." % [phrase_start + 1, mini(phrase_start + 4, sheet_notes.size())], C_WARN)
+		_set_level1_target()
+		return
+	_advance_level1_note()
+
+func _advance_level1_note() -> void:
+	_note_idx += 1
+	_current_note_elapsed = 0.0
+	_current_time_beats = float(_note_idx) - LEVEL1_GUIDED_LEAD_BEATS if str(_level1_config.get("mode", "")) == "guided_song" else float(_note_idx)
+	if _note_idx >= sheet_notes.size():
+		if str(_level1_config["mode"]) == "catch" and _level1_round < 2:
+			_level1_round += 1
+			_note_idx = 0
+			for i in note_statuses.size():
+				note_statuses[i] = "unplayed"
+			_set_level1_status("Lượt %d/3 · Tốc độ tăng lên." % (_level1_round + 1), C_GOLD_TEXT)
+			_set_level1_target()
+			_update_level1_score()
+		else:
+			_finish_level1_sequence()
+		return
+	_set_level1_target()
+	if str(_level1_config.get("mode", "")) == "guided_song":
+		_level1_backing_timer = 0.0
+		_set_level1_status("♪ Chính xác · Nhạc tiếp tục · Chuẩn bị nốt %s" % sheet_notes[_note_idx].rstrip("0123456789"), C_GREEN_OK)
+	_update_level1_score()
+
+func _update_level1_score() -> void:
+	var accuracy := float(_level1_correct_count) / float(maxi(1, _level1_total_attempts)) * 100.0
+	if str(_level1_config["mode"]) == "rhythm":
+		var timing := _get_average_score(_level1_timing_scores, 0.0)
+		_score = accuracy * 0.7 + timing * 0.3
+	else:
+		_score = accuracy
+	_refresh_score()
+	_update_level1_progress()
+
+func _finish_level1_sequence() -> void:
+	_recording = false
+	_stop_level1_backing()
+	_level1_state = "result"
+	_update_level1_score()
+	var passed := _score >= float(_level1_config["pass_score"])
+	if passed:
+		SecureDataManager.complete_lesson("dan_tranh", SecureDataManager.active_lesson_id, 3 if _score >= 90.0 else 2)
+	if _board:
+		_board.set_target(-1)
+		_board.is_active = false
+	_set_level1_controls(false)
+	if _level1_start_button:
+		_level1_start_button.text = "Luyện lại"
+	_set_level1_status("Hoàn thành · %d%% · %s" % [int(_score), "Đạt" if passed else "Cần đạt 80%"], C_GREEN_OK if passed else C_WARN)
+	_show_level1_result(passed)
+
+func _show_level1_result(passed: bool) -> void:
+	if _level1_result_shown:
+		return
+	_level1_result_shown = true
+	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
+	if not popup_scene:
+		return
+	var popup = popup_scene.instantiate()
+	add_child(popup)
+	var pitch_accuracy := float(_level1_correct_count) / float(maxi(1, _level1_total_attempts)) * 100.0
+	var timing := _get_average_score(_level1_timing_scores, pitch_accuracy)
+	popup.setup_result(_score, pitch_accuracy, timing, 100.0 if passed else 70.0, 30 if passed else 0, "Bài tiếp theo" if passed else "Luyện lại")
+	var action := popup.get_node_or_null("CardContainer/MarginContainer/Content/ActionBtn") as Button
+	if action:
+		action.text = "Bài tiếp theo" if passed else "Luyện lại"
+	if passed:
+		popup.closed.connect(_go_back)
+	else:
+		popup.closed.connect(_reset_level1_sequence)
+	var summary := popup.get_node_or_null("CardContainer/MarginContainer/Content/ResultVBox/MainRow/DetailsVBox/RewardsCard/RewardM/RewardsLabel") as Label
+	if summary:
+		summary.text = "Đúng %d/%d · Cao %d · Thấp %d · Sớm %d · Muộn %d" % [_level1_correct_count, _level1_total_attempts, _level1_high_errors, _level1_low_errors, _level1_early_errors, _level1_late_errors]
+
 
 func _process(delta: float) -> void:
+	if _level1_mode and not _level1_lesson1_mode:
+		_process_level1_sequence(delta)
+		return
+	if _level1_lesson1_mode:
+		if _recording:
+			_practice_time += delta
+			_process_level1_lesson1_audio(delta)
+		return
+
 	if _recording:
 		_practice_time += delta
 		
@@ -819,7 +1773,7 @@ func _set_labels() -> void:
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreTitle  as Label).text = "ĐIỂM SỐ"
 	($Root/MiddleRow/MainContent/StatsRow/ScorePanel/ScoreM/ScoreV/ScoreSub   as Label).text = "Cao độ 82%  ·  Nhịp 71%"
 
-	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐÀN TRANH 16 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để nhấn rung"
+	($Root/StringsBoard/BoardM/BoardVBox/BoardLabel as Label).text = "ĐÀN TRANH 17 DÂY  —  Chạm phải nhạn đàn để gảy  ·  Kéo trái để nhấn rung"
 	record_btn.text = "Bắt đầu luyện tập"
 	($Root/RecordBar/RecordM/RecordH/ResetBtn as Button).text = "Làm lại"
 
@@ -943,7 +1897,7 @@ func _build_theme() -> void:
 	if settings_panel:
 		settings_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
 		settings_panel.custom_minimum_size.x = 240
-		settings_panel.size.x = 240
+		settings_panel.offset_right = settings_panel.offset_left + 240.0
 		settings_panel.position.x = -260
 		settings_panel.visible = true
 		settings_panel.z_index = 100
@@ -1171,7 +2125,7 @@ func _build_dots() -> void:
 # ─── Dan Tranh Board ─────────────────────────────────────────────────────────
 func _build_strings() -> void:
 	var freqs: Array[float] = []
-	for i in 16:
+	for i in 17:
 		freqs.append(_get_string_frequency(i))
 	_board.init(NOTES_VN, _string_streams, freqs)
 	_board.string_plucked.connect(_on_string_plucked)
@@ -1189,13 +2143,13 @@ func _build_rhythm_bars() -> void:
 
 # ─── Sound Generator (Karplus-Strong Plucked String Synthesis) ────────────────
 func _generate_streams() -> void:
-	_string_streams.resize(16)
-	for i in 16:
+	_string_streams.resize(17)
+	for i in 17:
 		var freq := _get_string_frequency(i)
 		_string_streams[i] = _generate_pluck_stream(freq)
 
 func _get_string_frequency(idx: int) -> float:
-	# Đàn tranh 16 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
+	# Đàn tranh 17 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
 	var base_freqs = [
 		196.00, # Sol (G3)
 		220.00, # La (A3)
@@ -1279,6 +2233,31 @@ func _on_string_plucked(idx: int, plucked_note: String) -> void:
 	_show_header()
 	if _is_demo_mode:
 		return
+	if _level1_mode and str(_level1_config.get("mode", "")) == "catch":
+		var simple_note := plucked_note.rstrip("0123456789")
+		if _level1_state != "playing":
+			_set_level1_status("Nốt %s · Bấm Bắt đầu để vào bài Hứng nốt." % simple_note, C_GOLD_TEXT)
+			return
+		if _note_idx >= sheet_notes.size():
+			return
+		_level1_total_attempts += 1
+		var expected_idx := NOTES_VN.find(sheet_notes[_note_idx])
+		if idx == expected_idx:
+			_register_level1_correct("✓ %s · %s" % [simple_note, str(_level1_config["cues"][_note_idx])])
+		else:
+			_register_level1_miss("✕ Đã gảy %s" % simple_note)
+		return
+	if _level1_mode and not _level1_lesson1_mode:
+		_set_level1_status("Nghe mẫu nốt %s · Khi luyện tập, hãy gảy trên đàn thật." % plucked_note.rstrip("0123456789"), C_GOLD_TEXT)
+		return
+	if _level1_lesson1_mode:
+		var simple_note := plucked_note.rstrip("0123456789")
+		pitch_note.text = simple_note
+		pitch_status.text = "Nốt mẫu · Hãy gảy lại trên đàn thật"
+		pitch_status.add_theme_color_override("font_color", C_GOLD_TEXT)
+		pitch_note.add_theme_color_override("font_color", C_GOLD)
+		_set_level1_status("Đang phát mẫu nốt %s · Hãy gảy lại trên đàn thật." % simple_note, C_GOLD_TEXT)
+		return
 
 	pitch_note.text   = plucked_note
 	pitch_status.text = "Dây %d  —  Vừa gảy" % (idx + 1)
@@ -1344,7 +2323,9 @@ func _connect_buttons() -> void:
 		for conn in record_btn.get_signal_connection_list("pressed"):
 			record_btn.pressed.disconnect(conn["callable"])
 		record_btn.pressed.connect(func():
-			if not _recording: 
+			if _level1_mode:
+				_toggle_record()
+			elif not _recording:
 				_toggle_record()
 			else:
 				# Đang luyện tập, đóng sidebar để tiếp tục chơi đàn
@@ -1360,6 +2341,12 @@ func _connect_buttons() -> void:
 	_make_button_bouncy(reset_btn)
 
 func _toggle_record() -> void:
+	if _level1_lesson1_mode:
+		_toggle_level1_lesson1_listening()
+		return
+	if _level1_mode:
+		_toggle_level1_sequence()
+		return
 	_recording = not _recording
 	var visualizer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
 	_update_rec_pulse(_recording)
@@ -1393,7 +2380,7 @@ func _toggle_record() -> void:
 			_board.audio_enabled = true
 
 func _play_zither_sound(string_idx: int, volume: float = -6.0) -> void:
-	if string_idx < 0 or string_idx >= 16:
+	if string_idx < 0 or string_idx >= 17:
 		return
 	# Stop any previous player
 	if _active_player and is_instance_valid(_active_player):
@@ -1519,10 +2506,10 @@ func _process_real_audio(delta: float) -> void:
 	if db > -45.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
 		
-		# Find the closest frequency matching the target note in all 16 strings
+		# Find the closest frequency matching the target note across all 17 strings
 		var closest_target_freq := 0.0
 		var min_diff := 999999.0
-		for i in range(16):
+		for i in range(17):
 			var note_name = NOTES_VN[i]
 			if note_name == target_note:
 				var string_freq = _get_string_frequency(i)
@@ -1583,7 +2570,7 @@ func _process_real_audio(delta: float) -> void:
 		var detected_note := ""
 		var closest_detected_freq := 0.0
 		var min_detected_diff := 999999.0
-		for i in range(16):
+		for i in range(17):
 			var string_freq = _get_string_frequency(i)
 			var diff = abs(pitch - string_freq)
 			if diff < min_detected_diff:
@@ -1733,6 +2720,12 @@ func _update_target_indicator() -> void:
 		if _board: _board.set_target(target_idx)
 
 func _reset() -> void:
+	if _level1_lesson1_mode:
+		_reset_level1_lesson1_exercise()
+		return
+	if _level1_mode:
+		_reset_level1_sequence()
+		return
 	_score = 75.0; _recording = false; _note_idx = 0
 	_current_time_beats = float(_note_idx)
 	_target_time_beats = float(_note_idx)
@@ -1924,8 +2917,8 @@ func _show_introduction_overlay() -> void:
 			"note_to_play": ""
 		},
 		{
-			"text": "Cây đàn tranh của chúng ta có 16 dây chính, được lên dây theo thang năm âm (pentatonic) truyền thống gồm: Sol, La, Đô, Rê, Mi.",
-			"voice": "Cây đàn tranh của chúng ta có mười sáu dây chính, được lên dây theo thang năm âm truyền thống gồm: Hò tức là Đô, Xự tức là Rê, Xang tức là Fáp, Xê tức là Sol, và Công tức là La.",
+			"text": "Cây đàn tranh của chúng ta có 17 dây, được lên dây theo thang năm âm (pentatonic) truyền thống gồm: Sol, La, Đô, Rê, Mi.",
+			"voice": "Cây đàn tranh của chúng ta có mười bảy dây, được lên dây theo thang năm âm truyền thống gồm: Sol, La, Đô, Rê và Mi.",
 			"highlighted_string": -1,
 			"note_to_play": ""
 		},
@@ -2039,7 +3032,7 @@ func _show_introduction_overlay() -> void:
 	
 	# Cinematic Title
 	var title := Label.new()
-	title.text = "BÀI HỌC CƠ BẢN: ĐÀN TRANH 16 DÂY"
+	title.text = "BÀI HỌC CƠ BẢN: ĐÀN TRANH 17 DÂY"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if f_title: title.add_theme_font_override("font", f_title)
 	title.add_theme_font_size_override("font_size", 26)
@@ -2078,7 +3071,7 @@ func _show_introduction_overlay() -> void:
 		
 		# Draw 16 horizontal string lines
 		var step = h / 17.0
-		for i in range(16):
+		for i in range(17):
 			var y = step * (i + 1)
 			var color = Color(0.9, 0.75, 0.4, 0.4)
 			var width = 1.0
@@ -2207,7 +3200,7 @@ func _on_intro_next_pressed() -> void:
 		)
 
 func _play_intro_zither_sound_briefly(string_idx: int, volume: float = -3.0) -> void:
-	if string_idx < 0 or string_idx >= 16: return
+	if string_idx < 0 or string_idx >= 17: return
 	if _active_player and is_instance_valid(_active_player):
 		_active_player.stop()
 		_active_player.queue_free()
@@ -2396,7 +3389,7 @@ func _update_rec_pulse(active: bool) -> void:
 func _find_closest_string_index(freq: float) -> int:
 	var closest_idx = -1
 	var min_diff = 1e9
-	for i in range(16):
+	for i in range(17):
 		var string_freq = _get_string_frequency(i)
 		var diff = abs(freq - string_freq)
 		if diff < min_diff:
@@ -2515,7 +3508,7 @@ func _play_backing_chord(measure: int) -> void:
 		)
 
 func _play_backing_note(string_idx: int, volume: float) -> void:
-	if string_idx < 0 or string_idx >= 16: return
+	if string_idx < 0 or string_idx >= 17: return
 	var bp := AudioStreamPlayer.new()
 	bp.stream = _string_streams[string_idx]
 	bp.volume_db = backing_volume_db  # use the configured backing volume

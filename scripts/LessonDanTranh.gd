@@ -12,6 +12,7 @@ const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
 
 static var selected_level: int = 1
+const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
 
 var _is_dragging_scroll: bool = false
@@ -33,15 +34,15 @@ const LEVELS := [
 				"number": 1,
 				"title": "Giới thiệu Đàn Tranh & App",
 				"video": "Lịch sử đàn tranh, 17 dây đàn và thang ngũ cung Sol – La – Đô – Rê – Mi.",
-				"practice": "Làm quen giao diện dọc/ngang và chạm tự do để nghe âm thanh.",
-				"practice_title": "Khám phá Đàn Tranh",
+				"practice": "Nghe mẫu và gảy lại lần lượt 5 nốt Sol – La – Đô – Rê – Mi trên đàn thật; hệ thống nhận diện cao độ, báo đúng/sai và tô xanh nốt đúng.",
+				"practice_title": "Làm quen 5 nốt cơ bản",
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
 			},
 			{
 				"number": 2,
 				"title": "Gảy ngón cơ bản (Ngón 1 & 2)",
 				"video": "Kỹ thuật gảy ngón cái, ngón trỏ, ngón giữa và góc tiếp xúc của móng gảy.",
-				"practice": "Mini-game Hứng nốt với ba dây giữa Đô2 – Rê2 – Mi2.",
+				"practice": "Ba lượt Hứng nốt với Đô2 – Rê2 – Mi2, ký hiệu Ngón 1/Ngón 2 và tốc độ tăng dần; đạt 80% để qua bài.",
 				"practice_title": "Gảy ngón cơ bản",
 				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Mi2"]
 			},
@@ -49,7 +50,7 @@ const LEVELS := [
 				"number": 3,
 				"title": "Ghép nốt và nhịp điệu",
 				"video": "Đọc vị trí nốt và đối chiếu với đúng dây đàn trên giao diện.",
-				"practice": "Chuỗi nốt tốc độ chậm BPM 60; gảy đúng dây được tô sáng.",
+				"practice": "Gảy chuỗi 8 nốt trên đàn thật ở BPM 60; micro đánh giá cao độ và nhịp, sai ba nốt liên tiếp sẽ luyện lại cụm bốn nốt.",
 				"practice_title": "Ghép nốt và nhịp điệu",
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1"]
 			}
@@ -399,14 +400,14 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	var has_video := str(lesson["video"]) != ""
 	var video_id := _lesson_id(lesson_number, "video")
 	var practice_id := _lesson_id(lesson_number, "practice")
-	var lesson_ready := index == 0
-	if index > 0:
+	var lesson_ready: bool = not REQUIRE_SEQUENTIAL_UNLOCK or index == 0
+	if REQUIRE_SEQUENTIAL_UNLOCK and index > 0:
 		var previous: Dictionary = lessons[index - 1]
 		lesson_ready = completed.has(_lesson_id(int(previous["number"]), "practice"))
 	var video_completed := completed.has(video_id)
 	var practice_completed := completed.has(practice_id)
-	var video_unlocked := lesson_ready or video_completed
-	var practice_unlocked := practice_completed or (lesson_ready and (not has_video or video_completed))
+	var video_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or lesson_ready or video_completed
+	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or (lesson_ready and (not has_video or video_completed))
 
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2.ZERO
@@ -667,7 +668,12 @@ func _open_video(lesson: Dictionary) -> void:
 		return
 	var lesson_number := int(lesson["number"])
 	SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
-	VideoPlayer.custom_video_path = "res://Video/giang_vien_dan_tranh_1942.ogv"
+	if selected_level == 1 and lesson_number == 2:
+		VideoPlayer.custom_video_path = "res://Video/DT_LV1_B2.ogv"
+	elif selected_level == 1 and lesson_number == 3:
+		VideoPlayer.custom_video_path = "res://Video/DT_LV1_B3.ogv"
+	else:
+		VideoPlayer.custom_video_path = "res://Video/giang_vien_dan_tranh_1942.ogv"
 	VideoPlayer.custom_subtitles = [
 		{"start": 0.0, "end": 2.5, "text": "Bài %d: %s" % [lesson_number, lesson["title"]]},
 		{"start": 2.5, "end": 7.5, "text": lesson["video"]},
