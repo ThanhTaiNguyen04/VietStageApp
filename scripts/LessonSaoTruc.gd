@@ -884,8 +884,8 @@ func _generate_melody(target_note_key: String) -> Array:
 		# Format: ["Tên nốt", thời_gian_ngân, khoảng_nghỉ_sau]
 		var notes = [
 	# Này bầu trời rộng lớn ơi
-	["Rê", 0.5, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.25, 0.1], ["Rê", 0.5, 0.1],
-	["La", 0.5, 0.1], ["Sol", 1.25, 0.4],
+	["Rê", 0.5, 0], ["Rê", 0.25, 0], ["Rê", 0.25, 0], ["Rê", 0.5, 0],
+	["La", 0.5, 0], ["Sol", 1.25, 0.4],
 
 	# Có nghe chăng tiếng em gọi
 	["Sol", 0.25, 0.1],
