@@ -366,6 +366,9 @@ func _ready():
 	current_state = State.INTRO
 	
 	# Setup Staff Display
+	# Hide old rhythm UI
+	if rhythm_area: rhythm_area.visible = false
+	
 	staff_display = load("res://scripts/StaffDisplay.gd").new()
 	staff_display.name = "StaffDisplay"
 	add_child(staff_display)
@@ -1151,10 +1154,6 @@ func _complete_lesson():
 	current_state = State.COMPLETED
 	feedback_area.visible = false
 	analyzer.visible = false
-	
-	for lane in _lanes:
-		lane.visible = false
-	
 	instruction_lbl.visible = false
 	sub_instruction_lbl.visible = false
 	
@@ -1355,12 +1354,6 @@ func _build_flute():
 		
 		holes_overlay.add_child(cover)
 		_holes.append(cover)
-		
-		var lane = ColorRect.new()
-		lane.color = Color(1.0, 1.0, 1.0, 0.15)
-		lane.visible = true
-		rhythm_area.add_child(lane)
-		_lanes.append(lane)
 
 
 func _show_fingers(fingers: Array):
