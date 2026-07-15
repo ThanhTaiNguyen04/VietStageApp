@@ -1162,8 +1162,10 @@ func _complete_lesson():
 	if record_btn: record_btn.visible = false
 	if playback_btn: playback_btn.visible = false
 	
-	if retry_btn: retry_btn.visible = true
-	if understood_btn: understood_btn.visible = true
+	if get_node_or_null("StaffDisplay"):
+		get_node("StaffDisplay").visible = false
+		
+	_show_completion_modal()
 
 func _show_completion_modal():
 	if retry_btn: retry_btn.visible = false
@@ -1176,17 +1178,23 @@ func _show_completion_modal():
 	if complete_overlay:
 		complete_overlay.visible = true
 		if total_rhythm_duration > 0.0:
-			var vbox = complete_overlay.get_node_or_null("MarginContainer/VBoxContainer")
-			if vbox:
-				var pct_lbl = vbox.get_node_or_null("AccuracyLbl")
-				if not pct_lbl:
-					pct_lbl = Label.new()
-					pct_lbl.name = "AccuracyLbl"
-					pct_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-					pct_lbl.add_theme_font_size_override("font_size", 42)
-					pct_lbl.add_theme_color_override("font_color", C_GOLD)
-					vbox.add_child(pct_lbl)
-				pct_lbl.text = "Độ chính xác: %d%%" % int(acc * 100)
+			var center = complete_overlay.get_child(0)
+			if center:
+				var modal = center.get_child(0)
+				if modal:
+					var margin = modal.get_child(0)
+					if margin:
+						var vbox = margin.get_child(0)
+						if vbox:
+							var pct_lbl = vbox.get_node_or_null("AccuracyLbl")
+							if not pct_lbl:
+								pct_lbl = Label.new()
+								pct_lbl.name = "AccuracyLbl"
+								pct_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+								pct_lbl.add_theme_font_size_override("font_size", 42)
+								pct_lbl.add_theme_color_override("font_color", C_GOLD)
+								vbox.add_child(pct_lbl)
+							pct_lbl.text = "Độ chính xác: %d%%" % int(acc * 100)
 
 func _build_complete_overlay():
 	complete_overlay = ColorRect.new()
@@ -1294,7 +1302,7 @@ func _build_complete_overlay():
 	retry_sb.content_margin_left = 40; retry_sb.content_margin_right = 40
 	retry_sb.content_margin_top = 15; retry_sb.content_margin_bottom = 15
 	
-	var retry_btn = Button.new()
+	retry_btn = Button.new()
 	retry_btn.text = "↻ Chơi Lại"
 	retry_btn.add_theme_stylebox_override("normal", retry_sb)
 	retry_btn.add_theme_stylebox_override("hover", retry_sb)
