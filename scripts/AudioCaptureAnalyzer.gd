@@ -29,7 +29,7 @@ var _sliding_window := PackedFloat32Array()
 # Dynamic configurations for pitch detection and noise gating
 var min_frequency := 200.0
 var max_frequency := 2500.0
-var volume_threshold_db := -30.0
+var volume_threshold_db := -45.0
 
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
@@ -156,27 +156,37 @@ func _process(delta: float) -> void:
 				if current_amplitude_db > volume_threshold_db:
 					if _spectrum:
 						var max_mag = 0.0
-						var best_hz = 0.0
 						var hz = min_frequency
+						var magnitudes = []
+						# Scan frequencies
 						while hz <= max_frequency:
 							var mag = _spectrum.get_magnitude_for_frequency_range(hz, hz + 10.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
+							magnitudes.append({"hz": hz + 5.0, "mag": mag})
 							if mag > max_mag:
 								max_mag = mag
-								best_hz = hz + 5.0
 							hz += 10.0
 							
+						var best_hz = 0.0
+						if max_mag > 0.0:
+							# Find the lowest frequency that has at least 30% of the peak magnitude (Fundamental)
+							for m in magnitudes:
+								if m["mag"] >= max_mag * 0.3:
+									best_hz = m["hz"]
+									break
+									
 						if best_hz > 0.0:
 							var refine_hz = max(min_frequency, best_hz - 15.0)
 							var end_hz = min(max_frequency, best_hz + 15.0)
-							max_mag = 0.0
+							var refined_max = 0.0
+							var refined_best_hz = best_hz
 							while refine_hz <= end_hz:
 								var mag = _spectrum.get_magnitude_for_frequency_range(refine_hz, refine_hz + 2.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
-								if mag > max_mag:
-									max_mag = mag
-									best_hz = refine_hz + 1.0
+								if mag > refined_max:
+									refined_max = mag
+									refined_best_hz = refine_hz + 1.0
 								refine_hz += 2.0
 								
-							current_pitch = lerp(current_pitch, best_hz, 0.8)
+							current_pitch = lerp(current_pitch, refined_best_hz, 0.8)
 						else:
 							current_pitch = lerp(current_pitch, 0.0, 0.5)
 							
