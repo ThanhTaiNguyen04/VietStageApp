@@ -887,8 +887,8 @@ func _play_synth_note(freq: float) -> void:
 						slide = 0.980 + 0.020 * (t / 0.08)
 
 					# Vibrato onset after 0.10 s (uốn vòi builds slowly)
-					var vib_depth := 0.015 * clamp((t - 0.10) / 0.20, 0.0, 1.0)
-					var vibrato := 1.0 + vib_depth * sin(t * 5.5 * TAU)
+					var vib_depth: float = 0.015 * clampf((t - 0.10) / 0.20, 0.0, 1.0)
+					var vibrato: float = 1.0 + vib_depth * sin(t * 5.5 * TAU)
 					current_freq = freq * slide * vibrato
 
 					# Harmonic series tuned to Dan Bau overtone profile:

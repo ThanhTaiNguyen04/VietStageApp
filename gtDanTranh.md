@@ -44,3 +44,4 @@ Video hướng dẫn: Phân tích cách chuyển quãng, kỹ thuật nhấn/nh�
 Thực hành trên Đàn ảo: Áp dụng Sheet JSON [Sứ Thanh Hoa] (BPM 80). Bài này có sự chuyển quãng rộng (từ Rê3 lên La3, Mi4). Học viên phải tự xoay hoặc tinh chỉnh layout phù hợp để không gảy trượt.
 Bài 12: Boss Stage (Thử thách sinh tồn)
 Thực hành trên Đàn ảo: Người chơi chọn 1 trong 3 bài (Lý Cây Đa, Xàng Xê, Sứ Thanh Hoa). Chế độ "Không Gợi Ý": Tắt tên nốt, tắt dây sáng, chỉ có nốt rơi. Hoàn thành bài sẽ được mở khóa (Unlock) một giao diện/Skin cây đàn mới.
+

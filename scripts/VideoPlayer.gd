@@ -27,9 +27,9 @@ const C_SCREEN_BG  := Color(0.95, 0.93, 0.89, 1.0) # screen placeholder gray-cre
 @onready var skip_btn     : Button         = $Center/PlayerCard/CardM/PlayerVBox/FooterRow/SkipBtn
 @onready var complete_btn : Button         = $Center/PlayerCard/CardM/PlayerVBox/FooterRow/CompleteBtn
 @onready var screen_anch  : Control        = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor
-@onready var play_overlay : PanelContainer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/PlayOverlay
-@onready var linh_rect     : TextureRect    = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/LinhTexture
-@onready var video_stream_player : VideoStreamPlayer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/VideoStreamPlayer
+@onready var play_overlay : PanelContainer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/MediaAspect/MediaSurface/PlayOverlay
+@onready var linh_rect     : TextureRect    = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/MediaAspect/MediaSurface/LinhTexture
+@onready var video_stream_player : VideoStreamPlayer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/MediaAspect/MediaSurface/VideoStreamPlayer
 
 # ─── State ───
 var _playing     := false
@@ -448,7 +448,10 @@ func _on_complete() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
+		if lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeRoom.tscn")
+		elif lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
 			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
 		else:
@@ -462,7 +465,8 @@ func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		var target := "res://scenes/LessonDanTranh.tscn" if SecureDataManager.active_lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
+		get_tree().change_scene_to_file(target)
 	)
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:
