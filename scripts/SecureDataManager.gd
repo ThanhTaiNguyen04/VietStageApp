@@ -9,6 +9,8 @@ const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLe
 static var video_completed := false
 static var active_lesson_id := "Node2"
 static var active_course_title := ""
+static var active_course_start_node := 1
+static var active_course_node_count := 7
 
 # Default player state synchronized across all scenes
 static var data := {
