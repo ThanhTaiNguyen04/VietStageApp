@@ -676,7 +676,7 @@ func _go_practice_sao() -> void:
 	selected_instrument = "sao_truc"
 	SecureDataManager.data["selected_instrument"] = "sao_truc"
 	SecureDataManager.save_data()
-	_fade_to("res://scenes/MainMenu.tscn")
+	_fade_to("res://scenes/CourseDetailScreen.tscn")
 
 func _go_practice_bau() -> void:
 	selected_instrument = "dan_bau"

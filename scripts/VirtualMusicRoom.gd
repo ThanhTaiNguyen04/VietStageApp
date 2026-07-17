@@ -654,7 +654,7 @@ func _select_instrument_and_enter(code_name: String) -> void:
 		InstrumentSelect.selected_instrument = "sao_truc"
 		SecureDataManager.data["selected_instrument"] = "sao_truc"
 		SecureDataManager.save_data()
-		_fade_to("res://scenes/MainMenu.tscn")
+		_fade_to("res://scenes/CourseDetailScreen.tscn")
 	elif code_name == "bau":
 		InstrumentSelect.selected_instrument = "dan_bau"
 		SecureDataManager.data["selected_instrument"] = "dan_bau"
