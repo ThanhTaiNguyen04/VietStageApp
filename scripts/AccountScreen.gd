@@ -52,7 +52,11 @@ func _ready() -> void:
 func _populate_data() -> void:
 	# Override scene text with real UTF-8 labels
 	page_title.text = "Tài Khoản Của Tôi"
-	back_btn.text   = "← Quay Lại"
+	back_btn.text   = " Quay Lại"
+	var back_icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
+	if back_icon:
+		back_btn.icon = back_icon
+		back_btn.expand_icon = true
 	logout_btn.text = "Đăng Xuất"
 	ver_label.text  = "VietStage v1.0.0 · Đồ Án Tốt Nghiệp · Khoa CNTT"
 
@@ -108,7 +112,11 @@ func _enhance_ux() -> void:
 	if logout_btn.get_parent():
 		logout_btn.get_parent().remove_child(logout_btn)
 	toph.add_child(logout_btn)
-	logout_btn.text = "🚪 Thoát"
+	logout_btn.text = " Thoát"
+	var logout_icon = load("res://assets/textures/lucide/log-out.svg") as Texture2D
+	if logout_icon:
+		logout_btn.icon = logout_icon
+		logout_btn.expand_icon = true
 	logout_btn.custom_minimum_size = Vector2(110, 42)
 	logout_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	
@@ -129,6 +137,9 @@ func _enhance_ux() -> void:
 		edit_btn.icon = edit_icon
 		edit_btn.expand_icon = true
 	edit_btn.custom_minimum_size = Vector2(90, 32)
+	var bold_f = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_f:
+		edit_btn.add_theme_font_override("font", bold_f)
 	var eb_style = StyleBoxFlat.new()
 	eb_style.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.1)
 	eb_style.corner_radius_top_left = 6; eb_style.corner_radius_top_right = 6
@@ -181,13 +192,20 @@ func _build_theme() -> void:
 	# Fonts
 	var lora_bold = load("res://assets/fonts/Lora-Bold.ttf") as Font
 	var bevietnam_bold = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var bevietnam_reg = load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	if lora_bold:
 		page_title.add_theme_font_override("font", lora_bold)
 		name_lbl.add_theme_font_override("font", lora_bold)
 	if bevietnam_bold:
 		logout_btn.add_theme_font_override("font", bevietnam_bold)
+		back_btn.add_theme_font_override("font", bevietnam_bold)
 		for sc in STAT_CARDS:
 			_get_stat_node(sc[0], "Val").add_theme_font_override("font", bevietnam_bold)
+	if bevietnam_reg:
+		email_lbl.add_theme_font_override("font", bevietnam_reg)
+		ver_label.add_theme_font_override("font", bevietnam_reg)
+		for sc in STAT_CARDS:
+			_get_stat_node(sc[0], "Lbl").add_theme_font_override("font", bevietnam_reg)
 
 	if bg:
 		bg.texture = load("res://assets/textures/bon_nhac_cu_background.png") as Texture2D
