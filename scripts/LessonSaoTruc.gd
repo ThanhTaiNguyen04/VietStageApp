@@ -336,6 +336,7 @@ func _ready():
 	speech_text.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
 	
 	active_node_id = SecureDataManager.active_lesson_id
+	var txt = ""
 	if LESSON_NOTES.has(active_node_id):
 		var lesson_info = LESSON_NOTES[active_node_id]
 		active_note = lesson_info["note"]
@@ -345,19 +346,27 @@ func _ready():
 		target_hz = NOTE_FREQS.get(active_note, 0.0)
 		
 		# Setup Intro Speech
-		var txt = ""
 		if LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["intro"]
 		else:
 			txt = "Chào mừng bạn đến bài học! Hôm nay chúng ta sẽ làm quen với nốt " + active_note + ", để thổi nốt " + active_note + " bạn " + lesson_info["desc"].to_lower() + ". Nào cùng thử nhé!"
-			
-		speech_text.text = txt
+	else:
+		active_note = "Đô"
+		instruction_lbl.visible = false
+		sub_instruction_lbl.visible = false
+		_show_fingers([true, true, true, true, true, true])
+		target_hz = NOTE_FREQS.get(active_note, 0.0)
 		
-		# Use AIAudioManager for high quality Google Translate TTS
-		var ai_audio = load("res://scripts/AIAudioManager.gd").new()
-		ai_audio.name = "AIAudio"
-		add_child(ai_audio)
-		ai_audio.speak_vietnamese(txt)
+		var title = SecureDataManager.data.get("current_song_title", "Bài tập")
+		txt = "Chào mừng bạn đến với bài học " + title + "! Hãy chuẩn bị sẵn sàng sáo trúc và làm theo các nốt nhạc rơi xuống nhé."
+
+	speech_text.text = txt
+	
+	# Use AIAudioManager for high quality Google Translate TTS
+	var ai_audio = load("res://scripts/AIAudioManager.gd").new()
+	ai_audio.name = "AIAudio"
+	add_child(ai_audio)
+	ai_audio.speak_vietnamese(txt)
 	
 	# Initial UI State
 	teacher_area.visible = true
@@ -954,7 +963,7 @@ func _generate_melody(target_note_key: String) -> Array:
 ]
 		for n in notes:
 			seq.append({"note": n[0], "time": time, "duration": n[1]}); time += n[1] + n[2]
-	elif target_note_key == "Node18":
+	elif target_note_key == "Node18" or target_note_key == "sao_truc_level3_6":
 		# Đàn Gà Con hoàn chỉnh (Khúc Nhạc Vui)
 		var parts = [
 			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
@@ -970,12 +979,34 @@ func _generate_melody(target_note_key: String) -> Array:
 				var dur = p[7] if i == 6 else 0.5
 				seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.2
 			time += 0.5
+	elif target_note_key.begins_with("sao_truc_level3_"):
+		var parts = [
+			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
+			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5],
+			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
+			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
+			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
+			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5]
+		]
+		var idx = int(target_note_key.replace("sao_truc_level3_", "")) - 1
+		if idx >= 0 and idx < parts.size():
+			var p = parts[idx]
+			for i in range(7):
+				var n = p[i]
+				var dur = p[7] if i == 6 else 0.5
+				seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.2
+			time += 0.5
 	else:
 		var keys_order = ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
 		var target_idx = keys_order.find(target_note_key)
-		if target_idx == -1: target_idx = 0
-		
-		if target_idx == 0:
+		if target_idx == -1:
+			# Fallback for completely unknown nodes
+			seq.append({"note": "Đô", "time": time, "duration": 1.0}); time += 1.5
+			seq.append({"note": "Rê", "time": time, "duration": 1.0}); time += 1.5
+			seq.append({"note": "Mi", "time": time, "duration": 1.0}); time += 1.5
+			seq.append({"note": "Fa", "time": time, "duration": 1.0}); time += 1.5
+			seq.append({"note": "Sol", "time": time, "duration": 1.0}); time += 1.5
+		elif target_idx == 0:
 			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.5}); time += 2.0
 			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.0}); time += 1.5
 			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 2.0}); time += 2.5
@@ -1435,12 +1466,12 @@ func _play_recording():
 		_playback_player.play()
 
 func _on_back():
-	get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
+	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
 	SecureDataManager.complete_lesson(inst, active_node_id, 3)
-	get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
+	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
 func _on_retry():
 	get_tree().reload_current_scene()

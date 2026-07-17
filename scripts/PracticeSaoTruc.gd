@@ -249,6 +249,7 @@ func _ready() -> void:
 	# Setup collapsible LinhPanel system
 	_setup_collapsible_linh()
 	
+	current_song_title = SecureDataManager.data.get("current_song_title", "")
 	if current_song_title != "":
 		sheet_notes.assign(current_song_sheet)
 		sheet_durations.assign(current_song_durations)

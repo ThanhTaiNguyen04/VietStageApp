@@ -70,14 +70,20 @@ var btn_minigame_mob : Button
 @onready var card_pop_chords: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
+
+# --- Drag Tracking Variables ---
+var _is_dragging_scroll: bool = false
+var _drag_start_pos: Vector2 = Vector2.ZERO
+var _scroll_start_x: float = 0.0
+var _has_dragged_significantly: bool = false
+var _drag_velocity: float = 0.0
+var _last_drag_pos_x: float = 0.0
+var _last_drag_time: float = 0.0
+
 func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	
-	if InstrumentSelect.selected_instrument == "sao_truc":
-		get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
-		return
-		
 	# Programmatic instantiation of MiniGame button
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
@@ -121,7 +127,7 @@ func _process(delta: float) -> void:
 	# Ép chặt tọa độ Y để các thẻ Đàn Bầu tạo thành một đường thẳng ngang hoàn hảo
 	# Cách này chống lại việc Godot tự reset vị trí layout sau hàm _ready
 	var straight_instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if straight_instrument == "dan_bau" or straight_instrument == "dan_tranh":
+	if straight_instrument == "dan_bau" or straight_instrument == "dan_tranh" or straight_instrument == "sao_truc":
 		card_soloist_skills.position.y = 275
 		card_chords_skills.position.y = 275
 		card_pop_chords.position.y = 275
@@ -156,8 +162,8 @@ func _setup_drawing_callbacks() -> void:
 		if inst == "dan_tranh":
 			var stats: Dictionary = _get_dan_tranh_level_status(1)
 			pct = stats["pct"]
-		elif inst == "dan_bau":
-			var stats := _get_dan_bau_card_status("basic")
+		elif inst == "dan_bau" or inst == "sao_truc":
+			var stats := _get_dan_bau_card_status("basic") if inst == "dan_bau" else _get_sao_truc_card_status("basic")
 			pct = stats["pct"]
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"):
@@ -186,8 +192,8 @@ func _setup_drawing_callbacks() -> void:
 		if inst == "dan_tranh":
 			var stats: Dictionary = _get_dan_tranh_level_status(2)
 			pct = stats["pct"]
-		elif inst == "dan_bau":
-			var stats := _get_dan_bau_card_status("essentials")
+		elif inst == "dan_bau" or inst == "sao_truc":
+			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("essentials")
 			pct = stats["pct"]
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node2"): pct += 50.0
@@ -281,7 +287,7 @@ func _draw_roadmap_paths() -> void:
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
 		
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if inst == "dan_bau" or inst == "dan_tranh":
+	if inst == "dan_bau" or inst == "dan_tranh" or inst == "sao_truc":
 		# Ép tọa độ Y của các điểm neo bằng nhau để đường vàng vẽ thẳng tắp 100%
 		var straight_y = p_basic.y
 		p_ess.y = straight_y
@@ -687,32 +693,33 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
 		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
 	elif instrument == "sao_truc":
-		# Lộ trình Sáo Trúc
-		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
-		path_chords_title.text = "🎷 ĐƯỜNG HÒA TẤU (ENSEMBLE PATH)"
+		# Lộ trình Sáo Trúc (Tuyến tính giống Đàn Bầu)
+		card_soloist_unlock.hide()
+		card_chords_unlock.hide()
+		card_classical.hide()
+		path_soloist_title.hide()
+		path_chords_title.hide()
 		
-		basic_title.text = "Nhập Môn Sáo Trúc"
+		# Ép thẻ về cùng Y = 275
+		card_soloist_skills.position = Vector2(1060, 275)
+		card_chords_skills.position = Vector2(1570, 275)
+		card_pop_chords.position = Vector2(2080, 275)
+		
+		basic_title.text = "LEVEL 1: NHẬP MÔN SÁO TRÚC"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
-		basic_details.text = "📖 2 Bài Học | ⭐ 6 Sao | 60% Hoàn Thành"
+		basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 		
-		ess_title.text = "Bấm Ngón & Lấy Hơi"
+		ess_title.text = "LEVEL 2: BẤM NGÓN & LẤY HƠI"
 		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		ess_details.text = "📖 7 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
-		soloist_unlock_title.text = "Độc Tấu"
-		chords_unlock_title.text = "Hòa Tấu"
+		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
+		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
 		
-		soloist_skills_title.text = "Kỹ Năng Độc Tấu"
-		soloist_skills_bullets.text = "✓ Kỹ thuật Láy ngón, Rung ngón\n✓ Kỹ thuật Réo rắt, Vuốt sáo\n✓ Đọc sáo phổ Ngũ cung"
-		
-		chords_skills_title.text = "Kỹ Năng Hòa Tấu"
+		chords_skills_title.text = "LEVEL 4: KỸ NĂNG HÒA TẤU"
 		chords_skills_bullets.text = "✓ Thổi bè hòa âm phụ họa\n✓ Hòa tấu cùng các nhạc cụ dân tộc\n✓ Kỹ thuật thổi đệm bè nâng cao"
 		
-		classical_title.text = "Làn Điệu Quê Hương"
-		classical_title.text = "Làn Điệu Quê Hương"
-		classical_desc.text = "✓ Lý Hoài Nam (Dân ca)\n✓ Lòng Mẹ (Sáo độc tấu)\n✓ Thổi sáo truyền cảm cổ truyền"
-		
-		pop_chords_title.text = "Sáo Trúc Pop"
+		pop_chords_title.text = "LEVEL 5: MASTER - KHÚC NHẠC VUI & GẶP MẸ TRONG MƠ"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
 
 	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
@@ -724,8 +731,9 @@ func _build_roadmap_cards() -> void:
 		is_basic_completed = stats["completed"]
 		basic_stars = stats["stars"]
 		basic_pct = stats["pct"]
-	elif instrument == "dan_bau":
-		var stats := _get_dan_bau_card_status("basic")
+	elif instrument == "dan_bau" or instrument == "sao_truc":
+		var card_t = "basic"
+		var stats := _get_dan_bau_card_status(card_t) if instrument == "dan_bau" else _get_sao_truc_card_status(card_t)
 		is_basic_completed = stats["completed"]
 		basic_stars = stats["stars"]
 		basic_pct = stats["pct"]
@@ -744,8 +752,10 @@ func _build_roadmap_cards() -> void:
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	if instrument == "dan_tranh":
 		basic_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
-	elif instrument == "dan_bau":
+	elif instrument == "sao_truc":
 		basic_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
+	elif instrument == "dan_bau":
+		basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
 	else:
 		if is_basic_completed:
 			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
@@ -761,8 +771,8 @@ func _build_roadmap_cards() -> void:
 		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
-		if instrument == "dan_bau":
-			ess_details.text = "📖 1 Bài Học | 🔒 Cần hoàn thành bài trước"
+		if instrument == "dan_bau" or instrument == "sao_truc":
+			ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		card_essentials.add_theme_stylebox_override("panel", ess_sb)
@@ -772,9 +782,12 @@ func _build_roadmap_cards() -> void:
 		if instrument == "dan_tranh":
 			var stats := _get_dan_tranh_level_status(2)
 			ess_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
+		elif instrument == "sao_truc":
+			var stats := _get_sao_truc_card_status("essentials")
+			ess_details.text = "📖 7 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
-			ess_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
+			ess_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
 		else:
 			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
 			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
@@ -882,7 +895,7 @@ func _connect_buttons() -> void:
 
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 1
@@ -890,14 +903,16 @@ func _connect_buttons() -> void:
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			elif inst == "sao_truc":
-				SecureDataManager.active_lesson_id = "Node1"
-				_fade_to("res://scenes/LessonSaoTruc.tscn")
+				SecureDataManager.active_lesson_id = "sao_truc_level1_1_video"
+				SecureDataManager.data["custom_video_sequence"] = ["res://nvaore/intro1.ogv", "res://nvaore/intro2.ogv", "res://nvaore/intro3.ogv"]
+				SecureDataManager.data["current_sequence_index"] = 0
+				_fade_to("res://scenes/VideoPlayer.tscn")
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 2
@@ -905,8 +920,9 @@ func _connect_buttons() -> void:
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			elif inst == "sao_truc":
-				SecureDataManager.active_lesson_id = "Node2"
-				_fade_to("res://scenes/LessonSaoTruc.tscn")
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 2
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -930,8 +946,9 @@ func _connect_buttons() -> void:
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "sao_truc":
-			SecureDataManager.active_lesson_id = "Node35"
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			var script = load("res://scripts/LessonSaoTrucList.gd")
+			if script: script.selected_level = 3
+			_fade_to("res://scenes/LessonSaoTrucList.tscn")
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)
@@ -947,8 +964,9 @@ func _connect_buttons() -> void:
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "sao_truc":
-			SecureDataManager.active_lesson_id = "Node42"
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			var script = load("res://scripts/LessonSaoTrucList.gd")
+			if script: script.selected_level = 4
+			_fade_to("res://scenes/LessonSaoTrucList.tscn")
 		else:
 			_go_practice()
 	)
@@ -960,8 +978,9 @@ func _connect_buttons() -> void:
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "sao_truc":
-			SecureDataManager.active_lesson_id = "Node35"
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			var script = load("res://scripts/LessonSaoTrucList.gd")
+			if script: script.selected_level = 5
+			_fade_to("res://scenes/LessonSaoTrucList.tscn")
 		else:
 			_go_practice()
 	)
@@ -975,8 +994,10 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
-		else:
-			_go_practice()
+		elif inst == "sao_truc":
+			var script = load("res://scripts/LessonSaoTrucList.gd")
+			if script: script.selected_level = 5
+			_fade_to("res://scenes/LessonSaoTrucList.tscn")
 	)
 	_make_btn_bouncy(play_pop)
 
@@ -994,7 +1015,7 @@ func _connect_buttons() -> void:
 	_make_btn_bouncy(unlock_cho)
 
 	avatar_circle.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed: _go_account()
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly: _go_account()
 	)
 
 	# Mobile Navigation Connections
@@ -1305,3 +1326,94 @@ func _play_dan_bau_video(lesson_idx: int) -> void:
 func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
 	_fade_to("res://scenes/PracticeDanBau.tscn")
+
+# ─── Sáo Trúc Custom Progression ──────────────────────────────────────────────────
+func _get_sao_truc_card_status(card_type: String) -> Dictionary:
+	var completed : Array = SecureDataManager.data.completed_lessons.get("sao_truc", [])
+	var stars_dict : Dictionary = SecureDataManager.data.stars.get("sao_truc", {})
+	
+	var total_stars := 0
+	var completed_count := 0
+	var total_count := 2
+	
+	var steps_to_check := []
+	if card_type == "basic":
+		steps_to_check = ["sao_truc_level1_1_video"]
+	elif card_type == "essentials":
+		steps_to_check = ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
+	elif card_type == "soloist":
+		steps_to_check = ["sao_truc_level3_1", "sao_truc_level3_2"]
+	elif card_type == "chords":
+		steps_to_check = ["sao_truc_level4_1", "sao_truc_level4_2"]
+	elif card_type == "classical" or card_type == "pop_chords":
+		steps_to_check = ["sao_truc_level5_1", "sao_truc_level5_2"]
+		
+	total_count = steps_to_check.size()
+	if total_count == 0: total_count = 1
+		
+	for step in steps_to_check:
+		if completed.has(step):
+			completed_count += 1
+		total_stars += stars_dict.get(step, 0)
+		
+	var pct := 0
+	if total_count > 0:
+		pct = int((float(completed_count) / float(total_count)) * 100.0)
+	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+
+func _on_scroll_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_is_dragging_scroll = true
+			_drag_start_pos = event.global_position
+			_scroll_start_x = roadmap_scroll.scroll_horizontal
+			_has_dragged_significantly = false
+			_drag_velocity = 0.0
+			_last_drag_pos_x = event.global_position.x
+			_last_drag_time = Time.get_ticks_msec() / 1000.0
+		else:
+			if _is_dragging_scroll:
+				_is_dragging_scroll = false
+				if _has_dragged_significantly and abs(float(_drag_velocity)) > 50.0:
+					var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
+					var target_x = clamp(roadmap_scroll.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
+					create_tween().tween_property(roadmap_scroll, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	elif event is InputEventScreenTouch:
+		if event.pressed:
+			_is_dragging_scroll = true
+			_drag_start_pos = event.position
+			_scroll_start_x = roadmap_scroll.scroll_horizontal
+			_has_dragged_significantly = false
+			_drag_velocity = 0.0
+			_last_drag_pos_x = event.position.x
+			_last_drag_time = Time.get_ticks_msec() / 1000.0
+		else:
+			if _is_dragging_scroll:
+				_is_dragging_scroll = false
+				if _has_dragged_significantly and abs(float(_drag_velocity)) > 50.0:
+					var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
+					var target_x = clamp(roadmap_scroll.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
+					create_tween().tween_property(roadmap_scroll, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+
+func _input(event: InputEvent) -> void:
+	if _is_dragging_scroll:
+		var current_x = 0.0
+		if event is InputEventMouseMotion:
+			current_x = event.global_position.x
+		elif event is InputEventScreenDrag:
+			current_x = event.position.x
+		else:
+			return
+		
+		var delta_x = current_x - _drag_start_pos.x
+		if abs(float(delta_x)) > 8.0:
+			_has_dragged_significantly = true
+		
+		if _has_dragged_significantly:
+			var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
+			roadmap_scroll.scroll_horizontal = int(clamp(_scroll_start_x - delta_x, 0.0, max_scroll))
+			var now = Time.get_ticks_msec() / 1000.0
+			var dt = max(0.001, float(now - _last_drag_time))
+			_drag_velocity = (current_x - _last_drag_pos_x) / dt
+			_last_drag_pos_x = current_x
+			_last_drag_time = now
