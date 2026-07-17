@@ -74,6 +74,10 @@ func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	
+	if InstrumentSelect.selected_instrument == "sao_truc":
+		get_tree().change_scene_to_file("res://scenes/CourseDetailScreen.tscn")
+		return
+		
 	# Programmatic instantiation of MiniGame button
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
