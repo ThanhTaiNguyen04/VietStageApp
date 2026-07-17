@@ -8,6 +8,8 @@ const C_JADE         := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green
 const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for active path borders
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
 const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
+const C_MUTED        := Color("#6f6257")
+const C_CARD         := Color("#fffdf8")
 
 # ─── Drag Tracking Variables
 var _is_dragging_scroll: bool = false
@@ -199,7 +201,30 @@ func _build_theme() -> void:
 		bg_tex.texture = load(tex_path) as Texture2D
 		bg_rect.add_child(bg_tex)
 	
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	var top_s := StyleBoxFlat.new()
+	top_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	top_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
+	top_s.border_width_bottom = 2
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	
 	page_title.text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
 	page_title.add_theme_color_override("font_color", C_JADE)
@@ -258,13 +283,30 @@ func _connect_buttons() -> void:
 	)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
-	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
+	var side_s := StyleBoxFlat.new()
+	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+	
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -452,15 +494,7 @@ func _build_lesson_list() -> void:
 		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		v_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		
-		if is_v_completed:
-			v_btn.text = "🎬\nHướng dẫn\n✓"
-		elif not is_v_unlocked:
-			v_btn.text = "🔒"
-		else:
-			v_btn.text = "🎬\nHướng dẫn\n(%s)" % lesson_item["note"]
-			
-		_style_circle_btn(v_btn, is_v_unlocked, is_v_completed)
-		_make_btn_bouncy(v_btn)
+		_setup_circle_btn(v_btn, "Hướng dẫn", lesson_item["note"], is_v_unlocked, is_v_completed, "video")
 		row.add_child(v_btn)
 		
 		v_btn.pressed.connect(_on_video_pressed.bind(v_id, lesson_item["subtitles"], is_v_unlocked))
@@ -473,15 +507,7 @@ func _build_lesson_list() -> void:
 		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		p_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		
-		if is_p_completed:
-			p_btn.text = "🎵\nThực hành\n✓"
-		elif not is_p_unlocked:
-			p_btn.text = "🔒"
-		else:
-			p_btn.text = "🎵\nThực hành\n(%s)" % lesson_item["note"]
-			
-		_style_circle_btn(p_btn, is_p_unlocked, is_p_completed)
-		_make_btn_bouncy(p_btn)
+		_setup_circle_btn(p_btn, "Thực hành", lesson_item["note"], is_p_unlocked, is_p_completed, "practice")
 		row.add_child(p_btn)
 		
 		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
@@ -504,21 +530,30 @@ func _on_practice_pressed(p_id: String, is_unlocked: bool) -> void:
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn"))
 
-func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> void:
-	# Jade Green & Gold Traditional Lacquer Theme
-	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Light warm gray-cream for locked
-	var border_color := Color(0.85, 0.82, 0.78, 1.0) # Gray border for locked
-	var text_color := C_TEXT_MUTED # Translucent charcoal text for locked
+func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlocked: bool, completed: bool, type: String) -> void:
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if unlocked else Control.CURSOR_ARROW
+	btn.disabled = not unlocked
+
+	if completed:
+		btn.text = "\n\n%s\nHoàn thành" % action
+	elif unlocked:
+		btn.text = "\n\n%s\n(%s)" % [action, lesson_title]
+	else:
+		btn.text = ""
+
+	var bg_color := Color(0.95, 0.93, 0.89, 0.35) # Locked: Glassmorphism
+	var border_color := Color(0.85, 0.82, 0.78, 0.5)
+	var text_color := Color(C_MUTED, 0.8)
 	
-	if is_completed:
-		bg_color = C_JADE # Solid Jade Green for completed
-		border_color = C_GOLD # Gold border
-		text_color = Color.WHITE # White checkmark/text inside
-	elif is_unlocked:
-		bg_color = Color.WHITE # Solid white for active
-		border_color = C_JADE_LIGHT # Jade border
-		text_color = C_TEXT # Dark charcoal text
-		
+	if completed:
+		bg_color = C_JADE
+		border_color = C_GOLD
+		text_color = Color.WHITE
+	elif unlocked:
+		bg_color = C_CARD
+		border_color = C_JADE
+		text_color = C_TEXT
+
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -527,24 +562,26 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
 	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
 	
-	# Glow effect for active step (using softer, wider gold shadow)
-	if is_unlocked and not is_completed:
+	if unlocked and not completed:
 		s_normal.shadow_size = 24
 		s_normal.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 		
 	var s_hover := s_normal.duplicate() as StyleBoxFlat
-	if is_unlocked:
-		if is_completed:
+	if unlocked:
+		if completed:
 			s_hover.bg_color = bg_color.lightened(0.1)
 		else:
 			s_hover.bg_color = Color(0.97, 0.97, 0.97, 1.0)
-		
+
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
 	btn.add_theme_stylebox_override("disabled", s_normal)
 	btn.add_theme_color_override("font_color", text_color)
-	btn.add_theme_color_override("font_hover_color", C_JADE if (is_unlocked and not is_completed) else text_color)
+	
+	var hover_color = text_color
+	if unlocked and not completed: hover_color = C_JADE
+	btn.add_theme_color_override("font_hover_color", hover_color)
 	btn.add_theme_color_override("font_pressed_color", text_color)
 	btn.add_theme_color_override("font_disabled_color", text_color)
 	
@@ -552,8 +589,25 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
 	btn.add_theme_font_size_override("font_size", 18)
-	
-	btn.disabled = not is_unlocked
+
+	btn.draw.connect(func():
+		var tex_name = ""
+		if not unlocked: tex_name = "lock"
+		elif completed: tex_name = "check-circle"
+		else: tex_name = "play-circle" if type == "video" else "music"
+		
+		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
+		if tex:
+			var w = 32.0
+			var rect = Rect2((btn.size.x - w) / 2.0, 32.0, w, w)
+			
+			var draw_color = text_color
+			if unlocked and not completed and btn.is_hovered():
+				draw_color = C_JADE
+			
+			btn.draw_texture_rect(tex, rect, false, draw_color)
+	)
+	_make_btn_bouncy(btn)
 
 func _draw_connecting_lines() -> void:
 	var inst := "dan_bau"
@@ -604,10 +658,12 @@ func _draw_connecting_lines() -> void:
 		var p2 := Vector2(centers[idx + 1].x, line_y)
 		
 		var active := node_unlocked[idx + 1]
-		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.08)
-		var line_thickness := 14.0 if active else 7.0
-		
-		lessons_hbox.draw_line(p1, p2, line_color, line_thickness, true)
+		if active:
+			lessons_hbox.draw_line(p1, p2, Color(C_JADE, 0.15), 24.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(C_JADE, 0.4), 14.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.6), 4.0, true)
+		else:
+			lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.2), 8.0, true)
 
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
