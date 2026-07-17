@@ -48,11 +48,11 @@ const LEVELS := [
 			},
 			{
 				"number": 3,
-				"title": "Ghép nốt và nhịp điệu",
-				"video": "Đọc vị trí nốt và đối chiếu với đúng dây đàn trên giao diện.",
-				"practice": "Gảy chuỗi 8 nốt trên đàn thật ở BPM 60; micro đánh giá cao độ và nhịp, sai ba nốt liên tiếp sẽ luyện lại cụm bốn nốt.",
-				"practice_title": "Ghép nốt và nhịp điệu",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1"]
+				"title": "Đệm theo câu – Sứ Thanh Hoa",
+				"video": "Nghe từng câu nhạc, quan sát nốt kết câu và phối hợp ba ngón gảy.",
+				"practice": "Cô đàn sáu câu của Sứ Thanh Hoa ở BPM 80; học viên gảy nốt cuối mỗi câu bằng ngón 1, 2, 3 luân phiên.",
+				"practice_title": "Đệm Sứ Thanh Hoa",
+				"sheet": []
 			}
 		]
 	},
@@ -66,9 +66,12 @@ const LEVELS := [
 				"number": 4,
 				"title": "Tập đoạn 1 – Vào rừng hoa",
 				"video": "Chia đoạn, nhịp điệu và độ ngân của bài Vào rừng hoa.",
-				"practice": "Chế độ Chờ nốt: gảy đúng thì nốt tiếp theo mới di chuyển.",
+				"practice": "Luyện đúng đoạn đầu Mi – Sol – Sol | Mi – Sol – Sol | La – Đố – La – Đố | La – Sol – Sol theo nhịp 2/4; đúng hoặc sai đều chuyển tiếp, sai lần thứ sáu sẽ làm lại.",
 				"practice_title": "Vào rừng hoa – Đoạn 1",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1"]
+				"sheet": [
+					"Mi2", "Sol2", "Sol2", "Mi2", "Sol2", "Sol2",
+					"La2", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2"
+				]
 			},
 			{
 				"number": 5,
