@@ -3,15 +3,30 @@ class_name InstrumentSelect
 
 static var selected_instrument := "dan_tranh"
 
-const C_GOLD      := Color(0.95, 0.72, 0.18, 1.0)
+# ─── Color Palette — Skill §4: Dark Warm Vietnamese Premium
+# Accent — Golden Amber #F5C842
+const C_GOLD      := Color(0.961, 0.784, 0.259, 1.0) # #F5C842
 const C_GOLD_LT   := Color(1.00, 0.87, 0.45, 1.0)
-const C_RED_SON   := Color(0.09, 0.27, 0.18, 1.0)
-const C_JADE       := Color(0.12, 0.37, 0.23, 1.0) # Standard dark jade
-const C_JADE_LIGHT := Color(0.22, 0.86, 0.55, 1.0) # Standard light jade
-const C_JADE_LT    := Color(0.42, 0.95, 0.70, 1.0) # Sage/mint overlay
-const C_WHITE     := Color(1.00, 1.00, 1.00, 1.0)
-const C_WHITE_DIM := Color(1.00, 1.00, 1.00, 0.50)
-const C_DIM       := Color(1.00, 1.00, 1.00, 0.24)
+
+# Primary — Terracotta #C0541A
+const C_PRIMARY   := Color(0.753, 0.329, 0.102, 1.0) # #C0541A
+const C_PRIMARY_LT := Color(0.831, 0.388, 0.122, 1.0) # #D4631F
+const C_PRIMARY_DK := Color(0.620, 0.247, 0.063, 1.0) # #9E3F10
+
+# Legacy alias — kept so legacy call sites don’t break
+const C_RED_SON   := Color(0.059, 0.180, 0.118, 1.0) # deep jade card bg
+const C_JADE       := Color(0.059, 0.180, 0.118, 1.0) # #0F2E1E deep jade
+const C_JADE_LIGHT := Color(0.059, 0.180, 0.118, 1.0) # same deep jade (instrument card bg)
+const C_JADE_LT    := Color(0.110, 0.330, 0.180, 1.0) # slightly lighter jade
+
+# Backgrounds
+const C_BG_DARK   := Color(0.102, 0.071, 0.031, 1.0) # #1A1208
+const C_BG_MID    := Color(0.169, 0.122, 0.055, 1.0) # #2B1F0E
+
+# Text
+const C_WHITE     := Color(0.941, 0.871, 0.706, 1.0) # Warm Ivory #F0DEB4
+const C_WHITE_DIM := Color(0.659, 0.565, 0.439, 1.0) # Muted Sand #A89070
+const C_DIM       := Color(0.659, 0.565, 0.439, 0.35) # very dim sand
 
 const IMG_DAN_TRANH := "res://assets/textures/dan_tranh_asset.png"
 const IMG_SAO_TRUC  := "res://assets/textures/sao_truc_asset.png"
@@ -52,7 +67,7 @@ func _setup_images() -> void:
 			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTImageArea,
 			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox,
 			"path":   IMG_DAN_TRANH,
-			"bg":     Color(0.97, 0.91, 0.85, 1.0), # soft peach/gold
+			"bg":     Color(0.059, 0.180, 0.118, 1.0), # deep jade dark
 			"accent": C_GOLD,
 			"kind":   "dan_tranh",
 			"tag":    "Nhạc cụ dây",
@@ -62,8 +77,8 @@ func _setup_images() -> void:
 			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STImageArea,
 			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox,
 			"path":   IMG_SAO_TRUC,
-			"bg":     Color(0.88, 0.94, 0.90, 1.0), # soft sage green
-			"accent": C_JADE_LIGHT,
+			"bg":     Color(0.039, 0.145, 0.055, 1.0), # dark bamboo green
+			"accent": C_GOLD_LT,
 			"kind":   "sao_truc",
 			"tag":    "Nhạc cụ hơi",
 		},
@@ -72,8 +87,8 @@ func _setup_images() -> void:
 			"area":   $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBImageArea,
 			"cvbox":  $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox,
 			"path":   IMG_DAN_BAU,
-			"bg":     Color(0.92, 0.90, 0.95, 1.0), # soft lavender/gray
-			"accent": Color(0.55, 0.45, 0.80, 1.0),
+			"bg":     Color(0.169, 0.094, 0.047, 1.0), # dark walnut
+			"accent": C_GOLD,
 			"kind":   "dan_bau",
 			"tag":    "Nhạc cụ dây",
 		},
@@ -404,18 +419,24 @@ func _draw_dan_bau(c: Control, ac: Color) -> void:
 
 # ── Card theming ──────────────────────────────────────────────────────────────
 func _build_theme() -> void:
-	var top_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(0.77, 0.58, 0.15, 0.15), 0)
+	# ── Top bar: dark mahogany glass with gold bottom accent ───────────────────
+	var top_s := _flat(Color(0.102, 0.071, 0.031, 0.97), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 0)
 	top_s.border_width_top    = 0; top_s.border_width_left  = 0
-	top_s.border_width_right  = 0; top_s.border_width_bottom = 1
+	top_s.border_width_right  = 0; top_s.border_width_bottom = 2
+	top_s.shadow_size = 16; top_s.shadow_color = Color(0, 0, 0, 0.40)
+	top_s.shadow_offset = Vector2(0, 4)
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
-	($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_color_override("font_color", C_RED_SON)
+	
+	# Title: warm ivory
+	($Root/TopBar/TopM/TopH/PageTitle as Label).add_theme_color_override("font_color", C_WHITE)
 
+	# ── Back button: muted sand on dark bg ──────────────────────────────────
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	back.add_theme_color_override("font_color",       Color(0.13, 0.08, 0.05, 1.0))
-	back.add_theme_color_override("font_hover_color", C_RED_SON)
+	back.add_theme_color_override("font_color",       C_WHITE_DIM)
+	back.add_theme_color_override("font_hover_color", C_WHITE)
 	back.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 10))
-	back.add_theme_stylebox_override("hover",   _flat(Color(0,0,0,0.06), Color(0,0,0,0), 10))
-	back.add_theme_stylebox_override("pressed", _flat(Color(0,0,0,0.12), Color(0,0,0,0), 10))
+	back.add_theme_stylebox_override("hover",   _flat(Color(C_GOLD.r,C_GOLD.g,C_GOLD.b,0.08), Color(0,0,0,0), 10))
+	back.add_theme_stylebox_override("pressed", _flat(Color(C_PRIMARY.r,C_PRIMARY.g,C_PRIMARY.b,0.15), Color(0,0,0,0), 10))
 	back.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	SecureDataManager.load_data()
@@ -425,28 +446,31 @@ func _build_theme() -> void:
 	var dt_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardDanTranh/DTRoot/DTContent/DTCVBox
 	var dt_progress := SecureDataManager.get_course_progress("dan_tranh")
 	var dt_unlocked := SecureDataManager.is_instrument_unlocked("dan_tranh")
-	_update_card_ui(dt_card, dt_vbox, dt_progress, dt_unlocked, C_GOLD, C_RED_SON, "DTBar", "DTBtn", "DTPct", "Học ngay")
+	_update_card_ui(dt_card, dt_vbox, dt_progress, dt_unlocked, C_GOLD, C_PRIMARY,
+		Color(0.059, 0.180, 0.118, 1.0), "DTBar", "DTBtn", "DTPct", "Học ngay")
 
 	# Sáo Trúc
 	var st_card := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc
 	var st_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardSaoTruc/STRoot/STContent/STCVBox
 	var st_progress := SecureDataManager.get_course_progress("sao_truc")
 	var st_unlocked := SecureDataManager.is_instrument_unlocked("sao_truc")
-	_update_card_ui(st_card, st_vbox, st_progress, st_unlocked, C_JADE_LIGHT, C_JADE, "STBar", "STBtn", "STPct", "Bắt đầu")
+	_update_card_ui(st_card, st_vbox, st_progress, st_unlocked, C_GOLD_LT, C_PRIMARY,
+		Color(0.039, 0.145, 0.055, 1.0), "STBar", "STBtn", "STPct", "Bắt đầu")
 
 	# Đàn Bầu
 	var db_card := $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau
 	var db_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardDanBau/DBRoot/DBContent/DBCVBox
 	var db_progress := SecureDataManager.get_course_progress("dan_bau")
 	var db_unlocked := SecureDataManager.is_instrument_unlocked("dan_bau")
-	_update_card_ui(db_card, db_vbox, db_progress, db_unlocked, C_RED_SON, C_RED_SON, "DBBar", "DBBtn", "DBPct", "Bắt đầu")
+	_update_card_ui(db_card, db_vbox, db_progress, db_unlocked, C_GOLD, C_PRIMARY,
+		Color(0.169, 0.094, 0.047, 1.0), "DBBar", "DBBtn", "DBPct", "Bắt đầu")
 
 	# Trống Chầu
 	var tc_card := $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau
 	var tc_vbox := $Root/CardsArea/CardsScroll/CardsHBox/CardTrongChau/TCRoot/TCContent/TCCVBox
 	var tc_progress := SecureDataManager.get_course_progress("trong_chau")
 	var tc_unlocked := SecureDataManager.is_instrument_unlocked("trong_chau")
-	_update_card_ui(tc_card, tc_vbox, tc_progress, tc_unlocked, Color(0.85, 0.18, 0.12, 1.0), Color(0.85, 0.18, 0.12, 1.0), "TCBar", "TCBtn", "TCPct", "Bắt đầu")
+	_update_card_ui(tc_card, tc_vbox, tc_progress, tc_unlocked, Color(0.85, 0.18, 0.12, 1.0), Color(0.85, 0.18, 0.12, 1.0), Color(0.169, 0.094, 0.047, 1.0), "TCBar", "TCBtn", "TCPct", "Bắt đầu")
 
 	# Custom scrollbar styling
 	var scroll := $Root/CardsArea/CardsScroll as ScrollContainer
@@ -471,61 +495,67 @@ func _build_theme() -> void:
 func _style_card(card: PanelContainer, cvbox: VBoxContainer,
 		bg: Color, border: Color, accent: Color, btn_col: Color,
 		bar_name: String, btn_name: String, pct_name: String) -> void:
-	var cs := _flat(bg, border, 24)
-	cs.shadow_size = 30; cs.shadow_color = Color(0.13, 0.08, 0.05, 0.10)
-	cs.border_width_top = 3; cs.border_width_left = 1
-	cs.border_width_right = 1; cs.border_width_bottom = 1
+	# Card panel: dark bg, gold/accent border, warm glow shadow
+	var cs := _flat(bg, border, 20)
+	cs.shadow_size = 32; cs.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	cs.border_width_top = 2; cs.border_width_left = 2
+	cs.border_width_right = 2; cs.border_width_bottom = 2
 	card.add_theme_stylebox_override("panel", cs)
 
-	(cvbox.get_child(0) as Label).add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	(cvbox.get_child(1) as Label).add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
-	(cvbox.get_node(pct_name) as Label).add_theme_color_override("font_color", Color(0.55, 0.50, 0.45, 1.0))
+	# Text: warm ivory title, muted sand desc, gold percent
+	(cvbox.get_child(0) as Label).add_theme_color_override("font_color", C_WHITE)    # name
+	(cvbox.get_child(1) as Label).add_theme_color_override("font_color", C_WHITE_DIM) # desc
+	(cvbox.get_node(pct_name) as Label).add_theme_color_override("font_color", C_GOLD)
 
+	# Progress bar: gold fill on dark track
 	var pb  := cvbox.get_node(bar_name) as ProgressBar
 	var pf  := StyleBoxFlat.new()
-	pf.bg_color = accent
-	pf.corner_radius_top_left = 3; pf.corner_radius_top_right    = 3
-	pf.corner_radius_bottom_left = 3; pf.corner_radius_bottom_right = 3
-	pf.shadow_size = 8; pf.shadow_color = Color(accent.r, accent.g, accent.b, 0.35)
+	pf.bg_color = C_GOLD
+	pf.corner_radius_top_left = 4; pf.corner_radius_top_right    = 4
+	pf.corner_radius_bottom_left = 4; pf.corner_radius_bottom_right = 4
+	pf.shadow_size = 8; pf.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50)
 	var pbg := StyleBoxFlat.new()
-	pbg.bg_color = Color(0.13, 0.08, 0.05, 0.07)
-	pbg.corner_radius_top_left = 3; pbg.corner_radius_top_right    = 3
-	pbg.corner_radius_bottom_left = 3; pbg.corner_radius_bottom_right = 3
+	pbg.bg_color = Color(1.0, 1.0, 1.0, 0.06)
+	pbg.corner_radius_top_left = 4; pbg.corner_radius_top_right    = 4
+	pbg.corner_radius_bottom_left = 4; pbg.corner_radius_bottom_right = 4
 	pb.add_theme_stylebox_override("fill", pf)
 	pb.add_theme_stylebox_override("background", pbg)
 
+	# CTA Button: terracotta gradient, gold glow border, large radius
 	var btn := cvbox.get_node(btn_name) as Button
-	var bn  := _flat(btn_col, Color(1, 1, 1, 0.15), 28)
-	bn.shadow_size = 12; bn.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.25)
-	var bh  := _flat(btn_col.lightened(0.15), Color(1, 1, 1, 0.28), 28)
-	bh.shadow_size = 18; bh.shadow_color = Color(btn_col.r, btn_col.g, btn_col.b, 0.38)
+	var bn  := _flat(C_PRIMARY, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 28)
+	bn.shadow_size = 16; bn.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.45)
+	var bh  := _flat(C_PRIMARY_LT, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.70), 28)
+	bh.shadow_size = 22; bh.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.60)
+	var bp  := _flat(C_PRIMARY_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 28)
 	btn.add_theme_stylebox_override("normal",  bn)
 	btn.add_theme_stylebox_override("hover",   bh)
-	btn.add_theme_stylebox_override("pressed", _flat(btn_col.darkened(0.15), Color(0,0,0,0), 28))
-	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_stylebox_override("pressed", bp)
+	btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), C_GOLD, 28))
 	btn.add_theme_color_override("font_color",         C_WHITE)
 	btn.add_theme_color_override("font_hover_color",   C_WHITE)
-	btn.add_theme_color_override("font_pressed_color", C_WHITE)
+	btn.add_theme_color_override("font_pressed_color", C_GOLD)
 
 func _style_card_locked(card: PanelContainer, cvbox: VBoxContainer, btn_name: String) -> void:
-	var cs := _flat(Color(0.95, 0.93, 0.89, 0.65), Color(0.13, 0.08, 0.05, 0.08), 24)
-	cs.shadow_size = 10; cs.shadow_color = Color(0.13, 0.08, 0.05, 0.05)
+	# Dark muted card for locked instruments
+	var cs := _flat(Color(0.130, 0.094, 0.047, 0.80), Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.18), 20)
+	cs.shadow_size = 10; cs.shadow_color = Color(0, 0, 0, 0.40)
 	cs.border_width_top = 1; cs.border_width_left = 1
 	cs.border_width_right = 1; cs.border_width_bottom = 1
 	card.add_theme_stylebox_override("panel", cs)
-	card.modulate.a = 0.68
+	card.modulate.a = 0.72
 
 	for child in cvbox.get_children():
 		if child is Label:
-			(child as Label).add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.50))
+			(child as Label).add_theme_color_override("font_color", C_DIM)
 
 	var btn := cvbox.get_node(btn_name) as Button
-	btn.add_theme_stylebox_override("normal",   _flat(Color(0,0,0,0.03), Color(0.13, 0.08, 0.05, 0.10), 28))
-	btn.add_theme_stylebox_override("disabled", _flat(Color(0,0,0,0.01), Color(0.13, 0.08, 0.05, 0.05), 28))
-	btn.add_theme_color_override("font_color",          Color(0.13, 0.08, 0.05, 0.35))
-	btn.add_theme_color_override("font_disabled_color", Color(0.13, 0.08, 0.05, 0.25))
+	btn.add_theme_stylebox_override("normal",   _flat(Color(1.0,1.0,1.0,0.04), Color(1.0,1.0,1.0,0.08), 28))
+	btn.add_theme_stylebox_override("disabled", _flat(Color(1.0,1.0,1.0,0.02), Color(1.0,1.0,1.0,0.04), 28))
+	btn.add_theme_color_override("font_color",          C_DIM)
+	btn.add_theme_color_override("font_disabled_color", C_DIM)
 
-func _update_card_ui(card: PanelContainer, cvbox: VBoxContainer, progress: float, is_unlocked: bool, accent: Color, btn_col: Color, bar_name: String, btn_name: String, pct_name: String, default_btn_text: String) -> void:
+func _update_card_ui(card: PanelContainer, cvbox: VBoxContainer, progress: float, is_unlocked: bool, accent: Color, btn_col: Color, bg: Color, bar_name: String, btn_name: String, pct_name: String, default_btn_text: String) -> void:
 	var pb := cvbox.get_node(bar_name) as ProgressBar
 	pb.value = progress
 	
@@ -569,7 +599,13 @@ func _update_card_ui(card: PanelContainer, cvbox: VBoxContainer, progress: float
 		btn.disabled = false
 		btn.text = default_btn_text
 		card.modulate.a = 1.0
-		_style_card(card, cvbox, Color(1.0, 1.0, 1.0, 0.95), Color(accent.r, accent.g, accent.b, 0.25), accent, btn_col, bar_name, btn_name, pct_name)
+		# Dark card with instrument-colored bg, gold border
+		_style_card(card, cvbox,
+			bg,                                             # dark instrument bg
+			Color(accent.r, accent.g, accent.b, 0.40),     # gold/accent border
+			accent,                                         # progress bar fill
+			C_PRIMARY,                                      # CTA button terracotta
+			bar_name, btn_name, pct_name)
 	else:
 		btn.disabled = true
 		btn.text = "Chưa mở khóa"

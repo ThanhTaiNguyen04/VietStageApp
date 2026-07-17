@@ -136,7 +136,7 @@ func _ready() -> void:
 	_connect_buttons()
 	_update_play_state()
 	
-	if inst == "dan_bau":
+	if inst == "dan_bau" or inst == "dan_tranh":
 		_setup_simply_piano_layout()
 
 	

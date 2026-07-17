@@ -9,6 +9,8 @@ const C_GOLD_LIGHT  := Color(1.00, 0.87, 0.45, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 
 var _effect: AudioEffectCapture
+var _record_effect: AudioEffectRecord
+var _spectrum: AudioEffectSpectrumAnalyzerInstance
 var _bus_index := -1
 var _sample_history := PackedFloat32Array()
 const MAX_SAMPLES := 180
@@ -26,8 +28,8 @@ var _analyzer: RefCounted = null
 
 # Dynamic configurations for pitch detection and noise gating
 var min_frequency := 200.0
-var max_frequency := 2200.0
-var volume_threshold_db := -30.0
+var max_frequency := 2500.0
+var volume_threshold_db := -55.0
 
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
@@ -69,6 +71,36 @@ func _setup_audio_bus() -> void:
 		AudioServer.add_bus_effect(_bus_index, _effect, 0)
 	else:
 		_effect = AudioServer.get_bus_effect(_bus_index, effect_index) as AudioEffectCapture
+		
+	# Add AudioEffectRecord for user recording
+	var rec_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectRecord:
+			rec_idx = i
+			break
+			
+	if rec_idx == -1:
+		_record_effect = AudioEffectRecord.new()
+		AudioServer.add_bus_effect(_bus_index, _record_effect)
+	else:
+		_record_effect = AudioServer.get_bus_effect(_bus_index, rec_idx) as AudioEffectRecord
+		
+	# Add AudioEffectSpectrumAnalyzer for C++ high-precision pitch analysis
+	var spec_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectSpectrumAnalyzer:
+			spec_idx = i
+			break
+			
+	if spec_idx == -1:
+		var spectrum_effect = AudioEffectSpectrumAnalyzer.new()
+		spectrum_effect.buffer_length = 0.2
+		spectrum_effect.tap_back_pos = 0.05
+		spectrum_effect.fft_size = AudioEffectSpectrumAnalyzer.FFT_SIZE_4096
+		AudioServer.add_bus_effect(_bus_index, spectrum_effect)
+		spec_idx = AudioServer.get_bus_effect_count(_bus_index) - 1
+		
+	_spectrum = AudioServer.get_bus_effect_instance(_bus_index, spec_idx) as AudioEffectSpectrumAnalyzerInstance
 
 	# Setup microphone input player dynamically
 	_mic_player = AudioStreamPlayer.new()
@@ -77,11 +109,6 @@ func _setup_audio_bus() -> void:
 	add_child(_mic_player)
 
 func _process(delta: float) -> void:
-	if not visible:
-		if _mic_player and _mic_player.playing:
-			_mic_player.stop()
-		return
-		
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 	if not _effect: return
@@ -107,53 +134,75 @@ func _process(delta: float) -> void:
 				
 			if _analyzer:
 				# Use high-performance GDExtension C++ module for analysis
-				var current_filtered = _analyzer.filter_background_noise(mono_samples, 0.005)
-				current_amplitude_db = _analyzer.calculate_peak_db(current_filtered)
+				current_amplitude_db = _analyzer.calculate_peak_db(mono_samples)
 				
 				if current_amplitude_db > volume_threshold_db:
-					# Filter the rolling history buffer for pitch detection
-					var filtered_analysis = _analyzer.filter_background_noise(_analysis_buffer, 0.005)
-					
-					var detected_pitch = _analyzer.analyze_pitch_yin(filtered_analysis, AudioServer.get_mix_rate(), 0.15, min_frequency, max_frequency)
+					var detected_pitch = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.08, min_frequency, max_frequency)
 					if detected_pitch > 0.0:
 						current_pitch = lerp(current_pitch, detected_pitch, 0.70)
 					else:
 						current_pitch = lerp(current_pitch, 0.0, 0.5)
 					
-					current_tone_quality = _analyzer.evaluate_tone_quality(filtered_analysis)
-					current_breath_purity = _analyzer.analyze_breath_pattern(filtered_analysis)
+					current_tone_quality = _analyzer.evaluate_tone_quality(_analysis_buffer)
+					current_breath_purity = _analyzer.analyze_breath_pattern(_analysis_buffer)
 				else:
 					current_pitch = lerp(current_pitch, 0.0, 0.5)
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 			else:
 				# Fallback to pure GDScript analysis
-				var current_filtered = _filter_background_noise_gdscript(mono_samples, 0.005)
-				current_amplitude_db = _calculate_peak_db_gdscript(current_filtered)
+				current_amplitude_db = _calculate_peak_db_gdscript(mono_samples)
 				
 				if current_amplitude_db > volume_threshold_db:
-					# Run analysis 33 times a second (every 0.03s) for responsive real-time feedback
+					if _spectrum:
+						var max_mag = 0.0
+						var hz = min_frequency
+						var magnitudes = []
+						# Scan frequencies
+						while hz <= max_frequency:
+							var mag = _spectrum.get_magnitude_for_frequency_range(hz, hz + 10.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
+							magnitudes.append({"hz": hz + 5.0, "mag": mag})
+							if mag > max_mag:
+								max_mag = mag
+							hz += 10.0
+							
+						var best_hz = 0.0
+						if max_mag > 0.0:
+							# Find the lowest frequency that has at least 15% of the peak magnitude (Fundamental)
+							for m in magnitudes:
+								if m["mag"] >= max_mag * 0.15:
+									best_hz = m["hz"]
+									break
+									
+						if best_hz > 0.0:
+							var refine_hz = max(min_frequency, best_hz - 15.0)
+							var end_hz = min(max_frequency, best_hz + 15.0)
+							var refined_max = 0.0
+							var refined_best_hz = best_hz
+							while refine_hz <= end_hz:
+								var mag = _spectrum.get_magnitude_for_frequency_range(refine_hz, refine_hz + 2.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
+								if mag > refined_max:
+									refined_max = mag
+									refined_best_hz = refine_hz + 1.0
+								refine_hz += 2.0
+								
+							current_pitch = lerp(current_pitch, refined_best_hz, 0.8)
+						else:
+							current_pitch = lerp(current_pitch, 0.0, 0.5)
+							
+					# Compute other metrics
 					if _time_since_last_pitch >= 0.03:
 						_time_since_last_pitch = 0.0
 						if _analysis_buffer.size() >= 512:
-							var filtered_analysis = _filter_background_noise_gdscript(_analysis_buffer, 0.005)
-							var detected_pitch = _detect_pitch_yin_gdscript(filtered_analysis, AudioServer.get_mix_rate(), 0.15)
-							if detected_pitch > 0.0:
-								current_pitch = lerp(current_pitch, detected_pitch, 0.70)
-							else:
-								current_pitch = lerp(current_pitch, 0.0, 0.5)
-							
-							current_tone_quality = _evaluate_tone_quality_gdscript(filtered_analysis)
-							current_breath_purity = _analyze_breath_pattern_gdscript(filtered_analysis)
-						else:
-							current_pitch = lerp(current_pitch, 0.0, 0.70)
+							current_tone_quality = _evaluate_tone_quality_gdscript(_analysis_buffer)
+							current_breath_purity = _analyze_breath_pattern_gdscript(_analysis_buffer)
 				else:
 					current_pitch = lerp(current_pitch, 0.0, 0.5)
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 				
 			# Add samples to history for visualization
-			var step = max(1, int(mono_samples.size() / 10.0))
+			var step = max(1, mono_samples.size() / 10)
 			for i in range(0, mono_samples.size(), step):
 				var val = mono_samples[i]
 				if _sample_history.size() > 0:
@@ -163,8 +212,8 @@ func _process(delta: float) -> void:
 			queue_redraw()
 
 func _detect_pitch_high_res(samples: PackedFloat32Array, sample_rate: float) -> float:
-	var sample_count = samples.size()
-	if sample_count < 512:
+	var size = samples.size()
+	if size < 512:
 		return 0.0
 		
 	var peak := 0.0
@@ -176,12 +225,12 @@ func _detect_pitch_high_res(samples: PackedFloat32Array, sample_rate: float) -> 
 		
 	var min_lag = int(sample_rate / max_frequency)
 	var max_lag = int(sample_rate / min_frequency)
-	max_lag = min(max_lag, int(sample_count / 2.0))
+	max_lag = min(max_lag, size / 2)
 	
 	var best_lag := -1
 	var best_correlation := -1e9
 	
-	var window_size = min(256, sample_count - max_lag)
+	var window_size = min(256, size - max_lag)
 	if window_size <= 0:
 		return 0.0
 		
@@ -330,16 +379,16 @@ func _calculate_peak_db_gdscript(samples: PackedFloat32Array) -> float:
 	return -80.0
 
 func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_threshold: float) -> PackedFloat32Array:
-	var sample_count = samples.size()
+	var size = samples.size()
 	var filtered := PackedFloat32Array()
-	filtered.resize(sample_count)
+	filtered.resize(size)
 	
 	var peak := 0.0
 	for val in samples:
 		peak = max(peak, abs(val))
 	if peak < noise_threshold:
 		# Quiet signal: noise gate closed
-		for i in range(sample_count):
+		for i in range(size):
 			filtered[i] = 0.0
 		return filtered
 		
@@ -348,7 +397,7 @@ func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_thresh
 	var x2 := 0.0
 	var y1 := 0.0
 	var y2 := 0.0
-	for i in range(sample_count):
+	for i in range(size):
 		var x0 = samples[i]
 		var y0 = 0.88 * (x0 - x2) + 0.75 * y1 - 0.25 * y2
 		filtered[i] = clamp(y0, -1.0, 1.0)
@@ -359,8 +408,8 @@ func _filter_background_noise_gdscript(samples: PackedFloat32Array, noise_thresh
 	return filtered
 
 func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float, threshold: float) -> float:
-	var sample_count = samples.size()
-	var W = int(sample_count / 2.0)
+	var size = samples.size()
+	var W = size / 2
 	if W < 128: return 0.0
 	
 	var min_period = int(sample_rate / max_frequency)
@@ -432,8 +481,8 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 	return 0.0
 
 func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
-	var sample_count = samples.size()
-	if sample_count < 128: return 0.0
+	var size = samples.size()
+	if size < 128: return 0.0
 	
 	var sum_sq := 0.0
 	for val in samples:
@@ -442,13 +491,13 @@ func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
 	
 	var max_corr := 0.0
 	var min_lag := 40
-	var max_lag = min(int(sample_count / 2.0), 300)
+	var max_lag = min(size / 2, 300)
 	
 	# Stride lag for speed
 	for lag in range(min_lag, max_lag, 3):
 		var corr := 0.0
 		var sum_sq_shifted := 0.0
-		for i in range(0, sample_count - lag, 2):
+		for i in range(0, size - lag, 2):
 			corr += samples[i] * samples[i + lag]
 			sum_sq_shifted += samples[i + lag] * samples[i + lag]
 		
@@ -460,16 +509,16 @@ func _evaluate_tone_quality_gdscript(samples: PackedFloat32Array) -> float:
 	return clamp(max_corr * 100.0, 0.0, 100.0)
 
 func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
-	var sample_count = samples.size()
-	if sample_count < 256: return 0.0
+	var size = samples.size()
+	if size < 256: return 0.0
 	
 	var envelopes: Array[float] = []
 	var amplitude_sum := 0.0
 	var block_size := 64
 	
-	for i in range(0, sample_count, block_size):
+	for i in range(0, size, block_size):
 		var block_peak := 0.0
-		var limit = min(sample_count, i + block_size)
+		var limit = min(size, i + block_size)
 		for j in range(i, limit):
 			block_peak = max(block_peak, abs(samples[j]))
 		envelopes.append(block_peak)
@@ -488,7 +537,7 @@ func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
 	var residual_energy := 0.0
 	var total_energy := 0.0
 	var period := 80
-	for i in range(sample_count - period):
+	for i in range(size - period):
 		var periodic_diff = samples[i] - samples[i + period]
 		residual_energy += periodic_diff * periodic_diff
 		total_energy += samples[i] * samples[i]
@@ -498,3 +547,17 @@ func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
 		purity_factor = max(0.0, 1.0 - (residual_energy / total_energy))
 		
 	return clamp((0.7 * purity_factor + 0.3 * stability_factor) * 100.0, 0.0, 100.0)
+
+
+
+func start_recording() -> bool:
+	if _record_effect:
+		_record_effect.set_recording_active(true)
+		return true
+	return false
+	
+func stop_recording() -> AudioStreamWAV:
+	if _record_effect:
+		_record_effect.set_recording_active(false)
+		return _record_effect.get_recording()
+	return null

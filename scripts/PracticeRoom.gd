@@ -340,6 +340,13 @@ func _ready() -> void:
 	elif _level1_mode:
 		_song_bpm = float(_level1_config["bpm"])
 		
+	# Bulletproof safety: if sheet_notes is empty under any scenario, populate with default notes
+	if sheet_notes.is_empty():
+		sheet_notes.assign(["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"])
+		sheet_durations.clear()
+		for note in sheet_notes:
+			sheet_durations.append(1.0)
+			
 	_generate_streams()
 	_set_labels()
 	_build_theme()

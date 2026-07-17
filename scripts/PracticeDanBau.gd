@@ -89,6 +89,10 @@ func _ready() -> void:
 	
 	if current_song_title != "":
 		sheet_notes = current_song_sheet
+	
+	# Bulletproof safety: if sheet_notes is empty under any scenario, populate with default notes
+	if sheet_notes.is_empty():
+		sheet_notes = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 	elif SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
 		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
 		var idx := int(clean_id.replace("dan_bau_coban_", ""))
