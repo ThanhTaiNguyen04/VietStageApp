@@ -226,14 +226,16 @@ func _draw_background_waves() -> void:
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARKER)
 	
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if inst == "dan_tranh":
-		if not _sidebar_icons_cache.has("bg_dan_tranh"):
-			if ResourceLoader.exists("res://assets/textures/dan_tranh_background.png"):
-				_sidebar_icons_cache["bg_dan_tranh"] = load("res://assets/textures/dan_tranh_background.png") as Texture2D
+	if inst == "dan_tranh" or inst == "dan_bau":
+		var cache_key := "bg_" + inst
+		if not _sidebar_icons_cache.has(cache_key):
+			var tex_path := "res://assets/textures/" + inst + "_background.png"
+			if ResourceLoader.exists(tex_path):
+				_sidebar_icons_cache[cache_key] = load(tex_path) as Texture2D
 			else:
-				_sidebar_icons_cache["bg_dan_tranh"] = null
+				_sidebar_icons_cache[cache_key] = null
 				
-		var tex = _sidebar_icons_cache["bg_dan_tranh"]
+		var tex = _sidebar_icons_cache[cache_key]
 		if tex:
 			var scale_factor = max(sz.x / tex.get_width(), sz.y / tex.get_height())
 			var new_sz = Vector2(tex.get_width() * scale_factor, tex.get_height() * scale_factor)

@@ -190,6 +190,15 @@ func _input(event: InputEvent) -> void:
 func _build_theme() -> void:
 	bg_rect.color = C_BG
 	
+	var tex_path := "res://assets/textures/dan_bau_background.png"
+	if ResourceLoader.exists(tex_path):
+		var bg_tex := TextureRect.new()
+		bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg_tex.texture = load(tex_path) as Texture2D
+		bg_rect.add_child(bg_tex)
+	
 	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
 	
 	page_title.text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
