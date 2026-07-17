@@ -226,7 +226,7 @@ func _draw_background_waves() -> void:
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARKER)
 	
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if inst == "dan_tranh" or inst == "dan_bau":
+	if inst == "dan_tranh" or inst == "dan_bau" or inst == "trong_chau":
 		var cache_key := "bg_" + inst
 		if not _sidebar_icons_cache.has(cache_key):
 			var tex_path := "res://assets/textures/" + inst + "_background.png"
@@ -728,7 +728,10 @@ func _build_roadmap_cards() -> void:
 		
 		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
 		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
+	elif instrument == "trong_chau":
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Trống Chầu")
 	elif instrument == "sao_truc":
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Sáo Trúc")
 		# Lộ trình Sáo Trúc
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🎷 ĐƯỜNG HÒA TẤU (ENSEMBLE PATH)"
