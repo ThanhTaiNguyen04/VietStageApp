@@ -267,7 +267,39 @@ static func get_level_data(level_number: int) -> Dictionary:
 
 func _build_theme() -> void:
 	bg.color = C_BG
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	
+	if ResourceLoader.exists("res://assets/textures/dan_tranh_background.png"):
+		var bg_tex = TextureRect.new()
+		bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg_tex.texture = load("res://assets/textures/dan_tranh_background.png")
+		bg.add_child(bg_tex)
+		
+	var top_s := StyleBoxFlat.new()
+	top_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	top_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
+	top_s.border_width_bottom = 2
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	page_title.add_theme_color_override("font_color", C_JADE)
 	objective_label.add_theme_color_override("font_color", C_MUTED)
 	var heading_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -288,13 +320,30 @@ func _build_theme() -> void:
 	_style_outline_button(change_course_btn)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
-	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
+	var side_s := StyleBoxFlat.new()
+	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+	
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -454,15 +503,14 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	button.disabled = not unlocked
 
 	if completed:
-		button.text = "✓\n%s\nHoàn thành" % action
+		button.text = "\n\n%s\nHoàn thành" % action
 	elif unlocked:
-		var icon := "🎬" if action == "Hướng dẫn" else "🎵"
-		button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
+		button.text = "\n\n%s\n(%s)" % [action, lesson_title]
 	else:
-		button.text = "🔒"
+		button.text = ""
 
-	var bg_color := Color(0.95, 0.93, 0.89, 0.6)
-	var border_color := Color(0.85, 0.82, 0.78, 1.0)
+	var bg_color := Color(0.95, 0.93, 0.89, 0.35) # Locked: Glassmorphism
+	var border_color := Color(0.85, 0.82, 0.78, 0.5)
 	var text_color := Color(C_MUTED, 0.8)
 	
 	if completed:
@@ -470,8 +518,8 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 		border_color = C_GOLD
 		text_color = Color.WHITE
 	elif unlocked:
-		bg_color = Color.WHITE
-		border_color = C_JADE_LIGHT
+		bg_color = C_CARD
+		border_color = C_JADE
 		text_color = C_TEXT
 
 	var s_normal := StyleBoxFlat.new()
@@ -505,7 +553,25 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		button.add_theme_font_override("font", bold_font)
-	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_font_size_override("font_size", 16)
+	
+	button.draw.connect(func():
+		var tex_name = ""
+		if not unlocked: tex_name = "lock"
+		elif completed: tex_name = "check-circle"
+		else: tex_name = "play-circle" if action == "Hướng dẫn" else "music"
+		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
+		if tex:
+			var w = 32.0
+			var rect = Rect2((button.size.x - w) / 2.0, 32.0, w, w)
+			
+			var draw_color = text_color
+			if unlocked and not completed and button.is_hovered():
+				draw_color = C_JADE
+			
+			button.draw_texture_rect(tex, rect, false, draw_color)
+	)
+
 	_make_bouncy(button)
 	return button
 
@@ -542,9 +608,12 @@ func _draw_lesson_path() -> void:
 		var p1 := Vector2(centers[idx].x, line_y)
 		var p2 := Vector2(centers[idx + 1].x, line_y)
 		var active := node_unlocked[idx + 1]
-		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.08)
-		var line_thickness := 14.0 if active else 7.0
-		lessons_hbox.draw_line(p1, p2, line_color, line_thickness, true)
+		if active:
+			lessons_hbox.draw_line(p1, p2, Color(C_JADE, 0.15), 24.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(C_JADE, 0.4), 14.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.6), 4.0, true)
+		else:
+			lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.2), 8.0, true)
 
 func _create_lesson_card(lesson: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
