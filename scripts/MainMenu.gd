@@ -939,6 +939,8 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranh.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/LessonTrongChau.tscn")
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
@@ -951,6 +953,8 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranh.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/LessonTrongChau.tscn")
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -973,6 +977,8 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)
@@ -987,6 +993,8 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		else:
 			_go_practice()
 	)
@@ -997,6 +1005,8 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		else:
 			_go_practice()
 	)
@@ -1010,6 +1020,8 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		else:
 			_go_practice()
 	)
