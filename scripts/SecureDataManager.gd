@@ -9,29 +9,29 @@ const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLe
 static var video_completed := false
 static var active_lesson_id := "Node2"
 
-# Course Detail State
-static var active_course_title: String = ""
-static var active_course_start_node: int = 1
-static var active_course_node_count: int = 1
-
 # Default player state synchronized across all scenes
 static var data := {
 	"selected_instrument": "dan_tranh",
 	"is_premium": false,
 	"unlocked_lessons": {
-		"dan_tranh": ["Node1", "Node2"],
-		"sao_truc": ["Node1", "Node2"],
-		"dan_bau": ["Node1", "Node2"]
+
+		"dan_tranh": ["Node1"],
+		"sao_truc": ["Node1"],
+		"dan_bau": ["Node1", "dan_bau_coban_1_video"],
+		"trong_chau": ["Node1"]
+
 	},
 	"completed_lessons": {
 		"dan_tranh": [],
 		"sao_truc": [],
-		"dan_bau": []
+		"dan_bau": [],
+		"trong_chau": []
 	},
 	"stars": {
 		"dan_tranh": {},
 		"sao_truc": {},
-		"dan_bau": {}
+		"dan_bau": {},
+		"trong_chau": {}
 	},
 	"daily_streak": 1,
 	"last_practice_date": "",
@@ -91,6 +91,9 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		data.completed_lessons[instrument] = []
 	if not data.completed_lessons[instrument].has(lesson_id):
 		data.completed_lessons[instrument].append(lesson_id)
+
+	if not data.unlocked_lessons.has(instrument):
+		data.unlocked_lessons[instrument] = []
 		
 	if not data.stars.has(instrument):
 		data.stars[instrument] = {}
@@ -106,12 +109,6 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 		next_lesson_id = "Node4"
 	elif lesson_id == "Node4":
 		next_lesson_id = "Node5"
-	elif lesson_id == "Node5":
-		next_lesson_id = "Node6"
-	elif lesson_id == "Node6":
-		next_lesson_id = "Node7"
-	elif lesson_id == "Node7":
-		next_lesson_id = "Node8"
 	elif lesson_id.begins_with("dan_bau_coban_"):
 		if lesson_id.ends_with("_video"):
 			next_lesson_id = lesson_id.replace("_video", "_practice")
@@ -119,9 +116,10 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_practice", ""))
 			if idx < 5:
 				next_lesson_id = "dan_bau_coban_" + str(idx + 1) + "_video"
+		
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
-		
+
 	save_data()
 
 static func get_course_progress(instrument: String) -> float:
@@ -139,6 +137,8 @@ static func is_instrument_unlocked(instrument: String) -> bool:
 		return is_lesson_completed("dan_tranh", "Node5")
 	elif instrument == "dan_bau":
 		return is_lesson_completed("sao_truc", "Node5")
+	elif instrument == "trong_chau":
+		return is_lesson_completed("dan_bau", "Node5")
 	return false
 
 static func get_total_stars() -> int:

@@ -87,7 +87,7 @@ func _draw() -> void:
 	var NOTES_PITCHES : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
 	var lane_count := 7
 	var lane_h := H / float(lane_count + 1)
-
+	
 	# Draw horizontal lane guide lines
 	var font := get_theme_font("font")
 	for i in lane_count:

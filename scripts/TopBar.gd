@@ -55,14 +55,14 @@ func _style_avatar() -> void:
 	_avatar_circle.add_theme_stylebox_override("panel", s)
 
 func _style_pills() -> void:
-	var streak_s := DS.pill(
+	var streak_s: StyleBoxFlat = DS.pill(
 		Color(DS.C_BG_DARK.r, DS.C_BG_DARK.g, DS.C_BG_DARK.b, 0.80),
 		Color(0.90, 0.42, 0.08, 0.45)
 	)
 	_streak_pill.add_theme_stylebox_override("panel", streak_s)
 	_streak_label.add_theme_color_override("font_color", Color(1.0, 0.70, 0.22, 1.0))
 
-	var xp_s := DS.pill(
+	var xp_s: StyleBoxFlat = DS.pill(
 		Color(DS.C_BG_DARK.r, DS.C_BG_DARK.g, DS.C_BG_DARK.b, 0.80),
 		Color(DS.C_GOLD.r, DS.C_GOLD.g, DS.C_GOLD.b, 0.45)
 	)

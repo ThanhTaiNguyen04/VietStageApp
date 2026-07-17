@@ -24,7 +24,7 @@ var recent_scores_history : Array[float] = []
 var difficulty_tolerance_scale := 1.0
 
 var _analyzer: RefCounted = null
-var _sliding_window := PackedFloat32Array()
+
 
 # Dynamic configurations for pitch detection and noise gating
 var min_frequency := 200.0

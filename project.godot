@@ -11,13 +11,18 @@ config_version=5
 [application]
 
 config/name="VietStage"
-run/main_scene="res://scenes/LoginScreen.tscn"
+run/main_scene="res://scenes/SplashScreen.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
 [audio]
 
 driver/enable_input=true
+
+[autoload]
+
+VirtualArtist="*res://scripts/VirtualArtist.gd"
+DS="*res://scripts/DS.gd"
 
 [display]
 
@@ -26,6 +31,10 @@ window/size/viewport_height=886
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation="landscape"
+
+[dotnet]
+
+project/assembly_name="VietStage"
 
 [gui]
 

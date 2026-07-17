@@ -14,8 +14,8 @@ extends Control
 signal string_plucked(idx: int, note_name: String)
 signal pitch_bent(cents_offset: float)
 
-const NODE_COUNT := 7
-const NOTES_VN : Array[String] = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
+const NODE_COUNT := 6
+const NOTES_VN : Array[String] = ["Đố", "Sol", "Mi", "Đô", "Sol", "Đồ"]
 
 # - State Variables -------------------
 var _note_names : Array[String]      = []
@@ -43,20 +43,11 @@ var _target_weights : PackedFloat32Array = PackedFloat32Array()
 var _hover_weights  : PackedFloat32Array = PackedFloat32Array()
 var _press_weights  : PackedFloat32Array = PackedFloat32Array()
 
-<<<<<<< HEAD
 # Cached geometry for hit-testing and rendering
 var _str_y       := 0.0
 var _node_xs     : PackedFloat32Array = PackedFloat32Array()
 var _node_ys     : PackedFloat32Array = PackedFloat32Array()
 var _bend_zone_x := 0.0
-=======
-# Positions for drawing
-var _rod_start   := Vector2.ZERO
-var _rod_tip     := Vector2.ZERO
-var _rod_end     := Vector2.ZERO
-var _gourd_pos   := Vector2.ZERO
-var _string_end  := Vector2.ZERO
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 
 # --- Public API ---------------------------------------------------------------
 func init(notes: Array[String], streams: Array, freqs: Array[float]) -> void:
@@ -167,7 +158,7 @@ func _draw() -> void:
 	var W := size.x; var H := size.y
 	if W < 50.0 or H < 20.0: return
 
-	# â”€â”€â”€ 1. Core Geometry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 1. Core Geometry ──────────────────────────────────────────────────
 	var BL := W * 0.16        # soundboard left edge starts after gourd area
 	var BR := W * 0.98        # soundboard right edge
 	var BW := BR - BL
@@ -181,7 +172,7 @@ func _draw() -> void:
 	_str_y = BCY
 	_bend_zone_x = BL
 
-	# â”€â”€â”€ 2. Soundboard Body with Resonance Depth (Há»™p cá»™ng hÆ°á»Ÿng 2.5D) â”€â”€â”€â”€â”€
+	# ─── 2. Soundboard Body with Resonance Depth (Hộp cộng hưởng 2.5D) ─────
 	var sb_pts := PackedVector2Array()
 	var segs := 16
 	# Top-left corner rounded
@@ -197,8 +188,7 @@ func _draw() -> void:
 		var ang := PI * 0.5 + float(s) * (PI * 0.5) / float(segs)
 		sb_pts.append(Vector2(BL + CR, BB - CR) + Vector2(cos(ang), sin(ang)) * CR)
 
-<<<<<<< HEAD
-	# Zither side-wall thickness/depth polygon (ThÃ¢n há»™p cá»™ng hÆ°á»Ÿng)
+	# Zither side-wall thickness/depth polygon (Thân hộp cộng hưởng)
 	var depth_offset := 14.0
 	var depth_pts := PackedVector2Array()
 	# Top edge: Curve from left-vertical to bottom-horizontal, then to BR
@@ -206,15 +196,7 @@ func _draw() -> void:
 		var ang := PI * 0.5 + float(s) * (PI * 0.5) / float(segs)
 		depth_pts.append(Vector2(BL + CR, BB - CR) + Vector2(cos(ang), sin(ang)) * CR)
 	depth_pts.append(Vector2(BR, BB))
-=======
-	# Calculate key position points
-	_rod_start = Vector2(x_left + 24.0, body_center_y - h_left * 0.4)
-	_rod_tip = Vector2(x_left - 32.0 + _bend_offset, body_center_y - 110.0)
-	_gourd_pos = _rod_tip
-	_rod_end = _gourd_pos
-	_string_end = Vector2(x_right + 12.0, body_center_y - 5.0)
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
-
+	
 	# Bottom edge: Down to depth bottom edge at BR, then trace back left with depth_offset
 	depth_pts.append(Vector2(BR, BB + depth_offset))
 	for s in range(segs + 1):
@@ -225,24 +207,8 @@ func _draw() -> void:
 	draw_polygon(depth_pts, PackedColorArray([Color("#261105")])) # Dark mahogany depth color
 	draw_polyline(depth_pts, Color("#180a03"), 2.0, true)
 
-<<<<<<< HEAD
 	# Soundboard shadow
 	var shadow_offset := Vector2(0.0, 8.0 + depth_offset)
-=======
-	# 3. Draw brass collar socket (slanted upwards)
-	_draw_brass_collar(_rod_start, deg_to_rad(-70.0))
-
-	# 4. Draw tapered horn rod (Cần Đàn curving tall upwards and left)
-	var rod_control := Vector2(x_left + 32.0 + _bend_offset * 0.4, body_center_y - 95.0)
-	var rod_pts := PackedVector2Array()
-	var steps := 20
-	for k in range(steps + 1):
-		var t := float(k) / float(steps)
-		var pt := (1.0-t)*(1.0-t)*_rod_start + 2.0*(1.0-t)*t*rod_control + t*t*_rod_tip
-		rod_pts.append(pt)
-
-	# Draw horn rod shadow
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 	var shadow_pts := PackedVector2Array()
 	for p in sb_pts:
 		shadow_pts.append(p + shadow_offset)
@@ -251,7 +217,6 @@ func _draw() -> void:
 	# Soundboard wood fill (First fill entire zither frame contour with dark mahogany wood)
 	draw_polygon(sb_pts, PackedColorArray([Color("#261105")]))
 
-<<<<<<< HEAD
 	# 3D Cylindrical shading overlay on the rounded left corner (gives the dark wood headblock rounded volume!)
 	var shade_pts := PackedVector2Array()
 	var shade_cols := PackedColorArray()
@@ -266,12 +231,8 @@ func _draw() -> void:
 	shade_pts.append(Vector2(BL + CR + 60.0, BB))
 	shade_cols.append(Color(0.12, 0.05, 0.01, 0.0))
 	draw_polygon(shade_pts, shade_cols)
-=======
-	# 5. Draw pear-shaped gourd (Bầu) with radial 3D shading
-	_draw_shaded_gourd(_gourd_pos, (_rod_tip - rod_control).normalized())
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 
-	# Decorative dark wood borders along top and bottom edges (Náº¹p gá»— nÃ¢u sáº«m chá»‰ vÃ ng)
+	# Decorative dark wood borders along top and bottom edges (Nẹp gỗ nâu sẫm chỉ vàng)
 	# Top wood border band
 	var top_border_rect := Rect2(BL + CR * 0.4, BT + 4.0, BR - BL - CR * 0.4 - 5.0, 7.0)
 	draw_rect(top_border_rect, Color("#1a0802"))
@@ -282,20 +243,20 @@ func _draw() -> void:
 	draw_line(Vector2(BL + CR * 0.4, BB - 11.0), Vector2(BR - 5.0, BB - 11.0), Color("#cca43b", 0.50), 1.0)
 
 	# Spruce top panel (White/yellow wood resonance board) recessed inside the borders and starting at BL + 110.0
-	# Drawing with an elegant traditional bottle-neck / vase scroll contour (hoa vÄƒn uá»‘n lÆ°á»£n)
+	# Drawing with an elegant traditional bottle-neck / vase scroll contour (hoa văn uốn lượn)
 	var spruce_pts := PackedVector2Array()
-
+	
 	# Top edge (straight from BL + 190.0 to BR - 6.0)
 	spruce_pts.append(Vector2(BL + 190.0, BT + 11.0))
 	spruce_pts.append(Vector2(BR - 6.0, BT + 11.0))
 	# Bottom edge (straight from BR - 6.0 to BL + 190.0)
 	spruce_pts.append(Vector2(BR - 6.0, BB - 11.0))
 	spruce_pts.append(Vector2(BL + 190.0, BB - 11.0))
-
+	
 	# Trace traditional vase/scroll left boundary contour (going from bottom-left to top-left)
 	var div_pts := PackedVector2Array()
 	var X_start := BL + 110.0
-
+	
 	# Symmetrical contour points from bottom BB - 11.0 to top BT + 11.0 (recessing to BL + 110.0 at center)
 	div_pts.append(Vector2(BL + 190.0, BB - 11.0))
 	div_pts.append(Vector2(X_start + 70.0, BCY + 26.0))
@@ -308,7 +269,7 @@ func _draw() -> void:
 	div_pts.append(Vector2(X_start + 50.0, BCY - 32.0))
 	div_pts.append(Vector2(X_start + 70.0, BCY - 26.0))
 	div_pts.append(Vector2(BL + 190.0, BT + 11.0))
-
+	
 	for p in div_pts:
 		spruce_pts.append(p)
 
@@ -324,7 +285,7 @@ func _draw() -> void:
 	# Gold divider border between the dark mun headblock and the yellow spruce wood panel
 	draw_polyline(div_pts, Color("#cca43b", 0.85), 2.2, true)
 
-	# Traditional Vietnamese cloud/wave inlay pattern on the right tailpiece (Hoa vÄƒn vÃ¢n mÃ¢y cá»• bay bá»•ng)
+	# Traditional Vietnamese cloud/wave inlay pattern on the right tailpiece (Hoa văn vân mây cổ bay bổng)
 	var pat_x := BR - 85.0
 	var pat_y := BCY
 	# Main large swirl
@@ -353,7 +314,7 @@ func _draw() -> void:
 	sheen_pts.append(Vector2(BR, BT + 1.5))
 	draw_polyline(sheen_pts, Color(1.0, 1.0, 1.0, 0.40), 1.5, false)
 
-	# â”€â”€â”€ 3. Thick Curved Bamboo Rod (Cáº§n rung sá»«ng trÃ¢u) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 3. Thick Curved Bamboo Rod (Cần rung sừng trâu) ─────────────────────
 	# Passing vertically through the gourd body, straight base (60% length), and horizontal curve leftwards at tip
 	var GX := BL - 10.0       # Nested close inside the zither body (as requested!)
 	var GY := BCY
@@ -368,7 +329,7 @@ func _draw() -> void:
 	var current_pos := rod_start
 	var seg_len := rod_ht / 20.0
 	rod_pts.append(current_pos)
-
+	
 	for s in range(1, 21):
 		var t := float(s) / 20.0
 		var seg_angle := -deg_to_rad(5.0) # Base tilt
@@ -376,11 +337,11 @@ func _draw() -> void:
 			# Curves smoothly from -5 degrees to -90 degrees (horizontal pointing left)
 			var curve_t := (t - 0.58) / 0.42
 			seg_angle += -deg_to_rad(85.0) * pow(curve_t, 1.8)
-
+			
 		var dir := Vector2(sin(seg_angle), -cos(seg_angle))
 		current_pos += dir * seg_len
-
-		# Apply dynamic player bending deflection (uá»‘n cáº§n) to the final coordinates
+		
+		# Apply dynamic player bending deflection (uốn cần) to the final coordinates
 		var p_pos := current_pos
 		p_pos.x += tip_deflect * (t * t)
 		rod_pts.append(p_pos)
@@ -400,7 +361,7 @@ func _draw() -> void:
 	# Note: Rod body, joints, and tip cap are drawn later (after the gourd body is drawn)
 	# so that the rod base overlays the gourd shell in 2.5D perspective.
 
-	# â”€â”€â”€ 4. Unified Turned Wooden Gourd Cup (Báº§u Ä‘Ã n dÃ¡ng chum tiá»‡n gá»— nguyÃªn khá»‘i) â”€
+	# ─── 4. Unified Turned Wooden Gourd Cup (Bầu đàn dáng chum tiện gỗ nguyên khối) ─
 	# Sits on top of the rod base, nested inside the zither body, oriented horizontally
 	var rim_x := GX + GR * 1.15
 	var rim_r_w := 6.0
@@ -409,7 +370,7 @@ func _draw() -> void:
 	# Generate single closed contour for the entire turned wood gourd cup
 	var gourd_pts := PackedVector2Array()
 	var g_steps := 32
-
+	
 	# Top edge (left to right)
 	for i in g_steps + 1:
 		var t: float = float(i) / float(g_steps)
@@ -428,7 +389,7 @@ func _draw() -> void:
 			var nt := (t - 0.78) / 0.22
 			w = lerpf(0.48, 0.65, nt * nt)
 		gourd_pts.append(Vector2(x, GY - w * GR))
-
+		
 	# Bottom edge (right to left)
 	for i in range(g_steps, -1, -1):
 		var t: float = float(i) / float(g_steps)
@@ -503,7 +464,7 @@ func _draw() -> void:
 		gourd_sheen_pts.append(Vector2(x, GY - w * GR * 0.72))
 	draw_polyline(gourd_sheen_pts, Color(1.0, 1.0, 1.0, 0.16), 2.5, false)
 
-	# 4.3 Draw gold/brass decorative cap on the left tip (cÃ¡i nÃºm nhá»n Ä‘áº§u báº§u)
+	# 4.3 Draw gold/brass decorative cap on the left tip (cái núm nhọn đầu bầu)
 	var cap_pts := PackedVector2Array([
 		Vector2(GX - GR + 1.0, GY - 7.5),
 		Vector2(GX - GR - 12.0, GY),
@@ -514,13 +475,13 @@ func _draw() -> void:
 
 	# 4.4 Draw gold rim cavity at the right flared mouth
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w - 2.0, rim_r_h - 3.0, Color("#cca43b"))
-	draw_ellipse_like_cavity(Vector2(rim_x, GY), 2.5, rim_r_h - 4.0, Color("#0c0401")) # dark inner hole
+	draw_ellipse_like_cavity(Vector2(rim_x, GY), 2.5, rim_r_h - 4.0, Color("#0c0401")) # dark inner hole 
 
 	# 4.4 Draw brass/gold mounting bracket frame at the slot interface (on top of soundboard)
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w + 3.0, rim_r_h + 3.0, Color("#cca43b")) # gold bracket outer
 	draw_ellipse_like_cavity(Vector2(rim_x, GY), rim_r_w, rim_r_h, Color("#1a0802")) # gold bracket inner
 
-	# â”€â”€â”€ 4.5 Thick Curved Bamboo Rod (Cáº§n rung sá»«ng trÃ¢u) drawn on top of gourd body â”€â”€â”€
+	# ─── 4.5 Thick Curved Bamboo Rod (Cần rung sừng trâu) drawn on top of gourd body ───
 	# Draw rod dark border (outer silhouette - tapered from 24px to 11px - black horn)
 	for s in 20:
 		var t1 := float(s) / 20.0
@@ -566,7 +527,7 @@ func _draw() -> void:
 	draw_circle(rod_end, 5.5, Color("#cca43b"))
 	draw_circle(rod_end, 2.5, Color("#090909"))
 
-	# â”€â”€â”€ 4.6 Collar socket (Cá»• khá»›p ná»‘i cáº¯m cáº§n rung vÃ o báº§u) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 4.6 Collar socket (Cổ khớp nối cắm cần rung vào bầu) ───────────────────
 	# Aligned to the top-middle surface of the gourd at x = GX, y = GY - 10.0
 	var collar_y := GY - 10.0
 	var collar_center := Vector2(GX, collar_y)
@@ -579,37 +540,21 @@ func _draw() -> void:
 	draw_circle(rivet_pos, 3.0, Color("#cca43b"))
 	draw_circle(rivet_pos, 1.2, Color("#1a0802"))
 
-	# â”€â”€â”€ 5. String (Silver steel wire passing to BR) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+	# ─── 5. String (Silver steel wire passing to BR) ──────────────────────────
 	# Starts at the anchor point on the right of the gourd, runs horizontally to BR
 	var SE := Vector2(BR, BCY)
 	var SS := rivet_pos # string exits from the rivet anchor (exactly at Y=BCY)
 
-<<<<<<< HEAD
 	var str_pts := PackedVector2Array()
 	str_pts.append(SS)
-=======
-	# 7. Draw single monochord string (with slanted pluck vibration wave)
-	var str_pts := PackedVector2Array()
-	str_pts.append(_rod_tip)
-	
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 	if _pluck_amp > 0.005:
 		for k in range(1, 30):
-<<<<<<< HEAD
 			var t := float(k) / 30.0
 			var sx := lerpf(SS.x, SE.x, t)
 			var osc := sin(t * PI) * sin(_pluck_time * 24.0) * _pluck_amp * 8.0
 			str_pts.append(Vector2(sx, BCY + osc))
 	else:
 		str_pts.append(SE)
-=======
-			var ratio := float(k) / 30.0
-			var decay := exp(-_pluck_time * 2.2)
-			var osc := sin(ratio * PI) * sin(ratio * PI * 4.0 - _pluck_time * spd) * _pluck_amp * 7.5 * decay
-			var base_y := lerpf(_rod_tip.y, _string_end.y, ratio)
-			str_pts.append(Vector2(lerpf(_rod_tip.x, _string_end.x, ratio), base_y + osc))
-	str_pts.append(_string_end)
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 
 	# String shadow
 	var str_shad := PackedVector2Array()
@@ -622,19 +567,18 @@ func _draw() -> void:
 	draw_polyline(str_pts, Color("#d1d5db"), 1.2, false) # metal core (light silver core)
 	draw_polyline(str_pts, Color("#ffffff", 0.80), 0.5, false) # shiny metallic sheen
 
-<<<<<<< HEAD
-	# â”€â”€â”€ 6. Concentric Harmonic Nodes (Jade-wood-brass rivets) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-	# Cache node positions
-	var NODE_AREA_L := BL + 215.0
-	var NODE_AREA_R := BR - 95.0
-	var NODE_AW     := NODE_AREA_R - NODE_AREA_L
+	# ─── 6. Concentric Harmonic Nodes (Jade-wood-brass rivets) ───────────────
+	# Harmonic node positions based on string fraction (traditional Dan Bau)
+	# Fractions from gourd (SS) to bridge (SE): 1/8, 1/6, 1/5, 1/4, 1/3, 1/2
+	var harmonic_fractions : Array[float] = [1.0/8.0, 1.0/6.0, 1.0/5.0, 1.0/4.0, 1.0/3.0, 1.0/2.0]
+	var string_length := SE.x - SS.x
 
 	if _node_xs.size() != NODE_COUNT:
 		_node_xs.resize(NODE_COUNT)
 		_node_ys.resize(NODE_COUNT)
 	for i in NODE_COUNT:
-		var t := float(i) / float(NODE_COUNT - 1)
-		_node_xs[i] = NODE_AREA_L + t * NODE_AW
+		var frac : float = harmonic_fractions[i] if i < harmonic_fractions.size() else 0.5
+		_node_xs[i] = SS.x + frac * string_length
 		_node_ys[i] = BCY
 
 	# Node visible radius
@@ -650,85 +594,23 @@ func _draw() -> void:
 		var press_w := _press_weights[i] if _press_weights.size() > i else 0.0
 		var tgt_w := _target_weights[i] if _target_weights.size() > i else 0.0
 
-		# â”€â”€ Active target golden glowing concentric ripple rings â”€â”€
+		# ── Active target golden glowing concentric ripple rings ──
 		if tgt_w > 0.01:
 			var osc := 0.5 + 0.5 * sin(_pulse_phase * 2.2)
 			var r1 := NODE_VR + 5.0 + osc * 4.0
 			var r2 := r1 + 8.0 + osc * 2.0
 			draw_arc(pos, r1, 0, TAU, 32, Color("#ffd25c", tgt_w * 0.22), 1.2)
 			draw_arc(pos, r2, 0, TAU, 32, Color("#ffd25c", tgt_w * 0.09), 0.8)
-
+			
 			# Golden core radial glow (soft golden glow)
 			draw_circle(pos, NODE_VR + 2.0, Color("#cca43b", tgt_w * 0.12))
-=======
-	# 8. Draw 7 harmonic touch nodes exactly on the slanted string path
-	var start_x := x_left + 45.0
-	var end_x   := x_right - 45.0
-	var step_x  := (end_x - start_x) / float(NODE_COUNT - 1)
-	
-	var font := get_theme_font("font")
-
-	for i in NODE_COUNT:
-		var nx := start_x + float(i) * step_x
-		var ratio := (nx - _rod_tip.x) / (_string_end.x - _rod_tip.x)
-		var ny := lerpf(_rod_tip.y, _string_end.y, ratio)
-		_draw_ivory_node(Vector2(nx, ny), i, _is_target[i] == 1, _hovered_node_idx == i, _glow_alpha[i], _pulse_phase, font)
-
-	# 9. Draw pitch bending gauge and calligraphic cents display (floating above rod tip)
-	if _is_bending:
-		_draw_bend_gauge(_rod_tip, 32.0, _bend_cents)
-		_draw_cents_readout(font, Vector2(_rod_tip.x, _rod_tip.y - 30.0), _bend_cents)
-
-	# 10. Draw plectrum (que gảy)
-	_draw_plectrum(W, H)
-
-func _draw_tapered_body(x_left: float, x_right: float, y_center: float, h_left: float, h_right: float) -> void:
-	# Corners for the top face (mặt đàn)
-	var tl := Vector2(x_left, y_center - h_left / 2.0)
-	var bl := Vector2(x_left, y_center + h_left / 2.0)
-	var br := Vector2(x_right, y_center + h_right / 2.0)
-	var tr := Vector2(x_right, y_center - h_right / 2.0)
-	
-	# Corners for the 3D hông đàn (side face)
-	var thickness_l := h_left * 0.22
-	var thickness_r := h_right * 0.22
-	
-	# Rich deep 3D drop shadow underneath the side face
-	var sh_tl := tl + Vector2(0, thickness_l)
-	var sh_tr := tr + Vector2(0, thickness_r)
-	var sh_br := br + Vector2(0, thickness_r) + Vector2(0, 12.0)
-	var sh_bl := bl + Vector2(0, thickness_l) + Vector2(0, 10.0)
-	draw_colored_polygon(PackedVector2Array([sh_tl, sh_tr, sh_br, sh_bl]), Color(0.02, 0.01, 0.005, 0.65))
-
-	# Draw side face (Hông đàn) with rounded shading
-	var side_col_top := Color("#200a03")
-	var side_col_bottom := Color("#0c0401")
-	var side_steps := 8
-	for s in range(side_steps):
-		var t1 := float(s) / side_steps
-		var t2 := float(s + 1) / side_steps
-		var col := side_col_top.lerp(side_col_bottom, t1)
-		var y_l1 := bl.y + thickness_l * t1
-		var y_l2 := bl.y + thickness_l * t2
-		var y_r1 := br.y + thickness_r * t1
-		var y_r2 := br.y + thickness_r * t2
-		var side_pts := PackedVector2Array([
-			Vector2(x_left, y_l1),
-			Vector2(x_right, y_r1),
-			Vector2(x_right, y_r2),
-			Vector2(x_left, y_l2)
-		])
-		draw_colored_polygon(side_pts, col)
-	
-	draw_polyline(PackedVector2Array([bl + Vector2(0, thickness_l), br + Vector2(0, thickness_r)]), Color("#080301", 0.95), 2.2, true)
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 
 		# Pluck/press flashes
 		if glow_a > 0.0:
 			draw_circle(pos, NODE_VR + 12.0 * glow_a, Color(1.0, 0.90, 0.45, glow_a * 0.30))
 		if press_w > 0.0:
 			draw_circle(pos, NODE_VR + 16.0 * press_w, Color(1.0, 0.92, 0.55, press_w * 0.20))
-
+		
 		# Completed node soft green glow
 		if is_completed:
 			draw_circle(pos, NODE_VR + 4.0, Color("#a7f3d0", 0.15))
@@ -736,22 +618,22 @@ func _draw_tapered_body(x_left: float, x_right: float, y_center: float, h_left: 
 		# Concentric layered node body:
 		# 1. Shadow
 		draw_circle(pos, NODE_VR + 1.5, Color(0, 0, 0, 0.15))
-
-		# 2. Outer brass/gold ring (VÃ²ng Ä‘á»“ng vÃ ng)
+		
+		# 2. Outer brass/gold ring (Vòng đồng vàng)
 		draw_circle(pos, NODE_VR, Color("#cca43b"))
-
-		# 3. Center - Ivory/Cream color (TÃ¢m mÃ u ngÃ ) or Soft Light Green color if completed
+		
+		# 3. Center - Ivory/Cream color (Tâm màu ngà) or Soft Light Green color if completed
 		var center_col := Color("#ede7da")
 		if is_completed:
 			center_col = Color("#a7f3d0") # Soft light green
 		elif is_tgt:
 			center_col = Color("#fcd34d") # Slightly warmer yellow/gold for current target
-
+		
 		draw_circle(pos, NODE_VR - 3.5, center_col)
-
+		
 		# 4. Center small bronze rivet pin (no thick black border)
 		draw_circle(pos, 2.5, Color("#8c6827"))
-
+		
 		# 5. Specular highlight dot
 		draw_circle(pos - Vector2(3.5, 3.5), 1.5, Color(1, 1, 1, 0.6))
 
@@ -761,11 +643,11 @@ func _draw_tapered_body(x_left: float, x_right: float, y_center: float, h_left: 
 			draw_circle(pos, NODE_VR - 8.0, Color(1.0, 0.82, 0.20, tgt_w * pulse_val))
 			draw_circle(pos, 6.0, Color(1.0, 1.0, 0.90, tgt_w * pulse_val))
 
-		# â”€â”€â”€ 7. Vertical Pin Lines & Label Tags â”€â”€â”€
+		# ─── 7. Vertical Pin Lines & Label Tags ───
 		# Vertical dashed guide pin line going up to node label
 		var line_start_y := pos.y - NODE_VR - 3.0
 		var line_end_y := pos.y - 56.0
-
+		
 		# Draw clean vertical dashed pin line
 		var dy := line_start_y
 		var step := 5.0
@@ -786,16 +668,16 @@ func _draw_tapered_body(x_left: float, x_right: float, y_center: float, h_left: 
 			var pad_y := 6.0
 			var tw := ts.x + pad_x * 2.0
 			var th := ts.y + pad_y * 2.0
-
+			
 			var rect_x := pos.x - tw * 0.5
 			var rect_y := line_end_y - th + 2.0
 			var label_rect := Rect2(rect_x, rect_y, tw, th)
-
+			
 			# Choose label colors
 			var tag_bg := Color("#1a1a1a") # Dark background tag matching reference
 			var tag_border := Color("#cca43b", 0.45) # Gold border outline
 			var tag_text := Color("#ffffff")
-
+			
 			if is_tgt:
 				tag_bg = Color("#cca43b") # Active note gets a golden background tag
 				tag_border = Color("#ffffff", 0.8)
@@ -804,11 +686,11 @@ func _draw_tapered_body(x_left: float, x_right: float, y_center: float, h_left: 
 				tag_bg = Color("#3a200e")
 				tag_border = Color("#cca43b", 0.75)
 				tag_text = Color("#ffdca0")
-
+			
 			# Draw label rounded tag box (8px radius)
 			_draw_rrect(label_rect, 6.0, tag_bg)
 			_draw_rrect_outline(label_rect, 6.0, tag_border, 1.2)
-
+			
 			# Draw note text
 			var text_pos := Vector2(rect_x + pad_x, rect_y + pad_y + ts.y * 0.75)
 			draw_string(font, text_pos, label_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tag_text)
@@ -876,9 +758,9 @@ func _draw_rrect_outline(rect: Rect2, radius: float, col: Color, w: float) -> vo
 
 
 
-#
+# 
 #  INPUT HANDLING & DESKTOP FALLBACK
-#
+# 
 func _unhandled_input(ev: InputEvent) -> void:
 	if ev is InputEventKey:
 		var ek := ev as InputEventKey
@@ -903,170 +785,8 @@ func _gui_input(ev: InputEvent) -> void:
 		var e := ev as InputEventScreenDrag
 		_on_touch_drag(e.position, e.index)
 
-<<<<<<< HEAD
 func _on_press(pos: Vector2) -> void:
 	if pos.x < _bend_zone_x:
-=======
-func _draw_cents_readout(font: Font, pos: Vector2, cents: float) -> void:
-	if font == null: return
-	var sign_str := "+" if cents > 0 else ""
-	var txt := "%s%d ¢" % [sign_str, int(cents)]
-	
-	var color := Color("#c99a3c")
-	if cents > 5.0:
-		color = Color("#2ecc71")
-	elif cents < -5.0:
-		color = Color("#e74c3c")
-		
-	var text_size := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_CENTER, -1, 13)
-	var badge_w := text_size.x + 14.0
-	var badge_h := text_size.y + 4.0
-	var badge_rect := Rect2(pos.x - badge_w/2.0, pos.y - badge_h/2.0, badge_w, badge_h)
-	
-	# Glassmorphism badge styling
-	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = Color(0.04, 0.02, 0.01, 0.85)
-	badge_style.border_color = Color(color.r, color.g, color.b, 0.45)
-	badge_style.border_width_left = 1; badge_style.border_width_right = 1
-	badge_style.border_width_top = 1; badge_style.border_width_bottom = 1
-	badge_style.corner_radius_top_left = 8; badge_style.corner_radius_top_right = 8
-	badge_style.corner_radius_bottom_left = 8; badge_style.corner_radius_bottom_right = 8
-	
-	draw_style_box(badge_style, badge_rect)
-	
-	var text_pos := pos + Vector2(0, text_size.y/2.0 - 2.0)
-	draw_string(font, text_pos - Vector2(text_size.x/2.0, 0), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, color)
-
-func _draw_ivory_node(pos: Vector2, idx: int, is_target: bool, is_hovered: bool, glow_alpha: float, pulse_phase: float, font: Font) -> void:
-	var brass_col  := Color("#c99a3c")
-	var ivory_col  := Color("#faf5e6") # Polished Ivory
-	var shadow_col := Color(0, 0, 0, 0.3)
-	
-	draw_circle(pos + Vector2(0, 2), 11.0, shadow_col)
-	
-	if is_target:
-		# Premium glow pulses
-		var pulse := (sin(pulse_phase * 2.0) + 1.0) * 0.5
-		var glow_r := 15.0 + pulse * 4.5
-		var glow_col := Color(0.79, 0.60, 0.24, 0.15 + pulse * 0.15)
-		draw_circle(pos, glow_r, glow_col)
-		draw_arc(pos, glow_r, 0.0, TAU, 28, Color(0.79, 0.60, 0.24, 0.35 + pulse * 0.25), 1.2)
-		
-	if glow_alpha > 0.01:
-		var pluck_r := 10.0 + glow_alpha * 20.0
-		draw_circle(pos, pluck_r, Color(1, 0.95, 0.75, glow_alpha * 0.45))
-		draw_arc(pos, pluck_r, 0.0, TAU, 24, Color(1, 0.90, 0.5, glow_alpha * 0.55), 1.5)
-		
-	var base_r := 9.5
-	if is_hovered:
-		base_r = 11.0
-	elif is_target:
-		base_r = 10.0
-		
-	# Inlaid ivory node rendering
-	draw_circle(pos, base_r, brass_col)
-	draw_circle(pos, base_r - 1.5, ivory_col)
-	draw_circle(pos, base_r - 4.5, brass_col)
-	draw_circle(pos, 2.5, Color("#261408")) # dark core
-	draw_circle(pos, 1.0, Color.WHITE) # high point reflection
-	
-	if font != null:
-		var label_y := pos.y - 18.0
-		var text := _note_names[idx] if idx < _note_names.size() else NOTES_VN[idx]
-		var text_color := Color("#faf6eb") if is_target else (Color(1.0, 1.0, 1.0) if is_hovered else Color("#cbbdaf"))
-		var font_size := 13 if (is_target or is_hovered) else 11
-		
-		var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-		var text_pos := Vector2(pos.x - text_size.x / 2.0, label_y)
-		
-		draw_string(font, text_pos + Vector2(1, 1), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0, 0, 0, 0.75))
-		draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, text_color)
-
-func _draw_rivets(W: float, H: float) -> void:
-	var plate_size := 22.0
-	var brass_col := Color("#c99a3c")
-	draw_colored_polygon(PackedVector2Array([Vector2(0,0), Vector2(plate_size,0), Vector2(plate_size*0.6,plate_size*0.6), Vector2(0,plate_size)]), brass_col)
-	draw_circle(Vector2(plate_size*0.35, plate_size*0.35), 2.0, Color(0.2, 0.1, 0.0, 0.8))
-	draw_colored_polygon(PackedVector2Array([Vector2(0,H), Vector2(0,H-plate_size), Vector2(plate_size*0.6,H-plate_size*0.6), Vector2(plate_size,H)]), brass_col)
-	draw_circle(Vector2(plate_size*0.35, H-plate_size*0.35), 2.0, Color(0.2, 0.1, 0.0, 0.8))
-	draw_colored_polygon(PackedVector2Array([Vector2(W,0), Vector2(W-plate_size,0), Vector2(W-plate_size*0.6,plate_size*0.6), Vector2(W,plate_size)]), brass_col)
-	draw_circle(Vector2(W-plate_size*0.35, plate_size*0.35), 2.0, Color(0.2, 0.1, 0.0, 0.8))
-	draw_colored_polygon(PackedVector2Array([Vector2(W,H), Vector2(W,H-plate_size), Vector2(W-plate_size*0.6,H-plate_size*0.6), Vector2(W-plate_size,H)]), brass_col)
-	draw_circle(Vector2(W-plate_size*0.35, H-plate_size*0.35), 2.0, Color(0.2, 0.1, 0.0, 0.8))
-
-func _draw_plectrum(W: float, H: float) -> void:
-	var plectrum_color := Color("#dfb15b") # Warm Bamboo Yellow
-	var plectrum_shadow := Color(0, 0, 0, 0.35)
-	
-	var target_pos := Vector2.ZERO
-	var angle := 0.0
-	
-	var x_left := W * 0.18
-	var x_right := W * 0.94
-	var start_x := x_left + 45.0
-	var end_x   := x_right - 45.0
-	var step_x  := (end_x - start_x) / float(NODE_COUNT - 1)
-	
-	if _hovered_node_idx != -1:
-		var nx := start_x + float(_hovered_node_idx) * step_x
-		var ratio := (nx - _rod_tip.x) / (_string_end.x - _rod_tip.x)
-		var ny := lerpf(_rod_tip.y, _string_end.y, ratio)
-		target_pos = Vector2(nx, ny)
-		angle = -PI * 0.25 # Slanted 45 degrees
-	elif _last_plucked_idx != -1 and _pluck_amp > 0.1:
-		var nx := start_x + float(_last_plucked_idx) * step_x
-		var ratio := (nx - _rod_tip.x) / (_string_end.x - _rod_tip.x)
-		var ny := lerpf(_rod_tip.y, _string_end.y, ratio)
-		target_pos = Vector2(nx, ny)
-		angle = -PI * 0.25
-	else:
-		target_pos = _string_end + Vector2(-35.0, 16.0)
-		angle = -PI * 0.08 # Tilted slightly down
-		
-	# Draw plectrum shadow
-	var shadow_offset := Vector2(2.0, 4.0)
-	var tip_s := target_pos + shadow_offset
-	var base_s := tip_s + Vector2(cos(angle), sin(angle)) * 40.0
-	draw_line(tip_s, base_s, plectrum_shadow, 2.5, true)
-	
-	# Draw plectrum stick (3D tapered appearance)
-	var tip := target_pos
-	var base := tip + Vector2(cos(angle), sin(angle)) * 40.0
-	draw_line(tip, base, plectrum_color, 2.0, true)
-	
-	var handle_start := tip + Vector2(cos(angle), sin(angle)) * 14.0
-	draw_line(handle_start, base, Color("#8a5c1e"), 1.3, true)
-	
-	draw_circle(base, 1.8, Color("#5c3d13"))
-	draw_circle(tip, 0.8, plectrum_color)
-
-# ─── Input Logic ──────────────────────────────────────────────────────────────
-func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var ev := event as InputEventMouseButton
-		if ev.button_index == MOUSE_BUTTON_LEFT:
-			if ev.pressed:
-				_handle_touch_start(ev.position)
-			else:
-				_handle_touch_end()
-	elif event is InputEventMouseMotion:
-		var ev := event as InputEventMouseMotion
-		_handle_touch_move(ev.position)
-	elif event is InputEventScreenTouch:
-		var ev := event as InputEventScreenTouch
-		if ev.pressed:
-			_handle_touch_start(ev.position)
-		else:
-			_handle_touch_end()
-	elif event is InputEventScreenDrag:
-		var ev := event as InputEventScreenDrag
-		_handle_touch_move(ev.position)
-
-func _handle_touch_start(pos: Vector2) -> void:
-	var W := size.x
-	var x_left := W * 0.18
-	if pos.x < x_left + 15.0:
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 		_is_bending = true
 		_bend_start_y = pos.y
 		_bend_active = false
@@ -1082,7 +802,7 @@ func _on_move(pos: Vector2) -> void:
 		mouse_default_cursor_shape = CURSOR_POINTING_HAND
 	else:
 		mouse_default_cursor_shape = CURSOR_ARROW
-
+		
 	if _is_bending:
 		if not _bend_active:
 			if abs(pos.y - _bend_start_y) > 5.0:
@@ -1103,7 +823,6 @@ func _on_release() -> void:
 	_string_touch_index = -1
 	queue_redraw()
 
-<<<<<<< HEAD
 func _on_touch_press(pos: Vector2, index: int) -> void:
 	if pos.x < _bend_zone_x:
 		if _bamboo_touch_index == -1:
@@ -1147,30 +866,6 @@ func _node_at(pos: Vector2) -> int:
 		var ny := _node_ys[i] if _node_ys.size() > i else _str_y
 		# Large invisible hit areas: 72dp touch target (36px radius)
 		if pos.distance_to(Vector2(_node_xs[i], ny)) <= 36.0: return i
-=======
-func _get_node_at(pos: Vector2) -> int:
-	var W := size.x
-	var H := size.y
-	var x_left := W * 0.18
-	var x_right := W * 0.94
-	var body_center_y := H * 0.55
-	
-	var rod_tip := Vector2(x_left - 32.0 + _bend_offset, body_center_y - 110.0)
-	var string_end := Vector2(x_right + 12.0, body_center_y - 5.0)
-	
-	var start_x := x_left + 45.0
-	var end_x   := x_right - 45.0
-	var step_x  := (end_x - start_x) / float(NODE_COUNT - 1)
-	
-	var click_radius := 26.0
-	
-	for i in NODE_COUNT:
-		var nx := start_x + float(i) * step_x
-		var ratio := (nx - rod_tip.x) / (string_end.x - rod_tip.x)
-		var ny := lerpf(rod_tip.y, string_end.y, ratio)
-		if pos.distance_to(Vector2(nx, ny)) <= click_radius:
-			return i
->>>>>>> 990f93b9ed770a1fd2a1eeacab798fd657495889
 	return -1
 
 

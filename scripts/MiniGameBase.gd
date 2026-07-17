@@ -877,19 +877,31 @@ func _play_synth_note(freq: float) -> void:
 					sample = (sample * 0.25) + noise
 
 				"dan_bau", _:
-					amplitude_envelope = exp(-t * 3.2)
+					# Đàn Bầu: slow decay, rich harmonics, delayed vibrato, pitch slide
+					# Decay: T60 ≈ 2.0 s (monochord metallic long sustain)
+					amplitude_envelope = exp(-t * 1.4)
 
+					# Initial pitch slide up (pluck attack character: starts ~2% flat)
 					var slide := 1.0
-					if t < 0.15:
-						slide = 0.94 + 0.06 * (t / 0.15)
+					if t < 0.08:
+						slide = 0.980 + 0.020 * (t / 0.08)
 
-					var vibrato = 1.0 + 0.016 * sin(t * 5.0 * TAU)
+					# Vibrato onset after 0.10 s (uốn vòi builds slowly)
+					var vib_depth: float = 0.015 * clampf((t - 0.10) / 0.20, 0.0, 1.0)
+					var vibrato: float = 1.0 + vib_depth * sin(t * 5.5 * TAU)
 					current_freq = freq * slide * vibrato
 
+					# Harmonic series tuned to Dan Bau overtone profile:
+					# 1st partial (fundamental): strong
+					# 2nd partial (octave):      moderate — gives brightness
+					# 3rd partial:               soft metallic shimmer
+					# 4th partial:               very subtle body resonance
 					sample = sin(playback_phase) \
-						+ 0.45 * sin(playback_phase * 2.0) \
-						+ 0.3 * sin(playback_phase * 3.0)
-					sample *= 0.25
+						+ 0.55 * sin(playback_phase * 2.0) \
+						+ 0.18 * sin(playback_phase * 3.0) \
+						+ 0.07 * sin(playback_phase * 4.0) \
+						+ 0.03 * sin(playback_phase * 5.0)
+					sample *= 0.22
 
 			frames.append(Vector2(sample * amplitude_envelope, sample * amplitude_envelope))
 
