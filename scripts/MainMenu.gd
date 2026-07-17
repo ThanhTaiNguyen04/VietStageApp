@@ -226,7 +226,7 @@ func _draw_background_waves() -> void:
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARKER)
 	
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if inst == "dan_tranh" or inst == "dan_bau" or inst == "trong_chau":
+	if inst == "dan_tranh" or inst == "dan_bau" or inst == "trong_chau" or inst == "sao_truc":
 		var cache_key := "bg_" + inst
 		if not _sidebar_icons_cache.has(cache_key):
 			var tex_path := "res://assets/textures/" + inst + "_background.png"
