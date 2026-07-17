@@ -4,17 +4,18 @@ extends Control
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
-const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
-const C_CARD       := Color(1.00, 1.00, 1.00, 0.97)
+const C_JADE       := Color(0.09, 0.27, 0.18, 1.0)
+const C_BG_BAR     := Color(0.97, 0.95, 0.91, 0.55)
+const C_CARD       := Color(1.0, 0.99, 0.97, 0.8)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
 const C_TEXT_MUTED := Color(0.43, 0.38, 0.33, 1.0)
 
 # [node_id, label_text, bg, border, accent]
 const STAT_CARDS := [
-	["G1", "Chuỗi học liên tiếp",  Color(0.99, 0.94, 0.90, 1.0), Color(0.95, 0.75, 0.60, 0.5), Color(0.90, 0.45, 0.10, 1.0)],
-	["G2", "Tổng điểm tích lũy",    Color(0.99, 0.97, 0.90, 1.0), Color(0.92, 0.85, 0.60, 0.5), Color(0.77, 0.58, 0.15, 1.0)],
-	["G3", "Tiến trình khóa học",   Color(0.93, 0.97, 0.94, 1.0), Color(0.75, 0.88, 0.80, 0.5), Color(0.12, 0.37, 0.23, 1.0)],
-	["G4", "Ngày gia nhập",         Color(0.94, 0.95, 0.99, 1.0), Color(0.78, 0.82, 0.95, 0.5), Color(0.20, 0.40, 0.80, 1.0)],
+	["G1", "Chuỗi học liên tiếp",  Color(1.0, 1.0, 1.0, 0.65), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.4), C_JADE],
+	["G2", "Tổng điểm tích lũy",    Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), C_GOLD],
+	["G3", "Tiến trình khóa học",   Color(1.0, 1.0, 1.0, 0.65), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.4), C_JADE],
+	["G4", "Ngày gia nhập",         Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), C_GOLD],
 ]
 
 # ─── Node Refs ───────────────────────────────────────────────────────────────
@@ -29,10 +30,13 @@ const STAT_CARDS := [
 @onready var av_circle  : PanelContainer = $Root/Content/ContentV/Card/CardM/CardV/ProfileSection/AvatarCircle
 @onready var divider    : HSeparator     = $Root/Content/ContentV/Card/CardM/CardV/Divider
 @onready var content_m  : MarginContainer = $Root/Content
+@onready var bg         : TextureRect     = $BG
+@onready var bg_overlay : ColorRect       = $BGOverlay
 
 func _ready() -> void:
 	SecureDataManager.load_data()
 	_populate_data()
+	_enhance_ux()
 	_build_theme()
 	_animate_in()
 
@@ -69,7 +73,7 @@ func _populate_data() -> void:
 		SecureDataManager.save_data()
 
 	# Stat icons, values, labels
-	var stat_icons  := ["🔥", "✨", "🏆", "📅"]
+	var stat_icons  := ["flame", "star", "trending-up", "calendar-days"]
 	var stat_values := [
 		"%d Ngày" % streak,
 		"%d XP"   % xp,
@@ -80,39 +84,169 @@ func _populate_data() -> void:
 	for i in STAT_CARDS.size():
 		var id  : String = STAT_CARDS[i][0] as String
 		var lbl : String = STAT_CARDS[i][1] as String
-		_get_stat_node(id, "Icon").text = stat_icons[i]
+		var icon_lbl = _get_stat_node(id, "Icon")
+		icon_lbl.hide()
+		var parent = icon_lbl.get_parent()
+		if not parent.has_node("IconTex"):
+			var tex_rect = TextureRect.new()
+			tex_rect.name = "IconTex"
+			tex_rect.texture = load("res://assets/textures/lucide/" + stat_icons[i] + ".svg") as Texture2D
+			tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			tex_rect.custom_minimum_size = Vector2(24, 24)
+			tex_rect.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			tex_rect.modulate = STAT_CARDS[i][4] as Color
+			parent.add_child(tex_rect)
+			parent.move_child(tex_rect, 0)
 		_get_stat_node(id, "Val").text  = stat_values[i]
 		_get_stat_node(id, "Lbl").text  = lbl
 
+# ─── UX Enhancements ────────────────────────────────────────────────────────
+func _enhance_ux() -> void:
+	# 1. Move Logout Button to TopBar right
+	var toph = $Root/TopBar/TopM/TopH
+	if logout_btn.get_parent():
+		logout_btn.get_parent().remove_child(logout_btn)
+	toph.add_child(logout_btn)
+	logout_btn.text = "🚪 Thoát"
+	logout_btn.custom_minimum_size = Vector2(110, 42)
+	logout_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	
+	# 2. Add Edit button next to Name
+	var name_parent = name_lbl.get_parent()
+	var name_box = HBoxContainer.new()
+	name_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	name_box.add_theme_constant_override("separation", 16)
+	name_parent.add_child(name_box)
+	name_parent.move_child(name_box, name_lbl.get_index())
+	name_parent.remove_child(name_lbl)
+	name_box.add_child(name_lbl)
+	
+	var edit_btn = Button.new()
+	edit_btn.text = " Sửa"
+	var edit_icon = load("res://assets/textures/lucide/settings.svg") as Texture2D
+	if edit_icon:
+		edit_btn.icon = edit_icon
+		edit_btn.expand_icon = true
+	edit_btn.custom_minimum_size = Vector2(90, 32)
+	var eb_style = StyleBoxFlat.new()
+	eb_style.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.1)
+	eb_style.corner_radius_top_left = 6; eb_style.corner_radius_top_right = 6
+	eb_style.corner_radius_bottom_left = 6; eb_style.corner_radius_bottom_right = 6
+	eb_style.border_color = C_JADE; eb_style.border_width_bottom = 2
+	edit_btn.add_theme_stylebox_override("normal", eb_style)
+	edit_btn.add_theme_stylebox_override("hover", eb_style)
+	edit_btn.add_theme_color_override("font_color", C_JADE)
+	name_box.add_child(edit_btn)
+	_make_btn_bouncy(edit_btn)
+	
+	# 3. Add Progress Bar to G3
+	var g3v = _get_stat_node("G3", "Val").get_parent()
+	var prog = ProgressBar.new()
+	prog.custom_minimum_size = Vector2(0, 8)
+	prog.show_percentage = false
+	var inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+	prog.value = SecureDataManager.get_course_progress(inst)
+	g3v.add_child(prog)
+	
+	var p_bg = StyleBoxFlat.new(); p_bg.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.2); p_bg.corner_radius_top_left = 4; p_bg.corner_radius_bottom_right = 4; p_bg.corner_radius_top_right = 4; p_bg.corner_radius_bottom_left = 4
+	var p_fg = StyleBoxFlat.new(); p_fg.bg_color = C_JADE; p_fg.corner_radius_top_left = 4; p_fg.corner_radius_bottom_right = 4; p_fg.corner_radius_top_right = 4; p_fg.corner_radius_bottom_left = 4
+	prog.add_theme_stylebox_override("background", p_bg)
+	prog.add_theme_stylebox_override("fill", p_fg)
+	
+	# 4. Guest Banner
+	var user_name = SecureDataManager.data.get("user_name", "Google User")
+	if user_name == "Khách" or user_name == "Guest":
+		var banner = PanelContainer.new()
+		var b_style = StyleBoxFlat.new()
+		b_style.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+		b_style.border_color = C_GOLD; b_style.border_width_left = 2; b_style.border_width_top = 2; b_style.border_width_right = 2; b_style.border_width_bottom = 2
+		b_style.corner_radius_top_left = 8; b_style.corner_radius_top_right = 8; b_style.corner_radius_bottom_left = 8; b_style.corner_radius_bottom_right = 8
+		banner.add_theme_stylebox_override("panel", b_style)
+		
+		var b_lbl = Label.new()
+		b_lbl.text = "⚠️ Hãy đăng ký tài khoản để lưu lại tiến trình học tập"
+		b_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b_lbl.add_theme_color_override("font_color", C_TEXT)
+		b_lbl.add_theme_font_size_override("font_size", 13)
+		var m_lbl = MarginContainer.new()
+		m_lbl.add_theme_constant_override("margin_top", 10); m_lbl.add_theme_constant_override("margin_bottom", 10)
+		m_lbl.add_child(b_lbl)
+		banner.add_child(m_lbl)
+		name_parent.add_child(banner)
+		name_parent.move_child(banner, 0)
+
 # ─── Theme ───────────────────────────────────────────────────────────────────
 func _build_theme() -> void:
+	# Fonts
+	var lora_bold = load("res://assets/fonts/Lora-Bold.ttf") as Font
+	var bevietnam_bold = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if lora_bold:
+		page_title.add_theme_font_override("font", lora_bold)
+		name_lbl.add_theme_font_override("font", lora_bold)
+	if bevietnam_bold:
+		logout_btn.add_theme_font_override("font", bevietnam_bold)
+		for sc in STAT_CARDS:
+			_get_stat_node(sc[0], "Val").add_theme_font_override("font", bevietnam_bold)
+
+	if bg:
+		bg.texture = load("res://assets/textures/bon_nhac_cu_background.png") as Texture2D
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	if bg_overlay:
+		bg_overlay.color = Color(0, 0, 0, 0) # Không làm tối ảnh nền
+
 	# TopBar
-	var top_s : StyleBoxFlat = _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	var top_s : StyleBoxFlat = _flat(C_BG_BAR, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.25), 0)
 	top_s.border_width_bottom = 2
 	top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
-	page_title.add_theme_color_override("font_color", C_RED_SON)
+	page_title.add_theme_color_override("font_color", C_JADE)
+	
+	# TopBar Blur
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	$Root/TopBar.add_child(blur_rect)
+	$Root/TopBar.move_child(blur_rect, 0)
 
 	# Back button
-	back_btn.add_theme_color_override("font_color", C_RED_SON)
-	back_btn.add_theme_color_override("font_hover_color", C_RED_SON.lightened(0.2))
+	back_btn.add_theme_color_override("font_color", C_JADE)
+	back_btn.add_theme_color_override("font_hover_color", C_GOLD)
 	back_btn.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("hover",   _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.1), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("pressed", _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.18), Color(0,0,0,0), 8))
+	back_btn.add_theme_stylebox_override("hover",   _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.1), Color(0,0,0,0), 8))
+	back_btn.add_theme_stylebox_override("pressed", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.18), Color(0,0,0,0), 8))
 	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
-	# Main card
-	var cs : StyleBoxFlat = _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 22)
-	cs.border_width_top = 4
-	cs.shadow_size = 24; cs.shadow_color = Color(0.05, 0.02, 0.01, 0.12)
-	cs.shadow_offset = Vector2(0, 8)
+	# Main card (Glassmorphism Light)
+	var cs : StyleBoxFlat = _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 24)
+	cs.border_width_top = 2; cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_bottom = 2
+	cs.shadow_size = 32; cs.shadow_color = Color(0.0, 0.0, 0.0, 0.15)
+	cs.shadow_offset = Vector2(0, 12)
 	card_node.add_theme_stylebox_override("panel", cs)
+	
+	var card_blur = blur_rect.duplicate()
+	card_node.add_child(card_blur)
+	card_node.move_child(card_blur, 0)
 
-	# Avatar circle
-	var av_s : StyleBoxFlat = _flat(Color(0.97, 0.92, 0.84, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.75), 48)
+	# Avatar circle (Glow Effect)
+	var av_s : StyleBoxFlat = _flat(Color(0.97, 0.95, 0.91, 0.95), C_GOLD, 48)
 	av_s.border_width_left = 3; av_s.border_width_right = 3
 	av_s.border_width_top  = 3; av_s.border_width_bottom = 3
-	av_s.shadow_size = 8; av_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.2)
+	av_s.shadow_size = 16; av_s.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
 	av_circle.add_theme_stylebox_override("panel", av_s)
 
 	# Name & email
@@ -121,39 +255,44 @@ func _build_theme() -> void:
 
 	# Divider
 	var div_s : StyleBoxFlat = StyleBoxFlat.new()
-	div_s.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	div_s.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	div_s.content_margin_top = 1; div_s.content_margin_bottom = 1
 	divider.add_theme_stylebox_override("separator", div_s)
 
 	# Stat cards
 	for sc in STAT_CARDS:
 		var id  : String = sc[0] as String
-		var bg  : Color  = sc[2] as Color
+		var bg_c  : Color  = sc[2] as Color
 		var brd : Color  = sc[3] as Color
 		var acc : Color  = sc[4] as Color
 		var nc  : PanelContainer = grid.get_node(id) as PanelContainer
-		var card_s : StyleBoxFlat = _flat(bg, brd, 16)
-		card_s.border_width_top = 3
-		card_s.shadow_size = 4; card_s.shadow_color = Color(0, 0, 0, 0.05)
+		var card_s : StyleBoxFlat = _flat(bg_c, brd, 16)
+		card_s.border_width_top = 2; card_s.border_width_left = 2
+		card_s.border_width_right = 2; card_s.border_width_bottom = 2
+		card_s.shadow_size = 8; card_s.shadow_color = Color(0, 0, 0, 0.08)
 		nc.add_theme_stylebox_override("panel", card_s)
 		_get_stat_node(id, "Icon").add_theme_color_override("font_color", acc)
 		_get_stat_node(id, "Val").add_theme_color_override("font_color", C_TEXT)
 		_get_stat_node(id, "Lbl").add_theme_color_override("font_color", C_TEXT_MUTED)
 
 	# Logout button
-	var lg_n : StyleBoxFlat = _flat(C_CARD, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4), 14)
-	var lg_h : StyleBoxFlat = _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.75), 14)
-	lg_h.shadow_size = 4; lg_h.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.1)
+	var lg_n : StyleBoxFlat = _flat(Color(1.0, 1.0, 1.0, 0.5), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.5), 14)
+	lg_n.border_width_left = 2; lg_n.border_width_right = 2
+	lg_n.border_width_top = 2; lg_n.border_width_bottom = 2
+	var lg_h : StyleBoxFlat = lg_n.duplicate() as StyleBoxFlat
+	lg_h.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.15)
+	lg_h.border_color = C_JADE
+	lg_h.shadow_size = 8; lg_h.shadow_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.15)
 	logout_btn.add_theme_stylebox_override("normal",  lg_n)
 	logout_btn.add_theme_stylebox_override("hover",   lg_h)
-	logout_btn.add_theme_stylebox_override("pressed", _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5), 14))
+	logout_btn.add_theme_stylebox_override("pressed", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.25), C_JADE, 14))
 	logout_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	logout_btn.add_theme_color_override("font_color",         C_TEXT)
-	logout_btn.add_theme_color_override("font_hover_color",   C_RED_SON)
-	logout_btn.add_theme_color_override("font_pressed_color", C_RED_SON)
+	logout_btn.add_theme_color_override("font_hover_color",   C_JADE)
+	logout_btn.add_theme_color_override("font_pressed_color", C_JADE)
 
 	# Version label
-	ver_label.add_theme_color_override("font_color", Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.45))
+	ver_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.6))
 
 # ─── Responsive ───────────────────────────────────────────────────────────────
 func _on_viewport_size_changed() -> void:
@@ -169,13 +308,15 @@ func _on_viewport_size_changed() -> void:
 	content_m.add_theme_constant_override("margin_bottom", 24 if mobile else 36)
 
 	var card_m : MarginContainer = $Root/Content/ContentV/Card/CardM as MarginContainer
-	var inner : int = 28 if mobile else 56
+	var inner : int = 36 if mobile else 72
 	card_m.add_theme_constant_override("margin_left",   inner)
 	card_m.add_theme_constant_override("margin_right",  inner)
+	card_m.add_theme_constant_override("margin_top",    inner - 16)
+	card_m.add_theme_constant_override("margin_bottom", inner - 16)
 
-	page_title.add_theme_font_size_override("font_size", 20 if mobile else 26)
-	name_lbl.add_theme_font_size_override("font_size",   18 if mobile else 24)
-	email_lbl.add_theme_font_size_override("font_size",  12 if mobile else 14)
+	page_title.add_theme_font_size_override("font_size", 22 if mobile else 28)
+	name_lbl.add_theme_font_size_override("font_size",   20 if mobile else 26)
+	email_lbl.add_theme_font_size_override("font_size",  13 if mobile else 15)
 
 
 # ─── Animation ───────────────────────────────────────────────────────────────
