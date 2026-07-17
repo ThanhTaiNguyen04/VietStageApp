@@ -8,6 +8,7 @@ const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLe
 # Progression session state (migrated from CourseMap)
 static var video_completed := false
 static var active_lesson_id := "Node2"
+static var active_course_title := ""
 
 # Default player state synchronized across all scenes
 static var data := {
