@@ -102,7 +102,7 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(140, 50)
 	header.add_child(spacer)
 	
-		# Scroll area
+	# Scroll area
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
