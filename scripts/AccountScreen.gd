@@ -128,11 +128,25 @@ func _enhance_ux() -> void:
 	name_parent.add_child(name_box)
 	name_parent.move_child(name_box, name_lbl.get_index())
 	name_parent.remove_child(name_lbl)
+	
+	var name_edit = LineEdit.new()
+	name_edit.visible = false
+	name_edit.custom_minimum_size = Vector2(220, 42)
+	name_edit.text = name_lbl.text
+	var ne_style = StyleBoxFlat.new()
+	ne_style.bg_color = Color(1, 1, 1, 0.8)
+	ne_style.corner_radius_top_left = 6; ne_style.corner_radius_top_right = 6
+	ne_style.corner_radius_bottom_left = 6; ne_style.corner_radius_bottom_right = 6
+	ne_style.content_margin_left = 12; ne_style.content_margin_right = 12
+	name_edit.add_theme_stylebox_override("normal", ne_style)
+	name_edit.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1))
 	name_box.add_child(name_lbl)
+	name_box.add_child(name_edit)
 	
 	var edit_btn = Button.new()
 	edit_btn.text = " Sửa"
 	var edit_icon = load("res://assets/textures/lucide/settings.svg") as Texture2D
+	var save_icon = load("res://assets/textures/lucide/check-circle.svg") as Texture2D
 	if edit_icon:
 		edit_btn.icon = edit_icon
 		edit_btn.expand_icon = true
@@ -140,6 +154,7 @@ func _enhance_ux() -> void:
 	var bold_f = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_f:
 		edit_btn.add_theme_font_override("font", bold_f)
+		name_edit.add_theme_font_override("font", bold_f)
 	var eb_style = StyleBoxFlat.new()
 	eb_style.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.1)
 	eb_style.corner_radius_top_left = 6; eb_style.corner_radius_top_right = 6
@@ -150,6 +165,31 @@ func _enhance_ux() -> void:
 	edit_btn.add_theme_color_override("font_color", C_JADE)
 	name_box.add_child(edit_btn)
 	_make_btn_bouncy(edit_btn)
+
+	var is_editing = [false]
+	var save_func = func() -> void:
+		if is_editing[0]:
+			var new_name = name_edit.text.strip_edges()
+			if new_name != "":
+				name_lbl.text = new_name
+				SecureDataManager.data["user_name"] = new_name
+				SecureDataManager.save_data()
+			is_editing[0] = false
+			name_edit.visible = false
+			name_lbl.visible = true
+			edit_btn.text = " Sửa"
+			if edit_icon: edit_btn.icon = edit_icon
+		else:
+			is_editing[0] = true
+			name_edit.text = name_lbl.text
+			name_lbl.visible = false
+			name_edit.visible = true
+			name_edit.grab_focus()
+			edit_btn.text = " Lưu"
+			if save_icon: edit_btn.icon = save_icon
+			
+	edit_btn.pressed.connect(save_func)
+	name_edit.text_submitted.connect(func(_t): save_func.call())
 	
 	# 3. Add Progress Bar to G3
 	var g3v = _get_stat_node("G3", "Val").get_parent()
