@@ -164,7 +164,7 @@ size_flags_vertical = 3
 vertical_scroll_mode = 0
 
 [node name="RoadmapContent" type="Control" parent="Root/RightContent/RoadmapScroll"]
-custom_minimum_size = Vector2(2450, 760)
+custom_minimum_size = Vector2(6000, 760)
 layout_mode = 2
 
 [node name="RoadmapGuide" type="Label" parent="Root/RightContent/RoadmapScroll/RoadmapContent"]
