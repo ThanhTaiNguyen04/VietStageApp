@@ -716,8 +716,8 @@ func _build_roadmap_cards() -> void:
 		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
 		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
 		
-		chords_skills_title.text = "LEVEL 4: KỸ NĂNG HÒA TẤU"
-		chords_skills_bullets.text = "✓ Thổi bè hòa âm phụ họa\n✓ Hòa tấu cùng các nhạc cụ dân tộc\n✓ Kỹ thuật thổi đệm bè nâng cao"
+		chords_skills_title.text = "LEVEL 4: FUTARI NO KIMOCHI"
+		chords_skills_bullets.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
 		
 		pop_chords_title.text = "LEVEL 5: MASTER - KHÚC NHẠC VUI & GẶP MẸ TRONG MƠ"
 		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Futari No Kimochi (Nhạc ngoại)"
