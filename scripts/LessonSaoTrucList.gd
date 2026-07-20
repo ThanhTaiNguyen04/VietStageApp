@@ -97,34 +97,40 @@ const ALL_LESSONS = [
 		"id": "sao_truc_level3_6", "level": 3, "title": "BÀI 6", "note": "Khúc Nhạc Vui (Hoàn chỉnh)"
 	},
 	{
-		"id": "sao_truc_level4_1", "level": 4, "title": "BÀI 1", "note": "Đoạn 1 (Phần 1)"
+		"id": "sao_truc_level4_1", "level": 4, "title": "BÀI 1", "note": "Inh Lả Ơi (Câu 1)"
 	},
 	{
-		"id": "sao_truc_level4_2", "level": 4, "title": "BÀI 2", "note": "Đoạn 1 (Phần 2)"
+		"id": "sao_truc_level4_2", "level": 4, "title": "BÀI 2", "note": "Inh Lả Ơi (Câu 2)"
 	},
 	{
-		"id": "sao_truc_level4_3", "level": 4, "title": "BÀI 3", "note": "Đoạn 1 (Hoàn chỉnh)"
+		"id": "sao_truc_level4_3", "level": 4, "title": "BÀI 3", "note": "Inh Lả Ơi (Câu 3)"
 	},
 	{
-		"id": "sao_truc_level4_4", "level": 4, "title": "BÀI 4", "note": "Đoạn 2 (Phần 1)"
+		"id": "sao_truc_level4_4", "level": 4, "title": "BÀI 4", "note": "Inh Lả Ơi (Câu 4)"
 	},
 	{
-		"id": "sao_truc_level4_5", "level": 4, "title": "BÀI 5", "note": "Đoạn 2 (Phần 2)"
+		"id": "sao_truc_level4_5", "level": 4, "title": "BÀI 5", "note": "Inh Lả Ơi (Hoàn chỉnh)"
 	},
 	{
-		"id": "sao_truc_level4_6", "level": 4, "title": "BÀI 6", "note": "Đoạn 2 (Hoàn chỉnh)"
+		"id": "sao_truc_level5_1", "level": 5, "title": "BÀI 1", "note": "Futari no Kimochi (Đoạn 1 - P1)"
 	},
 	{
-		"id": "sao_truc_level4_7", "level": 4, "title": "BÀI 7", "note": "Hoàn chỉnh toàn bài"
+		"id": "sao_truc_level5_2", "level": 5, "title": "BÀI 2", "note": "Futari no Kimochi (Đoạn 1 - P2)"
 	},
 	{
-		"id": "sao_truc_level5_1", "level": 5, "title": "BÀI 1", "note": "Bèo Dạt Mây Trôi (Dân ca)"
+		"id": "sao_truc_level5_3", "level": 5, "title": "BÀI 3", "note": "Futari no Kimochi (Đoạn 1 - HC)"
 	},
 	{
-		"id": "sao_truc_level5_2", "level": 5, "title": "BÀI 2", "note": "Gặp Mẹ Trong Mơ (Nhạc ngoại)"
+		"id": "sao_truc_level5_4", "level": 5, "title": "BÀI 4", "note": "Futari no Kimochi (Đoạn 2 - P1)"
 	},
 	{
-		"id": "sao_truc_level5_3", "level": 5, "title": "BÀI 3", "note": "Hòa âm nhạc nhẹ trữ tình"
+		"id": "sao_truc_level5_5", "level": 5, "title": "BÀI 5", "note": "Futari no Kimochi (Đoạn 2 - P2)"
+	},
+	{
+		"id": "sao_truc_level5_6", "level": 5, "title": "BÀI 6", "note": "Futari no Kimochi (Đoạn 2 - HC)"
+	},
+	{
+		"id": "sao_truc_level5_7", "level": 5, "title": "BÀI 7", "note": "Futari no Kimochi (Hoàn chỉnh toàn bài)"
 	}
 ]
 var LESSONS: Array = []

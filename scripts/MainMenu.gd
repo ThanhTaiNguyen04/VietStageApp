@@ -716,11 +716,11 @@ func _build_roadmap_cards() -> void:
 		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
 		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
 		
-		chords_skills_title.text = "LEVEL 4: FUTARI NO KIMOCHI"
-		chords_skills_bullets.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
+		chords_skills_title.text = "LEVEL 4: INH LẢ ƠI"
+		chords_skills_bullets.text = "✓ Thực hành từng câu\n✓ Luyện tập chuyển ngón\n✓ Hoàn thiện bài Inh Lả Ơi"
 		
-		pop_chords_title.text = "LEVEL 5: MASTER - KHÚC NHẠC VUI & GẶP MẸ TRONG MƠ"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
+		pop_chords_title.text = "LEVEL 5: FUTARI NO KIMOCHI"
+		pop_chords_desc.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
 
 	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
 	var is_basic_completed := false
