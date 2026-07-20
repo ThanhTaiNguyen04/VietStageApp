@@ -112,7 +112,7 @@ const ALL_LESSONS = [
 		"id": "sao_truc_level5_2", "level": 5, "title": "BÀI 2", "note": "Gặp Mẹ Trong Mơ (Nhạc ngoại)"
 	},
 	{
-		"id": "sao_truc_level5_3", "level": 5, "title": "BÀI 3", "note": "Hòa âm nhạc nhẹ trữ tình"
+		"id": "sao_truc_level5_3", "level": 5, "title": "BÀI 3", "note": "Futari No Kimochi (Nhạc ngoại)"
 	}
 ]
 var LESSONS: Array = []
