@@ -105,7 +105,7 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(140, 50)
 	header.add_child(spacer)
 	
-		# Scroll area
+	# Scroll area
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -475,7 +475,7 @@ func _on_lesson_selected(node_id: int) -> void:
 func _on_back_pressed() -> void:
 	var t = create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.25)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn"))
 
 func _on_scroll_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
