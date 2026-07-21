@@ -504,6 +504,7 @@ func _make_button_bouncy(btn: Button) -> void:
 	)
 	btn.button_up.connect(func() -> void:
 		var t := create_tween()
+		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 
 func _setup_simply_piano_layout() -> void:
