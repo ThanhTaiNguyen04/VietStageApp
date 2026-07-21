@@ -718,11 +718,9 @@ func _build_roadmap_cards() -> void:
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
 		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
 		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
-		basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
 		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
-		ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
 		soloist_unlock_title.text = "LEVEL 3"
 		chords_unlock_title.text = "LEVEL 4"
@@ -759,11 +757,9 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN SÁO TRÚC"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
-		basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "LEVEL 2: BẤM NGÓN & LẤY HƠI"
 		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
-		ess_details.text = "📖 7 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
 		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
 		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
@@ -805,12 +801,9 @@ func _build_roadmap_cards() -> void:
 	if instrument == "dan_tranh":
 		_set_details_text(basic_details, 3, basic_stars, basic_pct, false)
 	elif instrument == "dan_bau":
-		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
-		basic_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
+		_set_details_text(basic_details, 3, basic_stars, basic_pct, false)
 	elif instrument == "sao_truc":
-		basic_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
-	elif instrument == "dan_bau":
-		basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
+		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
 	else:
 		if is_basic_completed:
 			_set_details_text(basic_details, 2, basic_stars, 100, false)
@@ -828,12 +821,11 @@ func _build_roadmap_cards() -> void:
 		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		if instrument == "dan_bau":
-			_set_details_text(ess_details, 1, 0, 0, true)
+			_set_details_text(ess_details, 2, 0, 0, true)
+		elif instrument == "sao_truc":
+			_set_details_text(ess_details, 7, 0, 0, true)
 		else:
 			_set_details_text(ess_details, 3, 0, 0, true)
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
-		if instrument == "dan_bau" or instrument == "sao_truc":
-			ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
@@ -847,14 +839,10 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(ess_details, 3, stats["stars"], stats["pct"], false)
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
-			_set_details_text(ess_details, 1, stats["stars"], stats["pct"], false)
-			ess_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
+			_set_details_text(ess_details, 2, stats["stars"], stats["pct"], false)
 		elif instrument == "sao_truc":
 			var stats := _get_sao_truc_card_status("essentials")
-			ess_details.text = "📖 7 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
-		elif instrument == "dan_bau":
-			var stats := _get_dan_bau_card_status("essentials")
-			ess_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
+			_set_details_text(ess_details, 7, stats["stars"], stats["pct"], false)
 		else:
 			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
 			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
