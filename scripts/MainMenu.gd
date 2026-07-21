@@ -235,6 +235,24 @@ func _draw_background_waves() -> void:
 	# Lacquer deep dark brown base
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARKER)
 	
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "dan_tranh" or inst == "dan_bau" or inst == "trong_chau" or inst == "sao_truc":
+		var cache_key := "bg_" + inst
+		if not _sidebar_icons_cache.has(cache_key):
+			var tex_path := "res://assets/textures/" + inst + "_background.png"
+			if ResourceLoader.exists(tex_path):
+				_sidebar_icons_cache[cache_key] = load(tex_path) as Texture2D
+			else:
+				_sidebar_icons_cache[cache_key] = null
+				
+		var tex = _sidebar_icons_cache[cache_key]
+		if tex:
+			var scale_factor = max(sz.x / tex.get_width(), sz.y / tex.get_height())
+			var new_sz = Vector2(tex.get_width() * scale_factor, tex.get_height() * scale_factor)
+			var pos = Vector2((sz.x - new_sz.x) / 2.0, (sz.y - new_sz.y) / 2.0)
+			bg_canvas.draw_texture_rect(tex, Rect2(pos, new_sz), false)
+			return # Bỏ qua vẽ sóng bên dưới
+	
 	# Lacquer Red Wave 1 (Animated)
 	var w1_pts := PackedVector2Array()
 	var w1_start := Vector2(0, sz.y * 0.15 + sin(_time * 0.8) * 8.0)
@@ -318,24 +336,24 @@ func _draw_roadmap_paths() -> void:
 		_draw_thick_path(p_cho_sk, p_pop)
 
 func _draw_thick_path(from: Vector2, to: Vector2) -> void:
-	roadmap_content.draw_line(from + Vector2(0, 3), to + Vector2(0, 3), C_PATH_SHADOW, 10.0, true)
-	roadmap_content.draw_line(from, to, C_PATH_LINE, 6.0, true)
+	roadmap_content.draw_line(from, to, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24.0, true)
+	roadmap_content.draw_line(from, to, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4), 14.0, true)
+	roadmap_content.draw_line(from, to, Color(1.0, 1.0, 1.0, 0.6), 4.0, true)
 
 func _draw_curved_path(from: Vector2, to: Vector2) -> void:
 	var ctrl1 := Vector2(from.x + (to.x - from.x) * 0.4, from.y)
 	var ctrl2 := Vector2(from.x + (to.x - from.x) * 0.6, to.y)
 	
-	var shadow_pts := PackedVector2Array()
 	var line_pts := PackedVector2Array()
 	
 	for i in range(20):
 		var t := i / 19.0
 		var p := from.bezier_interpolate(ctrl1, ctrl2, to, t)
-		shadow_pts.append(p + Vector2(0, 3))
 		line_pts.append(p)
 		
-	roadmap_content.draw_polyline(shadow_pts, C_PATH_SHADOW, 10.0, true)
-	roadmap_content.draw_polyline(line_pts, C_PATH_LINE, 6.0, true)
+	roadmap_content.draw_polyline(line_pts, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24.0, true)
+	roadmap_content.draw_polyline(line_pts, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4), 14.0, true)
+	roadmap_content.draw_polyline(line_pts, Color(1.0, 1.0, 1.0, 0.6), 4.0, true)
 
 func _draw_gold_star(c: Control, pos: Vector2, idx: int) -> void:
 	var shimmer := 0.20 + 0.22 * sin(_time * 2.2 + idx * 0.9)
@@ -363,13 +381,30 @@ func _draw_traditional_cloud(c: Control, pos: Vector2, size: float) -> void:
 
 # ─── Sidebar ───────────────────────────────────────────────────────────────────
 func _build_sidebar() -> void:
-	var side_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
-	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
+	var side_s := StyleBoxFlat.new()
+	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+	
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
@@ -578,7 +613,7 @@ func _build_roadmap_cards() -> void:
 	var is_tranh := (instrument == "dan_tranh")
 	
 	# Main labels styling
-	var font_title := load("res://assets/fonts/Lora-Bold.ttf")
+	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf")
 	if font_title:
 		roadmap_guide.add_theme_font_override("font", font_title)
 		path_soloist_title.add_theme_font_override("font", font_title)
@@ -611,6 +646,16 @@ func _build_roadmap_cards() -> void:
 	
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
+	
+	if font_title:
+		basic_title.add_theme_font_override("font", font_title)
+		ess_title.add_theme_font_override("font", font_title)
+		soloist_unlock_title.add_theme_font_override("font", font_title)
+		chords_unlock_title.add_theme_font_override("font", font_title)
+		soloist_skills_title.add_theme_font_override("font", font_title)
+		chords_skills_title.add_theme_font_override("font", font_title)
+		classical_title.add_theme_font_override("font", font_title)
+		pop_chords_title.add_theme_font_override("font", font_title)
 
 	# Hiển thị lại các thẻ bị ẩn nếu chuyển về đàn tranh / sáo trúc
 	card_soloist_unlock.show()
@@ -635,7 +680,7 @@ func _build_roadmap_cards() -> void:
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
-		roadmap_guide.text = "🗺️ Lộ trình học tập Đàn Tranh"
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
 		basic_desc.text = "Hiểu nhạc cụ, đọc giao diện nốt rơi và gảy những nốt cơ bản."
@@ -670,6 +715,7 @@ func _build_roadmap_cards() -> void:
 		card_pop_chords.position = Vector2(2080, 275)
 		
 		# Lộ trình Đàn Bầu
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
 		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
 		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
 		basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
@@ -692,7 +738,13 @@ func _build_roadmap_cards() -> void:
 		
 		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
 		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
+	elif instrument == "trong_chau":
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Trống Chầu")
 	elif instrument == "sao_truc":
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Sáo Trúc")
+		# Lộ trình Sáo Trúc
+		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
+		path_chords_title.text = "🎷 ĐƯỜNG HÒA TẤU (ENSEMBLE PATH)"
 		# Lộ trình Sáo Trúc (Tuyến tính giống Đàn Bầu)
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
@@ -716,11 +768,11 @@ func _build_roadmap_cards() -> void:
 		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
 		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
 		
-		chords_skills_title.text = "LEVEL 4: KỸ NĂNG HÒA TẤU"
-		chords_skills_bullets.text = "✓ Thổi bè hòa âm phụ họa\n✓ Hòa tấu cùng các nhạc cụ dân tộc\n✓ Kỹ thuật thổi đệm bè nâng cao"
+		chords_skills_title.text = "LEVEL 4: INH LẢ ƠI"
+		chords_skills_bullets.text = "✓ Thực hành từng câu\n✓ Luyện tập chuyển ngón\n✓ Hoàn thiện bài Inh Lả Ơi"
 		
-		pop_chords_title.text = "LEVEL 5: MASTER - KHÚC NHẠC VUI & GẶP MẸ TRONG MƠ"
-		pop_chords_desc.text = "✓ Bèo Dạt Mây Trôi (Dân ca)\n✓ Gặp Mẹ Trong Mơ (Nhạc ngoại)\n✓ Hòa âm nhạc nhẹ trữ tình"
+		pop_chords_title.text = "LEVEL 5: FUTARI NO KIMOCHI"
+		pop_chords_desc.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
 
 	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
 	var is_basic_completed := false
@@ -743,14 +795,17 @@ func _build_roadmap_cards() -> void:
 		basic_pct = 100 if is_basic_completed else 0
 
 	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
-	basic_sb.border_width_left = 4; basic_sb.border_width_right = 4
-	basic_sb.border_width_top = 4; basic_sb.border_width_bottom = 4
-	basic_sb.shadow_size = 20; basic_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	basic_sb.border_width_left = 6; basic_sb.border_width_right = 6
+	basic_sb.border_width_top = 6; basic_sb.border_width_bottom = 6
+	basic_sb.shadow_size = 24; basic_sb.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	card_basic.add_theme_stylebox_override("panel", basic_sb)
 	basic_title.add_theme_color_override("font_color", C_CREAM)
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	if instrument == "dan_tranh":
+		_set_details_text(basic_details, 3, basic_stars, basic_pct, false)
+	elif instrument == "dan_bau":
+		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
 		basic_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
 	elif instrument == "sao_truc":
 		basic_details.text = "📖 1 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
@@ -758,29 +813,41 @@ func _build_roadmap_cards() -> void:
 		basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [basic_stars, basic_pct]
 	else:
 		if is_basic_completed:
-			basic_details.text = "📖 2 Bài Học | ⭐ %d Sao | 100%% Hoàn Thành" % basic_stars
+			_set_details_text(basic_details, 2, basic_stars, 100, false)
 		else:
-			basic_details.text = "📖 2 Bài Học | ⭐ 0 Sao | 0%% Hoàn Thành"
+			_set_details_text(basic_details, 2, 0, 0, false)
 
 	# Dynamic progression styling for Card Essentials
 	var is_ess_unlocked := is_basic_completed
 	if not is_ess_unlocked:
-		var ess_lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24)
+		var ess_lock_sb := _flat(Color(1.0, 1.0, 1.0, 0.45), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 24)
+		ess_lock_sb.border_width_left = 6; ess_lock_sb.border_width_right = 6
+		ess_lock_sb.border_width_top = 6; ess_lock_sb.border_width_bottom = 6
 		card_essentials.add_theme_stylebox_override("panel", ess_lock_sb)
 		ess_title.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
+		if instrument == "dan_bau":
+			_set_details_text(ess_details, 1, 0, 0, true)
+		else:
+			_set_details_text(ess_details, 3, 0, 0, true)
 		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
 		if instrument == "dan_bau" or instrument == "sao_truc":
 			ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
+		ess_sb.border_width_top = 6; ess_sb.border_width_bottom = 6
 		card_essentials.add_theme_stylebox_override("panel", ess_sb)
 		ess_title.add_theme_color_override("font_color", C_CREAM)
 		ess_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 		if instrument == "dan_tranh":
 			var stats := _get_dan_tranh_level_status(2)
+			_set_details_text(ess_details, 3, stats["stars"], stats["pct"], false)
+		elif instrument == "dan_bau":
+			var stats := _get_dan_bau_card_status("essentials")
+			_set_details_text(ess_details, 1, stats["stars"], stats["pct"], false)
 			ess_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [stats["stars"], stats["pct"]]
 		elif instrument == "sao_truc":
 			var stats := _get_sao_truc_card_status("essentials")
@@ -795,11 +862,12 @@ func _build_roadmap_cards() -> void:
 			var pct = 0.0
 			if SecureDataManager.is_lesson_completed(instrument, "Node2"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(instrument, "Node3"): pct += 50.0
-			ess_details.text = "📖 3 Bài Học | ⭐ %d Sao | %d%% Hoàn Thành" % [total_stars, int(pct)]
+			_set_details_text(ess_details, 3, total_stars, int(pct), false)
 	
 	# Locked Cards (Soloist & Chords Unlock)
-	var lock_sb := _flat(C_CARD_LOCKED, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 20)
-	lock_sb.shadow_size = 12; lock_sb.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
+	var lock_sb := _flat(Color(1.0, 1.0, 1.0, 0.45), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 20)
+	lock_sb.border_width_left = 6; lock_sb.border_width_right = 6
+	lock_sb.border_width_top = 6; lock_sb.border_width_bottom = 6
 	
 	for card in [card_soloist_unlock, card_chords_unlock]:
 		card.add_theme_stylebox_override("panel", lock_sb)
@@ -818,10 +886,9 @@ func _build_roadmap_cards() -> void:
 		btn.add_theme_font_size_override("font_size", 14)
 
 	# Skills & End cards (partially master)
-	var skills_sb := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 20)
-	skills_sb.border_width_left = 3; skills_sb.border_width_right = 3
-	skills_sb.border_width_top = 3; skills_sb.border_width_bottom = 3
-	skills_sb.shadow_size = 12; skills_sb.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
+	var skills_sb := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 20)
+	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
+	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
 	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
@@ -902,6 +969,8 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranh.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/LessonTrongChau.tscn")
 			elif inst == "sao_truc":
 				SecureDataManager.active_lesson_id = "sao_truc_level1_1_video"
 				SecureDataManager.data["custom_video_sequence"] = ["res://nvaore/intro1.ogv", "res://nvaore/intro2.ogv", "res://nvaore/intro3.ogv"]
@@ -919,6 +988,8 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranh.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/LessonTrongChau.tscn")
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 2
@@ -945,6 +1016,8 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 3
@@ -963,6 +1036,8 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 4
@@ -977,6 +1052,8 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 5
@@ -994,10 +1071,14 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
+		elif inst == "trong_chau":
+			_fade_to("res://scenes/LessonTrongChau.tscn")
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 5
 			_fade_to("res://scenes/LessonSaoTrucList.tscn")
+		else:
+			_go_practice()
 	)
 	_make_btn_bouncy(play_pop)
 
@@ -1327,6 +1408,85 @@ func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
 	_fade_to("res://scenes/PracticeDanBau.tscn")
 
+func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_locked: bool) -> void:
+	for child in lbl.get_children():
+		child.queue_free()
+	lbl.text = ""
+	
+	var hbox := HBoxContainer.new()
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hbox.add_theme_constant_override("separation", 6)
+	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	
+	var add_item = func(icon_name: String, text: String, add_divider: bool = true):
+		var tex = TextureRect.new()
+		var texture = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
+		tex.texture = texture
+		tex.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex.custom_minimum_size = Vector2(18, 18)
+		tex.modulate = lbl.get_theme_color("font_color")
+		hbox.add_child(tex)
+		
+		var t = Label.new()
+		t.text = text
+		t.add_theme_font_size_override("font_size", lbl.get_theme_font_size("font_size"))
+		t.add_theme_color_override("font_color", lbl.get_theme_color("font_color"))
+		if lbl.has_theme_font_override("font"):
+			t.add_theme_font_override("font", lbl.get_theme_font("font"))
+		hbox.add_child(t)
+		
+		if add_divider:
+			var div = Label.new()
+			div.text = " | "
+			div.add_theme_font_size_override("font_size", lbl.get_theme_font_size("font_size"))
+			div.add_theme_color_override("font_color", lbl.get_theme_color("font_color"))
+			if lbl.has_theme_font_override("font"):
+				div.add_theme_font_override("font", lbl.get_theme_font("font"))
+			hbox.add_child(div)
+			
+	add_item.call("book-open", str(n_lessons) + " Bài Học", true)
+	if is_locked:
+		add_item.call("lock", "Cần hoàn thành bài trước", false)
+	else:
+		add_item.call("star", str(stars) + " Sao", true)
+		if pct >= 100:
+			add_item.call("check-circle", "100% Hoàn Thành", false)
+		else:
+			add_item.call("circle", str(pct) + "% Hoàn Thành", false)
+			
+	lbl.add_child(hbox)
+
+func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
+	for child in lbl.get_children():
+		child.queue_free()
+	lbl.text = ""
+	
+	var hbox := HBoxContainer.new()
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hbox.add_theme_constant_override("separation", 10)
+	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	
+	var tex = TextureRect.new()
+	var texture = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
+	tex.texture = texture
+	tex.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tex.custom_minimum_size = Vector2(28, 28)
+	tex.modulate = lbl.get_theme_color("font_color")
+	hbox.add_child(tex)
+	
+	var t = Label.new()
+	t.text = text
+	if lbl.has_theme_font_size_override("font_size"):
+		t.add_theme_font_size_override("font_size", lbl.get_theme_font_size("font_size"))
+	if lbl.has_theme_color_override("font_color"):
+		t.add_theme_color_override("font_color", lbl.get_theme_color("font_color"))
+	if lbl.has_theme_font_override("font"):
+		t.add_theme_font_override("font", lbl.get_theme_font("font"))
+	hbox.add_child(t)
+	
+	lbl.add_child(hbox)
 # ─── Sáo Trúc Custom Progression ──────────────────────────────────────────────────
 func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	var completed : Array = SecureDataManager.data.completed_lessons.get("sao_truc", [])

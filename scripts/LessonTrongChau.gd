@@ -8,6 +8,8 @@ const C_JADE         := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green
 const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for active path borders
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
 const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
+const C_MUTED        := Color("#6f6257")
+const C_CARD         := Color("#fffdf8")
 
 # ─── Drag Tracking Variables
 var _is_dragging_scroll: bool = false
@@ -38,109 +40,47 @@ var btn_minigame               : Button
 
 var _sidebar_icons_cache := {}
 
-static var selected_level: int = 1
-
-# 🗃️ Dynamic Lesson Data (10 Lessons for 5 Levels)
-const ALL_LESSONS = [
+# ─── Dynamic Lesson Data (3 Lessons Course)
+const LESSONS = [
 	{
-		"id": "sao_truc_level1_1", "level": 1, "title": "BÀI 1", "note": "Cầm sáo & Tư thế",
-		"video": "Cách cầm sáo trúc đúng tư thế.", "practice": "Thực hành cầm sáo.", "subtitles": []
+		"id": "trong_chau_coban_1",
+		"title": "BÀI 1",
+		"note": "Nhập môn Trống Chầu",
+		"video": "Video hướng dẫn: Giảng viên giới thiệu Trống chầu, dùi trống và tư thế gõ.",
+		"practice": "Thực hành: Làm quen với mặt trống và tang trống.",
+		"subtitles": [
+			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài học đầu tiên: Nhập môn Trống Chầu."},
+			{"start": 2.5, "end": 6.5, "text": "Hãy làm quen với dùi trống và tư thế ngồi chuẩn xác."},
+			{"start": 6.5, "end": 10.0, "text": "Bắt đầu bài học ngay nào."}
+		]
 	},
 	{
-		"id": "sao_truc_level1_2", "level": 1, "title": "BÀI 2", "note": "Hơi thở cơ bản",
-		"video": "Cách lấy hơi bụng.", "practice": "Luyện thở hơi dài.", "subtitles": []
+		"id": "trong_chau_coban_2",
+		"title": "BÀI 2",
+		"note": "Nhịp Trống Cơ Bản",
+		"video": "Video hướng dẫn: Gõ mặt trống (Tùng) và gõ tang trống (Cốc).",
+		"practice": "Thực hành: Gõ theo nhịp Tùng Cốc cơ bản.",
+		"subtitles": [
+			{"start": 0.0, "end": 2.5, "text": "Bài 2: Nhịp Trống Cơ Bản."},
+			{"start": 2.5, "end": 6.0, "text": "Tùng là tiếng giữa mặt trống. Cốc là tiếng gõ ngoài tang trống."},
+			{"start": 6.0, "end": 10.0, "text": "Cùng lắng nghe và đánh theo."}
+		]
 	},
 	{
-		"id": "Node2", "level": 2, "title": "BÀI 1", "note": "Nốt Si (B4)",
-		"video": "Hướng dẫn thổi nốt Si.", "practice": "Thực hành nốt Si.", "subtitles": []
-	},
-	{
-		"id": "Node3", "level": 2, "title": "BÀI 2", "note": "Nốt La (A4)",
-		"video": "Hướng dẫn thổi nốt La.", "practice": "Thực hành nốt La.", "subtitles": []
-	},
-	{
-		"id": "Node4", "level": 2, "title": "BÀI 3", "note": "Nốt Sol (G4)",
-		"video": "Hướng dẫn thổi nốt Sol.", "practice": "Thực hành nốt Sol.", "subtitles": []
-	},
-	{
-		"id": "Node5", "level": 2, "title": "BÀI 4", "note": "Nốt Fa (F4)",
-		"video": "Hướng dẫn thổi nốt Fa.", "practice": "Thực hành nốt Fa.", "subtitles": []
-	},
-	{
-		"id": "Node6", "level": 2, "title": "BÀI 5", "note": "Nốt Mi (E4)",
-		"video": "Hướng dẫn thổi nốt Mi.", "practice": "Thực hành nốt Mi.", "subtitles": []
-	},
-	{
-		"id": "Node7", "level": 2, "title": "BÀI 6", "note": "Nốt Rê (D4)",
-		"video": "Hướng dẫn thổi nốt Rê.", "practice": "Thực hành nốt Rê.", "subtitles": []
-	},
-	{
-		"id": "Node8", "level": 2, "title": "BÀI 7", "note": "Nốt Đô (C4)",
-		"video": "Hướng dẫn thổi nốt Đô.", "practice": "Thực hành nốt Đô.", "subtitles": []
-	},
-	{
-		"id": "sao_truc_level3_1", "level": 3, "title": "BÀI 1", "note": "Khúc Nhạc Vui (Khung 1)"
-	},
-	{
-		"id": "sao_truc_level3_2", "level": 3, "title": "BÀI 2", "note": "Khúc Nhạc Vui (Khung 2)"
-	},
-	{
-		"id": "sao_truc_level3_3", "level": 3, "title": "BÀI 3", "note": "Khúc Nhạc Vui (Khung 3)"
-	},
-	{
-		"id": "sao_truc_level3_4", "level": 3, "title": "BÀI 4", "note": "Khúc Nhạc Vui (Khung 4)"
-	},
-	{
-		"id": "sao_truc_level3_5", "level": 3, "title": "BÀI 5", "note": "Khúc Nhạc Vui (Khung 5)"
-	},
-	{
-		"id": "sao_truc_level3_6", "level": 3, "title": "BÀI 6", "note": "Khúc Nhạc Vui (Hoàn chỉnh)"
-	},
-	{
-		"id": "sao_truc_level4_1", "level": 4, "title": "BÀI 1", "note": "Inh Lả Ơi (Câu 1)"
-	},
-	{
-		"id": "sao_truc_level4_2", "level": 4, "title": "BÀI 2", "note": "Inh Lả Ơi (Câu 2)"
-	},
-	{
-		"id": "sao_truc_level4_3", "level": 4, "title": "BÀI 3", "note": "Inh Lả Ơi (Câu 3)"
-	},
-	{
-		"id": "sao_truc_level4_4", "level": 4, "title": "BÀI 4", "note": "Inh Lả Ơi (Câu 4)"
-	},
-	{
-		"id": "sao_truc_level4_5", "level": 4, "title": "BÀI 5", "note": "Inh Lả Ơi (Hoàn chỉnh)"
-	},
-	{
-		"id": "sao_truc_level5_1", "level": 5, "title": "BÀI 1", "note": "Futari no Kimochi (Đoạn 1 - P1)"
-	},
-	{
-		"id": "sao_truc_level5_2", "level": 5, "title": "BÀI 2", "note": "Futari no Kimochi (Đoạn 1 - P2)"
-	},
-	{
-		"id": "sao_truc_level5_3", "level": 5, "title": "BÀI 3", "note": "Futari no Kimochi (Đoạn 1 - HC)"
-	},
-	{
-		"id": "sao_truc_level5_4", "level": 5, "title": "BÀI 4", "note": "Futari no Kimochi (Đoạn 2 - P1)"
-	},
-	{
-		"id": "sao_truc_level5_5", "level": 5, "title": "BÀI 5", "note": "Futari no Kimochi (Đoạn 2 - P2)"
-	},
-	{
-		"id": "sao_truc_level5_6", "level": 5, "title": "BÀI 6", "note": "Futari no Kimochi (Đoạn 2 - HC)"
-	},
-	{
-		"id": "sao_truc_level5_7", "level": 5, "title": "BÀI 7", "note": "Futari no Kimochi (Hoàn chỉnh toàn bài)"
+		"id": "trong_chau_coban_3",
+		"title": "BÀI 3",
+		"note": "Tiếng Cốc Vành Gõ",
+		"video": "Video hướng dẫn: Tổ hợp âm sắc Tùng - Cốc đan xen.",
+		"practice": "Thực hành bài mẫu: Liên Khúc Trống Chầu",
+		"subtitles": [
+			{"start": 0.0, "end": 3.0, "text": "Bài 3: Liên Khúc Trống Chầu."},
+			{"start": 3.0, "end": 6.5, "text": "Chúng ta sẽ kết hợp tiếng mặt trống và tang trống."},
+			{"start": 6.5, "end": 10.0, "text": "Tạo ra một nhịp điệu hoàn chỉnh."}
+		]
 	}
 ]
-var LESSONS: Array = []
 
 func _ready() -> void:
-	LESSONS = []
-	for l in ALL_LESSONS:
-		if l.get("level", 1) == selected_level:
-			LESSONS.append(l)
-			
 	SecureDataManager.load_data()
 	
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
@@ -228,9 +168,41 @@ func _input(event: InputEvent) -> void:
 func _build_theme() -> void:
 	bg_rect.color = C_BG
 	
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	var tex_path := "res://assets/textures/trong_chau_background.png"
+	if ResourceLoader.exists(tex_path):
+		var bg_tex := TextureRect.new()
+		bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg_tex.texture = load(tex_path) as Texture2D
+		bg_rect.add_child(bg_tex)
 	
-	page_title.text = "GIÁO TRÌNH SÁO TRÚC - LEVEL %d" % selected_level
+	var top_s := StyleBoxFlat.new()
+	top_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	top_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
+	top_s.border_width_bottom = 2
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
+	
+	page_title.text = "GIÁO TRÌNH TRỐNG CHẦU CƠ BẢN"
 	page_title.add_theme_color_override("font_color", C_JADE)
 	
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -287,13 +259,30 @@ func _connect_buttons() -> void:
 	)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
-	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
+	var side_s := StyleBoxFlat.new()
+	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
-	side_s.shadow_size = 12
-	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+	
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -405,11 +394,6 @@ func _fade_to_scene(path: String) -> void:
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
 
-func _fade_to(path: String) -> void:
-	var t := create_tween()
-	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file(path))
-
 func _flat(bg: Color, border: Color, radius: int, border_width: int = 0) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
@@ -426,9 +410,9 @@ func _build_lesson_list() -> void:
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 		
-	var inst := "sao_truc"
+	var inst := "trong_chau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["sao_truc_level1_1_video"])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["trong_chau_coban_1_video"])
 	
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	
@@ -436,15 +420,22 @@ func _build_lesson_list() -> void:
 		var lesson_item : Dictionary = LESSONS[i]
 		var id := lesson_item["id"] as String
 		
+		# Define task status keys
+		var v_id := id + "_video"
+		var p_id := id + "_practice"
+		
 		# Unlocking checks
-		var is_unlocked := false
+		var is_v_unlocked := false
 		if i == 0:
-			is_unlocked = true
+			is_v_unlocked = true
 		else:
 			var prev_id := LESSONS[i - 1]["id"] as String
-			is_unlocked = completed_lessons.has(prev_id) or completed_lessons.has(prev_id + "_practice") or unlocked_lessons.has(id)
+			is_v_unlocked = unlocked_lessons.has(v_id) or completed_lessons.has(prev_id + "_practice")
 			
-		var is_completed := completed_lessons.has(id) or completed_lessons.has(id + "_practice")
+		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(v_id) or unlocked_lessons.has(p_id))
+		
+		var is_v_completed := completed_lessons.has(v_id)
+		var is_p_completed := completed_lessons.has(p_id)
 		
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
@@ -458,62 +449,87 @@ func _build_lesson_list() -> void:
 		var title_lbl := Label.new()
 		title_lbl.text = lesson_item["title"]
 		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_lbl.add_theme_color_override("font_color", C_TEXT if is_unlocked else C_TEXT_MUTED)
+		title_lbl.add_theme_color_override("font_color", C_TEXT if is_v_unlocked else C_TEXT_MUTED)
 		title_lbl.add_theme_font_size_override("font_size", 20)
 		if f_bold:
 			title_lbl.add_theme_font_override("font", f_bold)
 		col.add_child(title_lbl)
 		
-		# Center: Single Circle Button
+		# Center: Row of circles connected horizontally
 		var row := HBoxContainer.new()
 		row.name = "Row"
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_theme_constant_override("separation", 100)
 		col.add_child(row)
 		
-		var btn := Button.new()
-		btn.name = "LessonBtn"
-		btn.custom_minimum_size = Vector2(180, 180)
-		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		# 1. Hướng Dẫn Button (Left circle)
+		var v_btn := Button.new()
+		v_btn.name = "VideoBtn"
+		v_btn.custom_minimum_size = Vector2(180, 180)
+		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		v_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		
-		if is_completed:
-			btn.text = "✔️\n%s\nHoàn thành" % lesson_item["note"]
-		elif not is_unlocked:
-			btn.text = "🔒"
-		else:
-			btn.text = "🎵\n%s" % lesson_item["note"]
-			
-		_style_circle_btn(btn, is_unlocked, is_completed)
-		_make_btn_bouncy(btn)
-		row.add_child(btn)
+		_setup_circle_btn(v_btn, "Hướng dẫn", lesson_item["note"], is_v_unlocked, is_v_completed, "video")
+		row.add_child(v_btn)
 		
-		btn.pressed.connect(func() -> void:
-			if _has_dragged_significantly or not is_unlocked: return
-			SecureDataManager.active_lesson_id = id
-			
-			SecureDataManager.data["current_song_title"] = lesson_item.get("note", "Bài Tập Cơ Bản")
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
-		)
+		v_btn.pressed.connect(_on_video_pressed.bind(v_id, lesson_item["subtitles"], is_v_unlocked))
+		
+		# 2. Thực Hành Button (Right circle)
+		var p_btn := Button.new()
+		p_btn.name = "PracticeBtn"
+		p_btn.custom_minimum_size = Vector2(180, 180)
+		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		p_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		
+		_setup_circle_btn(p_btn, "Thực hành", lesson_item["note"], is_p_unlocked, is_p_completed, "practice")
+		row.add_child(p_btn)
+		
+		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
 		
 		lessons_hbox.add_child(col)
 
-func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> void:
-	# Jade Green & Gold Traditional Lacquer Theme
-	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Light warm gray-cream for locked
-	var border_color := Color(0.85, 0.82, 0.78, 1.0) # Gray border for locked
-	var text_color := C_TEXT_MUTED # Translucent charcoal text for locked
+func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
+	if _has_dragged_significantly or not is_unlocked: return
+	SecureDataManager.active_lesson_id = v_id
+	VideoPlayer.custom_video_path = "res://Video/DanBauDoan12Bai1.ogv"
+	VideoPlayer.custom_subtitles = subtitles
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.22)
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn"))
+
+func _on_practice_pressed(p_id: String, is_unlocked: bool) -> void:
+	if _has_dragged_significantly or not is_unlocked: return
+	SecureDataManager.active_lesson_id = p_id
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.22)
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn"))
+
+func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlocked: bool, completed: bool, type: String) -> void:
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if unlocked else Control.CURSOR_ARROW
+	btn.disabled = not unlocked
+
+	if completed:
+		btn.text = "\n\n%s\nHoàn thành" % action
+	elif unlocked:
+		btn.text = "\n\n%s\n(%s)" % [action, lesson_title]
+	else:
+		btn.text = ""
+
+	var bg_color := Color(0.95, 0.93, 0.89, 0.35) # Locked: Glassmorphism
+	var border_color := Color(0.85, 0.82, 0.78, 0.5)
+	var text_color := Color(C_MUTED, 0.8)
 	
-	if is_completed:
-		bg_color = C_JADE # Solid Jade Green for completed
-		border_color = C_GOLD # Gold border
-		text_color = Color.WHITE # White checkmark/text inside
-	elif is_unlocked:
-		bg_color = Color.WHITE # Solid white for active
-		border_color = C_JADE_LIGHT # Jade border
-		text_color = C_TEXT # Dark charcoal text
-		
+	if completed:
+		bg_color = C_JADE
+		border_color = C_GOLD
+		text_color = Color.WHITE
+	elif unlocked:
+		bg_color = C_CARD
+		border_color = C_JADE
+		text_color = C_TEXT
+
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -522,24 +538,26 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
 	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
 	
-	# Glow effect for active step (using softer, wider gold shadow)
-	if is_unlocked and not is_completed:
+	if unlocked and not completed:
 		s_normal.shadow_size = 24
 		s_normal.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 		
 	var s_hover := s_normal.duplicate() as StyleBoxFlat
-	if is_unlocked:
-		if is_completed:
+	if unlocked:
+		if completed:
 			s_hover.bg_color = bg_color.lightened(0.1)
 		else:
 			s_hover.bg_color = Color(0.97, 0.97, 0.97, 1.0)
-		
+
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
 	btn.add_theme_stylebox_override("disabled", s_normal)
 	btn.add_theme_color_override("font_color", text_color)
-	btn.add_theme_color_override("font_hover_color", C_JADE if (is_unlocked and not is_completed) else text_color)
+	
+	var hover_color = text_color
+	if unlocked and not completed: hover_color = C_JADE
+	btn.add_theme_color_override("font_hover_color", hover_color)
 	btn.add_theme_color_override("font_pressed_color", text_color)
 	btn.add_theme_color_override("font_disabled_color", text_color)
 	
@@ -547,13 +565,30 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
 	btn.add_theme_font_size_override("font_size", 18)
-	
-	btn.disabled = not is_unlocked
+
+	btn.draw.connect(func():
+		var tex_name = ""
+		if not unlocked: tex_name = "lock"
+		elif completed: tex_name = "check-circle"
+		else: tex_name = "play-circle" if type == "video" else "music"
+		
+		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
+		if tex:
+			var w = 32.0
+			var rect = Rect2((btn.size.x - w) / 2.0, 32.0, w, w)
+			
+			var draw_color = text_color
+			if unlocked and not completed and btn.is_hovered():
+				draw_color = C_JADE
+			
+			btn.draw_texture_rect(tex, rect, false, draw_color)
+	)
+	_make_btn_bouncy(btn)
 
 func _draw_connecting_lines() -> void:
-	var inst := "sao_truc"
+	var inst := "trong_chau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["sao_truc_coban_1_video"])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["trong_chau_coban_1_video"])
 
 	var centers : Array[Vector2] = []
 	var node_unlocked : Array[bool] = []
@@ -599,10 +634,12 @@ func _draw_connecting_lines() -> void:
 		var p2 := Vector2(centers[idx + 1].x, line_y)
 		
 		var active := node_unlocked[idx + 1]
-		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.08)
-		var line_thickness := 14.0 if active else 7.0
-		
-		lessons_hbox.draw_line(p1, p2, line_color, line_thickness, true)
+		if active:
+			lessons_hbox.draw_line(p1, p2, Color(C_JADE, 0.15), 24.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(C_JADE, 0.4), 14.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.6), 4.0, true)
+		else:
+			lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.2), 8.0, true)
 
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size

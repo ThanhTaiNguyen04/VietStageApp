@@ -601,17 +601,31 @@ func _on_sign_in() -> void:
 	else:
 		# Login mode: check if we already have this user registered.
 		# If yes, keep their name. If not, auto-register them using their email prefix!
-		var saved_email = SecureDataManager.data.get("user_email", "")
-		if em.to_lower() == saved_email.to_lower():
-			# Keep existing user name
-			pass
-		else:
-			# Auto-register new email: prefix from email
-			var prefix := em.split("@")[0]
-			var nm := prefix.capitalize()
-			SecureDataManager.data["user_name"] = nm
+		var em_lower = em.to_lower()
+		
+		# --- MOCK DATA ACCOUNTS ---
+		if em_lower == "student1@fpt.edu.vn" and pw == "123456":
+			SecureDataManager.data["user_name"] = "Thành Đạt"
 			SecureDataManager.data["user_email"] = em
+			SecureDataManager.data["daily_streak"] = max(12, SecureDataManager.data.get("daily_streak", 1))
 			SecureDataManager.save_data()
+		elif em_lower == "student2@fpt.edu.vn" and pw == "123456":
+			SecureDataManager.data["user_name"] = "Quang Tiến"
+			SecureDataManager.data["user_email"] = em
+			SecureDataManager.data["daily_streak"] = max(5, SecureDataManager.data.get("daily_streak", 1))
+			SecureDataManager.save_data()
+		else:
+			var saved_email = SecureDataManager.data.get("user_email", "")
+			if em_lower == saved_email.to_lower():
+				# Keep existing user name
+				pass
+			else:
+				# Auto-register new email: prefix from email
+				var prefix := em.split("@")[0]
+				var nm := prefix.capitalize()
+				SecureDataManager.data["user_name"] = nm
+				SecureDataManager.data["user_email"] = em
+				SecureDataManager.save_data()
 			
 	error_label.add_theme_color_override("font_color", C_GREEN_OK)
 	error_label.text = "Chào mừng!"

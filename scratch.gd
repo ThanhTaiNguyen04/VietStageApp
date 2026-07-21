@@ -225,16 +225,11 @@ const NOTE_FREQS = {
 	"Fa": 698.46,
 	"Sol": 783.99,
 	"La": 880.00,
-	"Sib": 932.33,
 	"Si": 987.77,
 	"Đô2": 1046.50,
 	"Rê2": 1174.66,
 	"Mi2": 1318.51,
-	"Fa2": 1396.91,
-	"Sol2": 1567.98,
-	"La2": 1760.00,
-	"Sib2": 1864.66,
-	"Si2": 1975.53
+	"Sol2": 1567.98
 }
 
 func _ready():
@@ -694,7 +689,6 @@ func _generate_melody(target_note_key: String) -> Array:
 	var seq = []
 	var time = 1.0
 	
-	
 	if target_note_key == "Node9":
 		# Đô, Sol
 		for i in range(2):
@@ -999,11 +993,7 @@ func _generate_melody(target_note_key: String) -> Array:
 			var p = parts[idx]
 			for i in range(7):
 				var n = p[i]
-				var dur = p[7] if i == 6 else 0.5
-				seq.append({"note": n, "time": time, "duration": dur})
-				time += dur + 0.2
-			time += 0.5
-	elif target_note_key == "sao_truc_level4_7":
+	elif target_note_key == "sao_truc_level5_7":
 		var parts = [
 			["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
 			["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
