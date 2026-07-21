@@ -145,10 +145,10 @@ func _ready() -> void:
 	SecureDataManager.load_data()
 	_spawn_decorations()
 	_setup_hud_shop_button()
-	_tex_tranh = _make_texture_transparent(load("res://assets/textures/dan-tranh-17.jpg") as Texture2D)
-	_tex_sao = _make_texture_transparent(load("res://assets/textures/Sao-truc-SN01.jpg") as Texture2D)
-	_tex_bau = _make_texture_transparent(load("res://assets/textures/dan-bau.jpg") as Texture2D)
-	_tex_trong = _make_texture_transparent(load("res://assets/textures/trong-chau.png") as Texture2D)
+	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
+	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
+	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
+	_tex_trong = load("res://assets/textures/trong_chau_assetremove.png") as Texture2D
 	_tex_linh = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
 	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
 	_tex_wall = load("res://image/imagesao.png") as Texture2D
@@ -2980,10 +2980,7 @@ func _setup_shop_popup() -> void:
 	scroll_content.add_child(grid)
 	
 	var items = [
-		{"id": "painting", "name": "Tranh Tố Nữ Cổ Phong", "cost": 3, "desc": "Tranh dân gian Hàng Trống phác họa thiếu nữ chơi nhạc cụ truyền thống."},
-		{"id": "vase", "name": "Giá Treo Chiêng Đồng", "cost": 5, "desc": "Chiêng đồng cổ Tây Nguyên treo trên giá gỗ chạm khắc tinh xảo."},
-		{"id": "bamboo", "name": "Kệ Sáo Trúc Nhã Nhạc", "cost": 8, "desc": "Giá treo các loại sáo trúc, tiêu với tua rua đỏ đung đưa sinh động."},
-		{"id": "bronze_drum", "name": "Trống Đồng Đông Sơn", "cost": 12, "desc": "Báu vật âm nhạc cổ xưa với họa tiết mặt trời tỏa sáng linh thiêng."}
+		{"id": "painting", "name": "Tranh Tố Nữ Cổ Phong", "cost": 3, "desc": "Tranh dân gian Hàng Trống phác họa thiếu nữ chơi nhạc cụ truyền thống."}
 	]
 	
 	for item in items:
@@ -3092,7 +3089,7 @@ func _update_shop_items() -> void:
 	if stars_label:
 		stars_label.text = "Bạn có: ⭐ %d Sao" % stars
 		
-	var items = ["painting", "vase", "bamboo", "bronze_drum"]
+	var items = ["painting"]
 	for item_id in items:
 		var card = shop_popup.get_node("ScrollPanel/ScrollContent/Grid/Card_" + item_id)
 		if not card: continue
