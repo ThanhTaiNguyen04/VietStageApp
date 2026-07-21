@@ -1465,13 +1465,13 @@ func _draw_linh(c: Control) -> void:
 	var scale_vec := Vector2.ONE
 	
 	if is_speaking:
-		bob = bow_y + sin(_time * 6.5) * 5.0
-		rot += sin(_time * 3.5) * 0.038
-		scale_vec = Vector2(1.0 + sin(_time * 9.0) * 0.022, 1.0 - sin(_time * 9.0) * 0.022)
+		bob = bow_y
+		rot = bow_tilt
+		scale_vec = Vector2.ONE
 	else:
-		bob = bow_y + sin(_time * 1.8) * 3.0
-		rot += sin(_time * 0.8) * 0.015
-		scale_vec = Vector2(1.0, 1.0 + sin(_time * 1.8) * 0.008)
+		bob = bow_y
+		rot = bow_tilt
+		scale_vec = Vector2.ONE
 		
 	# Draw flat feet shadow (before transform so it doesn't move with her)
 	var shadow_radius := 28.0 * clampf(1.0 - (bob / 45.0), 0.7, 1.15)
@@ -1490,8 +1490,8 @@ func _draw_linh(c: Control) -> void:
 		else:
 			img_w = sz.y * tex_ratio
 		
-		# Draw centered relative to the new origin (0.0, 74.0 is feet in local space, so offset is (6.0 - img_h))
-		var img_rect := Rect2(-img_w * 0.5, 6.0 - img_h, img_w, img_h)
+		# Draw centered relative to the new origin (0.0, 74.0 is feet in local space, so offset is (74.0 - img_h))
+		var img_rect := Rect2(-img_w * 0.5, 74.0 - img_h, img_w, img_h)
 		c.draw_texture_rect(_tex_linh, img_rect, false)
 	else:
 		# Draw procedural fallback (relative coordinates shifted by new origin at base_pos)
@@ -2311,7 +2311,7 @@ func _on_viewport_size_changed() -> void:
 	_right_bound = (size.x - rx) / scale_factor if scale_factor > 0.0 else 1200.0
 	var center_x := 600.0
 
-	var station_size := Vector2(360.0, 220.0) if is_mobile else Vector2(290.0, 180.0)
+	var station_size := Vector2(360.0, 250.0) if is_mobile else Vector2(360.0, 280.0)
 	for station in [s_tranh, s_sao, s_bau, s_trong]:
 		station.size = station_size
 		station.custom_minimum_size = station_size
@@ -2324,18 +2324,18 @@ func _on_viewport_size_changed() -> void:
 		_station_base_positions["trong"] = Vector2(right_x, 275.0)
 		_station_base_positions["tranh"] = Vector2(left_x, 515.0)
 		_station_base_positions["sao"] = Vector2(right_x, 515.0)
-		_linh_base_y = 230.0 # Shift down to avoid scroll text overlap on mobile
-		char_linh.position.x = 500.0
-		char_linh.size = Vector2(210.0, 210.0) * 3.0
+		_linh_base_y = 210.0 # Shift down to avoid scroll text overlap on mobile
+		char_linh.position.x = 500.0 - 50.0
+		char_linh.size = Vector2(210.0, 210.0) * 3.5
 	else:
-		# Symmetrical Arc Layout
-		_station_base_positions["tranh"] = Vector2(50.0, 470.0)
-		_station_base_positions["bau"] = Vector2(330.0, 430.0)
-		_station_base_positions["trong"] = Vector2(610.0, 430.0)
-		_station_base_positions["sao"] = Vector2(890.0, 470.0)
-		_linh_base_y = 310.0 if not _linh_is_moving else _linh_base_y # Shift down to avoid scroll text overlap on desktop
-		char_linh.position.x = 485.0
-		char_linh.size = Vector2(230.0, 230.0)
+		# Symmetrical Flat Layout
+		_station_base_positions["tranh"] = Vector2(-20.0, 500.0)
+		_station_base_positions["bau"] = Vector2(280.0, 500.0)
+		_station_base_positions["trong"] = Vector2(580.0, 500.0)
+		_station_base_positions["sao"] = Vector2(880.0, 500.0)
+		_linh_base_y = 290.0 if not _linh_is_moving else _linh_base_y
+		char_linh.position.x = 485.0 - 50.0
+		char_linh.size = Vector2(230.0, 230.0) * 1.6
 
 	s_tranh.position = _station_base_positions["tranh"]
 	s_sao.position = _station_base_positions["sao"]
