@@ -1577,4 +1577,3 @@ func _input(event: InputEvent) -> void:
 			_drag_velocity = (current_x - _last_drag_pos_x) / dt
 			_last_drag_pos_x = current_x
 			_last_drag_time = now
-

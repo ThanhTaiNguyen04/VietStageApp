@@ -120,14 +120,44 @@ func _enhance_ux() -> void:
 	logout_btn.custom_minimum_size = Vector2(110, 42)
 	logout_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	
-	# 2. Add Edit button next to Name
-	var name_parent = name_lbl.get_parent()
-	var name_box = HBoxContainer.new()
-	name_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	name_box.add_theme_constant_override("separation", 16)
-	name_parent.add_child(name_box)
-	name_parent.move_child(name_box, name_lbl.get_index())
-	name_parent.remove_child(name_lbl)
+	# 2. Modify Avatar Section and Settings
+	var profile_section = name_lbl.get_parent()
+	var avatar_circle = profile_section.get_node("AvatarCircle")
+	
+	var btn_overlay = Control.new()
+	avatar_circle.add_child(btn_overlay)
+	
+	var _circle_style = func(bg: Color, border: Color) -> StyleBoxFlat:
+		var s = StyleBoxFlat.new()
+		s.bg_color = bg; s.border_color = border; s.border_width_left = 1; s.border_width_top = 1
+		s.border_width_right = 1; s.border_width_bottom = 1
+		s.corner_radius_top_left = 32; s.corner_radius_top_right = 32
+		s.corner_radius_bottom_left = 32; s.corner_radius_bottom_right = 32
+		s.shadow_size = 3; s.shadow_color = Color(0,0,0,0.15)
+		return s
+		
+	var pen_btn = Button.new()
+	pen_btn.custom_minimum_size = Vector2(32, 32)
+	pen_btn.icon = load("res://assets/textures/lucide/camera.svg") as Texture2D
+	pen_btn.expand_icon = true
+	pen_btn.add_theme_stylebox_override("normal", _circle_style.call(Color(0.98, 0.98, 0.95), Color(0.85, 0.85, 0.8)))
+	pen_btn.add_theme_stylebox_override("hover", _circle_style.call(Color(1,1,1), C_JADE))
+	pen_btn.position = Vector2(72, -8)
+	pen_btn.size = Vector2(32, 32)
+	btn_overlay.add_child(pen_btn)
+	_make_btn_bouncy(pen_btn)
+	pen_btn.pressed.connect(func(): OS.alert("Mở hộp thoại tải ảnh từ thiết bị (FileDialog).", "Cập nhật Avatar"))
+	
+	var gear_btn = Button.new()
+	gear_btn.custom_minimum_size = Vector2(32, 32)
+	gear_btn.icon = load("res://assets/textures/lucide/settings.svg") as Texture2D
+	gear_btn.expand_icon = true
+	gear_btn.add_theme_stylebox_override("normal", _circle_style.call(Color(0.88, 0.92, 0.89), Color(0.7, 0.8, 0.75)))
+	gear_btn.add_theme_stylebox_override("hover", _circle_style.call(Color(1,1,1), C_JADE))
+	gear_btn.position = Vector2(72, 72)
+	gear_btn.size = Vector2(32, 32)
+	btn_overlay.add_child(gear_btn)
+	_make_btn_bouncy(gear_btn)
 	
 	var name_edit = LineEdit.new()
 	name_edit.visible = false
@@ -137,35 +167,14 @@ func _enhance_ux() -> void:
 	ne_style.bg_color = Color(1, 1, 1, 0.8)
 	ne_style.corner_radius_top_left = 6; ne_style.corner_radius_top_right = 6
 	ne_style.corner_radius_bottom_left = 6; ne_style.corner_radius_bottom_right = 6
-	ne_style.content_margin_left = 12; ne_style.content_margin_right = 12
 	name_edit.add_theme_stylebox_override("normal", ne_style)
 	name_edit.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1))
-	name_box.add_child(name_lbl)
-	name_box.add_child(name_edit)
-	
-	var edit_btn = Button.new()
-	edit_btn.text = " Sửa"
-	var edit_icon = load("res://assets/textures/lucide/settings.svg") as Texture2D
-	var save_icon = load("res://assets/textures/lucide/check-circle.svg") as Texture2D
-	if edit_icon:
-		edit_btn.icon = edit_icon
-		edit_btn.expand_icon = true
-	edit_btn.custom_minimum_size = Vector2(90, 32)
 	var bold_f = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	if bold_f:
-		edit_btn.add_theme_font_override("font", bold_f)
-		name_edit.add_theme_font_override("font", bold_f)
-	var eb_style = StyleBoxFlat.new()
-	eb_style.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.1)
-	eb_style.corner_radius_top_left = 6; eb_style.corner_radius_top_right = 6
-	eb_style.corner_radius_bottom_left = 6; eb_style.corner_radius_bottom_right = 6
-	eb_style.border_color = C_JADE; eb_style.border_width_bottom = 2
-	edit_btn.add_theme_stylebox_override("normal", eb_style)
-	edit_btn.add_theme_stylebox_override("hover", eb_style)
-	edit_btn.add_theme_color_override("font_color", C_JADE)
-	name_box.add_child(edit_btn)
-	_make_btn_bouncy(edit_btn)
-
+	if bold_f: name_edit.add_theme_font_override("font", bold_f)
+	
+	name_lbl.get_parent().add_child(name_edit)
+	name_lbl.get_parent().move_child(name_edit, name_lbl.get_index())
+	
 	var is_editing = [false]
 	var save_func = func() -> void:
 		if is_editing[0]:
@@ -177,18 +186,16 @@ func _enhance_ux() -> void:
 			is_editing[0] = false
 			name_edit.visible = false
 			name_lbl.visible = true
-			edit_btn.text = " Sửa"
-			if edit_icon: edit_btn.icon = edit_icon
+			gear_btn.icon = load("res://assets/textures/lucide/settings.svg") as Texture2D
 		else:
 			is_editing[0] = true
 			name_edit.text = name_lbl.text
 			name_lbl.visible = false
 			name_edit.visible = true
 			name_edit.grab_focus()
-			edit_btn.text = " Lưu"
-			if save_icon: edit_btn.icon = save_icon
+			gear_btn.icon = load("res://assets/textures/lucide/check-circle.svg") as Texture2D
 			
-	edit_btn.pressed.connect(save_func)
+	gear_btn.pressed.connect(save_func)
 	name_edit.text_submitted.connect(func(_t): save_func.call())
 	
 	# 3. Add Progress Bar to G3
@@ -224,6 +231,7 @@ func _enhance_ux() -> void:
 		m_lbl.add_theme_constant_override("margin_top", 10); m_lbl.add_theme_constant_override("margin_bottom", 10)
 		m_lbl.add_child(b_lbl)
 		banner.add_child(m_lbl)
+		var name_parent = name_lbl.get_parent()
 		name_parent.add_child(banner)
 		name_parent.move_child(banner, 0)
 
