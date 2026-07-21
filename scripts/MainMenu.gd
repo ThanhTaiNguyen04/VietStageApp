@@ -637,10 +637,9 @@ func _build_roadmap_cards() -> void:
 		card_pop_chords.position = Vector2(2080, 275)
 		roadmap_guide.text = "🗺️ Lộ trình học tập Đàn Tranh"
 		
-<<<<<<< HEAD
-		ess_title.text = "Kỹ Thuật Nhấn Rung"
-		ess_desc.text = "Luyện nhấn dây (nhấn 1/2 âm, 1 âm) và rung dây bằng tay trái tạo hồn cho nhạc."
-		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
+		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
+		basic_desc.text = "Hiểu nhạc cụ, đọc giao diện nốt rơi và gảy những nốt cơ bản."
+		basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 	elif instrument == "trong_chau":
 		# Lộ trình Trống Chầu
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
@@ -653,11 +652,6 @@ func _build_roadmap_cards() -> void:
 		ess_title.text = "Kỹ Thuật Gõ Nâng Cao"
 		ess_desc.text = "Luyện kỹ thuật đập Vành, trống cuộn (Roll) và nhịp Múa Lân."
 		ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
-=======
-		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
-		basic_desc.text = "Hiểu nhạc cụ, đọc giao diện nốt rơi và gảy những nốt cơ bản."
-		basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
->>>>>>> origin/datFix
 		
 		ess_title.text = "LEVEL 2: KHÚC DẠO ĐẦU"
 		ess_desc.text = "Chơi hoàn chỉnh bài nhạc đầu tiên với nhịp độ chậm."
@@ -920,16 +914,13 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranh.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
-<<<<<<< HEAD
 			elif inst == "trong_chau":
 				_fade_to("res://scenes/LessonTrongChau.tscn")
-=======
 			elif inst == "sao_truc":
 				SecureDataManager.active_lesson_id = "sao_truc_level1_1_video"
 				SecureDataManager.data["custom_video_sequence"] = ["res://nvaore/intro1.ogv", "res://nvaore/intro2.ogv", "res://nvaore/intro3.ogv"]
 				SecureDataManager.data["current_sequence_index"] = 0
 				_fade_to("res://scenes/VideoPlayer.tscn")
->>>>>>> origin/datFix
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
@@ -942,15 +933,12 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranh.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
-<<<<<<< HEAD
 			elif inst == "trong_chau":
 				_fade_to("res://scenes/LessonTrongChau.tscn")
-=======
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 2
 				_fade_to("res://scenes/LessonSaoTrucList.tscn")
->>>>>>> origin/datFix
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -973,15 +961,12 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranh.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
-<<<<<<< HEAD
 		elif inst == "trong_chau":
 			_fade_to("res://scenes/LessonTrongChau.tscn")
-=======
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 3
 			_fade_to("res://scenes/LessonSaoTrucList.tscn")
->>>>>>> origin/datFix
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)
