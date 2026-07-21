@@ -25,13 +25,29 @@ var _audio_players : Array            = []
 var audio_enabled := true
 var _hovered_idx : int                = -1
 var _active_touches : Dictionary      = {}
+var _string_feedback : PackedByteArray = PackedByteArray() # 0=normal, 1=correct, 2=wrong
+var _active_strings : PackedByteArray = PackedByteArray()
+var _feedback_texts : Array[String] = []
+var _lesson_marker_labels: Array[String] = []
+var _lesson_marker_states: PackedByteArray = PackedByteArray() # 0=ẩn, 1=chờ, 2=đang luyện, 3=hoàn thành
 
 var is_portrait_mode : bool = false
+var simplify_note_labels : bool = false
+var compact_active_strings : bool = false
+var playhead_ratio : float = 0.25
+var notes_move_left_to_right : bool = false
+var note_spacing_pixels : float = 120.0
+var note_marker_scale : float = 1.0
+var show_only_cued_notes : bool = false
+var show_only_current_note : bool = false
+var show_note_duration_glyphs : bool = false
+var note_label_overrides: Dictionary = {}
 
 # ─── Notes on strings properties ──────────────────────────────────────────────
 var sheet_notes        : Array = []
 var sheet_durations    : Array = []
 var note_statuses      : Array = []
+var note_cues          : Array = []
 var current_note_idx   : int   = 0
 var current_time_beats : float = 0.0
 var is_active          : bool  = false
@@ -51,9 +67,18 @@ func init(notes: Array[String], streams: Array, freqs: Array[float]) -> void:
 	_press_x.resize(STR_COUNT)
 	_press_y.resize(STR_COUNT)
 	_bridge_offsets.resize(STR_COUNT)
+	_string_feedback.resize(STR_COUNT)
+	_active_strings.resize(STR_COUNT)
+	_feedback_texts.resize(STR_COUNT)
+	_lesson_marker_labels.resize(STR_COUNT)
+	_lesson_marker_states.resize(STR_COUNT)
 	_audio_players.resize(STR_COUNT)
 	for i in STR_COUNT:
 		_audio_players[i] = null
+		_active_strings[i] = 1
+		_feedback_texts[i] = ""
+		_lesson_marker_labels[i] = ""
+		_lesson_marker_states[i] = 0
 	mouse_filter = MOUSE_FILTER_STOP
 	queue_redraw()
 
@@ -69,13 +94,202 @@ func set_target(idx: int) -> void:
 		_is_target[i] = 1 if i == idx else 0
 	queue_redraw()
 
-func pluck(idx: int) -> void:
+func set_string_feedback(idx: int, state: int) -> void:
+	if idx < 0 or idx >= STR_COUNT or _string_feedback.size() < STR_COUNT:
+		return
+	_string_feedback[idx] = clampi(state, 0, 2)
+	queue_redraw()
+
+func clear_string_feedback() -> void:
+	if _string_feedback.size() < STR_COUNT:
+		return
+	for i in STR_COUNT:
+		_string_feedback[i] = 0
+	queue_redraw()
+
+func set_active_strings(indices: Array[int]) -> void:
+	if _active_strings.size() < STR_COUNT:
+		return
+	var show_all := indices.is_empty()
+	for i in STR_COUNT:
+		_active_strings[i] = 1 if show_all or indices.has(i) else 0
+	queue_redraw()
+
+func set_compact_active_strings(enabled: bool) -> void:
+	compact_active_strings = enabled
+	_hovered_idx = -1
+	queue_redraw()
+
+func get_display_string_count() -> int:
+	return _get_display_indices().size()
+
+func _get_display_indices() -> Array[int]:
+	var indices: Array[int] = []
+	if compact_active_strings and _active_strings.size() == STR_COUNT:
+		for i in STR_COUNT:
+			if _active_strings[i] == 1:
+				indices.append(i)
+	if indices.is_empty():
+		for i in STR_COUNT:
+			indices.append(i)
+	return indices
+
+func set_playhead_ratio(value: float) -> void:
+	playhead_ratio = clampf(value, 0.15, 0.85)
+	queue_redraw()
+
+func set_note_travel_direction(left_to_right: bool) -> void:
+	notes_move_left_to_right = left_to_right
+	queue_redraw()
+
+func set_scrolling_note_visibility(cued_only: bool, current_only: bool) -> void:
+	show_only_cued_notes = cued_only
+	show_only_current_note = current_only
+	queue_redraw()
+
+func should_draw_scrolling_note(index: int) -> bool:
+	if index < 0 or index >= sheet_notes.size():
+		return false
+	if show_only_current_note and index != current_note_idx:
+		return false
+	if show_only_cued_notes and (index >= note_cues.size() or str(note_cues[index]).is_empty()):
+		return false
+	return true
+
+func get_note_duration_glyph(index: int) -> String:
+	if index < 0 or index >= sheet_durations.size():
+		return ""
+	var duration := float(sheet_durations[index])
+	if duration <= 0.5:
+		return "♪"
+	if duration <= 1.0:
+		return "♩"
+	return "𝅗𝅥"
+
+func get_finger_shape(cue: String) -> String:
+	match cue.strip_edges():
+		"1", "circle":
+			return "circle"
+		"2", "square":
+			return "square"
+		"3", "triangle":
+			return "triangle"
+	return ""
+
+func get_finger_shape_name(cue: String) -> String:
+	match get_finger_shape(cue):
+		"circle":
+			return "hình tròn"
+		"square":
+			return "hình vuông"
+		"triangle":
+			return "hình tam giác"
+	return ""
+
+func _draw_finger_shape(center: Vector2, radius: float, cue: String, fill: Color, outline: Color) -> void:
+	var outline_w := maxf(2.4, radius * 0.14)
+	match get_finger_shape(cue):
+		"circle":
+			draw_circle(center, radius, fill)
+			if outline.a > 0.0:
+				draw_arc(center, radius, 0.0, TAU, 36, outline, outline_w, true)
+				if fill.a > 0.5 and radius > 12.0:
+					draw_arc(center, radius - outline_w * 0.7, 0.0, TAU, 36, Color(1.0, 1.0, 1.0, 0.35), outline_w * 0.45, true)
+		"square":
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = fill
+			if outline.a > 0.0:
+				sb.border_color = outline
+				sb.border_width_left = int(outline_w)
+				sb.border_width_right = int(outline_w)
+				sb.border_width_top = int(outline_w)
+				sb.border_width_bottom = int(outline_w)
+			sb.set_corner_radius_all(clampi(int(radius * 0.38), 5, 16))
+			var rect := Rect2(center - Vector2.ONE * radius * 0.95, Vector2.ONE * radius * 1.9)
+			draw_style_box(sb, rect)
+			if fill.a > 0.5 and radius > 12.0 and outline.a > 0.0:
+				var hl_sb := StyleBoxFlat.new()
+				hl_sb.bg_color = Color.TRANSPARENT
+				hl_sb.border_color = Color(1.0, 1.0, 1.0, 0.35)
+				var hl_w := maxi(1, int(outline_w * 0.45))
+				hl_sb.border_width_left = hl_w; hl_sb.border_width_right = hl_w
+				hl_sb.border_width_top = hl_w; hl_sb.border_width_bottom = hl_w
+				hl_sb.set_corner_radius_all(clampi(int(radius * 0.32), 4, 13))
+				var hl_rect := rect.grow(-outline_w * 0.7)
+				draw_style_box(hl_sb, hl_rect)
+		"triangle":
+			var R := radius * 1.15
+			var v0 := center + Vector2(0.0, -R)
+			var v1 := center + Vector2(R * 0.866, R * 0.5)
+			var v2 := center + Vector2(-R * 0.866, R * 0.5)
+			var points := PackedVector2Array([v0, v1, v2])
+			draw_colored_polygon(points, fill)
+			if outline.a > 0.0:
+				draw_polyline(PackedVector2Array([v0, v1, v2, v0]), outline, outline_w, true)
+				draw_circle(v0, outline_w * 0.45, outline)
+				draw_circle(v1, outline_w * 0.45, outline)
+				draw_circle(v2, outline_w * 0.45, outline)
+				if fill.a > 0.5 and radius > 12.0:
+					var r_inner := R - outline_w * 1.15
+					var i0 := center + Vector2(0.0, -r_inner)
+					var i1 := center + Vector2(r_inner * 0.866, r_inner * 0.5)
+					var i2 := center + Vector2(-r_inner * 0.866, r_inner * 0.5)
+					draw_polyline(PackedVector2Array([i0, i1, i2, i0]), Color(1.0, 1.0, 1.0, 0.35), maxf(1.0, outline_w * 0.45), true)
+
+func get_note_entry_lead_beats() -> float:
+	var logical_width := size.y * 1.1 if is_portrait_mode else size.x
+	var entry_x := logical_width - 12.0 + clampf(_row_h() * 0.45 * note_marker_scale, 18.0, 58.0)
+	return maxf(1.0, (entry_x - get_playhead_x()) / maxf(note_spacing_pixels, 1.0))
+
+func set_feedback_detail(idx: int, text: String, state: int = 0) -> void:
+	if idx < 0 or idx >= STR_COUNT or _feedback_texts.size() < STR_COUNT:
+		return
+	_feedback_texts[idx] = text
+	set_string_feedback(idx, state)
+
+func clear_feedback_details() -> void:
+	if _feedback_texts.size() < STR_COUNT:
+		return
+	for i in STR_COUNT:
+		_feedback_texts[i] = ""
+	clear_string_feedback()
+
+func set_lesson_marker(string_index: int, label: String, state: int) -> void:
+	if string_index < 0 or string_index >= STR_COUNT or _lesson_marker_states.size() < STR_COUNT:
+		return
+	_lesson_marker_labels[string_index] = label
+	_lesson_marker_states[string_index] = clampi(state, 0, 4)
+	queue_redraw()
+
+func clear_lesson_markers() -> void:
+	if _lesson_marker_states.size() < STR_COUNT:
+		return
+	for i in STR_COUNT:
+		_lesson_marker_labels[i] = ""
+		_lesson_marker_states[i] = 0
+	queue_redraw()
+
+func get_lesson_marker_state(string_index: int) -> int:
+	if string_index < 0 or string_index >= STR_COUNT or _lesson_marker_states.size() < STR_COUNT:
+		return 0
+	return int(_lesson_marker_states[string_index])
+
+func get_lesson_marker_label(string_index: int) -> String:
+	if string_index < 0 or string_index >= STR_COUNT or _lesson_marker_labels.size() < STR_COUNT:
+		return ""
+	return _lesson_marker_labels[string_index]
+
+func get_playhead_x() -> float:
+	var W := size.y * 1.1 if is_portrait_mode else size.x
+	return lerpf(24.0, W - 36.0, playhead_ratio)
+
+func pluck(idx: int, play_sound: bool = true) -> void:
 	if idx < 0 or idx >= STR_COUNT or _pluck_amp.size() < STR_COUNT:
 		return
 	_pluck_time[idx] = 0.0
 	_pluck_amp[idx]  = 1.0
 	_glow_alpha[idx] = 1.0
-	if audio_enabled:
+	if play_sound and audio_enabled:
 		var pitch_mult := 1.0
 		if _bridge_offsets.size() > idx and _bridge_offsets[idx] != 0.0:
 			var W_ref := size.y * 1.1 if is_portrait_mode else size.x
@@ -130,17 +344,24 @@ func _get_bridge_pct(idx: int) -> float:
 	# therefore becomes the horizontal row of bridges shown in the reference.
 	if is_portrait_mode:
 		return PORTRAIT_BRIDGE_PCT
-	var t := float(idx) / float(STR_COUNT - 1)
+	var t := _get_visual_string_t(idx)
 	return lerpf(LANDSCAPE_BRIDGE_START_PCT, LANDSCAPE_BRIDGE_END_PCT, t)
 
 func get_str_l(idx: int) -> float:
 	var W := size.y * 1.1 if is_portrait_mode else size.x
 	var ix := 24.0
 	var iw := W - 60.0
-	var t := float(idx) / float(STR_COUNT - 1)
+	var t := _get_visual_string_t(idx)
 	# Curve that matches the diagonal slope of the bridges
 	var pct := lerpf(0.04, 0.22, t) - sin(t * PI) * 0.02
 	return ix + iw * pct
+
+func _get_visual_string_t(idx: int) -> float:
+	var display_indices := _get_display_indices()
+	var display_row := display_indices.find(idx)
+	if display_row >= 0:
+		return float(display_row) / float(maxi(display_indices.size() - 1, 1))
+	return float(idx) / float(STR_COUNT - 1)
 
 func _draw_inlay_pattern(rect: Rect2, color: Color) -> void:
 	var cx := rect.position.x + rect.size.x * 0.5
@@ -215,7 +436,7 @@ func _draw() -> void:
 	if _note_names.is_empty():
 		return
 
-	# 1. Base zither body shadow & background (Light Pale Wood)
+	# 1. Base zither body shadow & background
 	var base_sb := StyleBoxFlat.new()
 	base_sb.bg_color = Color(0.85, 0.76, 0.55)
 	base_sb.set_corner_radius_all(40) # Bo tròn nhiều hơn giống thân đàn thật
@@ -231,19 +452,22 @@ func _draw() -> void:
 	var iy    := 10.0
 	var iw    := W - 60.0
 	var ih    := H - 20.0
-	var rh    := ih / float(STR_COUNT)
+	var display_indices := _get_display_indices()
+	var display_count := display_indices.size()
+	var rh    := ih / float(display_count)
 	var str_r    := W - 24.0
 
 	# 2. Soundboard row backgrounds and S-curve wavy wood grain
-	for i in STR_COUNT:
-		var ry := iy + float(i) * rh
+	for display_row in display_count:
+		var i := display_indices[display_row]
+		var ry := iy + float(display_row) * rh
 		var cy := ry + rh * 0.5
 		
 		# Curved soundboard starts at get_str_l(i) + 8.0 and ends at W - 24.0
 		var row_l := get_str_l(i) + 8.0
 		var row_w := str_r - row_l
 		
-		var center_t := float(i) / float(STR_COUNT - 1)
+		var center_t := float(display_row) / float(maxi(display_count - 1, 1))
 		var curvature_light := sin(center_t * PI)
 		var wood_glow := Color(0.80, 0.68, 0.45)
 		var base_bg := Color(0.85, 0.76, 0.55) if (i % 2 == 0) else Color(0.82, 0.73, 0.52)
@@ -286,6 +510,11 @@ func _draw() -> void:
 		if _is_target[i]:
 			var pulse_tint := (sin(_pulse_phase[i]) + 1.0) * 0.5
 			draw_rect(Rect2(row_l, ry, row_w, rh), Color(0.95, 0.72, 0.18, 0.05 + pulse_tint * 0.05))
+		if _string_feedback.size() == STR_COUNT:
+			if _string_feedback[i] == 1:
+				draw_rect(Rect2(row_l, ry, row_w, rh), Color(0.12, 0.64, 0.34, 0.18))
+			elif _string_feedback[i] == 2:
+				draw_rect(Rect2(row_l, ry, row_w, rh), Color(0.82, 0.20, 0.14, 0.14))
 
 		# Row boundary line
 		draw_line(Vector2(row_l, ry + rh - 0.5), Vector2(str_r, ry + rh - 0.5), Color(0.08, 0.04, 0.02, 0.55), 1.0)
@@ -305,8 +534,9 @@ func _draw() -> void:
 
 	# 4. Draw the curved divider frame (nhạn đầu)
 	var div_pts := PackedVector2Array()
-	for i in STR_COUNT:
-		var ry := iy + float(i) * rh
+	for display_row in display_count:
+		var i := display_indices[display_row]
+		var ry := iy + float(display_row) * rh
 		var cy := ry + rh * 0.5
 		div_pts.append(Vector2(get_str_l(i) + 8.0, cy))
 	# Draw divider shadow
@@ -436,8 +666,9 @@ func _draw() -> void:
 	if dtheme != null:
 		font = dtheme.get_default_font()
 
-	for i in STR_COUNT:
-		var ry := iy + float(i) * rh
+	for display_row in display_count:
+		var i := display_indices[display_row]
+		var ry := iy + float(display_row) * rh
 		var cy := ry + rh * 0.5
 		var str_l := get_str_l(i)
 
@@ -456,12 +687,12 @@ func _draw() -> void:
 		_draw_bridge(bridge_x, cy, rh)
 
 		# ── Premium vibrating string lines ──
-		var tc       := float(i) / float(STR_COUNT - 1)
+		var tc       := float(display_row) / float(maxi(display_count - 1, 1))
 		
-		# String coloring matches zither image: 0, 5, 10, 15 (Sol strings) are green, others silver/white
-		var base_col := Color(0.85, 0.85, 0.85)
-		if i == 0 or i == 5 or i == 10 or i == 15:
-			base_col = Color(0.15, 0.80, 0.35) # green string
+		# Neutral silver/gold strings keep green reserved exclusively for success.
+		# All 17 strings keep their original full brightness. Active-string data is
+		# still used for lesson targeting and optional compact layout only.
+		var base_col := Color(0.88, 0.86, 0.78) if i % 5 != 0 else Color(0.91, 0.75, 0.34)
 
 		var str_col := base_col
 		if _pluck_amp[i] > 0.05:
@@ -471,6 +702,10 @@ func _draw() -> void:
 		elif _is_target[i]:
 			var pulse_col := (sin(_pulse_phase[i]) + 1.0) * 0.5
 			str_col = base_col.lerp(Color(0.95, 0.72, 0.18), 0.25 + pulse_col * 0.25)
+		if _string_feedback.size() == STR_COUNT and _string_feedback[i] == 1:
+			str_col = Color(0.18, 0.80, 0.44)
+		elif _string_feedback.size() == STR_COUNT and _string_feedback[i] == 2:
+			str_col = Color(0.92, 0.34, 0.22)
 
 		var sw := lerpf(4.0, 1.8, tc)
 
@@ -533,13 +768,13 @@ func _draw() -> void:
 
 
 		# ── Pluck Target Line & Scrolling Notes ──
-		var trigger_x: float = get_bridge_x(STR_COUNT - 1) + 32.0
+		var trigger_x: float = get_playhead_x()
 		
 		# (Removed circular target ring, replaced with a straight vertical finish line drawn later)
 		
 		# Draw scrolling notes on this string
 		if is_active and not sheet_notes.is_empty():
-			var PIXELS_PER_BEAT: float = 120.0
+			var PIXELS_PER_BEAT: float = note_spacing_pixels
 			var note_time: float = 0.0
 			for k in range(sheet_notes.size()):
 				var note_name = sheet_notes[k]
@@ -549,18 +784,22 @@ func _draw() -> void:
 				if is_rest:
 					note_time += duration
 					continue
+				if not should_draw_scrolling_note(k):
+					note_time += duration
+					continue
 					
 				var target_str_idx: int = _note_names.find(note_name)
 				if target_str_idx != i:
 					note_time += duration
 					continue
 					
-				# Note X position (starts at left, scrolls to right)
-				var note_x: float = trigger_x - (note_time - current_time_beats) * PIXELS_PER_BEAT
+				var time_offset: float = (note_time - current_time_beats) * PIXELS_PER_BEAT
+				# Bài 2 enters from the left; the other modes enter from the right.
+				var note_x: float = trigger_x - time_offset if notes_move_left_to_right else trigger_x + time_offset
 				
 				# Only draw if it's visible in the playable zither area
 				if note_x >= str_l - 20.0 and note_x <= str_r + 200.0:
-					var cap_h: float = clampf(rh * 0.90, 14.0, 42.0) # To bằng con nhạn
+					var cap_h: float = clampf(rh * 0.90 * note_marker_scale, 18.0, 58.0)
 					var note_width: float = cap_h # Force perfect circle
 					
 					# Fade in as the leading edge emerges from the left knot
@@ -578,9 +817,14 @@ func _draw() -> void:
 					border_color.a = 0.85 # Bright solid border
 					
 					if k == current_note_idx:
-						var pulse: float = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
-						cap_color = Color(0.95, 0.72, 0.18, 0.4 + pulse * 0.1) # semi-transparent gold
-						border_color = Color(1.0, 0.92, 0.60, 0.95)
+						var current_status = note_statuses[k] if k < note_statuses.size() else "unplayed"
+						if current_status == "missed":
+							cap_color = Color(0.78, 0.12, 0.10, 0.52)
+							border_color = Color(1.0, 0.38, 0.30, 0.98)
+						else:
+							var pulse: float = (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
+							cap_color = Color(0.95, 0.72, 0.18, 0.4 + pulse * 0.1) # semi-transparent gold
+							border_color = Color(1.0, 0.92, 0.60, 0.95)
 					elif k < current_note_idx:
 						var status = note_statuses[k] if k < note_statuses.size() else "unplayed"
 						if status == "correct":
@@ -596,59 +840,121 @@ func _draw() -> void:
 					cap_color.a *= alpha_mult
 					border_color.a *= alpha_mult
 							
-					var cap_sb: StyleBoxFlat = StyleBoxFlat.new()
-					cap_sb.bg_color = cap_color
-					cap_sb.border_color = border_color
-					cap_sb.border_width_left = 1; cap_sb.border_width_right = 1
-					cap_sb.border_width_top = 1; cap_sb.border_width_bottom = 1
-					cap_sb.set_corner_radius_all(int(cap_h * 0.5))
-					
-					# Shadow/Glow effect
-					cap_sb.shadow_color = Color(border_color.r, border_color.g, border_color.b, 0.3 * alpha_mult)
-					cap_sb.shadow_size = 3
-					cap_sb.shadow_offset = Vector2(0, 0)
-					
-					draw_style_box(cap_sb, cap_rect)
-					
-					# Draw flower inside
-					var fc = border_color
-					var fr = cap_h * 0.22
 					var center_pos = Vector2(note_x, cy)
-					draw_circle(center_pos + Vector2(-fr, 0.0), fr, fc)
-					draw_circle(center_pos + Vector2(fr, 0.0), fr, fc)
-					draw_circle(center_pos + Vector2(0.0, -fr), fr, fc)
-					draw_circle(center_pos + Vector2(0.0, fr), fr, fc)
-					var center_dot = fc
-					center_dot.a = 0.5 * alpha_mult
-					draw_circle(center_pos, fr * 0.6, center_dot)
+					var cue := str(note_cues[k]) if k < note_cues.size() else ""
+					var shape := get_finger_shape(cue)
+					if shape == "":
+						var default_shapes := ["circle", "square", "triangle"]
+						shape = default_shapes[k % 3]
+					var shape_center: Vector2 = center_pos + (Vector2(0.0, -cap_h * 0.09) if show_note_duration_glyphs else Vector2.ZERO)
+					var shape_radius: float = clampf(cap_h * 0.42, 16.0, 30.0)
+					_draw_finger_shape(shape_center + Vector2(0, 3), shape_radius, shape,
+						Color(border_color.r, border_color.g, border_color.b, 0.3 * alpha_mult), Color.TRANSPARENT)
+					_draw_finger_shape(shape_center, shape_radius, shape, cap_color, border_color)
+					if show_note_duration_glyphs and font != null:
+						var duration_glyph := get_note_duration_glyph(k)
+						draw_string(font, Vector2(note_x - cap_h * 0.5, cy + cap_h * 0.27), duration_glyph,
+							HORIZONTAL_ALIGNMENT_CENTER, cap_h, 8, Color(1.0, 0.94, 0.72, alpha_mult))
 						
 				note_time += duration
+
+		# Ký hiệu ngón bằng hình học nằm trực tiếp trên dây cho tất cả các bài.
+		if _lesson_marker_states.size() == STR_COUNT and int(_lesson_marker_states[i]) > 0 and font != null:
+			var marker_state := int(_lesson_marker_states[i])
+			var marker_radius := clampf(rh * 0.30, 22.0, 36.0)
+			# Lệch nhẹ khỏi vạch gảy để nút không bị đường dọc che giữa.
+			var marker_center := Vector2(get_playhead_x() + 34.0, cy)
+			var marker_fill := Color("#f8f3e6")
+			var marker_border := Color("#b8a88a")
+			if marker_state == 2:
+				var marker_pulse := (sin(Time.get_ticks_msec() * 0.008) + 1.0) * 0.5
+				marker_fill = Color("#ffdf40").lightened(marker_pulse * 0.12)
+				marker_border = Color("#ffffff")
+			elif marker_state == 3:
+				marker_fill = Color("#2998ff")
+				marker_border = Color("#d1edff")
+			elif marker_state == 4:
+				marker_fill = Color("#ff4747")
+				marker_border = Color("#ffe0e0")
+			var marker_label := _lesson_marker_labels[i]
+			var shape := get_finger_shape(marker_label)
+			if shape == "":
+				var default_shapes := ["circle", "square", "triangle"]
+				shape = default_shapes[i % 3]
+			_draw_finger_shape(marker_center + Vector2(0, 3), marker_radius, shape, Color(0, 0, 0, 0.28), Color.TRANSPARENT)
+			_draw_finger_shape(marker_center, marker_radius, shape, marker_fill, marker_border)
+			if not marker_label.is_empty() and get_finger_shape(marker_label) == "" and font != null:
+				draw_string(font, Vector2(marker_center.x - marker_radius, marker_center.y + 5.0), marker_label,
+					HORIZONTAL_ALIGNMENT_CENTER, marker_radius * 2.0, 12, Color.WHITE if marker_state >= 2 else Color("#4b443b"))
 
 		# ── Note Label and String Numbers ──
 		if font != null:
 			var num_alpha := 0.50 + _glow_alpha[i] * 0.50
-			var f_size := 11
-			var name_f_size := 12
-			
-			if rh < 18.0:
-				f_size = clamp(int(rh * 0.7), 8, 10)
-				name_f_size = clamp(int(rh * 0.75), 9, 11)
-				
-			var baseline_offset := f_size * 0.35
-			var name_baseline_offset := name_f_size * 0.35
-			var lbl_x := clampf(str_l - 22.0, 84.0, W)
-			
-			# Draw String Number inside left board background
-			draw_string(font, Vector2(lbl_x, cy + baseline_offset),
-				str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, f_size,
-				Color(0.95, 0.72, 0.18, num_alpha))
-			
-			# Draw Note Name centered inside Right block (W - 12.0)
-			var name_col := Color(0.98, 0.82, 0.20) if _is_target[i] else Color(0.95, 0.72, 0.18)
-			draw_string(font, Vector2(W - 12.0, cy + name_baseline_offset),
-				_note_names[i % _note_names.size()],
-				HORIZONTAL_ALIGNMENT_CENTER, -1, name_f_size,
-				Color(name_col.r, name_col.g, name_col.b, 0.90))
+			var number_size := clampi(int(rh * 0.42), 9, 13)
+			var note_size := clampi(int(rh * 0.48), 11, 16)
+
+			# String number badge: compact, high contrast and aligned with its string.
+			var number_radius := clampf(rh * 0.28, 7.0, 10.0)
+			var number_center := Vector2(clampf(str_l - 18.0, 48.0, W - 120.0), cy)
+			draw_circle(number_center + Vector2(0.0, 1.5), number_radius + 1.0, Color(0.05, 0.02, 0.01, 0.38))
+			draw_circle(number_center, number_radius, Color(0.18, 0.08, 0.03, 0.92))
+			draw_arc(number_center, number_radius, 0.0, TAU, 24, Color(0.95, 0.72, 0.18, 0.72), 1.2, true)
+			var number_text_width := number_radius * 2.0
+			draw_string(font,
+				Vector2(number_center.x - number_radius, cy + number_size * 0.35),
+				str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, number_text_width, number_size,
+				Color(1.0, 0.91, 0.62, num_alpha))
+
+			# Note badge: reserve an explicit width so Vietnamese note names never clip.
+			var note_width := clampf(W * 0.045, 52.0, 72.0)
+			var note_height := clampf(rh * 0.76, 18.0, 30.0)
+			var note_rect := Rect2(
+				str_r - note_width - 9.0,
+				cy - note_height * 0.5,
+				note_width,
+				note_height)
+			var feedback_state := int(_string_feedback[i]) if _string_feedback.size() == STR_COUNT else 0
+			var target_pulse := (sin(_pulse_phase[i]) + 1.0) * 0.5 if _is_target[i] else 0.0
+			var badge := StyleBoxFlat.new()
+			badge.bg_color = Color(0.16, 0.07, 0.025, 0.90)
+			badge.border_color = Color(0.98, 0.82, 0.20, 0.88) if _is_target[i] else Color(0.77, 0.58, 0.15, 0.68)
+			badge.set_border_width_all(2 if _is_target[i] else 1)
+			badge.set_corner_radius_all(int(note_height * 0.42))
+			badge.shadow_color = Color(0.0, 0.0, 0.0, 0.34)
+			badge.shadow_size = 3
+			badge.shadow_offset = Vector2(0.0, 1.5)
+			if _is_target[i]:
+				badge.bg_color = Color(0.30, 0.15, 0.03, 0.94)
+				badge.shadow_color = Color(0.98, 0.72, 0.18, 0.20 + target_pulse * 0.18)
+			if feedback_state == 1:
+				badge.bg_color = Color(0.08, 0.38, 0.20, 0.96)
+				badge.border_color = Color(0.34, 0.92, 0.54, 0.96)
+				badge.shadow_color = Color(0.18, 0.80, 0.44, 0.28)
+			elif feedback_state == 2:
+				badge.bg_color = Color(0.42, 0.08, 0.05, 0.94)
+				badge.border_color = Color(0.96, 0.38, 0.28, 0.92)
+			draw_style_box(badge, note_rect)
+
+			var name_col := Color(1.0, 0.92, 0.60) if _is_target[i] else Color(0.98, 0.82, 0.32)
+			if feedback_state == 1:
+				name_col = Color(0.82, 1.0, 0.86)
+			elif feedback_state == 2:
+				name_col = Color(1.0, 0.84, 0.78)
+			var display_note := _note_names[i % _note_names.size()]
+			if note_label_overrides.has(i):
+				display_note = str(note_label_overrides[i])
+			elif simplify_note_labels:
+				display_note = display_note.rstrip("0123456789")
+			draw_string(font,
+				Vector2(note_rect.position.x, cy + note_size * 0.35),
+				display_note,
+				HORIZONTAL_ALIGNMENT_CENTER, note_rect.size.x, note_size,
+				Color(name_col.r, name_col.g, name_col.b, 1.0))
+			if _feedback_texts.size() == STR_COUNT and _feedback_texts[i] != "":
+				var detail_color := Color(0.70, 1.0, 0.78) if feedback_state == 1 else Color(1.0, 0.78, 0.62)
+				var detail_x: float = get_playhead_x() - 180.0 if playhead_ratio > 0.65 else get_playhead_x() + 10.0
+				draw_string(font, Vector2(detail_x, cy + note_size * 0.32),
+					_feedback_texts[i], HORIZONTAL_ALIGNMENT_LEFT, 170.0, clampi(note_size - 2, 9, 14), detail_color)
 
 		# Press touch marker
 		if _is_pressed[i]:
@@ -660,8 +966,9 @@ func _draw() -> void:
 			draw_circle(Vector2(_press_x[i], marker_y), 3.0, Color(1.00, 0.75, 0.35, 0.95))
 			
 	# 5. Draw the target finish line (đường thẳng kết thúc)
-	var finish_x = get_bridge_x(STR_COUNT - 1) + 32.0
-	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(1.0, 0.85, 0.15, 0.65), 3.0)
+	var finish_x := get_playhead_x()
+	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(0.95, 0.72, 0.18, 0.20), 10.0)
+	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(1.0, 0.85, 0.15, 0.92), 2.0)
 
 func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 	var bw := 20.0
@@ -696,7 +1003,7 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 		Vector2(bx - 1.5, top_y + bh * 0.2),
 		Vector2(bx - 3.0, top_y + bh * 0.2)
 	])
-	draw_colored_polygon(poly_l, Color(0.12, 0.05, 0.02)) 
+	draw_colored_polygon(poly_l, Color(0.12, 0.05, 0.02))
 	
 	# Right leg (lit/bright side)
 	var poly_r := PackedVector2Array([
@@ -705,7 +1012,7 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 		Vector2(bx + 1.5, top_y + bh * 0.2),
 		Vector2(bx + 3.0, top_y + bh * 0.2)
 	])
-	draw_colored_polygon(poly_r, Color(0.18, 0.08, 0.04)) 
+	draw_colored_polygon(poly_r, Color(0.18, 0.08, 0.04))
 	
 	# Apex block (connects legs)
 	var poly_top := PackedVector2Array([
@@ -738,7 +1045,7 @@ func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 # ─── Input helpers ────────────────────────────────────────────────────────────
 func _row_h() -> float:
 	var H := size.x if is_portrait_mode else size.y
-	return (H - 20.0) / float(STR_COUNT)
+	return (H - 20.0) / float(_get_display_indices().size())
 
 func _row_at(y: float) -> int:
 	var H := size.x if is_portrait_mode else size.y
@@ -748,11 +1055,16 @@ func _row_at(y: float) -> int:
 	var rel_y := y - 10.0
 	if rel_y < 0.0 or rel_y >= ih:
 		return -1
-	return clamp(int(rel_y / (ih / float(STR_COUNT))), 0, STR_COUNT - 1)
+	var display_indices := _get_display_indices()
+	var display_row := clampi(int(rel_y / (ih / float(display_indices.size()))), 0, display_indices.size() - 1)
+	return display_indices[display_row]
 
 func _row_cy(idx: int) -> float:
 	var rh := _row_h()
-	return 10.0 + rh * 0.5 + float(idx) * rh
+	var display_row := _get_display_indices().find(idx)
+	if display_row < 0:
+		return -1000.0
+	return 10.0 + rh * 0.5 + float(display_row) * rh
 
 func _get_local_touch_pos(event_pos: Vector2) -> Vector2:
 	if is_portrait_mode:

@@ -27,9 +27,9 @@ const C_SCREEN_BG  := Color(0.95, 0.93, 0.89, 1.0) # screen placeholder gray-cre
 @onready var skip_btn     : Button         = $Center/PlayerCard/CardM/PlayerVBox/FooterRow/SkipBtn
 @onready var complete_btn : Button         = $Center/PlayerCard/CardM/PlayerVBox/FooterRow/CompleteBtn
 @onready var screen_anch  : Control        = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor
-@onready var play_overlay : PanelContainer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/PlayOverlay
-@onready var linh_rect     : TextureRect    = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/LinhTexture
-@onready var video_stream_player : VideoStreamPlayer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/VideoStreamPlayer
+@onready var play_overlay : PanelContainer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/MediaAspect/MediaSurface/PlayOverlay
+@onready var linh_rect     : TextureRect    = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/MediaAspect/MediaSurface/LinhTexture
+@onready var video_stream_player : VideoStreamPlayer = $Center/PlayerCard/CardM/PlayerVBox/VideoFrame/FrameM/ScreenAnchor/MediaAspect/MediaSurface/VideoStreamPlayer
 
 # ─── State ───
 var _playing     := false
@@ -44,6 +44,10 @@ var rewind_btn : Button
 var forward_btn : Button
 var speed_btn : Button
 var zoom_btn : Button
+var intro_exit_btn : Button
+var intro_overlay : Control
+var intro_pbar : ProgressBar
+var intro_count_lbl : Label
 
 const SUBTITLES_DAN_TRANH := [
 	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là giảng viên, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
@@ -73,15 +77,28 @@ const SUBTITLES_TRONG_CHAU := [
 	{"start": 8.0,  "end": 10.0, "text": "Tuyệt vời! Hãy nhấn 'Hoàn Thành Video' để nhận 80 điểm và bắt đầu luyện tập thực tế ngay!"}
 ]
 
+static var custom_video_sequence: Array = []
+static var current_sequence_index: int = 0
 static var custom_video_path := ""
-static var custom_subtitles : Array = []
+static var custom_subtitles := []
+
+var sequence_modal: Control
 
 var active_subtitles := []
 
 func _ready() -> void:
 	var inst := InstrumentSelect.selected_instrument
-	if custom_video_path != "":
+	
+	custom_video_sequence = SecureDataManager.data.get("custom_video_sequence", [])
+	current_sequence_index = SecureDataManager.data.get("current_sequence_index", 0)
+	
+	if custom_video_sequence.size() > 0:
+		var path: String = custom_video_sequence[current_sequence_index]
+		video_stream_player.stream = load(path)
+		_duration = _get_video_duration(path)
+	elif custom_video_path != "":
 		video_stream_player.stream = load(custom_video_path)
+		_duration = _get_video_duration(custom_video_path)
 		active_subtitles = custom_subtitles
 	else:
 		if inst == "sao_truc":
@@ -136,9 +153,55 @@ func _ready() -> void:
 	_connect_buttons()
 	_update_play_state()
 	
-	if inst == "dan_bau":
+	if inst == "dan_bau" or inst == "dan_tranh":
 		_setup_simply_piano_layout()
+		
+	if custom_video_sequence.size() > 0:
+		top_row.visible = false
+		control_row.visible = false
+		footer_row.visible = false
+		sub_panel.visible = false
+		video_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		# Loại bỏ viền trắng để video full màn hình
+		if card_m:
+			card_m.add_theme_constant_override("margin_left", 0)
+			card_m.add_theme_constant_override("margin_right", 0)
+			card_m.add_theme_constant_override("margin_top", 0)
+			card_m.add_theme_constant_override("margin_bottom", 0)
+		player_card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		video_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		var frame_m = video_frame.get_node_or_null("FrameM")
+		if frame_m:
+			frame_m.add_theme_constant_override("margin_left", 0)
+			frame_m.add_theme_constant_override("margin_right", 0)
+			frame_m.add_theme_constant_override("margin_top", 0)
+			frame_m.add_theme_constant_override("margin_bottom", 0)
+		
+		# Chuyển nền tổng thể thành đen
+		var bg_node := get_node_or_null("BG") as ColorRect
+		if bg_node: bg_node.color = Color.BLACK
+		var screen_bg = screen_anch.get_node_or_null("ScreenBG") as ColorRect
+		if screen_bg: screen_bg.color = Color.BLACK
+			
+		var media_aspect = screen_anch.get_node_or_null("MediaAspect")
+		if media_aspect:
+			media_aspect.ratio = 16.0 / 9.0
+			# Thay đổi thành COVER để lấp đầy toàn bộ màn hình, cắt bỏ viền đen
+			media_aspect.stretch_mode = AspectRatioContainer.STRETCH_COVER
+			
+		video_stream_player.expand = true
+		
+		# Tự động phát
+		_time = 0.0
+		video_stream_player.stream_position = 0.0
+		_playing = true
+		_update_play_state()
+		video_stream_player.play()
+		
+		_setup_intro_layout()
 
+	_create_sequence_modal()
 	
 	# Determine duration dynamically
 	if video_stream_player.stream:
@@ -163,15 +226,22 @@ func _process(delta: float) -> void:
 	if _playing:
 		if video_stream_player.is_playing():
 			_time = video_stream_player.stream_position
+		elif not video_stream_player.paused:
+			# Video finished naturally before reaching _duration
+			_time = _duration
 		
 		if _time >= _duration:
 			_time = _duration
 			_playing = false
 			_update_play_state()
-			_va_success_prompt()
 			video_stream_player.stop()
-			linh_rect.visible = true
-			video_stream_player.visible = false
+			
+			if custom_video_sequence.size() > 0:
+				_show_sequence_modal()
+			else:
+				_va_success_prompt()
+				linh_rect.visible = true
+				video_stream_player.visible = false
 			
 		_update_media_progress()
 
@@ -345,10 +415,14 @@ func _on_forward_pressed() -> void:
 		_time = _duration
 		_playing = false
 		_update_play_state()
-		_va_success_prompt()
 		video_stream_player.stop()
-		linh_rect.visible = true
-		video_stream_player.visible = false
+		
+		if custom_video_sequence.size() > 0:
+			_show_sequence_modal()
+		else:
+			_va_success_prompt()
+			linh_rect.visible = true
+			video_stream_player.visible = false
 	else:
 		_time = new_pos
 		video_stream_player.stream_position = new_pos
@@ -393,6 +467,11 @@ func _update_play_state() -> void:
 			lbl.text = "Pause"
 			var tex = _get_white_lucide_icon("pause")
 			if tex: irect.texture = tex
+		elif play_btn.has_meta("is_intro_btn"):
+			var irect = play_btn.get_child(0) as TextureRect
+			var tex = _get_white_lucide_icon("pause")
+			if tex: irect.texture = tex
+			if intro_exit_btn: intro_exit_btn.visible = false
 		else:
 			play_btn.text = "⏸"
 		play_overlay.visible = false
@@ -409,11 +488,18 @@ func _update_play_state() -> void:
 			lbl.text = "Play"
 			var tex = _get_white_lucide_icon("play")
 			if tex: irect.texture = tex
+		elif play_btn.has_meta("is_intro_btn"):
+			var irect = play_btn.get_child(0) as TextureRect
+			var tex = _get_white_lucide_icon("play")
+			if tex: irect.texture = tex
+			if intro_exit_btn: intro_exit_btn.visible = true
 		else:
 			play_btn.text = "▶"
 		play_overlay.visible = true
 		if video_stream_player.is_playing() and not video_stream_player.paused:
 			video_stream_player.paused = true
+	
+	_create_sequence_modal()
 
 func _va_success_prompt() -> void:
 	var inst := InstrumentSelect.selected_instrument
@@ -445,10 +531,15 @@ func _on_complete() -> void:
 	SecureDataManager.video_completed = true
 	custom_video_path = ""
 	custom_subtitles = []
+	custom_video_sequence = []
+	current_sequence_index = 0
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
+		if lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeRoom.tscn")
+		elif lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
 			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
 		elif lesson_id.begins_with("trong_chau_coban_") and lesson_id.ends_with("_video"):
@@ -462,10 +553,13 @@ func _go_back() -> void:
 	video_stream_player.stop()
 	custom_video_path = ""
 	custom_subtitles = []
+	custom_video_sequence = []
+	current_sequence_index = 0
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		var target := "res://scenes/LessonDanTranh.tscn" if SecureDataManager.active_lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
+		get_tree().change_scene_to_file(target)
 	)
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:
@@ -628,7 +722,150 @@ func _setup_simply_piano_layout() -> void:
 	# Override sub_label reference so subtitle updates work
 	sub_label = new_sub_lbl
 
-func _get_white_lucide_icon(icon_name: String) -> Texture2D:
+func _get_video_duration(path: String) -> float:
+	if "intro" in path or "intro" in path.to_lower():
+		return 16.0
+	return 10.0
+
+# ─── SEQUENCE MODAL ─────────────────────────────────────────────────────────
+
+func _create_sequence_modal() -> void:
+	sequence_modal = Control.new()
+	sequence_modal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sequence_modal.visible = false
+	
+	var panel = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	# Phóng to x3: Rộng 720, Cao 260
+	panel.position = Vector2(-360, -260)
+	panel.custom_minimum_size = Vector2(720, 260)
+	
+	var panel_sb = StyleBoxFlat.new()
+	var bg_col = Color("1a1208")
+	bg_col.a = 0.95
+	panel_sb.bg_color = bg_col # Màu Deep Mahogany của app
+	panel_sb.corner_radius_top_left = 130
+	panel_sb.corner_radius_top_right = 130
+	panel_sb.corner_radius_bottom_left = 0
+	panel_sb.corner_radius_bottom_right = 0
+	panel.add_theme_stylebox_override("panel", panel_sb)
+	sequence_modal.add_child(panel)
+	
+	var hbox := HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 80)
+	panel.add_child(hbox)
+	
+	# Nút Replay (Trái) - Phóng to 160x160
+	var replay_btn := Button.new()
+	replay_btn.custom_minimum_size = Vector2(160, 160)
+	replay_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var replay_sb := StyleBoxFlat.new()
+	replay_sb.bg_color = Color.TRANSPARENT
+	replay_sb.border_width_left = 6; replay_sb.border_width_top = 6
+	replay_sb.border_width_right = 6; replay_sb.border_width_bottom = 6
+	replay_sb.border_color = Color("f0deb4") # Warm Ivory
+	replay_sb.corner_radius_top_left = 80; replay_sb.corner_radius_top_right = 80
+	replay_sb.corner_radius_bottom_left = 80; replay_sb.corner_radius_bottom_right = 80
+	replay_btn.add_theme_stylebox_override("normal", replay_sb)
+	replay_btn.add_theme_stylebox_override("hover", replay_sb)
+	replay_btn.add_theme_stylebox_override("pressed", replay_sb)
+	replay_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	var replay_icon := TextureRect.new()
+	# Tăng scale nội tại của SVG lên cực đại (x5) để siêu nét
+	replay_icon.texture = _get_white_lucide_icon("rotate-ccw", 5.0)
+	replay_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	replay_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	replay_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Thu hẹp vùng hiển thị icon lại một chút so với viền nút để không bị lẹm
+	replay_icon.offset_left = 35
+	replay_icon.offset_top = 35
+	replay_icon.offset_right = -35
+	replay_icon.offset_bottom = -35
+	replay_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	replay_btn.add_child(replay_icon)
+	hbox.add_child(replay_btn)
+	
+	# Nút Next (Phải) - Phóng to 160x160
+	var next_btn := Button.new()
+	next_btn.custom_minimum_size = Vector2(160, 160)
+	next_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var next_sb := StyleBoxFlat.new()
+	next_sb.bg_color = Color("c0541a") # Màu Terracotta đỏ cam (Primary)
+	next_sb.corner_radius_top_left = 80; next_sb.corner_radius_top_right = 80
+	next_sb.corner_radius_bottom_left = 80; next_sb.corner_radius_bottom_right = 80
+	next_btn.add_theme_stylebox_override("normal", next_sb)
+	
+	var next_sb_hover := next_sb.duplicate() as StyleBoxFlat
+	next_sb_hover.bg_color = Color("d16021") # Sáng hơn xíu
+	next_btn.add_theme_stylebox_override("hover", next_sb_hover)
+	next_btn.add_theme_stylebox_override("pressed", next_sb)
+	next_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	var next_icon := TextureRect.new()
+	next_icon.texture = _get_white_lucide_icon("play", 5.0)
+	next_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	next_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	next_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Padding 35px -> kích thước icon thực tế là 90x90 trên nền nút 160x160
+	next_icon.offset_left = 35
+	next_icon.offset_top = 35
+	next_icon.offset_right = -35
+	next_icon.offset_bottom = -35
+	next_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	next_btn.add_child(next_icon)
+	hbox.add_child(next_btn)
+	
+	_make_button_bouncy(replay_btn)
+	_make_button_bouncy(next_btn)
+	
+	replay_btn.pressed.connect(_on_sequence_replay)
+	next_btn.pressed.connect(_on_sequence_next)
+	
+	# Đưa panel vào VideoFrame
+	video_frame.add_child(sequence_modal)
+
+func _show_sequence_modal() -> void:
+	sequence_modal.visible = true
+	if intro_overlay: intro_overlay.visible = false
+	if play_overlay: play_overlay.visible = false
+	sequence_modal.modulate.a = 0.0
+	var t := create_tween()
+	t.tween_property(sequence_modal, "modulate:a", 1.0, 0.3)
+
+func _on_sequence_replay() -> void:
+	sequence_modal.visible = false
+	if intro_overlay: intro_overlay.visible = true
+	_time = 0.0
+	video_stream_player.stream_position = 0.0
+	_playing = true
+	_update_play_state()
+	video_stream_player.play()
+
+func _on_sequence_next() -> void:
+	current_sequence_index += 1
+	sequence_modal.visible = false
+	if intro_overlay: intro_overlay.visible = true
+	
+	if current_sequence_index < custom_video_sequence.size():
+		var path: String = custom_video_sequence[current_sequence_index]
+		video_stream_player.stream = load(path)
+		_duration = _get_video_duration(path)
+		_time = 0.0
+		video_stream_player.stream_position = 0.0
+		_playing = true
+		_update_play_state()
+		video_stream_player.play()
+		
+		if intro_pbar:
+			intro_pbar.value = current_sequence_index + 1
+		if intro_count_lbl:
+			intro_count_lbl.text = str(current_sequence_index + 1) + "/" + str(custom_video_sequence.size())
+	else:
+		_on_complete()
+
+func _get_white_lucide_icon(icon_name: String, svg_scale: float = 1.25) -> Texture2D:
 	var path = "res://assets/textures/lucide/" + icon_name + ".svg"
 	if not FileAccess.file_exists(path):
 		return null
@@ -642,3 +879,102 @@ func _get_white_lucide_icon(icon_name: String) -> Texture2D:
 	if err == OK:
 		return ImageTexture.create_from_image(img)
 	return null
+
+func _setup_intro_layout() -> void:
+	intro_overlay = Control.new()
+	intro_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	video_frame.add_child(intro_overlay)
+
+	var tl_hbox = HBoxContainer.new()
+	tl_hbox.add_theme_constant_override("separation", 20)
+	tl_hbox.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	tl_hbox.position = Vector2(40, 40)
+	intro_overlay.add_child(tl_hbox)
+
+	var create_circ_btn = func(icon_name: String, cb: Callable) -> Button:
+		var btn = Button.new()
+		btn.custom_minimum_size = Vector2(120, 120)
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = Color(0, 0, 0, 0.5)
+		sb.corner_radius_top_left = 60
+		sb.corner_radius_top_right = 60
+		sb.corner_radius_bottom_left = 60
+		sb.corner_radius_bottom_right = 60
+		btn.add_theme_stylebox_override("normal", sb)
+		btn.add_theme_stylebox_override("hover", sb)
+		btn.add_theme_stylebox_override("pressed", sb)
+		btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		
+		var icon_rect = TextureRect.new()
+		var tex = _get_white_lucide_icon(icon_name, 5.0)
+		if tex: icon_rect.texture = tex
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		# Margin 25px để icon to (70x70) bên trong viền nút (120x120)
+		icon_rect.offset_left = 25
+		icon_rect.offset_top = 25
+		icon_rect.offset_right = -25
+		icon_rect.offset_bottom = -25
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(icon_rect)
+		btn.pressed.connect(cb)
+		_make_button_bouncy(btn)
+		return btn
+
+	var intro_play = create_circ_btn.call("pause", _toggle_play)
+	play_btn = intro_play
+	play_btn.set_meta("is_intro_btn", true)
+	tl_hbox.add_child(intro_play)
+	
+	intro_exit_btn = create_circ_btn.call("log-out", _go_back)
+	intro_exit_btn.visible = false
+	tl_hbox.add_child(intro_exit_btn)
+
+	var sp_skip = Button.new()
+	sp_skip.text = "SKIP"
+	sp_skip.add_theme_font_size_override("font_size", 48)
+	var skip_sb = StyleBoxEmpty.new()
+	sp_skip.add_theme_stylebox_override("normal", skip_sb)
+	sp_skip.add_theme_stylebox_override("hover", skip_sb)
+	sp_skip.add_theme_stylebox_override("pressed", skip_sb)
+	sp_skip.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	sp_skip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	sp_skip.position = Vector2(-220, -100)
+	sp_skip.pressed.connect(_on_sequence_next)
+	_make_button_bouncy(sp_skip)
+	intro_overlay.add_child(sp_skip)
+
+	var tr_hbox = HBoxContainer.new()
+	tr_hbox.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	tr_hbox.position = Vector2(-450, 50)
+	tr_hbox.add_theme_constant_override("separation", 20)
+	intro_overlay.add_child(tr_hbox)
+
+	intro_pbar = ProgressBar.new()
+	intro_pbar.custom_minimum_size = Vector2(300, 24)
+	intro_pbar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	intro_pbar.show_percentage = false
+	var bg_sb = StyleBoxFlat.new()
+	bg_sb.bg_color = Color(0, 0, 0, 0.4)
+	bg_sb.corner_radius_top_left = 12
+	bg_sb.corner_radius_top_right = 12
+	bg_sb.corner_radius_bottom_left = 12
+	bg_sb.corner_radius_bottom_right = 12
+	var fg_sb = StyleBoxFlat.new()
+	fg_sb.bg_color = Color(0.6, 0.9, 0.2)
+	fg_sb.corner_radius_top_left = 12
+	fg_sb.corner_radius_top_right = 12
+	fg_sb.corner_radius_bottom_left = 12
+	fg_sb.corner_radius_bottom_right = 12
+	intro_pbar.add_theme_stylebox_override("background", bg_sb)
+	intro_pbar.add_theme_stylebox_override("fill", fg_sb)
+	intro_pbar.max_value = custom_video_sequence.size()
+	intro_pbar.value = current_sequence_index + 1
+	tr_hbox.add_child(intro_pbar)
+
+	intro_count_lbl = Label.new()
+	intro_count_lbl.text = str(current_sequence_index + 1) + "/" + str(custom_video_sequence.size())
+	intro_count_lbl.add_theme_font_size_override("font_size", 40)
+	tr_hbox.add_child(intro_count_lbl)

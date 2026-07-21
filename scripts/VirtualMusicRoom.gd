@@ -69,6 +69,7 @@ var _tex_bau : Texture2D
 var _tex_trong : Texture2D
 var _tex_linh : Texture2D
 var _tex_player : Texture2D
+var _tex_wall : Texture2D
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
 var _is_blinking : bool = false
@@ -114,10 +115,10 @@ var _font_body_bold : Font
 var _is_mobile_layout : bool = false
 var _station_transitioning : bool = false
 var _station_base_positions := {
-	"tranh": Vector2(70.0, 520.0),
-	"sao": Vector2(810.0, 520.0),
-	"bau": Vector2(230.0, 330.0),
-	"trong": Vector2(650.0, 330.0),
+	"tranh": Vector2(-20.0, 620.0),
+	"bau": Vector2(260.0, 620.0),
+	"trong": Vector2(540.0, 620.0),
+	"sao": Vector2(820.0, 620.0),
 }
 
 
@@ -144,12 +145,13 @@ func _ready() -> void:
 	SecureDataManager.load_data()
 	_spawn_decorations()
 	_setup_hud_shop_button()
-	_tex_tranh = _make_texture_transparent(load("res://assets/textures/dan_tranh_asset.png") as Texture2D)
-	_tex_sao = _make_texture_transparent(load("res://assets/textures/sao_truc_asset.png") as Texture2D)
-	_tex_bau = _make_texture_transparent(load("res://assets/textures/dan_bau_asset.png") as Texture2D)
-	_tex_trong = _make_texture_transparent(load("res://assets/textures/trong_chau_asset.png") as Texture2D)
+	_tex_tranh = _make_texture_transparent(load("res://assets/textures/dan-tranh-17.jpg") as Texture2D)
+	_tex_sao = _make_texture_transparent(load("res://assets/textures/Sao-truc-SN01.jpg") as Texture2D)
+	_tex_bau = _make_texture_transparent(load("res://assets/textures/dan-bau.jpg") as Texture2D)
+	_tex_trong = _make_texture_transparent(load("res://assets/textures/trong-chau.png") as Texture2D)
 	_tex_linh = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
 	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
+	_tex_wall = load("res://image/imagesao.png") as Texture2D
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
@@ -207,10 +209,10 @@ func _ready() -> void:
 	tooltip_lbl.add_theme_color_override("font_color", C_RED_DK)
 	
 	# Setup Interactive Stations
-	s_tranh.size = Vector2(240, 140)
-	s_sao.size = Vector2(240, 140)
-	s_bau.size = Vector2(240, 140)
-	s_trong.size = Vector2(240, 140)
+	s_tranh.size = Vector2(400, 240)
+	s_sao.size = Vector2(400, 240)
+	s_bau.size = Vector2(400, 240)
+	s_trong.size = Vector2(400, 240)
 	
 	_setup_station_button(s_tranh, "tranh", "Đàn Tranh", _draw_tranh)
 	_setup_station_button(s_sao, "sao", "Sáo Trúc", _draw_sao)
@@ -219,6 +221,7 @@ func _ready() -> void:
 	
 	# Setup Linh Assist
 	char_linh.draw.connect(_draw_linh.bind(char_linh))
+	char_linh.position.y += 170.0
 	_linh_base_y = char_linh.position.y
 	char_linh.gui_input.connect(_on_char_linh_gui_input)
 	
@@ -920,7 +923,7 @@ func _draw_room_background() -> void:
 	# Set transform relative to room_content (1200x800 space)
 	bg_canvas.draw_set_transform(room_content.position, 0.0, room_content.scale)
 	var sz := Vector2(1200, 800)
-	var wall_h := 260.0 if _is_mobile_layout else 310.0
+	var wall_h := 380.0 if _is_mobile_layout else 480.0
 	
 	# Calculate visible screen boundaries in transformed coordinates to stretch room background
 	var rx := room_content.position.x
@@ -931,23 +934,26 @@ func _draw_room_background() -> void:
 	var top_bound : float = -ry / scale if scale > 0.0 else 0.0
 	var bottom_bound : float = (viewport_size.y - ry) / scale if scale > 0.0 else 800.0
 	
-	# ── 2. Wall: aged cream plaster with soft lighting gradient (Stretched!) ──────
-	var steps := 32
-	var step_h := (wall_h - top_bound) / steps
-	var col_top := Color(0.97, 0.96, 0.92) # Luminous light cream-white
-	var col_bottom := Color(0.99, 0.99, 0.96) # Luminous bright warm-white
-	for s in range(steps):
-		var y1 = top_bound + s * step_h
-		var y2 = y1 + step_h
-		var t = float(s) / float(steps)
-		var col = col_top.lerp(col_bottom, t)
-		bg_canvas.draw_rect(Rect2(left_bound, y1, right_bound - left_bound, y2 - y1), col)
-	
-	# Subtle aged plaster texture — horizontal streaks stretching across bounds
-	for i in range(int(top_bound), int(wall_h), 8):
-		var streak_a := 0.02 * sin(float(i) * 0.3 + _time * 0.1)
-		var streak_col := Color(0.95 + streak_a, 0.93, 0.88, 0.08) # Very subtle bright streaks
-		bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
+	# ── 2. Wall: Custom image background ──────
+	if _tex_wall:
+		var wall_rect := Rect2(left_bound, top_bound, right_bound - left_bound, wall_h - top_bound)
+		bg_canvas.draw_texture_rect(_tex_wall, wall_rect, false)
+	else:
+		var steps := 32
+		var step_h := (wall_h - top_bound) / steps
+		var col_top := Color(0.97, 0.96, 0.92) # Luminous light cream-white
+		var col_bottom := Color(0.99, 0.99, 0.96) # Luminous bright warm-white
+		for s in range(steps):
+			var y1 = top_bound + s * step_h
+			var y2 = y1 + step_h
+			var t = float(s) / float(steps)
+			var col = col_top.lerp(col_bottom, t)
+			bg_canvas.draw_rect(Rect2(left_bound, y1, right_bound - left_bound, y2 - y1), col)
+		
+		for i in range(int(top_bound), int(wall_h), 8):
+			var streak_a := 0.02 * sin(float(i) * 0.3 + _time * 0.1)
+			var streak_col := Color(0.95 + streak_a, 0.93, 0.88, 0.08) # Very subtle bright streaks
+			bg_canvas.draw_line(Vector2(left_bound, i), Vector2(right_bound, i), streak_col, 1.0)
 	
 	# ── 3. Ornate upper cornice (horizontal gilded beam - Stretched!) ─────────────
 	var cornice_y := wall_h - 36.0
@@ -1058,7 +1064,7 @@ func _draw_room_background() -> void:
 	bg_canvas.draw_colored_polygon(floor_pts, Color(0.42, 0.32, 0.22))  # warm golden-brown teak wood floor
 	
 	# Horizontal plank grain lines stretching across bounds
-	var plank_h := 26.0
+	var plank_h := 16.0
 	for y_floor in range(int(wall_h), int(bottom_bound), int(plank_h)):
 		bg_canvas.draw_line(Vector2(left_bound, y_floor), Vector2(right_bound, y_floor), Color(0.11, 0.08, 0.05, 0.6), 1.2)
 		# Staggered joint
@@ -1117,12 +1123,12 @@ func _draw_floor_canvas() -> void:
 		var pos : Vector2 = st[0]
 		
 		# 1. Soft floor shadow, kept low so instruments are not framed by dark rings.
-		_draw_ellipse_poly(floor_canvas, pos + Vector2(0.0, 16.0), 94.0, 22.0, shadow_col)
+		_draw_ellipse_poly(floor_canvas, pos + Vector2(0.0, 16.0), 156.0, 36.0, shadow_col)
 		
 		# 2. Permanent warm spotlight glow, subtle enough for mobile.
 		var halo_a := 0.04 + 0.02 * sin(_time * 1.2)
-		_draw_ellipse_line(floor_canvas, pos + Vector2(0.0, 14.0), 108.0, 26.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 2.0)
-		_draw_ellipse_line(floor_canvas, pos + Vector2(0.0, 14.0), 78.0, 18.0, Color(1.0, 0.95, 0.80, halo_a * 0.8), 1.2)
+		_draw_ellipse_line(floor_canvas, pos + Vector2(0.0, 14.0), 180.0, 43.0, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, halo_a), 2.0)
+		_draw_ellipse_line(floor_canvas, pos + Vector2(0.0, 14.0), 132.0, 30.0, Color(1.0, 0.95, 0.80, halo_a * 0.8), 1.2)
 	
 	# 3. Pulsing yellow glow circle when hovering (Soften by 50%)
 	if _hovered_station != "":
@@ -1136,9 +1142,9 @@ func _draw_floor_canvas() -> void:
 		
 		if base_pos != Vector2.ZERO:
 			var pulse := sin(_time * 7.0)
-			_draw_ellipse_line(floor_canvas, base_pos + Vector2(0.0, 14.0), 118.0 + pulse * 5.0, 28.0 + pulse * 2.0,
+			_draw_ellipse_line(floor_canvas, base_pos + Vector2(0.0, 14.0), 198.0 + pulse * 5.0, 47.0 + pulse * 2.0,
 				Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.22 + 0.06 * pulse), 3.0)
-			_draw_ellipse_line(floor_canvas, base_pos + Vector2(0.0, 14.0), 82.0, 19.0,
+			_draw_ellipse_line(floor_canvas, base_pos + Vector2(0.0, 14.0), 138.0, 31.0,
 				Color(1.0, 0.97, 0.90, 0.42), 1.5)
 
 				
