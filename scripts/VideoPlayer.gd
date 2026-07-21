@@ -396,7 +396,7 @@ func _toggle_play() -> void:
 		# replay from start
 		_time = 0.0
 		video_stream_player.stream_position = 0.0
-		linh_rect.texture = load("res://assets/textures/virtual_artist_mai.png") # reset to default vector avatar
+		linh_rect.texture = load("res://assets/textures/cogiaoMai_asset.png") # reset to default vector avatar
 	_playing = not _playing
 	_update_play_state()
 

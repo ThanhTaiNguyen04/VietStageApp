@@ -2,7 +2,7 @@
 
 [ext_resource type="Script"    path="res://scripts/PracticeDanBau.gd"                      id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dh73yas1kofe0" path="res://assets/textures/bg_practice_room.png" id="2_bg"]
-[ext_resource type="Texture2D" uid="uid://d3ewwh4ccte6v" path="res://assets/textures/virtual_artist_mai.png" id="3_char"]
+[ext_resource type="Texture2D" path="res://assets/textures/cogiaoMai_asset.png" id="3_char"]
 [ext_resource type="Script"    path="res://scripts/DanBauBoard.gd"                         id="4_board"]
 [ext_resource type="Script"    path="res://scripts/FallingNotesLayer.gd"                        id="5_falling"]
 [ext_resource type="Script"    path="res://scripts/SongPlayer.gd"                        id="6_song"]

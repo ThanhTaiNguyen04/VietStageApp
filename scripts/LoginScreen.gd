@@ -518,11 +518,11 @@ func _style_all() -> void:
 	password_edit.add_theme_font_size_override("font_size", 20)
 
 	# Nút Đăng nhập: Đỏ Crimson — đồng bộ màu primary với web (#610000)
-	var si_n := _pill(C_PRIMARY,    Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 1.0), 28)
+	var si_n := _pill(C_PRIMARY,    Color(1.0, 1.0, 1.0, 1.0), 28)
 	si_n.border_width_left = 2; si_n.border_width_right = 2; si_n.border_width_top = 2; si_n.border_width_bottom = 2
-	var si_h := _pill(C_PRIMARY_LT, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 1.0), 28)
+	var si_h := _pill(C_PRIMARY_LT, Color(1.0, 1.0, 1.0, 1.0), 28)
 	si_h.border_width_left = 2; si_h.border_width_right = 2; si_h.border_width_top = 2; si_h.border_width_bottom = 2
-	var si_p := _pill(C_PRIMARY_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 1.0), 28)
+	var si_p := _pill(C_PRIMARY_DK, Color(1.0, 1.0, 1.0, 1.0), 28)
 	si_p.border_width_left = 2; si_p.border_width_right = 2; si_p.border_width_top = 2; si_p.border_width_bottom = 2
 	
 	si_n.shadow_size = 16; si_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.35)
@@ -530,15 +530,15 @@ func _style_all() -> void:
 	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
 	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
 	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
-	sign_in_btn.add_theme_color_override("font_color", C_GOLD)
-	sign_in_btn.add_theme_color_override("font_hover_color", C_GOLD_LT)
+	sign_in_btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	sign_in_btn.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.9, 1.0))
 	
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		sign_in_btn.add_theme_font_override("font", bold_font)
 	sign_in_btn.add_theme_font_size_override("font_size", 24)
 	sign_in_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	sign_in_btn.add_theme_color_override("font_pressed_color", C_GOLD_LT)
+	sign_in_btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.8, 1.0))
 
 	# Nút Chuyển chế độ: Flat link button
 	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))

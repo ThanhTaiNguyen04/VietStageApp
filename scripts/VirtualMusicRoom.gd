@@ -149,7 +149,7 @@ func _ready() -> void:
 	_tex_sao = _make_texture_transparent(load("res://assets/textures/Sao-truc-SN01.jpg") as Texture2D)
 	_tex_bau = _make_texture_transparent(load("res://assets/textures/dan-bau.jpg") as Texture2D)
 	_tex_trong = _make_texture_transparent(load("res://assets/textures/trong-chau.png") as Texture2D)
-	_tex_linh = load("res://assets/textures/virtual_artist_mai.png") as Texture2D
+	_tex_linh = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
 	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
 	_tex_wall = load("res://image/imagesao.png") as Texture2D
 	
@@ -2326,7 +2326,7 @@ func _on_viewport_size_changed() -> void:
 		_station_base_positions["sao"] = Vector2(right_x, 515.0)
 		_linh_base_y = 230.0 # Shift down to avoid scroll text overlap on mobile
 		char_linh.position.x = 500.0
-		char_linh.size = Vector2(210.0, 210.0)
+		char_linh.size = Vector2(210.0, 210.0) * 3.0
 	else:
 		# Symmetrical Arc Layout
 		_station_base_positions["tranh"] = Vector2(50.0, 470.0)
@@ -2540,16 +2540,19 @@ func _spawn_decorations() -> void:
 				ctrl.position = Vector2(50, 240)
 				ctrl.size = Vector2(80, 110)
 			"bronze_drum":
-				ctrl.position = Vector2(615, 665)
-				ctrl.size = Vector2(80, 65)
+				ctrl.position = Vector2(600 - 150, 800 - 180) # Center bottom
+				ctrl.size = Vector2(300, 180)
 				
 		room_content.add_child(ctrl)
-		ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id))
+		ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id, false))
 	
 	_sort_room_elements()
 
-func _draw_decor_node(c: Control, item_id: String) -> void:
-	_draw_decor_item(c, item_id, 1.0)
+func _draw_decor_node(c: Control, item_id: String, in_shop: bool = false) -> void:
+	var scale := 1.0
+	if item_id == "bronze_drum" and not in_shop:
+		scale = 3.5
+	_draw_decor_item(c, item_id, scale)
 
 func _draw_ellipse_poly(c: Control, center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:
 	var pts := PackedVector2Array()
@@ -2792,105 +2795,111 @@ func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> v
 				c.draw_colored_polygon(fringe_pts, C_RED_SON)
 
 		"bronze_drum":
-			var dr_r := 36.0 * size_scale
-			var dr_h := 50.0 * size_scale
-			var drum_base_y := cy + 18 * size_scale
+			var dr_r := 38.0 * size_scale
+			var dr_h := 46.0 * size_scale
+			var drum_base_y := cy + 24 * size_scale
 			
-			# Wooden base platform
-			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 10.0 * size_scale), Color(0.18, 0.10, 0.05), true)
-			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 10.0 * size_scale), C_GOLD, false, 1.2 * size_scale)
+			# Wooden base platform (Darker and thicker)
+			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 12.0 * size_scale), Color(0.12, 0.08, 0.04), true)
+			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 12.0 * size_scale), Color(0.3, 0.2, 0.1), false, 2.0 * size_scale)
 			
-			# Drum Body polygon (typical flared top, curved middle waist, and wider base)
+			# Drum Body polygon (Realistic flare and waist)
 			var body_pts := PackedVector2Array()
-			var steps := 24
+			var steps := 32
 			for i in range(steps + 1):
 				var t := float(i) / steps
 				var py = drum_base_y - t * dr_h
 				var w_fac = 1.0
-				if t < 0.28:
-					# Lower flare
-					w_fac = lerpf(0.95, 0.76, t / 0.28)
-				elif t < 0.72:
-					# Curved waist
-					var wt = (t - 0.28) / 0.44
-					w_fac = 0.76 + (1.0 - 0.76) * sin(wt * PI) * 0.15 # waist dip
+				if t < 0.3:
+					# Lower flare (Chân trống)
+					w_fac = lerpf(0.98, 0.78, t / 0.3)
+				elif t < 0.75:
+					# Curved waist (Lưng trống)
+					var wt = (t - 0.3) / 0.45
+					w_fac = 0.78 + (1.0 - 0.78) * sin(wt * PI) * 0.12
 					if wt > 0.5:
-						w_fac = lerpf(0.76, 0.96, (wt - 0.5) * 2.0)
+						w_fac = lerpf(0.78, 0.98, (wt - 0.5) * 2.0)
 				else:
-					# Top flare
-					w_fac = lerpf(0.96, 1.05, (t - 0.72) / 0.28)
+					# Top flare (Tang trống)
+					w_fac = lerpf(0.98, 1.08, (t - 0.75) / 0.25)
 				body_pts.append(Vector2(cx - dr_r * w_fac, py))
 			for i in range(steps, -1, -1):
 				var t := float(i) / steps
 				var py = drum_base_y - t * dr_h
 				var w_fac = 1.0
-				if t < 0.28:
-					w_fac = lerpf(0.95, 0.76, t / 0.28)
-				elif t < 0.72:
-					var wt = (t - 0.28) / 0.44
-					w_fac = 0.76 + (1.0 - 0.76) * sin(wt * PI) * 0.15
+				if t < 0.3:
+					w_fac = lerpf(0.98, 0.78, t / 0.3)
+				elif t < 0.75:
+					var wt = (t - 0.3) / 0.45
+					w_fac = 0.78 + (1.0 - 0.78) * sin(wt * PI) * 0.12
 					if wt > 0.5:
-						w_fac = lerpf(0.76, 0.96, (wt - 0.5) * 2.0)
+						w_fac = lerpf(0.78, 0.98, (wt - 0.5) * 2.0)
 				else:
-					w_fac = lerpf(0.96, 1.05, (t - 0.72) / 0.28)
+					w_fac = lerpf(0.98, 1.08, (t - 0.75) / 0.25)
 				body_pts.append(Vector2(cx + dr_r * w_fac, py))
 				
-			c.draw_colored_polygon(body_pts, Color(0.48, 0.35, 0.20)) # Darker bronze base
-			c.draw_polyline(body_pts, C_GOLD, 1.0 * size_scale, true)
+			# Rich, oxidized bronze base color
+			c.draw_colored_polygon(body_pts, Color(0.35, 0.28, 0.18)) 
 			
-			# Outer highlight / 3D shading
-			c.draw_polyline(body_pts, Color(0.68, 0.52, 0.32, 0.65), 2.2 * size_scale, true)
+			# Edge outlines
+			c.draw_polyline(body_pts, Color(0.15, 0.10, 0.05), 1.5 * size_scale, true)
 			
-			# Horizontal decorative bands on drum barrel
-			for by_f in [0.22, 0.5, 0.78]:
+			# 3D Shading/Highlight on the left side to simulate cylindrical volume
+			var highlight_pts := PackedVector2Array()
+			for pt in body_pts:
+				if pt.x < cx: highlight_pts.append(pt)
+			c.draw_polyline(highlight_pts, Color(0.7, 0.6, 0.4, 0.3), 6.0 * size_scale, false)
+			
+			# Horizontal decorative bands (văn hoa)
+			for by_f in [0.28, 0.5, 0.72]:
 				var dy = drum_base_y - dr_h * by_f
-				c.draw_line(Vector2(cx - dr_r * 0.72, dy), Vector2(cx + dr_r * 0.72, dy), Color(0.68, 0.55, 0.35, 0.5), 1.5 * size_scale)
+				c.draw_line(Vector2(cx - dr_r * 0.75, dy), Vector2(cx + dr_r * 0.75, dy), Color(0.5, 0.4, 0.25, 0.7), 1.8 * size_scale)
 				
-			# Side handles (2 pairs of double loops)
-			var h_color := C_GOLD
-			var h_y1 := drum_base_y - dr_h * 0.68
-			var h_y2 := drum_base_y - dr_h * 0.42
-			# Left double loops
-			c.draw_line(Vector2(cx - dr_r * 0.8, h_y1), Vector2(cx - dr_r * 0.98, h_y1 + 4*size_scale), h_color, 2.0 * size_scale)
-			c.draw_line(Vector2(cx - dr_r * 0.8, h_y2), Vector2(cx - dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
-			c.draw_line(Vector2(cx - dr_r * 0.98, h_y1 + 4*size_scale), Vector2(cx - dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
+			# Side handles (4 quai kép)
+			var h_color := Color(0.4, 0.3, 0.15)
+			var h_y1 := drum_base_y - dr_h * 0.65
+			var h_y2 := drum_base_y - dr_h * 0.35
+			# Left loops
+			c.draw_line(Vector2(cx - dr_r * 0.85, h_y1), Vector2(cx - dr_r * 1.05, h_y1 + 4*size_scale), h_color, 2.5 * size_scale)
+			c.draw_line(Vector2(cx - dr_r * 0.82, h_y2), Vector2(cx - dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
+			c.draw_line(Vector2(cx - dr_r * 1.05, h_y1 + 4*size_scale), Vector2(cx - dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
+			# Right loops
+			c.draw_line(Vector2(cx + dr_r * 0.85, h_y1), Vector2(cx + dr_r * 1.05, h_y1 + 4*size_scale), h_color, 2.5 * size_scale)
+			c.draw_line(Vector2(cx + dr_r * 0.82, h_y2), Vector2(cx + dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
+			c.draw_line(Vector2(cx + dr_r * 1.05, h_y1 + 4*size_scale), Vector2(cx + dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
 			
-			# Right double loops
-			c.draw_line(Vector2(cx + dr_r * 0.8, h_y1), Vector2(cx + dr_r * 0.98, h_y1 + 4*size_scale), h_color, 2.0 * size_scale)
-			c.draw_line(Vector2(cx + dr_r * 0.8, h_y2), Vector2(cx + dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
-			c.draw_line(Vector2(cx + dr_r * 0.98, h_y1 + 4*size_scale), Vector2(cx + dr_r * 0.98, h_y2 - 4*size_scale), h_color, 2.0 * size_scale)
-			
-			# Drumhead ellipse top
+			# Drumhead ellipse top (Mặt trống)
 			var dh_center := Vector2(cx, drum_base_y - dr_h)
-			var dh_rx := dr_r * 1.05
-			var dh_ry := 11.5 * size_scale
-			_draw_ellipse_poly(c, dh_center, dh_rx, dh_ry, Color(0.55, 0.42, 0.25))
-			_draw_ellipse_line(c, dh_center, dh_rx, dh_ry, C_GOLD, 1.5 * size_scale)
+			var dh_rx := dr_r * 1.08
+			var dh_ry := 13.0 * size_scale
+			_draw_ellipse_poly(c, dh_center, dh_rx, dh_ry, Color(0.42, 0.35, 0.22))
+			_draw_ellipse_line(c, dh_center, dh_rx, dh_ry, Color(0.8, 0.7, 0.5, 0.8), 2.0 * size_scale)
 			
-			# Concentric rings on drumhead
-			_draw_ellipse_line(c, dh_center, dh_rx * 0.82, dh_ry * 0.82, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0.8 * size_scale)
-			_draw_ellipse_line(c, dh_center, dh_rx * 0.52, dh_ry * 0.52, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 0.8 * size_scale)
+			# Concentric rings on drumhead (Vòng tròn đồng tâm)
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.8, dh_ry * 0.8, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.2 * size_scale)
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.6, dh_ry * 0.6, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.2 * size_scale)
+			_draw_ellipse_line(c, dh_center, dh_rx * 0.4, dh_ry * 0.4, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.2 * size_scale)
 			
-			# Abstract Chim Lạc flying bird icons (little golden arcs) in the middle ring
-			for deg in range(0, 360, 45):
+			# Chim Lạc flying bird icons (little golden arcs) in the middle ring
+			for deg in range(0, 360, 30):
 				var rad := float(deg) * PI / 180.0
-				var bird_pos := dh_center + Vector2(cos(rad) * dh_rx * 0.68, sin(rad) * dh_ry * 0.68)
-				c.draw_arc(bird_pos, 2.8 * size_scale, PI * 0.85, PI * 1.85, 8, C_GOLD_LIGHT, 0.8 * size_scale)
+				var bird_pos := dh_center + Vector2(cos(rad) * dh_rx * 0.7, sin(rad) * dh_ry * 0.7)
+				c.draw_arc(bird_pos, 1.8 * size_scale, PI * 0.8, PI * 2.0, 8, Color(1, 0.9, 0.7), 1.0 * size_scale)
 			
-			# Star/Sun motif in center (12-pointed star)
-			var sun_glow_p := 0.25 + 0.15 * sin(_time * 4.0) # Pulsing glow value
-			c.draw_circle(dh_center, 6.5 * size_scale, Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, sun_glow_p))
-			
-			# 12 Points of the Star/Sun
+			# Star motif in center (14-pointed star Ngôi sao 14 cánh đặc trưng Ngọc Lũ)
 			var star_pts := PackedVector2Array()
-			var star_inner_r := 3.2 * size_scale
-			var star_outer_r := 8.2 * size_scale
-			for step in range(24):
-				var angle := step * (TAU / 24.0)
+			var star_inner_r := 2.2 * size_scale
+			var star_outer_r := 7.0 * size_scale
+			var star_points := 14
+			for step in range(star_points * 2):
+				var angle := step * (TAU / (star_points * 2.0))
 				var r := star_outer_r if step % 2 == 0 else star_inner_r
 				star_pts.append(dh_center + Vector2(cos(angle) * r, sin(angle) * r * (dh_ry / dh_rx)))
-			c.draw_colored_polygon(star_pts, C_GOLD_LIGHT)
-			c.draw_polyline(star_pts, Color.WHITE, 0.6 * size_scale, true)
+			c.draw_colored_polygon(star_pts, Color(1, 0.9, 0.6))
+			
+			# Center sun bump
+			var sun_glow_p := 0.25 + 0.15 * sin(_time * 4.0)
+			c.draw_circle(dh_center, 1.5 * size_scale, Color(1, 1, 1, sun_glow_p))
 
 func _open_shop_popup() -> void:
 	if not shop_popup:
@@ -3003,7 +3012,7 @@ func _setup_shop_popup() -> void:
 		preview.custom_minimum_size = Vector2(90, 110)
 		preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		hbox.add_child(preview)
-		preview.draw.connect(_draw_decor_node.bind(preview, item.id))
+		preview.draw.connect(_draw_decor_node.bind(preview, item.id, true))
 		
 		var vbox := VBoxContainer.new()
 		vbox.name = "VBox"
