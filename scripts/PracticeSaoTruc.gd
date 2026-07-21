@@ -2021,7 +2021,7 @@ func _setup_collapsible_linh() -> void:
 	linh_mini_btn.add_theme_stylebox_override("pressed", btn_s.duplicate())
 	
 	var mini_tex := TextureRect.new()
-	mini_tex.texture = load("res://assets/textures/cogiaoMai_asset.png")
+	mini_tex.texture = load("res://assets/textures/avacogiaoMai_asset.png")
 	mini_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	mini_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mini_tex.size = Vector2(44, 44)
@@ -2756,7 +2756,7 @@ func _show_introduction_overlay() -> void:
 	
 	# ─── Virtual Instructor (Mai) - 2/3 Screen Width ───
 	var artist_img := TextureRect.new()
-	artist_img.texture = load("res://assets/textures/cogiaoMai_asset.png")
+	artist_img.texture = load("res://assets/textures/avacogiaoMai_asset.png")
 	artist_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	artist_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	artist_img.size = Vector2(850, 720)

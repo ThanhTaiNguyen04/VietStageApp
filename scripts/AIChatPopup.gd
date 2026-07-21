@@ -66,7 +66,7 @@ func _ready() -> void:
 	_tex_mai_idle = load("res://assets/textures/mai_idle.jpg") as Texture2D
 	_tex_mai_talking = load("res://assets/textures/mai_talking.jpg") as Texture2D
 	_tex_mai_happy = load("res://assets/textures/mai_happy.jpg") as Texture2D
-	_tex_fallback = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
+	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
 	
 	if not _tex_mai_idle: _tex_mai_idle = _tex_fallback
 	if not _tex_mai_talking: _tex_mai_talking = _tex_fallback

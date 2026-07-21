@@ -1003,7 +1003,8 @@ func _generate_melody(target_note_key: String) -> Array:
 				seq.append({"note": n, "time": time, "duration": dur})
 				time += dur + 0.2
 			time += 0.5
-	elif target_note_key == "sao_truc_level4_7":
+
+	elif target_note_key == "sao_truc_level5_7":
 		var parts = [
 			["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
 			["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
