@@ -21,7 +21,6 @@ driver/enable_input=true
 
 [autoload]
 
-VirtualArtist="*res://scripts/VirtualArtist.gd"
 DS="*res://scripts/DS.gd"
 
 [display]
