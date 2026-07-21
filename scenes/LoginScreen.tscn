@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://hwdi7jwdg22b"]
 
 [ext_resource type="Script" uid="uid://bqkb5nt22rquw" path="res://scripts/LoginScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://i8utldwquptg" path="res://assets/textures/login-heritage-bg.jpg" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://doe5ouac8lmn3" path="res://assets/textures/logincogiaoMaithoisao.png" id="2_bg"]
 [ext_resource type="Texture2D" uid="uid://cc4csldnvu2db" path="res://assets/textures/logovuongtachnen.png" id="3_logo"]
 [ext_resource type="FontFile" uid="uid://dm1siqu17a31w" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="4_font"]
 [ext_resource type="FontFile" uid="uid://d30eoe2n7si46" path="res://assets/fonts/Lora-Bold.ttf" id="5_font_title"]
@@ -33,7 +33,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.15, 0.02, 0.02, 0.5)
+color = Color(0.15, 0.02, 0.02, 0)
 
 [node name="TopDark" type="ColorRect" parent="." unique_id=1914769809]
 layout_mode = 1
@@ -48,7 +48,7 @@ anchors_preset = -1
 anchor_top = 0.65
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.77, 0.58, 0.15, 0.08)
+color = Color(0.77, 0.58, 0.15, 0)
 
 [node name="ParticleLayer" type="Control" parent="." unique_id=1097826436]
 layout_mode = 1
@@ -66,12 +66,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.95, 0.93, 0.88, 0.2)
+color = Color(0.95, 0.93, 0.88, 0)
 
 [node name="Center" type="CenterContainer" parent="." unique_id=662112900]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = -1
+anchor_left = 0.48
+anchor_right = 0.92
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -81,10 +82,10 @@ layout_mode = 2
 
 [node name="CardMargin" type="MarginContainer" parent="Center/Card" unique_id=88047472]
 layout_mode = 2
-theme_override_constants/margin_left = 64
-theme_override_constants/margin_top = 52
-theme_override_constants/margin_right = 64
-theme_override_constants/margin_bottom = 52
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
 
 [node name="ContentVBox" type="VBoxContainer" parent="Center/Card/CardMargin" unique_id=161379408]
 custom_minimum_size = Vector2(460, 0)
