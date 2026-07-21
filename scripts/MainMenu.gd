@@ -20,7 +20,7 @@ const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 
-const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranh.gd")
+const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
 
 var _active_side_btn : Button = null
 var _time : float = 0.0
