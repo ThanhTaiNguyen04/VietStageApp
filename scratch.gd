@@ -1,4 +1,5 @@
 extends Control
+class_name LessonSaoTruc
 
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)

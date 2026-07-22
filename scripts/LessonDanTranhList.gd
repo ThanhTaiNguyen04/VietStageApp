@@ -151,7 +151,22 @@ const LEVELS := [
 				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
 				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 với các quãng rộng.",
 				"practice_title": "Sứ Thanh Hoa",
-				"sheet": ["La2", "Đô3", "Rê3", "Mi3", "Sol3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3"]
+				"sheet": [
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
+				],
+				"durations": [
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
+					0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
+					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
+				]
 			},
 			{
 				"number": 12,
@@ -165,7 +180,7 @@ const LEVELS := [
 	}
 ]
 
-@onready var bg: ColorRect = $BG
+@onready var bg: TextureRect = $BG
 @onready var sidebar: PanelContainer = $Root/Sidebar
 @onready var btn_menu      : Button         = $Root/Sidebar/SideM/SideV/BtnMenu
 @onready var btn_courses   : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
@@ -269,7 +284,7 @@ static func get_level_data(level_number: int) -> Dictionary:
 	return LEVELS[index]
 
 func _build_theme() -> void:
-	bg.color = C_BG
+	bg.texture = load("res://assets/textures/dan_tranh_background.png")
 	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
 	page_title.add_theme_color_override("font_color", C_JADE)
 	objective_label.add_theme_color_override("font_color", C_MUTED)
@@ -433,7 +448,7 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 
 func _create_circle_button(action: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(180, 180)
+	button.custom_minimum_size = Vector2(250, 250)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -466,8 +481,8 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
-	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
+	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
 	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
@@ -492,7 +507,7 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		button.add_theme_font_override("font", bold_font)
-	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_font_size_override("font_size", 21)
 	_make_bouncy(button)
 	return button
 
@@ -641,7 +656,6 @@ func _open_lesson(lesson: Dictionary) -> void:
 	if _has_dragged_significantly:
 		return
 	var lesson_number := int(lesson["number"])
-	SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
 	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])
@@ -649,7 +663,19 @@ func _open_lesson(lesson: Dictionary) -> void:
 	typed_sheet.assign(lesson.get("sheet", []))
 	PracticeRoom.current_song_sheet = typed_sheet
 	
-	_fade_to("res://scenes/LessonDanTranh.tscn")
+	var typed_durations: Array[float] = []
+	typed_durations.assign(lesson.get("durations", []))
+	LessonDanTranh.current_song_durations = typed_durations
+	
+	if selected_level == 1 and lesson_number in [1, 2, 3]:
+		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
+		var VP = load("res://scripts/VideoPlayer.gd")
+		VP.custom_video_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
+		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
+		_fade_to("res://scenes/VideoPlayer.tscn")
+	else:
+		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
+		_fade_to("res://scenes/LessonDanTranh.tscn")
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
 	return "dan_tranh_level_%d_bai_%d_%s" % [selected_level, lesson_number, activity]
@@ -677,8 +703,9 @@ func _apply_responsive_layout() -> void:
 			col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			var btn := col.get_node_or_null("LessonBtn") as Button
 			if btn:
-				var sz := Vector2(145, 145) if mobile else Vector2(180, 180)
+				var sz := Vector2(180, 180) if mobile else Vector2(250, 250)
 				btn.custom_minimum_size = sz
+				btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
 
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
 	btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
