@@ -53,7 +53,7 @@ var virtual_holes_state := [false, false, false, false, false, false]
 
 var target_hz := 0.0
 var time_correct := 0.0
-var REQUIRED_HOLD_TIME := 1.0 # 1 second of correct note to pass
+var REQUIRED_HOLD_TIME := 0.4 # Quicker recognition (0.4s) to feel instant
 
 var rhythm_time := 0.0
 var spawned_notes := 0
