@@ -1520,7 +1520,7 @@ func _build_flute():
 		pnl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pnl.add_theme_stylebox_override("panel", sb)
 		pnl.custom_minimum_size = Vector2(76, 76)
-		pnl.set_anchors_preset(Control.PRESET_CENTER)
+		pnl.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		pnl.visible = false
 		cover.add_child(pnl)
 		
