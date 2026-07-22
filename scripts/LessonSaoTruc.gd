@@ -371,7 +371,17 @@ func _ready():
 	var ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
-	ai_audio.speak_vietnamese(txt)
+	
+	var stream = null
+	if active_node_id == "Node2":
+		stream = load("res://audio/introSi.mp3")
+	elif active_node_id in ["Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		stream = load("res://audio/intro" + active_node_id + ".mp3")
+	if stream and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stream = stream
+		ai_audio.audio_player.play()
+	else:
+		ai_audio.speak_vietnamese(txt)
 	
 	# Initial UI State
 	teacher_area.visible = true
@@ -1252,7 +1262,16 @@ func _hit_note():
 		
 		var ai = get_node_or_null("AIAudio")
 		if ai and ai.has_method("speak_vietnamese"):
-			ai.speak_vietnamese(txt)
+			var stream = null
+			if active_node_id == "Node2":
+				stream = load("res://audio/practiceSi.mp3")
+			elif active_node_id in ["Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+				stream = load("res://audio/practice" + active_node_id + ".mp3")
+			if stream and is_instance_valid(ai.audio_player):
+				ai.audio_player.stream = stream
+				ai.audio_player.play()
+			else:
+				ai.speak_vietnamese(txt)
 
 func _start_rhythm_game():
 	var ai = get_node_or_null("AIAudio")
