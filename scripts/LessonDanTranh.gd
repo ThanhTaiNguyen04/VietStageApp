@@ -304,6 +304,7 @@ func _ready():
 	complete_btn.pressed.connect(_on_complete)
 	
 	_create_pause_system()
+	_create_skip_intro_button()
 	
 	if _should_have_speed_control():
 		_create_speed_control_bar()
@@ -724,13 +725,8 @@ func _create_speed_control_bar():
 	speed_bar_container = PanelContainer.new()
 	speed_bar_container.name = "SpeedControlBar"
 	
-	# Background style
-	var style_bg = StyleBoxFlat.new()
-	style_bg.bg_color = Color(0.18, 0.08, 0.35, 0.85) # Tím đậm khớp ảnh mẫu
-	style_bg.corner_radius_top_left = 20
-	style_bg.corner_radius_top_right = 20
-	style_bg.corner_radius_bottom_left = 20
-	style_bg.corner_radius_bottom_right = 20
+	# Background style - Đồng bộ với viền vàng và nền gỗ của nút HUD (không dùng màu đen)
+	var style_bg = _flat_sb(Color(C_WOOD.r, C_WOOD.g, C_WOOD.b, 0.85), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 20)
 	style_bg.content_margin_left = 16
 	style_bg.content_margin_right = 16
 	style_bg.content_margin_top = 8
@@ -790,9 +786,9 @@ func _select_speed(speed_val: float):
 	for i in range(speeds.size()):
 		var btn = speed_buttons[i]
 		if speeds[i] == speed_val:
-			# Nút được chọn (nền trắng, chữ tím đậm)
+			# Nút được chọn (nền vàng kim sang trọng, chữ nâu gỗ tối)
 			var sb_selected = StyleBoxFlat.new()
-			sb_selected.bg_color = Color.WHITE
+			sb_selected.bg_color = C_GOLD
 			sb_selected.corner_radius_top_left = 12
 			sb_selected.corner_radius_top_right = 12
 			sb_selected.corner_radius_bottom_left = 12
@@ -800,8 +796,8 @@ func _select_speed(speed_val: float):
 			btn.add_theme_stylebox_override("normal", sb_selected)
 			btn.add_theme_stylebox_override("hover", sb_selected)
 			btn.add_theme_stylebox_override("pressed", sb_selected)
-			btn.add_theme_color_override("font_color", Color(0.18, 0.08, 0.35))
-			btn.add_theme_color_override("font_hover_color", Color(0.18, 0.08, 0.35))
+			btn.add_theme_color_override("font_color", Color(0.15, 0.1, 0.08))
+			btn.add_theme_color_override("font_hover_color", Color(0.15, 0.1, 0.08))
 		else:
 			# Nút không được chọn (trong suốt, chữ trắng)
 			var sb_empty = StyleBoxEmpty.new()
@@ -874,15 +870,15 @@ var skip_intro_btn: Button = null
 
 func _create_skip_intro_button():
 	skip_intro_btn = _create_aesthetic_btn(
-		"Bỏ qua", 
+		"SKIP", 
 		"res://icons8/icons8-play-100.png", 
 		true, 
-		Color.TRANSPARENT, 
-		Color(0.25, 0.18, 0.12, 0.08), 
-		Color(0.25, 0.18, 0.12), 
+		C_WOOD, 
+		C_WOOD.lightened(0.12), 
+		Color.WHITE, 
 		C_GOLD, 
-		18, 
-		Vector2(150, 45)
+		16, 
+		Vector2(140, 48)
 	)
 	
 	# Đặt nút ở góc dưới cùng bên phải màn hình
@@ -954,12 +950,12 @@ func _create_pause_system():
 	pause_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	pause_overlay.visible = false
 	
-	# 3. Tạo thanh Top Bar màu tím đậm full màn hình chiều ngang (Giống Simply Guitar)
+	# 3. Tạo thanh Top Bar màu gỗ đồng bộ full màn hình chiều ngang (Giống Simply Guitar nhưng dùng màu gỗ ấm)
 	var top_bar = PanelContainer.new()
 	top_bar.name = "PauseTopBar"
 	
 	var style_tb = StyleBoxFlat.new()
-	style_tb.bg_color = Color(0.18, 0.08, 0.35, 0.96) # Màu tím đậm giống Simply Guitar
+	style_tb.bg_color = Color(C_WOOD.r, C_WOOD.g, C_WOOD.b, 0.95) # Màu gỗ đồng bộ ấm áp
 	style_tb.border_width_bottom = 3
 	style_tb.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
 	top_bar.add_theme_stylebox_override("panel", style_tb)
@@ -1119,8 +1115,8 @@ func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Butt
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	
-	# Viền vòng tròn vàng sang trọng, nền hơi tối nhẹ để nổi bật trên nền nhạc
-	var sb_normal = _flat_sb(Color(0, 0, 0, 0.18), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 34)
+	# Viền vòng tròn vàng sang trọng, nền gỗ ấm đồng bộ với nhạc cụ (không dùng màu đen)
+	var sb_normal = _flat_sb(Color(C_WOOD.r, C_WOOD.g, C_WOOD.b, 0.85), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 34)
 	var sb_hover = _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), C_GOLD, 34)
 	var sb_pressed = _flat_sb(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), C_GOLD, 34)
 	
