@@ -50,6 +50,7 @@ const FORCE_PROCEDURAL_PLAYER : bool = true
 @onready var btn_popup_close   : Button         = $HUD/FocusModePopup/ScrollPanel/ScrollContent/ButtonHBox/BtnPopupClose
 
 # State variables
+static var _has_played_intro : bool = false
 var _time : float = 0.0
 var _hovered_station : String = ""
 var _linh_base_y : float = 220.0
@@ -257,8 +258,9 @@ func _ready() -> void:
 	_audio_manager.name = "AIAudioManager"
 	add_child(_audio_manager)
 	
-	# Play welcome speech after transition
-	get_tree().create_timer(0.8).timeout.connect(_start_intro_cinematic)
+	# Play welcome speech only once per session
+	if not _has_played_intro:
+		get_tree().create_timer(0.8).timeout.connect(_start_intro_cinematic)
 
 
 
@@ -3158,6 +3160,7 @@ func _make_texture_transparent(tex: Texture2D) -> Texture2D:
 
 func _start_intro_cinematic() -> void:
 	if not is_instance_valid(_audio_manager): return
+	_has_played_intro = true
 	_is_in_intro = true
 	var dim_overlay = ColorRect.new()
 	dim_overlay.name = "IntroDimOverlay"
