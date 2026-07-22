@@ -3169,11 +3169,11 @@ func _start_intro_cinematic() -> void:
 	
 	var sub_panel = PanelContainer.new()
 	sub_panel.name = "IntroSubtitle"
-	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	sub_panel.offset_left = 120.0
-	sub_panel.offset_right = -120.0
-	sub_panel.offset_bottom = -60.0
-	sub_panel.offset_top = -170.0
+	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	sub_panel.offset_left = 150.0
+	sub_panel.offset_right = 750.0
+	sub_panel.offset_top = -120.0
+	sub_panel.offset_bottom = 120.0
 	sub_panel.z_index = 51
 	sub_panel.modulate = Color(1, 1, 1, 0)
 	
@@ -3196,10 +3196,10 @@ func _start_intro_cinematic() -> void:
 	var subtitle = Label.new()
 	subtitle.name = "TextLabel"
 	subtitle.text = "Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì?"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD
-	subtitle.add_theme_font_size_override("font_size", 34)
+	subtitle.add_theme_font_size_override("font_size", 38)
 	subtitle.add_theme_color_override("font_color", Color.WHITE)
 	subtitle.add_theme_constant_override("line_spacing", 8)
 	subtitle.visible_ratio = 0.0 # Start hidden for typewriter effect
