@@ -11,7 +11,26 @@ const NOTE_POSITIONS = {
 	"Đô2": 2.5,
 	"Rê2": 3.0,
 	"Mi2": 3.5,
-	"Sol2": 4.5
+	"Sol2": 4.5,
+	
+	# Dan Tranh specific mappings (ZT_)
+	"ZT_Sol1": -2.0,
+	"ZT_La1": -1.5,
+	"ZT_Đô2": -1.0,
+	"ZT_Rê2": -0.5,
+	"ZT_Mi2": 0.0,
+	"ZT_Sol2": 1.0,
+	"ZT_La2": 1.5,
+	"ZT_Đô3": 2.5,
+	"ZT_Rê3": 3.0,
+	"ZT_Mi3": 3.5,
+	"ZT_Sol3": 4.5,
+	"ZT_La3": 5.0,
+	"ZT_Đô4": 6.0,
+	"ZT_Rê4": 6.5,
+	"ZT_Mi4": 7.0,
+	"ZT_Sol4": 8.0,
+	"ZT_La4": 8.5
 }
 
 var active_note = "Đô"
