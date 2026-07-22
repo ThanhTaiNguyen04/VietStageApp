@@ -1,6 +1,9 @@
 extends Control
 class_name LessonSaoTruc
 
+@export var hole_offset_x: float = -40.0
+@export var hole_offset_y: float = -27.0
+
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)
 
@@ -582,7 +585,7 @@ func _process(delta):
 	for i in range(HOLES):
 		var hx = rect.position.x + rect.size.x * HOLE_PROPS_X[i]
 		var hy = rect.position.y + rect.size.y * HOLE_PROP_Y
-		_holes[i].position = Vector2(hx - 50, hy - 50)
+		_holes[i].position = Vector2(hx - 50 + hole_offset_x, hy - 50 + hole_offset_y)
 		
 	if current_state == State.PRACTICE:
 		if staff_display:
