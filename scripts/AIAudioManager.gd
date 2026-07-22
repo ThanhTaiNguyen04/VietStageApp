@@ -30,6 +30,7 @@ func _ready() -> void:
 func speak_vietnamese(text: String) -> void:
 	# Stop current audio
 	audio_player.stop()
+	DisplayServer.tts_stop()
 	current_playing_idx = -1
 	sentence_queue.clear()
 	is_ai_finished = true
@@ -191,6 +192,12 @@ func _download_sentence(index: int) -> void:
 		push_error("Failed to start request for sentence " + str(index))
 		item["downloading"] = false
 		http.queue_free()
+		if not item.get("use_local_fallback", false):
+			item["use_local_fallback"] = true
+			call_deferred("_download_sentence", index)
+		else:
+			item["downloaded"] = true
+			call_deferred("_check_queue_playback")
 
 func _on_sentence_download_completed(index: int, http: HTTPRequest, result: int, response_code: int, body: PackedByteArray) -> void:
 	if is_instance_valid(http):
