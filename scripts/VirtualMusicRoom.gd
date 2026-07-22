@@ -62,6 +62,7 @@ var _audio_manager : AIAudioManager = null
 
 var _linh_is_moving : bool = false
 var _linh_tween : Tween = null
+var _is_in_intro : bool = false
 var _particles : Array[Dictionary] = []
 var _tex_tranh : Texture2D
 var _tex_sao : Texture2D
@@ -257,10 +258,7 @@ func _ready() -> void:
 	add_child(_audio_manager)
 	
 	# Play welcome speech after transition
-	get_tree().create_timer(0.8).timeout.connect(func() -> void:
-		if is_instance_valid(_audio_manager):
-			_audio_manager.speak_vietnamese("Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì")
-	)
+	get_tree().create_timer(0.8).timeout.connect(_start_intro_cinematic)
 
 
 
@@ -2324,18 +2322,20 @@ func _on_viewport_size_changed() -> void:
 		_station_base_positions["trong"] = Vector2(right_x, 275.0)
 		_station_base_positions["tranh"] = Vector2(left_x, 515.0)
 		_station_base_positions["sao"] = Vector2(right_x, 515.0)
-		_linh_base_y = 210.0 # Shift down to avoid scroll text overlap on mobile
-		char_linh.position.x = 500.0 - 50.0
-		char_linh.size = Vector2(210.0, 210.0) * 3.5
+		if not _is_in_intro:
+			_linh_base_y = 210.0 # Shift down to avoid scroll text overlap on mobile
+			char_linh.position.x = 500.0 - 50.0
+			char_linh.size = Vector2(210.0, 210.0) * 3.5
 	else:
 		# Symmetrical Flat Layout
 		_station_base_positions["tranh"] = Vector2(-20.0, 500.0)
 		_station_base_positions["bau"] = Vector2(280.0, 500.0)
 		_station_base_positions["trong"] = Vector2(580.0, 500.0)
 		_station_base_positions["sao"] = Vector2(880.0, 500.0)
-		_linh_base_y = 290.0 if not _linh_is_moving else _linh_base_y
-		char_linh.position.x = 485.0 - 50.0
-		char_linh.size = Vector2(230.0, 230.0) * 1.6
+		if not _is_in_intro:
+			_linh_base_y = 290.0 if not _linh_is_moving else _linh_base_y
+			char_linh.position.x = 485.0 - 50.0
+			char_linh.size = Vector2(230.0, 230.0) * 1.6
 
 	s_tranh.position = _station_base_positions["tranh"]
 	s_sao.position = _station_base_positions["sao"]
@@ -3155,3 +3155,96 @@ func _make_texture_transparent(tex: Texture2D) -> Texture2D:
 				img.set_pixel(x, y, Color(0, 0, 0, 0))
 				
 	return ImageTexture.create_from_image(img)
+
+func _start_intro_cinematic() -> void:
+	if not is_instance_valid(_audio_manager): return
+	_is_in_intro = true
+	var dim_overlay = ColorRect.new()
+	dim_overlay.name = "IntroDimOverlay"
+	dim_overlay.color = Color(0, 0, 0, 0)
+	dim_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim_overlay.z_index = 40
+	dim_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(dim_overlay)
+	
+	var sub_panel = PanelContainer.new()
+	sub_panel.name = "IntroSubtitle"
+	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	sub_panel.offset_left = 120.0
+	sub_panel.offset_right = -120.0
+	sub_panel.offset_bottom = -60.0
+	sub_panel.offset_top = -170.0
+	sub_panel.z_index = 51
+	sub_panel.modulate = Color(1, 1, 1, 0)
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.05, 0.05, 0.75)
+	sb.border_width_left = 3; sb.border_width_right = 3
+	sb.border_width_top = 3; sb.border_width_bottom = 3
+	sb.border_color = Color(0.9, 0.75, 0.3, 0.9) # Gold border
+	sb.corner_radius_top_left = 25; sb.corner_radius_top_right = 25
+	sb.corner_radius_bottom_left = 25; sb.corner_radius_bottom_right = 25
+	sub_panel.add_theme_stylebox_override("panel", sb)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	sub_panel.add_child(margin)
+	
+	var subtitle = Label.new()
+	subtitle.name = "TextLabel"
+	subtitle.text = "Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì?"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD
+	subtitle.add_theme_font_size_override("font_size", 34)
+	subtitle.add_theme_color_override("font_color", Color.WHITE)
+	subtitle.add_theme_constant_override("line_spacing", 8)
+	subtitle.visible_ratio = 0.0 # Start hidden for typewriter effect
+	margin.add_child(subtitle)
+	
+	add_child(sub_panel)
+	
+	char_linh.z_index = 50
+	
+	var t = create_tween()
+	t.set_parallel(true)
+	t.tween_property(dim_overlay, "color:a", 0.75, 1.0)
+	t.tween_property(sub_panel, "modulate:a", 1.0, 1.0)
+	var vp_size = get_viewport().size
+	t.tween_property(char_linh, "position:x", vp_size.x * 0.5 - 200.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "size", Vector2(400, 400) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "_linh_base_y", vp_size.y * 0.5 - 150.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.set_parallel(false)
+	
+	t.tween_callback(func():
+		var tw_text = create_tween()
+		tw_text.tween_property(subtitle, "visible_ratio", 1.0, 3.5).set_ease(Tween.EASE_OUT)
+		
+		var stream = load("res://audio/phongnhac1.mp3")
+		if stream and is_instance_valid(_audio_manager.audio_player):
+			_audio_manager.audio_player.stream = stream
+			_audio_manager.audio_player.play()
+			_audio_manager.audio_player.finished.connect(_end_intro_cinematic, CONNECT_ONE_SHOT)
+		else:
+			_audio_manager.speak_vietnamese(subtitle.text)
+			get_tree().create_timer(5.0).timeout.connect(_end_intro_cinematic)
+	)
+
+func _end_intro_cinematic() -> void:
+	_is_in_intro = false
+	var dim_overlay = get_node_or_null("IntroDimOverlay")
+	var subtitle = get_node_or_null("IntroSubtitle")
+	var t = create_tween()
+	t.set_parallel(true)
+	if dim_overlay: t.tween_property(dim_overlay, "color:a", 0.0, 1.0)
+	if subtitle: t.tween_property(subtitle, "modulate:a", 0.0, 1.0)
+	t.set_parallel(false)
+	t.tween_callback(func():
+		if dim_overlay: dim_overlay.queue_free()
+		if subtitle: subtitle.queue_free()
+		char_linh.z_index = 0
+		_on_viewport_size_changed()
+	)
