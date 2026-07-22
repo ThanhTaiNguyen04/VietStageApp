@@ -1514,12 +1514,12 @@ func _build_flute():
 		
 		var sb = StyleBoxFlat.new()
 		sb.bg_color = C_GOLD
-		sb.corner_radius_top_left = 18; sb.corner_radius_top_right = 18
-		sb.corner_radius_bottom_left = 18; sb.corner_radius_bottom_right = 18
+		sb.corner_radius_top_left = 38; sb.corner_radius_top_right = 38
+		sb.corner_radius_bottom_left = 38; sb.corner_radius_bottom_right = 38
 		var pnl = Panel.new()
 		pnl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pnl.add_theme_stylebox_override("panel", sb)
-		pnl.custom_minimum_size = Vector2(36, 36)
+		pnl.custom_minimum_size = Vector2(76, 76)
 		pnl.set_anchors_preset(Control.PRESET_CENTER)
 		pnl.visible = false
 		cover.add_child(pnl)
