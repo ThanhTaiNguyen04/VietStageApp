@@ -7,11 +7,16 @@ const NOTE_POSITIONS = {
 	"Fa": 0.5,
 	"Sol": 1.0,
 	"La": 1.5,
+	"Sib": 2.0,
 	"Si": 2.0,
 	"Đô2": 2.5,
 	"Rê2": 3.0,
 	"Mi2": 3.5,
+	"Fa2": 4.0,
 	"Sol2": 4.5,
+	"La2": 5.0,
+	"Sib2": 5.5,
+	"Si2": 5.5,
 	
 	# Dan Tranh specific mappings (ZT_)
 	"ZT_Sol1": -2.0,
