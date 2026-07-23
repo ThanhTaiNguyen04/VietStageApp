@@ -112,9 +112,6 @@ func _draw() -> void:
 		var draw_size := tex_size * scale_factor
 		var draw_pos := (sz - draw_size) / 2.0
 		draw_texture_rect(bg_texture, Rect2(draw_pos, draw_size), false)
-		
-		# Draw a semi-transparent overlay to keep contrast
-		draw_rect(Rect2(Vector2.ZERO, sz), Color(1.0, 0.98, 0.95, 0.85))
 	else:
 		draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARK)
 
@@ -188,7 +185,7 @@ func _build_theme() -> void:
 	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	
 	# Main Game Card
-	var card_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 28, true, 4)
+	var card_s := _flat(Color(1.0, 1.0, 1.0, 0.85), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 28, true, 2)
 	$Root/Card.add_theme_stylebox_override("panel", card_s)
 	
 	# Header styling
@@ -213,7 +210,7 @@ func _build_theme() -> void:
 	play_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
 	
 	# Feedback panel
-	var feed_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 16)
+	var feed_s := _flat(Color(1.0, 1.0, 1.0, 0.9), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.2), 16)
 	feedback_pan.add_theme_stylebox_override("panel", feed_s)
 	result_lbl.add_theme_color_override("font_color", C_TEXT)
 	feedback_pan.visible = false
@@ -317,7 +314,7 @@ func _show_mode_selection_menu() -> void:
 		card.custom_minimum_size = Vector2(280, 240) if is_mobile else Vector2(270, 360)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		
-		var card_s := _flat(C_CREAM, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 24, true, 3)
+		var card_s := _flat(Color(1.0, 1.0, 1.0, 0.85), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24, true, 1)
 		card.add_theme_stylebox_override("panel", card_s)
 		
 		var card_m := MarginContainer.new()
@@ -356,14 +353,14 @@ func _show_mode_selection_menu() -> void:
 		card_v.add_child(spacer)
 		
 		var play_btn_card := Button.new()
-		play_btn_card.text = "Chơi Ngay"
+		play_btn_card.text = "CHƠI NGAY"
 		play_btn_card.custom_minimum_size = Vector2(0, 48)
 		play_btn_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		play_btn_card.add_theme_font_size_override("font_size", 14 if is_mobile else 16)
 		
-		var btn_normal = _flat(C_RED_SON, C_GOLD, 16, true, 2)
-		var btn_hover = _flat(C_RED_SON_DK, C_GOLD_LIGHT, 16, true, 2)
-		var btn_pressed = _flat(C_RED_SON, C_GOLD, 16, false, 1)
+		var btn_normal = _flat(C_RED_SON, Color.TRANSPARENT, 24)
+		var btn_hover = _flat(C_RED_SON.lightened(0.15), Color.TRANSPARENT, 24)
+		var btn_pressed = _flat(C_RED_SON.darkened(0.15), Color.TRANSPARENT, 24)
 		
 		play_btn_card.add_theme_stylebox_override("normal", btn_normal)
 		play_btn_card.add_theme_stylebox_override("hover", btn_hover)
