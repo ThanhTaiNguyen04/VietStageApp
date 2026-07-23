@@ -197,29 +197,32 @@ const LEVELS := [
 	{
 		"level": 6,
 		"title": "HỌC & LUYỆN TẬP HỢP ÂM ĐÀN TRANH",
-		"desc": "Thực hành gảy hợp âm, hợp âm rải (arpeggio) và đệm hòa âm cơ bản trên Đàn Tranh 17 dây.",
+		"sessions": "Session 13–14",
+		"objective": "Thực hành gảy hợp âm, hợp âm rải (arpeggio) và đệm hòa âm cơ bản trên Đàn Tranh 17 dây.",
 		"lessons": [
 			{
-				"id": "DanTranh_Lvl6_01",
-				"name": "Bài 13: Luyện hợp âm cơ bản",
-				"type": "theory",
-				"desc": "Tìm hiểu về cấu tạo hợp âm Đàn Tranh và cách gảy song âm, hợp âm 3 nốt.",
-				"theory": "Trên Đàn Tranh, do không có các nốt thăng giáng, các hợp âm thường sử dụng là hợp âm 3 nốt ngũ cung (ví dụ: Sol-Đô-Mi hoặc La-Rê-Sol). Kỹ thuật gảy có thể là vuốt dây hoặc gảy đồng thời nhiều ngón (Tỳ - Á).\n\nHãy tập gảy 3 nốt cùng lúc thật đều và vang, tạo nền tảng cho việc đệm hát.",
+				"number": 13,
+				"title": "Làm quen Song Âm & Hợp âm cơ bản",
 				"video": "",
-				"practice": "Thực hành gảy một số thế hợp âm cơ bản trên Đàn Tranh.",
-				"practice_title": "Thực hành gảy Hợp âm",
-				"sheet": ["Sol2", "Đô3", "Mi3", "La2", "Rê3", "Sol3"]
+				"practice": "Thực hành gảy lướt (Rải) các cặp Song âm Quãng 8 và Quãng 5.",
+				"practice_title": "Luyện tập Song Âm (Quãng 8 & 5)",
+				"sheet": ["Sol1", "Sol2", "La1", "La2", "Đô2", "Đô3", "Sol1", "Rê2", "La1", "Mi2", "Sol1", "Đô2", "Mi2"]
 			},
 			{
-				"id": "DanTranh_Lvl6_02",
-				"name": "Bài 14: Thực hành Hòa âm Đàn Tranh",
-				"type": "practice",
-				"desc": "Ứng dụng kỹ thuật hợp âm rải (Arpeggio) và đệm hòa âm vào bản nhạc.",
-				"theory": "Kỹ thuật Rải hợp âm (Arpeggio) là gảy các nốt của hợp âm lần lượt từ thấp lên cao một cách mượt mà và nhanh chóng.\n\nHãy thử kết hợp tay trái gảy nốt trầm (Bass) và tay phải gảy hợp âm rải để tạo hiệu ứng âm thanh phong phú.",
+				"number": 14,
+				"title": "Thực hành Hòa âm Đàn Tranh",
 				"video": "",
 				"practice": "Chơi một đoạn nhạc đệm sử dụng kỹ thuật Arpeggio.",
 				"practice_title": "Luyện tập Hòa âm",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3"]
+				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3", "Đô2", "Đô3", "Mi3", "Sol3", "Sol1", "Sol2", "La2", "Đô3"]
+			},
+			{
+				"number": 15,
+				"title": "Boss Stage – Đệm Hát Dân Ca",
+				"video": "",
+				"practice": "Vận dụng toàn bộ kỹ thuật Hợp âm và Arpeggio để đệm một đoạn nhạc Dân Ca dài.",
+				"practice_title": "Boss Stage - Đệm Dân Ca",
+				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Đô3", "Mi3", "Sol1", "Sol2", "Rê3", "La2", "Đô2", "Đô3", "Mi3", "Sol3", "La1", "La2", "Rê3", "Mi3", "Sol1", "Sol2", "Đô3", "La2"]
 			}
 		]
 	}
