@@ -3716,7 +3716,7 @@ func _process_real_audio(delta: float) -> void:
 					
 		if closest_target_freq > 0.0:
 			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
-			if abs(cents) < 50.0:
+			if abs(cents) < 80.0:
 				pitch_note.text = target_note
 				
 				# Scaled tolerance window based on difficulty scale
@@ -3765,16 +3765,16 @@ func _process_real_audio(delta: float) -> void:
 				
 		var detected_note := ""
 		var closest_detected_freq := 0.0
-		var min_detected_diff := 999999.0
+		var min_detected_cents := 999999.0
 		for i in range(17):
 			var string_freq = _get_string_frequency(i)
-			var diff = abs(pitch - string_freq)
-			if diff < min_detected_diff:
-				min_detected_diff = diff
+			var cents_diff = abs(1200.0 * log(pitch / string_freq) / log(2.0))
+			if cents_diff < min_detected_cents:
+				min_detected_cents = cents_diff
 				closest_detected_freq = string_freq
 				detected_note = NOTES_VN[i]
 				
-		if detected_note != "" and min_detected_diff < 30.0:
+		if detected_note != "" and min_detected_cents < 80.0:
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
 			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
