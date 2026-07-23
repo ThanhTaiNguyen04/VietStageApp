@@ -141,6 +141,9 @@ func _on_label_resized():
 	# Wait for the next frame to ensure the label has calculated its size
 	await get_tree().process_frame
 	
+	if not is_instance_valid(device_label):
+		return
+	
 	# Get the label's preferred height with wrapping
 	var label_height = device_label.get_theme_font("font").get_multiline_string_size(
 		device_label.text, 

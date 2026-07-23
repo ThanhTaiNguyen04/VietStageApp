@@ -139,14 +139,14 @@ func _process(delta: float) -> void:
 				if current_amplitude_db > volume_threshold_db:
 					var detected_pitch = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.08, min_frequency, max_frequency)
 					if detected_pitch > 0.0:
-						current_pitch = lerp(current_pitch, detected_pitch, 0.70)
+						current_pitch = detected_pitch
 					else:
-						current_pitch = lerp(current_pitch, 0.0, 0.5)
+						current_pitch = 0.0
 					
 					current_tone_quality = _analyzer.evaluate_tone_quality(_analysis_buffer)
 					current_breath_purity = _analyzer.analyze_breath_pattern(_analysis_buffer)
 				else:
-					current_pitch = lerp(current_pitch, 0.0, 0.5)
+					current_pitch = 0.0
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 			else:
@@ -186,9 +186,9 @@ func _process(delta: float) -> void:
 									refined_best_hz = refine_hz + 1.0
 								refine_hz += 2.0
 								
-							current_pitch = lerp(current_pitch, refined_best_hz, 0.8)
+							current_pitch = refined_best_hz
 						else:
-							current_pitch = lerp(current_pitch, 0.0, 0.5)
+							current_pitch = 0.0
 							
 					# Compute other metrics
 					if _time_since_last_pitch >= 0.03:
@@ -197,7 +197,7 @@ func _process(delta: float) -> void:
 							current_tone_quality = _evaluate_tone_quality_gdscript(_analysis_buffer)
 							current_breath_purity = _analyze_breath_pattern_gdscript(_analysis_buffer)
 				else:
-					current_pitch = lerp(current_pitch, 0.0, 0.5)
+					current_pitch = 0.0
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 				
