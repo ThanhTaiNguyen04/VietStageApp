@@ -3228,15 +3228,23 @@ func _start_intro_cinematic() -> void:
 		
 		var stream = load("res://audio/phongnhac1.mp3")
 		if stream and is_instance_valid(_audio_manager.audio_player):
+			if "loop" in stream:
+				stream.loop = false
 			_audio_manager.audio_player.stream = stream
 			_audio_manager.audio_player.play()
-			_audio_manager.audio_player.finished.connect(_end_intro_cinematic, CONNECT_ONE_SHOT)
+			
+			if not _audio_manager.audio_player.finished.is_connected(_end_intro_cinematic):
+				_audio_manager.audio_player.finished.connect(_end_intro_cinematic, CONNECT_ONE_SHOT)
+			
+			var dur = stream.get_length() if stream.has_method("get_length") else 5.0
+			get_tree().create_timer(dur + 0.5).timeout.connect(_end_intro_cinematic)
 		else:
 			_audio_manager.speak_vietnamese(subtitle.text)
 			get_tree().create_timer(5.0).timeout.connect(_end_intro_cinematic)
 	)
 
 func _end_intro_cinematic() -> void:
+	if not _is_in_intro: return
 	_is_in_intro = false
 	var dim_overlay = get_node_or_null("IntroDimOverlay")
 	var subtitle = get_node_or_null("IntroSubtitle")
