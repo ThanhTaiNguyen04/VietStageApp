@@ -210,6 +210,13 @@ static var current_song_sheet : Array[String] = []
 
 var songs_list : Array = [
 	{
+		"title": "Bài Test 17 Dây",
+		"bpm": 60.0,
+		"sheet": ["Sol", "La", "Đô", "Rê", "Mi", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"],
+		"durations": []
+	},
+
+	{
 		"title": "Bèo Dạt Mây Trôi",
 		"bpm": 80.0,
 		"sheet": ["Đô2","Đô2","Rê2","Fa","Fa","Sol2","La2","Sol2","Fa","Rê2","Đô2"],
