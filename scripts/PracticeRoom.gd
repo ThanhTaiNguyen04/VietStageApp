@@ -3346,11 +3346,11 @@ func get_string_stream_source(string_index: int) -> String:
 func _get_string_frequency(idx: int) -> float:
 	# Đàn tranh 17 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
 	var base_freqs = [
-		196.00, # Sol (G3)
-		220.00, # La (A3)
-		261.63, # Đô (C4)
-		293.66, # Rê (D4)
-		329.63  # Mi (E4)
+		98.00,  # Sol (G2)
+		110.00, # La (A2)
+		130.81, # Đô (C3)
+		146.83, # Rê (D3)
+		164.81  # Mi (E3)
 	]
 	var octave = idx / 5
 	var note_in_octave = idx % 5
