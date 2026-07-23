@@ -36,7 +36,7 @@ const LEVELS := [
 				"video": "Lịch sử đàn tranh, 17 dây đàn và thang ngũ cung Sol – La – Đô – Rê – Mi.",
 				"practice": "Nghe mẫu và gảy lại lần lượt 5 nốt Sol – La – Đô – Rê – Mi trên đàn thật; hệ thống nhận diện cao độ, báo đúng/sai và tô xanh nốt đúng.",
 				"practice_title": "Làm quen 5 nốt cơ bản",
-				"sheet": ["Sol2", "La2", "Đô2", "Rê2", "Mi2"]
+				"sheet": ["Sol", "La", "Đô", "Rê", "Mi"]
 			},
 			{
 				"number": 2,
@@ -44,7 +44,7 @@ const LEVELS := [
 				"video": "Kỹ thuật gảy ngón cái, ngón trỏ, ngón giữa và góc tiếp xúc của móng gảy.",
 				"practice": "Ba lượt Hứng nốt với Đô2 – Rê2 – Mi2, ký hiệu Ngón 1/Ngón 2 và tốc độ tăng dần; đạt 80% để qua bài.",
 				"practice_title": "Gảy ngón cơ bản",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Mi2"]
+				"sheet": ["Đô", "Rê", "Mi", "Rê", "Đô", "Mi"]
 			},
 			{
 				"number": 3,
@@ -52,7 +52,7 @@ const LEVELS := [
 				"video": "Nghe từng câu nhạc, quan sát nốt kết câu và phối hợp ba ngón gảy.",
 				"practice": "Cô đàn sáu câu của Sứ Thanh Hoa ở BPM 80; học viên gảy nốt cuối mỗi câu bằng ngón 1, 2, 3 luân phiên.",
 				"practice_title": "Đệm Sứ Thanh Hoa",
-				"sheet": ["Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol", "La", "Sol", "Mi2", "Rê2", "Đô2", "La2", "Sol2"]
+				"sheet": ["Sol", "La", "Đô", "Rê", "Mi", "Sol2", "La2", "Sol2", "Mi", "Rê", "Đô", "La", "Sol"]
 			}
 		]
 	},
@@ -69,8 +69,8 @@ const LEVELS := [
 				"practice": "Luyện đúng đoạn đầu Mi – Sol – Sol | Mi – Sol – Sol | La – Đố – La – Đố | La – Sol – Sol theo nhịp 2/4; đúng hoặc sai đều chuyển tiếp, sai lần thứ sáu sẽ làm lại.",
 				"practice_title": "Vào rừng hoa – Đoạn 1",
 				"sheet": [
-					"Mi2", "Sol", "Sol", "Mi2", "Sol", "Sol",
-					"La", "Đô", "La", "Đô", "La", "Sol", "Sol"
+					"Mi", "Sol2", "Sol2", "Mi", "Sol2", "Sol2",
+					"La2", "Đô2", "La2", "Đô2", "La2", "Sol2", "Sol2"
 				]
 			},
 			{
@@ -79,7 +79,7 @@ const LEVELS := [
 				"video": "Điều tiết lực tay để giai điệu tự nhiên và giàu cảm xúc.",
 				"practice": "Chơi ở BPM 70 và nhận đánh giá Perfect, Great hoặc Miss.",
 				"practice_title": "Vào rừng hoa",
-				"sheet": ["Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol", "Mi2", "Rê2", "Đô2", "La2", "Sol2"]
+				"sheet": ["Sol", "La", "Đô", "Rê", "Mi", "Sol2", "Mi", "Rê", "Đô", "La", "Sol"]
 			},
 			{
 				"number": 6,
@@ -87,7 +87,7 @@ const LEVELS := [
 				"video": "Âm sắc Nam Bộ và cách gảy các nốt luyến đặc trưng của điệu Xàng Xê.",
 				"practice": "Tập Xàng Xê với tên nốt hiển thị trực tiếp trên dây đàn.",
 				"practice_title": "Xàng Xê",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Sol", "La", "Sol", "Mi2", "Rê2", "Đô2"]
+				"sheet": ["Đô", "Rê", "Mi", "Sol2", "La2", "Sol2", "Mi", "Rê", "Đô"]
 			}
 		]
 	},
@@ -103,7 +103,7 @@ const LEVELS := [
 				"video": "Luyện scale, giữ khung tay và di chuyển ổn định giữa các quãng xa.",
 				"practice": "Tập Mã Vũ đoạn 1 với tốc độ luyện tập phù hợp.",
 				"practice_title": "Mã Vũ – Đoạn 1",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Sol", "La", "Đô", "La", "Sol", "Mi2", "Rê2"]
+				"sheet": ["Đô", "Rê", "Mi", "Sol2", "La2", "Đô2", "La2", "Sol2", "Mi", "Rê"]
 			},
 			{
 				"number": 8,
@@ -111,7 +111,7 @@ const LEVELS := [
 				"video": "Nhấn nhá và luyến láy đặc trưng của Quan họ Bắc Ninh.",
 				"practice": "Luyện sheet Lý Cây Đa và hướng tới độ chính xác cao.",
 				"practice_title": "Lý Cây Đa",
-				"sheet": ["Sol", "Sol", "La", "Đô", "Rê", "Mi", "Rê", "Đô", "La", "Sol", "La", "Đô", "Sol"]
+				"sheet": ["Sol2", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "La2", "Đô2", "Sol2"]
 			}
 		]
 	},
@@ -127,7 +127,7 @@ const LEVELS := [
 				"video": "Cách nhấn dây, kiểm soát độ sâu và tạo độ rung bằng tay trái.",
 				"practice": "Giữ các nốt dài để luyện cảm giác rung và độ ngân.",
 				"practice_title": "Kỹ thuật Rung tay trái",
-				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol", "Sol"]
+				"sheet": ["Đô", "Đô", "Rê", "Rê", "Mi", "Mi", "Sol2", "Sol2"]
 			},
 			{
 				"number": 10,
@@ -135,7 +135,7 @@ const LEVELS := [
 				"video": "Nghe nhạc nền, giữ nhịp và làm nổi bật giai điệu chính khi hòa tấu.",
 				"practice": "Đóng vai trò đàn tranh lead trong một bài dân ca có sẵn.",
 				"practice_title": "Lý Cây Bông",
-				"sheet": ["Mi2", "Sol", "La", "Sol", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2", "Sol", "La", "Sol"]
+				"sheet": ["Mi", "Sol2", "La2", "Sol2", "Mi", "Rê", "Đô", "Rê", "Mi", "Sol2", "La2", "Sol2"]
 			}
 		]
 	},
@@ -151,7 +151,7 @@ const LEVELS := [
 				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
 				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 với các quãng rộng.",
 				"practice_title": "Sứ Thanh Hoa",
-				"sheet": ["La", "Đô", "Rê", "Mi", "Sol3", "Mi", "Rê", "Đô", "La", "Sol", "La", "Đô", "Rê", "Mi", "Sol3"]
+				"sheet": ["La2", "Đô2", "Rê2", "Mi2", "Sol3", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3"]
 			},
 			{
 				"number": 12,
@@ -159,7 +159,7 @@ const LEVELS := [
 				"video": "",
 				"practice": "Chọn một bài đã học và biểu diễn bằng giao diện luyện tập hiện có.",
 				"practice_title": "Thử thách sinh tồn 17 dây",
-				"sheet": ["Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol", "La", "Đô", "Rê", "Mi", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
+				"sheet": ["Sol", "La", "Đô", "Rê", "Mi", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
 			}
 		]
 	}

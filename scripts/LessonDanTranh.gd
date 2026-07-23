@@ -107,15 +107,15 @@ const LESSON_DIALOGUES = {
 }
 
 const NOTE_TO_STRING = {
-	"Sol2": 0, "La2": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4,
-	"Sol": 5, "La": 6, "Đô": 7, "Rê": 8, "Mi": 9,
+	"Sol": 0, "La": 1, "Đô": 2, "Rê": 3, "Mi": 4,
+	"Sol2": 5, "La2": 6, "Đô2": 7, "Rê2": 8, "Mi2": 9,
 	"Sol3": 10, "La3": 11, "Đô3": 12, "Rê3": 13, "Mi3": 14,
 	"Sol4": 15, "La4": 16
 }
 
 const NOTE_FREQS = {
-	"Sol2": 196.00, "La2": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Sol": 392.00, "La": 440.00, "Đô": 523.25, "Rê": 587.33, "Mi": 659.25,
+	"Sol": 196.00, "La": 220.00, "Đô": 261.63, "Rê": 293.66, "Mi": 329.63,
+	"Sol2": 392.00, "La2": 440.00, "Đô2": 523.25, "Rê2": 587.33, "Mi2": 659.25,
 	"Sol3": 783.99, "La3": 880.00, "Đô3": 1046.50, "Rê3": 1174.66, "Mi3": 1318.51,
 	"Sol4": 1567.98, "La4": 1760.00
 }
@@ -127,7 +127,7 @@ func _ready():
 		
 	lesson_sheet.assign(PracticeRoom.current_song_sheet)
 	if lesson_sheet.is_empty():
-		lesson_sheet = ["Sol2", "La2", "Đô2", "Rê2", "Mi2"] # fallback
+		lesson_sheet = ["Sol", "La", "Đô", "Rê", "Mi"] # fallback
 	
 	staff_display = load("res://scripts/StaffDisplay.gd").new()
 	staff_display.name = "StaffDisplay"
@@ -158,7 +158,7 @@ func _ready():
 	staff_display.offset_right = 0
 	staff_display.offset_bottom = 0
 	
-	var string_notes: Array[String] = ["Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol", "La", "Đô", "Rê", "Mi", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
+	var string_notes: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
 	var string_freqs: Array[float] = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]
 	var string_streams: Array = []
 	string_streams.resize(17)

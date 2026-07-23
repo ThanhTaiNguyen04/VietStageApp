@@ -84,8 +84,8 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
 	"Sol", "La", "Đô", "Rê", "Mi",
+	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
 	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
 	"Sol4", "La4" 
 ]
@@ -94,8 +94,8 @@ const LEVEL1_LESSON1_ID := "dan_tranh_level_1_bai_1_practice"
 const LEVEL1_LESSON2_ID := "dan_tranh_level_1_bai_2_practice"
 const LEVEL1_LESSON3_ID := "dan_tranh_level_1_bai_3_practice"
 const LEVEL2_LESSON4_ID := "dan_tranh_level_2_bai_4_practice"
-const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol2", "La2", "Đô2", "Rê2", "Mi2"]
-const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
+const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
+const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol2", "La2", "Đô2", "Rê2", "Mi2"]
 const FINGER_CUES := [
 	{"id": "circle", "symbol": "●", "shape_name": "hình tròn", "finger_name": "ngón cái"},
 	{"id": "square", "symbol": "■", "shape_name": "hình vuông", "finger_name": "ngón trỏ"},
@@ -104,16 +104,16 @@ const FINGER_CUES := [
 const LEVEL1_CONFIGS := {
 	LEVEL1_LESSON1_ID: {
 		"lesson": 1, "title": "Luyện từng nốt bằng ba ngón", "mode": "explore", "input": "micro",
-		"sheet": ["Sol2", "La2", "Đô2", "Rê2", "Mi2"], "active_strings": [0, 1, 2, 3, 4],
+		"sheet": ["Sol", "La", "Đô", "Rê", "Mi"], "active_strings": [0, 1, 2, 3, 4],
 		"instruction": "Nghe câu nhạc chậm. Khi nhạc dừng, hãy gảy lần lượt Sol – La – Đô – Rê – Mi trên đàn thật.",
 		"bpm": 56.0, "pass_score": 80.0
 	},
 	LEVEL1_LESSON2_ID: {
 		"lesson": 2, "title": "Điền nốt còn thiếu vào bài nhạc", "mode": "fill_melody", "input": "micro",
 		"sheet": [
-			"Sol2", "La2", "Đô2", "La2", "Sol2", "Rê2", "Mi2", "Rê2",
-			"Đô2", "La2", "Sol2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2",
-			"La2", "Sol2", "La2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2"
+			"Sol", "La", "Đô", "La", "Sol", "Rê", "Mi", "Rê",
+			"Đô", "La", "Sol", "Đô", "Rê", "Mi", "Rê", "Đô",
+			"La", "Sol", "La", "Đô", "Mi", "Rê", "Đô", "Sol"
 		],
 		"missing_indices": [3, 7, 11, 15, 19, 23],
 		"cues": ["", "", "", "square", "", "", "", "square", "", "", "", "triangle",
@@ -212,18 +212,18 @@ var songs_list : Array = [
 	{
 		"title": "Bèo Dạt Mây Trôi",
 		"bpm": 80.0,
-		"sheet": ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"],
+		"sheet": ["Đô2","Đô2","Rê2","Fa","Fa","Sol2","La2","Sol2","Fa","Rê2","Đô2"],
 		"durations": []
 	},
 	{
 		"title": "Lý Cây Đa",
 		"bpm": 85.0,
 		"sheet": [
-			"Đô", "Rê", "Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Đô", "Rê",
-			"Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Đô", "Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Đô",
-			"Mi", "Mi", "Rê", "Rê", "Đô", "Mi", "Rê", "Đô", "Sol", "Sol", "Đô",
-			"Đô", "Sol", "Sol", "Đô", "Sol", "Đô", "La", "Sol", "Fa2", "La", "Sol", "La", "Đô", "La",
-			"Sol", "La", "Sol", "Sol", "La", "Sol", "La", "Đô", "La", "Sol", "La", "Sol"
+			"Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2",
+			"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2",
+			"Mi2", "Mi2", "Rê2", "Rê2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "Sol2", "Đô2",
+			"Đô2", "Sol2", "Sol2", "Đô2", "Sol2", "Đô2", "La2", "Sol2", "Fa2", "La2", "Sol2", "La2", "Đô2", "La2",
+			"Sol2", "La2", "Sol2", "Sol2", "La2", "Sol2", "La2", "Đô2", "La2", "Sol2", "La2", "Sol2"
 		],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
@@ -237,11 +237,11 @@ var songs_list : Array = [
 		"title": "Lý Cây Bông",
 		"bpm": 80.0,
 		"sheet": [
-			"La", "Sol", "La", "La", "Sol", "La", "Đô", "Mi", "Sol3", "Mi", "Sol3", "Sol3", "Mi",
-			"La", "Sol", "Mi", "Sol", "La", "La", "La", "Sol", "Mi", "Sol3", "Mi", "Sol3",
-			"La", "Sol", "Mi", "Sol", "La", "La", "Rê", "Mi", "Sol3", "Mi", "Rê", "Đô", "La",
-			"Rê", "Mi", "Rê", "Rê", "Rê", "Rê", "Rê", "Mi", "Sol3",
-			"Mi", "Rê", "Đô", "La", "La", "La", "Đô", "Rê", "Mi", "Rê"
+			"La2", "Sol2", "La2", "La2", "Sol2", "La2", "Đô2", "Mi2", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2",
+			"La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "La2", "Sol2", "Mi2", "Sol3", "Mi2", "Sol3",
+			"La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rê2", "Mi2", "Sol3", "Mi2", "Rê2", "Đô2", "La2",
+			"Rê2", "Mi2", "Rê2", "Rê2", "Rê2", "Rê2", "Rê2", "Mi2", "Sol3",
+			"Mi2", "Rê2", "Đô2", "La2", "La2", "La2", "Đô2", "Rê2", "Mi2", "Rê2"
 		],
 		"durations": [
 			0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
@@ -254,7 +254,7 @@ var songs_list : Array = [
 	{
 		"title": "Giấc Mơ Trưa",
 		"bpm": 90.0,
-		"sheet": ["Rest", "Sol2", "La2", "Đô", "Rê", "Mi", "Sol", "La", "Rê3", "Rê3", "Rest", "La", "Sol", "Mi", "Rê", "Đô", "La2", "Sol2", "Đô", "Đô", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Rê", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Đô3", "La", "Sol", "Sol", "Rest", "La", "Sol", "Mi", "Rê", "Mi", "Rê", "Đô", "Đô", "Rest", "Mi", "Rê", "Đô", "Rê", "Sol", "Rê", "Sol", "Đô3", "Đô3", "Đô3", "Rest", "Mi", "Rê", "Sol", "Rê", "Rê", "Rê", "Rest", "Mi", "Rê", "Đô", "Rê", "Sol", "La", "La", "La", "Rest", "Sol", "La", "Mi", "Rê", "Đô", "Rê", "Sol", "Sol", "Rest", "Rê3", "Đô3", "La", "Đô3", "Sol", "Sol", "Rest", "La", "Sol", "Mi", "Sol", "Rê", "Rê", "Rest", "Mi", "Rê", "Đô", "Rê", "Sol2", "Sol2", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "La", "La", "Rest", "Sol", "La", "Mi", "Rê", "Đô", "Rê", "Đô", "Đô", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "La", "Đô3", "La", "Sol", "Mi", "Sol", "La", "La", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "La", "Đô3", "Rê3", "Đô3", "La", "Đô3", "Sol", "Sol", "Rest", "La", "Sol", "Mi", "Sol", "Rê", "Mi", "Đô", "Đô", "Rest", "La2", "Sol2", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Đô", "Đô", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "La", "Đô3", "La", "Sol", "Mi", "Sol", "La", "La", "Rest", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "La", "Đô3", "Rê3", "Đô3", "La", "Đô3", "Sol", "Sol", "Rest", "La", "Sol", "Mi", "Sol", "Rê", "Mi", "Đô", "Đô", "Rest", "La2", "Sol2", "Đô", "Rê", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Đô", "Đô", "Rest"],
+		"sheet": ["Rest", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Rê3", "Rê3", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Sol", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Rê2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Rê2", "Sol2", "Đô3", "Đô3", "Đô3", "Rest", "Mi2", "Rê2", "Sol2", "Rê2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Sol2", "Rest", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "Sol", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest"],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 2.0,
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 2.0,
@@ -284,10 +284,10 @@ var songs_list : Array = [
 		"title": "Vào rừng hoa – Đoạn 1",
 		"bpm": 60.0,
 		"sheet": [
-			"Mi2", "Sol", "Sol",
-			"Mi2", "Sol", "Sol",
-			"La", "Đô", "La", "Đô",
-			"La", "Sol", "Sol"
+			"Mi", "Sol2", "Sol2",
+			"Mi", "Sol2", "Sol2",
+			"La2", "Đô2", "La2", "Đô2",
+			"La2", "Sol2", "Sol2"
 		],
 		"durations": [
 			0.5, 0.5, 1.0,
@@ -300,12 +300,12 @@ var songs_list : Array = [
 		"title": "Sứ Thanh Hoa",
 		"bpm": 80.0,
 		"sheet": [
-			"Rê", "Đô", "La", "Đô", "Đô", "La", "Đô", "Đô", "La", "Đô", "La", "Sol",
-			"Rê", "Đô", "La", "Đô", "Đô", "La", "Đô", "Đô", "Mi", "Rê", "Đô", "Sol", "La", "Mi",
-			"Mi", "Rê", "Mi", "Rê", "Mi", "Sol3", "Mi", "Rest", "Mi", "Mi", "Rê",
-			"Đô", "Mi", "Rê", "Rê", "Đô", "La", "Đô", "Đô", "La", "Đô",
-			"La", "Sol", "Sol", "La", "Mi", "Sol3", "Sol3", "Mi", "Sol3", "Sol3", "Mi", "Rê", "Đô", "Đô",
-			"Rê", "Đô", "Rê", "Mi", "Rê", "Rê", "Đô", "Rê", "Đô", "Rê", "Đô", "Đô", "La", "Đô", "Rê", "Rê", "Rê"
+			"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "La2", "Sol2",
+			"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "La2", "Mi2",
+			"Mi2", "Rê2", "Mi2", "Rê2", "Mi2", "Sol3", "Mi2", "Rest", "Mi2", "Mi2", "Rê2",
+			"Đô2", "Mi2", "Rê2", "Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2",
+			"La2", "Sol2", "Sol2", "La2", "Mi2", "Sol3", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2",
+			"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "La2", "Đô2", "Rê2", "Rê2", "Rê2"
 		],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
@@ -318,7 +318,7 @@ var songs_list : Array = [
 	}
 ]
 
-var sheet_notes : Array[String] = ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"]
+var sheet_notes : Array[String] = ["Đô2","Đô2","Rê2","Fa","Fa","Sol2","La2","Sol2","Fa","Rê2","Đô2"]
 var sheet_durations : Array[float] = []
 var note_visuals : Dictionary = {}
 var note_statuses : Array[String] = []
@@ -367,13 +367,13 @@ func _ready() -> void:
 				song["durations"].append(1.0)
 
 	var pentatonic_to_western = {
-		"Hò": "Đô",
-		"Xự": "Rê",
+		"Hò": "Đô2",
+		"Xự": "Rê2",
 		"Xang": "Fa",
-		"Xê": "Sol",
-		"Công": "La",
-		"Liu": "Đô2",
-		"Ú": "Rê2"
+		"Xê": "Sol2",
+		"Công": "La2",
+		"Liu": "Đô",
+		"Ú": "Rê"
 	}
 	# Try loading from local songs_list first to preserve custom durations!
 	var found_local := false
@@ -426,7 +426,7 @@ func _ready() -> void:
 		
 	# Bulletproof safety: if sheet_notes is empty under any scenario, populate with default notes
 	if sheet_notes.is_empty():
-		sheet_notes.assign(["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"])
+		sheet_notes.assign(["Đô2", "Rê2", "Mi2", "Fa", "Sol2", "La2", "Si"])
 		sheet_durations.clear()
 		for note in sheet_notes:
 			sheet_durations.append(1.0)
@@ -4061,13 +4061,13 @@ func _on_song_selected(index: int) -> void:
 	current_song_title = song["title"]
 	
 	var pentatonic_to_western = {
-		"Hò": "Đô",
-		"Xự": "Rê",
+		"Hò": "Đô2",
+		"Xự": "Rê2",
 		"Xang": "Fa",
-		"Xê": "Sol",
-		"Công": "La",
-		"Liu": "Đô2",
-		"Ú": "Rê2"
+		"Xê": "Sol2",
+		"Công": "La2",
+		"Liu": "Đô",
+		"Ú": "Rê"
 	}
 	
 	sheet_notes.clear()
@@ -4137,19 +4137,19 @@ func _show_introduction_overlay() -> void:
 			"text": "Dây số 1 (dây trầm nhất, ở xa con nhất) là nốt Đô (Hò). Hãy nghe thử âm thanh ngân vang của dây Đô trầm nhé.",
 			"voice": "Dây số một dây trầm nhất, ở xa con nhất là nốt Đô. Hãy nghe thử âm thanh ngân vang của dây Đô trầm nhé.",
 			"highlighted_string": 0,
-			"note_to_play": "Đô"
+			"note_to_play": "Đô2"
 		},
 		{
 			"text": "Dây số 2 tiếp theo là nốt Rê (Xự). Âm thanh hơi cao hơn một chút.",
 			"voice": "Dây số hai tiếp theo là nốt Rê. Âm thanh hơi cao hơn một chút.",
 			"highlighted_string": 1,
-			"note_to_play": "Rê"
+			"note_to_play": "Rê2"
 		},
 		{
 			"text": "Dây số 3 là nốt Đô. Dưới đây là âm nốt Đô.",
 			"voice": "Dây số ba là nốt Đô. Dưới đây là âm nốt Đô.",
 			"highlighted_string": 2,
-			"note_to_play": "Đô"
+			"note_to_play": "Đô2"
 		},
 		{
 			"text": "Khi gảy, con chạm và vuốt nhẹ bên phải nhạn đàn. Khi nhấn nhấn bên trái nhạn đàn, âm thanh sẽ có tiếng nhấn rung vô cùng điệu nghệ.",
