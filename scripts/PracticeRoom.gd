@@ -993,7 +993,7 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if amplitude_db <= -45.0 or pitch <= 50.0:
+	if amplitude_db <= -28.0 or pitch <= 50.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -1026,13 +1026,13 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 	expected_cents = fmod(expected_cents, 1200.0)
 	if expected_cents > 600.0: expected_cents = 1200.0 - expected_cents
 	pitch_note.text = LEVEL1_LESSON1_LABELS[closest_index]
-	if expected_cents <= 80.0:
+	if expected_cents <= 120.0:
 		if _board:
 			_board.set_lesson_marker(_note_idx, _level1_current_finger_shape(), 2)
 		_level1_pitch_hold += delta
-		var hold_percent := mini(100, int((_level1_pitch_hold / 0.35) * 100.0))
+		var hold_percent := mini(100, int((_level1_pitch_hold / 0.15) * 100.0))
 		_set_level1_status("Đúng nốt %s bằng %s · Giữ âm ổn định %d%%" % [LEVEL1_LESSON1_LABELS[_note_idx], _level1_current_finger_name(), hold_percent], C_BLUE_OK)
-		if _level1_pitch_hold >= 0.35:
+		if _level1_pitch_hold >= 0.15:
 			_complete_level1_lesson1_note()
 		return
 
@@ -2452,7 +2452,7 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
-	if amplitude_db <= -45.0 or pitch <= 50.0:
+	if amplitude_db <= -28.0 or pitch <= 50.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -2491,7 +2491,7 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var detected_name: String = NOTES_VN[closest_idx].rstrip("0123456789")
 	pitch_note.text = detected_name
 
-	if target_cents <= 80.0:
+	if target_cents <= 120.0:
 		_level1_pitch_hold += delta
 		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
 		pitch_status.text = "Đúng nốt · Nhạc sắp phát tiếp"
@@ -2566,7 +2566,7 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 		return
 	var db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if db <= -45.0 or pitch <= 50.0:
+	if db <= -28.0 or pitch <= 50.0:
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
 			if _level1_silence_time >= 0.12:
@@ -2591,7 +2591,7 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 	var cents_mod = fmod(absf(cents), 1200.0)
 	if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 	_level1_total_attempts += 1
-	if cents_mod <= 80.0:
+	if cents_mod <= 120.0:
 		var timing := clampf(100.0 - absf(_current_note_elapsed - seconds_per_note * 0.35) / seconds_per_note * 130.0, 0.0, 100.0)
 		_level1_timing_scores.append(timing)
 		if _current_note_elapsed < seconds_per_note * 0.18:
@@ -3709,7 +3709,7 @@ func _process_real_audio(delta: float) -> void:
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
 	
-	if db > -45.0 and pitch > 50.0:
+	if db > -28.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
 		
 		# Find the closest frequency matching the target note across all 17 strings
@@ -3730,7 +3730,7 @@ func _process_real_audio(delta: float) -> void:
 			var cents_mod = fmod(abs(cents), 1200.0)
 			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 			
-			if cents_mod < 80.0:
+			if cents_mod < 120.0:
 				pitch_note.text = target_note
 				cents = cents_mod # Use folded cents for scoring
 				
@@ -3789,7 +3789,7 @@ func _process_real_audio(delta: float) -> void:
 				closest_detected_freq = string_freq
 				detected_note = NOTES_VN[i]
 				
-		if detected_note != "" and min_detected_cents < 80.0:
+		if detected_note != "" and min_detected_cents < 120.0:
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
 			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
