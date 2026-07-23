@@ -141,9 +141,9 @@ func _build_lessons() -> void:
 	
 	for i in range(lesson_count):
 		var node_id = start_node + i
-		var is_locked = (node_id > unlocked_up_to)
-		var is_completed = (node_id < unlocked_up_to)
-		var is_active = (node_id == unlocked_up_to)
+		var is_locked = false # FORCE UNLOCK
+		var is_completed = false # FORCE UNLOCK
+		var is_active = true # FORCE UNLOCK
 		
 		# Wrapper (to align vertically begin/top to shift up)
 		var card_wrapper = Control.new()
