@@ -2580,8 +2580,10 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 	var target_idx := NOTES_VN.find(sheet_notes[_note_idx])
 	var target_frequency := _get_string_frequency(target_idx)
 	var cents := 1200.0 * log(pitch / target_frequency) / log(2.0)
+	var cents_mod = fmod(absf(cents), 1200.0)
+	if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 	_level1_total_attempts += 1
-	if closest_idx == target_idx and absf(cents) <= 35.0:
+	if cents_mod <= 80.0:
 		var timing := clampf(100.0 - absf(_current_note_elapsed - seconds_per_note * 0.35) / seconds_per_note * 130.0, 0.0, 100.0)
 		_level1_timing_scores.append(timing)
 		if _current_note_elapsed < seconds_per_note * 0.18:
@@ -3346,11 +3348,11 @@ func get_string_stream_source(string_index: int) -> String:
 func _get_string_frequency(idx: int) -> float:
 	# Đàn tranh 17 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
 	var base_freqs = [
-		98.00,  # Sol (G2)
-		110.00, # La (A2)
-		130.81, # Đô (C3)
-		146.83, # Rê (D3)
-		164.81  # Mi (E3)
+		196.00, # Sol (G3)
+		220.00, # La (A3)
+		261.63, # Đô (C4)
+		293.66, # Rê (D4)
+		329.63  # Mi (E4)
 	]
 	var octave = idx / 5
 	var note_in_octave = idx % 5
@@ -3716,8 +3718,13 @@ func _process_real_audio(delta: float) -> void:
 					
 		if closest_target_freq > 0.0:
 			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
-			if abs(cents) < 80.0:
+			# Handle octave errors (YIN algorithm often detects 1 octave higher for plucked strings)
+			var cents_mod = fmod(abs(cents), 1200.0)
+			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
+			
+			if cents_mod < 80.0:
 				pitch_note.text = target_note
+				cents = cents_mod # Use folded cents for scoring
 				
 				# Scaled tolerance window based on difficulty scale
 				var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
