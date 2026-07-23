@@ -15,6 +15,10 @@ void AudioAnalyzer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("calculate_composite_score", "pitch_score", "rhythm_score", "tone_score", "breath_score"), &AudioAnalyzer::calculate_composite_score);
 	ClassDB::bind_method(D_METHOD("adjust_difficulty", "recent_scores"), &AudioAnalyzer::adjust_difficulty);
 	ClassDB::bind_method(D_METHOD("filter_background_noise", "samples", "noise_threshold"), &AudioAnalyzer::filter_background_noise);
+
+	ClassDB::bind_method(D_METHOD("detect_dan_tranh_note", "samples", "sample_rate"), &AudioAnalyzer::detect_dan_tranh_note);
+	ClassDB::bind_method(D_METHOD("detect_note_onset_and_duration", "samples", "sample_rate", "threshold_db"), &AudioAnalyzer::detect_note_onset_and_duration);
+	ClassDB::bind_method(D_METHOD("evaluate_dan_tranh_note_performance", "detected_freq", "detected_duration", "target_freq", "target_duration", "pitch_tolerance_cents", "duration_tolerance_sec"), &AudioAnalyzer::evaluate_dan_tranh_note_performance);
 }
 
 AudioAnalyzer::AudioAnalyzer() {
@@ -152,6 +156,7 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 	if (best_tau <= 0 || best_tau >= max_period) {
 		return 0.0f;
 	}
+
 
 	// Step 4: Parabolic interpolation for sub-sample accuracy
 	float precise_tau = static_cast<float>(best_tau);
@@ -384,4 +389,202 @@ PackedFloat32Array AudioAnalyzer::filter_background_noise(const PackedFloat32Arr
 
 	return filtered_samples;
 }
+
+// ─── Specialized C++ Dan Tranh Note & Fundamental Frequency Recognition ─────────
+Dictionary AudioAnalyzer::detect_dan_tranh_note(const PackedFloat32Array &samples, float sample_rate) {
+	Dictionary result;
+	result["frequency"] = 0.0f;
+	result["note_name"] = "None";
+	result["string_index"] = -1;
+	result["cents_offset"] = 0.0f;
+	result["clarity"] = 0.0f;
+
+	if (samples.size() < 256) {
+		return result;
+	}
+
+	// 1. Detect fundamental pitch using YIN algorithm (range: 120 Hz to 4200 Hz for all 17 strings + harmonics)
+	float freq = analyze_pitch_yin(samples, sample_rate, 0.22f, 120.0f, 4200.0f);
+
+
+	if (freq <= 0.0f) {
+		return result;
+	}
+
+	// 2. Dan Tranh 17-String Reference Frequencies & Note Names
+	static const struct {
+		const char *name;
+		int string_idx;
+		float freq;
+	} DAN_TRANH_NOTES[] = {
+		{"Sol1", 0,  196.00f},
+		{"La1",  1,  220.00f},
+		{"Đô2",  2,  261.63f},
+		{"Rê2",  3,  293.66f},
+		{"Mi2",  4,  329.63f},
+		{"Sol2", 5,  392.00f},
+		{"La2",  6,  440.00f},
+		{"Đô3",  7,  523.25f},
+		{"Rê3",  8,  587.33f},
+		{"Mi3",  9,  659.25f},
+		{"Sol3", 10, 783.99f},
+		{"La3",  11, 880.00f},
+		{"Đô4",  12, 1046.50f},
+		{"Rê4",  13, 1174.66f},
+		{"Mi4",  14, 1318.51f},
+		{"Sol4", 15, 1567.98f},
+		{"La4",  16, 1760.00f}
+	};
+	constexpr int NOTE_COUNT = sizeof(DAN_TRANH_NOTES) / sizeof(DAN_TRANH_NOTES[0]);
+
+	// 3. Find closest reference note frequency
+	int best_idx = -1;
+	float min_ratio_diff = 1e10f;
+
+	for (int i = 0; i < NOTE_COUNT; ++i) {
+		float ref_freq = DAN_TRANH_NOTES[i].freq;
+		float cents = 1200.0f * std::log2(freq / ref_freq);
+		if (std::abs(cents) < min_ratio_diff) {
+			min_ratio_diff = std::abs(cents);
+			best_idx = i;
+		}
+	}
+
+	if (best_idx >= 0 && min_ratio_diff < 600.0f) { // Map any pitch in spectrum to nearest 17-string note
+
+		float ref_freq = DAN_TRANH_NOTES[best_idx].freq;
+		float cents_offset = 1200.0f * std::log2(freq / ref_freq);
+		float tone_q = evaluate_tone_quality(samples);
+
+		result["frequency"] = freq;
+		result["note_name"] = String(DAN_TRANH_NOTES[best_idx].name);
+		result["string_index"] = DAN_TRANH_NOTES[best_idx].string_idx;
+		result["cents_offset"] = cents_offset;
+		result["clarity"] = tone_q;
+	}
+
+	return result;
+}
+
+// ─── Note Onset & Duration Detection in C++ ──────────────────────────────────
+Dictionary AudioAnalyzer::detect_note_onset_and_duration(const PackedFloat32Array &samples, float sample_rate, float threshold_db) {
+	Dictionary result;
+	result["is_onset"] = false;
+	result["duration_sec"] = 0.0f;
+	result["peak_db"] = -80.0f;
+	result["is_active"] = false;
+
+	int size = samples.size();
+	if (size < 128) {
+		return result;
+	}
+
+	// Calculate overall RMS and peak
+	float sum_sq = 0.0f;
+	float peak = 0.0f;
+	for (int i = 0; i < size; ++i) {
+		float v = std::abs(samples[i]);
+		sum_sq += v * v;
+		if (v > peak) peak = v;
+	}
+
+	float rms = std::sqrt(sum_sq / static_cast<float>(size));
+	float rms_db = (rms > 0.0001f) ? 20.0f * std::log10(rms) : -80.0f;
+	float peak_db = (peak > 0.0001f) ? 20.0f * std::log10(peak) : -80.0f;
+	result["peak_db"] = peak_db;
+
+	if (peak_db < threshold_db) {
+		return result;
+	}
+
+	result["is_active"] = true;
+
+	// Spectral flux / Onset detection: compare first half and second half energy
+	int half = size / 2;
+	float e_first = 0.0f, e_second = 0.0f;
+	for (int i = 0; i < half; ++i) {
+		e_first += samples[i] * samples[i];
+	}
+	for (int i = half; i < size; ++i) {
+		e_second += samples[i] * samples[i];
+	}
+
+	// Pluck onset condition: sharp initial energy spike followed by decay
+	if (e_first > 0.0001f && (e_first / (e_second + 0.0001f)) > 2.5f) {
+		result["is_onset"] = true;
+	}
+
+	// Estimate sustain duration based on energy window exceeding threshold
+	float active_ratio = 0.0f;
+	int active_samples = 0;
+	int block = 32;
+	for (int i = 0; i < size; i += block) {
+		float b_peak = 0.0f;
+		int limit = std::min(size, i + block);
+		for (int j = i; j < limit; ++j) {
+			b_peak = std::max(b_peak, std::abs(samples[j]));
+		}
+		if (b_peak > 0.01f) {
+			active_samples += block;
+		}
+	}
+	result["duration_sec"] = static_cast<float>(active_samples) / sample_rate;
+
+	return result;
+}
+
+// ─── Dan Tranh Note Performance Evaluation (Pitch & Duration Score) ──────────
+Dictionary AudioAnalyzer::evaluate_dan_tranh_note_performance(
+	float detected_freq,
+	float detected_duration,
+	float target_freq,
+	float target_duration,
+	float pitch_tolerance_cents,
+	float duration_tolerance_sec
+) {
+	Dictionary result;
+	float pitch_score = 0.0f;
+	float duration_score = 0.0f;
+	String feedback = "Cần cố gắng thêm";
+
+	if (detected_freq > 0.0f && target_freq > 0.0f) {
+		float cents_diff = std::abs(1200.0f * std::log2(detected_freq / target_freq));
+		if (cents_diff <= pitch_tolerance_cents) {
+			pitch_score = 100.0f * (1.0f - (cents_diff / pitch_tolerance_cents));
+		} else {
+			pitch_score = std::max(0.0f, 100.0f - (cents_diff - pitch_tolerance_cents) * 2.0f);
+		}
+	}
+
+	if (target_duration > 0.0f) {
+		float dur_diff = std::abs(detected_duration - target_duration);
+		if (dur_diff <= duration_tolerance_sec) {
+			duration_score = 100.0f * (1.0f - (dur_diff / duration_tolerance_sec));
+		} else {
+			duration_score = std::max(0.0f, 100.0f - (dur_diff - duration_tolerance_sec) * 50.0f);
+		}
+	} else {
+		duration_score = 100.0f;
+	}
+
+	float composite = 0.6f * pitch_score + 0.4f * duration_score;
+
+	if (composite >= 90.0f) {
+		feedback = "Tuyệt vời! Cao độ và trường độ rất chuẩn.";
+	} else if (pitch_score >= 80.0f && duration_score < 70.0f) {
+		feedback = "Cao độ chuẩn, hãy chú ý ngân đủ trường độ nốt.";
+	} else if (pitch_score < 70.0f && duration_score >= 80.0f) {
+		feedback = "Trường độ tốt, hãy gảy đúng phím dây đàn.";
+	} else if (composite >= 70.0f) {
+		feedback = "Khá tốt! Tiếp tục phát huy.";
+	}
+
+	result["pitch_score"] = std::clamp(pitch_score, 0.0f, 100.0f);
+	result["duration_score"] = std::clamp(duration_score, 0.0f, 100.0f);
+	result["composite_score"] = std::clamp(composite, 0.0f, 100.0f);
+	result["feedback"] = feedback;
+
+	return result;
+}
+
 
