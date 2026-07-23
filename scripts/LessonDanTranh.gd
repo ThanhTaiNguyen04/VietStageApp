@@ -114,9 +114,12 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Hãy chứng minh bạn đã hoàn toàn làm chủ cây Đàn Tranh này nào!", "highlight": -1}
 	],
 	"dan_tranh_level_6_bai_13_practice": [
-		{"action": "speak", "text": "Chào bạn! Đây là cấp độ cuối cùng: Học gảy Hợp âm trên Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Bài này chúng ta sẽ tập gảy Song Âm, tức là gảy 2 dây cùng lúc.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chú ý dùng ngón cái và ngón giữa (ký hiệu Tròn và Tam giác) để gảy nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào bạn! Chào mừng đến với cấp độ cuối cùng: Học gảy Hợp âm trên Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm là sự kết hợp của nhiều nốt vang lên cùng lúc, tạo ra âm thanh dày dặn và phong phú để đệm cho giai điệu.", "highlight": -1},
+		{"action": "speak", "text": "Khác với Piano hay Guitar, Đàn Tranh dùng thang ngũ cung nên các hợp âm thường được tạo từ các quãng 4, quãng 5, hoặc quãng 8.", "highlight": -1},
+		{"action": "speak", "text": "Các thế bấm phổ biến nhất là Song Âm (chỉ gảy 2 dây) và Hợp âm 3 nốt (ví dụ như cụm nốt Sol-Đô-Mi).", "highlight": -1},
+		{"action": "speak", "text": "Hôm nay, chúng ta sẽ bước đầu làm quen với việc gảy Song Âm, tức là gảy 2 dây cùng lúc để cảm nhận độ vang.", "highlight": -1},
+		{"action": "speak", "text": "Hãy chú ý dùng ngón cái và ngón giữa (ký hiệu Tròn và Tam giác) để gảy thật đều nhé.", "highlight": -1}
 	],
 	"dan_tranh_level_6_bai_14_practice": [
 		{"action": "speak", "text": "Hôm nay chúng ta sẽ thực hành kỹ thuật Rải Hợp Âm (Arpeggio).", "highlight": -1},
