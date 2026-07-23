@@ -576,9 +576,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
-		visualizer.min_frequency = 120.0
-		visualizer.max_frequency = 900.0
-		visualizer.volume_threshold_db = -45.0
+		visualizer.min_frequency = 80.0
+		visualizer.max_frequency = 950.0
+		visualizer.volume_threshold_db = -50.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -1000,7 +1000,7 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if amplitude_db <= -28.0 or pitch <= 50.0:
+	if amplitude_db <= -40.0 or pitch <= 70.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -2459,7 +2459,7 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
-	if amplitude_db <= -28.0 or pitch <= 50.0:
+	if amplitude_db <= -40.0 or pitch <= 70.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -2573,7 +2573,7 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 		return
 	var db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if db <= -28.0 or pitch <= 50.0:
+	if db <= -40.0 or pitch <= 70.0:
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
 			if _level1_silence_time >= 0.12:
@@ -3361,17 +3361,33 @@ func get_string_stream_source(string_index: int) -> String:
 	return _string_stream_sources[string_index]
 
 func _get_string_frequency(idx: int) -> float:
-	# Đàn tranh 17 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
-	var base_freqs = [
-		196.00, # Sol (G3)
-		220.00, # La (A3)
-		261.63, # Đô (C4)
-		293.66, # Rê (D4)
-		329.63  # Mi (E4)
+	# Đàn tranh 17 dây - tần số thực tế từng dây
+	# Dây 1-5 (không số): Sol=G2, La=A2, Đô=C3, Rê=D3, Mi=E3
+	# Dây 6-10 (số 2): Sol2=G3, La2=A3, Đô2=C4, Rê2=D4, Mi2=E4
+	# Dây 11-15 (số 3): Sol3=G4, La3=A4, Đô3=C5, Rê3=D5, Mi3=E5
+	# Dây 16-17 (số 4): Sol4=G5, La4=A5
+	const DAN_TRANH_FREQS: Array[float] = [
+		98.00,   # Dây 1 - Sol  (G2)
+		110.00,  # Dây 2 - La   (A2)
+		130.81,  # Dây 3 - Đô   (C3)
+		146.83,  # Dây 4 - Rê   (D3)
+		164.81,  # Dây 5 - Mi   (E3)
+		196.00,  # Dây 6 - Sol2 (G3)
+		220.00,  # Dây 7 - La2  (A3)
+		261.63,  # Dây 8 - Đô2  (C4)
+		293.66,  # Dây 9 - Rê2  (D4)
+		329.63,  # Dây 10- Mi2  (E4)
+		392.00,  # Dây 11- Sol3 (G4)
+		440.00,  # Dây 12- La3  (A4)
+		523.25,  # Dây 13- Đô3  (C5)
+		587.33,  # Dây 14- Rê3  (D5)
+		659.25,  # Dây 15- Mi3  (E5)
+		783.99,  # Dây 16- Sol4 (G5)
+		880.00   # Dây 17- La4  (A5)
 	]
-	var octave = idx / 5
-	var note_in_octave = idx % 5
-	return base_freqs[note_in_octave] * pow(2, octave)
+	if idx < 0 or idx >= DAN_TRANH_FREQS.size():
+		return 220.0
+	return DAN_TRANH_FREQS[idx]
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 	# ── Clean Karplus-Strong — Đàn Tranh tuned ───────────────────────────────
@@ -3716,7 +3732,7 @@ func _process_real_audio(delta: float) -> void:
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
 	
-	if db > -28.0 and pitch > 50.0:
+	if db > -40.0 and pitch > 70.0:
 		var target_note = sheet_notes[_note_idx]
 		
 		# Find the closest frequency matching the target note across all 17 strings
