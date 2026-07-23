@@ -84,9 +84,10 @@ func _draw():
 		var n_x = note_data.get("x", size.x / 2.0)
 		var n_color = note_data.get("color", Color(0.1, 0.1, 0.1, 1.0))
 		var n_tail = note_data.get("tail", 0.0)
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail)
+		var n_cue = note_data.get("cue", "")
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = ""):
 	if not NOTE_POSITIONS.has(note_name): return
 	var pos_idx = NOTE_POSITIONS[note_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
@@ -121,6 +122,22 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	# Draw note head (rotated ellipse)
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
 	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
+	
+	# Draw fingering cues inside the note if available
+	if cue != "":
+		var center_pt = Vector2(note_x, note_y)
+		var symbol_color = Color.WHITE
+		if cue == "circle":
+			draw_circle(center_pt, note_height * 0.35, symbol_color)
+		elif cue == "square":
+			var sz = note_height * 0.6
+			draw_rect(Rect2(center_pt.x - sz/2.0, center_pt.y - sz/2.0, sz, sz), symbol_color, true)
+		elif cue == "triangle":
+			var sz = note_height * 0.4
+			var p1 = center_pt + Vector2(0, -sz)
+			var p2 = center_pt + Vector2(-sz, sz * 0.8)
+			var p3 = center_pt + Vector2(sz, sz * 0.8)
+			draw_polygon(PackedVector2Array([p1, p2, p3]), PackedColorArray([symbol_color, symbol_color, symbol_color]))
 	
 	# Draw stem
 	var stem_len = line_spacing * 3.0

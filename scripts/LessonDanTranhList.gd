@@ -206,7 +206,8 @@ const LEVELS := [
 				"video": "",
 				"practice": "Thực hành gảy lướt (Rải) các cặp Song âm Quãng 8 và Quãng 5.",
 				"practice_title": "Luyện tập Song Âm (Quãng 8 & 5)",
-				"sheet": ["Sol1", "Sol2", "La1", "La2", "Đô2", "Đô3", "Sol1", "Rê2", "La1", "Mi2", "Sol1", "Đô2", "Mi2"]
+				"sheet": ["Sol1", "Sol2", "La1", "La2", "Đô2", "Đô3", "Sol1", "Rê2", "La1", "Mi2", "Sol1", "Đô2", "Mi2"],
+				"cues": ["triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "square", "circle"]
 			},
 			{
 				"number": 14,
@@ -214,7 +215,8 @@ const LEVELS := [
 				"video": "",
 				"practice": "Chơi một đoạn nhạc đệm sử dụng kỹ thuật Arpeggio.",
 				"practice_title": "Luyện tập Hòa âm",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3", "Đô2", "Đô3", "Mi3", "Sol3", "Sol1", "Sol2", "La2", "Đô3"]
+				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3", "Đô2", "Đô3", "Mi3", "Sol3", "Sol1", "Sol2", "La2", "Đô3"],
+				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
 			},
 			{
 				"number": 15,
@@ -222,7 +224,8 @@ const LEVELS := [
 				"video": "",
 				"practice": "Vận dụng toàn bộ kỹ thuật Hợp âm và Arpeggio để đệm một đoạn nhạc Dân Ca dài.",
 				"practice_title": "Boss Stage - Đệm Dân Ca",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Đô3", "Mi3", "Sol1", "Sol2", "Rê3", "La2", "Đô2", "Đô3", "Mi3", "Sol3", "La1", "La2", "Rê3", "Mi3", "Sol1", "Sol2", "Đô3", "La2"]
+				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Đô3", "Mi3", "Sol1", "Sol2", "Rê3", "La2", "Đô2", "Đô3", "Mi3", "Sol3", "La1", "La2", "Rê3", "Mi3", "Sol1", "Sol2", "Đô3", "La2"],
+				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
 			}
 		]
 	}
@@ -714,6 +717,10 @@ func _open_lesson(lesson: Dictionary) -> void:
 	var typed_durations: Array[float] = []
 	typed_durations.assign(lesson.get("durations", []))
 	LessonDanTranh.current_song_durations = typed_durations
+	
+	var typed_cues: Array[String] = []
+	typed_cues.assign(lesson.get("cues", []))
+	LessonDanTranh.current_song_cues = typed_cues
 	
 	if selected_level == 1 and lesson_number in [1, 2, 3]:
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
