@@ -255,7 +255,7 @@ func _ready():
 	zither_board.init(string_notes, string_streams, string_freqs)
 	zither_board.visible = false
 	
-	# Hide redundant mode selection buttons (e.g. "Dùng Sáo Thật")
+	# Hide redundant mode selection buttons (e.g. "Dùng Đàn Thật")
 	var mode_buttons = teacher_area.get_node_or_null("DialogBox/M/V/ModeButtons")
 	if mode_buttons:
 		mode_buttons.visible = false
