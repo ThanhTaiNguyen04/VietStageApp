@@ -265,48 +265,99 @@ func _build_theme() -> void:
 	var accent_color := C_GOLD
 	var bg_overlay_color := Color(0.06, 0.03, 0.012, 0.94) # deep warm mahogany
 	var inst_label := "Đàn Tranh"
+	var bg_texture_path := "res://assets/textures/bg_main_menu.png"
 	
 	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-		bg_overlay_color = Color(0.01, 0.05, 0.03, 0.95) # deep jade green
+		bg_overlay_color = Color(0, 0, 0, 0)
+		bg_texture_path = "res://assets/textures/sao_truc_background.png"
 		inst_label = "Sáo Trúc"
 	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0) # purple
-		accent_color = Color(0.55, 0.45, 0.80, 1.0) # lavender
-		bg_overlay_color = Color(0.03, 0.02, 0.06, 0.95) # deep midnight purple
+		bg_overlay_color = Color(0, 0, 0, 0)
+		bg_texture_path = "res://assets/textures/dan_bau_background.png"
 		inst_label = "Đàn Bầu"
+	elif selected_inst == "trong_chau":
+		bg_overlay_color = Color(0, 0, 0, 0)
+		bg_texture_path = "res://assets/textures/trong_chau_background.png"
+		inst_label = "Trống Chầu"
+	elif selected_inst == "dan_tranh":
+		bg_texture_path = "res://assets/textures/dan_tranh_background.png"
+		bg_overlay_color = Color(0, 0, 0, 0)
 		
 	# Apply dynamic title
 	page_title.text = "Kho Bài Hát - " + inst_label
+	
+	# Load and set the specific background texture
+	var bg = get_node_or_null("BG") as TextureRect
+	if bg:
+		bg.texture = load(bg_texture_path)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	
 	# Apply background overlay color
 	if bg_overlay:
 		bg_overlay.color = bg_overlay_color
 	
 	# Top bar style matching global design
-	var top_s := _flat(C_BG_BAR, Color(theme_color.r, theme_color.g, theme_color.b, 0.15), 0)
-	top_s.border_width_bottom = 2; top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
-	$Root/TopBar.add_theme_stylebox_override("panel", top_s)
+	var top_bar = $Root/TopBar
+	if not top_bar.has_node("BlurRect"):
+		var top_blur_mat = ShaderMaterial.new()
+		var top_blur_shader = Shader.new()
+		top_blur_shader.code = """
+		shader_type canvas_item;
+		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+		uniform float lod: hint_range(0.0, 5.0) = 2.0;
+		void fragment() {
+			COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+		}
+		"""
+		top_blur_mat.shader = top_blur_shader
+		var blur := ColorRect.new()
+		blur.name = "BlurRect"
+		blur.material = top_blur_mat
+		blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blur.show_behind_parent = true
+		blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		blur.offset_bottom = -1
+		top_bar.add_child(blur)
+		
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 0)
+	top_s.border_width_bottom = 1
+	top_s.content_margin_bottom = 0
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
 	page_title.add_theme_color_override("font_color", theme_color)
+	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if font_title:
+		page_title.add_theme_font_override("font", font_title)
 
 	# Back button style
-	back_btn.add_theme_color_override("font_color", theme_color)
-	back_btn.add_theme_color_override("font_hover_color", theme_color.lightened(0.15))
+	back_btn.text = ""
+	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
+	back_btn.expand_icon = true
+	back_btn.custom_minimum_size = Vector2(48, 48)
+	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	back_btn.add_theme_color_override("icon_normal_color", theme_color)
+	back_btn.add_theme_color_override("icon_hover_color", accent_color)
+	back_btn.add_theme_color_override("icon_pressed_color", theme_color)
 	back_btn.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 8))
 	back_btn.add_theme_stylebox_override("hover",   _flat(Color(theme_color.r,theme_color.g,theme_color.b,0.12), Color(0,0,0,0), 8))
 	back_btn.add_theme_stylebox_override("pressed", _flat(Color(theme_color.r,theme_color.g,theme_color.b,0.20), Color(0,0,0,0), 8))
 	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 
-	# Search LineEdit style
-	var se_n := _flat(Color(1.0, 1.0, 1.0, 0.8), Color(0.13, 0.08, 0.05, 0.15), 24)
-	var se_f := _flat(Color(1.0, 1.0, 1.0, 1.0), accent_color, 24)
-	se_f.shadow_size = 10; se_f.shadow_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.15)
+	# Search LineEdit style (Match Login email input)
+	var se_n := _flat(Color(0.95, 0.93, 0.89, 0.60), Color(0.13, 0.08, 0.05, 0.15), 28)
+	se_n.border_width_left=1; se_n.border_width_right=1; se_n.border_width_top=1; se_n.border_width_bottom=1
+	se_n.content_margin_left = 20
+	var se_f := _flat(Color(1.00, 1.00, 1.00, 1.00), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
+	se_f.border_width_left=1; se_f.border_width_right=1; se_f.border_width_top=1; se_f.border_width_bottom=1
+	se_f.content_margin_left = 20
+	se_f.shadow_size = 12; se_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	
 	search_edit.add_theme_stylebox_override("normal", se_n)
 	search_edit.add_theme_stylebox_override("focus",  se_f)
 	search_edit.add_theme_color_override("font_color",        C_TEXT)
-	search_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
-	search_edit.add_theme_color_override("caret_color",       accent_color)
+	search_edit.add_theme_color_override("placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
+	search_edit.add_theme_color_override("caret_color",       C_GOLD)
 
 	# Filter buttons style
 	_style_filter_btn(btn_all, current_filter == "all")
@@ -368,39 +419,26 @@ func _style_filter_btn(btn: Button, active: bool) -> void:
 	
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
-	var bg := theme_color if active else Color(0.95, 0.93, 0.89, 0.6)
-	var fg := C_BG_DARK if active else C_TEXT_MUTED
-	var border := theme_color if active else Color(accent_color.r, accent_color.g, accent_color.b, 0.20)
+	var bg := theme_color if active else Color(1.0, 1.0, 1.0, 0.85)
+	var border := theme_color.darkened(0.1) if active else Color.TRANSPARENT
 	
-	var style := _flat(bg, border, 16)
+	var style := _flat(bg, border, 20)
 	btn.add_theme_stylebox_override("normal", style)
-	btn.add_theme_stylebox_override("hover", _flat(bg.lightened(0.12), border, 16))
-	btn.add_theme_stylebox_override("pressed", _flat(bg.darkened(0.12), border, 16))
+	btn.add_theme_stylebox_override("hover", _flat(bg.lightened(0.12) if active else Color.WHITE, border, 20))
+	btn.add_theme_stylebox_override("pressed", _flat(bg.darkened(0.12), border, 20))
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	btn.add_theme_color_override("font_color", fg)
-	btn.add_theme_color_override("font_hover_color", fg)
-	btn.add_theme_color_override("font_pressed_color", fg)
+	btn.add_theme_color_override("font_color", Color.WHITE if active else C_TEXT)
+	btn.add_theme_color_override("font_hover_color", Color.WHITE if active else theme_color)
+	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(theme_color.r, theme_color.g, theme_color.b, 0.08), Color(0, 0, 0, 0), 12)
 	var bg_h := _flat(Color(accent_color.r, accent_color.g, accent_color.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
@@ -450,10 +488,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var accent_color := C_GOLD
-	if selected_inst == "sao_truc":
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var tex_name := ""
 	match t:
@@ -578,13 +613,7 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var card_style := _flat(C_CARD, Color(accent_color.r, accent_color.g, accent_color.b, 0.22), 20)
 	card_style.shadow_size = 12
@@ -641,17 +670,19 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	var icon_circle_style := _flat(icon_bg_color, icon_border_color, 29)
 	icon_circle.add_theme_stylebox_override("panel", icon_circle_style)
 
-	var icon_lbl := Label.new()
+	var icon_lbl := TextureRect.new()
 	if song.instrument == "dan_tranh":
-		icon_lbl.text = "箏"
+		icon_lbl.texture = load("res://assets/textures/lucide/music.svg") as Texture2D
+		icon_lbl.modulate = icon_border_color
 	elif song.instrument == "sao_truc":
-		icon_lbl.text = "🪈"
+		icon_lbl.texture = load("res://assets/textures/lucide/music.svg") as Texture2D
+		icon_lbl.modulate = icon_border_color
 	else:
-		icon_lbl.text = "🪕"
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	icon_lbl.add_theme_font_size_override("font_size", 24)
-	icon_lbl.add_theme_color_override("font_color", icon_border_color)
+		icon_lbl.texture = load("res://assets/textures/lucide/music.svg") as Texture2D
+		icon_lbl.modulate = icon_border_color
+	icon_lbl.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_lbl.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_lbl.custom_minimum_size = Vector2(24, 24)
 	icon_circle.add_child(icon_lbl)
 	hbox.add_child(icon_circle)
 
@@ -664,9 +695,9 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 
 	var title_lbl := Label.new()
 	title_lbl.text = song.title
-	var font_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
-	if font_title:
-		title_lbl.add_theme_font_override("font", font_title)
+	var font_card_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if font_card_title:
+		title_lbl.add_theme_font_override("font", font_card_title)
 	title_lbl.add_theme_font_size_override("font_size", 18)
 	title_lbl.add_theme_color_override("font_color", C_TEXT)
 	vbox.add_child(title_lbl)
@@ -747,22 +778,12 @@ func _style_circular_play_btn(btn: Button, theme_color: Color, accent_color: Col
 	btn.add_theme_stylebox_override("pressed", _flat(theme_color.darkened(0.15), accent_color, 24))
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	
-	var draw_node := Control.new()
-	draw_node.name = "PlayTriangle"
-	draw_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	draw_node.set_anchors_preset(Control.PRESET_FULL_RECT)
-	draw_node.draw.connect(func() -> void:
-		var sz := draw_node.size
-		var cx := sz.x * 0.54
-		var cy := sz.y * 0.5
-		var pts := PackedVector2Array([
-			Vector2(cx - 6, cy - 8),
-			Vector2(cx + 8, cy),
-			Vector2(cx - 6, cy + 8)
-		])
-		draw_node.draw_colored_polygon(pts, Color.WHITE)
-	)
-	btn.add_child(draw_node)
+	btn.icon = load("res://assets/textures/lucide/play.svg") as Texture2D
+	btn.expand_icon = true
+	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.add_theme_color_override("icon_normal_color", Color.WHITE)
+	btn.add_theme_color_override("icon_hover_color", Color.WHITE)
+	btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
 
 # ─── Navigation ────────────────────────────────────────────────────────────────
 func _on_play_song(song: Dictionary) -> void:
@@ -917,6 +938,9 @@ func _select_song(song: Dictionary, card: PanelContainer) -> void:
 		
 	# Update Detail Panel info
 	detail_title.text = song.title
+	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if font_title:
+		detail_title.add_theme_font_override("font", font_title)
 	detail_desc.text = song.desc
 	btn_start_practice.disabled = false
 	btn_start_practice.text = "VÀO LUYỆN TẬP"
@@ -928,13 +952,7 @@ func _select_song(song: Dictionary, card: PanelContainer) -> void:
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+	# Use unified theme color (Dan Tranh style)
 		
 	# Instrument Tag
 	var inst_pill := PanelContainer.new()
@@ -988,7 +1006,7 @@ func _select_song(song: Dictionary, card: PanelContainer) -> void:
 		note_lbl.text = str(note)
 		note_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		note_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var font_bold = load("res://assets/fonts/Lora-Bold.ttf") as Font
+		var font_bold = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 		if font_bold:
 			note_lbl.add_theme_font_override("font", font_bold)
 		note_lbl.add_theme_font_size_override("font_size", 14)
@@ -1001,14 +1019,7 @@ func _style_card_border(card: PanelContainer, song: Dictionary, is_selected: boo
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
-		
+	# Use unified theme color (Dan Tranh style)
 	var border_color = theme_color if is_selected else Color(accent_color.r, accent_color.g, accent_color.b, 0.22)
 	var border_width = 3 if is_selected else 1
 	var shadow_size = 18 if is_selected else 12

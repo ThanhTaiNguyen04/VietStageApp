@@ -193,6 +193,41 @@ const LEVELS := [
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 			}
 		]
+	},
+	{
+		"level": 6,
+		"title": "HỌC & LUYỆN TẬP HỢP ÂM ĐÀN TRANH",
+		"sessions": "Session 13–14",
+		"objective": "Thực hành gảy hợp âm, hợp âm rải (arpeggio) và đệm hòa âm cơ bản trên Đàn Tranh 17 dây.",
+		"lessons": [
+			{
+				"number": 13,
+				"title": "Làm quen Song Âm & Hợp âm cơ bản",
+				"video": "",
+				"practice": "Thực hành gảy lướt (Rải) các cặp Song âm Quãng 8 và Quãng 5.",
+				"practice_title": "Luyện tập Song Âm (Quãng 8 & 5)",
+				"sheet": ["Sol1", "Sol2", "La1", "La2", "Đô2", "Đô3", "Sol1", "Rê2", "La1", "Mi2", "Sol1", "Đô2", "Mi2"],
+				"cues": ["triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "square", "circle"]
+			},
+			{
+				"number": 14,
+				"title": "Thực hành Hòa âm Đàn Tranh",
+				"video": "",
+				"practice": "Chơi một đoạn nhạc đệm sử dụng kỹ thuật Arpeggio.",
+				"practice_title": "Luyện tập Hòa âm",
+				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3", "Đô2", "Đô3", "Mi3", "Sol3", "Sol1", "Sol2", "La2", "Đô3"],
+				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
+			},
+			{
+				"number": 15,
+				"title": "Boss Stage – Đệm Hát Dân Ca",
+				"video": "",
+				"practice": "Vận dụng toàn bộ kỹ thuật Hợp âm và Arpeggio để đệm một đoạn nhạc Dân Ca dài.",
+				"practice_title": "Boss Stage - Đệm Dân Ca",
+				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Đô3", "Mi3", "Sol1", "Sol2", "Rê3", "La2", "Đô2", "Đô3", "Mi3", "Sol3", "La1", "La2", "Rê3", "Mi3", "Sol1", "Sol2", "Đô3", "La2"],
+				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
+			}
+		]
 	}
 ]
 
@@ -301,7 +336,29 @@ static func get_level_data(level_number: int) -> Dictionary:
 
 func _build_theme() -> void:
 	bg.texture = load("res://assets/textures/dan_tranh_background.png")
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD, 0.28), 0, 0)
+	top_s.border_width_bottom = 1
+	top_s.content_margin_bottom = 0
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	page_title.add_theme_color_override("font_color", C_JADE)
 	objective_label.add_theme_color_override("font_color", C_MUTED)
 	var heading_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -322,13 +379,33 @@ func _build_theme() -> void:
 	_style_outline_button(change_course_btn)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
+	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	side_s.shadow_size = 12
 	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -682,6 +759,10 @@ func _open_lesson(lesson: Dictionary) -> void:
 	var typed_durations: Array[float] = []
 	typed_durations.assign(lesson.get("durations", []))
 	LessonDanTranh.current_song_durations = typed_durations
+	
+	var typed_cues: Array[String] = []
+	typed_cues.assign(lesson.get("cues", []))
+	LessonDanTranh.current_song_cues = typed_cues
 	
 	if selected_level == 1 and lesson_number in [1, 2, 3]:
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")

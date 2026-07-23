@@ -25,6 +25,8 @@ var staff_display: Control
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
+static var current_song_cues: Array[String] = []
+
 var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
 
@@ -137,6 +139,24 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập cuối cùng của khóa học Đàn Tranh!", "highlight": -1},
 		{"action": "speak", "text": "Bạn sẽ cần gảy lần lượt toàn bộ 17 dây đàn từ cực trầm đến cực cao.", "highlight": -1},
 		{"action": "speak", "text": "Hãy chứng minh bạn đã hoàn toàn làm chủ cây Đàn Tranh này nào!", "highlight": -1}
+	],
+	"dan_tranh_level_6_bai_13_practice": [
+		{"action": "speak", "text": "Chào bạn! Chào mừng đến với cấp độ cuối cùng: Học gảy Hợp âm trên Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm là sự kết hợp của nhiều nốt vang lên cùng lúc, tạo ra âm thanh dày dặn và phong phú để đệm cho giai điệu.", "highlight": -1},
+		{"action": "speak", "text": "Khác với Piano hay Guitar, Đàn Tranh dùng thang ngũ cung nên các hợp âm thường được tạo từ các quãng 4, quãng 5, hoặc quãng 8.", "highlight": -1},
+		{"action": "speak", "text": "Các thế bấm phổ biến nhất là Song Âm (chỉ gảy 2 dây) và Hợp âm 3 nốt (ví dụ như cụm nốt Sol-Đô-Mi).", "highlight": -1},
+		{"action": "speak", "text": "Hôm nay, chúng ta sẽ bước đầu làm quen với việc gảy Song Âm, tức là gảy 2 dây cùng lúc để cảm nhận độ vang.", "highlight": -1},
+		{"action": "speak", "text": "Hãy chú ý dùng ngón cái và ngón giữa (ký hiệu Tròn và Tam giác) để gảy thật đều nhé.", "highlight": -1}
+	],
+	"dan_tranh_level_6_bai_14_practice": [
+		{"action": "speak", "text": "Hôm nay chúng ta sẽ thực hành kỹ thuật Rải Hợp Âm (Arpeggio).", "highlight": -1},
+		{"action": "speak", "text": "Các nốt nhạc sẽ xuất hiện liên tiếp nhau rất nhanh. Bạn hãy gảy lướt từ ngón giữa sang ngón cái.", "highlight": -1},
+		{"action": "speak", "text": "Giai điệu vang lên sẽ rất mượt mà và êm ái.", "highlight": -1}
+	],
+	"dan_tranh_level_6_bai_15_practice": [
+		{"action": "speak", "text": "Chào mừng bạn đến với thử thách Boss cuối cùng của Đàn Tranh: Đệm Hát Dân Ca!", "highlight": -1},
+		{"action": "speak", "text": "Bạn sẽ phải vận dụng toàn bộ kỹ thuật Rải Hợp Âm để đệm một đoạn nhạc dài liên tục.", "highlight": -1},
+		{"action": "speak", "text": "Hãy hít một hơi thật sâu, thả lỏng cổ tay và sẵn sàng nào!", "highlight": -1}
 	]
 }
 
@@ -677,6 +697,8 @@ func _start_practice():
 				missing = _is_note_missing(i)
 				note_color = Color(1.0, 0.45, 0.0) if missing else Color(0.7, 0.7, 0.7, 0.5)
 				
+			var cue_name = current_song_cues[i] if i < current_song_cues.size() else ""
+			
 			active_falling_notes.append({
 				"note": "ZT_" + note_name,
 				"x": start_x + cur_beat * distance_per_beat,
@@ -685,7 +707,8 @@ func _start_practice():
 				"hit": false,
 				"duration": dur,
 				"tail": tail_len,
-				"is_missing": missing
+				"is_missing": missing,
+				"cue": cue_name
 			})
 		cur_beat += dur
 

@@ -1,17 +1,17 @@
 extends Control
 
 # ── Palette đỏ sẫm cổ trang ──────────────────────────────────────────────────
-const C_GOLD        := Color(0.95, 0.72, 0.18, 1.0)
-const C_GOLD_LT     := Color(1.00, 0.87, 0.45, 1.0)
+const C_GOLD        := Color(0.77, 0.59, 0.15, 1.0)
+const C_GOLD_LT     := Color(0.94, 0.80, 0.38, 1.0)
 const C_GOLD_DARK   := Color(0.06, 0.02, 0.00, 1.0)
 const C_WHITE       := Color(1.00, 1.00, 1.00, 1.00)
 const C_WHITE_DIM   := Color(1.00, 1.00, 1.00, 0.40)
 const C_ERR         := Color(0.98, 0.32, 0.22, 1.0)
 const C_GREEN_OK    := Color(0.25, 0.88, 0.55, 1.0)
-# Primary brand crimson (đồng bộ với web #610000)
-const C_PRIMARY     := Color(0.38, 0.00, 0.00, 1.0)
-const C_PRIMARY_LT  := Color(0.50, 0.06, 0.06, 1.0)
-const C_PRIMARY_DK  := Color(0.26, 0.00, 0.00, 1.0)
+# Primary brand color is now Jade Green matching Dan Tranh
+const C_PRIMARY     := Color(0.09, 0.25, 0.18, 1.0)
+const C_PRIMARY_LT  := Color(0.14, 0.37, 0.26, 1.0)
+const C_PRIMARY_DK  := Color(0.06, 0.16, 0.11, 1.0)
 # Google brand
 const C_G_BLUE      := Color(0.26, 0.52, 0.96, 1.0)
 # Màu hạt hoạt hình (Lá trúc & Đom đóm vàng)
@@ -70,6 +70,12 @@ func _ready() -> void:
 func _setup_extra_ui() -> void:
 	var vbox := get_node("Center/Card/CardMargin/ContentVBox") as VBoxContainer
 	var font_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var title_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
+	
+	if title_font:
+		app_name.add_theme_font_override("font", title_font)
+	app_name.add_theme_color_override("font_color", C_PRIMARY)
+	app_sub.add_theme_color_override("font_color", C_PRIMARY_LT)
 	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 
 	# — Welcome header (chèn ngay dưới LogoVBox) —
@@ -232,53 +238,74 @@ func _setup_extra_ui() -> void:
 	# — Icon trong Email input (👤) —
 	var email_icon := TextureRect.new()
 	email_icon.name = "EmailIcon"
-	email_icon.texture = load("res://assets/textures/icons8/account.png")
+	email_icon.texture = load("res://assets/textures/lucide/user.svg")
 	email_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	email_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	email_icon.custom_minimum_size = Vector2(20, 20)
-	email_icon.size = Vector2(20, 20)
+	email_icon.custom_minimum_size = Vector2(24, 24)
+	email_icon.size = Vector2(24, 24)
 	email_icon.layout_mode = 1
 	email_icon.anchor_top = 0.5
 	email_icon.anchor_bottom = 0.5
 	email_icon.offset_left = 16
-	email_icon.offset_top = -10
-	email_icon.offset_bottom = 10
-	email_icon.self_modulate = Color(0.13, 0.08, 0.05, 0.45)
+	email_icon.offset_top = -12
+	email_icon.offset_bottom = 12
+	email_icon.self_modulate = C_PRIMARY_LT
 	email_edit.add_child(email_icon)
 
 	# — Icon trong Mật khẩu input (🔒) —
 	var pass_icon := TextureRect.new()
 	pass_icon.name = "PassIcon"
-	pass_icon.texture = load("res://assets/textures/icons8/lock.png")
+	pass_icon.texture = load("res://assets/textures/lucide/lock.svg")
 	pass_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pass_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	pass_icon.custom_minimum_size = Vector2(20, 20)
-	pass_icon.size = Vector2(20, 20)
+	pass_icon.custom_minimum_size = Vector2(24, 24)
+	pass_icon.size = Vector2(24, 24)
 	pass_icon.layout_mode = 1
 	pass_icon.anchor_top = 0.5
 	pass_icon.anchor_bottom = 0.5
 	pass_icon.offset_left = 16
-	pass_icon.offset_top = -10
-	pass_icon.offset_bottom = 10
-	pass_icon.self_modulate = Color(0.13, 0.08, 0.05, 0.45)
+	pass_icon.offset_top = -12
+	pass_icon.offset_bottom = 12
+	pass_icon.self_modulate = C_PRIMARY_LT
 	password_edit.add_child(pass_icon)
 
 	# — Icon trong Tên hiển thị input (👤) —
 	var name_icon := TextureRect.new()
 	name_icon.name = "NameIcon"
-	name_icon.texture = load("res://assets/textures/icons8/account.png")
+	name_icon.texture = load("res://assets/textures/lucide/user.svg")
 	name_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	name_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	name_icon.custom_minimum_size = Vector2(20, 20)
-	name_icon.size = Vector2(20, 20)
+	name_icon.custom_minimum_size = Vector2(24, 24)
+	name_icon.size = Vector2(24, 24)
 	name_icon.layout_mode = 1
 	name_icon.anchor_top = 0.5
 	name_icon.anchor_bottom = 0.5
 	name_icon.offset_left = 16
-	name_icon.offset_top = -10
-	name_icon.offset_bottom = 10
-	name_icon.self_modulate = Color(0.13, 0.08, 0.05, 0.45)
+	name_icon.offset_top = -12
+	name_icon.offset_bottom = 12
+	name_icon.self_modulate = C_PRIMARY_LT
 	name_edit.add_child(name_icon)
+	
+	# — Icon trong GuestBtn (Khách) —
+	guest_btn.text = ""
+	var guest_icon := TextureRect.new()
+	guest_icon.name = "GuestIcon"
+	guest_icon.texture = load("res://assets/textures/lucide/user.svg")
+	guest_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	guest_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	guest_icon.custom_minimum_size = Vector2(36, 36)
+	guest_icon.size = Vector2(36, 36)
+	guest_icon.layout_mode = 1
+	guest_icon.anchor_left = 0.5
+	guest_icon.anchor_right = 0.5
+	guest_icon.anchor_top = 0.5
+	guest_icon.anchor_bottom = 0.5
+	guest_icon.offset_left = -18
+	guest_icon.offset_top = -18
+	guest_icon.offset_right = 18
+	guest_icon.offset_bottom = 18
+	guest_icon.self_modulate = C_PRIMARY_LT
+	guest_btn.add_child(guest_icon)
 
 # ── Entrance animation ───────────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
@@ -409,18 +436,45 @@ func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float,
 # ── Card kính sáng Alabaster Glass ───────────────────────────────────────────
 func _style_card() -> void:
 	var cs := StyleBoxFlat.new()
-	cs.bg_color              = Color(1.0, 1.0, 1.0, 0.88)
-	cs.border_color          = Color(0.77, 0.58, 0.15, 0.25)
-	cs.border_width_left     = 1; cs.border_width_right  = 1
-	cs.border_width_top      = 1; cs.border_width_bottom = 1
-	cs.corner_radius_top_left     = 28; cs.corner_radius_top_right    = 28
-	cs.corner_radius_bottom_left  = 28; cs.corner_radius_bottom_right = 28
+	cs.bg_color              = Color(0.95, 0.93, 0.89, 0.75) # Màu nền sidebar Đàn Tranh có alpha
+	cs.border_color          = Color(0.77, 0.59, 0.15, 0.4) # Viền vàng đồng mờ
+	cs.border_width_left     = 2; cs.border_width_right  = 2
+	cs.border_width_top      = 2; cs.border_width_bottom = 2
+	cs.corner_radius_top_left     = 32; cs.corner_radius_top_right    = 32
+	cs.corner_radius_bottom_left  = 32; cs.corner_radius_bottom_right = 32
 	cs.shadow_size   = 40
-	cs.shadow_color  = Color(0.13, 0.08, 0.05, 0.12)
+	cs.shadow_color  = Color(0.09, 0.25, 0.18, 0.15) # Bóng ngả xanh ngọc
 	cs.shadow_offset = Vector2(0, 10)
 	card.add_theme_stylebox_override("panel", cs)
 	card.pivot_offset = card.size / 2.0
 	card.resized.connect(func() -> void: card.pivot_offset = card.size / 2.0)
+	
+	# Hiệu ứng kính mờ (Glassmorphism)
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	
+	# Loại bỏ blur_rect cũ nếu có
+	for c in card.get_children():
+		if c is ColorRect and c.name == "BlurRect":
+			c.queue_free()
+			
+	blur_rect.name = "BlurRect"
+	card.add_child(blur_rect)
+	card.move_child(blur_rect, 0)
 
 # ── Tô màu toàn bộ UI theo Cream/Espresso ─────────────────────────────────────
 func _style_all() -> void:
@@ -466,34 +520,46 @@ func _style_all() -> void:
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
 	email_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
-	email_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	email_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	email_edit.add_theme_color_override("caret_color",       C_GOLD)
+	email_edit.add_theme_font_size_override("font_size", 20)
 
 	name_edit.add_theme_stylebox_override("normal", ei_n)
 	name_edit.add_theme_stylebox_override("focus",  ei_f)
 	name_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
-	name_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	name_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	name_edit.add_theme_color_override("caret_color",       C_GOLD)
+	name_edit.add_theme_font_size_override("font_size", 20)
 
 	password_edit.add_theme_stylebox_override("normal", ei_n)
 	password_edit.add_theme_stylebox_override("focus",  ei_f)
 	password_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
-	password_edit.add_theme_color_override("placeholder_color", Color(0.43, 0.38, 0.33, 0.55))
+	password_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	password_edit.add_theme_color_override("caret_color",       C_GOLD)
+	password_edit.add_theme_font_size_override("font_size", 20)
 
 	# Nút Đăng nhập: Đỏ Crimson — đồng bộ màu primary với web (#610000)
-	var si_n := _pill(C_PRIMARY,    Color(1, 1, 1, 0.15), 28)
-	var si_h := _pill(C_PRIMARY_LT, Color(1, 1, 1, 0.20), 28)
-	var si_p := _pill(C_PRIMARY_DK, Color(0, 0, 0, 0.20), 28)
+	var si_n := _pill(C_PRIMARY,    Color(1.0, 1.0, 1.0, 1.0), 28)
+	si_n.border_width_left = 2; si_n.border_width_right = 2; si_n.border_width_top = 2; si_n.border_width_bottom = 2
+	var si_h := _pill(C_PRIMARY_LT, Color(1.0, 1.0, 1.0, 1.0), 28)
+	si_h.border_width_left = 2; si_h.border_width_right = 2; si_h.border_width_top = 2; si_h.border_width_bottom = 2
+	var si_p := _pill(C_PRIMARY_DK, Color(1.0, 1.0, 1.0, 1.0), 28)
+	si_p.border_width_left = 2; si_p.border_width_right = 2; si_p.border_width_top = 2; si_p.border_width_bottom = 2
+	
 	si_n.shadow_size = 16; si_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.35)
 	si_h.shadow_size = 22; si_h.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.48)
 	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
 	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
 	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
+	sign_in_btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	sign_in_btn.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.9, 1.0))
+	
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		sign_in_btn.add_theme_font_override("font", bold_font)
+	sign_in_btn.add_theme_font_size_override("font_size", 24)
 	sign_in_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	sign_in_btn.add_theme_color_override("font_color",         Color(1, 1, 1, 1))
-	sign_in_btn.add_theme_color_override("font_hover_color",   Color(1, 1, 1, 1))
-	sign_in_btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1, 0.85))
+	sign_in_btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.8, 1.0))
 
 	# Nút Chuyển chế độ: Flat link button
 	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))

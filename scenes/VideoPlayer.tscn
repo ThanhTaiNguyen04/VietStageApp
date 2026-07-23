@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://video_player_001"]
 
 [ext_resource type="Script" path="res://scripts/VideoPlayer.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://d3ewwh4ccte6v" path="res://assets/textures/virtual_artist_mai.png" id="2_linh"]
+[ext_resource type="Texture2D" path="res://assets/textures/avacogiaoMai_asset.png" id="2_linh"]
 [ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="4_font_title"]
 
 [node name="VideoPlayer" type="Control"]

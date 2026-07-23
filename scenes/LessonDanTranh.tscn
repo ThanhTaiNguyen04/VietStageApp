@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/LessonDanTranh.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dh73yas1kofe0" path="res://assets/textures/bg_practice_room.png" id="2_bg"]
 [ext_resource type="Script" path="res://scripts/DanTranhBoard.gd" id="3_flute_body"]
-[ext_resource type="Texture2D" uid="uid://d3ewwh4ccte6v" path="res://assets/textures/virtual_artist_mai.png" id="4_char"]
+[ext_resource type="Texture2D" path="res://assets/textures/avacogiaoMai_asset.png" id="4_char"]
 [ext_resource type="Script" path="res://scripts/AudioCaptureAnalyzer.gd" id="5_analyzer"]
 
 [node name="LessonDanTranh" type="Control"]

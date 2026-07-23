@@ -31,8 +31,6 @@ var _analyzer: RefCounted = null
 # Dynamic configurations for pitch detection and noise gating
 var min_frequency := 140.0
 var max_frequency := 4200.0
-
-
 var volume_threshold_db := -55.0
 
 var _mic_player: AudioStreamPlayer = null

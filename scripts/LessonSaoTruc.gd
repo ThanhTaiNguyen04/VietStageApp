@@ -1,6 +1,9 @@
 extends Control
 class_name LessonSaoTruc
 
+@export var hole_offset_x: float = -40.0
+@export var hole_offset_y: float = -27.0
+
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)
 
@@ -53,7 +56,7 @@ var virtual_holes_state := [false, false, false, false, false, false]
 
 var target_hz := 0.0
 var time_correct := 0.0
-var REQUIRED_HOLD_TIME := 1.0 # 1 second of correct note to pass
+var REQUIRED_HOLD_TIME := 0.4 # Quicker recognition (0.4s) to feel instant
 
 var rhythm_time := 0.0
 var spawned_notes := 0
@@ -371,7 +374,17 @@ func _ready():
 	var ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
-	ai_audio.speak_vietnamese(txt)
+	
+	var stream = null
+	if active_node_id == "Node2":
+		stream = load("res://audio/introSi.mp3")
+	elif active_node_id in ["Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		stream = load("res://audio/intro" + active_node_id + ".mp3")
+	if stream and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stream = stream
+		ai_audio.audio_player.play()
+	else:
+		ai_audio.speak_vietnamese(txt)
 	
 	# Initial UI State
 	teacher_area.visible = true
@@ -572,7 +585,7 @@ func _process(delta):
 	for i in range(HOLES):
 		var hx = rect.position.x + rect.size.x * HOLE_PROPS_X[i]
 		var hy = rect.position.y + rect.size.y * HOLE_PROP_Y
-		_holes[i].position = Vector2(hx - 50, hy - 50)
+		_holes[i].position = Vector2(hx - 50 + hole_offset_x, hy - 50 + hole_offset_y)
 		
 	if current_state == State.PRACTICE:
 		if staff_display:
@@ -1003,7 +1016,8 @@ func _generate_melody(target_note_key: String) -> Array:
 				seq.append({"note": n, "time": time, "duration": dur})
 				time += dur + 0.2
 			time += 0.5
-	elif target_note_key == "sao_truc_level4_7":
+
+	elif target_note_key == "sao_truc_level5_7":
 		var parts = [
 			["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
 			["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
@@ -1251,7 +1265,16 @@ func _hit_note():
 		
 		var ai = get_node_or_null("AIAudio")
 		if ai and ai.has_method("speak_vietnamese"):
-			ai.speak_vietnamese(txt)
+			var stream = null
+			if active_node_id == "Node2":
+				stream = load("res://audio/practiceSi.mp3")
+			elif active_node_id in ["Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+				stream = load("res://audio/practice" + active_node_id + ".mp3")
+			if stream and is_instance_valid(ai.audio_player):
+				ai.audio_player.stream = stream
+				ai.audio_player.play()
+			else:
+				ai.speak_vietnamese(txt)
 
 func _start_rhythm_game():
 	var ai = get_node_or_null("AIAudio")
@@ -1494,13 +1517,13 @@ func _build_flute():
 		
 		var sb = StyleBoxFlat.new()
 		sb.bg_color = C_GOLD
-		sb.corner_radius_top_left = 18; sb.corner_radius_top_right = 18
-		sb.corner_radius_bottom_left = 18; sb.corner_radius_bottom_right = 18
+		sb.corner_radius_top_left = 38; sb.corner_radius_top_right = 38
+		sb.corner_radius_bottom_left = 38; sb.corner_radius_bottom_right = 38
 		var pnl = Panel.new()
 		pnl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pnl.add_theme_stylebox_override("panel", sb)
-		pnl.custom_minimum_size = Vector2(36, 36)
-		pnl.set_anchors_preset(Control.PRESET_CENTER)
+		pnl.custom_minimum_size = Vector2(76, 76)
+		pnl.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		pnl.visible = false
 		cover.add_child(pnl)
 		
