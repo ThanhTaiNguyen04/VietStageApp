@@ -268,20 +268,14 @@ func _build_theme() -> void:
 	var bg_texture_path := "res://assets/textures/bg_main_menu.png"
 	
 	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
 		bg_overlay_color = Color(0, 0, 0, 0)
 		bg_texture_path = "res://assets/textures/sao_truc_background.png"
 		inst_label = "Sáo Trúc"
 	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0) # purple
-		accent_color = Color(0.55, 0.45, 0.80, 1.0) # lavender
 		bg_overlay_color = Color(0, 0, 0, 0)
 		bg_texture_path = "res://assets/textures/dan_bau_background.png"
 		inst_label = "Đàn Bầu"
 	elif selected_inst == "trong_chau":
-		theme_color = Color(0.66, 0.17, 0.17, 1.0) # red
-		accent_color = Color(0.85, 0.25, 0.25, 1.0) # light red
 		bg_overlay_color = Color(0, 0, 0, 0)
 		bg_texture_path = "res://assets/textures/trong_chau_background.png"
 		inst_label = "Trống Chầu"
@@ -425,16 +419,7 @@ func _style_filter_btn(btn: Button, active: bool) -> void:
 	
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
-	elif selected_inst == "trong_chau":
-		theme_color = Color(0.66, 0.17, 0.17, 1.0)
-		accent_color = Color(0.85, 0.25, 0.25, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var bg := theme_color if active else Color(1.0, 1.0, 1.0, 0.85)
 	var border := theme_color.darkened(0.1) if active else Color.TRANSPARENT
@@ -453,16 +438,7 @@ func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = fals
 	
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
-	elif selected_inst == "trong_chau":
-		theme_color = Color(0.66, 0.17, 0.17, 1.0)
-		accent_color = Color(0.85, 0.25, 0.25, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(theme_color.r, theme_color.g, theme_color.b, 0.08), Color(0, 0, 0, 0), 12)
 	var bg_h := _flat(Color(accent_color.r, accent_color.g, accent_color.b, 0.06) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
@@ -512,12 +488,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var accent_color := C_GOLD
-	if selected_inst == "sao_truc":
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
-	elif selected_inst == "trong_chau":
-		accent_color = Color(0.85, 0.25, 0.25, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var tex_name := ""
 	match t:
@@ -642,16 +613,7 @@ func _create_song_card(song: Dictionary) -> PanelContainer:
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
-	elif selected_inst == "trong_chau":
-		theme_color = Color(0.66, 0.17, 0.17, 1.0)
-		accent_color = Color(0.85, 0.25, 0.25, 1.0)
+	# Use unified theme color (Dan Tranh style)
 
 	var card_style := _flat(C_CARD, Color(accent_color.r, accent_color.g, accent_color.b, 0.22), 20)
 	card_style.shadow_size = 12
@@ -990,13 +952,7 @@ func _select_song(song: Dictionary, card: PanelContainer) -> void:
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
+	# Use unified theme color (Dan Tranh style)
 		
 	# Instrument Tag
 	var inst_pill := PanelContainer.new()
@@ -1063,16 +1019,7 @@ func _style_card_border(card: PanelContainer, song: Dictionary, is_selected: boo
 	var selected_inst = SecureDataManager.data.get("selected_instrument", "dan_tranh")
 	var theme_color := C_RED_SON
 	var accent_color := C_GOLD
-	
-	if selected_inst == "sao_truc":
-		theme_color = C_JADE
-		accent_color = C_JADE_LIGHT
-	elif selected_inst == "dan_bau":
-		theme_color = Color(0.38, 0.25, 0.60, 1.0)
-		accent_color = Color(0.55, 0.45, 0.80, 1.0)
-	elif selected_inst == "trong_chau":
-		theme_color = Color(0.66, 0.17, 0.17, 1.0)
-		accent_color = Color(0.85, 0.25, 0.25, 1.0)
+	# Use unified theme color (Dan Tranh style)
 	var border_color = theme_color if is_selected else Color(accent_color.r, accent_color.g, accent_color.b, 0.22)
 	var border_width = 3 if is_selected else 1
 	var shadow_size = 18 if is_selected else 12
