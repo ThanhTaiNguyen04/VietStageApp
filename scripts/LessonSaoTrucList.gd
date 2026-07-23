@@ -442,7 +442,7 @@ func _build_lesson_list() -> void:
 			is_unlocked = true
 		else:
 			var prev_id := LESSONS[i - 1]["id"] as String
-			is_unlocked = completed_lessons.has(prev_id) or completed_lessons.has(prev_id + "_practice") or unlocked_lessons.has(id)
+			is_unlocked = true # FORCE UNLOCK
 			
 		var is_completed := completed_lessons.has(id) or completed_lessons.has(id + "_practice")
 		
