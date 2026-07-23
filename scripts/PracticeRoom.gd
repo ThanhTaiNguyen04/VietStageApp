@@ -2455,7 +2455,10 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 			if _level1_silence_time >= 0.12:
 				_level1_wait_for_silence = false
 				_level1_silence_time = 0.0
-				_set_level1_status("NHẠC ĐANG DỪNG · Gảy đúng nốt %s để tiếp tục" % target_name, C_GOLD_TEXT)
+				if _level1_lesson2_mode:
+					_set_level1_status("HÃY THỬ LẠI · Hãy gảy lại nốt %s trên đàn thật để nhạc tiếp tục!" % target_name, C_GOLD_TEXT)
+				else:
+					_set_level1_status("NHẠC ĐANG DỪNG · Gảy đúng nốt %s để tiếp tục" % target_name, C_GOLD_TEXT)
 		return
 	_level1_silence_time = 0.0
 	if _level1_wait_for_silence:
@@ -2515,6 +2518,13 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var correction: String = "↓" if target_cents > 0.0 else "↑"
 	if _board:
 		_board.set_feedback_detail(target_idx, "✕ %s · cần %s" % [detected_name, target_name], 2)
+	
+	if _level1_lesson2_mode:
+		# Hướng dẫn học viên gảy lại trên đàn thật để đúng nốt, không tự động chuyển nốt
+		_set_level1_status("CHƯA ĐÚNG · Bạn gảy nhầm nốt %s. Hãy gảy lại nốt %s trên đàn thật!" % [detected_name, target_name], C_RED_ERR)
+		_update_level1_score()
+		return
+		
 	var wrong_limit := int(_level1_config.get("wrong_limit", 6))
 	_set_level1_status("SAI NỐT · Nghe thấy %s %s%d¢ · Nhạc tiếp tục (%d/%d)" % [detected_name, correction, int(absf(target_cents)), _level1_wrong_count, wrong_limit], C_RED_ERR)
 	_update_level1_score()

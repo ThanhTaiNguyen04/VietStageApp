@@ -966,7 +966,7 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 1
-				_fade_to("res://scenes/LessonDanTranh.tscn")
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			elif inst == "trong_chau":
@@ -985,7 +985,7 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 2
-				_fade_to("res://scenes/LessonDanTranh.tscn")
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			elif inst == "trong_chau":
@@ -1007,13 +1007,61 @@ func _connect_buttons() -> void:
 					_go_practice_room_for_node(2)
 	)
 	
+	card_soloist_skills.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 3
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_chords_skills.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 4
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 4
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_classical.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 5
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 5
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 5
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 5
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+	
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_soloist.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 3
-			_fade_to("res://scenes/LessonDanTranh.tscn")
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
@@ -1033,7 +1081,7 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 4
-			_fade_to("res://scenes/LessonDanTranh.tscn")
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
@@ -1068,7 +1116,7 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 5
-			_fade_to("res://scenes/LessonDanTranh.tscn")
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
