@@ -265,6 +265,7 @@ func _build_theme() -> void:
 	var accent_color := C_GOLD
 	var bg_overlay_color := Color(0.06, 0.03, 0.012, 0.94) # deep warm mahogany
 	var inst_label := "Đàn Tranh"
+	var bg_texture_path := "res://assets/textures/bg_main_menu.png"
 	
 	if selected_inst == "sao_truc":
 		theme_color = C_JADE
@@ -276,9 +277,17 @@ func _build_theme() -> void:
 		accent_color = Color(0.55, 0.45, 0.80, 1.0) # lavender
 		bg_overlay_color = Color(0.03, 0.02, 0.06, 0.95) # deep midnight purple
 		inst_label = "Đàn Bầu"
+	elif selected_inst == "dan_tranh":
+		bg_texture_path = "res://assets/textures/dan_tranh_background.png"
+		bg_overlay_color = Color(0.06, 0.03, 0.012, 0.7) # Less opaque so background is visible
 		
 	# Apply dynamic title
 	page_title.text = "Kho Bài Hát - " + inst_label
+	
+	# Load and set the specific background texture
+	var bg = get_node_or_null("BG") as TextureRect
+	if bg:
+		bg.texture = load(bg_texture_path)
 	
 	# Apply background overlay color
 	if bg_overlay:

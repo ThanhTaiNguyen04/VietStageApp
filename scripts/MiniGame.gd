@@ -59,6 +59,9 @@ var target_beats : Array = []
 var hit_beats : Array = []
 var rhythm_sweep_count := 0
 
+# Background texture
+var bg_texture: Texture2D = null
+
 # Melody matcher state
 var melody_notes : Array[String] = []
 var missing_idx := -1
@@ -81,6 +84,13 @@ func _ready() -> void:
 		get_node("BG").queue_free()
 		
 	SecureDataManager.load_data()
+	
+	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if inst == "dan_tranh":
+		bg_texture = load("res://assets/textures/dan_tranh_background.png") as Texture2D
+	elif inst == "sao_truc":
+		bg_texture = load("res://assets/textures/sao_truc_background.png") as Texture2D
+		
 	_build_theme()
 	_connect_buttons()
 	_show_mode_selection_menu()
@@ -92,8 +102,21 @@ func _ready() -> void:
 	_on_viewport_size_changed()
 
 func _draw() -> void:
-	# Draw Mahogany heritage background
-	draw_rect(Rect2(Vector2.ZERO, size), C_BG_DARK)
+	var sz := get_rect().size
+	if bg_texture:
+		# Draw the texture covering the screen (like expand_mode = ignore / stretch_mode = cover)
+		# Actually, just drawing the rect with the texture is fine, but it might stretch if aspect differs.
+		# For simplicity, we draw the texture scaled to fit.
+		var tex_size := bg_texture.get_size()
+		var scale_factor := maxf(sz.x / tex_size.x, sz.y / tex_size.y)
+		var draw_size := tex_size * scale_factor
+		var draw_pos := (sz - draw_size) / 2.0
+		draw_texture_rect(bg_texture, Rect2(draw_pos, draw_size), false)
+		
+		# Draw a semi-transparent overlay to keep contrast
+		draw_rect(Rect2(Vector2.ZERO, sz), Color(1.0, 0.98, 0.95, 0.85))
+	else:
+		draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARK)
 
 func _process(delta: float) -> void:
 	if game_mode == "rhythm" and rhythm_active:
