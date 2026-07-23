@@ -390,6 +390,7 @@ func _build_sidebar() -> void:
 	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
 	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	sidebar.add_theme_stylebox_override("panel", side_s)
 	
 	var blur_mat = ShaderMaterial.new()

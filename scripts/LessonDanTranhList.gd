@@ -336,7 +336,29 @@ static func get_level_data(level_number: int) -> Dictionary:
 
 func _build_theme() -> void:
 	bg.texture = load("res://assets/textures/dan_tranh_background.png")
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD, 0.28), 0, 0)
+	top_s.border_width_bottom = 1
+	top_s.content_margin_bottom = 0
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	page_title.add_theme_color_override("font_color", C_JADE)
 	objective_label.add_theme_color_override("font_color", C_MUTED)
 	var heading_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -357,13 +379,33 @@ func _build_theme() -> void:
 	_style_outline_button(change_course_btn)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
+	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	side_s.shadow_size = 12
 	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
