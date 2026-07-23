@@ -3172,11 +3172,11 @@ func _start_intro_cinematic() -> void:
 	
 	var sub_panel = PanelContainer.new()
 	sub_panel.name = "IntroSubtitle"
-	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
-	sub_panel.offset_left = 150.0
-	sub_panel.offset_right = 750.0
-	sub_panel.offset_top = -120.0
-	sub_panel.offset_bottom = 120.0
+	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	sub_panel.offset_left = -440.0
+	sub_panel.offset_right = 60.0
+	sub_panel.offset_top = -130.0
+	sub_panel.offset_bottom = 90.0
 	sub_panel.z_index = 51
 	sub_panel.modulate = Color(1, 1, 1, 0)
 	
@@ -3216,10 +3216,9 @@ func _start_intro_cinematic() -> void:
 	t.set_parallel(true)
 	t.tween_property(dim_overlay, "color:a", 0.75, 1.0)
 	t.tween_property(sub_panel, "modulate:a", 1.0, 1.0)
-	var vp_size = get_viewport().size
-	t.tween_property(char_linh, "position:x", vp_size.x * 0.5 - 200.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(char_linh, "size", Vector2(400, 400) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "_linh_base_y", vp_size.y * 0.5 - 150.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "position:x", 600.0 - 50.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "size", Vector2(250.0, 250.0) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "_linh_base_y", 370.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.set_parallel(false)
 	
 	t.tween_callback(func():
