@@ -1015,14 +1015,18 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 	for i in LEVEL1_LESSON1_NOTES.size():
 		var frequency := _get_string_frequency(i)
 		var cents_distance: float = absf(1200.0 * log(pitch / frequency) / log(2.0))
+		cents_distance = fmod(cents_distance, 1200.0)
+		if cents_distance > 600.0: cents_distance = 1200.0 - cents_distance
 		if cents_distance < closest_cents:
 			closest_cents = cents_distance
 			closest_index = i
 
 	var expected_frequency := _get_string_frequency(_note_idx)
-	var expected_cents: float = 1200.0 * log(pitch / expected_frequency) / log(2.0)
+	var expected_cents: float = absf(1200.0 * log(pitch / expected_frequency) / log(2.0))
+	expected_cents = fmod(expected_cents, 1200.0)
+	if expected_cents > 600.0: expected_cents = 1200.0 - expected_cents
 	pitch_note.text = LEVEL1_LESSON1_LABELS[closest_index]
-	if closest_index == _note_idx and absf(expected_cents) <= 35.0:
+	if expected_cents <= 80.0:
 		if _board:
 			_board.set_lesson_marker(_note_idx, _level1_current_finger_shape(), 2)
 		_level1_pitch_hold += delta
@@ -2472,6 +2476,8 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	for i in detection_indices:
 		var candidate_frequency: float = _get_string_frequency(i)
 		var cents_distance: float = absf(1200.0 * log(pitch / candidate_frequency) / log(2.0))
+		cents_distance = fmod(cents_distance, 1200.0)
+		if cents_distance > 600.0: cents_distance = 1200.0 - cents_distance
 		if cents_distance < closest_cents:
 			closest_cents = cents_distance
 			closest_idx = i
@@ -2479,11 +2485,13 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	if target_idx < 0:
 		return
 	var target_frequency: float = _get_string_frequency(target_idx)
-	var target_cents: float = 1200.0 * log(pitch / target_frequency) / log(2.0)
+	var target_cents: float = absf(1200.0 * log(pitch / target_frequency) / log(2.0))
+	target_cents = fmod(target_cents, 1200.0)
+	if target_cents > 600.0: target_cents = 1200.0 - target_cents
 	var detected_name: String = NOTES_VN[closest_idx].rstrip("0123456789")
 	pitch_note.text = detected_name
 
-	if closest_idx == target_idx and absf(target_cents) <= 35.0:
+	if target_cents <= 80.0:
 		_level1_pitch_hold += delta
 		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
 		pitch_status.text = "Đúng nốt · Nhạc sắp phát tiếp"
