@@ -131,12 +131,14 @@ func _process(delta: float) -> void:
 		card_soloist_skills.position.y = 275
 		card_chords_skills.position.y = 275
 		card_pop_chords.position.y = 275
+		card_classical.position.y = 275
 		
 		# Khóa luôn trục X sau 1s để không ảnh hưởng đến animation trượt vào lúc đầu
 		if _time > 1.0:
 			card_soloist_skills.position.x = 1060
 			card_chords_skills.position.x = 1570
 			card_pop_chords.position.x = 2080
+			card_classical.position.x = 2590
 
 # ─── Drawing Callbacks ────────────────────────────────────────────────────────
 func _setup_drawing_callbacks() -> void:
@@ -312,12 +314,15 @@ func _draw_roadmap_paths() -> void:
 		p_sol_sk.y = straight_y
 		p_cho_sk.y = straight_y
 		p_pop.y = straight_y
+		p_class.y = straight_y
 		
-		# Đường thẳng duy nhất nằm ngang cho Đàn Bầu
+		# Đường thẳng duy nhất nằm ngang
 		_draw_thick_path(p_basic, p_ess)
 		_draw_thick_path(p_ess, p_sol_sk)
 		_draw_thick_path(p_sol_sk, p_cho_sk)
 		_draw_thick_path(p_cho_sk, p_pop)
+		if inst == "dan_tranh":
+			_draw_thick_path(p_pop, p_class)
 	else:
 		# Draw roadmap line segments connecting cards
 		# Basic Card -> Essentials Card -> Split point
@@ -385,6 +390,7 @@ func _build_sidebar() -> void:
 	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
 	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	sidebar.add_theme_stylebox_override("panel", side_s)
 	
 	var blur_mat = ShaderMaterial.new()
@@ -670,16 +676,17 @@ func _build_roadmap_cards() -> void:
 	card_pop_chords.position = Vector2(1930, 455)
 
 	if instrument == "dan_tranh":
-		# Dùng cùng bố cục roadmap thẳng của Đàn Bầu cho 5 level Đàn Tranh.
+		# Dùng cùng bố cục roadmap thẳng cho 6 level Đàn Tranh.
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
-		card_classical.hide()
+		card_classical.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 		
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
+		card_classical.position = Vector2(2590, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
@@ -696,11 +703,11 @@ func _build_roadmap_cards() -> void:
 		chords_skills_title.text = "LEVEL 4: KỸ THUẬT NÂNG CAO"
 		chords_skills_bullets.text = "✓ Mô phỏng kỹ thuật rung tay trái\n✓ Hòa tấu cùng nhạc cụ khác\n✓ Đánh đàn theo beat"
 		
-		classical_title.text = "LEVEL 5: MASTER – NHẠC HIỆN ĐẠI"
-		classical_desc.text = "✓ Sứ Thanh Hoa\n✓ Boss Stage\n✓ Thử thách tổng hợp"
-		
 		pop_chords_title.text = "LEVEL 5: MASTER – NHẠC HIỆN ĐẠI"
 		pop_chords_desc.text = "✓ Nhạc hiện đại: Sứ Thanh Hoa\n✓ Boss Stage sinh tồn\n✓ Biểu diễn không gợi ý"
+		
+		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
+		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
@@ -954,7 +961,7 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 1
-				_fade_to("res://scenes/LessonDanTranh.tscn")
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			elif inst == "trong_chau":
@@ -973,7 +980,7 @@ func _connect_buttons() -> void:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 2
-				_fade_to("res://scenes/LessonDanTranh.tscn")
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
 			elif inst == "dan_bau":
 				_fade_to("res://scenes/LessonDanBau.tscn")
 			elif inst == "trong_chau":
@@ -995,13 +1002,61 @@ func _connect_buttons() -> void:
 					_go_practice_room_for_node(2)
 	)
 	
+	card_soloist_skills.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 3
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_chords_skills.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 4
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 4
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_classical.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 6
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 5
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 5
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "sao_truc":
+				var script = load("res://scripts/LessonSaoTrucList.gd")
+				if script: script.selected_level = 5
+				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+	
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_soloist.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 3
-			_fade_to("res://scenes/LessonDanTranh.tscn")
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
@@ -1021,7 +1076,7 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 4
-			_fade_to("res://scenes/LessonDanTranh.tscn")
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
@@ -1038,7 +1093,10 @@ func _connect_buttons() -> void:
 	var play_classical := card_classical.get_node("Margin/HBox/BtnPlay") as Button
 	play_classical.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-		if inst == "dan_bau":
+		if inst == "dan_tranh":
+			DAN_TRANH_LESSON_SCRIPT.selected_level = 6
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
+		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
 			_fade_to("res://scenes/LessonTrongChau.tscn")
@@ -1056,7 +1114,7 @@ func _connect_buttons() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 5
-			_fade_to("res://scenes/LessonDanTranh.tscn")
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
@@ -1282,6 +1340,9 @@ func _on_viewport_size_changed() -> void:
 	var x_sk    := x_un + un_card_w + gap
 	var x_end   := x_sk + card_w + gap
 	var total_w := x_end + card_w + 40.0
+	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if instrument == "dan_tranh":
+		total_w = 2590.0 + card_w + 120.0
 	
 	var y_top := 40.0 if is_mobile else 95.0
 	var y_mid := 180.0 if is_mobile else 275.0

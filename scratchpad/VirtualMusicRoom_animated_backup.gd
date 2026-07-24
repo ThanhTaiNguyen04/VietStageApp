@@ -222,10 +222,21 @@ func _ready() -> void:
 	_setup_station_button(s_trong, "trong", "Trống Chầu", _draw_trong)
 	
 	# Setup Linh Assist
-	char_linh.draw.connect(_draw_linh.bind(char_linh))
+	var comai_scene = preload("res://scenes/CoMai.tscn")
+	var comai_instance = comai_scene.instantiate()
+	comai_instance.name = "CoMaiInstance"
+	char_linh.add_child(comai_instance)
+	comai_instance.position = char_linh.size * 0.5
 	char_linh.position.y += 170.0
 	_linh_base_y = char_linh.position.y
 	char_linh.gui_input.connect(_on_char_linh_gui_input)
+	
+	var wander_timer = Timer.new()
+	wander_timer.name = "WanderTimer"
+	wander_timer.wait_time = randf_range(4.0, 7.0)
+	wander_timer.autostart = true
+	wander_timer.timeout.connect(_on_wander_timer_timeout)
+	add_child(wander_timer)
 	
 	# Speech bubble hidden (removed by design)
 	
@@ -732,6 +743,33 @@ func _on_floor_gui_input(event: InputEvent) -> void:
 		_interact_target_linh = false
 		_close_dialogue()
 
+func _on_wander_timer_timeout() -> void:
+	if _linh_is_moving or _is_in_intro or popup.visible or (dialogue_box and dialogue_box.visible) or (shop_popup and shop_popup.visible):
+		var t = get_node_or_null("WanderTimer")
+		if t: t.wait_time = randf_range(3.0, 6.0)
+		return
+	
+	var target_x = char_linh.position.x + randf_range(-200.0, 200.0)
+	target_x = clamp(target_x, 150.0, 1050.0)
+	
+	_linh_is_moving = true
+	if _linh_tween:
+		_linh_tween.kill()
+	
+	var dir = Vector2(target_x - char_linh.position.x, 0).normalized()
+	if char_linh.has_node("CoMaiInstance"):
+		char_linh.get_node("CoMaiInstance").update_animation(dir)
+	
+	_linh_tween = create_tween()
+	_linh_tween.tween_property(char_linh, "position:x", target_x, randf_range(1.5, 3.0)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_linh_tween.tween_callback(func() -> void:
+		_linh_is_moving = false
+		if char_linh.has_node("CoMaiInstance"):
+			char_linh.get_node("CoMaiInstance").update_animation(Vector2.ZERO)
+	)
+	var t = get_node_or_null("WanderTimer")
+	if t: t.wait_time = randf_range(4.0, 8.0)
+
 func _move_linh_to_station(station_code: String, show_popup_after_move: bool = true) -> void:
 	_linh_is_moving = true
 	if _linh_tween:
@@ -749,6 +787,10 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 	var target_x := target_feet.x - linh_feet_offset.x
 	var target_y := target_feet.y - linh_feet_offset.y
 	
+	var dir = Vector2(target_x - char_linh.position.x, target_y - _linh_base_y).normalized()
+	if char_linh.has_node("CoMaiInstance"):
+		char_linh.get_node("CoMaiInstance").update_animation(dir)
+		
 	_linh_tween = create_tween()
 	_linh_tween.set_parallel(true)
 	_linh_tween.tween_property(char_linh, "position:x", target_x, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
@@ -757,6 +799,8 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 	_linh_tween.set_parallel(false)
 	_linh_tween.tween_callback(func() -> void:
 		_linh_is_moving = false
+		if char_linh.has_node("CoMaiInstance"):
+			char_linh.get_node("CoMaiInstance").update_animation(Vector2.ZERO)
 		if show_popup_after_move:
 			_open_focus_mode_popup(station_code)
 		else:
@@ -3172,11 +3216,11 @@ func _start_intro_cinematic() -> void:
 	
 	var sub_panel = PanelContainer.new()
 	sub_panel.name = "IntroSubtitle"
-	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	sub_panel.offset_left = -440.0
-	sub_panel.offset_right = 60.0
-	sub_panel.offset_top = -130.0
-	sub_panel.offset_bottom = 90.0
+	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	sub_panel.offset_left = 150.0
+	sub_panel.offset_right = 750.0
+	sub_panel.offset_top = -120.0
+	sub_panel.offset_bottom = 120.0
 	sub_panel.z_index = 51
 	sub_panel.modulate = Color(1, 1, 1, 0)
 	
@@ -3216,9 +3260,10 @@ func _start_intro_cinematic() -> void:
 	t.set_parallel(true)
 	t.tween_property(dim_overlay, "color:a", 0.75, 1.0)
 	t.tween_property(sub_panel, "modulate:a", 1.0, 1.0)
-	t.tween_property(char_linh, "position:x", 600.0 - 50.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(char_linh, "size", Vector2(250.0, 250.0) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "_linh_base_y", 370.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var vp_size = get_viewport().size
+	t.tween_property(char_linh, "position:x", vp_size.x * 0.5 - 200.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "size", Vector2(400, 400) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "_linh_base_y", vp_size.y * 0.5 - 150.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.set_parallel(false)
 	
 	t.tween_callback(func():
@@ -3227,23 +3272,15 @@ func _start_intro_cinematic() -> void:
 		
 		var stream = load("res://audio/phongnhac1.mp3")
 		if stream and is_instance_valid(_audio_manager.audio_player):
-			if "loop" in stream:
-				stream.loop = false
 			_audio_manager.audio_player.stream = stream
 			_audio_manager.audio_player.play()
-			
-			if not _audio_manager.audio_player.finished.is_connected(_end_intro_cinematic):
-				_audio_manager.audio_player.finished.connect(_end_intro_cinematic, CONNECT_ONE_SHOT)
-			
-			var dur = stream.get_length() if stream.has_method("get_length") else 5.0
-			get_tree().create_timer(dur + 0.5).timeout.connect(_end_intro_cinematic)
+			_audio_manager.audio_player.finished.connect(_end_intro_cinematic, CONNECT_ONE_SHOT)
 		else:
 			_audio_manager.speak_vietnamese(subtitle.text)
 			get_tree().create_timer(5.0).timeout.connect(_end_intro_cinematic)
 	)
 
 func _end_intro_cinematic() -> void:
-	if not _is_in_intro: return
 	_is_in_intro = false
 	var dim_overlay = get_node_or_null("IntroDimOverlay")
 	var subtitle = get_node_or_null("IntroSubtitle")

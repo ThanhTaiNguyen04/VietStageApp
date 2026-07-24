@@ -285,6 +285,27 @@ func _setup_extra_ui() -> void:
 	name_icon.offset_bottom = 12
 	name_icon.self_modulate = C_PRIMARY_LT
 	name_edit.add_child(name_icon)
+	
+	# — Icon trong GuestBtn (Khách) —
+	guest_btn.text = ""
+	var guest_icon := TextureRect.new()
+	guest_icon.name = "GuestIcon"
+	guest_icon.texture = load("res://assets/textures/lucide/user.svg")
+	guest_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	guest_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	guest_icon.custom_minimum_size = Vector2(36, 36)
+	guest_icon.size = Vector2(36, 36)
+	guest_icon.layout_mode = 1
+	guest_icon.anchor_left = 0.5
+	guest_icon.anchor_right = 0.5
+	guest_icon.anchor_top = 0.5
+	guest_icon.anchor_bottom = 0.5
+	guest_icon.offset_left = -18
+	guest_icon.offset_top = -18
+	guest_icon.offset_right = 18
+	guest_icon.offset_bottom = 18
+	guest_icon.self_modulate = C_PRIMARY_LT
+	guest_btn.add_child(guest_icon)
 
 # ── Entrance animation ───────────────────────────────────────────────────────────────────────
 func _animate_in() -> void:

@@ -84,9 +84,9 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
-	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
-	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
+	"Sol", "La", "Đô", "Rê", "Mi",
+	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
+	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
 	"Sol4", "La4" 
 ]
 
@@ -94,8 +94,8 @@ const LEVEL1_LESSON1_ID := "dan_tranh_level_1_bai_1_practice"
 const LEVEL1_LESSON2_ID := "dan_tranh_level_1_bai_2_practice"
 const LEVEL1_LESSON3_ID := "dan_tranh_level_1_bai_3_practice"
 const LEVEL2_LESSON4_ID := "dan_tranh_level_2_bai_4_practice"
-const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
-const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
+const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
+const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol2", "La2", "Đô2", "Rê2", "Mi2"]
 const FINGER_CUES := [
 	{"id": "circle", "symbol": "●", "shape_name": "hình tròn", "finger_name": "ngón cái"},
 	{"id": "square", "symbol": "■", "shape_name": "hình vuông", "finger_name": "ngón trỏ"},
@@ -104,16 +104,16 @@ const FINGER_CUES := [
 const LEVEL1_CONFIGS := {
 	LEVEL1_LESSON1_ID: {
 		"lesson": 1, "title": "Luyện từng nốt bằng ba ngón", "mode": "explore", "input": "micro",
-		"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "active_strings": [0, 1, 2, 3, 4],
+		"sheet": ["Sol", "La", "Đô", "Rê", "Mi"], "active_strings": [0, 1, 2, 3, 4],
 		"instruction": "Nghe câu nhạc chậm. Khi nhạc dừng, hãy gảy lần lượt Sol – La – Đô – Rê – Mi trên đàn thật.",
 		"bpm": 56.0, "pass_score": 80.0
 	},
 	LEVEL1_LESSON2_ID: {
 		"lesson": 2, "title": "Điền nốt còn thiếu vào bài nhạc", "mode": "fill_melody", "input": "micro",
 		"sheet": [
-			"Sol1", "La1", "Đô2", "La1", "Sol1", "Rê2", "Mi2", "Rê2",
-			"Đô2", "La1", "Sol1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2",
-			"La1", "Sol1", "La1", "Đô2", "Mi2", "Rê2", "Đô2", "Sol1"
+			"Sol", "La", "Đô", "La", "Sol", "Rê", "Mi", "Rê",
+			"Đô", "La", "Sol", "Đô", "Rê", "Mi", "Rê", "Đô",
+			"La", "Sol", "La", "Đô", "Mi", "Rê", "Đô", "Sol"
 		],
 		"missing_indices": [3, 7, 11, 15, 19, 23],
 		"cues": ["", "", "", "square", "", "", "", "square", "", "", "", "triangle",
@@ -210,20 +210,27 @@ static var current_song_sheet : Array[String] = []
 
 var songs_list : Array = [
 	{
+		"title": "Bài Test 17 Dây",
+		"bpm": 60.0,
+		"sheet": ["Sol", "La", "Đô", "Rê", "Mi", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"],
+		"durations": []
+	},
+
+	{
 		"title": "Bèo Dạt Mây Trôi",
 		"bpm": 80.0,
-		"sheet": ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"],
+		"sheet": ["Đô2","Đô2","Rê2","Fa","Fa","Sol2","La2","Sol2","Fa","Rê2","Đô2"],
 		"durations": []
 	},
 	{
 		"title": "Lý Cây Đa",
 		"bpm": 85.0,
 		"sheet": [
-			"Đô3", "Rê3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3",
-			"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3",
-			"Mi3", "Mi3", "Rê3", "Rê3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "Sol2", "Đô3",
-			"Đô3", "Sol2", "Sol2", "Đô3", "Sol2", "Đô3", "La2", "Sol2", "Fa2", "La2", "Sol2", "La2", "Đô3", "La2",
-			"Sol2", "La2", "Sol2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "La2", "Sol2"
+			"Đô2", "Rê2", "Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2",
+			"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2",
+			"Mi2", "Mi2", "Rê2", "Rê2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "Sol2", "Đô2",
+			"Đô2", "Sol2", "Sol2", "Đô2", "Sol2", "Đô2", "La2", "Sol2", "Fa2", "La2", "Sol2", "La2", "Đô2", "La2",
+			"Sol2", "La2", "Sol2", "Sol2", "La2", "Sol2", "La2", "Đô2", "La2", "Sol2", "La2", "Sol2"
 		],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
@@ -237,11 +244,11 @@ var songs_list : Array = [
 		"title": "Lý Cây Bông",
 		"bpm": 80.0,
 		"sheet": [
-			"La2", "Sol2", "La2", "La2", "Sol2", "La2", "Đô3", "Mi3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3",
-			"La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "La2", "Sol2", "Mi3", "Sol3", "Mi3", "Sol3",
-			"La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "Rê3", "Mi3", "Sol3", "Mi3", "Rê3", "Đô3", "La2",
-			"Rê3", "Mi3", "Rê3", "Rê3", "Rê3", "Rê3", "Rê3", "Mi3", "Sol3",
-			"Mi3", "Rê3", "Đô3", "La2", "La2", "La2", "Đô3", "Rê3", "Mi3", "Rê3"
+			"La2", "Sol2", "La2", "La2", "Sol2", "La2", "Đô2", "Mi2", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2",
+			"La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "La2", "Sol2", "Mi2", "Sol3", "Mi2", "Sol3",
+			"La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rê2", "Mi2", "Sol3", "Mi2", "Rê2", "Đô2", "La2",
+			"Rê2", "Mi2", "Rê2", "Rê2", "Rê2", "Rê2", "Rê2", "Mi2", "Sol3",
+			"Mi2", "Rê2", "Đô2", "La2", "La2", "La2", "Đô2", "Rê2", "Mi2", "Rê2"
 		],
 		"durations": [
 			0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0,
@@ -254,7 +261,7 @@ var songs_list : Array = [
 	{
 		"title": "Giấc Mơ Trưa",
 		"bpm": 90.0,
-		"sheet": ["Rest", "Sol1", "La1", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Rê4", "Rê4", "Rest", "La2", "Sol2", "Mi3", "Rê3", "Đô3", "La1", "Sol1", "Đô3", "Đô3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "Mi3", "Rê3", "Rê3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Đô4", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Rê3", "Mi3", "Rê3", "Đô3", "Đô3", "Rest", "Mi3", "Rê3", "Đô3", "Rê3", "Sol2", "Rê3", "Sol2", "Đô4", "Đô4", "Đô4", "Rest", "Mi3", "Rê3", "Sol2", "Rê3", "Rê3", "Rê3", "Rest", "Mi3", "Rê3", "Đô3", "Rê3", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi3", "Rê3", "Đô3", "Rê3", "Sol2", "Sol2", "Rest", "Rê4", "Đô4", "La2", "Đô4", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Sol2", "Rê3", "Rê3", "Rest", "Mi3", "Rê3", "Đô3", "Rê3", "Sol1", "Sol1", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "Rê4", "Đô4", "La2", "Đô4", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Sol2", "Rê3", "Mi3", "Đô3", "Đô3", "Rest", "La1", "Sol1", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "Mi3", "Rê3", "Đô3", "Đô3", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "La2", "Sol2", "Mi3", "Sol2", "La2", "La2", "Rest", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "La2", "Đô4", "Rê4", "Đô4", "La2", "Đô4", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi3", "Sol2", "Rê3", "Mi3", "Đô3", "Đô3", "Rest", "La1", "Sol1", "Đô3", "Rê3", "Mi3", "Sol2", "La2", "Sol2", "Mi3", "Rê3", "Đô3", "Đô3", "Rest"],
+		"sheet": ["Rest", "Sol", "La", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Rê3", "Rê3", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Sol", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Rê2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Rê2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Rê2", "Sol2", "Đô3", "Đô3", "Đô3", "Rest", "Mi2", "Rê2", "Sol2", "Rê2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "La2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Sol2", "Sol2", "Rest", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Rê2", "Rest", "Mi2", "Rê2", "Đô2", "Rê2", "Sol", "Sol", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "La2", "Rest", "Sol2", "La2", "Mi2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Sol2", "La2", "La2", "Rest", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Rê3", "Đô3", "La2", "Đô3", "Sol2", "Sol2", "Rest", "La2", "Sol2", "Mi2", "Sol2", "Rê2", "Mi2", "Đô2", "Đô2", "Rest", "La", "Sol", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "Rest"],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 2.0,
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0, 2.0,
@@ -284,9 +291,9 @@ var songs_list : Array = [
 		"title": "Vào rừng hoa – Đoạn 1",
 		"bpm": 60.0,
 		"sheet": [
-			"Mi2", "Sol2", "Sol2",
-			"Mi2", "Sol2", "Sol2",
-			"La2", "Đô3", "La2", "Đô3",
+			"Mi", "Sol2", "Sol2",
+			"Mi", "Sol2", "Sol2",
+			"La2", "Đô2", "La2", "Đô2",
 			"La2", "Sol2", "Sol2"
 		],
 		"durations": [
@@ -300,12 +307,12 @@ var songs_list : Array = [
 		"title": "Sứ Thanh Hoa",
 		"bpm": 80.0,
 		"sheet": [
-			"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-			"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-			"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-			"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-			"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-			"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
+			"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "La2", "Sol2",
+			"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "La2", "Mi2",
+			"Mi2", "Rê2", "Mi2", "Rê2", "Mi2", "Sol3", "Mi2", "Rest", "Mi2", "Mi2", "Rê2",
+			"Đô2", "Mi2", "Rê2", "Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2",
+			"La2", "Sol2", "Sol2", "La2", "Mi2", "Sol3", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2",
+			"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "La2", "Đô2", "Rê2", "Rê2", "Rê2"
 		],
 		"durations": [
 			0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
@@ -318,7 +325,7 @@ var songs_list : Array = [
 	}
 ]
 
-var sheet_notes : Array[String] = ["Đô","Đô","Rê","Fa","Fa","Sol","La","Sol","Fa","Rê","Đô"]
+var sheet_notes : Array[String] = ["Đô2","Đô2","Rê2","Fa","Fa","Sol2","La2","Sol2","Fa","Rê2","Đô2"]
 var sheet_durations : Array[float] = []
 var note_visuals : Dictionary = {}
 var note_statuses : Array[String] = []
@@ -367,13 +374,13 @@ func _ready() -> void:
 				song["durations"].append(1.0)
 
 	var pentatonic_to_western = {
-		"Hò": "Đô",
-		"Xự": "Rê",
+		"Hò": "Đô2",
+		"Xự": "Rê2",
 		"Xang": "Fa",
-		"Xê": "Sol",
-		"Công": "La",
-		"Liu": "Đô2",
-		"Ú": "Rê2"
+		"Xê": "Sol2",
+		"Công": "La2",
+		"Liu": "Đô",
+		"Ú": "Rê"
 	}
 	# Try loading from local songs_list first to preserve custom durations!
 	var found_local := false
@@ -426,7 +433,7 @@ func _ready() -> void:
 		
 	# Bulletproof safety: if sheet_notes is empty under any scenario, populate with default notes
 	if sheet_notes.is_empty():
-		sheet_notes.assign(["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"])
+		sheet_notes.assign(["Đô2", "Rê2", "Mi2", "Fa", "Sol2", "La2", "Si"])
 		sheet_durations.clear()
 		for note in sheet_notes:
 			sheet_durations.append(1.0)
@@ -569,9 +576,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
-		visualizer.min_frequency = 120.0
-		visualizer.max_frequency = 900.0
-		visualizer.volume_threshold_db = -45.0
+		visualizer.min_frequency = 80.0
+		visualizer.max_frequency = 950.0
+		visualizer.volume_threshold_db = -50.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -993,7 +1000,7 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if amplitude_db <= -45.0 or pitch <= 50.0:
+	if amplitude_db <= -40.0 or pitch <= 70.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -1015,20 +1022,24 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 	for i in LEVEL1_LESSON1_NOTES.size():
 		var frequency := _get_string_frequency(i)
 		var cents_distance: float = absf(1200.0 * log(pitch / frequency) / log(2.0))
+		cents_distance = fmod(cents_distance, 1200.0)
+		if cents_distance > 600.0: cents_distance = 1200.0 - cents_distance
 		if cents_distance < closest_cents:
 			closest_cents = cents_distance
 			closest_index = i
 
 	var expected_frequency := _get_string_frequency(_note_idx)
-	var expected_cents: float = 1200.0 * log(pitch / expected_frequency) / log(2.0)
+	var expected_cents: float = absf(1200.0 * log(pitch / expected_frequency) / log(2.0))
+	expected_cents = fmod(expected_cents, 1200.0)
+	if expected_cents > 600.0: expected_cents = 1200.0 - expected_cents
 	pitch_note.text = LEVEL1_LESSON1_LABELS[closest_index]
-	if closest_index == _note_idx and absf(expected_cents) <= 35.0:
+	if expected_cents <= 120.0:
 		if _board:
 			_board.set_lesson_marker(_note_idx, _level1_current_finger_shape(), 2)
 		_level1_pitch_hold += delta
-		var hold_percent := mini(100, int((_level1_pitch_hold / 0.35) * 100.0))
+		var hold_percent := mini(100, int((_level1_pitch_hold / 0.15) * 100.0))
 		_set_level1_status("Đúng nốt %s bằng %s · Giữ âm ổn định %d%%" % [LEVEL1_LESSON1_LABELS[_note_idx], _level1_current_finger_name(), hold_percent], C_BLUE_OK)
-		if _level1_pitch_hold >= 0.35:
+		if _level1_pitch_hold >= 0.15:
 			_complete_level1_lesson1_note()
 		return
 
@@ -2448,14 +2459,17 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
-	if amplitude_db <= -45.0 or pitch <= 50.0:
+	if amplitude_db <= -40.0 or pitch <= 70.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
 			if _level1_silence_time >= 0.12:
 				_level1_wait_for_silence = false
 				_level1_silence_time = 0.0
-				_set_level1_status("NHẠC ĐANG DỪNG · Gảy đúng nốt %s để tiếp tục" % target_name, C_GOLD_TEXT)
+				if _level1_lesson2_mode:
+					_set_level1_status("HÃY THỬ LẠI · Hãy gảy lại nốt %s trên đàn thật để nhạc tiếp tục!" % target_name, C_GOLD_TEXT)
+				else:
+					_set_level1_status("NHẠC ĐANG DỪNG · Gảy đúng nốt %s để tiếp tục" % target_name, C_GOLD_TEXT)
 		return
 	_level1_silence_time = 0.0
 	if _level1_wait_for_silence:
@@ -2472,6 +2486,8 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	for i in detection_indices:
 		var candidate_frequency: float = _get_string_frequency(i)
 		var cents_distance: float = absf(1200.0 * log(pitch / candidate_frequency) / log(2.0))
+		cents_distance = fmod(cents_distance, 1200.0)
+		if cents_distance > 600.0: cents_distance = 1200.0 - cents_distance
 		if cents_distance < closest_cents:
 			closest_cents = cents_distance
 			closest_idx = i
@@ -2479,11 +2495,13 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	if target_idx < 0:
 		return
 	var target_frequency: float = _get_string_frequency(target_idx)
-	var target_cents: float = 1200.0 * log(pitch / target_frequency) / log(2.0)
+	var target_cents: float = absf(1200.0 * log(pitch / target_frequency) / log(2.0))
+	target_cents = fmod(target_cents, 1200.0)
+	if target_cents > 600.0: target_cents = 1200.0 - target_cents
 	var detected_name: String = NOTES_VN[closest_idx].rstrip("0123456789")
 	pitch_note.text = detected_name
 
-	if closest_idx == target_idx and absf(target_cents) <= 35.0:
+	if target_cents <= 120.0:
 		_level1_pitch_hold += delta
 		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
 		pitch_status.text = "Đúng nốt · Nhạc sắp phát tiếp"
@@ -2515,6 +2533,13 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var correction: String = "↓" if target_cents > 0.0 else "↑"
 	if _board:
 		_board.set_feedback_detail(target_idx, "✕ %s · cần %s" % [detected_name, target_name], 2)
+	
+	if _level1_lesson2_mode:
+		# Hướng dẫn học viên gảy lại trên đàn thật để đúng nốt, không tự động chuyển nốt
+		_set_level1_status("CHƯA ĐÚNG · Bạn gảy nhầm nốt %s. Hãy gảy lại nốt %s trên đàn thật!" % [detected_name, target_name], C_RED_ERR)
+		_update_level1_score()
+		return
+		
 	var wrong_limit := int(_level1_config.get("wrong_limit", 6))
 	_set_level1_status("SAI NỐT · Nghe thấy %s %s%d¢ · Nhạc tiếp tục (%d/%d)" % [detected_name, correction, int(absf(target_cents)), _level1_wrong_count, wrong_limit], C_RED_ERR)
 	_update_level1_score()
@@ -2558,7 +2583,7 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 		return
 	var db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if db <= -45.0 or pitch <= 50.0:
+	if db <= -40.0 or pitch <= 70.0:
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
 			if _level1_silence_time >= 0.12:
@@ -2580,8 +2605,10 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 	var target_idx := NOTES_VN.find(sheet_notes[_note_idx])
 	var target_frequency := _get_string_frequency(target_idx)
 	var cents := 1200.0 * log(pitch / target_frequency) / log(2.0)
+	var cents_mod = fmod(absf(cents), 1200.0)
+	if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 	_level1_total_attempts += 1
-	if closest_idx == target_idx and absf(cents) <= 35.0:
+	if cents_mod <= 120.0:
 		var timing := clampf(100.0 - absf(_current_note_elapsed - seconds_per_note * 0.35) / seconds_per_note * 130.0, 0.0, 100.0)
 		_level1_timing_scores.append(timing)
 		if _current_note_elapsed < seconds_per_note * 0.18:
@@ -3344,17 +3371,33 @@ func get_string_stream_source(string_index: int) -> String:
 	return _string_stream_sources[string_index]
 
 func _get_string_frequency(idx: int) -> float:
-	# Đàn tranh 17 dây - tuning theo hệ ngũ cung Sol - La - Đô - Rê - Mi
-	var base_freqs = [
-		196.00, # Sol (G3)
-		220.00, # La (A3)
-		261.63, # Đô (C4)
-		293.66, # Rê (D4)
-		329.63  # Mi (E4)
+	# Đàn tranh 17 dây - tần số thực tế từng dây
+	# Dây 1-5 (không số): Sol=G2, La=A2, Đô=C3, Rê=D3, Mi=E3
+	# Dây 6-10 (số 2): Sol2=G3, La2=A3, Đô2=C4, Rê2=D4, Mi2=E4
+	# Dây 11-15 (số 3): Sol3=G4, La3=A4, Đô3=C5, Rê3=D5, Mi3=E5
+	# Dây 16-17 (số 4): Sol4=G5, La4=A5
+	const DAN_TRANH_FREQS: Array[float] = [
+		98.00,   # Dây 1 - Sol  (G2)
+		110.00,  # Dây 2 - La   (A2)
+		130.81,  # Dây 3 - Đô   (C3)
+		146.83,  # Dây 4 - Rê   (D3)
+		164.81,  # Dây 5 - Mi   (E3)
+		196.00,  # Dây 6 - Sol2 (G3)
+		220.00,  # Dây 7 - La2  (A3)
+		261.63,  # Dây 8 - Đô2  (C4)
+		293.66,  # Dây 9 - Rê2  (D4)
+		329.63,  # Dây 10- Mi2  (E4)
+		392.00,  # Dây 11- Sol3 (G4)
+		440.00,  # Dây 12- La3  (A4)
+		523.25,  # Dây 13- Đô3  (C5)
+		587.33,  # Dây 14- Rê3  (D5)
+		659.25,  # Dây 15- Mi3  (E5)
+		783.99,  # Dây 16- Sol4 (G5)
+		880.00   # Dây 17- La4  (A5)
 	]
-	var octave = idx / 5
-	var note_in_octave = idx % 5
-	return base_freqs[note_in_octave] * pow(2, octave)
+	if idx < 0 or idx >= DAN_TRANH_FREQS.size():
+		return 220.0
+	return DAN_TRANH_FREQS[idx]
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 	# ── Clean Karplus-Strong — Đàn Tranh tuned ───────────────────────────────
@@ -3699,7 +3742,7 @@ func _process_real_audio(delta: float) -> void:
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
 	
-	if db > -45.0 and pitch > 50.0:
+	if db > -40.0 and pitch > 70.0:
 		var target_note = sheet_notes[_note_idx]
 		
 		# Find the closest frequency matching the target note across all 17 strings
@@ -3716,8 +3759,13 @@ func _process_real_audio(delta: float) -> void:
 					
 		if closest_target_freq > 0.0:
 			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
-			if abs(cents) < 50.0:
+			# Handle octave errors (YIN algorithm often detects 1 octave higher for plucked strings)
+			var cents_mod = fmod(abs(cents), 1200.0)
+			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
+			
+			if cents_mod < 120.0:
 				pitch_note.text = target_note
+				cents = cents_mod # Use folded cents for scoring
 				
 				# Scaled tolerance window based on difficulty scale
 				var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
@@ -3765,16 +3813,16 @@ func _process_real_audio(delta: float) -> void:
 				
 		var detected_note := ""
 		var closest_detected_freq := 0.0
-		var min_detected_diff := 999999.0
+		var min_detected_cents := 999999.0
 		for i in range(17):
 			var string_freq = _get_string_frequency(i)
-			var diff = abs(pitch - string_freq)
-			if diff < min_detected_diff:
-				min_detected_diff = diff
+			var cents_diff = abs(1200.0 * log(pitch / string_freq) / log(2.0))
+			if cents_diff < min_detected_cents:
+				min_detected_cents = cents_diff
 				closest_detected_freq = string_freq
 				detected_note = NOTES_VN[i]
 				
-		if detected_note != "" and min_detected_diff < 30.0:
+		if detected_note != "" and min_detected_cents < 120.0:
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
 			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
@@ -4046,13 +4094,13 @@ func _on_song_selected(index: int) -> void:
 	current_song_title = song["title"]
 	
 	var pentatonic_to_western = {
-		"Hò": "Đô",
-		"Xự": "Rê",
+		"Hò": "Đô2",
+		"Xự": "Rê2",
 		"Xang": "Fa",
-		"Xê": "Sol",
-		"Công": "La",
-		"Liu": "Đô2",
-		"Ú": "Rê2"
+		"Xê": "Sol2",
+		"Công": "La2",
+		"Liu": "Đô",
+		"Ú": "Rê"
 	}
 	
 	sheet_notes.clear()
@@ -4122,19 +4170,19 @@ func _show_introduction_overlay() -> void:
 			"text": "Dây số 1 (dây trầm nhất, ở xa con nhất) là nốt Đô (Hò). Hãy nghe thử âm thanh ngân vang của dây Đô trầm nhé.",
 			"voice": "Dây số một dây trầm nhất, ở xa con nhất là nốt Đô. Hãy nghe thử âm thanh ngân vang của dây Đô trầm nhé.",
 			"highlighted_string": 0,
-			"note_to_play": "Đô"
+			"note_to_play": "Đô2"
 		},
 		{
 			"text": "Dây số 2 tiếp theo là nốt Rê (Xự). Âm thanh hơi cao hơn một chút.",
 			"voice": "Dây số hai tiếp theo là nốt Rê. Âm thanh hơi cao hơn một chút.",
 			"highlighted_string": 1,
-			"note_to_play": "Rê"
+			"note_to_play": "Rê2"
 		},
 		{
 			"text": "Dây số 3 là nốt Đô. Dưới đây là âm nốt Đô.",
 			"voice": "Dây số ba là nốt Đô. Dưới đây là âm nốt Đô.",
 			"highlighted_string": 2,
-			"note_to_play": "Đô"
+			"note_to_play": "Đô2"
 		},
 		{
 			"text": "Khi gảy, con chạm và vuốt nhẹ bên phải nhạn đàn. Khi nhấn nhấn bên trái nhạn đàn, âm thanh sẽ có tiếng nhấn rung vô cùng điệu nghệ.",

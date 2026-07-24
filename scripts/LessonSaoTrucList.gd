@@ -19,7 +19,7 @@ var _last_drag_pos_x: float = 0.0
 var _last_drag_time: float = 0.0
 
 # ─── @onready Refs
-@onready var bg_rect           : ColorRect      = $BG
+@onready var bg_rect           : TextureRect      = $BG
 @onready var top_bar           : PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn          : Button         = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title        : Label          = $Root/RightContent/TopBar/TopM/TopH/PageTitle
@@ -226,9 +226,31 @@ func _input(event: InputEvent) -> void:
 			_last_drag_time = now
 
 func _build_theme() -> void:
-	bg_rect.color = C_BG
+	bg_rect.texture = load("res://assets/textures/sao_truc_background.png")
 	
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD, 0.28), 0, 0)
+	top_s.border_width_bottom = 1
+	top_s.content_margin_bottom = 0
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	
 	page_title.text = "GIÁO TRÌNH SÁO TRÚC - LEVEL %d" % selected_level
 	page_title.add_theme_color_override("font_color", C_JADE)
@@ -287,13 +309,33 @@ func _connect_buttons() -> void:
 	)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
+	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	side_s.shadow_size = 12
 	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -473,7 +515,7 @@ func _build_lesson_list() -> void:
 		
 		var btn := Button.new()
 		btn.name = "LessonBtn"
-		btn.custom_minimum_size = Vector2(180, 180)
+		btn.custom_minimum_size = Vector2(250, 250)
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -510,7 +552,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		border_color = C_GOLD # Gold border
 		text_color = Color.WHITE # White checkmark/text inside
 	elif is_unlocked:
-		bg_color = Color.WHITE # Solid white for active
+		bg_color = Color(1.0, 1.0, 1.0, 0.8) # semi-transparent white for glass effect
 		border_color = C_JADE_LIGHT # Jade border
 		text_color = C_TEXT # Dark charcoal text
 		
@@ -519,8 +561,8 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
-	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
+	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
 	
 	# Glow effect for active step (using softer, wider gold shadow)
 	if is_unlocked and not is_completed:
@@ -532,7 +574,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		if is_completed:
 			s_hover.bg_color = bg_color.lightened(0.1)
 		else:
-			s_hover.bg_color = Color(0.97, 0.97, 0.97, 1.0)
+			s_hover.bg_color = Color(1.0, 1.0, 1.0, 0.95)
 		
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
@@ -546,7 +588,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_font_size_override("font_size", 21)
 	
 	btn.disabled = not is_unlocked
 
@@ -565,30 +607,16 @@ func _draw_connecting_lines() -> void:
 		var row := col.get_node_or_null("Row") as HBoxContainer
 		if not row: continue
 		
-		var v_btn := row.get_node_or_null("VideoBtn") as Button
-		var p_btn := row.get_node_or_null("PracticeBtn") as Button
-		if not v_btn or not p_btn: continue
+		var btn := row.get_node_or_null("LessonBtn") as Button
+		if not btn: continue
 		
 		# Compute centers in HBox local coordinates
-		var v_center := col.position + row.position + v_btn.position + v_btn.size / 2.0
-		var p_center := col.position + row.position + p_btn.position + p_btn.size / 2.0
+		var center := col.position + row.position + btn.position + btn.size / 2.0
 		
-		centers.append(v_center)
-		centers.append(p_center)
+		centers.append(center)
 		
-		var lesson_id := LESSONS[i]["id"] as String
-		var p_id := lesson_id + "_practice"
-		var is_v_unlocked := false
-		if i == 0:
-			is_v_unlocked = true
-		else:
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(lesson_id + "_video") or completed_lessons.has(prev_id + "_practice")
-			
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(lesson_id + "_video") or unlocked_lessons.has(p_id))
-		
-		node_unlocked.append(is_v_unlocked)
-		node_unlocked.append(is_p_unlocked)
+		# Determine unlock status - currently forcing true to match UI
+		node_unlocked.append(true)
 
 	if centers.is_empty():
 		return
@@ -624,10 +652,16 @@ func _apply_responsive_layout() -> void:
 			var row := col.get_node_or_null("Row") as HBoxContainer
 			if row:
 				row.add_theme_constant_override("separation", sep)
-				for btn in row.get_children():
-					if btn is Button:
-						var sz := Vector2(145, 145) if mobile else Vector2(180, 180)
-						btn.custom_minimum_size = sz
+				var btn := row.get_node_or_null("LessonBtn") as Button
+				if btn:
+					var sz := Vector2(180, 180) if mobile else Vector2(250, 250)
+					btn.custom_minimum_size = sz
+					btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
+					var s_normal := btn.get_theme_stylebox("normal") as StyleBoxFlat
+					if s_normal:
+						var rad := 90 if mobile else 125
+						s_normal.corner_radius_top_left = rad; s_normal.corner_radius_top_right = rad
+						s_normal.corner_radius_bottom_left = rad; s_normal.corner_radius_bottom_right = rad
 
 # ─── Helper Functions ─────────────────────────────────────────────────────────
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
