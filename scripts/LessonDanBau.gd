@@ -11,14 +11,8 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
-# ─── Drag Tracking Variables
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
+var selected_level: int = 1
+var is_unlocked: bool = true
 
 # ─── @onready Refs
 @onready var bg_rect           : ColorRect      = $BG
@@ -128,66 +122,15 @@ func _ready() -> void:
 	
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	var content_margin := lessons_hbox.get_parent() as Control
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.3)
 
 func _input(event: InputEvent) -> void:
-	if not scroll_container or not is_instance_valid(scroll_container):
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.global_position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.global_position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.global_position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif _is_dragging_scroll:
-		var current_x: float = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		var delta_x := current_x - _drag_start_pos.x
-		if absf(delta_x) > 8.0:
-			_has_dragged_significantly = true
-		if _has_dragged_significantly:
-			var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-			scroll_container.scroll_horizontal = int(clampf(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now := Time.get_ticks_msec() / 1000.0
-			var dt := maxf(0.001, now - _last_drag_time)
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
+	pass
 
 func _build_theme() -> void:
 	bg_rect.color = C_BG
@@ -488,6 +431,7 @@ func _build_lesson_list() -> void:
 		
 		# 1. Hướng Dẫn Button (Left circle)
 		var v_btn := Button.new()
+		v_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		v_btn.name = "VideoBtn"
 		v_btn.custom_minimum_size = Vector2(180, 180)
 		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -501,6 +445,7 @@ func _build_lesson_list() -> void:
 		
 		# 2. Thực Hành Button (Right circle)
 		var p_btn := Button.new()
+		p_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		p_btn.name = "PracticeBtn"
 		p_btn.custom_minimum_size = Vector2(180, 180)
 		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -515,7 +460,7 @@ func _build_lesson_list() -> void:
 		lessons_hbox.add_child(col)
 
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
-	if _has_dragged_significantly or not is_unlocked: return
+	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = v_id
 	VideoPlayer.custom_video_path = "res://Video/DanBauDoan12Bai1.ogv"
 	VideoPlayer.custom_subtitles = subtitles
@@ -524,7 +469,7 @@ func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> voi
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn"))
 
 func _on_practice_pressed(p_id: String, is_unlocked: bool) -> void:
-	if _has_dragged_significantly or not is_unlocked: return
+	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = p_id
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)

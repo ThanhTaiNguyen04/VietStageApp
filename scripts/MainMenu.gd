@@ -71,15 +71,6 @@ var btn_minigame_mob : Button
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 
-# --- Drag Tracking Variables ---
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
-
 func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
@@ -570,7 +561,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 			var ly := cy + 8.0
 			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, C_GOLD)
 
-# ─── Top Bar ──────────────────────────────────────────────────────────────────
+# ─── Top Bar ────────────────────────────────────────────────────────────────
 func _build_top_bar() -> void:
 	# Khung avatar: bo tròn hoàn toàn, viền vàng phát sáng
 	var av_s := StyleBoxFlat.new()
@@ -943,10 +934,12 @@ func _style_circular_play_btn(btn: Button) -> void:
 
 # ─── Animate In ────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
+	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]
 	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
+		item.mouse_filter = Control.MOUSE_FILTER_PASS
 		item.modulate.a = 0.0
 		item.position.x += 40.0
 		var t := create_tween().set_parallel(true)
@@ -969,7 +962,7 @@ func _connect_buttons() -> void:
 
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 1
@@ -988,7 +981,7 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/VideoPlayer.tscn")
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 2
@@ -1015,7 +1008,7 @@ func _connect_buttons() -> void:
 	)
 	
 	card_soloist_skills.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
@@ -1027,7 +1020,7 @@ func _connect_buttons() -> void:
 	)
 
 	card_chords_skills.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 4
@@ -1039,7 +1032,7 @@ func _connect_buttons() -> void:
 	)
 
 	card_classical.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 6
@@ -1051,7 +1044,7 @@ func _connect_buttons() -> void:
 	)
 
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 5
@@ -1154,7 +1147,7 @@ func _connect_buttons() -> void:
 	_make_btn_bouncy(unlock_cho)
 
 	avatar_circle.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly: _go_account()
+		if e is InputEventMouseButton and not e.pressed and e.button_index == MOUSE_BUTTON_LEFT: _go_account()
 	)
 
 	# Mobile Navigation Connections
@@ -1581,60 +1574,3 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	if total_count > 0:
 		pct = int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
-
-func _on_scroll_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_is_dragging_scroll = true
-			_drag_start_pos = event.global_position
-			_scroll_start_x = roadmap_scroll.scroll_horizontal
-			_has_dragged_significantly = false
-			_drag_velocity = 0.0
-			_last_drag_pos_x = event.global_position.x
-			_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and abs(float(_drag_velocity)) > 50.0:
-					var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
-					var target_x = clamp(roadmap_scroll.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(roadmap_scroll, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			_is_dragging_scroll = true
-			_drag_start_pos = event.position
-			_scroll_start_x = roadmap_scroll.scroll_horizontal
-			_has_dragged_significantly = false
-			_drag_velocity = 0.0
-			_last_drag_pos_x = event.position.x
-			_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and abs(float(_drag_velocity)) > 50.0:
-					var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
-					var target_x = clamp(roadmap_scroll.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(roadmap_scroll, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-
-func _input(event: InputEvent) -> void:
-	if _is_dragging_scroll:
-		var current_x = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		
-		var delta_x = current_x - _drag_start_pos.x
-		if abs(float(delta_x)) > 8.0:
-			_has_dragged_significantly = true
-		
-		if _has_dragged_significantly:
-			var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
-			roadmap_scroll.scroll_horizontal = int(clamp(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now = Time.get_ticks_msec() / 1000.0
-			var dt = max(0.001, float(now - _last_drag_time))
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
