@@ -1000,7 +1000,8 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if amplitude_db <= -40.0 or pitch <= 70.0:
+	var tone: float = visualizer.current_tone_quality
+	if amplitude_db <= -40.0 or pitch <= 70.0 or tone < 75.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -1037,9 +1038,9 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 		if _board:
 			_board.set_lesson_marker(_note_idx, _level1_current_finger_shape(), 2)
 		_level1_pitch_hold += delta
-		var hold_percent := mini(100, int((_level1_pitch_hold / 0.15) * 100.0))
+		var hold_percent := mini(100, int((_level1_pitch_hold / 0.05) * 100.0))
 		_set_level1_status("Đúng nốt %s bằng %s · Giữ âm ổn định %d%%" % [LEVEL1_LESSON1_LABELS[_note_idx], _level1_current_finger_name(), hold_percent], C_BLUE_OK)
-		if _level1_pitch_hold >= 0.15:
+		if _level1_pitch_hold >= 0.05:
 			_complete_level1_lesson1_note()
 		return
 
@@ -2459,7 +2460,8 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
-	if amplitude_db <= -40.0 or pitch <= 70.0:
+	var tone: float = visualizer.current_tone_quality
+	if amplitude_db <= -40.0 or pitch <= 70.0 or tone < 75.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -2505,9 +2507,9 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 		pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 		if _board:
 			_board.set_feedback_detail(target_idx, "✓ %s" % target_name, 1)
-		var hold_percent: int = mini(100, int((_level1_pitch_hold / 0.18) * 100.0))
+		var hold_percent: int = mini(100, int((_level1_pitch_hold / 0.05) * 100.0))
 		_set_level1_status("ĐÚNG NỐT %s · %d%%" % [target_name, hold_percent], C_GREEN_OK)
-		if _level1_pitch_hold >= 0.18:
+		if _level1_pitch_hold >= 0.05:
 			_level1_total_attempts += 1
 			_level1_wait_for_silence = true
 			_level1_waiting_for_note = false
@@ -2573,7 +2575,8 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 		return
 	var db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
-	if db <= -40.0 or pitch <= 70.0:
+	var tone: float = visualizer.current_tone_quality
+	if db <= -40.0 or pitch <= 70.0 or tone < 75.0:
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
 			if _level1_silence_time >= 0.12:
@@ -3731,8 +3734,9 @@ func _process_real_audio(delta: float) -> void:
 	
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
+	var tone = visualizer.current_tone_quality
 	
-	if db > -40.0 and pitch > 70.0:
+	if db > -40.0 and pitch > 70.0 and tone >= 75.0:
 		var target_note = sheet_notes[_note_idx]
 		
 		# Find the closest frequency matching the target note across all 17 strings
