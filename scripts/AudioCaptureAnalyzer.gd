@@ -207,6 +207,13 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 			else:
 				detected_pitch *= 2.0
 			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
+		# Normalize 3rd harmonic jumps (Perfect 12th = ~1902 cents)
+		elif jump_cents > 1850.0 and jump_cents < 1950.0:
+			if detected_pitch > previous:
+				detected_pitch /= 3.0
+			else:
+				detected_pitch *= 3.0
+			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
 			
 		if jump_cents > PITCH_JUMP_CENTS:
 			_pitch_candidates.clear()

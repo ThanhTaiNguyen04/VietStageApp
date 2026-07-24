@@ -206,7 +206,7 @@ func _ready():
 	# The lesson covers every real string from Sol1 (196 Hz) to La4 (1760 Hz).
 	# Keep this explicit so scene/default changes cannot cut off the high strings.
 	analyzer.min_frequency = 180.0
-	analyzer.max_frequency = 1900.0
+	analyzer.max_frequency = 4200.0
 	analyzer.volume_threshold_db = -55.0
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
@@ -911,8 +911,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 		return false
 		
 	if not is_poly and (pitch <= 0.0 or not analyzer.current_pitch_is_reliable):
-		time_correct = 0.0
-		return false
+		pitch = 0.0 # Force pitch to 0.0 so YIN checks fail cleanly, allowing FFT fallback to take over
 
 	var is_match = false
 	if is_poly:
@@ -945,13 +944,13 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 			var notes = _target_note_name.split("+")
 			for n in notes:
 				var freq = NOTE_FREQS.get(n, 0.0)
-				if freq > 0.0:
+				if freq > 0.0 and pitch > 0.0:
 					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
 					if cents_error <= 25.0:
 						is_match = true
 						break
 	else:
-		if target_hz > 0.0:
+		if target_hz > 0.0 and pitch > 0.0:
 			var cents_error = absf(1200.0 * log(pitch / target_hz) / log(2.0))
 			if cents_error <= 25.0:
 				is_match = true
@@ -959,6 +958,26 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				# Allow 1st harmonic (octave equivalence) for weak fundamentals
 				var harmonic_error = absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
 				if harmonic_error <= 25.0:
+					is_match = true
+				else:
+					# Allow 3rd harmonic (Perfect 12th) which is extremely dominant on Dan Tranh
+					var harmonic3_error = absf(1200.0 * log(pitch / (target_hz * 3.0)) / log(2.0))
+					if harmonic3_error <= 25.0:
+						is_match = true
+							
+		# Fallback to FFT for single notes if YIN completely fails (very common for La 1)
+		# ONLY apply to low strings (< 500 Hz) to prevent sympathetic resonance false-positives on high strings.
+		if not is_match and target_hz < 500.0 and db >= -42.0 and analyzer and analyzer.get("_spectrum") != null:
+			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
+			if target_hz > 0.0:
+				var mag1 = spec.get_magnitude_for_frequency_range(target_hz * 0.96, target_hz * 1.04).length()
+				var mag2 = spec.get_magnitude_for_frequency_range(target_hz * 1.96, target_hz * 2.04).length()
+				var mag3 = spec.get_magnitude_for_frequency_range(target_hz * 2.96, target_hz * 3.04).length()
+				var max_mag = max(mag1, max(mag2, mag3))
+				var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
+				
+				# If there is a strong peak at the fundamental or major harmonics, accept it!
+				if freq_db >= -40.0:
 					is_match = true
 				
 	if not is_match:
