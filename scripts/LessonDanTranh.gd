@@ -141,22 +141,31 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Hãy chứng minh bạn đã hoàn toàn làm chủ cây Đàn Tranh này nào!", "highlight": -1}
 	],
 	"dan_tranh_level_6_bai_13_practice": [
-		{"action": "speak", "text": "Chào bạn! Chào mừng đến với cấp độ cuối cùng: Học gảy Hợp âm trên Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm là sự kết hợp của nhiều nốt vang lên cùng lúc, tạo ra âm thanh dày dặn và phong phú để đệm cho giai điệu.", "highlight": -1},
-		{"action": "speak", "text": "Khác với Piano hay Guitar, Đàn Tranh dùng thang ngũ cung nên các hợp âm thường được tạo từ các quãng 4, quãng 5, hoặc quãng 8.", "highlight": -1},
-		{"action": "speak", "text": "Các thế bấm phổ biến nhất là Song Âm (chỉ gảy 2 dây) và Hợp âm 3 nốt (ví dụ như cụm nốt Sol-Đô-Mi).", "highlight": -1},
-		{"action": "speak", "text": "Hôm nay, chúng ta sẽ bước đầu làm quen với việc gảy Song Âm, tức là gảy 2 dây cùng lúc để cảm nhận độ vang.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chú ý dùng ngón cái và ngón giữa (ký hiệu Tròn và Tam giác) để gảy thật đều nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào em! Hôm nay chúng ta sẽ bắt đầu làm quen với hợp âm trên đàn tranh.", "highlight": -1},
+		{"action": "speak", "text": "Trước đây, em đã học cách gảy từng dây để tạo nên giai điệu. Còn hôm nay, chúng ta sẽ học cách gảy nhiều dây cùng một lúc.", "highlight": -1},
+		{"action": "speak", "text": "Khi em gảy một dây, em sẽ nghe một nốt nhạc. Nhưng khi em gảy hai hoặc nhiều dây cùng lúc, âm thanh sẽ đầy đặn và vang hơn. Đó chính là hợp âm.", "highlight": -1},
+		{"action": "speak", "text": "Trong bài học này, em chỉ cần làm quen với khái niệm hợp âm và ôn lại cách gảy từng dây thật chính xác trước khi học các kỹ thuật mới.", "highlight": -1}
 	],
 	"dan_tranh_level_6_bai_14_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ thực hành kỹ thuật Rải Hợp Âm (Arpeggio).", "highlight": -1},
-		{"action": "speak", "text": "Các nốt nhạc sẽ xuất hiện liên tiếp nhau rất nhanh. Bạn hãy gảy lướt từ ngón giữa sang ngón cái.", "highlight": -1},
-		{"action": "speak", "text": "Giai điệu vang lên sẽ rất mượt mà và êm ái.", "highlight": -1}
+		{"action": "speak", "text": "Trước khi học hợp âm ba nốt, chúng ta sẽ làm quen với song âm.", "highlight": -1},
+		{"action": "speak", "text": "Song âm là khi hai dây được gảy cùng một lúc. Đây là bước chuyển tiếp giữa việc gảy một dây và gảy hợp âm.", "highlight": -1},
+		{"action": "speak", "text": "Khi chơi song âm, em hãy sử dụng ngón cái và ngón trỏ của tay phải. Đặt mỗi ngón lên một dây, sau đó gảy đồng thời để hai âm thanh vang lên cùng lúc.", "highlight": -1},
+		{"action": "speak", "text": "Khi đã quen với song âm, em sẽ dễ dàng học các hợp âm ba nốt ở những bài tiếp theo.", "highlight": -1}
 	],
 	"dan_tranh_level_6_bai_15_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với thử thách Boss cuối cùng của Đàn Tranh: Đệm Hát Dân Ca!", "highlight": -1},
-		{"action": "speak", "text": "Bạn sẽ phải vận dụng toàn bộ kỹ thuật Rải Hợp Âm để đệm một đoạn nhạc dài liên tục.", "highlight": -1},
-		{"action": "speak", "text": "Hãy hít một hơi thật sâu, thả lỏng cổ tay và sẵn sàng nào!", "highlight": -1}
+		{"action": "speak", "text": "Bây giờ chúng ta sẽ học hợp âm đầu tiên, đó là hợp âm Đô trưởng.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm Đô trưởng gồm ba nốt: Đô, Mi và Sol. Em hãy đặt ngón cái lên dây Đô, ngón trỏ lên dây Mi và ngón giữa lên dây Sol.", "highlight": -1},
+		{"action": "speak", "text": "Sau đó gảy cả ba dây cùng một lúc. Hãy nhớ rằng chúng ta không gảy từng dây riêng lẻ, mà gảy đồng thời để tạo thành một hợp âm hoàn chỉnh.", "highlight": -1}
+	],
+	"dan_tranh_level_6_bai_16_practice": [
+		{"action": "speak", "text": "Tiếp theo là hợp âm La thứ. Hợp âm này gồm ba nốt: La, Đô và Mi.", "highlight": -1},
+		{"action": "speak", "text": "Cách đặt tay giống như hợp âm Đô trưởng, chỉ thay đổi vị trí các dây.", "highlight": -1},
+		{"action": "speak", "text": "Sau bài này, em sẽ biết hai hợp âm cơ bản thường gặp nhất trên đàn tranh.", "highlight": -1}
+	],
+	"dan_tranh_level_6_bai_17_practice": [
+		{"action": "speak", "text": "Trong một bản nhạc, hợp âm sẽ thay đổi theo từng câu để phù hợp với giai điệu.", "highlight": -1},
+		{"action": "speak", "text": "Hôm nay, chúng ta sẽ luyện chuyển giữa hợp âm Đô trưởng và hợp âm La thứ.", "highlight": -1},
+		{"action": "speak", "text": "Ban đầu, em hãy chuyển thật chậm để nhớ vị trí các dây. Khi đã quen, em có thể tăng dần tốc độ.", "highlight": -1}
 	]
 }
 
@@ -208,7 +217,7 @@ func _ready():
 		for i in range(17):
 			d_arr.append(1.5)
 		lesson_durations.assign(d_arr)
-	elif current_lesson_id == "dan_tranh_level_5_bai_11_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice" or lesson_sheet.is_empty():
+	elif current_lesson_id == "dan_tranh_level_5_bai_11_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice" or PracticeRoom.current_song_sheet.is_empty():
 		lesson_sheet.assign(SU_THANH_HOA_SHEET)
 		lesson_durations.assign(SU_THANH_HOA_DURATIONS)
 	else:
@@ -451,29 +460,48 @@ func _start_practice_single():
 	
 
 	unique_practice_notes.clear()
-	for note in lesson_sheet:
-		if not unique_practice_notes.has(note):
-			unique_practice_notes.append(note)
+	if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+		unique_practice_notes = lesson_sheet.duplicate()
+	else:
+		for note in lesson_sheet:
+			if not unique_practice_notes.has(note):
+				unique_practice_notes.append(note)
 			
 	single_practice_idx = 0
 	_schedule_next_single_note()
 
 func _schedule_next_single_note():
 	if single_practice_idx >= unique_practice_notes.size():
+		if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+			if ai_audio: ai_audio.speak_vietnamese("Chúc mừng em đã hoàn thành bài học mở đầu về hợp âm!")
+			_finish_practice()
+			return
+			
 		if ai_audio: ai_audio.speak_vietnamese("Rất tuyệt! Bây giờ chúng ta sẽ luyện tập với bản nhạc.")
 		current_state = State.INTRO
 		get_tree().create_timer(3.0).timeout.connect(_start_practice)
 		return
 		
-	var note_name = unique_practice_notes[single_practice_idx]
-	var string_idx = NOTE_TO_STRING.get(note_name, 0)
+	var raw_note_name = unique_practice_notes[single_practice_idx]
+	var notes = raw_note_name.split("+")
+	var text = ""
 	
-	var text = "Hãy gảy dây thứ %d, nốt %s." % [string_idx + 1, note_name]
+	if current_lesson_id == "dan_tranh_level_6_bai_13_practice" and notes.size() > 1:
+		text = "Đây là một hợp âm. Em hãy thử gảy ba dây cùng lúc để cảm nhận sự khác biệt."
+	elif notes.size() > 1:
+		text = "Hãy gảy hợp âm: " + raw_note_name.replace("+", " và ")
+	else:
+		var string_idx = NOTE_TO_STRING.get(raw_note_name, 0)
+		text = "Hãy gảy dây thứ %d, nốt %s." % [string_idx + 1, raw_note_name]
+		
 	speech_text.text = text
 	if ai_audio:
 		ai_audio.speak_vietnamese(text)
 		
-	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": C_JADE}])
+	var staff_notes = []
+	for n in notes:
+		staff_notes.append({"note": "ZT_" + n, "x": staff_display.hit_line_x, "color": C_JADE})
+	staff_display.set_notes(staff_notes)
 
 func _process_practice_single(delta: float) -> void:
 	wrong_note_cooldown = max(0.0, wrong_note_cooldown - delta)
@@ -497,9 +525,9 @@ func _process_practice_single(delta: float) -> void:
 	else:
 		if single_practice_idx >= unique_practice_notes.size(): return
 		target_note = unique_practice_notes[single_practice_idx]
-		target_string_idx = NOTE_TO_STRING.get(target_note, 0)
+		target_string_idx = NOTE_TO_STRING.get(target_note.split("+")[0], 0)
 		
-	var target_hz = NOTE_FREQS.get(target_note, 0.0)
+	var target_hz = NOTE_FREQS.get(target_note, 0.0) if "+" not in target_note else NOTE_FREQS.get(target_note.split("+")[0], 0.0)
 	
 	# 1. Check if user played correct pitch
 	if _check_mic_pitch(target_hz, delta, target_note):
@@ -571,16 +599,26 @@ func _on_intro_note_correct(note_name: String) -> void:
 	)
 
 
-func _on_single_note_correct(note_name: String) -> void:
+func _on_single_note_correct(raw_note_name: String) -> void:
 	current_state = State.INTRO
-	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.2)}])
-	var string_idx = NOTE_TO_STRING.get(note_name, 0)
+	var notes = raw_note_name.split("+")
+	var staff_notes = []
 	zither_board.call("clear_lesson_markers")
-	zither_board.call("set_lesson_marker", string_idx, note_name, 2)
+	
+	for n in notes:
+		staff_notes.append({"note": "ZT_" + n, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.2)})
+		var string_idx = NOTE_TO_STRING.get(n, 0)
+		zither_board.call("set_lesson_marker", string_idx, n, 2)
+		
+	staff_display.set_notes(staff_notes)
 	
 	var mic_lbl = feedback_area.get_node_or_null("MicStatus") as Label
 	if mic_lbl:
-		mic_lbl.text = "Chính xác! Nốt %s (Dây %d)" % [note_name, string_idx + 1]
+		if notes.size() > 1:
+			mic_lbl.text = "Chính xác hợp âm: %s" % raw_note_name.replace("+", " ")
+		else:
+			var string_idx = NOTE_TO_STRING.get(raw_note_name, 0)
+			mic_lbl.text = "Chính xác! Nốt %s (Dây %d)" % [raw_note_name, string_idx + 1]
 		mic_lbl.add_theme_color_override("font_color", Color(0.18, 0.62, 0.42))
 		
 	if ai_audio:
@@ -613,10 +651,18 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 					_on_wrong_note_played(note_name, idx, target_note, highlight_idx)
 		else:
 			var target_note = unique_practice_notes[single_practice_idx]
-			var target_idx = NOTE_TO_STRING.get(target_note, 0)
-			if note_name == target_note:
-				_on_single_note_correct(note_name)
+			var is_correct = false
+			if "+" in target_note:
+				if note_name in target_note.split("+"):
+					is_correct = true
 			else:
+				if note_name == target_note:
+					is_correct = true
+					
+			if is_correct:
+				_on_single_note_correct(target_note)
+			else:
+				var target_idx = NOTE_TO_STRING.get(target_note.split("+")[0], 0)
 				_on_wrong_note_played(note_name, idx, target_note, target_idx)
 
 	elif current_state == State.PRACTICE:
@@ -682,13 +728,12 @@ func _start_practice():
 	
 	var cur_beat: float = 0.0
 	for i in range(lesson_sheet.size()):
-		var note_name = lesson_sheet[i]
+		var raw_note_name = lesson_sheet[i]
 		var dur = lesson_durations[i] if i < lesson_durations.size() else 1.0
 		
-		if note_name != "Rest" and note_name != "-":
-			var string_idx = NOTE_TO_STRING.get(note_name, 0)
+		if raw_note_name != "Rest" and raw_note_name != "-":
+			var notes_in_chord = raw_note_name.split("+")
 			var tail_len = max(0.0, (dur - 0.5) * distance_per_beat)
-			
 			var is_demo_lesson = (current_lesson_id == "dan_tranh_level_1_bai_3_practice")
 			var missing = true
 			var note_color = C_JADE
@@ -699,17 +744,21 @@ func _start_practice():
 				
 			var cue_name = current_song_cues[i] if i < current_song_cues.size() else ""
 			
-			active_falling_notes.append({
-				"note": "ZT_" + note_name,
-				"x": start_x + cur_beat * distance_per_beat,
-				"color": note_color,
-				"target_string": string_idx,
-				"hit": false,
-				"duration": dur,
-				"tail": tail_len,
-				"is_missing": missing,
-				"cue": cue_name
-			})
+			for single_note in notes_in_chord:
+				var string_idx = NOTE_TO_STRING.get(single_note, 0)
+				active_falling_notes.append({
+					"note": "ZT_" + single_note,
+					"x": start_x + cur_beat * distance_per_beat,
+					"color": note_color,
+					"target_string": string_idx,
+					"hit": false,
+					"duration": dur,
+					"tail": tail_len,
+					"is_missing": missing,
+					"cue": cue_name,
+					"chord_group_id": i,
+					"raw_chord_name": raw_note_name
+				})
 		cur_beat += dur
 
 func _process_practice(delta):
@@ -763,15 +812,24 @@ func _process_practice(delta):
 				
 				var target_hz = NOTE_FREQS.get(clean_note, 0.0)
 				
-				# 1. Check if user played correct pitch and duration
-				if _check_mic_pitch(target_hz, delta, clean_note):
+				var raw_chord_name = note.get("raw_chord_name", clean_note)
+				if _check_mic_pitch(target_hz, delta, raw_chord_name):
 
-					note["color"] = Color(0.2, 0.8, 0.2)
-					note["hit"] = true
-					zither_board.call("pluck", s_idx)
+					var chord_group = note.get("chord_group_id", -1)
+					if chord_group != -1:
+						for other_note in active_falling_notes:
+							if other_note.get("chord_group_id", -1) == chord_group:
+								other_note["color"] = Color(0.2, 0.8, 0.2)
+								other_note["hit"] = true
+								zither_board.call("pluck", other_note["target_string"])
+					else:
+						note["color"] = Color(0.2, 0.8, 0.2)
+						note["hit"] = true
+						zither_board.call("pluck", s_idx)
+						
 					zither_board.call("clear_lesson_markers")
 					zither_board.call("set_lesson_marker", s_idx, "Chính xác!", 2)
-					if ai_audio: ai_audio.speak_vietnamese("Tốt lắm! Chính xác nốt %s." % clean_note)
+					if ai_audio: ai_audio.speak_vietnamese("Tốt lắm! Chính xác hợp âm." if chord_group != -1 else "Tốt lắm! Chính xác nốt %s." % clean_note)
 					wrong_note_time = 0.0
 					consecutive_hits += 1
 					consecutive_misses = 0
@@ -784,7 +842,15 @@ func _process_practice(delta):
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 						var det_name = note_info.get("note_name", "None")
 						var det_idx = note_info.get("string_index", -1)
-						if det_name != "None" and det_name != clean_note and det_idx != s_idx and det_idx >= 0:
+						var is_wrong = true
+						if "+" in raw_chord_name:
+							if det_name in raw_chord_name.split("+"):
+								is_wrong = false
+						else:
+							if det_name == clean_note or det_idx == s_idx:
+								is_wrong = false
+								
+						if det_name != "None" and is_wrong and det_idx >= 0:
 
 							wrong_note_time += delta
 							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
@@ -823,7 +889,7 @@ func _process_practice(delta):
 	staff_display.set_notes(active_falling_notes)
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
-	if not analyzer or target_hz <= 0.0:
+	if not analyzer:
 		time_correct = 0.0
 		return false
 
@@ -833,10 +899,23 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 		time_correct = 0.0
 		return false
 
-	# Match the measured fundamental itself. Never normalize by octave: Sol1,
-	# Sol2, Sol3 and Sol4 are different strings and must not pass each other.
-	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
-	if cents_error > 25.0:
+	var is_match = false
+	if "+" in _target_note_name:
+		var notes = _target_note_name.split("+")
+		for n in notes:
+			var freq = NOTE_FREQS.get(n, 0.0)
+			if freq > 0.0:
+				var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
+				if cents_error <= 25.0:
+					is_match = true
+					break
+	else:
+		if target_hz > 0.0:
+			var cents_error = absf(1200.0 * log(pitch / target_hz) / log(2.0))
+			if cents_error <= 25.0:
+				is_match = true
+				
+	if not is_match:
 		time_correct = 0.0
 		return false
 

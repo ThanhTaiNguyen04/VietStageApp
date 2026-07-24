@@ -188,36 +188,71 @@ const LEVELS := [
 	},
 	{
 		"level": 6,
-		"title": "HỌC & LUYỆN TẬP HỢP ÂM ĐÀN TRANH",
-		"sessions": "Session 13–14",
-		"objective": "Thực hành gảy hợp âm, hợp âm rải (arpeggio) và đệm hòa âm cơ bản trên Đàn Tranh 17 dây.",
+		"title": "HỢP ÂM CƠ BẢN",
+		"sessions": "Bài 1-5",
+		"objective": "Làm quen với khái niệm hợp âm, thực hành gảy song âm, hợp âm Đô trưởng, La thứ và chuyển hợp âm.",
 		"lessons": [
 			{
 				"number": 13,
-				"title": "Làm quen Song Âm & Hợp âm cơ bản",
-				"video": "",
-				"practice": "Thực hành gảy lướt (Rải) các cặp Song âm Quãng 8 và Quãng 5.",
-				"practice_title": "Luyện tập Song Âm (Quãng 8 & 5)",
-				"sheet": ["Sol1", "Sol2", "La1", "La2", "Đô2", "Đô3", "Sol1", "Rê2", "La1", "Mi2", "Sol1", "Đô2", "Mi2"],
-				"cues": ["triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "square", "circle"]
+				"title": "Bài 1: Hợp âm là gì?",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
+				"practice_title": "Luyện tập: Hợp âm là gì",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
 			},
 			{
 				"number": 14,
-				"title": "Thực hành Hòa âm Đàn Tranh",
-				"video": "",
-				"practice": "Chơi một đoạn nhạc đệm sử dụng kỹ thuật Arpeggio.",
-				"practice_title": "Luyện tập Hòa âm",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3", "Đô2", "Đô3", "Mi3", "Sol3", "Sol1", "Sol2", "La2", "Đô3"],
-				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
+				"title": "Bài 2: Song âm (2 dây)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice_title": "Luyện tập: Song âm",
+				"sheet": [
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
 			},
 			{
 				"number": 15,
-				"title": "Boss Stage – Đệm Hát Dân Ca",
-				"video": "",
-				"practice": "Vận dụng toàn bộ kỹ thuật Hợp âm và Arpeggio để đệm một đoạn nhạc Dân Ca dài.",
-				"practice_title": "Boss Stage - Đệm Dân Ca",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Đô3", "Mi3", "Sol1", "Sol2", "Rê3", "La2", "Đô2", "Đô3", "Mi3", "Sol3", "La1", "La2", "Rê3", "Mi3", "Sol1", "Sol2", "Đô3", "La2"],
-				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
+				"title": "Bài 3: Hợp âm Đô trưởng (C)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
+				"practice_title": "Luyện tập: Đô trưởng",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
+					"Đô2", "Đô2+Mi2+Sol2", "Đô2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+			},
+			{
+				"number": 16,
+				"title": "Bài 4: Hợp âm La thứ (Am)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
+				"practice_title": "Luyện tập: La thứ",
+				"sheet": [
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
+			},
+			{
+				"number": 17,
+				"title": "Bài 5: Chuyển hợp âm",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Chuyển mượt mà giữa Đô trưởng (C) và La thứ (Am).",
+				"practice_title": "Luyện tập: Chuyển hợp âm",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
 			}
 		]
 	}
