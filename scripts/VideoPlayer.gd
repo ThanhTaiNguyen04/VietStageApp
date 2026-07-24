@@ -48,6 +48,7 @@ var intro_exit_btn : Button
 var intro_overlay : Control
 var intro_pbar : ProgressBar
 var intro_count_lbl : Label
+var sp_skip_btn : Button
 
 const SUBTITLES_DAN_TRANH := [
 	{"start": 0.0,  "end": 2.5,  "text": "Xin chào bạn! Tôi là giảng viên, người đồng hành hướng dẫn nhạc cụ truyền thống của bạn tại VietStage."},
@@ -151,10 +152,45 @@ func _ready() -> void:
 
 	_build_theme()
 	_connect_buttons()
+	_playing = true
 	_update_play_state()
 	
 	if inst == "dan_bau" or inst == "dan_tranh":
 		_setup_simply_piano_layout()
+		
+	if custom_video_path == "res://Video/DanBauDoan12Bai1.ogv":
+		top_row.visible = false
+		control_row.visible = false
+		footer_row.visible = false
+		video_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		
+		# Loại bỏ viền trắng để video full màn hình
+		if card_m:
+			card_m.add_theme_constant_override("margin_left", 0)
+			card_m.add_theme_constant_override("margin_right", 0)
+			card_m.add_theme_constant_override("margin_top", 0)
+			card_m.add_theme_constant_override("margin_bottom", 0)
+		player_card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		video_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		var frame_m = video_frame.get_node_or_null("FrameM")
+		if frame_m:
+			frame_m.add_theme_constant_override("margin_left", 0)
+			frame_m.add_theme_constant_override("margin_right", 0)
+			frame_m.add_theme_constant_override("margin_top", 0)
+			frame_m.add_theme_constant_override("margin_bottom", 0)
+		
+		# Chuyển nền tổng thể thành đen
+		var bg_node := get_node_or_null("BG") as ColorRect
+		if bg_node: bg_node.color = Color.BLACK
+		var screen_bg = screen_anch.get_node_or_null("ScreenBG") as ColorRect
+		if screen_bg: screen_bg.color = Color.BLACK
+			
+		var media_aspect = screen_anch.get_node_or_null("MediaAspect")
+		if media_aspect:
+			media_aspect.ratio = 16.0 / 9.0
+			media_aspect.stretch_mode = AspectRatioContainer.STRETCH_COVER
+			
+		video_stream_player.expand = true
 		
 	if custom_video_sequence.size() > 0:
 		top_row.visible = false
@@ -502,26 +538,45 @@ func _update_play_state() -> void:
 	_create_sequence_modal()
 
 func _va_success_prompt() -> void:
-	var inst := InstrumentSelect.selected_instrument
+	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
 	var btn_color_name := "màu vàng"
 	var text_col := C_RED_SON
 	if inst == "sao_truc":
 		btn_color_name = "màu xanh"
 		text_col = C_JADE
 	elif inst == "dan_bau":
-		btn_color_name = "màu tím"
+		btn_color_name = "nút bấm bên dưới"
 		text_col = Color(0.38, 0.25, 0.60, 1.0)
 		
-	sub_label.text = "Tuyệt vời! Bài học hoàn thành. Hãy bấm nút 'Hoàn Thành Video' %s để mở khóa thực hành!" % btn_color_name
+	sub_label.text = "Tuyệt vời! Bài học hoàn thành. Hãy bấm nút 'HOÀN THÀNH BÀI HỌC' bên dưới để quay lại lộ trình!"
 	sub_label.add_theme_color_override("font_color", text_col)
 	
 	# Load the happy virtual artist texture when completed
 	linh_rect.texture = load("res://assets/textures/mai_happy.jpg")
 	
-	# Flash the complete button
-	var ct := create_tween()
-	ct.tween_property(complete_btn, "scale", Vector2(1.08, 1.08), 0.15).set_trans(Tween.TRANS_BACK)
-	ct.tween_property(complete_btn, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK)
+	if is_instance_valid(sp_skip_btn):
+		sp_skip_btn.text = "✓ HOÀN THÀNH"
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("#2e7d32")
+		sb.corner_radius_top_left = 16
+		sb.corner_radius_top_right = 16
+		sb.corner_radius_bottom_left = 16
+		sb.corner_radius_bottom_right = 16
+		sb.content_margin_left = 24
+		sb.content_margin_right = 24
+		sb.content_margin_top = 12
+		sb.content_margin_bottom = 12
+		sp_skip_btn.add_theme_stylebox_override("normal", sb)
+		sp_skip_btn.add_theme_stylebox_override("hover", sb)
+		sp_skip_btn.add_theme_color_override("font_color", Color.WHITE)
+		sp_skip_btn.add_theme_font_size_override("font_size", 28)
+		if sp_skip_btn.pressed.is_connected(_on_sequence_next):
+			sp_skip_btn.pressed.disconnect(_on_sequence_next)
+		if not sp_skip_btn.pressed.is_connected(_on_complete):
+			sp_skip_btn.pressed.connect(_on_complete)
+			
+	if is_instance_valid(complete_btn):
+		complete_btn.text = "✓ Hoàn Thành & Quay Lại"
 
 func _on_complete() -> void:
 	video_stream_player.stop()
@@ -539,15 +594,18 @@ func _on_complete() -> void:
 		if lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
 			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
-		elif lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
-			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
-			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
+		elif inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
+			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
 		else:
 			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
 
 func _go_back() -> void:
 	video_stream_player.stop()
+	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
+	var lesson_id := SecureDataManager.active_lesson_id
+	if inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
+		SecureDataManager.complete_lesson("dan_bau", lesson_id, 3)
 	custom_video_path = ""
 	custom_subtitles = []
 	custom_video_sequence = []
@@ -555,8 +613,11 @@ func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		var target := "res://scenes/LessonDanTranh.tscn" if SecureDataManager.active_lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
-		get_tree().change_scene_to_file(target)
+		if inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
+			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
+		else:
+			var target := "res://scenes/LessonDanTranh.tscn" if lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
+			get_tree().change_scene_to_file(target)
 	)
 
 func _style_outlined_btn(btn: Button, radius: int, theme_color: Color = C_RED_SON, accent_color: Color = C_GOLD) -> void:
@@ -941,6 +1002,7 @@ func _setup_intro_layout() -> void:
 	sp_skip.pressed.connect(_on_sequence_next)
 	_make_button_bouncy(sp_skip)
 	intro_overlay.add_child(sp_skip)
+	sp_skip_btn = sp_skip
 
 	var tr_hbox = HBoxContainer.new()
 	tr_hbox.set_anchors_preset(Control.PRESET_TOP_RIGHT)

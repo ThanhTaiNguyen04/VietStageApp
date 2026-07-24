@@ -1,17 +1,31 @@
 extends Control
 
 const NOTE_POSITIONS = {
+	"Đồ": -1.0,
+	"Đổ": -1.0,
 	"Đô": -1.0,
+	"Rề": -0.5,
 	"Rê": -0.5,
+	"Mì": 0.0,
 	"Mi": 0.0,
+	"Fà": 0.5,
 	"Fa": 0.5,
+	"Sò": 1.0,
 	"Sol": 1.0,
+	"Là": 1.5,
 	"La": 1.5,
+	"Sì": 2.0,
 	"Si": 2.0,
+	"Đố": 2.5,
 	"Đô2": 2.5,
+	"Rế": 3.0,
 	"Rê2": 3.0,
+	"Mí": 3.5,
 	"Mi2": 3.5,
+	"Sól": 4.5,
 	"Sol2": 4.5,
+	"Lá": 5.0,
+	"La2": 5.0,
 	
 	# Dan Tranh specific mappings (ZT_)
 	"ZT_Sol1": -2.0,
@@ -34,7 +48,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 90.0
+var line_spacing = 85.0
 var clef_tex: Texture2D
 
 func _ready():
@@ -92,20 +106,20 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var pos_idx = NOTE_POSITIONS[note_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
 	
-	var note_width = line_spacing * 1.2
-	var note_height = line_spacing * 0.85
+	var note_width = line_spacing * 1.35
+	var note_height = line_spacing * 0.95
 
 	# Draw ledger lines if outside staff
 	if pos_idx < 0:
 		var ledgers = int(floor(-pos_idx))
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 + i) * line_spacing
-			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
+			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 	elif pos_idx > 4:
 		var ledgers = int(floor(pos_idx - 4))
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 - 4 - i) * line_spacing
-			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
+			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
 	# Draw duration tail
 	if tail_w > 0.0:
@@ -123,7 +137,7 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
 	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
 	
-	# Draw fingering cues inside the note if available
+	# Draw fingering cues inside the note if available, else draw text
 	if cue != "":
 		var center_pt = Vector2(note_x, note_y)
 		var symbol_color = Color.WHITE
@@ -138,6 +152,14 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var p2 = center_pt + Vector2(-sz, sz * 0.8)
 			var p3 = center_pt + Vector2(sz, sz * 0.8)
 			draw_polygon(PackedVector2Array([p1, p2, p3]), PackedColorArray([symbol_color, symbol_color, symbol_color]))
+	else:
+		# Draw bold note name text inside note head
+		var font = ThemeDB.fallback_font
+		if font:
+			var font_size = int(line_spacing * 0.48)
+			var str_size = font.get_string_size(note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+			var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
+			draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 	
 	# Draw stem
 	var stem_len = line_spacing * 3.0
