@@ -45,6 +45,7 @@ var single_practice_idx: int = 0
 var unique_practice_notes: Array[String] = []
 
 var wrong_note_cooldown: float = 0.0
+var mic_cooldown: float = 0.0
 
 var consecutive_hits: int = 0
 
@@ -762,11 +763,18 @@ func _start_practice():
 		cur_beat += dur
 
 func _process_practice(delta):
+	if active_falling_notes.size() == 0 and practice_idx >= lesson_sheet.size():
+		_finish_practice()
+		return
+		
+	if mic_cooldown > 0.0:
+		mic_cooldown -= delta
+
 	practice_time += delta
 	var hit_x = staff_display.hit_line_x
 	var scroll_speed = 350.0
 	
-	var is_wait_mode = (current_lesson_id == "dan_tranh_level_1_bai_1_practice")
+	var is_wait_mode = (current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id.begins_with("dan_tranh_level_6"))
 	
 	# In Wait Mode, check if the first un-hit note has reached the hit line
 	var freeze_unhit_notes = false
@@ -813,7 +821,7 @@ func _process_practice(delta):
 				var target_hz = NOTE_FREQS.get(clean_note, 0.0)
 				
 				var raw_chord_name = note.get("raw_chord_name", clean_note)
-				if _check_mic_pitch(target_hz, delta, raw_chord_name):
+				if mic_cooldown <= 0.0 and _check_mic_pitch(target_hz, delta, raw_chord_name):
 
 					var chord_group = note.get("chord_group_id", -1)
 					if chord_group != -1:
@@ -833,10 +841,11 @@ func _process_practice(delta):
 					wrong_note_time = 0.0
 					consecutive_hits += 1
 					consecutive_misses = 0
+					mic_cooldown = 0.4
 					continue
 					
 				# 2. Check if user played WRONG note (requires 0.18s debounce hold time)
-				if analyzer and wrong_note_cooldown <= 0.0:
+				if analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
 					var db = analyzer.current_amplitude_db
 					if db > -28.0:
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
@@ -895,25 +904,62 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 	var pitch: float = analyzer.current_pitch
 	var db: float = analyzer.current_amplitude_db
-	if db <= analyzer.volume_threshold_db or pitch <= 0.0 or not analyzer.current_pitch_is_reliable:
+	var is_poly = "+" in _target_note_name
+	
+	if db <= analyzer.volume_threshold_db:
+		time_correct = 0.0
+		return false
+		
+	if not is_poly and (pitch <= 0.0 or not analyzer.current_pitch_is_reliable):
 		time_correct = 0.0
 		return false
 
 	var is_match = false
-	if "+" in _target_note_name:
-		var notes = _target_note_name.split("+")
-		for n in notes:
-			var freq = NOTE_FREQS.get(n, 0.0)
-			if freq > 0.0:
-				var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-				if cents_error <= 25.0:
-					is_match = true
-					break
+	if is_poly:
+		# Require an overall volume spike to process chords (ignores room noise entirely)
+		if db < -40.0:
+			time_correct = 0.0
+			return false
+			
+		if analyzer and analyzer.get("_spectrum") != null:
+			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
+			var notes = _target_note_name.split("+")
+			var all_detected = true
+			for n in notes:
+				var freq = NOTE_FREQS.get(n, 0.0)
+				if freq > 0.0:
+					# Check both fundamental and 1st harmonic (octave) because Dan Tranh's low notes have weak fundamentals
+					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.96, freq * 1.04).length()
+					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.96, freq * 2.04).length()
+					var max_mag = max(mag1, mag2)
+					
+					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
+					
+					# Slightly tightened threshold to prevent sympathetic resonance from falsely triggering chords
+					if freq_db < -42.0:
+						all_detected = false
+						break
+			if all_detected:
+				is_match = true
+		else:
+			var notes = _target_note_name.split("+")
+			for n in notes:
+				var freq = NOTE_FREQS.get(n, 0.0)
+				if freq > 0.0:
+					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
+					if cents_error <= 25.0:
+						is_match = true
+						break
 	else:
 		if target_hz > 0.0:
 			var cents_error = absf(1200.0 * log(pitch / target_hz) / log(2.0))
 			if cents_error <= 25.0:
 				is_match = true
+			else:
+				# Allow 1st harmonic (octave equivalence) for weak fundamentals
+				var harmonic_error = absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
+				if harmonic_error <= 25.0:
+					is_match = true
 				
 	if not is_match:
 		time_correct = 0.0

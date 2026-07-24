@@ -199,6 +199,15 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	if not _pitch_candidates.is_empty():
 		var previous := _pitch_candidates[_pitch_candidates.size() - 1]
 		var jump_cents := absf(1200.0 * log(detected_pitch / previous) / log(2.0))
+		
+		# Normalize octave jumps (harmonic interference typical of Dan Tranh low notes)
+		if jump_cents > 1150.0 and jump_cents < 1250.0:
+			if detected_pitch > previous:
+				detected_pitch /= 2.0
+			else:
+				detected_pitch *= 2.0
+			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
+			
 		if jump_cents > PITCH_JUMP_CENTS:
 			_pitch_candidates.clear()
 

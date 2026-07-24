@@ -11,7 +11,6 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
-var selected_level: int = 1
 var is_unlocked: bool = true
 
 # ─── @onready Refs

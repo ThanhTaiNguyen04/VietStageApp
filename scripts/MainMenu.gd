@@ -115,21 +115,9 @@ func _process(delta: float) -> void:
 	bg_canvas.queue_redraw()
 	roadmap_content.queue_redraw()
 	
-	# Ép chặt tọa độ Y để các thẻ Đàn Bầu tạo thành một đường thẳng ngang hoàn hảo
-	# Cách này chống lại việc Godot tự reset vị trí layout sau hàm _ready
 	var straight_instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if straight_instrument == "dan_bau" or straight_instrument == "dan_tranh" or straight_instrument == "sao_truc":
-		card_soloist_skills.position.y = 275
-		card_chords_skills.position.y = 275
-		card_pop_chords.position.y = 275
-		card_classical.position.y = 275
-		
-		# Khóa luôn trục X sau 1s để không ảnh hưởng đến animation trượt vào lúc đầu
-		if _time > 1.0:
-			card_soloist_skills.position.x = 1060
-			card_chords_skills.position.x = 1570
-			card_pop_chords.position.x = 2080
-			card_classical.position.x = 2590
+	# Removed hack because _on_viewport_size_changed now handles it properly
+
 
 # ─── Drawing Callbacks ────────────────────────────────────────────────────────
 func _setup_drawing_callbacks() -> void:
@@ -789,7 +777,9 @@ func _build_roadmap_cards() -> void:
 		basic_pct = stats["pct"]
 	else:
 		is_basic_completed = SecureDataManager.is_lesson_completed(instrument, "Node1")
-		basic_stars = SecureDataManager.data.stars[instrument].get("Node1", 0)
+		var stars_dict = SecureDataManager.data.get("stars", {})
+		var inst_stars = stars_dict.get(instrument, {})
+		basic_stars = inst_stars.get("Node1", 0)
 		basic_pct = 100 if is_basic_completed else 0
 
 	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
@@ -846,8 +836,10 @@ func _build_roadmap_cards() -> void:
 			var stats := _get_dan_bau_card_status("essentials")
 			_set_details_text(ess_details, 2, stats["stars"], stats["pct"], false)
 		else:
-			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
-			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
+			var stars_dict = SecureDataManager.data.get("stars", {})
+			var inst_stars = stars_dict.get(instrument, {})
+			var stars_n2: int = inst_stars.get("Node2", 0)
+			var stars_n3: int = inst_stars.get("Node3", 0)
 			var total_stars = stars_n2 + stars_n3
 			var pct = 0.0
 			if SecureDataManager.is_lesson_completed(instrument, "Node2"): pct += 50.0
@@ -1333,50 +1325,80 @@ func _on_viewport_size_changed() -> void:
 		xp_pill.get_node("XPMargin").add_theme_constant_override("margin_right", 22)
 		
 	# Cards scaling
-	var card_w := 300.0 if is_mobile else 460.0
-	var un_card_w := 200.0 if is_mobile else 280.0
-	var gap := 40.0 if is_mobile else 90.0
+	var card_w: float = 300.0 if is_mobile else 460.0
+	var un_card_w: float = 200.0 if is_mobile else 280.0
+	var gap: float = 40.0 if is_mobile else 90.0
 	
-	var x_basic := 40.0
-	var x_ess   := x_basic + card_w + gap
-	var x_un    := x_ess + card_w + gap
-	var x_sk    := x_un + un_card_w + gap
-	var x_end   := x_sk + card_w + gap
-	var total_w := x_end + card_w + 40.0
-	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if instrument == "dan_tranh":
-		total_w = 2590.0 + card_w + 120.0
+	var x_basic: float = 40.0
+	var instrument: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	
-	var y_top := 40.0 if is_mobile else 95.0
-	var y_mid := 180.0 if is_mobile else 275.0
-	var y_bot := 320.0 if is_mobile else 455.0
-	var roadmap_h := 520.0 if is_mobile else 760.0
+	var y_top: float = 40.0 if is_mobile else 95.0
+	var y_mid: float = 180.0 if is_mobile else 275.0
+	var y_bot: float = 320.0 if is_mobile else 455.0
+	var roadmap_h: float = 520.0 if is_mobile else 760.0
+	var x_un: float = 0.0
 	
-	roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
-	
-	card_basic.position = Vector2(x_basic, y_mid)
-	card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
-	
-	card_essentials.position = Vector2(x_ess, y_mid)
-	card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
-	
-	card_soloist_unlock.position = Vector2(x_un, y_top)
-	card_soloist_unlock.custom_minimum_size = Vector2(un_card_w, card_soloist_unlock.custom_minimum_size.y)
-	
-	card_chords_unlock.position = Vector2(x_un, y_bot)
-	card_chords_unlock.custom_minimum_size = Vector2(un_card_w, card_chords_unlock.custom_minimum_size.y)
-	
-	card_soloist_skills.position = Vector2(x_sk, y_top)
-	card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
-	
-	card_chords_skills.position = Vector2(x_sk, y_bot)
-	card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
-	
-	card_classical.position = Vector2(x_end, y_top)
-	card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
-	
-	card_pop_chords.position = Vector2(x_end, y_bot)
-	card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
+	if instrument == "dan_bau" or instrument == "sao_truc" or instrument == "trong_chau" or instrument == "dan_tranh":
+		var x_ess: float = x_basic + card_w + gap
+		var x_sk: float = x_ess + card_w + gap
+		var x_ch: float = x_sk + card_w + gap
+		var x_pop: float = x_ch + card_w + gap
+		var x_class: float = x_pop + card_w + gap
+		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
+		
+		var total_w: float = x_class + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
+		
+		card_basic.position = Vector2(x_basic, y_mid)
+		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
+		
+		card_essentials.position = Vector2(x_ess, y_mid)
+		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
+		
+		card_soloist_skills.position = Vector2(x_sk, y_mid)
+		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
+		
+		card_chords_skills.position = Vector2(x_ch, y_mid)
+		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
+		
+		card_pop_chords.position = Vector2(x_pop, y_mid)
+		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
+		
+		card_classical.position = Vector2(x_class, y_mid)
+		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
+	else:
+		var x_ess: float = x_basic + card_w + gap
+		x_un = x_ess + card_w + gap
+		var x_sk: float = x_un + un_card_w + gap
+		var x_end: float = x_sk + card_w + gap
+		var total_w: float = 2590.0 + card_w + 120.0
+		
+		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
+		
+		card_basic.position = Vector2(x_basic, y_mid)
+		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
+		
+		card_essentials.position = Vector2(x_ess, y_mid)
+		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
+		
+		card_soloist_unlock.position = Vector2(x_un, y_top)
+		card_soloist_unlock.custom_minimum_size = Vector2(un_card_w, card_soloist_unlock.custom_minimum_size.y)
+		
+		card_chords_unlock.position = Vector2(x_un, y_bot)
+		card_chords_unlock.custom_minimum_size = Vector2(un_card_w, card_chords_unlock.custom_minimum_size.y)
+		
+		card_soloist_skills.position = Vector2(x_sk, y_top)
+		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
+		
+		card_chords_skills.position = Vector2(x_sk, y_bot)
+		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
+		
+		card_classical.position = Vector2(x_end, y_top)
+		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
+		
+		card_pop_chords.position = Vector2(x_end, y_bot)
+		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
+
 	
 	roadmap_guide.position = Vector2(x_basic, 80.0 if is_mobile else 180.0)
 	path_soloist_title.position = Vector2(x_un, 10.0 if is_mobile else 40.0)
@@ -1387,8 +1409,8 @@ func _on_viewport_size_changed() -> void:
 
 # ─── Dan Tranh Level Progress ─────────────────────────────────────────────────
 func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
-	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
-	var stars: Dictionary = SecureDataManager.data.stars.get("dan_tranh", {})
+	var completed: Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_tranh", [])
+	var stars: Dictionary = SecureDataManager.data.get("stars", {}).get("dan_tranh", {})
 	var level_data: Dictionary = DAN_TRANH_LESSON_SCRIPT.get_level_data(level_number)
 	var step_ids: Array[String] = []
 	for lesson_value in level_data["lessons"]:
@@ -1417,8 +1439,8 @@ func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
 const LESSON_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 
 func _get_dan_bau_card_status(card_type: String) -> Dictionary:
-	var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-	var stars_dict : Dictionary = SecureDataManager.data.stars.get("dan_bau", {})
+	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_bau", [])
+	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("dan_bau", {})
 	
 	var total_stars := 0
 	var completed_count := 0
@@ -1541,8 +1563,8 @@ func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
 	lbl.add_child(hbox)
 # ─── Sáo Trúc Custom Progression ──────────────────────────────────────────────────
 func _get_sao_truc_card_status(card_type: String) -> Dictionary:
-	var completed : Array = SecureDataManager.data.completed_lessons.get("sao_truc", [])
-	var stars_dict : Dictionary = SecureDataManager.data.stars.get("sao_truc", {})
+	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("sao_truc", [])
+	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("sao_truc", {})
 	
 	var total_stars := 0
 	var completed_count := 0

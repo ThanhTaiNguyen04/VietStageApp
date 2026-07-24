@@ -223,10 +223,10 @@ const LEVELS := [
 				"practice_title": "Luyện tập: Đô trưởng",
 				"sheet": [
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
-					"Đô2", "Đô2+Mi2+Sol2", "Đô2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
 				],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
 			},
 			{
 				"number": 16,
