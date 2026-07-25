@@ -71,15 +71,6 @@ var btn_minigame_mob : Button
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 
-# --- Drag Tracking Variables ---
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
-
 func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
@@ -124,21 +115,9 @@ func _process(delta: float) -> void:
 	bg_canvas.queue_redraw()
 	roadmap_content.queue_redraw()
 	
-	# Ép chặt tọa độ Y để các thẻ Đàn Bầu tạo thành một đường thẳng ngang hoàn hảo
-	# Cách này chống lại việc Godot tự reset vị trí layout sau hàm _ready
 	var straight_instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if straight_instrument == "dan_bau" or straight_instrument == "dan_tranh" or straight_instrument == "sao_truc":
-		card_soloist_skills.position.y = 275
-		card_chords_skills.position.y = 275
-		card_pop_chords.position.y = 275
-		card_classical.position.y = 275
-		
-		# Khóa luôn trục X sau 1s để không ảnh hưởng đến animation trượt vào lúc đầu
-		if _time > 1.0:
-			card_soloist_skills.position.x = 1060
-			card_chords_skills.position.x = 1570
-			card_pop_chords.position.x = 2080
-			card_classical.position.x = 2590
+	# Removed hack because _on_viewport_size_changed now handles it properly
+
 
 # ─── Drawing Callbacks ────────────────────────────────────────────────────────
 func _setup_drawing_callbacks() -> void:
@@ -570,7 +549,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 			var ly := cy + 8.0
 			c.draw_texture_rect(lock_tex, Rect2(lx - 6, ly - 6, 12, 12), false, C_GOLD)
 
-# ─── Top Bar ──────────────────────────────────────────────────────────────────
+# ─── Top Bar ────────────────────────────────────────────────────────────────
 func _build_top_bar() -> void:
 	# Khung avatar: bo tròn hoàn toàn, viền vàng phát sáng
 	var av_s := StyleBoxFlat.new()
@@ -810,7 +789,9 @@ func _build_roadmap_cards() -> void:
 		basic_pct = stats["pct"]
 	else:
 		is_basic_completed = SecureDataManager.is_lesson_completed(instrument, "Node1")
-		basic_stars = SecureDataManager.data.stars[instrument].get("Node1", 0)
+		var stars_dict = SecureDataManager.data.get("stars", {})
+		var inst_stars = stars_dict.get(instrument, {})
+		basic_stars = inst_stars.get("Node1", 0)
 		basic_pct = 100 if is_basic_completed else 0
 
 	var basic_sb := _flat(C_CARD_BG, Color.WHITE, 24)
@@ -883,8 +864,10 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(ess_details, 2, stats["stars"], stats["pct"], false)
 >>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		else:
-			var stars_n2: int = SecureDataManager.data.stars[instrument].get("Node2", 0)
-			var stars_n3: int = SecureDataManager.data.stars[instrument].get("Node3", 0)
+			var stars_dict = SecureDataManager.data.get("stars", {})
+			var inst_stars = stars_dict.get(instrument, {})
+			var stars_n2: int = inst_stars.get("Node2", 0)
+			var stars_n3: int = inst_stars.get("Node3", 0)
 			var total_stars = stars_n2 + stars_n3
 			var pct = 0.0
 			if SecureDataManager.is_lesson_completed(instrument, "Node2"): pct += 50.0
@@ -963,10 +946,12 @@ func _style_circular_play_btn(btn: Button) -> void:
 
 # ─── Animate In ────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
+	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]
 	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
+		item.mouse_filter = Control.MOUSE_FILTER_PASS
 		item.modulate.a = 0.0
 		item.position.x += 40.0
 		var t := create_tween().set_parallel(true)
@@ -989,7 +974,7 @@ func _connect_buttons() -> void:
 
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 1
@@ -1009,7 +994,7 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/VideoPlayer.tscn")
 	)
 	card_essentials.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 2
@@ -1037,7 +1022,7 @@ func _connect_buttons() -> void:
 	)
 	
 	card_soloist_skills.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
@@ -1049,7 +1034,7 @@ func _connect_buttons() -> void:
 	)
 
 	card_chords_skills.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 4
@@ -1061,7 +1046,7 @@ func _connect_buttons() -> void:
 	)
 
 	card_classical.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 6
@@ -1073,7 +1058,7 @@ func _connect_buttons() -> void:
 	)
 
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 5
@@ -1130,14 +1115,21 @@ func _connect_buttons() -> void:
 	play_classical.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 5ea47272736d1865d1f7c912053cc34462e3caaf
 		if inst == "dan_tranh":
 			DAN_TRANH_LESSON_SCRIPT.selected_level = 6
 			_fade_to("res://scenes/LessonDanTranhList.tscn")
 		elif inst == "dan_bau":
+<<<<<<< HEAD
 =======
 		if inst == "dan_bau":
 			LESSON_SCRIPT.selected_level = 5
 >>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
+=======
+			LESSON_SCRIPT.selected_level = 5
+>>>>>>> 5ea47272736d1865d1f7c912053cc34462e3caaf
 			_fade_to("res://scenes/LessonDanBau.tscn")
 		elif inst == "trong_chau":
 			_fade_to("res://scenes/LessonTrongChau.tscn")
@@ -1184,7 +1176,7 @@ func _connect_buttons() -> void:
 	_make_btn_bouncy(unlock_cho)
 
 	avatar_circle.gui_input.connect(func(e: InputEvent) -> void:
-		if e is InputEventMouseButton and e.pressed and not _has_dragged_significantly: _go_account()
+		if e is InputEventMouseButton and not e.pressed and e.button_index == MOUSE_BUTTON_LEFT: _go_account()
 	)
 
 	# Mobile Navigation Connections
@@ -1372,50 +1364,80 @@ func _on_viewport_size_changed() -> void:
 		xp_pill.get_node("XPMargin").add_theme_constant_override("margin_right", 22)
 		
 	# Cards scaling
-	var card_w := 300.0 if is_mobile else 460.0
-	var un_card_w := 200.0 if is_mobile else 280.0
-	var gap := 40.0 if is_mobile else 90.0
+	var card_w: float = 300.0 if is_mobile else 460.0
+	var un_card_w: float = 200.0 if is_mobile else 280.0
+	var gap: float = 40.0 if is_mobile else 90.0
 	
-	var x_basic := 40.0
-	var x_ess   := x_basic + card_w + gap
-	var x_un    := x_ess + card_w + gap
-	var x_sk    := x_un + un_card_w + gap
-	var x_end   := x_sk + card_w + gap
-	var total_w := x_end + card_w + 40.0
-	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if instrument == "dan_tranh":
-		total_w = 2590.0 + card_w + 120.0
+	var x_basic: float = 40.0
+	var instrument: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	
-	var y_top := 40.0 if is_mobile else 95.0
-	var y_mid := 180.0 if is_mobile else 275.0
-	var y_bot := 320.0 if is_mobile else 455.0
-	var roadmap_h := 520.0 if is_mobile else 760.0
+	var y_top: float = 40.0 if is_mobile else 95.0
+	var y_mid: float = 180.0 if is_mobile else 275.0
+	var y_bot: float = 320.0 if is_mobile else 455.0
+	var roadmap_h: float = 520.0 if is_mobile else 760.0
+	var x_un: float = 0.0
 	
-	roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
-	
-	card_basic.position = Vector2(x_basic, y_mid)
-	card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
-	
-	card_essentials.position = Vector2(x_ess, y_mid)
-	card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
-	
-	card_soloist_unlock.position = Vector2(x_un, y_top)
-	card_soloist_unlock.custom_minimum_size = Vector2(un_card_w, card_soloist_unlock.custom_minimum_size.y)
-	
-	card_chords_unlock.position = Vector2(x_un, y_bot)
-	card_chords_unlock.custom_minimum_size = Vector2(un_card_w, card_chords_unlock.custom_minimum_size.y)
-	
-	card_soloist_skills.position = Vector2(x_sk, y_top)
-	card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
-	
-	card_chords_skills.position = Vector2(x_sk, y_bot)
-	card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
-	
-	card_classical.position = Vector2(x_end, y_top)
-	card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
-	
-	card_pop_chords.position = Vector2(x_end, y_bot)
-	card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
+	if instrument == "dan_bau" or instrument == "sao_truc" or instrument == "trong_chau" or instrument == "dan_tranh":
+		var x_ess: float = x_basic + card_w + gap
+		var x_sk: float = x_ess + card_w + gap
+		var x_ch: float = x_sk + card_w + gap
+		var x_pop: float = x_ch + card_w + gap
+		var x_class: float = x_pop + card_w + gap
+		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
+		
+		var total_w: float = x_class + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
+		
+		card_basic.position = Vector2(x_basic, y_mid)
+		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
+		
+		card_essentials.position = Vector2(x_ess, y_mid)
+		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
+		
+		card_soloist_skills.position = Vector2(x_sk, y_mid)
+		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
+		
+		card_chords_skills.position = Vector2(x_ch, y_mid)
+		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
+		
+		card_pop_chords.position = Vector2(x_pop, y_mid)
+		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
+		
+		card_classical.position = Vector2(x_class, y_mid)
+		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
+	else:
+		var x_ess: float = x_basic + card_w + gap
+		x_un = x_ess + card_w + gap
+		var x_sk: float = x_un + un_card_w + gap
+		var x_end: float = x_sk + card_w + gap
+		var total_w: float = 2590.0 + card_w + 120.0
+		
+		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
+		
+		card_basic.position = Vector2(x_basic, y_mid)
+		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
+		
+		card_essentials.position = Vector2(x_ess, y_mid)
+		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
+		
+		card_soloist_unlock.position = Vector2(x_un, y_top)
+		card_soloist_unlock.custom_minimum_size = Vector2(un_card_w, card_soloist_unlock.custom_minimum_size.y)
+		
+		card_chords_unlock.position = Vector2(x_un, y_bot)
+		card_chords_unlock.custom_minimum_size = Vector2(un_card_w, card_chords_unlock.custom_minimum_size.y)
+		
+		card_soloist_skills.position = Vector2(x_sk, y_top)
+		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
+		
+		card_chords_skills.position = Vector2(x_sk, y_bot)
+		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
+		
+		card_classical.position = Vector2(x_end, y_top)
+		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
+		
+		card_pop_chords.position = Vector2(x_end, y_bot)
+		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
+
 	
 	roadmap_guide.position = Vector2(x_basic, 80.0 if is_mobile else 180.0)
 	path_soloist_title.position = Vector2(x_un, 10.0 if is_mobile else 40.0)
@@ -1426,8 +1448,8 @@ func _on_viewport_size_changed() -> void:
 
 # ─── Dan Tranh Level Progress ─────────────────────────────────────────────────
 func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
-	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
-	var stars: Dictionary = SecureDataManager.data.stars.get("dan_tranh", {})
+	var completed: Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_tranh", [])
+	var stars: Dictionary = SecureDataManager.data.get("stars", {}).get("dan_tranh", {})
 	var level_data: Dictionary = DAN_TRANH_LESSON_SCRIPT.get_level_data(level_number)
 	var step_ids: Array[String] = []
 	for lesson_value in level_data["lessons"]:
@@ -1456,8 +1478,8 @@ func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
 const LESSON_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 
 func _get_dan_bau_card_status(card_type: String) -> Dictionary:
-	var completed : Array = SecureDataManager.data.completed_lessons.get("dan_bau", [])
-	var stars_dict : Dictionary = SecureDataManager.data.stars.get("dan_bau", {})
+	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_bau", [])
+	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("dan_bau", {})
 	
 	var total_stars := 0
 	var completed_count := 0
@@ -1580,8 +1602,8 @@ func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
 	lbl.add_child(hbox)
 # ─── Sáo Trúc Custom Progression ──────────────────────────────────────────────────
 func _get_sao_truc_card_status(card_type: String) -> Dictionary:
-	var completed : Array = SecureDataManager.data.completed_lessons.get("sao_truc", [])
-	var stars_dict : Dictionary = SecureDataManager.data.stars.get("sao_truc", {})
+	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("sao_truc", [])
+	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("sao_truc", {})
 	
 	var total_stars := 0
 	var completed_count := 0
@@ -1611,60 +1633,3 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	if total_count > 0:
 		pct = int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
-
-func _on_scroll_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_is_dragging_scroll = true
-			_drag_start_pos = event.global_position
-			_scroll_start_x = roadmap_scroll.scroll_horizontal
-			_has_dragged_significantly = false
-			_drag_velocity = 0.0
-			_last_drag_pos_x = event.global_position.x
-			_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and abs(float(_drag_velocity)) > 50.0:
-					var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
-					var target_x = clamp(roadmap_scroll.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(roadmap_scroll, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			_is_dragging_scroll = true
-			_drag_start_pos = event.position
-			_scroll_start_x = roadmap_scroll.scroll_horizontal
-			_has_dragged_significantly = false
-			_drag_velocity = 0.0
-			_last_drag_pos_x = event.position.x
-			_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and abs(float(_drag_velocity)) > 50.0:
-					var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
-					var target_x = clamp(roadmap_scroll.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(roadmap_scroll, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-
-func _input(event: InputEvent) -> void:
-	if _is_dragging_scroll:
-		var current_x = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		
-		var delta_x = current_x - _drag_start_pos.x
-		if abs(float(delta_x)) > 8.0:
-			_has_dragged_significantly = true
-		
-		if _has_dragged_significantly:
-			var max_scroll = max(0.0, roadmap_content.size.x - roadmap_scroll.size.x)
-			roadmap_scroll.scroll_horizontal = int(clamp(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now = Time.get_ticks_msec() / 1000.0
-			var dt = max(0.001, float(now - _last_drag_time))
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now

@@ -150,7 +150,11 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
 	
 <<<<<<< HEAD
+<<<<<<< HEAD
 	# Draw fingering cues inside the note if available
+=======
+	# Draw fingering cues inside the note if available, else draw text
+>>>>>>> 5ea47272736d1865d1f7c912053cc34462e3caaf
 	if cue != "":
 		var center_pt = Vector2(note_x, note_y)
 		var symbol_color = Color.WHITE
@@ -165,6 +169,7 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var p2 = center_pt + Vector2(-sz, sz * 0.8)
 			var p3 = center_pt + Vector2(sz, sz * 0.8)
 			draw_polygon(PackedVector2Array([p1, p2, p3]), PackedColorArray([symbol_color, symbol_color, symbol_color]))
+<<<<<<< HEAD
 =======
 	# Draw bold note name text inside note head
 	var font = ThemeDB.fallback_font
@@ -174,6 +179,16 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
 		draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 >>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
+=======
+	else:
+		# Draw bold note name text inside note head
+		var font = ThemeDB.fallback_font
+		if font:
+			var font_size = int(line_spacing * 0.48)
+			var str_size = font.get_string_size(note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+			var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
+			draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
+>>>>>>> 5ea47272736d1865d1f7c912053cc34462e3caaf
 	
 	# Draw stem
 	var stem_len = line_spacing * 3.0

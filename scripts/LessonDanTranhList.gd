@@ -15,14 +15,6 @@ static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
 
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
-
 const LEVELS := [
 	{
 		"level": 1,
@@ -196,36 +188,71 @@ const LEVELS := [
 	},
 	{
 		"level": 6,
-		"title": "HỌC & LUYỆN TẬP HỢP ÂM ĐÀN TRANH",
-		"sessions": "Session 13–14",
-		"objective": "Thực hành gảy hợp âm, hợp âm rải (arpeggio) và đệm hòa âm cơ bản trên Đàn Tranh 17 dây.",
+		"title": "HỢP ÂM CƠ BẢN",
+		"sessions": "Bài 1-5",
+		"objective": "Làm quen với khái niệm hợp âm, thực hành gảy song âm, hợp âm Đô trưởng, La thứ và chuyển hợp âm.",
 		"lessons": [
 			{
 				"number": 13,
-				"title": "Làm quen Song Âm & Hợp âm cơ bản",
-				"video": "",
-				"practice": "Thực hành gảy lướt (Rải) các cặp Song âm Quãng 8 và Quãng 5.",
-				"practice_title": "Luyện tập Song Âm (Quãng 8 & 5)",
-				"sheet": ["Sol1", "Sol2", "La1", "La2", "Đô2", "Đô3", "Sol1", "Rê2", "La1", "Mi2", "Sol1", "Đô2", "Mi2"],
-				"cues": ["triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "circle", "triangle", "square", "circle"]
+				"title": "Bài 1: Hợp âm là gì?",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
+				"practice_title": "Luyện tập: Hợp âm là gì",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
 			},
 			{
 				"number": 14,
-				"title": "Thực hành Hòa âm Đàn Tranh",
-				"video": "",
-				"practice": "Chơi một đoạn nhạc đệm sử dụng kỹ thuật Arpeggio.",
-				"practice_title": "Luyện tập Hòa âm",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Rê3", "Sol3", "Đô2", "Đô3", "Mi3", "Sol3", "Sol1", "Sol2", "La2", "Đô3"],
-				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
+				"title": "Bài 2: Song âm (2 dây)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice_title": "Luyện tập: Song âm",
+				"sheet": [
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
 			},
 			{
 				"number": 15,
-				"title": "Boss Stage – Đệm Hát Dân Ca",
-				"video": "",
-				"practice": "Vận dụng toàn bộ kỹ thuật Hợp âm và Arpeggio để đệm một đoạn nhạc Dân Ca dài.",
-				"practice_title": "Boss Stage - Đệm Dân Ca",
-				"sheet": ["Sol1", "Sol2", "Đô3", "Mi3", "La1", "La2", "Đô3", "Mi3", "Sol1", "Sol2", "Rê3", "La2", "Đô2", "Đô3", "Mi3", "Sol3", "La1", "La2", "Rê3", "Mi3", "Sol1", "Sol2", "Đô3", "La2"],
-				"cues": ["triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle", "triangle", "circle", "square", "circle"]
+				"title": "Bài 3: Hợp âm Đô trưởng (C)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
+				"practice_title": "Luyện tập: Đô trưởng",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+			},
+			{
+				"number": 16,
+				"title": "Bài 4: Hợp âm La thứ (Am)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
+				"practice_title": "Luyện tập: La thứ",
+				"sheet": [
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
+			},
+			{
+				"number": 17,
+				"title": "Bài 5: Chuyển hợp âm",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Chuyển mượt mà giữa Đô trưởng (C) và La thứ (Am).",
+				"practice_title": "Luyện tập: Chuyển hợp âm",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
 			}
 		]
 	}
@@ -270,65 +297,10 @@ func _ready() -> void:
 	_connect_navigation()
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
-	modulate.a = 0.0
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	var content_margin := lessons_hbox.get_parent() as Control
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.28)
-
-func _input(event: InputEvent) -> void:
-	if not scroll_container or not is_instance_valid(scroll_container):
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.global_position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.global_position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.global_position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif _is_dragging_scroll:
-		var current_x: float = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		var delta_x := current_x - _drag_start_pos.x
-		if absf(delta_x) > 8.0:
-			_has_dragged_significantly = true
-		if _has_dragged_significantly:
-			var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-			scroll_container.scroll_horizontal = int(clampf(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now := Time.get_ticks_msec() / 1000.0
-			var dt := maxf(0.001, now - _last_drag_time)
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
 
 static func get_level_data(level_number: int) -> Dictionary:
 	var index := clampi(level_number, 1, LEVELS.size()) - 1
@@ -541,6 +513,7 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 
 func _create_circle_button(action: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
 	var button := Button.new()
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.custom_minimum_size = Vector2(250, 250)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -715,6 +688,7 @@ func _create_description(label_text: String, description: String, icon: String) 
 
 func _create_action_button(text_value: String, primary: bool) -> Button:
 	var button := Button.new()
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.text = text_value
 	button.custom_minimum_size = Vector2(0, 54)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -746,8 +720,6 @@ func _go_to_levels() -> void:
 	_fade_to("res://scenes/MainMenu.tscn")
 
 func _open_lesson(lesson: Dictionary) -> void:
-	if _has_dragged_significantly:
-		return
 	var lesson_number := int(lesson["number"])
 	
 	# Load current lesson data so LessonDanTranh can read it

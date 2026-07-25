@@ -134,7 +134,7 @@ const LEVEL1_CONFIGS := {
 		"lesson": 4, "title": "Vào rừng hoa – Đoạn 1", "mode": "wait_sequence", "input": "micro",
 		"sheet": [], "durations": [], "cues": [],
 		"finger_pattern": ["circle", "square", "triangle", "circle", "square", "triangle", "circle", "square"],
-		"instruction": "Chờ từng nốt tới vạch vàng rồi gảy trên đàn thật. Nốt đúng hoặc sai đều chuyển tiếp; sai lần thứ sáu sẽ làm lại từ đầu.",
+		"instruction": "Chờ từng nốt tới vạch vàng rồi gảy trên đàn thật. Chỉ đúng cao độ mới chuyển sang nốt tiếp theo.",
 		"active_strings": [4, 5, 6, 7], "bpm": 60.0, "time_signature": [2, 4], "wrong_limit": 6, "pass_score": 80.0
 	}
 }
@@ -576,9 +576,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
-		visualizer.min_frequency = 80.0
-		visualizer.max_frequency = 950.0
-		visualizer.volume_threshold_db = -50.0
+		visualizer.min_frequency = 180.0
+		visualizer.max_frequency = 1900.0
+		visualizer.volume_threshold_db = -55.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -1001,7 +1001,7 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 	var amplitude_db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	var tone: float = visualizer.current_tone_quality
-	if amplitude_db <= -40.0 or pitch <= 70.0 or tone < 75.0:
+	if amplitude_db <= visualizer.volume_threshold_db or pitch <= 70.0 or not visualizer.current_pitch_is_reliable or tone < 75.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -1034,7 +1034,7 @@ func _process_level1_lesson1_audio(delta: float) -> void:
 	expected_cents = fmod(expected_cents, 1200.0)
 	if expected_cents > 600.0: expected_cents = 1200.0 - expected_cents
 	pitch_note.text = LEVEL1_LESSON1_LABELS[closest_index]
-	if expected_cents <= 120.0:
+	if closest_index == _note_idx and absf(expected_cents) <= 25.0:
 		if _board:
 			_board.set_lesson_marker(_note_idx, _level1_current_finger_shape(), 2)
 		_level1_pitch_hold += delta
@@ -2289,8 +2289,9 @@ func _process_level1_sequence(delta: float) -> void:
 			_level1_backing_timer = seconds_per_note
 	if str(_level1_config["mode"]) == "rhythm":
 		_process_level1_rhythm_audio(delta, seconds_per_note)
-	if _level1_state == "playing" and _current_note_elapsed >= seconds_per_note:
-		_register_level1_miss("missed")
+	if _level1_state == "playing" and _current_note_elapsed >= seconds_per_note and str(_level1_config["mode"]) == "rhythm":
+		_current_note_elapsed = seconds_per_note
+		_set_level1_status("CHỜ ĐÚNG NỐT · Hãy gảy đúng cao độ để tiếp tục.", C_WARN)
 	_sync_level1_board()
 
 func _is_level1_missing_note(index: int) -> bool:
@@ -2461,7 +2462,7 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var pitch: float = visualizer.current_pitch
 	var target_name: String = sheet_notes[_note_idx].rstrip("0123456789")
 	var tone: float = visualizer.current_tone_quality
-	if amplitude_db <= -40.0 or pitch <= 70.0 or tone < 75.0:
+	if amplitude_db <= visualizer.volume_threshold_db or pitch <= 70.0 or not visualizer.current_pitch_is_reliable or tone < 75.0:
 		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
@@ -2503,7 +2504,7 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var detected_name: String = NOTES_VN[closest_idx].rstrip("0123456789")
 	pitch_note.text = detected_name
 
-	if target_cents <= 120.0:
+	if closest_idx == target_idx and absf(target_cents) <= 25.0:
 		_level1_pitch_hold += delta
 		pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
 		pitch_status.text = "Đúng nốt · Nhạc sắp phát tiếp"
@@ -2536,27 +2537,9 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	if _board:
 		_board.set_feedback_detail(target_idx, "✕ %s · cần %s" % [detected_name, target_name], 2)
 	
-	if _level1_lesson2_mode:
-		# Hướng dẫn học viên gảy lại trên đàn thật để đúng nốt, không tự động chuyển nốt
-		_set_level1_status("CHƯA ĐÚNG · Bạn gảy nhầm nốt %s. Hãy gảy lại nốt %s trên đàn thật!" % [detected_name, target_name], C_RED_ERR)
-		_update_level1_score()
-		return
-		
-	var wrong_limit := int(_level1_config.get("wrong_limit", 6))
-	_set_level1_status("SAI NỐT · Nghe thấy %s %s%d¢ · Nhạc tiếp tục (%d/%d)" % [detected_name, correction, int(absf(target_cents)), _level1_wrong_count, wrong_limit], C_RED_ERR)
+	_set_level1_status("CHƯA ĐÚNG · Nghe thấy %s %s%d¢. Hãy gảy lại nốt %s trên đàn thật!" % [detected_name, correction, int(absf(target_cents)), target_name], C_RED_ERR)
 	_update_level1_score()
-	if _level1_lesson3_mode:
-		_level1_waiting_for_note = false
-		if _level1_wrong_count > 5:
-			_restart_level3_after_too_many_misses()
-		else:
-			_advance_level3_student_note()
-	elif _level2_lesson4_mode:
-		_level1_waiting_for_note = false
-		if _level1_wrong_count >= wrong_limit:
-			_restart_level4_after_too_many_misses()
-		else:
-			_advance_level4_attempted_note()
+	return
 
 func _restart_level3_after_too_many_misses() -> void:
 	_stop_native_level3_audio()
@@ -2586,7 +2569,8 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 	var db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	var tone: float = visualizer.current_tone_quality
-	if db <= -40.0 or pitch <= 70.0 or tone < 75.0:
+	if db <= visualizer.volume_threshold_db or pitch <= 70.0 or not visualizer.current_pitch_is_reliable or tone < 75.0:
+		_level1_pitch_hold = 0.0
 		if _level1_wait_for_silence:
 			_level1_silence_time += delta
 			if _level1_silence_time >= 0.12:
@@ -2596,7 +2580,6 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 	_level1_silence_time = 0.0
 	if _level1_wait_for_silence:
 		return
-	_level1_wait_for_silence = true
 	var closest_idx := 0
 	var closest_cents := INF
 	for i in NOTES_VN.size():
@@ -2608,10 +2591,14 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 	var target_idx := NOTES_VN.find(sheet_notes[_note_idx])
 	var target_frequency := _get_string_frequency(target_idx)
 	var cents := 1200.0 * log(pitch / target_frequency) / log(2.0)
-	var cents_mod = fmod(absf(cents), 1200.0)
-	if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
-	_level1_total_attempts += 1
-	if cents_mod <= 120.0:
+	if closest_idx == target_idx and absf(cents) <= 25.0:
+		_level1_pitch_hold += delta
+		if _level1_pitch_hold < 0.30:
+			_set_level1_status("ĐÚNG CAO ĐỘ · Giữ ổn định %d%%" % mini(100, int(_level1_pitch_hold / 0.30 * 100.0)), C_GREEN_OK)
+			return
+		_level1_total_attempts += 1
+		_level1_wait_for_silence = true
+		_level1_pitch_hold = 0.0
 		var timing := clampf(100.0 - absf(_current_note_elapsed - seconds_per_note * 0.35) / seconds_per_note * 130.0, 0.0, 100.0)
 		_level1_timing_scores.append(timing)
 		if _current_note_elapsed < seconds_per_note * 0.18:
@@ -2620,6 +2607,9 @@ func _process_level1_rhythm_audio(delta: float, seconds_per_note: float) -> void
 			_level1_late_errors += 1
 		_register_level1_correct("✓ %s" % sheet_notes[_note_idx].rstrip("0123456789"))
 	else:
+		_level1_pitch_hold = 0.0
+		_level1_total_attempts += 1
+		_level1_wait_for_silence = true
 		if cents > 0.0:
 			_level1_high_errors += 1
 		else:
@@ -2684,7 +2674,9 @@ func _register_level1_miss(detail: String) -> void:
 		_set_level1_status("Hãy thử lại cụm %d–%d." % [phrase_start + 1, mini(phrase_start + 4, sheet_notes.size())], C_WARN)
 		_set_level1_target()
 		return
-	_advance_level1_note()
+	_current_note_elapsed = 0.0
+	_set_level1_status("CHƯA ĐÚNG · Hãy gảy lại đúng nốt hiện tại.", C_RED_ERR)
+	_set_level1_target()
 
 func _advance_level1_note() -> void:
 	if _level1_lesson3_mode:
@@ -2821,15 +2813,7 @@ func _process(delta: float) -> void:
 			if _mic_mode:
 				_process_real_audio(delta)
 			else:
-				_sim_timer += delta
-				if _sim_timer >= 1.2:
-					_sim_timer = 0.0
-					if randf() > 0.3:
-						_current_note_hit = true
-						var target_note = sheet_notes[_note_idx]
-						var target_idx = NOTES_VN.find(target_note)
-						if target_idx != -1 and _board:
-							_board.pluck(target_idx)
+				_set_level1_status("Micro đang tắt · Bật micro và gảy đúng nốt trên đàn thật.", C_WARN)
 							
 			if _current_note_elapsed >= target_duration:
 				# Evaluate this note
@@ -2847,10 +2831,13 @@ func _process(delta: float) -> void:
 				_refresh_score()
 				_update_rhythm()
 				_current_note_elapsed = 0.0
-				_current_note_hit = false
-				_note_idx = (_note_idx + 1) % sheet_notes.size()
-				_build_notation()
-				_update_target_indicator()
+				if is_rest or _current_note_hit:
+					_current_note_hit = false
+					_note_idx = (_note_idx + 1) % sheet_notes.size()
+					_build_notation()
+					_update_target_indicator()
+				else:
+					_set_level1_status("CHƯA ĐÚNG · Bài đang chờ cao độ chính xác từ micro.", C_RED_ERR)
 		else:
 			var target_note = sheet_notes[_note_idx]
 			if target_note == "Rest" or target_note == "-" or target_note == "nghỉ":
@@ -2866,10 +2853,7 @@ func _process(delta: float) -> void:
 				if _mic_mode:
 					_process_real_audio(delta)
 				else:
-					_sim_timer += delta
-					if _sim_timer >= 1.2:
-						_sim_timer = 0.0
-						_simulate_tick()
+					_set_level1_status("Micro đang tắt · Bật micro và gảy đúng nốt trên đàn thật.", C_WARN)
 
 	# Update note rolling blocks positions
 	var track_panel = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox.get_node_or_null("NoteTrackPanel")
@@ -3475,6 +3459,9 @@ func _on_string_plucked(idx: int, plucked_note: String) -> void:
 		_show_header()
 	if _is_demo_mode:
 		return
+	if _recording and _mic_mode:
+		_set_level1_status("Đây là âm mẫu · Hệ thống chỉ chấm âm thanh thật đi vào micro.", C_GOLD_TEXT)
+		return
 	if _level1_mode and str(_level1_config.get("mode", "")) == "catch":
 		var simple_note := plucked_note.rstrip("0123456789")
 		if _level1_state != "playing":
@@ -3746,7 +3733,7 @@ func _process_real_audio(delta: float) -> void:
 	var pitch = visualizer.current_pitch
 	var tone = visualizer.current_tone_quality
 	
-	if db > -40.0 and pitch > 70.0 and tone >= 75.0:
+	if db > visualizer.volume_threshold_db and pitch > 70.0 and visualizer.current_pitch_is_reliable and tone >= 75.0:
 		var target_note = sheet_notes[_note_idx]
 		
 		# Find the closest frequency matching the target note across all 17 strings
@@ -3763,13 +3750,13 @@ func _process_real_audio(delta: float) -> void:
 					
 		if closest_target_freq > 0.0:
 			var cents = 1200.0 * log(pitch / closest_target_freq) / log(2.0)
-			# Handle octave errors (YIN algorithm often detects 1 octave higher for plucked strings)
-			var cents_mod = fmod(abs(cents), 1200.0)
-			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
-			
-			if cents_mod < 120.0:
+			if abs(cents) <= 25.0:
+				_correct_pitch_hold_time += delta
 				pitch_note.text = target_note
-				cents = cents_mod # Use folded cents for scoring
+				if _correct_pitch_hold_time < 0.30:
+					pitch_status.text = "Đúng cao độ · Giữ ổn định %d%%" % mini(100, int(_correct_pitch_hold_time / 0.30 * 100.0))
+					pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+					return
 				
 				# Scaled tolerance window based on difficulty scale
 				var tolerance_cents = 12.0 / visualizer.difficulty_tolerance_scale
@@ -3813,8 +3800,10 @@ func _process_real_audio(delta: float) -> void:
 					_update_target_indicator()
 					
 				_eval_cooldown = 1.0
+				_correct_pitch_hold_time = 0.0
 				return
 				
+		_correct_pitch_hold_time = 0.0
 		var detected_note := ""
 		var closest_detected_freq := 0.0
 		var min_detected_cents := 999999.0
@@ -3834,6 +3823,7 @@ func _process_real_audio(delta: float) -> void:
 			_score = clamp(_score - 0.5 * delta, 0, 100)
 			_refresh_score()
 	else:
+		_correct_pitch_hold_time = 0.0
 		pitch_note.text = "—"
 		pitch_status.text = "Đang nghe..."
 		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)

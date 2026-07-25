@@ -171,6 +171,7 @@ vertical_alignment = 1
 autowrap_mode = 3
 
 [node name="ModeButtons" type="HBoxContainer" parent="TeacherArea/DialogBox/M/V"]
+visible = false
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 20
@@ -181,7 +182,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
-text = "  Dùng Sáo Thật  "
+text = "  Dùng Đàn Thật  "
 
 [node name="Analyzer" type="Control" parent="."]
 visible = false

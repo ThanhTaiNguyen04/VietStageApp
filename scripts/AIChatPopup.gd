@@ -664,7 +664,7 @@ func _on_wake_word_tick() -> void:
 		return
 		
 	wake_index = (wake_index + 1) % 5
-	var wake_path = "d:/modelAO/user_voice_wake_%d.wav" % wake_index
+	var wake_path = "user://user_voice_wake_%d.wav" % wake_index
 	
 	if is_processing_stt:
 		stt_manager.stop_recording(wake_path, false)
@@ -681,7 +681,7 @@ func _on_listening_timeout() -> void:
 		
 	_update_status("Đang dịch...")
 	question_index = (question_index + 1) % 5
-	var question_path = "d:/modelAO/user_voice_question_%d.wav" % question_index
+	var question_path = "user://user_voice_question_%d.wav" % question_index
 	stt_manager.stop_recording(question_path)
 
 func _transition_to_state(new_state: VoiceState) -> void:
@@ -709,20 +709,20 @@ func _transition_to_state(new_state: VoiceState) -> void:
 			listening_timer.start()
 		VoiceState.THINKING:
 			_update_status("Đang suy nghĩ...")
-			stt_manager.stop_recording("d:/modelAO/user_voice_question_%d.wav" % question_index, false)
+			stt_manager.stop_recording("user://user_voice_question_%d.wav" % question_index, false)
 		VoiceState.SPEAKING:
 			_update_status("Đang nói...")
-			stt_manager.stop_recording("d:/modelAO/user_voice_question_%d.wav" % question_index, false)
+			stt_manager.stop_recording("user://user_voice_question_%d.wav" % question_index, false)
 		VoiceState.WAKING_RESPONSE:
 			_update_status("Mai nghe đây")
-			stt_manager.stop_recording("d:/modelAO/user_voice_wake_%d.wav" % wake_index, false)
+			stt_manager.stop_recording("user://user_voice_wake_%d.wav" % wake_index, false)
 		VoiceState.TIMEOUT_RESPONSE:
 			_update_status("Tạm biệt")
-			stt_manager.stop_recording("d:/modelAO/user_voice_question_%d.wav" % question_index, false)
+			stt_manager.stop_recording("user://user_voice_question_%d.wav" % question_index, false)
 		VoiceState.INACTIVE:
 			_update_status("Tắt mic")
 			ai_mic_btn.text = "🎤"
-			stt_manager.stop_recording("d:/modelAO/user_voice_wake_%d.wav" % wake_index, false)
+			stt_manager.stop_recording("user://user_voice_wake_%d.wav" % wake_index, false)
 			audio_manager.audio_player.stop()
 
 func _start_waking_loop() -> void:
