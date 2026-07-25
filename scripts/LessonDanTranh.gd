@@ -237,11 +237,11 @@ func _ready():
 		if pos < min_pos: min_pos = pos
 		if pos > max_pos: max_pos = pos
 	
-	var optimal_spacing = 110.0
+	var optimal_spacing = 65.0
 	if max_pos > min_pos:
 		var span = max_pos - min_pos
 		if span > 4.0:
-			optimal_spacing = clampf(1440.0 / (span + 2.0), 95.0, 140.0)
+			optimal_spacing = clampf(520.0 / (span + 2.0), 50.0, 70.0)
 	staff_display.line_spacing = optimal_spacing
 	
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()

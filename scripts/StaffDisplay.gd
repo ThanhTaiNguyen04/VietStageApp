@@ -48,7 +48,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 110.0
+var line_spacing = 65.0
 var clef_tex: Texture2D
 
 func _ready():
@@ -162,14 +162,14 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 	
 	# Draw stem
-	var stem_len = line_spacing * 3.0
-	var stem_w = max(2.0, line_spacing * 0.1)
+	var stem_len = line_spacing * 2.2
+	var stem_w = max(2.5, line_spacing * 0.08)
 	if pos_idx < 2.0:
 		var stem_x = note_x + note_width/2.0 - 2.0
-		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y - stem_len), note_color, stem_w, true)
+		draw_line(Vector2(note_x + note_width/2.0 - 2.0, note_y), Vector2(note_x + note_width/2.0 - 2.0, note_y - stem_len), note_color, stem_w, true)
 	else:
 		var stem_x = note_x - note_width/2.0 + 2.0
-		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y + stem_len), note_color, stem_w, true)
+		draw_line(Vector2(note_x - note_width/2.0 + 2.0, note_y), Vector2(note_x - note_width/2.0 + 2.0, note_y + stem_len), note_color, stem_w, true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()
