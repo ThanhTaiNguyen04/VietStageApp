@@ -22,6 +22,9 @@ var current_state = State.INTRO
 var ai_audio = null
 
 var staff_display: Control
+var pitch_box: PanelContainer
+var pitch_note_lbl: Label
+var pitch_status_lbl: Label
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -278,6 +281,8 @@ func _ready():
 	dialog_sb.border_width_top = 4; dialog_sb.border_width_bottom = 4
 	dialog_sb.border_width_left = 4; dialog_sb.border_width_right = 4
 	dialog_sb.border_color = C_GOLD
+	
+	_setup_top_pitch_box()
 	dialog_sb.shadow_color = Color(0, 0, 0, 0.15)
 	dialog_sb.shadow_size = 12
 	dialog_sb.shadow_offset = Vector2(0, 6)
@@ -380,6 +385,62 @@ func _ready():
 		
 	_start_intro()
 
+func _setup_top_pitch_box():
+	pitch_box = PanelContainer.new()
+	pitch_box.name = "PitchFeedbackBox"
+	pitch_box.anchor_left = 0.5
+	pitch_box.anchor_right = 0.5
+	pitch_box.anchor_top = 0.0
+	pitch_box.anchor_bottom = 0.0
+	pitch_box.offset_left = -260
+	pitch_box.offset_right = 260
+	pitch_box.offset_top = 16
+	pitch_box.offset_bottom = 78
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.22, 0.14, 0.94) # Dark jade lacquer theme
+	sb.border_width_left = 3
+	sb.border_width_right = 3
+	sb.border_width_top = 3
+	sb.border_width_bottom = 3
+	sb.border_color = C_GOLD
+	sb.set_corner_radius_all(18)
+	sb.shadow_color = Color(0, 0, 0, 0.4)
+	sb.shadow_size = 8
+	sb.shadow_offset = Vector2(0, 3)
+	pitch_box.add_theme_stylebox_override("panel", sb)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	pitch_box.add_child(margin)
+	
+	var hbox = HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 20)
+	margin.add_child(hbox)
+	
+	pitch_note_lbl = Label.new()
+	pitch_note_lbl.text = "🎵 Nốt: ---"
+	pitch_note_lbl.add_theme_font_size_override("font_size", 22)
+	pitch_note_lbl.add_theme_color_override("font_color", C_GOLD)
+	hbox.add_child(pitch_note_lbl)
+	
+	var sep = VSeparator.new()
+	sep.modulate.a = 0.4
+	hbox.add_child(sep)
+	
+	pitch_status_lbl = Label.new()
+	pitch_status_lbl.text = "🎙️ Đang nghe..."
+	pitch_status_lbl.add_theme_font_size_override("font_size", 22)
+	pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
+	hbox.add_child(pitch_status_lbl)
+	
+	add_child(pitch_box)
+	pitch_box.visible = false
+
 func _process(delta):
 	if is_paused:
 		return
@@ -403,6 +464,8 @@ func _start_intro():
 		pause_btn.visible = false
 	if pause_overlay:
 		pause_overlay.visible = false
+	if pitch_box:
+		pitch_box.visible = false
 	_play_next_intro_step()
 
 func _play_next_intro_step():
@@ -458,6 +521,8 @@ func _start_practice_single():
 		skip_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
+	if pitch_box:
+		pitch_box.visible = true
 	
 
 	unique_practice_notes.clear()
@@ -562,6 +627,10 @@ func _process_practice_single(delta: float) -> void:
 
 
 func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note: String, target_idx: int) -> void:
+	if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + detected_note
+	if pitch_status_lbl:
+		pitch_status_lbl.text = "🔴 NHẦM NỐT! (Cần: " + target_note + ")"
+		pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
 	zither_board.call("clear_lesson_markers")
 	# Red marker on wrong string, Gold pulse marker on target string
 	zither_board.call("set_lesson_marker", detected_idx, "Nhầm: " + detected_note, 3)
@@ -709,6 +778,8 @@ func _start_practice():
 	staff_display.visible = true
 	staff_display.offset_top = 0
 	staff_display.offset_bottom = 0
+	if pitch_box:
+		pitch_box.visible = true
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
@@ -837,6 +908,10 @@ func _process_practice(delta):
 						
 					zither_board.call("clear_lesson_markers")
 					zither_board.call("set_lesson_marker", s_idx, "Chính xác!", 2)
+					if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + clean_note
+					if pitch_status_lbl:
+						pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
+						pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
 					if ai_audio: ai_audio.speak_vietnamese("Tốt lắm! Chính xác hợp âm." if chord_group != -1 else "Tốt lắm! Chính xác nốt %s." % clean_note)
 					wrong_note_time = 0.0
 					consecutive_hits += 1
