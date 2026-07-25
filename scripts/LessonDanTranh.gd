@@ -245,7 +245,7 @@ func _ready():
 	# Keep this explicit so scene/default changes cannot cut off the high strings.
 	analyzer.min_frequency = 180.0
 	analyzer.max_frequency = 4200.0
-	analyzer.volume_threshold_db = -32.0
+	analyzer.volume_threshold_db = -50.0
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
@@ -499,7 +499,7 @@ func _update_continuous_pitch_hud():
 	var db: float = analyzer.current_amplitude_db
 	var pitch: float = analyzer.current_pitch
 	
-	if db <= -45.0 or pitch <= 0.0:
+	if db <= -52.0 or pitch <= 0.0:
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
 			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
 			if pitch_status_lbl:
@@ -541,20 +541,19 @@ func _update_continuous_pitch_hud():
 			pitch_meter.is_active = true
 			pitch_meter.queue_redraw()
 			
-		# Update status label real-time if not in brief speech cooldown
-		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
-			if absf(cents_err) <= 35.0:
-				if pitch_status_lbl:
-					pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
-					pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
-			elif cents_err < -35.0:
-				if pitch_status_lbl:
-					pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % cents_err
-					pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
-			else:
-				if pitch_status_lbl:
-					pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % cents_err
-					pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+		# Update status label real-time continuously
+		if absf(cents_err) <= 35.0:
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
+				pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
+		elif cents_err < -35.0:
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % cents_err
+				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+		else:
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % cents_err
+				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 
 func _get_closest_dan_tranh_note_name(freq: float) -> String:
 	if freq <= 0.0: return ""
@@ -1110,8 +1109,8 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
 	
-	# Strict volume threshold (-32 dB) to ignore mic blowing and ambient room noise
-	if db <= -32.0:
+	# Relaxed volume threshold (-48 dB) to pick up standard acoustic instruments
+	if db <= -48.0:
 		time_correct = 0.0
 		if pitch_meter:
 			pitch_meter.is_active = false

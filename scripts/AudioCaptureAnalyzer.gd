@@ -387,7 +387,7 @@ func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: f
 	
 	# Reject unpitched wind noise / blowing air into microphone!
 	var clarity = _evaluate_tone_quality_gdscript(samples)
-	if clarity < 0.25:
+	if clarity < 0.15:
 		return result
 		
 	var freq = _detect_pitch_yin_gdscript(samples, sample_rate, 0.12)
@@ -425,8 +425,8 @@ func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: f
 			min_ratio_diff = min_c
 			best_item = item
 			
-	# Require strict pitch matching (within 50.0 cents = 0.5 semitone)
-	if best_item and min_ratio_diff <= 50.0:
+	# Require strict pitch matching (within 80.0 cents to account for real-world tuning deviations)
+	if best_item and min_ratio_diff <= 80.0:
 		var ref_f = best_item["freq"]
 		var cents_offset = 1200.0 * (log(freq / ref_f) / log(2.0))
 		while cents_offset > 600.0: cents_offset -= 1200.0
