@@ -245,7 +245,7 @@ func _ready():
 	# Keep this explicit so scene/default changes cannot cut off the high strings.
 	analyzer.min_frequency = 180.0
 	analyzer.max_frequency = 4200.0
-	analyzer.volume_threshold_db = -55.0
+	analyzer.volume_threshold_db = -32.0
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
@@ -1086,23 +1086,21 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
 	
-	if db <= analyzer.volume_threshold_db:
+	# Strict volume threshold (-32 dB) to ignore mic blowing and ambient room noise
+	if db <= -32.0:
 		time_correct = 0.0
 		if pitch_meter:
 			pitch_meter.is_active = false
 			pitch_meter.queue_redraw()
 		return false
 		
-	if not is_poly and (pitch <= 0.0 or not analyzer.current_pitch_is_reliable):
-		pitch = 0.0 # Force pitch to 0.0 so YIN checks fail cleanly, allowing FFT fallback to take over
+	# Require pitch periodicity (reject unpitched wind noise / blowing air into microphone)
+	if not is_poly and not analyzer.current_pitch_is_reliable:
+		time_correct = 0.0
+		return false
 
 	var is_match = false
 	if is_poly:
-		# Require an overall volume spike to process chords (ignores room noise entirely)
-		if db < -40.0:
-			time_correct = 0.0
-			return false
-			
 		if analyzer and analyzer.get("_spectrum") != null:
 			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
 			var notes = _target_note_name.split("+")
@@ -1110,14 +1108,10 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 			for n in notes:
 				var freq = NOTE_FREQS.get(n, 0.0)
 				if freq > 0.0:
-					# Check both fundamental and 1st harmonic (octave) because Dan Tranh's low notes have weak fundamentals
-					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.96, freq * 1.04).length()
-					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.96, freq * 2.04).length()
+					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.97, freq * 1.03).length()
+					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
 					var max_mag = max(mag1, mag2)
-					
 					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					
-					# Slightly tightened threshold to prevent sympathetic resonance from falsely triggering chords
 					if freq_db < -42.0:
 						all_detected = false
 						break

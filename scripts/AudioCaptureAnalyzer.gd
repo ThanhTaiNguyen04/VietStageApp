@@ -384,6 +384,12 @@ func evaluate_dan_tranh_note_performance(detected_freq: float, detected_duration
 func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
 	var result := {"frequency": 0.0, "note_name": "None", "string_index": -1, "cents_offset": 0.0, "clarity": 0.0}
 	if samples.size() < 256: return result
+	
+	# Reject unpitched wind noise / blowing air into microphone!
+	var clarity = _evaluate_tone_quality_gdscript(samples)
+	if clarity < 0.25:
+		return result
+		
 	var freq = _detect_pitch_yin_gdscript(samples, sample_rate, 0.12)
 	if freq <= 0.0: return result
 	
@@ -411,16 +417,20 @@ func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: f
 	var min_ratio_diff := 1e10
 	for item in DAN_TRANH_NOTES:
 		var ref_f = item["freq"]
-		var cents = abs(1200.0 * (log(freq / ref_f) / log(2.0)))
-		if cents < min_ratio_diff:
-			min_ratio_diff = cents
+		var cents1 = abs(1200.0 * (log(freq / ref_f) / log(2.0)))
+		var cents2 = abs(1200.0 * (log(freq / (ref_f * 2.0)) / log(2.0)))
+		var cents3 = abs(1200.0 * (log(freq / (ref_f * 3.0)) / log(2.0)))
+		var min_c = min(cents1, min(cents2, cents3))
+		if min_c < min_ratio_diff:
+			min_ratio_diff = min_c
 			best_item = item
 			
-	if best_item and min_ratio_diff < 600.0:
-
+	# Require strict pitch matching (within 50.0 cents = 0.5 semitone)
+	if best_item and min_ratio_diff <= 50.0:
 		var ref_f = best_item["freq"]
 		var cents_offset = 1200.0 * (log(freq / ref_f) / log(2.0))
-		var clarity = _evaluate_tone_quality_gdscript(samples)
+		while cents_offset > 600.0: cents_offset -= 1200.0
+		while cents_offset < -600.0: cents_offset += 1200.0
 		result["frequency"] = freq
 		result["note_name"] = best_item["name"]
 		result["string_index"] = best_item["idx"]
