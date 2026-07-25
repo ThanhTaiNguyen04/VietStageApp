@@ -25,6 +25,41 @@ var staff_display: Control
 var pitch_box: PanelContainer
 var pitch_note_lbl: Label
 var pitch_status_lbl: Label
+var pitch_meter: Control
+
+class PitchMeterDraw extends Control:
+	var current_cents: float = 0.0
+	var is_active: bool = false
+	
+	func _draw():
+		var W = size.x
+		var H = size.y
+		var cy = H / 2.0
+		var cx = W / 2.0
+		
+		# Base track bar
+		draw_rect(Rect2(0, cy - 3, W, 6), Color(0.15, 0.15, 0.15, 0.7), true)
+		
+		# Target in-tune zone (-25 to +25 cents) -> Green translucent fill
+		var safe_w = (50.0 / 100.0) * W
+		draw_rect(Rect2(cx - safe_w/2.0, cy - 5, safe_w, 10), Color(0.2, 0.8, 0.3, 0.35), true)
+		
+		# Center gold target line (0 cents)
+		draw_line(Vector2(cx, cy - 8), Vector2(cx, cy + 8), Color(0.961, 0.784, 0.259, 1.0), 2.5)
+		
+		# End ticks (-50, +50)
+		draw_line(Vector2(4, cy - 5), Vector2(4, cy + 5), Color(0.7, 0.7, 0.7, 0.5), 1.5)
+		draw_line(Vector2(W - 4, cy - 5), Vector2(W - 4, cy + 5), Color(0.7, 0.7, 0.7, 0.5), 1.5)
+		
+		# Real-time Needle / Pointer
+		if is_active:
+			var norm_c = clampf(current_cents, -50.0, 50.0)
+			var ptr_x = cx + (norm_c / 50.0) * (W / 2.0 - 6.0)
+			var ptr_color = Color(0.25, 0.95, 0.45) if abs(norm_c) <= 25.0 else Color(1.0, 0.35, 0.35)
+			
+			# Needle pointer (bright glowing vertical bar + circle cap)
+			draw_line(Vector2(ptr_x, cy - 10), Vector2(ptr_x, cy + 10), ptr_color, 3.5)
+			draw_circle(Vector2(ptr_x, cy), 5.0, ptr_color)
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -392,17 +427,15 @@ func _setup_top_pitch_box():
 	pitch_box.anchor_right = 0.5
 	pitch_box.anchor_top = 0.0
 	pitch_box.anchor_bottom = 0.0
-	pitch_box.offset_left = -260
-	pitch_box.offset_right = 260
+	pitch_box.offset_left = -280
+	pitch_box.offset_right = 280
 	pitch_box.offset_top = 16
-	pitch_box.offset_bottom = 78
+	pitch_box.offset_bottom = 96
 	
 	var sb = StyleBoxFlat.new()
-	sb.bg_color = Color(0.10, 0.22, 0.14, 0.94) # Dark jade lacquer theme
-	sb.border_width_left = 3
-	sb.border_width_right = 3
-	sb.border_width_top = 3
-	sb.border_width_bottom = 3
+	sb.bg_color = Color(0.10, 0.22, 0.14, 0.95) # Dark jade theme
+	sb.border_width_left = 3; sb.border_width_right = 3
+	sb.border_width_top = 3; sb.border_width_bottom = 3
 	sb.border_color = C_GOLD
 	sb.set_corner_radius_all(18)
 	sb.shadow_color = Color(0, 0, 0, 0.4)
@@ -411,16 +444,20 @@ func _setup_top_pitch_box():
 	pitch_box.add_theme_stylebox_override("panel", sb)
 	
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 18)
-	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_bottom", 8)
 	pitch_box.add_child(margin)
 	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	margin.add_child(vbox)
+	
 	var hbox = HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 20)
-	margin.add_child(hbox)
+	hbox.add_theme_constant_override("separation", 24)
+	vbox.add_child(hbox)
 	
 	pitch_note_lbl = Label.new()
 	pitch_note_lbl.text = "🎵 Nốt: ---"
@@ -437,6 +474,10 @@ func _setup_top_pitch_box():
 	pitch_status_lbl.add_theme_font_size_override("font_size", 22)
 	pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
 	hbox.add_child(pitch_status_lbl)
+	
+	pitch_meter = PitchMeterDraw.new()
+	pitch_meter.custom_minimum_size = Vector2(480, 20)
+	vbox.add_child(pitch_meter)
 	
 	add_child(pitch_box)
 	pitch_box.visible = false
@@ -983,6 +1024,9 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	
 	if db <= analyzer.volume_threshold_db:
 		time_correct = 0.0
+		if pitch_meter:
+			pitch_meter.is_active = false
+			pitch_meter.queue_redraw()
 		return false
 		
 	if not is_poly and (pitch <= 0.0 or not analyzer.current_pitch_is_reliable):
@@ -1026,8 +1070,12 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 						break
 	else:
 		if target_hz > 0.0 and pitch > 0.0:
-			var cents_error = absf(1200.0 * log(pitch / target_hz) / log(2.0))
-			if cents_error <= 25.0:
+			var cents_error = 1200.0 * log(pitch / target_hz) / log(2.0)
+			if pitch_meter:
+				pitch_meter.current_cents = cents_error
+				pitch_meter.is_active = true
+				pitch_meter.queue_redraw()
+			if absf(cents_error) <= 25.0:
 				is_match = true
 			else:
 				# Allow 1st harmonic (octave equivalence) for weak fundamentals
@@ -1158,16 +1206,15 @@ func _create_speed_control_bar():
 	style_bg.content_margin_bottom = 8
 	speed_bar_container.add_theme_stylebox_override("panel", style_bg)
 	
-	# Định vị căn giữa trên cùng
+	# Position at top right (left of pause button)
 	add_child(speed_bar_container)
-	speed_bar_container.anchor_left = 0.5
-	speed_bar_container.anchor_right = 0.5
+	speed_bar_container.anchor_left = 1.0
+	speed_bar_container.anchor_right = 1.0
 	speed_bar_container.anchor_top = 0.0
 	speed_bar_container.anchor_bottom = 0.0
-	speed_bar_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	speed_bar_container.offset_top = 24
-	speed_bar_container.offset_left = -180
-	speed_bar_container.offset_right = 180
+	speed_bar_container.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	speed_bar_container.offset_top = 18
+	speed_bar_container.offset_right = -100
 	
 	var hbox = HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
