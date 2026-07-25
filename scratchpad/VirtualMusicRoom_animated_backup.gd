@@ -222,11 +222,13 @@ func _ready() -> void:
 	_setup_station_button(s_trong, "trong", "Trống Chầu", _draw_trong)
 	
 	# Setup Linh Assist
-	var comai_scene = preload("res://scenes/CoMai.tscn")
-	var comai_instance = comai_scene.instantiate()
-	comai_instance.name = "CoMaiInstance"
-	char_linh.add_child(comai_instance)
-	comai_instance.position = char_linh.size * 0.5
+	if ResourceLoader.exists("res://scenes/CoMai.tscn"):
+		var comai_scene = load("res://scenes/CoMai.tscn")
+		if comai_scene:
+			var comai_instance = comai_scene.instantiate()
+			comai_instance.name = "CoMaiInstance"
+			char_linh.add_child(comai_instance)
+			comai_instance.position = char_linh.size * 0.5
 	char_linh.position.y += 170.0
 	_linh_base_y = char_linh.position.y
 	char_linh.gui_input.connect(_on_char_linh_gui_input)
