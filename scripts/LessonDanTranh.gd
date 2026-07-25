@@ -429,8 +429,8 @@ func _setup_top_pitch_box():
 	pitch_box.anchor_bottom = 0.0
 	pitch_box.offset_left = -280
 	pitch_box.offset_right = 280
-	pitch_box.offset_top = 16
-	pitch_box.offset_bottom = 96
+	pitch_box.offset_top = 55
+	pitch_box.offset_bottom = 135
 	
 	var sb = StyleBoxFlat.new()
 	sb.bg_color = Color(0.10, 0.22, 0.14, 0.95) # Dark jade theme
@@ -489,6 +489,70 @@ func _process(delta):
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
 		_process_practice(delta)
+	
+	_update_continuous_pitch_hud()
+
+func _update_continuous_pitch_hud():
+	if not pitch_box or not pitch_box.visible or not analyzer:
+		return
+		
+	var db: float = analyzer.current_amplitude_db
+	var pitch: float = analyzer.current_pitch
+	
+	if db <= -48.0 or pitch <= 0.0:
+		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
+			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🎙️ Đang nghe..."
+				pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
+			if pitch_meter:
+				pitch_meter.is_active = false
+				pitch_meter.queue_redraw()
+		return
+
+	# Mic has sound -> detect played note
+	var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
+	var det_name = note_info.get("note_name", "None")
+	
+	if det_name != "None":
+		if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + det_name
+	
+	# Determine target frequency to calculate cents error
+	var current_target_hz = 0.0
+	if current_state == State.PRACTICE_SINGLE and single_practice_idx < unique_practice_notes.size():
+		var t_n = unique_practice_notes[single_practice_idx].split("+")[0]
+		current_target_hz = NOTE_FREQS.get(t_n, 0.0)
+	elif current_state == State.PRACTICE:
+		for note in active_falling_notes:
+			if not note.get("hit", false):
+				var clean_n = note["note"].replace("ZT_", "").split("+")[0]
+				current_target_hz = NOTE_FREQS.get(clean_n, 0.0)
+				break
+				
+	if current_target_hz > 0.0 and pitch > 0.0:
+		var cents_err = 1200.0 * log(pitch / current_target_hz) / log(2.0)
+		while cents_err > 600.0: cents_err -= 1200.0
+		while cents_err < -600.0: cents_err += 1200.0
+		
+		if pitch_meter:
+			pitch_meter.current_cents = cents_err
+			pitch_meter.is_active = true
+			pitch_meter.queue_redraw()
+			
+		# Update status label real-time if not in brief cooldown delay
+		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
+			if absf(cents_err) <= 25.0:
+				if pitch_status_lbl:
+					pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
+					pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
+			elif cents_err < -25.0:
+				if pitch_status_lbl:
+					pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % cents_err
+					pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+			else:
+				if pitch_status_lbl:
+					pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % cents_err
+					pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 
 func _start_intro():
 	current_state = State.INTRO
