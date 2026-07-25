@@ -237,11 +237,11 @@ func _ready():
 		if pos < min_pos: min_pos = pos
 		if pos > max_pos: max_pos = pos
 	
-	var optimal_spacing = 80.0
+	var optimal_spacing = 110.0
 	if max_pos > min_pos:
 		var span = max_pos - min_pos
 		if span > 4.0:
-			optimal_spacing = clampf(480.0 / (span + 2.0), 35.0, 80.0)
+			optimal_spacing = clampf(1440.0 / (span + 2.0), 95.0, 140.0)
 	staff_display.line_spacing = optimal_spacing
 	
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
@@ -734,7 +734,7 @@ func _start_practice():
 		
 		if raw_note_name != "Rest" and raw_note_name != "-":
 			var notes_in_chord = raw_note_name.split("+")
-			var tail_len = max(0.0, (dur - 0.5) * distance_per_beat)
+			var tail_len = 0.0 # Dan Tranh is a plucked zither instrument, so no extended hold tail!
 			var is_demo_lesson = (current_lesson_id == "dan_tranh_level_1_bai_3_practice")
 			var missing = true
 			var note_color = C_JADE

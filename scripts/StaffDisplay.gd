@@ -48,7 +48,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 85.0
+var line_spacing = 110.0
 var clef_tex: Texture2D
 
 func _ready():
@@ -79,7 +79,7 @@ func _draw():
 	# Draw 5 lines (0 is bottom line, 4 is top line)
 	for i in range(5):
 		var y = center_y + (2 - i) * line_spacing
-		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 2.0, true)
+		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.5, true)
 			
 		# Draw treble clef
 		if clef_tex:
@@ -90,7 +90,7 @@ func _draw():
 			draw_texture_rect(clef_tex, Rect2(hit_line_x - clef_w - 20, clef_y, clef_w, clef_h), false)
 			
 	# Draw hit line
-	draw_line(Vector2(hit_line_x, center_y - 3 * line_spacing), Vector2(hit_line_x, center_y + 3 * line_spacing), Color(0.2, 0.8, 0.2, 0.5), 4.0, true)
+	draw_line(Vector2(hit_line_x, center_y - 3 * line_spacing), Vector2(hit_line_x, center_y + 3 * line_spacing), Color(0.2, 0.8, 0.2, 0.6), 5.0, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
