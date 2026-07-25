@@ -499,7 +499,7 @@ func _update_continuous_pitch_hud():
 	var db: float = analyzer.current_amplitude_db
 	var pitch: float = analyzer.current_pitch
 	
-	if db <= -48.0 or pitch <= 0.0:
+	if db <= -45.0 or pitch <= 0.0:
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
 			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
 			if pitch_status_lbl:
@@ -510,11 +510,13 @@ func _update_continuous_pitch_hud():
 				pitch_meter.queue_redraw()
 		return
 
-	# Mic has sound -> detect played note
+	# Mic has sound -> detect played note continuously 60fps
 	var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 	var det_name = note_info.get("note_name", "None")
-	
-	if det_name != "None":
+	if det_name == "None" and pitch > 0.0:
+		det_name = _get_closest_dan_tranh_note_name(pitch)
+		
+	if det_name != "None" and det_name != "":
 		if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + det_name
 	
 	# Determine target frequency to calculate cents error
@@ -539,13 +541,13 @@ func _update_continuous_pitch_hud():
 			pitch_meter.is_active = true
 			pitch_meter.queue_redraw()
 			
-		# Update status label real-time if not in brief cooldown delay
+		# Update status label real-time if not in brief speech cooldown
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
-			if absf(cents_err) <= 25.0:
+			if absf(cents_err) <= 35.0:
 				if pitch_status_lbl:
 					pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
 					pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
-			elif cents_err < -25.0:
+			elif cents_err < -35.0:
 				if pitch_status_lbl:
 					pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % cents_err
 					pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
@@ -553,6 +555,21 @@ func _update_continuous_pitch_hud():
 				if pitch_status_lbl:
 					pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % cents_err
 					pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+
+func _get_closest_dan_tranh_note_name(freq: float) -> String:
+	if freq <= 0.0: return ""
+	var best_name = ""
+	var min_c = 999.0
+	for n in ALL_17_NOTES:
+		var ref_f = NOTE_FREQS.get(n, 0.0)
+		if ref_f > 0.0:
+			var c = abs(1200.0 * log(freq / ref_f) / log(2.0))
+			while c > 600.0: c -= 1200.0
+			c = abs(c)
+			if c < min_c:
+				min_c = c
+				best_name = n
+	return best_name if min_c <= 150.0 else ""
 
 func _start_intro():
 	current_state = State.INTRO
@@ -734,8 +751,15 @@ func _process_practice_single(delta: float) -> void:
 func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note: String, target_idx: int) -> void:
 	if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + detected_note
 	if pitch_status_lbl:
-		pitch_status_lbl.text = "🔴 NHẦM NỐT! (Cần: " + target_note + ")"
+		pitch_status_lbl.text = "🔴 CHƯA ĐÚNG! (Cần: " + target_note + ")"
 		pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+	
+	# Turn note head RED on staff to signal wrong note, but DO NOT advance!
+	for note in active_falling_notes:
+		if not note.get("hit", false):
+			note["color"] = Color(0.95, 0.25, 0.25) # Red note head
+			break
+			
 	zither_board.call("clear_lesson_markers")
 	# Red marker on wrong string, Gold pulse marker on target string
 	zither_board.call("set_lesson_marker", detected_idx, "Nhầm: " + detected_note, 3)
