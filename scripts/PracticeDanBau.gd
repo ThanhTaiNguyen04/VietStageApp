@@ -72,6 +72,19 @@ var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
 
+# Notation Track Variables
+var _current_time_beats := 0.0
+var _target_time_beats := 0.0
+var _current_note_elapsed := 0.0
+var note_visuals : Dictionary = {}
+var note_statuses : Array[String] = []
+var _track_panel : Panel = null
+var _note_container : Control = null
+var _staff_display: Control = null
+var _intro_overlay: ColorRect = null
+var _intro_audio_manager: AIAudioManager = null
+const LANES := ["Đồ", "Sol", "Mi", "Đô", "Sol", "Đố"]
+
 const NOTES_VN : Array[String] = ["Đố", "Sol", "Mi", "Đô", "Sol", "Đồ"]
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
@@ -90,31 +103,100 @@ func _ready() -> void:
 	if current_song_title != "":
 		sheet_notes = current_song_sheet
 	
-	# Bulletproof safety: if sheet_notes is empty under any scenario, populate with default notes
-	if sheet_notes.is_empty():
-		sheet_notes = ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"]
-	elif SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
-		var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
-		var idx := int(clean_id.replace("dan_bau_coban_", ""))
-		if idx == 1 or idx == 2:
-			sheet_notes = ["Đồ", "Đồ", "Đồ", "Đồ"]
-		elif idx == 3:
-			sheet_notes = ["Đồ", "Đô", "Mi", "Đô", "Mi", "Đồ"]
-		elif idx == 4:
-			sheet_notes = ["Đồ", "Đô", "Đồ", "Đô"]
-		elif idx == 5:
-			sheet_notes = ["Đồ", "Đô", "Mi", "Sol", "Sol", "Mi", "Đô", "Sol", "Mi", "Đô", "Đồ"]
+	var active_id := SecureDataManager.active_lesson_id
+	match active_id:
+		"dan_bau_level1_bai2_practice", "dan_bau_level1_bai3_practice":
+			sheet_notes = ["Đồ", "Đồ", "Đồ", "Đồ", "Đồ"]
+		"dan_bau_level1_bai4_practice":
+			sheet_notes = ["Đồ", "Đồ", "Đồ", "Đồ", "Đồ", "Đồ", "Đồ", "Đồ", "Đồ", "Đồ"]
+		"dan_bau_level2_bai1_practice":
+			sheet_notes = ["Đô", "Đô", "Đô", "Đô", "Đô"] # Bồi âm C4 (1/2 dây)
+		"dan_bau_level2_bai2_practice":
+			sheet_notes = ["Sol", "Sol", "Sol", "Sol", "Sol"] # Bồi âm G4 (1/3 dây)
+		"dan_bau_level2_bai3_practice":
+			sheet_notes = ["Đố", "Đố", "Đố", "Đố", "Đố"] # Bồi âm C5 (1/4 dây)
+		"dan_bau_level2_bai4_practice":
+			sheet_notes = ["Đô", "Sol", "Đố", "Sol", "Đô"]
+		"dan_bau_level2_bai5_practice":
+			sheet_notes = ["Đô", "Đô", "Đô", "Đô", "Đô"]
+		"dan_bau_level3_bai1_practice":
+			sheet_notes = ["Rê", "Rê", "Rê", "Rê", "Rê"] # Kéo cần nốt Rê (D4)
+		"dan_bau_level3_bai2_practice":
+			sheet_notes = ["Si", "Si", "Si", "Si", "Si"] # Nhả cần nốt Si (B3)
+		"dan_bau_level3_bai3_practice":
+			sheet_notes = ["Rê", "Rê", "Rê", "Rê", "Rê"]
+		"dan_bau_level3_bai4_practice", "dan_bau_level3_bai5_practice":
+			sheet_notes = ["Đô", "Rê", "Mi", "Rê", "Đô"]
+		"dan_bau_level4_bai1_practice":
+			sheet_notes = ["Đô", "Đô", "Đô", "Đô", "Đô"] # Rung vòi nốt Đô
+		"dan_bau_level4_bai2_practice":
+			sheet_notes = ["Đô", "Rê", "Đô", "Rê", "Đô"]
+		"dan_bau_level4_bai3_practice":
+			sheet_notes = ["Đô", "Mi", "Sol", "Mi", "Đô"]
+		"dan_bau_level4_bai4_practice":
+			sheet_notes = ["Đô", "Sol", "Đô", "Sol", "Đô"]
+		"dan_bau_level4_bai5_practice":
+			sheet_notes = ["Đô", "Rê", "Mi", "Sol", "Đố"]
+		"dan_bau_level5_bai1_practice":
+			sheet_notes = ["Sol", "Mi", "Sol", "La", "Đố"]
+		"dan_bau_level5_bai2_practice":
+			sheet_notes = ["Sol", "Mi", "Sol", "La", "Đố", "La", "Sol"]
+		"dan_bau_level5_bai3_practice", "dan_bau_level5_bai4_practice", "dan_bau_level5_bai5_practice":
+			sheet_notes = ["Sol", "Mi", "Sol", "La", "Đố", "La", "Sol", "Mi", "Rê", "Đô"]
+		_:
+			if sheet_notes.is_empty():
+				sheet_notes = ["Đồ", "Đồ", "Đồ", "Đồ", "Đồ"]
 	_generate_streams()
 	_set_labels()
+	var top_bar := get_node_or_null("Root/TopBar")
+	if top_bar: top_bar.visible = false
+	
+	var record_bar := get_node_or_null("Root/RecordBar")
+	if record_bar: record_bar.visible = false
+	
+	var linh_panel := get_node_or_null("Root/MiddleRow/LinhPanel")
+	if linh_panel: linh_panel.visible = false
+	
+	var settings_panel_node := get_node_or_null("SettingsPanel")
+	if settings_panel_node: settings_panel_node.visible = false
+	
+	# Add a custom floating Back button
+	var custom_back = Button.new()
+	custom_back.text = "← Quay Lại"
+	custom_back.name = "CustomBackBtn"
+	var bs = StyleBoxFlat.new()
+	bs.bg_color = Color("#2e1c12")
+	bs.corner_radius_top_left = 12
+	bs.corner_radius_top_right = 12
+	bs.corner_radius_bottom_left = 12
+	bs.corner_radius_bottom_right = 12
+	bs.content_margin_left = 16
+	bs.content_margin_right = 16
+	bs.content_margin_top = 8
+	bs.content_margin_bottom = 8
+	custom_back.add_theme_stylebox_override("normal", bs)
+	custom_back.add_theme_stylebox_override("hover", bs)
+	custom_back.add_theme_stylebox_override("pressed", bs)
+	custom_back.add_theme_color_override("font_color", Color.WHITE)
+	custom_back.add_theme_font_size_override("font_size", 16)
+	custom_back.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	custom_back.position = Vector2(24, 24)
+	custom_back.pressed.connect(_go_back)
+	$Root.add_child(custom_back)
+	
 	_build_theme()
 	_build_board()
 	_build_dots()
+	_build_notation_track()
+	
 	if falling_notes: falling_notes.note_hit.connect(_on_falling_note_hit)
 	_start_float()
 	_connect_buttons()
 	
 	resized.connect(_on_resized)
 	_on_resized()
+	
+	_setup_cinematic_intro()
 	# Removed duplicate _setup_collapsible_linh() call
 	# Removed char_linh.get_parent().visible = false because collapsible system handles it
 	
@@ -138,9 +220,9 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
-		visualizer.min_frequency = 150.0
-		visualizer.max_frequency = 800.0
-		visualizer.volume_threshold_db = -32.0
+		visualizer.min_frequency = 85.0
+		visualizer.max_frequency = 1100.0
+		visualizer.volume_threshold_db = -45.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1)
@@ -210,6 +292,20 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _recording:
 		_practice_time += delta
+		
+		# Smooth scroll logic (chờ nốt)
+		_current_note_elapsed += delta
+		var wait_for_note = get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/SlowBtn")
+		var is_waiting = wait_for_note and "Bật" in wait_for_note.text
+		
+		var bps = 1.0 # Tốc độ cuộn mặc định
+		var beat_target = float(_note_idx) + (_current_note_elapsed * bps)
+		if is_waiting:
+			# Giới hạn beat_target không được vượt quá note_idx hiện tại để cuộn dừng lại chờ
+			beat_target = min(beat_target, float(_note_idx))
+		
+		_target_time_beats = beat_target
+		
 		if _mic_mode:
 			_process_real_audio(delta)
 		else:
@@ -217,6 +313,39 @@ func _process(delta: float) -> void:
 			if _sim_timer >= 1.2:
 				_sim_timer = 0.0
 				_simulate_tick()
+	
+	# Update scrolling visuals with StaffDisplay
+	if _staff_display and sheet_notes.size() > 0:
+		_current_time_beats = lerpf(_current_time_beats, _target_time_beats, 5.0 * delta)
+		var hit_x = _staff_display.hit_line_x if _staff_display.hit_line_x > 0 else 250.0
+		var pixels_per_beat = 420.0
+		var notes_for_staff = []
+		
+		var beat_accum = 0.0
+		for i in range(sheet_notes.size()):
+			var n_name = sheet_notes[i]
+			var note_time = beat_accum
+			var duration = 1.0
+			beat_accum += duration
+			
+			var note_x = hit_x + (note_time - _current_time_beats) * pixels_per_beat
+			var tail_w = min(120.0, duration * 120.0) # Discrete tail per beat instead of long connecting bar
+			
+			var col = Color("#d6a033") # Golden note color
+			if i == _note_idx:
+				col = Color("#e53935") # Highlight active note
+			elif i < _note_idx:
+				col = Color("#388e3c") # Played note
+				
+			if note_x < _staff_display.size.x + 400 and note_x > -300:
+				notes_for_staff.append({
+					"note": n_name,
+					"x": note_x,
+					"color": col,
+					"tail": tail_w
+				})
+				
+		_staff_display.set_notes(notes_for_staff)
 
 # ─── Labels & Details ─────────────────────────────────────────────────────────
 func _set_labels() -> void:
@@ -508,6 +637,36 @@ func _build_dots() -> void:
 		var d := dots_hbox.get_child(i) as ColorRect
 		if d:
 			d.color = C_GOLD if i < done else Color(0.85, 0.82, 0.75, 1.0)
+
+func _build_notation_track() -> void:
+	# Create track panel dynamically if not exists
+	var main_content = $Root/MiddleRow/MainContent
+	if not _track_panel:
+		_track_panel = Panel.new()
+		_track_panel.name = "NoteTrackPanel"
+		_track_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_track_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		main_content.add_child(_track_panel)
+		main_content.move_child(_track_panel, 0)
+		
+		var tp_style = StyleBoxFlat.new()
+		tp_style.bg_color = Color(0, 0, 0, 0) # Transparent to show cream background
+		_track_panel.add_theme_stylebox_override("panel", tp_style)
+		
+		_staff_display = load("res://scripts/StaffDisplay.gd").new()
+		_staff_display.name = "StaffDisplay"
+		_staff_display.line_spacing = 85.0 # Large 85px line spacing for giant notes & staff
+		_staff_display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_track_panel.add_child(_staff_display)
+
+func _set_block_color(block: Panel, color: Color) -> void:
+	if not is_instance_valid(block): return
+	var sb = block.get_theme_stylebox("panel") as StyleBoxFlat
+	if sb:
+		var sb_dup = sb.duplicate() as StyleBoxFlat
+		sb_dup.bg_color = color
+		block.add_theme_stylebox_override("panel", sb_dup)
 
 func _build_board() -> void:
 	var freqs: Array[float] = []
@@ -905,20 +1064,107 @@ func _demo() -> void:
 		return
 		
 	_demo_active = true
-	var song_name := current_song_title if current_song_title != "" else "Lòng Mẹ"
-	_va_say("Hãy lắng nghe bài nhạc mẫu: " + song_name)
+	var active_id := SecureDataManager.active_lesson_id
 	
-	var dm_btn := get_node_or_null("SettingsPanel/SettingsM/SettingsVBox/CtrlBtns/DemoBtn") as Button
-	if dm_btn: dm_btn.text = "Nghe mẫu: BẬT"
+	if active_id == "dan_bau_level4_bai1_practice":
+		_play_demo_single_note("Đô", true)
+	elif sheet_notes.is_empty():
+		_play_demo_single_note("Đô")
+	elif sheet_notes.count(sheet_notes[0]) == sheet_notes.size():
+		_play_demo_single_note(sheet_notes[0])
+	else:
+		_play_demo_note_sequence(sheet_notes)
+
+func _play_note_by_name(note_name: String) -> void:
+	var idx := 3
+	var bend_cents := 0.0
 	
-	if song_player:
-		var song_id := "long_me"
-		if current_song_title == "Sứ Thanh Hoa":
-			song_id = "su_thanh_hoa"
-		song_player.load_song(song_id)
-		song_player.play()
-	if falling_notes:
-		falling_notes.reset_hits()
+	match note_name:
+		"Đồ":
+			idx = 5
+			bend_cents = 0.0
+		"Rề":
+			idx = 5
+			bend_cents = 200.0
+		"Mì":
+			idx = 5
+			bend_cents = 400.0
+		"Fà":
+			idx = 5
+			bend_cents = 500.0
+		"Sòn":
+			idx = 4
+			bend_cents = 0.0
+		"Làn":
+			idx = 4
+			bend_cents = 200.0
+		"Sìn":
+			idx = 4
+			bend_cents = 400.0
+		"Đô":
+			idx = 3
+			bend_cents = 0.0
+		"Rê":
+			idx = 3
+			bend_cents = 200.0
+		"Mi":
+			idx = 2
+			bend_cents = 0.0
+		"Fa":
+			idx = 2
+			bend_cents = 100.0
+		"Sol":
+			idx = 1
+			bend_cents = 0.0
+		"La":
+			idx = 1
+			bend_cents = 200.0
+		"Si":
+			idx = 1
+			bend_cents = 400.0
+		"Đố":
+			idx = 0
+			bend_cents = 0.0
+		_:
+			if note_name.begins_with("Đồ"): idx = 5
+			elif note_name.begins_with("Đô"): idx = 3
+			elif note_name.begins_with("Đố"): idx = 0
+			elif note_name.begins_with("Sol"): idx = 1
+			elif note_name.begins_with("Mi"): idx = 2
+			elif note_name.begins_with("Rê"): idx = 3; bend_cents = 200.0
+			elif note_name.begins_with("La"): idx = 1; bend_cents = 200.0
+			elif note_name.begins_with("Si"): idx = 1; bend_cents = 400.0
+			
+	_current_bend_cents = bend_cents
+	_play_audio(idx)
+
+func _play_demo_single_note(target_note: String, apply_vibrato: bool = false) -> void:
+	for count in range(3):
+		if not _demo_active:
+			break
+		_play_note_by_name(target_note)
+		if apply_vibrato and _board:
+			var tw = create_tween()
+			tw.tween_property(_board, "_target_bend_offset", -12.0, 0.15)
+			tw.tween_property(_board, "_target_bend_offset", 12.0, 0.15)
+			tw.tween_property(_board, "_target_bend_offset", 0.0, 0.15)
+		await get_tree().create_timer(1.1).timeout
+		
+	_demo_active = false
+
+func _play_demo_note_sequence(seq: Array) -> void:
+	if seq.is_empty():
+		_demo_active = false
+		return
+		
+	for i in range(seq.size()):
+		if not _demo_active:
+			break
+		var target_note: String = seq[i]
+		_play_note_by_name(target_note)
+		await get_tree().create_timer(0.85).timeout
+		
+	_demo_active = false
 
 func _stop_demo() -> void:
 	_demo_active = false
@@ -979,7 +1225,8 @@ func _process_real_audio(delta: float) -> void:
 	var db: float = visualizer.current_amplitude_db
 	var pitch: float = visualizer.current_pitch
 	
-	if db > -45.0 and pitch > 50.0:
+	var tone: float = visualizer.current_tone_quality
+	if db > -45.0 and pitch > 50.0 and tone >= 75.0:
 		var target_note = sheet_notes[_note_idx]
 		
 		# Find the target frequency based on target note name
@@ -988,6 +1235,8 @@ func _process_real_audio(delta: float) -> void:
 		
 		if target_freq > 0.0:
 			var cents = 1200.0 * log(pitch / target_freq) / log(2.0)
+			var cents_mod = fmod(abs(cents), 1200.0)
+			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 			
 			# Estimate current bend visually on the board
 			if _board:
@@ -1012,24 +1261,51 @@ func _process_real_audio(delta: float) -> void:
 				_board._is_bending = true
 				_board.queue_redraw()
 				
-			var acceptable_cents : float = 50.0 * visualizer.difficulty_tolerance_scale
-			if abs(cents) < acceptable_cents:
+			# Pitch tolerance evaluation: ±20 cents or ±15 Hz as per specs
+			var tolerance_cents : float = 20.0 * visualizer.difficulty_tolerance_scale
+			var is_match = DanBauPitchDetector.is_pitch_accurate(pitch, target_freq, tolerance_cents, 15.0)
+			
+			if is_match:
 				pitch_note.text = target_note
+				pitch_status.text = "Chuẩn âm"
+				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
 				
-				var tolerance_cents : float = 12.0 / visualizer.difficulty_tolerance_scale
-				if abs(cents) < tolerance_cents:
-					pitch_status.text = "Đúng cao độ"
-					pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
-					pitch_note.add_theme_color_override("font_color", C_GREEN_OK)
-				else:
-					pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
-					pitch_status.add_theme_color_override("font_color", C_WARN)
-					pitch_note.add_theme_color_override("font_color", C_WARN)
+				_correct_pitch_hold_time += delta
+				if _correct_pitch_hold_time > 0.05:
+					_note_idx = (_note_idx + 1) % sheet_notes.size()
+					_update_target_indicator()
+					_correct_pitch_hold_time = 0.0
 					
-				# Record AI performance metrics
-				_detected_onsets.append(_practice_time)
-				var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
-				_pitch_scores.append(pitch_err)
+					# Record AI performance metrics
+					_detected_onsets.append(_practice_time)
+					var pitch_err = clamp(100.0 - abs(cents) * 2.0, 0.0, 100.0)
+					_pitch_scores.append(pitch_err)
+					_tone_scores.append(visualizer.current_tone_quality)
+					
+					# Dynamic AI scoring
+					var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+					var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
+					var avg_tone_score = _get_average_score(_tone_scores, 80.0)
+					
+					_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, avg_tone_score, 100.0)
+					_refresh_score()
+					
+					if _board:
+						_board.pluck(target_idx)
+						
+					_va_say("Tuyệt vời! Âm sắc chuẩn.")
+					_eval_cooldown = 1.0
+					_teacher_tip_timer = 0.0
+					return
+			else:
+				pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
+				pitch_status.add_theme_color_override("font_color", C_WARN)
+				pitch_note.add_theme_color_override("font_color", C_WARN)
+				
+				_teacher_tip_timer += delta
+				if _teacher_tip_timer > 3.0:
+					_check_teacher_advice(target_note, cents_mod)
+					_teacher_tip_timer = 0.0
 				_tone_scores.append(visualizer.current_tone_quality)
 				
 				# Advance note
@@ -1085,7 +1361,12 @@ func _hop_linh() -> void:
 	pass
 
 func _va_say(text: String) -> void:
-	pass
+	if not is_instance_valid(_intro_audio_manager):
+		_intro_audio_manager = AIAudioManager.new()
+		_intro_audio_manager.name = "IntroAudioManager"
+		add_child(_intro_audio_manager)
+	if text.strip_edges() != "":
+		_intro_audio_manager.speak_vietnamese(text)
 
 func _setup_collapsible_linh() -> void:
 	var linh_vbox := linh_panel.get_node("LinhVBox") as VBoxContainer
@@ -1492,5 +1773,168 @@ func _set_sidebar_icon(btn: Button, icon_name: String) -> void:
 	if tex:
 		btn.icon = tex
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		if "vertical_icon_alignment" in btn:
-			btn.set("vertical_icon_alignment", 0)
+
+func _setup_cinematic_intro() -> void:
+	if get_node_or_null("IntroOverlay"):
+		return
+		
+	# 1. Fullscreen dark overlay background
+	_intro_overlay = ColorRect.new()
+	_intro_overlay.name = "IntroOverlay"
+	_intro_overlay.color = Color("#0a0604e6") # Dark warm transparent overlay
+	_intro_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_intro_overlay)
+	
+	# 2. Virtual Instructor (Mai) - Large Image on Left
+	var artist_img := TextureRect.new()
+	if ResourceLoader.exists("res://assets/textures/avacogiaoMai_asset.png"):
+		artist_img.texture = load("res://assets/textures/avacogiaoMai_asset.png")
+	artist_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artist_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artist_img.size = Vector2(850, 720)
+	artist_img.custom_minimum_size = Vector2(1000, 900)
+	artist_img.position = Vector2(-50, 50)
+	_intro_overlay.add_child(artist_img)
+	
+	# Load fonts
+	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
+	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	
+	# 3. Main Margin Container
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 600)
+	margin.add_theme_constant_override("margin_right", 60)
+	margin.add_theme_constant_override("margin_top", 60)
+	margin.add_theme_constant_override("margin_bottom", 60)
+	_intro_overlay.add_child(margin)
+	
+	# 4. Content VBox
+	var right_vbox := VBoxContainer.new()
+	right_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	right_vbox.add_theme_constant_override("separation", 28)
+	margin.add_child(right_vbox)
+	
+	# Title
+	var title := Label.new()
+	title.text = "BÀI HỌC CƠ BẢN: ĐÀN BẦU"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if f_title: title.add_theme_font_override("font", f_title)
+	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_color_override("font_color", Color("#d6a033"))
+	right_vbox.add_child(title)
+	
+	# Speech Bubble Panel Container
+	var bubble := PanelContainer.new()
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = Color("#fbf8f0") # Warm Cream
+	bs.border_color = Color("#d6a033") # Gold
+	bs.border_width_left = 3; bs.border_width_right = 3
+	bs.border_width_top = 3; bs.border_width_bottom = 3
+	bs.corner_radius_top_left = 20; bs.corner_radius_top_right = 20
+	bs.corner_radius_bottom_left = 20; bs.corner_radius_bottom_right = 20
+	bs.shadow_size = 8
+	bs.shadow_color = Color(0, 0, 0, 0.3)
+	bubble.add_theme_stylebox_override("panel", bs)
+	bubble.custom_minimum_size = Vector2(520, 220)
+	bubble.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	right_vbox.add_child(bubble)
+	
+	var bubble_margin := MarginContainer.new()
+	bubble_margin.add_theme_constant_override("margin_left", 24)
+	bubble_margin.add_theme_constant_override("margin_right", 24)
+	bubble_margin.add_theme_constant_override("margin_top", 24)
+	bubble_margin.add_theme_constant_override("margin_bottom", 24)
+	bubble.add_child(bubble_margin)
+	
+	var active_id := SecureDataManager.active_lesson_id
+	var intro_text := "Chào bạn! Hãy cùng cô Mai luyện tập Đàn Bầu nhé.\nLắng nghe giai điệu và quan sát các nốt nhạc trôi qua vạch đích màu xanh để gảy đàn đúng cao độ nhịp nhé!"
+	
+	if active_id == "dan_bau_level2_bai1_practice":
+		intro_text = "Chào bạn! Ở Bài 1 này, chúng ta luyện tập Bồi Âm 1/2 dây (Nốt Đô / C4).\nHãy chạm nhẹ cạnh bàn tay phải vào giữa dây (1/2) và gảy duy nhất nốt Đô nhé!"
+	elif active_id == "dan_bau_level2_bai2_practice":
+		intro_text = "Chào bạn! Ở Bài 2 này, chúng ta luyện tập Bồi Âm 1/3 dây (Nốt Sol / G4).\nHãy chạm nhẹ vị trí 1/3 dây và gảy duy nhất nốt Sol nhé!"
+	elif active_id == "dan_bau_level2_bai3_practice":
+		intro_text = "Chào bạn! Ở Bài 3 này, chúng ta luyện tập Bồi Âm 1/4 dây (Nốt Đố / C5).\nHãy chạm nhẹ vị trí 1/4 dây và gảy duy nhất nốt Đố nhé!"
+	elif active_id == "dan_bau_level3_bai1_practice":
+		intro_text = "Chào bạn! Ở Bài 1 này, chúng ta luyện kéo cần đàn tay trái sang trái để nâng cao cao độ lên nốt Rê (D4) nhé!"
+	elif active_id == "dan_bau_level3_bai2_practice":
+		intro_text = "Chào bạn! Ở Bài 2 này, chúng ta luyện nhả thả lỏng cần đàn sang phải để giảm cao độ về nốt Si (B3) nhé!"
+	elif active_id == "dan_bau_level4_bai1_practice":
+		intro_text = "Chào bạn! Ở Bài 1 này, chúng ta luyện kỹ thuật Rung vòi (Vibrato) đều tay trái trên nốt Đô (C4) nhé!"
+		
+	var speech_lbl = Label.new()
+	speech_lbl.text = intro_text
+	speech_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	speech_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speech_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if f_body: speech_lbl.add_theme_font_override("font", f_body)
+	speech_lbl.add_theme_font_size_override("font_size", 22)
+	speech_lbl.add_theme_color_override("font_color", Color("#2b2b2b"))
+	bubble_margin.add_child(speech_lbl)
+	
+	if not is_instance_valid(_intro_audio_manager):
+		_intro_audio_manager = AIAudioManager.new()
+		_intro_audio_manager.name = "IntroAudioManager"
+		add_child(_intro_audio_manager)
+		
+	_intro_audio_manager.speak_vietnamese(intro_text)
+	
+	# Action Buttons Row
+	var btn_hbox := HBoxContainer.new()
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_hbox.add_theme_constant_override("separation", 24)
+	right_vbox.add_child(btn_hbox)
+	
+	# "Nghe thử" Button
+	var demo_btn = Button.new()
+	demo_btn.text = "🎧 Nghe thử bài hát"
+	var d_bs = StyleBoxFlat.new()
+	d_bs.bg_color = Color("#8d2b2b")
+	d_bs.border_color = Color("#d6a033")
+	d_bs.border_width_left = 2; d_bs.border_width_right = 2
+	d_bs.border_width_top = 2; d_bs.border_width_bottom = 2
+	d_bs.corner_radius_top_left = 14; d_bs.corner_radius_top_right = 14
+	d_bs.corner_radius_bottom_left = 14; d_bs.corner_radius_bottom_right = 14
+	d_bs.content_margin_left = 20; d_bs.content_margin_right = 20
+	d_bs.content_margin_top = 12; d_bs.content_margin_bottom = 12
+	demo_btn.add_theme_stylebox_override("normal", d_bs)
+	demo_btn.add_theme_stylebox_override("hover", d_bs)
+	demo_btn.add_theme_stylebox_override("pressed", d_bs)
+	demo_btn.add_theme_color_override("font_color", Color.WHITE)
+	if f_body_bold: demo_btn.add_theme_font_override("font", f_body_bold)
+	demo_btn.add_theme_font_size_override("font_size", 20)
+	demo_btn.pressed.connect(func():
+		_demo()
+	)
+	btn_hbox.add_child(demo_btn)
+	
+	# "Bắt đầu luyện tập" Button
+	var start_btn = Button.new()
+	start_btn.text = "▶ Bắt đầu luyện tập"
+	var s_bs = StyleBoxFlat.new()
+	s_bs.bg_color = Color("#2e7d32")
+	s_bs.border_color = Color("#d6a033")
+	s_bs.border_width_left = 2; s_bs.border_width_right = 2
+	s_bs.border_width_top = 2; s_bs.border_width_bottom = 2
+	s_bs.corner_radius_top_left = 14; s_bs.corner_radius_top_right = 14
+	s_bs.corner_radius_bottom_left = 14; s_bs.corner_radius_bottom_right = 14
+	s_bs.content_margin_left = 24; s_bs.content_margin_right = 24
+	s_bs.content_margin_top = 12; s_bs.content_margin_bottom = 12
+	start_btn.add_theme_stylebox_override("normal", s_bs)
+	start_btn.add_theme_stylebox_override("hover", s_bs)
+	start_btn.add_theme_stylebox_override("pressed", s_bs)
+	start_btn.add_theme_color_override("font_color", Color.WHITE)
+	if f_body_bold: start_btn.add_theme_font_override("font", f_body_bold)
+	start_btn.add_theme_font_size_override("font_size", 20)
+	start_btn.pressed.connect(func():
+		if is_instance_valid(_intro_audio_manager):
+			_intro_audio_manager.speak_vietnamese("Bắt đầu luyện tập!")
+		if _demo_active: _stop_demo()
+		var tw = create_tween()
+		tw.tween_property(_intro_overlay, "modulate:a", 0.0, 0.3)
+		tw.tween_callback(func(): _intro_overlay.queue_free())
+	)
+	btn_hbox.add_child(start_btn)

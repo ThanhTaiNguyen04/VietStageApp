@@ -78,6 +78,7 @@ var btn_minigame               : Button
 
 var _sidebar_icons_cache := {}
 
+<<<<<<< HEAD
 # ─── Dynamic Lesson Data (5 Lessons Course)
 const LESSONS = [
 	{
@@ -143,9 +144,202 @@ const LESSONS = [
 			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 5: Luyện tập bài Bèo Dạt Mây Trôi."},
 			{"start": 3.0, "end": 6.5, "text": "Kết hợp kỹ thuật gảy hài âm nốt Đô, Rê, Mi và uốn cần nhịp nhàng."},
 			{"start": 6.5, "end": 10.0, "text": "Hãy cố gắng liên kết các âm vang mềm mại và đúng nhịp điệu bài học nhé."}
+=======
+static var selected_level: int = 1
+
+const LEVELS := [
+	{
+		"level": 1,
+		"title": "LÀM QUEN VỚI ĐÀN (NHẬP MÔN)",
+		"objective": "🎯 Mục tiêu: Xem video giới thiệu cấu tạo, tư thế và cách tạo âm chuẩn.",
+		"lessons": [
+			{
+				"id": "dan_bau_level1_bai1_video",
+				"title": "BÀI 1",
+				"type": "video",
+				"note": "Giới thiệu Đàn Bầu",
+				"subtitles": [
+					{"start": 0.0, "end": 2.5, "text": "Chào mừng bạn đến với Bài 1: Lịch sử ngắn và Cấu tạo Đàn Bầu."},
+					{"start": 2.5, "end": 6.5, "text": "Đàn Bầu gồm Bầu vang, vòi/cần đàn, dây đàn, trạc đàn và que gảy."},
+					{"start": 6.5, "end": 10.0, "text": "Hãy quan sát kỹ từng bộ phận trước khi bắt đầu tư thế ngồi nhé."}
+				]
+			}
+		]
+	},
+	{
+		"level": 2,
+		"title": "KỸ THUẬT BỒI ÂM CƠ BẢN",
+		"objective": "🎯 Mục tiêu: Biết tạo các bồi âm tự nhiên trên dây đàn.",
+		"lessons": [
+			{
+				"id": "dan_bau_level2_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Bồi âm 1/2 dây (C4)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Bồi âm 1/3 dây (G4)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Bồi âm 1/4 dây (C5)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Ghép chuỗi Bồi Âm",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🎮 Mini Game: Nhận diện C4",
+				"subtitles": []
+			}
+		]
+	},
+	{
+		"level": 3,
+		"title": "ĐIỀU KHIỂN CẦN ĐÀN",
+		"objective": "🎯 Mục tiêu: Làm chủ cao độ bằng tay trái uốn/nhả cần.",
+		"lessons": [
+			{
+				"id": "dan_bau_level3_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Kéo cần tăng cao độ",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Nhả cần giảm cao độ",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Giữ cao độ ổn định",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Chuyển giữa các cao độ",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🎮 Mini Game: C4 → C#4 → D4",
+				"subtitles": []
+			}
+		]
+	},
+	{
+		"level": 4,
+		"title": "KỸ THUẬT BIỂU CẢM",
+		"objective": "🎯 Mục tiêu: Chơi có cảm xúc với Rung, Luyến, Vuốt, Ngắt.",
+		"lessons": [
+			{
+				"id": "dan_bau_level4_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Kỹ thuật Rung (Vibrato)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Kỹ thuật Luyến âm",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Kỹ thuật Vuốt cần",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Kỹ thuật Ngắt tiếng",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🎮 Mini Game: AI Bắt chước & Chấm điểm",
+				"subtitles": []
+			}
+		]
+	},
+	{
+		"level": 5,
+		"title": "CHƠI BÀI HÁT DÂN CA",
+		"objective": "🎯 Mục tiêu: Áp dụng toàn bộ kỹ thuật chơi hoàn chỉnh bài hát.",
+		"lessons": [
+			{
+				"id": "dan_bau_level5_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Luyện từng câu nhạc",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Ghép câu & Ghép đoạn",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Bài Bèo Dạt Mây Trôi",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Bài Lý Cây Đa & Cò Lả",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🏆 Mini Game Cuối: Chơi Cả Bài (AI Chấm 100)",
+				"subtitles": []
+			}
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		]
 	}
 ]
+
+func get_current_lessons() -> Array:
+	var level_idx := clampi(selected_level, 1, LEVELS.size()) - 1
+	return LEVELS[level_idx]["lessons"]
 
 func _ready() -> void:
 	SecureDataManager.load_data()
@@ -273,8 +467,15 @@ func _build_theme() -> void:
 	top_blur_rect.show_behind_parent = true
 	top_bar.add_child(top_blur_rect)
 	top_bar.move_child(top_blur_rect, 0)
+<<<<<<< HEAD
 
 	page_title.text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
+=======
+	
+	var level_idx := clampi(selected_level, 1, LEVELS.size()) - 1
+	var level_info: Dictionary = LEVELS[level_idx]
+	page_title.text = "GIÁO TRÌNH ĐÀN BẦU · LEVEL %d: %s" % [selected_level, level_info["title"]]
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 	page_title.add_theme_color_override("font_color", C_JADE)
 
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -752,13 +953,14 @@ func _flat(bg: Color, border: Color, radius: int, border_width: int = 0) -> Styl
 # ─── Lesson List ─────────────────────────────────────────────────────────────
 
 func _build_lesson_list() -> void:
-	lessons_hbox.add_theme_constant_override("separation", 120)
+	lessons_hbox.add_theme_constant_override("separation", 100)
 	# Clear existing children
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 
 	var inst := "dan_bau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
+<<<<<<< HEAD
 	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_coban_1_video"])
 
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
@@ -771,11 +973,24 @@ func _build_lesson_list() -> void:
 		var v_id := id + "_video"
 		var p_id := id + "_practice"
 
+=======
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_level1_bai1_video"])
+	
+	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var lessons_data := get_current_lessons()
+	
+	for i in range(lessons_data.size()):
+		var lesson_item : Dictionary = lessons_data[i]
+		var id := lesson_item["id"] as String
+		var type := lesson_item["type"] as String
+		
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		# Unlocking checks
-		var is_v_unlocked := false
+		var is_unlocked := false
 		if i == 0:
-			is_v_unlocked = true
+			is_unlocked = true
 		else:
+<<<<<<< HEAD
 			var prev_id := LESSONS[i - 1]["id"] as String
 			is_v_unlocked = unlocked_lessons.has(v_id) or completed_lessons.has(prev_id + "_practice")
 
@@ -784,12 +999,20 @@ func _build_lesson_list() -> void:
 		var is_v_completed := completed_lessons.has(v_id)
 		var is_p_completed := completed_lessons.has(p_id)
 
+=======
+			var prev_id := lessons_data[i - 1]["id"] as String
+			is_unlocked = unlocked_lessons.has(id) or completed_lessons.has(prev_id)
+			
+		var is_completed := completed_lessons.has(id)
+		
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
 		col.custom_minimum_size = Vector2.ZERO
 		col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
+<<<<<<< HEAD
 		col.add_theme_constant_override("separation", 20)
 
 		# Top: Lesson Title Label
@@ -813,11 +1036,26 @@ func _build_lesson_list() -> void:
 		col.add_child(sub_lbl)
 
 		# Center: Row of circles connected horizontally
+=======
+		col.add_theme_constant_override("separation", 16)
+		
+		# Top: Lesson Title Label (BÀI 1, BÀI 2, BÀI 3...)
+		var title_lbl := Label.new()
+		title_lbl.text = lesson_item["title"]
+		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_lbl.add_theme_color_override("font_color", C_TEXT if is_unlocked else C_TEXT_MUTED)
+		title_lbl.add_theme_font_size_override("font_size", 20)
+		if f_bold:
+			title_lbl.add_theme_font_override("font", f_bold)
+		col.add_child(title_lbl)
+		
+		# Center: Row containing EXACTLY 1 Circle Button per Lesson
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		var row := HBoxContainer.new()
 		row.name = "Row"
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.add_theme_constant_override("separation", 100)
 		col.add_child(row)
+<<<<<<< HEAD
 
 		# 1. Hướng Dẫn Button (Left circle)
 		var v_btn := Button.new()
@@ -843,6 +1081,24 @@ func _build_lesson_list() -> void:
 
 		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
 
+=======
+		
+		var btn := Button.new()
+		btn.name = "LessonBtn"
+		btn.custom_minimum_size = Vector2(180, 180)
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		
+		_setup_circle_btn(btn, lesson_item["title"], lesson_item["note"], is_unlocked, is_completed, type)
+		row.add_child(btn)
+		
+		if type == "video":
+			btn.pressed.connect(_on_video_pressed.bind(id, lesson_item.get("subtitles", []), is_unlocked))
+		else:
+			btn.pressed.connect(_on_practice_pressed.bind(id, is_unlocked))
+			
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		lessons_hbox.add_child(col)
 
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
@@ -869,9 +1125,15 @@ func _setup_circle_btn(btn: Button, action: String, unlocked: bool, completed: b
 
 	# Short, clean text — no long lesson title inside circle
 	if completed:
+<<<<<<< HEAD
 		btn.text = "\n\n%s\n✓ Xong" % action
 	elif unlocked:
 		btn.text = "\n\n%s" % action
+=======
+		btn.text = "\n\n%s\nHoàn thành" % lesson_title
+	elif unlocked:
+		btn.text = "\n\n%s" % lesson_title
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 	else:
 		btn.text = ""
 
@@ -954,17 +1216,20 @@ func _setup_circle_btn(btn: Button, action: String, unlocked: bool, completed: b
 func _draw_connecting_lines() -> void:
 	var inst := "dan_bau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_coban_1_video"])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_level1_bai1_video"])
 
 	var centers : Array[Vector2] = []
 	var node_unlocked : Array[bool] = []
 
+	var lessons_data := get_current_lessons()
 	var cols := lessons_hbox.get_children()
 	for i in range(cols.size()):
+		if i >= lessons_data.size(): break
 		var col := cols[i] as VBoxContainer
 		if not col: continue
 		var row := col.get_node_or_null("Row") as HBoxContainer
 		if not row: continue
+<<<<<<< HEAD
 
 		var v_btn := row.get_node_or_null("VideoBtn") as Button
 		var p_btn := row.get_node_or_null("PracticeBtn") as Button
@@ -980,9 +1245,22 @@ func _draw_connecting_lines() -> void:
 		var lesson_id := LESSONS[i]["id"] as String
 		var p_id := lesson_id + "_practice"
 		var is_v_unlocked := false
+=======
+		
+		var btn := row.get_node_or_null("LessonBtn") as Button
+		if not btn: continue
+		
+		# Compute center in HBox local coordinates
+		var center := col.position + row.position + btn.position + btn.size / 2.0
+		centers.append(center)
+		
+		var lesson_id := lessons_data[i]["id"] as String
+		var is_unlocked := false
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		if i == 0:
-			is_v_unlocked = true
+			is_unlocked = true
 		else:
+<<<<<<< HEAD
 			var prev_id := LESSONS[i - 1]["id"] as String
 			is_v_unlocked = unlocked_lessons.has(lesson_id + "_video") or completed_lessons.has(prev_id + "_practice")
 
@@ -990,6 +1268,12 @@ func _draw_connecting_lines() -> void:
 
 		node_unlocked.append(is_v_unlocked)
 		node_unlocked.append(is_p_unlocked)
+=======
+			var prev_id := lessons_data[i - 1]["id"] as String
+			is_unlocked = unlocked_lessons.has(lesson_id) or completed_lessons.has(prev_id)
+			
+		node_unlocked.append(is_unlocked)
+>>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 
 	if centers.is_empty():
 		return

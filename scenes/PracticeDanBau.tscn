@@ -241,6 +241,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 0
 
 [node name="FallingNotesLayer" type="Control" parent="Root/MiddleRow/MainContent"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_horizontal = 3
@@ -250,6 +251,7 @@ script = ExtResource("5_falling")
 script = ExtResource("6_song")
 
 [node name="StringsBoard" type="PanelContainer" parent="Root"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
