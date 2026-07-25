@@ -774,7 +774,7 @@ func _process_practice(delta):
 	var hit_x = staff_display.hit_line_x
 	var scroll_speed = 350.0
 	
-	var is_wait_mode = (current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id.begins_with("dan_tranh_level_6"))
+	var is_wait_mode = true # Always wait for the correct note sound before advancing past notes!
 	
 	# In Wait Mode, check if the first un-hit note has reached the hit line
 	var freeze_unhit_notes = false
