@@ -245,7 +245,7 @@ func _ready():
 	# Keep this explicit so scene/default changes cannot cut off the high strings.
 	analyzer.min_frequency = 180.0
 	analyzer.max_frequency = 4200.0
-	analyzer.volume_threshold_db = -50.0
+	analyzer.volume_threshold_db = -58.0
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
@@ -499,7 +499,7 @@ func _update_continuous_pitch_hud():
 	var db: float = analyzer.current_amplitude_db
 	var pitch: float = analyzer.current_pitch
 	
-	if db <= -52.0 or pitch <= 0.0:
+	if db <= -58.0 or pitch <= 0.0:
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
 			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
 			if pitch_status_lbl:
@@ -1109,17 +1109,12 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
 	
-	# Relaxed volume threshold (-48 dB) to pick up standard acoustic instruments
-	if db <= -48.0:
+	# Relaxed volume threshold (-55 dB) to pick up standard acoustic instruments
+	if db <= -55.0:
 		time_correct = 0.0
 		if pitch_meter:
 			pitch_meter.is_active = false
 			pitch_meter.queue_redraw()
-		return false
-		
-	# Require pitch periodicity (reject unpitched wind noise / blowing air into microphone)
-	if not is_poly and not analyzer.current_pitch_is_reliable:
-		time_correct = 0.0
 		return false
 
 	var is_match = false
