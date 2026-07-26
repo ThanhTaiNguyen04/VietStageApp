@@ -167,7 +167,7 @@ func _build_content() -> void:
 
 	# Card style
 	var card := $Root/Card as PanelContainer
-	var cs   := _flat(Color(0.95, 0.93, 0.89, 0.75), Color(0.77, 0.59, 0.15, 0.4), 32)
+	var cs   := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 32)
 	cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
 	cs.shadow_size   = 40
 	cs.shadow_color  = Color(0.09, 0.25, 0.18, 0.15)
@@ -230,33 +230,48 @@ func _build_content() -> void:
 	inner.add_theme_constant_override("separation", 0)
 	scroll.add_child(inner)
 
-	# ── Podium (top 3) ──
-	_build_podium(inner)
+	# ── Podium (top 3) - Removed ──
 
 	# ── List header ──
 	var header_margin := MarginContainer.new()
-	header_margin.add_theme_constant_override("margin_left",  20)
-	header_margin.add_theme_constant_override("margin_right", 20)
+	header_margin.add_theme_constant_override("margin_left",  32)
+	header_margin.add_theme_constant_override("margin_right", 32)
 	header_margin.add_theme_constant_override("margin_top",   8)
 	header_margin.add_theme_constant_override("margin_bottom", 4)
 	inner.add_child(header_margin)
 
 	var hdr := HBoxContainer.new()
+	hdr.add_theme_constant_override("separation", 10)
 	header_margin.add_child(hdr)
-	for col in [["#",48], ["Người chơi",0], ["Level",-1], ["⭐ Sao",-1]]:
-		var lbl := Label.new()
-		lbl.text = col[0]
-		if col[1] > 0:
-			lbl.custom_minimum_size = Vector2(col[1], 0)
-		elif col[1] == 0:
-			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for col in [["Hạng",56, HORIZONTAL_ALIGNMENT_CENTER], ["Người chơi",0, HORIZONTAL_ALIGNMENT_LEFT], ["Level",100, HORIZONTAL_ALIGNMENT_RIGHT], ["Sao",60, HORIZONTAL_ALIGNMENT_RIGHT]]:
+		if col[0] == "Sao":
+			var col_hb := HBoxContainer.new()
+			col_hb.custom_minimum_size = Vector2(col[1], 0)
+			col_hb.alignment = BoxContainer.ALIGNMENT_END
+			var ic := TextureRect.new()
+			ic.texture = load("res://assets/textures/lucide/star.svg")
+			ic.custom_minimum_size = Vector2(14, 14)
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ic.modulate = C_TEXT_MUT
+			col_hb.add_child(ic)
+			var lbl := Label.new()
+			lbl.text = col[0]
+			lbl.add_theme_color_override("font_color", C_TEXT_MUT)
+			lbl.add_theme_font_size_override("font_size", 12)
+			if font_regular: lbl.add_theme_font_override("font", font_regular)
+			col_hb.add_child(lbl)
+			hdr.add_child(col_hb)
 		else:
-			lbl.custom_minimum_size = Vector2(80, 0)
-			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-		lbl.add_theme_font_size_override("font_size", 12)
-		if font_regular: lbl.add_theme_font_override("font", font_regular)
-		hdr.add_child(lbl)
+			var lbl := Label.new()
+			lbl.text = col[0]
+			if col[1] > 0: lbl.custom_minimum_size = Vector2(col[1], 0)
+			elif col[1] == 0: lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.horizontal_alignment = col[2]
+			lbl.add_theme_color_override("font_color", C_TEXT_MUT)
+			lbl.add_theme_font_size_override("font_size", 12)
+			if font_regular: lbl.add_theme_font_override("font", font_regular)
+			hdr.add_child(lbl)
 
 	# thin separator
 	var sep2 := ColorRect.new()
@@ -271,83 +286,12 @@ func _build_content() -> void:
 	inner.add_child(_list_vbox)
 
 	_populate_list()
+	
+	var sticky_bar := _build_sticky_bar()
+	if sticky_bar: gv.add_child(sticky_bar)
 
 # ──────────────────────────────────────────────────────────────────────
 # PODIUM  (top 3 visually)
-# ──────────────────────────────────────────────────────────────────────
-func _build_podium(container: VBoxContainer) -> void:
-	var players = MOCK.get(instrument_id, [])
-	if players.size() < 3:
-		return
-
-	var pod_margin := MarginContainer.new()
-	pod_margin.add_theme_constant_override("margin_left",  24)
-	pod_margin.add_theme_constant_override("margin_right", 24)
-	pod_margin.add_theme_constant_override("margin_top",   20)
-	pod_margin.add_theme_constant_override("margin_bottom", 8)
-	container.add_child(pod_margin)
-
-	# HBox: [2nd | 1st | 3rd]
-	var hbox := HBoxContainer.new()
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 12)
-	pod_margin.add_child(hbox)
-
-	# Order: rank 2, rank 1, rank 3
-	var order := [1, 0, 2]
-	for oi in order:
-		var p   : Dictionary = players[oi]
-		var rk  : int = oi + 1  # 1-based
-		var col := _get_rank_color(rk)
-
-		var vbox := VBoxContainer.new()
-		vbox.alignment = BoxContainer.ALIGNMENT_END
-		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		vbox.add_theme_constant_override("separation", 6)
-		hbox.add_child(vbox)
-
-		# Crown icon for #1
-		if rk == 1:
-			var crown_lbl := Label.new()
-			crown_lbl.text = "👑"
-			crown_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			crown_lbl.add_theme_font_size_override("font_size", 28)
-			vbox.add_child(crown_lbl)
-
-		# Avatar circle
-		var avatar_size := 72 if rk == 1 else 58
-		var av_btn := _make_avatar_circle(avatar_size, col)
-		vbox.add_child(av_btn)
-
-		# Medal badge
-		var medal_lbl := Label.new()
-		medal_lbl.text = ["🥇","🥈","🥉"][rk - 1]
-		medal_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		medal_lbl.add_theme_font_size_override("font_size", 22)
-		vbox.add_child(medal_lbl)
-
-		# Name
-		var name_lbl := Label.new()
-		name_lbl.text = p["name"]
-		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_lbl.add_theme_color_override("font_color", C_TEXT)
-		name_lbl.add_theme_font_size_override("font_size", 13 if rk == 1 else 12)
-		if font_bold: name_lbl.add_theme_font_override("font", font_bold)
-		name_lbl.clip_text = true
-		vbox.add_child(name_lbl)
-
-		# Level badge
-		var lv_badge := _make_level_badge(p["level"], p["stars"])
-		vbox.add_child(lv_badge)
-
-		# Spacer at bottom for non-first to visually "lower" them
-		if rk != 1:
-			var spacer := Control.new()
-			spacer.custom_minimum_size = Vector2(0, 0 if rk == 2 else 12)
-			vbox.add_child(spacer)
-
-# ──────────────────────────────────────────────────────────────────────
-# RANK LIST (rows 4 and beyond)
 # ──────────────────────────────────────────────────────────────────────
 func _populate_list() -> void:
 	if _list_vbox == null:
@@ -356,106 +300,130 @@ func _populate_list() -> void:
 		c.queue_free()
 
 	var players = MOCK.get(instrument_id, [])
-	var start   = 3 if players.size() > 3 else 0
-
-	for i in range(start, players.size()):
+	
+	for i in range(players.size()):
 		var p   : Dictionary = players[i]
 		var rk  : int = i + 1
 		var is_me := (rk == MY_RANK)
-
-		var row_margin := MarginContainer.new()
-		row_margin.add_theme_constant_override("margin_left",  20)
-		row_margin.add_theme_constant_override("margin_right", 20)
-		row_margin.add_theme_constant_override("margin_top",    4)
-		row_margin.add_theme_constant_override("margin_bottom", 4)
-		_list_vbox.add_child(row_margin)
-
-		var row_bg := PanelContainer.new()
-		var rs : StyleBoxFlat
-		if is_me:
-			rs = _flat(Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.12), Color(0, 0, 0, 0), 12)
-			rs.border_width_left = 6
-			rs.border_color = C_GOLD
-		else:
-			rs = _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
-		row_bg.add_theme_stylebox_override("panel", rs)
-		row_margin.add_child(row_bg)
-
-		var inner := MarginContainer.new()
-		inner.add_theme_constant_override("margin_left",  12)
-		inner.add_theme_constant_override("margin_right", 12)
-		inner.add_theme_constant_override("margin_top",    8)
-		inner.add_theme_constant_override("margin_bottom", 8)
-		row_bg.add_child(inner)
-
-		var hbox := HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 10)
-		inner.add_child(hbox)
-
-		# Rank number
-		var rk_lbl := Label.new()
-		rk_lbl.text = "#" + str(rk)
-		rk_lbl.custom_minimum_size = Vector2(36, 0)
-		rk_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		rk_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
-		rk_lbl.add_theme_font_size_override("font_size", 14)
-		if font_bold: rk_lbl.add_theme_font_override("font", font_bold)
-		hbox.add_child(rk_lbl)
-
-		# Mini avatar
-		var mini_av := _make_mini_avatar(32, C_GREEN_MID)
-		hbox.add_child(mini_av)
-
-		# Name + "BẠN" badge
-		var name_hbox := HBoxContainer.new()
-		name_hbox.add_theme_constant_override("separation", 6)
-		name_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		hbox.add_child(name_hbox)
-
-		var name_lbl := Label.new()
-		name_lbl.text = p["name"]
-		name_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
-		name_lbl.add_theme_font_size_override("font_size", 14)
-		if font_bold and is_me:
-			name_lbl.add_theme_font_override("font", font_bold)
-		elif font_regular:
-			name_lbl.add_theme_font_override("font", font_bold if is_me else font_regular)
-		name_hbox.add_child(name_lbl)
-
-		if is_me:
-			var me_badge := Label.new()
-			me_badge.text = " BẠN "
-			me_badge.add_theme_color_override("font_color", C_CREAM)
-			me_badge.add_theme_font_size_override("font_size", 10)
-			if font_bold: me_badge.add_theme_font_override("font", font_bold)
-			var me_s := _flat(C_GREEN, Color(0,0,0,0), 6)
-			me_badge.add_theme_stylebox_override("normal", me_s)
-			name_hbox.add_child(me_badge)
-
-		# Level text
-		var lv_lbl := Label.new()
-		lv_lbl.text = "Lv.%d · Bài %d" % [p["level"], p["lesson"]]
-		lv_lbl.custom_minimum_size = Vector2(100, 0)
-		lv_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lv_lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-		lv_lbl.add_theme_font_size_override("font_size", 12)
-		if font_regular: lv_lbl.add_theme_font_override("font", font_regular)
-		hbox.add_child(lv_lbl)
-
-		# Stars
-		var star_lbl := Label.new()
-		star_lbl.text = "⭐ " + str(p["stars"])
-		star_lbl.custom_minimum_size = Vector2(60, 0)
-		star_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		star_lbl.add_theme_color_override("font_color", C_GOLD)
-		star_lbl.add_theme_font_size_override("font_size", 13)
-		if font_bold: star_lbl.add_theme_font_override("font", font_bold)
-		hbox.add_child(star_lbl)
+		_list_vbox.add_child(_create_list_row(p, rk, is_me))
 
 	# Bottom padding
 	var bottom := Control.new()
 	bottom.custom_minimum_size = Vector2(0, 16)
 	_list_vbox.add_child(bottom)
+
+func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
+	var row_margin := MarginContainer.new()
+	row_margin.add_theme_constant_override("margin_left",  20)
+	row_margin.add_theme_constant_override("margin_right", 20)
+	row_margin.add_theme_constant_override("margin_top",    4)
+	row_margin.add_theme_constant_override("margin_bottom", 4)
+
+	var row_bg := PanelContainer.new()
+	var rs : StyleBoxFlat
+	if is_me:
+		rs = _flat(Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.12), Color(0, 0, 0, 0), 12)
+		rs.border_width_left = 6
+		rs.border_color = C_GOLD
+	else:
+		rs = _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+	row_bg.add_theme_stylebox_override("panel", rs)
+	row_margin.add_child(row_bg)
+
+	var inner := MarginContainer.new()
+	inner.add_theme_constant_override("margin_left",  12)
+	inner.add_theme_constant_override("margin_right", 12)
+	inner.add_theme_constant_override("margin_top",    8)
+	inner.add_theme_constant_override("margin_bottom", 8)
+	row_bg.add_child(inner)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 10)
+	inner.add_child(hbox)
+
+	var rk_lbl := Label.new()
+	rk_lbl.text = str(rk)
+	rk_lbl.custom_minimum_size = Vector2(56, 0)
+	rk_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rk_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
+	rk_lbl.add_theme_font_size_override("font_size", 14)
+	if font_bold: rk_lbl.add_theme_font_override("font", font_bold)
+	hbox.add_child(rk_lbl)
+
+	var mini_av := _make_mini_avatar(32, C_GREEN_MID)
+	hbox.add_child(mini_av)
+
+	var name_hbox := HBoxContainer.new()
+	name_hbox.add_theme_constant_override("separation", 6)
+	name_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(name_hbox)
+
+	var name_lbl := Label.new()
+	name_lbl.text = p["name"]
+	name_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
+	name_lbl.add_theme_font_size_override("font_size", 14)
+	if font_bold and is_me:
+		name_lbl.add_theme_font_override("font", font_bold)
+	elif font_regular:
+		name_lbl.add_theme_font_override("font", font_bold if is_me else font_regular)
+	name_hbox.add_child(name_lbl)
+
+	if is_me:
+		var me_badge := Label.new()
+		me_badge.text = " BẠN "
+		me_badge.add_theme_color_override("font_color", C_CREAM)
+		me_badge.add_theme_font_size_override("font_size", 10)
+		if font_bold: me_badge.add_theme_font_override("font", font_bold)
+		var me_s := _flat(C_GREEN, Color(0,0,0,0), 6)
+		me_badge.add_theme_stylebox_override("normal", me_s)
+		name_hbox.add_child(me_badge)
+
+	var lv_lbl := Label.new()
+	lv_lbl.text = "Lv.%d · Bài %d" % [p["level"], p["lesson"]]
+	lv_lbl.custom_minimum_size = Vector2(100, 0)
+	lv_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	lv_lbl.add_theme_color_override("font_color", C_TEXT_MUT)
+	lv_lbl.add_theme_font_size_override("font_size", 12)
+	if font_regular: lv_lbl.add_theme_font_override("font", font_regular)
+	hbox.add_child(lv_lbl)
+
+	var star_hbox := HBoxContainer.new()
+	star_hbox.custom_minimum_size = Vector2(60, 0)
+	star_hbox.alignment = BoxContainer.ALIGNMENT_END
+	hbox.add_child(star_hbox)
+	
+	var star_ic := TextureRect.new()
+	star_ic.texture = load("res://assets/textures/lucide/star.svg")
+	star_ic.custom_minimum_size = Vector2(14, 14)
+	star_ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	star_ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	star_ic.modulate = C_GOLD
+	star_hbox.add_child(star_ic)
+	
+	var star_lbl := Label.new()
+	star_lbl.text = str(p["stars"])
+	star_lbl.add_theme_color_override("font_color", C_GOLD)
+	star_lbl.add_theme_font_size_override("font_size", 13)
+	if font_bold: star_lbl.add_theme_font_override("font", font_bold)
+	star_hbox.add_child(star_lbl)
+
+	return row_margin
+
+func _build_sticky_bar() -> Control:
+	var players = MOCK.get(instrument_id, [])
+	if MY_RANK > 0 and MY_RANK <= players.size():
+		var p = players[MY_RANK - 1]
+		var wrapper = PanelContainer.new()
+		var s = _flat(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 0)
+		s.border_width_top = 2
+		wrapper.add_theme_stylebox_override("panel", s)
+		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var row = _create_list_row(p, MY_RANK, true)
+		row.add_theme_constant_override("margin_top", 12)
+		row.add_theme_constant_override("margin_bottom", 12)
+		wrapper.add_child(row)
+		return wrapper
+	return null
 
 # ──────────────────────────────────────────────────────────────────────
 # TAB SWITCH
@@ -496,27 +464,47 @@ func _rebuild_all() -> void:
 	inner.add_theme_constant_override("separation", 0)
 	scroll.add_child(inner)
 
-	_build_podium(inner)
+	# _build_podium(inner) removed
 
 	var header_margin := MarginContainer.new()
-	header_margin.add_theme_constant_override("margin_left",  20)
-	header_margin.add_theme_constant_override("margin_right", 20)
+	header_margin.add_theme_constant_override("margin_left",  32)
+	header_margin.add_theme_constant_override("margin_right", 32)
 	header_margin.add_theme_constant_override("margin_top",    8)
 	header_margin.add_theme_constant_override("margin_bottom", 4)
 	inner.add_child(header_margin)
 
 	var hdr := HBoxContainer.new()
+	hdr.add_theme_constant_override("separation", 10)
 	header_margin.add_child(hdr)
-	for col in [["#",48], ["Người chơi",0], ["Level",-1], ["⭐ Sao",-1]]:
-		var lbl := Label.new()
-		lbl.text = col[0]
-		if col[1] > 0: lbl.custom_minimum_size = Vector2(col[1], 0)
-		elif col[1] == 0: lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		else: lbl.custom_minimum_size = Vector2(80, 0); lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-		lbl.add_theme_font_size_override("font_size", 12)
-		if font_regular: lbl.add_theme_font_override("font", font_regular)
-		hdr.add_child(lbl)
+	for col in [["Hạng",56, HORIZONTAL_ALIGNMENT_CENTER], ["Người chơi",0, HORIZONTAL_ALIGNMENT_LEFT], ["Level",100, HORIZONTAL_ALIGNMENT_RIGHT], ["Sao",60, HORIZONTAL_ALIGNMENT_RIGHT]]:
+		if col[0] == "Sao":
+			var col_hb := HBoxContainer.new()
+			col_hb.custom_minimum_size = Vector2(col[1], 0)
+			col_hb.alignment = BoxContainer.ALIGNMENT_END
+			var ic := TextureRect.new()
+			ic.texture = load("res://assets/textures/lucide/star.svg")
+			ic.custom_minimum_size = Vector2(14, 14)
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ic.modulate = C_TEXT_MUT
+			col_hb.add_child(ic)
+			var lbl := Label.new()
+			lbl.text = col[0]
+			lbl.add_theme_color_override("font_color", C_TEXT_MUT)
+			lbl.add_theme_font_size_override("font_size", 12)
+			if font_regular: lbl.add_theme_font_override("font", font_regular)
+			col_hb.add_child(lbl)
+			hdr.add_child(col_hb)
+		else:
+			var lbl := Label.new()
+			lbl.text = col[0]
+			if col[1] > 0: lbl.custom_minimum_size = Vector2(col[1], 0)
+			elif col[1] == 0: lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.horizontal_alignment = col[2]
+			lbl.add_theme_color_override("font_color", C_TEXT_MUT)
+			lbl.add_theme_font_size_override("font_size", 12)
+			if font_regular: lbl.add_theme_font_override("font", font_regular)
+			hdr.add_child(lbl)
 
 	var sep2 := ColorRect.new()
 	sep2.custom_minimum_size = Vector2(0, 1)
@@ -529,6 +517,9 @@ func _rebuild_all() -> void:
 	inner.add_child(_list_vbox)
 
 	_populate_list()
+	
+	var sticky_bar := _build_sticky_bar()
+	if sticky_bar: gv.add_child(sticky_bar)
 
 # ──────────────────────────────────────────────────────────────────────
 # HELPERS
@@ -584,18 +575,42 @@ func _make_mini_avatar(size: int, col: Color) -> Control:
 
 func _make_level_badge(level: int, stars: int) -> CenterContainer:
 	var cc := CenterContainer.new()
-	var lbl := Label.new()
-	lbl.text = "Lv.%d  ⭐%d" % [level, stars]
-	lbl.add_theme_color_override("font_color", _get_level_text_color(level))
-	lbl.add_theme_font_size_override("font_size", 11)
-	if font_bold: lbl.add_theme_font_override("font", font_bold)
 	var s := _flat(_get_level_bg_color(level), Color(0,0,0,0), 8)
 	s.content_margin_left  = 8
 	s.content_margin_right = 8
 	s.content_margin_top   = 3
 	s.content_margin_bottom= 3
-	lbl.add_theme_stylebox_override("normal", s)
-	cc.add_child(lbl)
+	
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", s)
+	
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 4)
+	
+	var lbl_lv := Label.new()
+	lbl_lv.text = "Lv.%d" % level
+	lbl_lv.add_theme_color_override("font_color", _get_level_text_color(level))
+	lbl_lv.add_theme_font_size_override("font_size", 11)
+	if font_bold: lbl_lv.add_theme_font_override("font", font_bold)
+	hbox.add_child(lbl_lv)
+	
+	var star_ic := TextureRect.new()
+	star_ic.texture = load("res://assets/textures/lucide/star.svg")
+	star_ic.custom_minimum_size = Vector2(10, 10)
+	star_ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	star_ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	star_ic.modulate = _get_level_text_color(level)
+	hbox.add_child(star_ic)
+	
+	var lbl_stars := Label.new()
+	lbl_stars.text = str(stars)
+	lbl_stars.add_theme_color_override("font_color", _get_level_text_color(level))
+	lbl_stars.add_theme_font_size_override("font_size", 11)
+	if font_bold: lbl_stars.add_theme_font_override("font", font_bold)
+	hbox.add_child(lbl_stars)
+	
+	p.add_child(hbox)
+	cc.add_child(p)
 	return cc
 
 func _style_tab(btn: Button, active: bool) -> void:

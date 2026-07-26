@@ -80,7 +80,7 @@ func _animate_bar() -> void:
 	t.tween_property(load_bar, "value", 22.0,  0.70).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void: load_title.text = "Đang tải nhạc cụ...")
 	t.tween_property(load_bar, "value", 51.0,  0.80).set_trans(Tween.TRANS_CUBIC)
-	t.tween_callback(func() -> void: load_title.text = "Đang tải nhân vật Linh...")
+	t.tween_callback(func() -> void: load_title.text = "Đang tải nghệ sĩ ảo cô Mai...")
 	t.tween_property(load_bar, "value", 78.0,  0.60).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void: load_title.text = "Đang tải bài học...")
 	t.tween_property(load_bar, "value", 100.0, 0.45).set_trans(Tween.TRANS_CUBIC)
