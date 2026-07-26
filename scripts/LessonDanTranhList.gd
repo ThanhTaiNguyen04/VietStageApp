@@ -266,6 +266,7 @@ const LEVELS := [
 @onready var btn_songs     : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
 @onready var btn_account   : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 var btn_minigame : Button
+var btn_leaderboard : Button
 
 @onready var top_bar: PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn: Button = $Root/RightContent/TopBar/TopM/TopH/BackBtn
@@ -285,9 +286,17 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
 	
 	_build_theme()
 	_build_sidebar()
@@ -384,6 +393,7 @@ func _build_sidebar() -> void:
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
@@ -391,9 +401,10 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
 	_attach_icon_draw(btn_account,  5)
 
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_bouncy(b)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
@@ -401,11 +412,11 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -431,7 +442,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -577,6 +588,9 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	_make_bouncy(button)
 	return button
 
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to("res://scenes/LeaderboardScreen.tscn")
+
 func _draw_lesson_path() -> void:
 	if lessons_hbox.size.x <= 0.0:
 		return
@@ -714,6 +728,7 @@ func _connect_navigation() -> void:
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
 
 func _go_to_levels() -> void:

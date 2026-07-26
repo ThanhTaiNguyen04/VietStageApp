@@ -27,6 +27,8 @@ var _time : float = 0.0
 var _sidebar_icons_cache := {}
 var btn_minigame : Button
 var btn_minigame_mob : Button
+var btn_leaderboard : Button
+var btn_leaderboard_mob : Button
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -81,7 +83,7 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
 
@@ -93,6 +95,22 @@ func _ready() -> void:
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)
 	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
+
+	btn_leaderboard_mob = Button.new()
+	btn_leaderboard_mob.name = "BtnLeaderboardMobile"
+	btn_leaderboard_mob.text = "Xếp hạng"
+	btn_leaderboard_mob.flat = true
+	btn_leaderboard_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_h.add_child(btn_leaderboard_mob)
+	bottom_h.move_child(btn_leaderboard_mob, 4)
 	
 	_build_sidebar()
 	_build_bottom_bar()
@@ -391,6 +409,24 @@ func _build_sidebar() -> void:
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
 
+	_style_side_icon_btn(btn_menu,     false)
+	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
+	_style_side_icon_btn(btn_songs,    false)
+	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
+	_style_side_icon_btn(btn_account,  false)
+
+	_attach_icon_draw(btn_menu,     0)
+	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
+	_attach_icon_draw(btn_songs,    2)
+	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
+	_attach_icon_draw(btn_account,  5)
+
+	_active_side_btn = btn_courses
+
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
 	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
@@ -405,12 +441,14 @@ func _build_bottom_bar() -> void:
 	_style_bottom_icon_btn(btn_songs_mob,   false)
 	_style_bottom_icon_btn(btn_account_mob, false)
 	_style_bottom_icon_btn(btn_minigame_mob, false)
+	_style_bottom_icon_btn(btn_leaderboard_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
 	_attach_bottom_icon_draw(btn_room_mob,    6)
 	_attach_bottom_icon_draw(btn_songs_mob,   2)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
 	_attach_bottom_icon_draw(btn_minigame_mob, 3)
+	_attach_bottom_icon_draw(btn_leaderboard_mob, 4)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
@@ -451,32 +489,16 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_account,  false)
-
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_account,  5)
-
-	_active_side_btn = btn_courses
-
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -502,7 +524,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -939,8 +961,9 @@ func _connect_buttons() -> void:
 	)
 	btn_account.pressed.connect(_go_account)
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
  
-	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
@@ -1147,18 +1170,20 @@ func _connect_buttons() -> void:
 	)
 	btn_account_mob.pressed.connect(_go_account)
 	btn_minigame_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_leaderboard_mob.pressed.connect(_on_btn_leaderboard_pressed)
  
-	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]:
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob, btn_leaderboard_mob]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 func _set_active_tab(active: Button) -> void:
-	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]
+	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]
 	var active_desktop : Button = null
 	if active == btn_courses or active == btn_courses_mob: active_desktop = btn_courses
 	elif active == btn_room or active == btn_room_mob: active_desktop = btn_room
 	elif active == btn_songs or active == btn_songs_mob: active_desktop = btn_songs
 	elif active == btn_minigame or active == btn_minigame_mob: active_desktop = btn_minigame
+	elif active == btn_leaderboard or active == btn_leaderboard_mob: active_desktop = btn_leaderboard
 	elif active == btn_account or active == btn_account_mob: active_desktop = btn_account
 	
 	for b : Button in all:
@@ -1594,3 +1619,6 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	if total_count > 0:
 		pct = int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to("res://scenes/LeaderboardScreen.tscn")
