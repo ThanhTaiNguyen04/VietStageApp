@@ -91,18 +91,23 @@ func _restructure_layout() -> void:
 	if grid.get_parent():
 		grid.get_parent().remove_child(grid)
 	_right_col.add_child(grid)
-	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	grid.custom_minimum_size = Vector2(0, 240)
 	grid.add_theme_constant_override("h_separation", 24)
 	grid.add_theme_constant_override("v_separation", 24)
 
 # ─── Data ────────────────────────────────────────────────────────────────────
 func _populate_data() -> void:
 	page_title.text = "Hồ Sơ Học Viên"
-	back_btn.text   = " Trang Chủ"
-	var back_icon = load("res://assets/textures/lucide/home.svg") as Texture2D
+	back_btn.text   = " Quay lại"
+	var back_icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	if back_icon: back_btn.icon = back_icon; back_btn.expand_icon = true
 	
-	ver_label.text  = "VietStage v1.0.0 · Đồ Án Tốt Nghiệp · Khoa CNTT"
+	var avatar_rect = av_circle.get_node_or_null("Avatar") as TextureRect
+	if avatar_rect:
+		avatar_rect.texture = load("res://assets/textures/avacogiaoMai_asset.png")
+	
+	ver_label.hide()
 
 	name_lbl.text  = SecureDataManager.data.get("user_name",  "Google User")
 	email_lbl.text = SecureDataManager.data.get("user_email", "google.user@gmail.com")
@@ -316,6 +321,23 @@ func _build_theme() -> void:
 		back_btn.add_theme_font_override("font", bevietnam_bold)
 		for sc in STAT_CARDS:
 			_get_stat_node(sc[0], "Val").add_theme_font_override("font", bevietnam_bold)
+			
+	var btn_sb = _flat(Color(1,1,1,0.5), Color(0,0,0,0), 24)
+	btn_sb.content_margin_left = 16; btn_sb.content_margin_right = 16
+	btn_sb.content_margin_top = 8; btn_sb.content_margin_bottom = 8
+	var btn_hover = btn_sb.duplicate()
+	btn_hover.bg_color = Color(1,1,1,0.8)
+	
+	back_btn.add_theme_stylebox_override("normal", btn_sb)
+	back_btn.add_theme_stylebox_override("hover", btn_hover)
+	back_btn.add_theme_color_override("font_color", C_JADE)
+	back_btn.add_theme_color_override("font_hover_color", C_JADE)
+	
+	logout_btn.add_theme_stylebox_override("normal", btn_sb)
+	logout_btn.add_theme_stylebox_override("hover", btn_hover)
+	logout_btn.add_theme_color_override("font_color", C_RED_SON)
+	logout_btn.add_theme_color_override("font_hover_color", C_RED_SON)
+
 	if bevietnam_reg:
 		email_lbl.add_theme_font_override("font", bevietnam_reg)
 		ver_label.add_theme_font_override("font", bevietnam_reg)
