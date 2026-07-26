@@ -613,6 +613,10 @@ func _build_top_bar() -> void:
 
 	var total_xp : int = 1240 + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
 	xp_label.text = str(total_xp) + " XP"
+	
+	# Tạm thời ẩn theo yêu cầu
+	streak_pill.visible = false
+	xp_pill.visible = false
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
 func _build_roadmap_cards() -> void:
@@ -835,11 +839,11 @@ func _build_roadmap_cards() -> void:
 		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		if instrument == "dan_bau":
-			_set_details_text(ess_details, 2, 0, 0, true)
+			_set_details_text(ess_details, 2, 0, 0, false)
 		elif instrument == "sao_truc":
-			_set_details_text(ess_details, 7, 0, 0, true)
+			_set_details_text(ess_details, 7, 0, 0, false)
 		else:
-			_set_details_text(ess_details, 3, 0, 0, true)
+			_set_details_text(ess_details, 3, 0, 0, false)
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
@@ -904,6 +908,10 @@ func _build_roadmap_cards() -> void:
 		# Style circular play button (Vermilion red filled, gold border)
 		var btn := card.get_node("Margin/HBox/BtnPlay") as Button
 		_style_circular_play_btn(btn)
+		
+		var det := _ensure_details_label(card)
+		if det:
+			_set_details_text(det, 3, 0, 0, false)
 
 func _style_circular_play_btn(btn: Button) -> void:
 	var pb_n := _flat(C_RED_SON, C_GOLD, 32)
@@ -1506,6 +1514,25 @@ func _play_dan_bau_video(lesson_idx: int) -> void:
 func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
 	_fade_to("res://scenes/PracticeDanBau.tscn")
+
+func _ensure_details_label(card: Control) -> Label:
+	var text_v = card.get_node_or_null("Margin/Row/TextV")
+	if not text_v:
+		text_v = card.get_node_or_null("Margin/HBox/TextV")
+	if not text_v:
+		return null
+		
+	var details = text_v.get_node_or_null("Details") as Label
+	if not details:
+		details = Label.new()
+		details.name = "Details"
+		details.custom_minimum_size = Vector2(310, 0)
+		details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		details.add_theme_font_size_override("font_size", 16)
+		text_v.add_child(details)
+	
+	details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	return details
 
 func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_locked: bool) -> void:
 	for child in lbl.get_children():
