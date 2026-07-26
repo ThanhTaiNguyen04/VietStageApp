@@ -83,14 +83,7 @@ func _ready() -> void:
 	font_bold    = load("res://assets/fonts/BeVietnamPro-Bold.ttf")
 	font_regular = load("res://assets/fonts/BeVietnamPro-Regular.ttf")
 
-	# Load background per instrument (fallback to dan_tranh)
-	var bg_map := {
-		"dan_tranh":  "res://assets/textures/dan_tranh_background.png",
-		"dan_bau":    "res://assets/textures/dan_bau_background.png",
-		"sao_truc":   "res://assets/textures/sao_truc_background.png",
-		"trong_chau": "res://assets/textures/trong_chau_background.png",
-	}
-	bg_texture = load(bg_map.get(instrument_id, bg_map["dan_tranh"])) as Texture2D
+	bg_texture = load("res://assets/textures/bon_nhac_cu_background.png") as Texture2D
 
 	_build_topbar()
 	_build_content()
@@ -135,7 +128,7 @@ func _build_topbar() -> void:
 		blur.offset_bottom = -1
 		top_bar.add_child(blur)
 
-	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.75), Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.30), 0)
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 0)
 	top_s.border_width_bottom = 1
 	top_s.content_margin_bottom = 0
 	top_bar.add_theme_stylebox_override("panel", top_s)
@@ -145,10 +138,14 @@ func _build_topbar() -> void:
 	var spacer_right = $Root/TopBar/TopM/TopH/SpacerRight
 	if spacer_right: spacer_right.hide()
 
-	top_title.text = "BẢNG XẾP HẠNG"
+	top_title.text = " BẢNG XẾP HẠNG"
 	top_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	top_title.add_theme_color_override("font_color", C_GREEN)
 	if font_bold: top_title.add_theme_font_override("font", font_bold)
+
+	var toph := $Root/TopBar/TopM/TopH
+	if toph.has_node("TitleIcon"):
+		toph.get_node("TitleIcon").queue_free()
 
 	var back_tex := load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back_btn.icon = back_tex
@@ -170,10 +167,31 @@ func _build_content() -> void:
 
 	# Card style
 	var card := $Root/Card as PanelContainer
-	var cs   := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), 20)
-	cs.shadow_color = Color(0, 0, 0, 0.18)
-	cs.shadow_size  = 24
+	var cs   := _flat(Color(0.95, 0.93, 0.89, 0.75), Color(0.77, 0.59, 0.15, 0.4), 32)
+	cs.border_width_left = 2; cs.border_width_right = 2; cs.border_width_top = 2; cs.border_width_bottom = 2
+	cs.shadow_size   = 40
+	cs.shadow_color  = Color(0.09, 0.25, 0.18, 0.15)
+	cs.shadow_offset = Vector2(0, 10)
 	card.add_theme_stylebox_override("panel", cs)
+
+	# Add blur effect to card
+	if not card.has_node("BlurRect"):
+		var blur_mat := ShaderMaterial.new()
+		var blur_sh  := Shader.new()
+		blur_sh.code = """
+		shader_type canvas_item;
+		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+		uniform float lod : hint_range(0.0,5.0) = 2.0;
+		void fragment() { COLOR = textureLod(screen_texture, SCREEN_UV, lod); }
+		"""
+		blur_mat.shader = blur_sh
+		var blur := ColorRect.new()
+		blur.name = "BlurRect"
+		blur.material = blur_mat
+		blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blur.show_behind_parent = true
+		blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		card.add_child(blur)
 
 	# ── Instrument tabs ──
 	var tab_margin := MarginContainer.new()
@@ -190,7 +208,7 @@ func _build_content() -> void:
 	for inst in INSTRUMENTS:
 		var tb := Button.new()
 		tb.text = inst["label"]
-		tb.flat = true
+		tb.flat = false
 		tb.custom_minimum_size = Vector2(100, 42)
 		_style_tab(tb, inst["id"] == instrument_id)
 		if font_bold: tb.add_theme_font_override("font", font_bold)
@@ -355,20 +373,11 @@ func _populate_list() -> void:
 		var row_bg := PanelContainer.new()
 		var rs : StyleBoxFlat
 		if is_me:
-			rs = _flat(C_ROW_ME, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.8), 20)
-			rs.border_width_left   = 2
-			rs.border_width_right  = 2
-			rs.border_width_top    = 2
-			rs.border_width_bottom = 2
+			rs = _flat(Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.12), Color(0, 0, 0, 0), 12)
+			rs.border_width_left = 6
+			rs.border_color = C_GOLD
 		else:
-			rs = _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22), 20)
-			rs.border_width_left = 1
-			rs.border_width_right = 1
-			rs.border_width_top = 1
-			rs.border_width_bottom = 1
-			rs.shadow_size = 8
-			rs.shadow_color = Color(0, 0, 0, 0.05)
-			rs.shadow_offset = Vector2(0, 2)
+			rs = _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
 		row_bg.add_theme_stylebox_override("panel", rs)
 		row_margin.add_child(row_bg)
 
@@ -388,7 +397,7 @@ func _populate_list() -> void:
 		rk_lbl.text = "#" + str(rk)
 		rk_lbl.custom_minimum_size = Vector2(36, 0)
 		rk_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		rk_lbl.add_theme_color_override("font_color", C_GOLD if is_me else C_TEXT_MUT)
+		rk_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
 		rk_lbl.add_theme_font_size_override("font_size", 14)
 		if font_bold: rk_lbl.add_theme_font_override("font", font_bold)
 		hbox.add_child(rk_lbl)
@@ -405,7 +414,7 @@ func _populate_list() -> void:
 
 		var name_lbl := Label.new()
 		name_lbl.text = p["name"]
-		name_lbl.add_theme_color_override("font_color", C_TEXT)
+		name_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
 		name_lbl.add_theme_font_size_override("font_size", 14)
 		if font_bold and is_me:
 			name_lbl.add_theme_font_override("font", font_bold)
@@ -456,21 +465,12 @@ func _switch_instrument(iid: String) -> void:
 		return
 	instrument_id = iid
 
-	# Update title
-	top_title.text = "BẢNG XẾP HẠNG  ·  " + _inst_label(iid).to_upper()
-
 	# Re-style tabs
 	for i in range(_tab_btns.size()):
 		_style_tab(_tab_btns[i], INSTRUMENTS[i]["id"] == iid)
 
 	# Switch background
-	var bg_map := {
-		"dan_tranh":  "res://assets/textures/dan_tranh_background.png",
-		"dan_bau":    "res://assets/textures/dan_bau_background.png",
-		"sao_truc":   "res://assets/textures/sao_truc_background.png",
-		"trong_chau": "res://assets/textures/trong_chau_background.png",
-	}
-	bg_texture = load(bg_map.get(iid, bg_map["dan_tranh"])) as Texture2D
+	bg_texture = load("res://assets/textures/bon_nhac_cu_background.png") as Texture2D
 	queue_redraw()
 
 	# Rebuild list only (podium is rebuilt from scratch below)
@@ -478,8 +478,8 @@ func _switch_instrument(iid: String) -> void:
 
 func _rebuild_all() -> void:
 	var gv : VBoxContainer = $Root/Card/CardM/GameVBox
-	# Remove everything except the first two children (tab_margin + sep1)
-	var keep := 2
+	# Remove everything except the first child (tab_margin)
+	var keep := 1
 	var children := gv.get_children()
 	for i in range(children.size()):
 		if i >= keep:
@@ -599,12 +599,24 @@ func _make_level_badge(level: int, stars: int) -> CenterContainer:
 	return cc
 
 func _style_tab(btn: Button, active: bool) -> void:
-	var bg := C_GREEN if active else Color(0.95, 0.94, 0.90, 1.0)
-	var border := C_GREEN.darkened(0.1) if active else Color.TRANSPARENT
+	var bg_n : StyleBoxFlat
+	var bg_h : StyleBoxFlat
+	var bg_p : StyleBoxFlat
 	
-	var bg_n := _flat(bg, border, 20)
-	var bg_h := _flat(bg.lightened(0.12) if active else Color.WHITE, border, 20)
-	var bg_p := _flat(bg.darkened(0.12), border, 20)
+	if active:
+		bg_n = _flat(C_GREEN, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+		bg_n.border_width_left = 4; bg_n.border_width_right = 4; bg_n.border_width_top = 4; bg_n.border_width_bottom = 4
+		bg_h = _flat(C_GREEN.lightened(0.08), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24)
+		bg_h.border_width_left = 4; bg_h.border_width_right = 4; bg_h.border_width_top = 4; bg_h.border_width_bottom = 4
+		bg_p = _flat(C_GREEN.darkened(0.08), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+		bg_p.border_width_left = 4; bg_p.border_width_right = 4; bg_p.border_width_top = 4; bg_p.border_width_bottom = 4
+	else:
+		bg_n = _flat(Color(1.0, 1.0, 1.0, 0.45), Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.55), 24)
+		bg_n.border_width_left = 4; bg_n.border_width_right = 4; bg_n.border_width_top = 4; bg_n.border_width_bottom = 4
+		bg_h = _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.7), 24)
+		bg_h.border_width_left = 4; bg_h.border_width_right = 4; bg_h.border_width_top = 4; bg_h.border_width_bottom = 4
+		bg_p = _flat(Color(1.0, 1.0, 1.0, 0.3), Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.55), 24)
+		bg_p.border_width_left = 4; bg_p.border_width_right = 4; bg_p.border_width_top = 4; bg_p.border_width_bottom = 4
 	
 	bg_n.content_margin_left = 24
 	bg_n.content_margin_right = 24
@@ -618,10 +630,10 @@ func _style_tab(btn: Button, active: bool) -> void:
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
 	
-	var text_c := Color.WHITE if active else C_TEXT
+	var text_c := C_CREAM if active else Color(0.43, 0.38, 0.33, 0.7)
 	btn.add_theme_color_override("font_color", text_c)
-	btn.add_theme_color_override("font_hover_color", Color.WHITE if active else C_GREEN)
-	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	btn.add_theme_color_override("font_hover_color", C_CREAM if active else Color(0.43, 0.38, 0.33, 1.0))
+	btn.add_theme_color_override("font_pressed_color", text_c)
 	btn.add_theme_color_override("font_focus_color", text_c)
 
 func _flat(bg: Color, border: Color, radius: int, bw: int = 0) -> StyleBoxFlat:

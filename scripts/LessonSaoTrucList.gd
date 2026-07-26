@@ -31,6 +31,7 @@ var btn_leaderboard            : Button
 var _sidebar_icons_cache := {}
 
 static var selected_level: int = 1
+var _tap_timer: float = 0.0
 
 # 🗃️ Dynamic Lesson Data (10 Lessons for 5 Levels)
 const ALL_LESSONS = [
