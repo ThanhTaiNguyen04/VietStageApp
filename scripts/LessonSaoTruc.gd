@@ -69,7 +69,7 @@ var total_rhythm_duration: float = 0.0
 var wrong_rhythm_duration: float = 0.0
 var has_rhythm_completed: bool = false
 
-var _current_note_color: Color = Color(0.1, 0.1, 0.1)
+var _current_note_color: Color = Color(0.96, 0.75, 0.25)
 const HIT_WINDOW := 0.5 # Nới lỏng thời gian chấm điểm thêm nữa
 
 var melody_sequence = []
@@ -396,14 +396,7 @@ func _ready():
 	# Hide old rhythm UI
 	if rhythm_area: rhythm_area.visible = false
 	
-	staff_display = load("res://scripts/StaffDisplay.gd").new()
-	staff_display.name = "StaffDisplay"
-	add_child(staff_display)
-	move_child(staff_display, get_node("Root").get_index())
-	
-	staff_display.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	staff_display.offset_top = 0
-	staff_display.offset_bottom = 700
+	_setup_premium_practice_ui()
 	
 	intro_overlay = ColorRect.new()
 	intro_overlay.color = Color(0, 0, 0, 0.5)
@@ -414,6 +407,183 @@ func _ready():
 	staff_display.visible = true
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		staff_display.set_note(active_note)
+
+func _setup_premium_practice_ui():
+	var bg_ov = get_node_or_null("BGOverlay")
+	if bg_ov and bg_ov is ColorRect:
+		bg_ov.color = Color(0.965, 0.935, 0.875, 0.96)
+		
+	var screen_frame = Panel.new()
+	screen_frame.name = "ScreenGoldFrame"
+	screen_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen_frame.offset_left = 16; screen_frame.offset_top = 16; screen_frame.offset_right = -16; screen_frame.offset_bottom = -16
+	screen_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sf_sb = StyleBoxFlat.new()
+	sf_sb.draw_center = false
+	sf_sb.border_color = Color(0.85, 0.68, 0.35, 0.6)
+	sf_sb.border_width_left = 2; sf_sb.border_width_right = 2; sf_sb.border_width_top = 2; sf_sb.border_width_bottom = 2
+	sf_sb.corner_radius_top_left = 16; sf_sb.corner_radius_top_right = 16; sf_sb.corner_radius_bottom_left = 16; sf_sb.corner_radius_bottom_right = 16
+	screen_frame.add_theme_stylebox_override("panel", sf_sb)
+	add_child(screen_frame)
+	move_child(screen_frame, get_node("Root").get_index())
+	
+	if is_instance_valid(back_btn):
+		back_btn.offset_left = 32
+		back_btn.offset_top = 26
+		back_btn.custom_minimum_size = Vector2(155, 48)
+		back_btn.text = "← Quay Lại"
+		var btn_sb = StyleBoxFlat.new()
+		btn_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
+		btn_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+		btn_sb.border_width_left = 2; btn_sb.border_width_right = 2; btn_sb.border_width_top = 2; btn_sb.border_width_bottom = 2
+		btn_sb.corner_radius_top_left = 24; btn_sb.corner_radius_top_right = 24; btn_sb.corner_radius_bottom_left = 24; btn_sb.corner_radius_bottom_right = 24
+		btn_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.35); btn_sb.shadow_size = 5; btn_sb.shadow_offset = Vector2(0, 3)
+		back_btn.add_theme_stylebox_override("normal", btn_sb)
+		back_btn.add_theme_stylebox_override("hover", btn_sb)
+		back_btn.add_theme_stylebox_override("pressed", btn_sb)
+		back_btn.add_theme_color_override("font_color", Color(0.98, 0.92, 0.82, 1.0))
+		back_btn.add_theme_font_size_override("font_size", 22)
+		
+	var top_right_box = HBoxContainer.new()
+	top_right_box.name = "TopRightIcons"
+	top_right_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	top_right_box.offset_left = -160; top_right_box.offset_top = 26; top_right_box.offset_right = -32; top_right_box.offset_bottom = 74
+	top_right_box.add_theme_constant_override("separation", 16)
+	top_right_box.alignment = BoxContainer.ALIGNMENT_END
+	add_child(top_right_box)
+	for icon_txt in ["⚙", "♫"]:
+		var med_btn = Button.new()
+		med_btn.text = icon_txt
+		med_btn.custom_minimum_size = Vector2(48, 48)
+		var med_sb = StyleBoxFlat.new()
+		med_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
+		med_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+		med_sb.border_width_left = 2; med_sb.border_width_right = 2; med_sb.border_width_top = 2; med_sb.border_width_bottom = 2
+		med_sb.corner_radius_top_left = 24; med_sb.corner_radius_top_right = 24; med_sb.corner_radius_bottom_left = 24; med_sb.corner_radius_bottom_right = 24
+		med_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.3); med_sb.shadow_size = 4; med_sb.shadow_offset = Vector2(0, 2)
+		med_btn.add_theme_stylebox_override("normal", med_sb)
+		med_btn.add_theme_stylebox_override("hover", med_sb)
+		med_btn.add_theme_stylebox_override("pressed", med_sb)
+		med_btn.add_theme_color_override("font_color", Color(0.96, 0.82, 0.45, 1.0))
+		med_btn.add_theme_font_size_override("font_size", 24)
+		top_right_box.add_child(med_btn)
+		
+	var lesson_map = {
+		"Node2": {"num": "BÀI 1", "title": "LUYỆN NỐT SI"},
+		"Node3": {"num": "BÀI 2", "title": "LUYỆN NỐT LA"},
+		"Node4": {"num": "BÀI 3", "title": "LUYỆN NỐT SOL"},
+		"Node5": {"num": "BÀI 4", "title": "LUYỆN NỐT FA"},
+		"Node6": {"num": "BÀI 5", "title": "LUYỆN NỐT MI"},
+		"Node7": {"num": "BÀI 6", "title": "LUYỆN NỐT RÊ"},
+		"Node8": {"num": "BÀI 7", "title": "LUYỆN NỐT ĐÔ"}
+	}
+	var l_num = "BÀI LUYỆN"
+	var l_title = "LUYỆN NỐT " + active_note.to_upper()
+	if lesson_map.has(active_node_id):
+		l_num = lesson_map[active_node_id]["num"]
+		l_title = lesson_map[active_node_id]["title"]
+	elif LESSON_NOTES.has(active_node_id) and LESSON_NOTES[active_node_id].has("title"):
+		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
+		
+	var title_plaque = PanelContainer.new()
+	title_plaque.name = "TitlePlaque"
+	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
+	title_plaque.offset_left = -265; title_plaque.offset_right = 265
+	title_plaque.offset_top = 24; title_plaque.offset_bottom = 132
+	var pl_sb = StyleBoxFlat.new()
+	pl_sb.bg_color = Color(0.22, 0.14, 0.08, 0.96)
+	pl_sb.border_color = Color(0.88, 0.72, 0.35, 1.0)
+	pl_sb.border_width_left = 3; pl_sb.border_width_right = 3; pl_sb.border_width_top = 3; pl_sb.border_width_bottom = 3
+	pl_sb.corner_radius_top_left = 24; pl_sb.corner_radius_top_right = 24; pl_sb.corner_radius_bottom_left = 24; pl_sb.corner_radius_bottom_right = 24
+	pl_sb.shadow_color = Color(0.2, 0.12, 0.05, 0.35); pl_sb.shadow_size = 12; pl_sb.shadow_offset = Vector2(0, 5)
+	title_plaque.add_theme_stylebox_override("panel", pl_sb)
+	var pl_vbox = VBoxContainer.new()
+	pl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	pl_vbox.add_theme_constant_override("separation", 2)
+	title_plaque.add_child(pl_vbox)
+	var lbl_num = Label.new()
+	lbl_num.text = l_num
+	lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
+	lbl_num.add_theme_font_size_override("font_size", 20)
+	pl_vbox.add_child(lbl_num)
+	var lbl_main = Label.new()
+	lbl_main.text = "🌿   " + l_title + "   🌿"
+	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
+	lbl_main.add_theme_font_size_override("font_size", 34)
+	pl_vbox.add_child(lbl_main)
+	add_child(title_plaque)
+	
+	var staff_card = PanelContainer.new()
+	staff_card.name = "StaffCard"
+	staff_card.anchor_left = 0.0; staff_card.anchor_right = 1.0
+	staff_card.offset_left = 55; staff_card.offset_right = -55
+	staff_card.offset_top = 195; staff_card.offset_bottom = 675
+	staff_card.clip_contents = true
+	var card_sb = StyleBoxFlat.new()
+	card_sb.bg_color = Color(0.995, 0.98, 0.93, 0.96)
+	card_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
+	card_sb.border_width_left = 3; card_sb.border_width_right = 3; card_sb.border_width_top = 3; card_sb.border_width_bottom = 3
+	card_sb.corner_radius_top_left = 18; card_sb.corner_radius_top_right = 18; card_sb.corner_radius_bottom_left = 18; card_sb.corner_radius_bottom_right = 18
+	card_sb.shadow_color = Color(0.45, 0.30, 0.12, 0.25); card_sb.shadow_size = 14; card_sb.shadow_offset = Vector2(0, 6)
+	staff_card.add_theme_stylebox_override("panel", card_sb)
+	add_child(staff_card)
+	move_child(staff_card, get_node("Root").get_index())
+	
+	staff_display = load("res://scripts/StaffDisplay.gd").new()
+	staff_display.name = "StaffDisplay"
+	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	staff_card.add_child(staff_display)
+	
+	var pill_badge = PanelContainer.new()
+	pill_badge.name = "NotePillBadge"
+	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
+	pill_badge.offset_left = -125; pill_badge.offset_right = 125
+	pill_badge.offset_top = 172; pill_badge.offset_bottom = 220
+	var pill_sb = StyleBoxFlat.new()
+	pill_sb.bg_color = Color(1.0, 0.99, 0.95, 1.0)
+	pill_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+	pill_sb.border_width_left = 2; pill_sb.border_width_right = 2; pill_sb.border_width_top = 2; pill_sb.border_width_bottom = 2
+	pill_sb.corner_radius_top_left = 24; pill_sb.corner_radius_top_right = 24; pill_sb.corner_radius_bottom_left = 24; pill_sb.corner_radius_bottom_right = 24
+	pill_sb.shadow_color = Color(0.3, 0.2, 0.08, 0.2); pill_sb.shadow_size = 6; pill_sb.shadow_offset = Vector2(0, 3)
+	pill_badge.add_theme_stylebox_override("panel", pill_sb)
+	var pill_lbl = Label.new()
+	pill_lbl.text = "🌿    " + active_note.to_upper() + "    🌿"
+	pill_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pill_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pill_lbl.add_theme_color_override("font_color", Color(0.78, 0.55, 0.18, 1.0))
+	pill_lbl.add_theme_font_size_override("font_size", 26)
+	pill_badge.add_child(pill_lbl)
+	add_child(pill_badge)
+	
+	var sub_instr_row = HBoxContainer.new()
+	sub_instr_row.name = "SubInstrRow"
+	sub_instr_row.anchor_left = 0.0; sub_instr_row.anchor_right = 1.0
+	sub_instr_row.offset_left = 90; sub_instr_row.offset_right = -90
+	sub_instr_row.offset_top = 698; sub_instr_row.offset_bottom = 738
+	sub_instr_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var line_left_cont = CenterContainer.new()
+	line_left_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_l = ColorRect.new()
+	line_l.custom_minimum_size = Vector2(240, 2)
+	line_l.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_left_cont.add_child(line_l)
+	sub_instr_row.add_child(line_left_cont)
+	var sub_lbl = Label.new()
+	sub_lbl.text = "   🌿   Thổi nhẹ và giữ hơi ổn định   🌿   "
+	sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+	sub_lbl.add_theme_font_size_override("font_size", 26)
+	sub_instr_row.add_child(sub_lbl)
+	var line_right_cont = CenterContainer.new()
+	line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_r = ColorRect.new()
+	line_r.custom_minimum_size = Vector2(240, 2)
+	line_r.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_right_cont.add_child(line_r)
+	sub_instr_row.add_child(line_right_cont)
+	add_child(sub_instr_row)
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):
@@ -596,7 +766,7 @@ func _process(delta):
 				var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
 				var duration = note_data.get("duration", 1.0)
 				var tail_w = duration * 300.0
-				var color = Color(0.1, 0.1, 0.1)
+				var color = Color(0.96, 0.75, 0.25)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
 				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w})
@@ -688,7 +858,7 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * 300.0
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.1, 0.1, 0.1)), "tail": tail_w})
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
@@ -1315,7 +1485,7 @@ func _start_rhythm_game():
 			"time": note["time"],
 			"duration": note.get("duration", 1.0),
 			"note_name": note["note"],
-			"color": Color(0.1, 0.1, 0.1),
+			"color": Color(0.96, 0.75, 0.25),
 			"hit": false,
 			"failed": false
 		})
