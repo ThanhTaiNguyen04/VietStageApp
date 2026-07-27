@@ -552,8 +552,8 @@ func _build_theme() -> void:
 		hw_panel.add_theme_stylebox_override("panel", _flat(Color("#0e0603"), Color("#c99a3c", 0.22), 0))
 
 	# TopBar pitch/score chips color
-	pitch_note.add_theme_color_override("font_color",   C_GOLD)
-	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+	# pitch_note.add_theme_color_override("font_color",   C_GOLD)
+	# pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
 	score_num.add_theme_color_override("font_color",    C_GOLD)
 
 
@@ -871,8 +871,8 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		return
 	pitch_note.text   = note_name
 	pitch_status.text = "Nốt %s  —  Vừa gảy" % note_name
-	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
-	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
+	# pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+	# pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
 	# Reset bend when a new note is plucked — old bend must NOT carry over
 	_current_bend_cents = 0.0
@@ -913,7 +913,7 @@ func _on_pitch_bent(cents_offset: float) -> void:
 	if abs(_current_bend_cents) > 5.0:
 		var sign_char := "+" if _current_bend_cents > 0 else ""
 		pitch_status.text = "Uốn cần: %s%d¢" % [sign_char, int(_current_bend_cents)]
-		pitch_status.add_theme_color_override("font_color", C_GOLD)
+		# pitch_status.add_theme_color_override("font_color", C_GOLD)
 		
 		# Check if the bent pitch matches target note during pitch bending practice
 		var target_note := sheet_notes[_note_idx]
@@ -928,7 +928,7 @@ func _on_pitch_bent(cents_offset: float) -> void:
 	else:
 		if not _recording:
 			pitch_status.text = "Chuẩn âm"
-			pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+			# pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
 
 func _play_audio(idx: int) -> void:
 	if idx >= _string_streams.size() or _string_streams[idx] == null:
@@ -1235,16 +1235,16 @@ func _simulate_tick() -> void:
 	var ac    := absf(cents)
 	if ac < 8.0:
 		pitch_status.text = "Đúng cao độ"
-		pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
-		pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
+		# pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+		# pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
 	elif ac < 18.0:
 		pitch_status.text = ("Hơi thấp" if cents < 0 else "Hơi cao")
-		pitch_status.add_theme_color_override("font_color", C_WARN)
-		pitch_note.add_theme_color_override("font_color",   C_WARN)
+		# pitch_status.add_theme_color_override("font_color", C_WARN)
+		# pitch_note.add_theme_color_override("font_color",   C_WARN)
 	else:
 		pitch_status.text = "Lệch cao độ"
-		pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-		pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
+		# pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+		# pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
 
 	if NOTES_VN[ni] == sheet_notes[_note_idx] and randf() > 0.5:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
@@ -1307,13 +1307,13 @@ func _process_real_audio(delta: float) -> void:
 				
 				if eval_res["rank"] == "PERFECT":
 					pitch_status.text = "Hoàn hảo"
-					pitch_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+					# pitch_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 				elif eval_res["rank"] == "GOOD":
 					pitch_status.text = "Rất tốt"
-					pitch_status.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+					# pitch_status.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
 				else:
 					pitch_status.text = "Đạt"
-					pitch_status.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
+					# pitch_status.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
 				
 				_correct_pitch_hold_time += delta
 				if _correct_pitch_hold_time > 0.05:
@@ -1345,8 +1345,8 @@ func _process_real_audio(delta: float) -> void:
 			else:
 				var status_text = "Cần luyện thêm (Cao)" if cents > 0 else "Cần luyện thêm (Thấp)"
 				pitch_status.text = status_text
-				pitch_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
-				pitch_note.add_theme_color_override("font_color", C_WARN)
+				# pitch_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+				# pitch_note.add_theme_color_override("font_color", C_WARN)
 				
 				_correct_pitch_hold_time = 0.0
 				_teacher_tip_timer += delta
@@ -1371,8 +1371,8 @@ func _process_real_audio(delta: float) -> void:
 			detected_note = NOTES_VN[closest_idx]
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
-			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			# pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+			# pitch_note.add_theme_color_override("font_color", C_RED_ERR)
 			_score = clamp(_score - 0.5 * delta, 0, 100)
 			_refresh_score()
 	else:
@@ -1380,8 +1380,8 @@ func _process_real_audio(delta: float) -> void:
 			_board._is_bending = false
 		pitch_note.text = "—"
 		pitch_status.text = "Đang nghe..."
-		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
-		pitch_note.add_theme_color_override("font_color", C_RED_SON)
+		# pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+		# pitch_note.add_theme_color_override("font_color", C_RED_SON)
 
 func _hop_linh() -> void:
 	pass
@@ -1472,8 +1472,8 @@ func _reset() -> void:
 	if visualizer: visualizer.visible = false
 	pitch_note.text   = "—"
 	pitch_status.text = "Đang nghe..."
-	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
-	pitch_note.add_theme_color_override("font_color", C_RED_SON)
+	# pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+	# pitch_note.add_theme_color_override("font_color", C_RED_SON)
 
 	_refresh_score()
 	_va_say("Cố gắng lên!\nChăm chỉ tập luyện để làm chủ tiếng đàn.")
@@ -2091,3 +2091,28 @@ func _setup_premium_practice_ui():
 	pill_lbl.add_theme_font_size_override("font_size", 26)
 	pill_badge.add_child(pill_lbl)
 	add_child(pill_badge)
+
+	# ─── TOP-LEFT REALTIME PITCH FEEDBACK (BLACK TEXT) ───
+	var feedback_box = HBoxContainer.new()
+	feedback_box.name = "TopLeftFeedback"
+	feedback_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	feedback_box.offset_left = 32
+	feedback_box.offset_top = 100
+	feedback_box.add_theme_constant_override("separation", 8)
+	
+	var p_note = Label.new()
+	p_note.text = "Lắng nghe..."
+	p_note.add_theme_color_override("font_color", Color(0, 0, 0, 1)) # Black text
+	p_note.add_theme_font_size_override("font_size", 24)
+	feedback_box.add_child(p_note)
+	
+	var p_status = Label.new()
+	p_status.text = " Hãy gảy đàn"
+	p_status.add_theme_color_override("font_color", Color(0, 0, 0, 1)) # Black text
+	p_status.add_theme_font_size_override("font_size", 24)
+	feedback_box.add_child(p_status)
+	
+	add_child(feedback_box)
+	
+	self.pitch_note = p_note
+	self.pitch_status = p_status
