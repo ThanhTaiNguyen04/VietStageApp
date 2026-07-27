@@ -39,7 +39,7 @@ const C_GREEN_JADE := Color("#2e8b57") # Jade green
 
 
 # ─── State ────────────────────────────────────────────────────────────────────
-var _recording   := false
+var _recording   := true
 var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
@@ -660,11 +660,38 @@ func _build_notation_track() -> void:
 		line_l.color = Color(0.85, 0.68, 0.35, 0.75)
 		line_left_cont.add_child(line_l)
 		sub_instr_row.add_child(line_left_cont)
-		var sub_lbl = Label.new()
-		sub_lbl.text = "   🌿   Lắng nghe và uốn cần đàn tương ứng   🌿   "
-		sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
-		sub_lbl.add_theme_font_size_override("font_size", 26)
-		sub_instr_row.add_child(sub_lbl)
+		var feedback_box = HBoxContainer.new()
+		feedback_box.alignment = BoxContainer.ALIGNMENT_CENTER
+		feedback_box.add_theme_constant_override("separation", 12)
+		
+		var icon_l = Label.new()
+		icon_l.text = "🌿"
+		icon_l.add_theme_font_size_override("font_size", 26)
+		icon_l.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+		feedback_box.add_child(icon_l)
+		
+		var p_note = Label.new()
+		p_note.text = "Lắng nghe..."
+		p_note.add_theme_color_override("font_color", Color(0.85, 0.5, 0.2, 1.0))
+		p_note.add_theme_font_size_override("font_size", 28)
+		feedback_box.add_child(p_note)
+		
+		var p_status = Label.new()
+		p_status.text = " Hãy gảy đàn"
+		p_status.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+		p_status.add_theme_font_size_override("font_size", 26)
+		feedback_box.add_child(p_status)
+		
+		var icon_r = Label.new()
+		icon_r.text = "🌿"
+		icon_r.add_theme_font_size_override("font_size", 26)
+		icon_r.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+		feedback_box.add_child(icon_r)
+		
+		sub_instr_row.add_child(feedback_box)
+		
+		self.pitch_note = p_note
+		self.pitch_status = p_status
 		var line_right_cont = CenterContainer.new()
 		line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var line_r = ColorRect.new()
