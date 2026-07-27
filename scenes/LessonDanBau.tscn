@@ -54,19 +54,19 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 
 [node name="BtnCourses" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=489830105]
-custom_minimum_size = Vector2(220, 140)
+custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 text = "Khóa học"
 flat = true
 
 [node name="BtnRoom" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=1317064251]
-custom_minimum_size = Vector2(220, 140)
+custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 text = "Phòng nhạc"
 flat = true
 
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=116132194]
-custom_minimum_size = Vector2(220, 140)
+custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 text = "Bài hát"
 flat = true

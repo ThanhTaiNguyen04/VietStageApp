@@ -11,43 +11,7 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
-<<<<<<< HEAD
-# ─── Dan Bau Note Map: pitch (Hz) → Vietnamese note name
-# Covers boi am (harmonics) range of Dan Bau: ~130Hz – 1200Hz
-const DANBAU_NOTE_MAP: Array[Dictionary] = [
-	{"min": 123.0,  "max": 135.0,  "name": "Đố thấp",  "solfege": "Do"},
-	{"min": 135.0,  "max": 150.0,  "name": "Rê thấp",  "solfege": "Re"},
-	{"min": 150.0,  "max": 168.0,  "name": "Mi thấp",  "solfege": "Mi"},
-	{"min": 168.0,  "max": 185.0,  "name": "Fa thấp",  "solfege": "Fa"},
-	{"min": 185.0,  "max": 207.0,  "name": "Sol thấp", "solfege": "Sol"},
-	{"min": 207.0,  "max": 232.0,  "name": "La thấp",  "solfege": "La"},
-	{"min": 232.0,  "max": 260.0,  "name": "Si thấp",  "solfege": "Si"},
-	{"min": 260.0,  "max": 295.0,  "name": "Đô",       "solfege": "Do"},
-	{"min": 295.0,  "max": 330.0,  "name": "Rê",       "solfege": "Re"},
-	{"min": 330.0,  "max": 370.0,  "name": "Mi",       "solfege": "Mi"},
-	{"min": 370.0,  "max": 415.0,  "name": "Fa",       "solfege": "Fa"},
-	{"min": 415.0,  "max": 465.0,  "name": "Sol",      "solfege": "Sol"},
-	{"min": 465.0,  "max": 520.0,  "name": "La",       "solfege": "La"},
-	{"min": 520.0,  "max": 585.0,  "name": "Si",       "solfege": "Si"},
-	{"min": 585.0,  "max": 655.0,  "name": "Đố",       "solfege": "Do"},
-	{"min": 655.0,  "max": 740.0,  "name": "Rế",       "solfege": "Re"},
-	{"min": 740.0,  "max": 830.0,  "name": "Mí",       "solfege": "Mi"},
-	{"min": 830.0,  "max": 930.0,  "name": "Fá",       "solfege": "Fa"},
-	{"min": 930.0,  "max": 1050.0, "name": "Sól",      "solfege": "Sol"},
-	{"min": 1050.0, "max": 1200.0, "name": "Lá",       "solfege": "La"},
-]
-
-# ─── Drag Tracking Variables
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
-=======
 var is_unlocked: bool = true
->>>>>>> 5ea47272736d1865d1f7c912053cc34462e3caaf
 
 # ─── Audio Recognition State
 var _audio_panel_visible := false
@@ -79,76 +43,10 @@ const NOTE_HOLD_REQUIRED := 0.4 # seconds a note must be held to confirm
 @onready var btn_songs         : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
 @onready var btn_account       : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 var btn_minigame               : Button
+var btn_leaderboard            : Button
 
 var _sidebar_icons_cache := {}
 
-<<<<<<< HEAD
-# ─── Dynamic Lesson Data (5 Lessons Course)
-const LESSONS = [
-	{
-		"id": "dan_bau_coban_1",
-		"title": "BÀI 1",
-		"note": "Khám phá\nĐộc Huyền Cầm",
-		"short_note": "Khám phá",
-		"video": "Video hướng dẫn: Giảng viên giới thiệu cấu tạo (Bầu vang, cần đàn, dây, que gảy), tư thế ngồi và cách cầm que gảy tay phải.",
-		"practice": "Thực hành (Tạm thời ở phòng luyện Đàn Bầu ảo): Chế độ \"Exploration\". Người dùng làm quen giao diện màn hình: chạm vào dây đàn ảo để nghe âm thanh dây buông.",
-		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài học đầu tiên: Khám phá Độc Huyền Cầm."},
-			{"start": 2.5, "end": 6.5, "text": "Đàn Bầu gồm Bầu vang, cần đàn, dây, que gảy. Hãy lưu ý tư thế ngồi và cách cầm que gảy tay phải."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy sẵn sàng để bước vào thế giới của Độc Huyền Cầm nhé."}
-		]
-	},
-	{
-		"id": "dan_bau_coban_2",
-		"title": "BÀI 2",
-		"note": "Kỹ thuật\ntạo Bồi Âm",
-		"short_note": "Bồi âm",
-		"video": "Video hướng dẫn: Bí quyết dùng cạnh bàn tay phải chặn nhẹ lên dây và gảy để tạo ra các bồi âm (Harmonics) ở các vị trí nốt khác nhau.",
-		"practice": "Thực hành (Tạm thời ở phòng luyện Đàn Bầu ảo): Mini-game \"Dò đúng nốt\". Ứng dụng chia dây đàn ảo thành các vạch điểm chạm (Nodes). Chạm đúng vạch sáng trên màn hình.",
-		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài 2: Kỹ thuật tạo Bồi Âm."},
-			{"start": 2.5, "end": 6.0, "text": "Bí quyết là dùng cạnh bàn tay phải chặn nhẹ lên dây và gảy."},
-			{"start": 6.0, "end": 10.0, "text": "Điều này sẽ tạo ra các bồi âm ở các vị trí nốt khác nhau. Cùng thử nhé."}
-		]
-	},
-	{
-		"id": "dan_bau_coban_3",
-		"title": "BÀI 3",
-		"note": "Nốt Rê & Mi",
-		"short_note": "Rê & Mi",
-		"video": "Xem video hướng dẫn nốt Rê & Mi",
-		"practice": "Luyện gảy nốt Rê và Mi",
-		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 3: Hài âm nốt Rê và Mi."},
-			{"start": 3.0, "end": 6.5, "text": "Vị trí hài âm nốt Rê và Mi nằm dịch về phía bên phải một chút so với nốt Đô."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy chạm nhẹ và gảy chính xác để nghe âm vang của hai nốt nhạc này."}
-		]
-	},
-	{
-		"id": "dan_bau_coban_4",
-		"title": "BÀI 4",
-		"note": "Uốn vòi cần",
-		"short_note": "Uốn vòi",
-		"video": "Xem video hướng dẫn uốn vòi đàn",
-		"practice": "Luyện uốn vòi đổi âm",
-		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 4: Học kỹ thuật Uốn vòi cần đàn Đàn Bầu."},
-			{"start": 3.0, "end": 6.5, "text": "Tay trái uốn cần đàn sang trái để kéo căng dây giúp nâng cao cao độ nốt nhạc."},
-			{"start": 6.5, "end": 10.0, "text": "Ngược lại, thả lỏng cần sang phải để giảm độ căng giúp hạ thấp cao độ."}
-		]
-	},
-	{
-		"id": "dan_bau_coban_5",
-		"title": "BÀI 5",
-		"note": "Bài mẫu",
-		"short_note": "Bèo Dạt",
-		"video": "Xem video hướng dẫn chơi bài mẫu",
-		"practice": "Luyện chơi bài Bèo Dạt Mây Trôi",
-		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 5: Luyện tập bài Bèo Dạt Mây Trôi."},
-			{"start": 3.0, "end": 6.5, "text": "Kết hợp kỹ thuật gảy hài âm nốt Đô, Rê, Mi và uốn cần nhịp nhàng."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy cố gắng liên kết các âm vang mềm mại và đúng nhịp điệu bài học nhé."}
-=======
 static var selected_level: int = 1
 
 const LEVELS := [
@@ -336,7 +234,6 @@ const LEVELS := [
 				"note": "🏆 Mini Game Cuối: Chơi Cả Bài (AI Chấm 100)",
 				"subtitles": []
 			}
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		]
 	}
 ]
@@ -353,10 +250,18 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
-
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
+	
 	_build_theme()
 	_connect_buttons()
 	_build_lesson_list()
@@ -370,20 +275,15 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
-<<<<<<< HEAD
-
-=======
 	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	var content_margin := lessons_hbox.get_parent() as Control
 	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	
->>>>>>> 5ea47272736d1865d1f7c912053cc34462e3caaf
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.3)
 
-func _process(delta: float) -> void:
-	if _mic_active and _audio_analyzer and _waveform_control:
-		_update_audio_display(delta)
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to_scene("res://scenes/LeaderboardScreen.tscn")
 
 func _input(event: InputEvent) -> void:
 	pass
@@ -424,15 +324,10 @@ func _build_theme() -> void:
 	top_blur_rect.show_behind_parent = true
 	top_bar.add_child(top_blur_rect)
 	top_bar.move_child(top_blur_rect, 0)
-<<<<<<< HEAD
-
-	page_title.text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
-=======
 	
 	var level_idx := clampi(selected_level, 1, LEVELS.size()) - 1
 	var level_info: Dictionary = LEVELS[level_idx]
 	page_title.text = "GIÁO TRÌNH ĐÀN BẦU · LEVEL %d: %s" % [selected_level, level_info["title"]]
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 	page_title.add_theme_color_override("font_color", C_JADE)
 
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -792,6 +687,7 @@ func _build_sidebar() -> void:
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
@@ -799,9 +695,10 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
 	_attach_icon_draw(btn_account,  5)
 
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(b)
 
 	btn_menu.pressed.connect(func() -> void:
@@ -819,6 +716,7 @@ func _build_sidebar() -> void:
 	btn_minigame.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/MiniGame.tscn")
 	)
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/AccountScreen.tscn")
 	)
@@ -828,11 +726,11 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -858,7 +756,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -917,20 +815,6 @@ func _build_lesson_list() -> void:
 
 	var inst := "dan_bau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-<<<<<<< HEAD
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_coban_1_video"])
-
-	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-
-	for i in range(LESSONS.size()):
-		var lesson_item : Dictionary = LESSONS[i]
-		var id := lesson_item["id"] as String
-
-		# Define task status keys
-		var v_id := id + "_video"
-		var p_id := id + "_practice"
-
-=======
 	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_level1_bai1_video"])
 	
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
@@ -941,59 +825,22 @@ func _build_lesson_list() -> void:
 		var id := lesson_item["id"] as String
 		var type := lesson_item["type"] as String
 		
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		# Unlocking checks
 		var is_unlocked := false
 		if i == 0:
 			is_unlocked = true
 		else:
-<<<<<<< HEAD
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(v_id) or completed_lessons.has(prev_id + "_practice")
-
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(v_id) or unlocked_lessons.has(p_id))
-
-		var is_v_completed := completed_lessons.has(v_id)
-		var is_p_completed := completed_lessons.has(p_id)
-
-=======
 			var prev_id := lessons_data[i - 1]["id"] as String
 			is_unlocked = unlocked_lessons.has(id) or completed_lessons.has(prev_id)
 			
 		var is_completed := completed_lessons.has(id)
 		
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
 		col.custom_minimum_size = Vector2.ZERO
 		col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
-<<<<<<< HEAD
-		col.add_theme_constant_override("separation", 20)
-
-		# Top: Lesson Title Label
-		var title_lbl := Label.new()
-		title_lbl.text = lesson_item["title"]
-		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_lbl.add_theme_color_override("font_color", C_TEXT if is_v_unlocked else C_TEXT_MUTED)
-		title_lbl.add_theme_font_size_override("font_size", 18)
-		if f_bold:
-			title_lbl.add_theme_font_override("font", f_bold)
-		col.add_child(title_lbl)
-
-		# Short note subtitle label (separate from button — no overflow)
-		var sub_lbl := Label.new()
-		sub_lbl.text = lesson_item.get("short_note", "") as String
-		sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		sub_lbl.add_theme_color_override("font_color", C_TEXT_MUTED if not is_v_unlocked else Color(C_TEXT, 0.65))
-		sub_lbl.add_theme_font_size_override("font_size", 13)
-		sub_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		sub_lbl.custom_minimum_size = Vector2(180, 0)
-		col.add_child(sub_lbl)
-
-		# Center: Row of circles connected horizontally
-=======
 		col.add_theme_constant_override("separation", 16)
 		
 		# Top: Lesson Title Label (BÀI 1, BÀI 2, BÀI 3...)
@@ -1007,38 +854,10 @@ func _build_lesson_list() -> void:
 		col.add_child(title_lbl)
 		
 		# Center: Row containing EXACTLY 1 Circle Button per Lesson
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		var row := HBoxContainer.new()
 		row.name = "Row"
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.add_child(row)
-<<<<<<< HEAD
-
-		# 1. Hướng Dẫn Button (Left circle)
-		var v_btn := Button.new()
-		v_btn.name = "VideoBtn"
-		v_btn.custom_minimum_size = Vector2(165, 165)
-		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-
-		_setup_circle_btn(v_btn, "Hướng dẫn", is_v_unlocked, is_v_completed, "video")
-		row.add_child(v_btn)
-
-		v_btn.pressed.connect(_on_video_pressed.bind(v_id, lesson_item["subtitles"], is_v_unlocked))
-
-		# 2. Thực Hành Button (Right circle)
-		var p_btn := Button.new()
-		p_btn.name = "PracticeBtn"
-		p_btn.custom_minimum_size = Vector2(165, 165)
-		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-
-		_setup_circle_btn(p_btn, "Thực hành", is_p_unlocked, is_p_completed, "practice")
-		row.add_child(p_btn)
-
-		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
-
-=======
 		
 		var btn := Button.new()
 		btn.name = "LessonBtn"
@@ -1055,7 +874,6 @@ func _build_lesson_list() -> void:
 		else:
 			btn.pressed.connect(_on_practice_pressed.bind(id, is_unlocked))
 			
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		lessons_hbox.add_child(col)
 
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
@@ -1082,15 +900,9 @@ func _setup_circle_btn(btn: Button, action: String, unlocked: bool, completed: b
 
 	# Short, clean text — no long lesson title inside circle
 	if completed:
-<<<<<<< HEAD
-		btn.text = "\n\n%s\n✓ Xong" % action
-	elif unlocked:
-		btn.text = "\n\n%s" % action
-=======
 		btn.text = "\n\n%s\nHoàn thành" % lesson_title
 	elif unlocked:
 		btn.text = "\n\n%s" % lesson_title
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 	else:
 		btn.text = ""
 
@@ -1186,23 +998,6 @@ func _draw_connecting_lines() -> void:
 		if not col: continue
 		var row := col.get_node_or_null("Row") as HBoxContainer
 		if not row: continue
-<<<<<<< HEAD
-
-		var v_btn := row.get_node_or_null("VideoBtn") as Button
-		var p_btn := row.get_node_or_null("PracticeBtn") as Button
-		if not v_btn or not p_btn: continue
-
-		# Compute centers in HBox local coordinates
-		var v_center := col.position + row.position + v_btn.position + v_btn.size / 2.0
-		var p_center := col.position + row.position + p_btn.position + p_btn.size / 2.0
-
-		centers.append(v_center)
-		centers.append(p_center)
-
-		var lesson_id := LESSONS[i]["id"] as String
-		var p_id := lesson_id + "_practice"
-		var is_v_unlocked := false
-=======
 		
 		var btn := row.get_node_or_null("LessonBtn") as Button
 		if not btn: continue
@@ -1213,24 +1008,13 @@ func _draw_connecting_lines() -> void:
 		
 		var lesson_id := lessons_data[i]["id"] as String
 		var is_unlocked := false
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		if i == 0:
 			is_unlocked = true
 		else:
-<<<<<<< HEAD
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(lesson_id + "_video") or completed_lessons.has(prev_id + "_practice")
-
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(lesson_id + "_video") or unlocked_lessons.has(p_id))
-
-		node_unlocked.append(is_v_unlocked)
-		node_unlocked.append(is_p_unlocked)
-=======
 			var prev_id := lessons_data[i - 1]["id"] as String
 			is_unlocked = unlocked_lessons.has(lesson_id) or completed_lessons.has(prev_id)
 			
 		node_unlocked.append(is_unlocked)
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 
 	if centers.is_empty():
 		return

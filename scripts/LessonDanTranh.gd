@@ -22,6 +22,44 @@ var current_state = State.INTRO
 var ai_audio = null
 
 var staff_display: Control
+var pitch_box: PanelContainer
+var pitch_note_lbl: Label
+var pitch_status_lbl: Label
+var pitch_meter: Control
+
+class PitchMeterDraw extends Control:
+	var current_cents: float = 0.0
+	var is_active: bool = false
+	
+	func _draw():
+		var W = size.x
+		var H = size.y
+		var cy = H / 2.0
+		var cx = W / 2.0
+		
+		# Base track bar
+		draw_rect(Rect2(0, cy - 3, W, 6), Color(0.15, 0.15, 0.15, 0.7), true)
+		
+		# Target in-tune zone (-25 to +25 cents) -> Green translucent fill
+		var safe_w = (50.0 / 100.0) * W
+		draw_rect(Rect2(cx - safe_w/2.0, cy - 5, safe_w, 10), Color(0.2, 0.8, 0.3, 0.35), true)
+		
+		# Center gold target line (0 cents)
+		draw_line(Vector2(cx, cy - 8), Vector2(cx, cy + 8), Color(0.961, 0.784, 0.259, 1.0), 2.5)
+		
+		# End ticks (-50, +50)
+		draw_line(Vector2(4, cy - 5), Vector2(4, cy + 5), Color(0.7, 0.7, 0.7, 0.5), 1.5)
+		draw_line(Vector2(W - 4, cy - 5), Vector2(W - 4, cy + 5), Color(0.7, 0.7, 0.7, 0.5), 1.5)
+		
+		# Real-time Needle / Pointer
+		if is_active:
+			var norm_c = clampf(current_cents, -50.0, 50.0)
+			var ptr_x = cx + (norm_c / 50.0) * (W / 2.0 - 6.0)
+			var ptr_color = Color(0.25, 0.95, 0.45) if abs(norm_c) <= 25.0 else Color(1.0, 0.35, 0.35)
+			
+			# Needle pointer (bright glowing vertical bar + circle cap)
+			draw_line(Vector2(ptr_x, cy - 10), Vector2(ptr_x, cy + 10), ptr_color, 3.5)
+			draw_circle(Vector2(ptr_x, cy), 5.0, ptr_color)
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -207,7 +245,7 @@ func _ready():
 	# Keep this explicit so scene/default changes cannot cut off the high strings.
 	analyzer.min_frequency = 180.0
 	analyzer.max_frequency = 4200.0
-	analyzer.volume_threshold_db = -55.0
+	analyzer.volume_threshold_db = -58.0
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
@@ -237,11 +275,11 @@ func _ready():
 		if pos < min_pos: min_pos = pos
 		if pos > max_pos: max_pos = pos
 	
-	var optimal_spacing = 80.0
+	var optimal_spacing = 65.0
 	if max_pos > min_pos:
 		var span = max_pos - min_pos
 		if span > 4.0:
-			optimal_spacing = clampf(480.0 / (span + 2.0), 35.0, 80.0)
+			optimal_spacing = clampf(520.0 / (span + 2.0), 50.0, 70.0)
 	staff_display.line_spacing = optimal_spacing
 	
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
@@ -278,6 +316,8 @@ func _ready():
 	dialog_sb.border_width_top = 4; dialog_sb.border_width_bottom = 4
 	dialog_sb.border_width_left = 4; dialog_sb.border_width_right = 4
 	dialog_sb.border_color = C_GOLD
+	
+	_setup_top_pitch_box()
 	dialog_sb.shadow_color = Color(0, 0, 0, 0.15)
 	dialog_sb.shadow_size = 12
 	dialog_sb.shadow_offset = Vector2(0, 6)
@@ -380,6 +420,68 @@ func _ready():
 		
 	_start_intro()
 
+func _setup_top_pitch_box():
+	pitch_box = PanelContainer.new()
+	pitch_box.name = "PitchFeedbackBox"
+	pitch_box.anchor_left = 0.5
+	pitch_box.anchor_right = 0.5
+	pitch_box.anchor_top = 0.0
+	pitch_box.anchor_bottom = 0.0
+	pitch_box.offset_left = -280
+	pitch_box.offset_right = 280
+	pitch_box.offset_top = 55
+	pitch_box.offset_bottom = 135
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.22, 0.14, 0.95) # Dark jade theme
+	sb.border_width_left = 3; sb.border_width_right = 3
+	sb.border_width_top = 3; sb.border_width_bottom = 3
+	sb.border_color = C_GOLD
+	sb.set_corner_radius_all(18)
+	sb.shadow_color = Color(0, 0, 0, 0.4)
+	sb.shadow_size = 8
+	sb.shadow_offset = Vector2(0, 3)
+	pitch_box.add_theme_stylebox_override("panel", sb)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	pitch_box.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	margin.add_child(vbox)
+	
+	var hbox = HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 24)
+	vbox.add_child(hbox)
+	
+	pitch_note_lbl = Label.new()
+	pitch_note_lbl.text = "🎵 Nốt: ---"
+	pitch_note_lbl.add_theme_font_size_override("font_size", 22)
+	pitch_note_lbl.add_theme_color_override("font_color", C_GOLD)
+	hbox.add_child(pitch_note_lbl)
+	
+	var sep = VSeparator.new()
+	sep.modulate.a = 0.4
+	hbox.add_child(sep)
+	
+	pitch_status_lbl = Label.new()
+	pitch_status_lbl.text = "🎙️ Đang nghe..."
+	pitch_status_lbl.add_theme_font_size_override("font_size", 22)
+	pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
+	hbox.add_child(pitch_status_lbl)
+	
+	pitch_meter = PitchMeterDraw.new()
+	pitch_meter.custom_minimum_size = Vector2(480, 20)
+	vbox.add_child(pitch_meter)
+	
+	add_child(pitch_box)
+	pitch_box.visible = false
+
 func _process(delta):
 	if is_paused:
 		return
@@ -387,6 +489,86 @@ func _process(delta):
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
 		_process_practice(delta)
+	
+	_update_continuous_pitch_hud()
+
+func _update_continuous_pitch_hud():
+	if not pitch_box or not pitch_box.visible or not analyzer:
+		return
+		
+	var db: float = analyzer.current_amplitude_db
+	var pitch: float = analyzer.current_pitch
+	
+	if db <= -58.0 or pitch <= 0.0:
+		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
+			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🎙️ Đang nghe..."
+				pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
+			if pitch_meter:
+				pitch_meter.is_active = false
+				pitch_meter.queue_redraw()
+		return
+
+	# Mic has sound -> detect played note continuously 60fps
+	var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
+	var det_name = note_info.get("note_name", "None")
+	if det_name == "None" and pitch > 0.0:
+		det_name = _get_closest_dan_tranh_note_name(pitch)
+		
+	if det_name != "None" and det_name != "":
+		if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + det_name
+	
+	# Determine target frequency to calculate cents error
+	var current_target_hz = 0.0
+	if current_state == State.PRACTICE_SINGLE and single_practice_idx < unique_practice_notes.size():
+		var t_n = unique_practice_notes[single_practice_idx].split("+")[0]
+		current_target_hz = NOTE_FREQS.get(t_n, 0.0)
+	elif current_state == State.PRACTICE:
+		for note in active_falling_notes:
+			if not note.get("hit", false):
+				var clean_n = note["note"].replace("ZT_", "").split("+")[0]
+				current_target_hz = NOTE_FREQS.get(clean_n, 0.0)
+				break
+				
+	if current_target_hz > 0.0 and pitch > 0.0:
+		var cents_err = 1200.0 * log(pitch / current_target_hz) / log(2.0)
+		while cents_err > 600.0: cents_err -= 1200.0
+		while cents_err < -600.0: cents_err += 1200.0
+		
+		if pitch_meter:
+			pitch_meter.current_cents = cents_err
+			pitch_meter.is_active = true
+			pitch_meter.queue_redraw()
+			
+		# Update status label real-time continuously
+		if absf(cents_err) <= 35.0:
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
+				pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
+		elif cents_err < -35.0:
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % cents_err
+				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+		else:
+			if pitch_status_lbl:
+				pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % cents_err
+				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
+
+func _get_closest_dan_tranh_note_name(freq: float) -> String:
+	if freq <= 0.0: return ""
+	var best_name = ""
+	var min_c = 999.0
+	for n in ALL_17_NOTES:
+		var ref_f = NOTE_FREQS.get(n, 0.0)
+		if ref_f > 0.0:
+			var c = abs(1200.0 * log(freq / ref_f) / log(2.0))
+			while c > 600.0: c -= 1200.0
+			c = abs(c)
+			if c < min_c:
+				min_c = c
+				best_name = n
+	return best_name if min_c <= 150.0 else ""
 
 func _start_intro():
 	current_state = State.INTRO
@@ -403,6 +585,8 @@ func _start_intro():
 		pause_btn.visible = false
 	if pause_overlay:
 		pause_overlay.visible = false
+	if pitch_box:
+		pitch_box.visible = false
 	_play_next_intro_step()
 
 func _play_next_intro_step():
@@ -458,6 +642,8 @@ func _start_practice_single():
 		skip_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
+	if pitch_box:
+		pitch_box.visible = true
 	
 
 	unique_practice_notes.clear()
@@ -562,6 +748,17 @@ func _process_practice_single(delta: float) -> void:
 
 
 func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note: String, target_idx: int) -> void:
+	if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + detected_note
+	if pitch_status_lbl:
+		pitch_status_lbl.text = "🔴 CHƯA ĐÚNG! (Cần: " + target_note + ")"
+		pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+	
+	# Turn note head RED on staff to signal wrong note, but DO NOT advance!
+	for note in active_falling_notes:
+		if not note.get("hit", false):
+			note["color"] = Color(0.95, 0.25, 0.25) # Red note head
+			break
+			
 	zither_board.call("clear_lesson_markers")
 	# Red marker on wrong string, Gold pulse marker on target string
 	zither_board.call("set_lesson_marker", detected_idx, "Nhầm: " + detected_note, 3)
@@ -709,6 +906,8 @@ func _start_practice():
 	staff_display.visible = true
 	staff_display.offset_top = 0
 	staff_display.offset_bottom = 0
+	if pitch_box:
+		pitch_box.visible = true
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
@@ -734,7 +933,7 @@ func _start_practice():
 		
 		if raw_note_name != "Rest" and raw_note_name != "-":
 			var notes_in_chord = raw_note_name.split("+")
-			var tail_len = max(0.0, (dur - 0.5) * distance_per_beat)
+			var tail_len = 0.0 # Dan Tranh is a plucked zither instrument, so no extended hold tail!
 			var is_demo_lesson = (current_lesson_id == "dan_tranh_level_1_bai_3_practice")
 			var missing = true
 			var note_color = C_JADE
@@ -774,7 +973,7 @@ func _process_practice(delta):
 	var hit_x = staff_display.hit_line_x
 	var scroll_speed = 350.0
 	
-	var is_wait_mode = (current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id.begins_with("dan_tranh_level_6"))
+	var is_wait_mode = true # Always wait for the correct note sound before advancing past notes!
 	
 	# In Wait Mode, check if the first un-hit note has reached the hit line
 	var freeze_unhit_notes = false
@@ -837,6 +1036,10 @@ func _process_practice(delta):
 						
 					zither_board.call("clear_lesson_markers")
 					zither_board.call("set_lesson_marker", s_idx, "Chính xác!", 2)
+					if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + clean_note
+					if pitch_status_lbl:
+						pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
+						pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
 					if ai_audio: ai_audio.speak_vietnamese("Tốt lắm! Chính xác hợp âm." if chord_group != -1 else "Tốt lắm! Chính xác nốt %s." % clean_note)
 					wrong_note_time = 0.0
 					consecutive_hits += 1
@@ -906,20 +1109,16 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
 	
-	if db <= analyzer.volume_threshold_db:
+	# Relaxed volume threshold (-55 dB) to pick up standard acoustic instruments
+	if db <= -55.0:
 		time_correct = 0.0
+		if pitch_meter:
+			pitch_meter.is_active = false
+			pitch_meter.queue_redraw()
 		return false
-		
-	if not is_poly and (pitch <= 0.0 or not analyzer.current_pitch_is_reliable):
-		pitch = 0.0 # Force pitch to 0.0 so YIN checks fail cleanly, allowing FFT fallback to take over
 
 	var is_match = false
 	if is_poly:
-		# Require an overall volume spike to process chords (ignores room noise entirely)
-		if db < -40.0:
-			time_correct = 0.0
-			return false
-			
 		if analyzer and analyzer.get("_spectrum") != null:
 			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
 			var notes = _target_note_name.split("+")
@@ -927,14 +1126,10 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 			for n in notes:
 				var freq = NOTE_FREQS.get(n, 0.0)
 				if freq > 0.0:
-					# Check both fundamental and 1st harmonic (octave) because Dan Tranh's low notes have weak fundamentals
-					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.96, freq * 1.04).length()
-					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.96, freq * 2.04).length()
+					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.97, freq * 1.03).length()
+					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
 					var max_mag = max(mag1, mag2)
-					
 					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					
-					# Slightly tightened threshold to prevent sympathetic resonance from falsely triggering chords
 					if freq_db < -42.0:
 						all_detected = false
 						break
@@ -951,8 +1146,12 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 						break
 	else:
 		if target_hz > 0.0 and pitch > 0.0:
-			var cents_error = absf(1200.0 * log(pitch / target_hz) / log(2.0))
-			if cents_error <= 25.0:
+			var cents_error = 1200.0 * log(pitch / target_hz) / log(2.0)
+			if pitch_meter:
+				pitch_meter.current_cents = cents_error
+				pitch_meter.is_active = true
+				pitch_meter.queue_redraw()
+			if absf(cents_error) <= 25.0:
 				is_match = true
 			else:
 				# Allow 1st harmonic (octave equivalence) for weak fundamentals
@@ -1083,16 +1282,15 @@ func _create_speed_control_bar():
 	style_bg.content_margin_bottom = 8
 	speed_bar_container.add_theme_stylebox_override("panel", style_bg)
 	
-	# Định vị căn giữa trên cùng
+	# Position at top right (left of pause button)
 	add_child(speed_bar_container)
-	speed_bar_container.anchor_left = 0.5
-	speed_bar_container.anchor_right = 0.5
+	speed_bar_container.anchor_left = 1.0
+	speed_bar_container.anchor_right = 1.0
 	speed_bar_container.anchor_top = 0.0
 	speed_bar_container.anchor_bottom = 0.0
-	speed_bar_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	speed_bar_container.offset_top = 24
-	speed_bar_container.offset_left = -180
-	speed_bar_container.offset_right = 180
+	speed_bar_container.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	speed_bar_container.offset_top = 18
+	speed_bar_container.offset_right = -100
 	
 	var hbox = HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER

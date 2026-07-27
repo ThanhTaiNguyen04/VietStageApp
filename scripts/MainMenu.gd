@@ -27,6 +27,8 @@ var _time : float = 0.0
 var _sidebar_icons_cache := {}
 var btn_minigame : Button
 var btn_minigame_mob : Button
+var btn_leaderboard : Button
+var btn_leaderboard_mob : Button
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -81,7 +83,7 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
 
@@ -93,6 +95,22 @@ func _ready() -> void:
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)
 	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
+
+	btn_leaderboard_mob = Button.new()
+	btn_leaderboard_mob.name = "BtnLeaderboardMobile"
+	btn_leaderboard_mob.text = "Xếp hạng"
+	btn_leaderboard_mob.flat = true
+	btn_leaderboard_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_h.add_child(btn_leaderboard_mob)
+	bottom_h.move_child(btn_leaderboard_mob, 4)
 	
 	_build_sidebar()
 	_build_bottom_bar()
@@ -391,6 +409,24 @@ func _build_sidebar() -> void:
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
 
+	_style_side_icon_btn(btn_menu,     false)
+	_style_side_icon_btn(btn_courses,  true)
+	_style_side_icon_btn(btn_room,     false)
+	_style_side_icon_btn(btn_songs,    false)
+	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
+	_style_side_icon_btn(btn_account,  false)
+
+	_attach_icon_draw(btn_menu,     0)
+	_attach_icon_draw(btn_courses,  1)
+	_attach_icon_draw(btn_room,     6)
+	_attach_icon_draw(btn_songs,    2)
+	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
+	_attach_icon_draw(btn_account,  5)
+
+	_active_side_btn = btn_courses
+
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
 	bottom_s.border_width_left = 0; bottom_s.border_width_right = 0; bottom_s.border_width_bottom = 0
@@ -405,12 +441,14 @@ func _build_bottom_bar() -> void:
 	_style_bottom_icon_btn(btn_songs_mob,   false)
 	_style_bottom_icon_btn(btn_account_mob, false)
 	_style_bottom_icon_btn(btn_minigame_mob, false)
+	_style_bottom_icon_btn(btn_leaderboard_mob, false)
 
 	_attach_bottom_icon_draw(btn_courses_mob, 1)
 	_attach_bottom_icon_draw(btn_room_mob,    6)
 	_attach_bottom_icon_draw(btn_songs_mob,   2)
 	_attach_bottom_icon_draw(btn_account_mob, 5)
 	_attach_bottom_icon_draw(btn_minigame_mob, 3)
+	_attach_bottom_icon_draw(btn_leaderboard_mob, 4)
 
 func _style_bottom_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.08), Color(0, 0, 0, 0), 12)
@@ -451,32 +489,16 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_account,  false)
-
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_account,  5)
-
-	_active_side_btn = btn_courses
-
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -502,7 +524,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -591,6 +613,10 @@ func _build_top_bar() -> void:
 
 	var total_xp : int = 1240 + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
 	xp_label.text = str(total_xp) + " XP"
+	
+	# Tạm thời ẩn theo yêu cầu
+	streak_pill.visible = false
+	xp_pill.visible = false
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
 func _build_roadmap_cards() -> void:
@@ -704,17 +730,11 @@ func _build_roadmap_cards() -> void:
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
 		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
 		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
-<<<<<<< HEAD
-		
-		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
-		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
-=======
 		# basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
 		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
 		# ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		
 		soloist_unlock_title.text = "LEVEL 3"
 		chords_unlock_title.text = "LEVEL 4"
@@ -751,17 +771,11 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN SÁO TRÚC"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
-<<<<<<< HEAD
-		
-		ess_title.text = "LEVEL 2: BẤM NGÓN & LẤY HƠI"
-		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
-=======
 		# basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "LEVEL 2: BẤM NGÓN & LẤY HƠI"
 		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
 		# ess_details.text = "📖 7 Bài Học | 🔒 Cần hoàn thành bài trước"
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		
 		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
 		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
@@ -804,17 +818,10 @@ func _build_roadmap_cards() -> void:
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	if instrument == "dan_tranh":
 		_set_details_text(basic_details, 3, basic_stars, basic_pct, false)
-<<<<<<< HEAD
-	elif instrument == "dan_bau":
-		_set_details_text(basic_details, 3, basic_stars, basic_pct, false)
-	elif instrument == "sao_truc":
-		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
-=======
 	elif instrument == "sao_truc":
 		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
 	elif instrument == "dan_bau":
 		_set_details_text(basic_details, 2, basic_stars, basic_pct, false)
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 	else:
 		if is_basic_completed:
 			_set_details_text(basic_details, 2, basic_stars, 100, false)
@@ -832,11 +839,11 @@ func _build_roadmap_cards() -> void:
 		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
 		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
 		if instrument == "dan_bau":
-			_set_details_text(ess_details, 2, 0, 0, true)
+			_set_details_text(ess_details, 2, 0, 0, false)
 		elif instrument == "sao_truc":
-			_set_details_text(ess_details, 7, 0, 0, true)
+			_set_details_text(ess_details, 7, 0, 0, false)
 		else:
-			_set_details_text(ess_details, 3, 0, 0, true)
+			_set_details_text(ess_details, 3, 0, 0, false)
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
@@ -848,21 +855,12 @@ func _build_roadmap_cards() -> void:
 		if instrument == "dan_tranh":
 			var stats := _get_dan_tranh_level_status(2)
 			_set_details_text(ess_details, 3, stats["stars"], stats["pct"], false)
-<<<<<<< HEAD
-		elif instrument == "dan_bau":
-			var stats := _get_dan_bau_card_status("essentials")
-			_set_details_text(ess_details, 2, stats["stars"], stats["pct"], false)
-		elif instrument == "sao_truc":
-			var stats := _get_sao_truc_card_status("essentials")
-			_set_details_text(ess_details, 7, stats["stars"], stats["pct"], false)
-=======
 		elif instrument == "sao_truc":
 			var stats := _get_sao_truc_card_status("essentials")
 			_set_details_text(ess_details, 7, stats["stars"], stats["pct"], false)
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
 			_set_details_text(ess_details, 2, stats["stars"], stats["pct"], false)
->>>>>>> 92a30cf66a46caceb8970d060858dafbfbaa7dd8
 		else:
 			var stars_dict = SecureDataManager.data.get("stars", {})
 			var inst_stars = stars_dict.get(instrument, {})
@@ -910,6 +908,10 @@ func _build_roadmap_cards() -> void:
 		# Style circular play button (Vermilion red filled, gold border)
 		var btn := card.get_node("Margin/HBox/BtnPlay") as Button
 		_style_circular_play_btn(btn)
+		
+		var det := _ensure_details_label(card)
+		if det:
+			_set_details_text(det, 3, 0, 0, false)
 
 func _style_circular_play_btn(btn: Button) -> void:
 	var pb_n := _flat(C_RED_SON, C_GOLD, 32)
@@ -967,8 +969,9 @@ func _connect_buttons() -> void:
 	)
 	btn_account.pressed.connect(_go_account)
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
  
-	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
@@ -1186,18 +1189,20 @@ func _connect_buttons() -> void:
 	)
 	btn_account_mob.pressed.connect(_go_account)
 	btn_minigame_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_leaderboard_mob.pressed.connect(_on_btn_leaderboard_pressed)
  
-	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]:
+	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob, btn_leaderboard_mob]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 func _set_active_tab(active: Button) -> void:
-	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account]
+	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]
 	var active_desktop : Button = null
 	if active == btn_courses or active == btn_courses_mob: active_desktop = btn_courses
 	elif active == btn_room or active == btn_room_mob: active_desktop = btn_room
 	elif active == btn_songs or active == btn_songs_mob: active_desktop = btn_songs
 	elif active == btn_minigame or active == btn_minigame_mob: active_desktop = btn_minigame
+	elif active == btn_leaderboard or active == btn_leaderboard_mob: active_desktop = btn_leaderboard
 	elif active == btn_account or active == btn_account_mob: active_desktop = btn_account
 	
 	for b : Button in all:
@@ -1521,6 +1526,25 @@ func _play_dan_bau_practice(lesson_num: int) -> void:
 	SecureDataManager.active_lesson_id = "dan_bau_coban_" + str(lesson_num) + "_practice"
 	_fade_to("res://scenes/PracticeDanBau.tscn")
 
+func _ensure_details_label(card: Control) -> Label:
+	var text_v = card.get_node_or_null("Margin/Row/TextV")
+	if not text_v:
+		text_v = card.get_node_or_null("Margin/HBox/TextV")
+	if not text_v:
+		return null
+		
+	var details = text_v.get_node_or_null("Details") as Label
+	if not details:
+		details = Label.new()
+		details.name = "Details"
+		details.custom_minimum_size = Vector2(310, 0)
+		details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		details.add_theme_font_size_override("font_size", 16)
+		text_v.add_child(details)
+	
+	details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	return details
+
 func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_locked: bool) -> void:
 	for child in lbl.get_children():
 		child.queue_free()
@@ -1633,3 +1657,6 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	if total_count > 0:
 		pct = int((float(completed_count) / float(total_count)) * 100.0)
 	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to("res://scenes/LeaderboardScreen.tscn")
