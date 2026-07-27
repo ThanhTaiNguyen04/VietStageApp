@@ -78,7 +78,7 @@ var _target_time_beats := 0.0
 var _current_note_elapsed := 0.0
 var note_visuals : Dictionary = {}
 var note_statuses : Array[String] = []
-var _track_panel : Panel = null
+var _track_panel : PanelContainer = null
 var _note_container : Control = null
 var _staff_display: Control = null
 var _intro_overlay: ColorRect = null
@@ -160,29 +160,7 @@ func _ready() -> void:
 	var settings_panel_node := get_node_or_null("SettingsPanel")
 	if settings_panel_node: settings_panel_node.visible = false
 	
-	# Add a custom floating Back button
-	var custom_back = Button.new()
-	custom_back.text = "← Quay Lại"
-	custom_back.name = "CustomBackBtn"
-	var bs = StyleBoxFlat.new()
-	bs.bg_color = Color("#2e1c12")
-	bs.corner_radius_top_left = 12
-	bs.corner_radius_top_right = 12
-	bs.corner_radius_bottom_left = 12
-	bs.corner_radius_bottom_right = 12
-	bs.content_margin_left = 16
-	bs.content_margin_right = 16
-	bs.content_margin_top = 8
-	bs.content_margin_bottom = 8
-	custom_back.add_theme_stylebox_override("normal", bs)
-	custom_back.add_theme_stylebox_override("hover", bs)
-	custom_back.add_theme_stylebox_override("pressed", bs)
-	custom_back.add_theme_color_override("font_color", Color.WHITE)
-	custom_back.add_theme_font_size_override("font_size", 16)
-	custom_back.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	custom_back.position = Vector2(24, 24)
-	custom_back.pressed.connect(_go_back)
-	$Root.add_child(custom_back)
+	_setup_premium_practice_ui()
 	
 	_build_theme()
 	_build_board()
@@ -639,26 +617,62 @@ func _build_dots() -> void:
 			d.color = C_GOLD if i < done else Color(0.85, 0.82, 0.75, 1.0)
 
 func _build_notation_track() -> void:
-	# Create track panel dynamically if not exists
 	var main_content = $Root/MiddleRow/MainContent
 	if not _track_panel:
-		_track_panel = Panel.new()
-		_track_panel.name = "NoteTrackPanel"
+		var top_spacer = Control.new()
+		top_spacer.custom_minimum_size = Vector2(0, 195)
+		main_content.add_child(top_spacer)
+		
+		_track_panel = PanelContainer.new()
+		_track_panel.name = "StaffCard"
 		_track_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		_track_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var card_sb = StyleBoxFlat.new()
+		card_sb.bg_color = Color(0.995, 0.98, 0.93, 0.96)
+		card_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
+		card_sb.border_width_left = 3; card_sb.border_width_right = 3; card_sb.border_width_top = 3; card_sb.border_width_bottom = 3
+		card_sb.corner_radius_top_left = 18; card_sb.corner_radius_top_right = 18; card_sb.corner_radius_bottom_left = 18; card_sb.corner_radius_bottom_right = 18
+		card_sb.shadow_color = Color(0.45, 0.30, 0.12, 0.25); card_sb.shadow_size = 14; card_sb.shadow_offset = Vector2(0, 6)
+		_track_panel.add_theme_stylebox_override("panel", card_sb)
 		
-		main_content.add_child(_track_panel)
-		main_content.move_child(_track_panel, 0)
-		
-		var tp_style = StyleBoxFlat.new()
-		tp_style.bg_color = Color(0, 0, 0, 0) # Transparent to show cream background
-		_track_panel.add_theme_stylebox_override("panel", tp_style)
+		var margin_container = MarginContainer.new()
+		margin_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		margin_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		margin_container.add_theme_constant_override("margin_left", 55)
+		margin_container.add_theme_constant_override("margin_right", 55)
+		margin_container.add_child(_track_panel)
+		main_content.add_child(margin_container)
 		
 		_staff_display = load("res://scripts/StaffDisplay.gd").new()
 		_staff_display.name = "StaffDisplay"
-		_staff_display.line_spacing = 85.0 # Large 85px line spacing for giant notes & staff
+		_staff_display.line_spacing = 85.0
 		_staff_display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_track_panel.add_child(_staff_display)
+		
+		var sub_instr_row = HBoxContainer.new()
+		sub_instr_row.name = "SubInstrRow"
+		sub_instr_row.custom_minimum_size = Vector2(0, 50)
+		sub_instr_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		var line_left_cont = CenterContainer.new()
+		line_left_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var line_l = ColorRect.new()
+		line_l.custom_minimum_size = Vector2(240, 2)
+		line_l.color = Color(0.85, 0.68, 0.35, 0.75)
+		line_left_cont.add_child(line_l)
+		sub_instr_row.add_child(line_left_cont)
+		var sub_lbl = Label.new()
+		sub_lbl.text = "   🌿   Lắng nghe và uốn cần đàn tương ứng   🌿   "
+		sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+		sub_lbl.add_theme_font_size_override("font_size", 26)
+		sub_instr_row.add_child(sub_lbl)
+		var line_right_cont = CenterContainer.new()
+		line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var line_r = ColorRect.new()
+		line_r.custom_minimum_size = Vector2(240, 2)
+		line_r.color = Color(0.85, 0.68, 0.35, 0.75)
+		line_right_cont.add_child(line_r)
+		sub_instr_row.add_child(line_right_cont)
+		main_content.add_child(sub_instr_row)
 
 func _set_block_color(block: Panel, color: Color) -> void:
 	if not is_instance_valid(block): return
@@ -1938,3 +1952,130 @@ func _setup_cinematic_intro() -> void:
 		tw.tween_callback(func(): _intro_overlay.queue_free())
 	)
 	btn_hbox.add_child(start_btn)
+
+func _setup_premium_practice_ui():
+	var bg_ov = get_node_or_null("BGOverlay")
+	if bg_ov and bg_ov is ColorRect:
+		bg_ov.color = Color(0.965, 0.935, 0.875, 0.96)
+		
+	var screen_frame = Panel.new()
+	screen_frame.name = "ScreenGoldFrame"
+	screen_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen_frame.offset_left = 16; screen_frame.offset_top = 16; screen_frame.offset_right = -16; screen_frame.offset_bottom = -16
+	screen_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sf_sb = StyleBoxFlat.new()
+	sf_sb.draw_center = false
+	sf_sb.border_color = Color(0.85, 0.68, 0.35, 0.6)
+	sf_sb.border_width_left = 2; sf_sb.border_width_right = 2; sf_sb.border_width_top = 2; sf_sb.border_width_bottom = 2
+	sf_sb.corner_radius_top_left = 16; sf_sb.corner_radius_top_right = 16; sf_sb.corner_radius_bottom_left = 16; sf_sb.corner_radius_bottom_right = 16
+	screen_frame.add_theme_stylebox_override("panel", sf_sb)
+	add_child(screen_frame)
+	
+	# Add frame early in tree to be behind UI
+	var root_node = get_node_or_null("Root")
+	if root_node:
+		move_child(screen_frame, root_node.get_index())
+	
+	var custom_back = Button.new()
+	custom_back.text = "← Quay Lại"
+	custom_back.name = "CustomBackBtn"
+	custom_back.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	custom_back.offset_left = 32
+	custom_back.offset_top = 26
+	custom_back.custom_minimum_size = Vector2(155, 48)
+	var btn_sb = StyleBoxFlat.new()
+	btn_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
+	btn_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+	btn_sb.border_width_left = 2; btn_sb.border_width_right = 2; btn_sb.border_width_top = 2; btn_sb.border_width_bottom = 2
+	btn_sb.corner_radius_top_left = 24; btn_sb.corner_radius_top_right = 24; btn_sb.corner_radius_bottom_left = 24; btn_sb.corner_radius_bottom_right = 24
+	btn_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.35); btn_sb.shadow_size = 5; btn_sb.shadow_offset = Vector2(0, 3)
+	custom_back.add_theme_stylebox_override("normal", btn_sb)
+	custom_back.add_theme_stylebox_override("hover", btn_sb)
+	custom_back.add_theme_stylebox_override("pressed", btn_sb)
+	custom_back.add_theme_color_override("font_color", Color(0.98, 0.92, 0.82, 1.0))
+	custom_back.add_theme_font_size_override("font_size", 22)
+	custom_back.pressed.connect(_go_back)
+	add_child(custom_back)
+	
+	var top_right_box = HBoxContainer.new()
+	top_right_box.name = "TopRightIcons"
+	top_right_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	top_right_box.offset_left = -160; top_right_box.offset_top = 26; top_right_box.offset_right = -32; top_right_box.offset_bottom = 74
+	top_right_box.add_theme_constant_override("separation", 16)
+	top_right_box.alignment = BoxContainer.ALIGNMENT_END
+	add_child(top_right_box)
+	for icon_txt in ["⚙", "♫"]:
+		var med_btn = Button.new()
+		med_btn.text = icon_txt
+		med_btn.custom_minimum_size = Vector2(48, 48)
+		var med_sb = StyleBoxFlat.new()
+		med_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
+		med_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+		med_sb.border_width_left = 2; med_sb.border_width_right = 2; med_sb.border_width_top = 2; med_sb.border_width_bottom = 2
+		med_sb.corner_radius_top_left = 24; med_sb.corner_radius_top_right = 24; med_sb.corner_radius_bottom_left = 24; med_sb.corner_radius_bottom_right = 24
+		med_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.3); med_sb.shadow_size = 4; med_sb.shadow_offset = Vector2(0, 2)
+		med_btn.add_theme_stylebox_override("normal", med_sb)
+		med_btn.add_theme_stylebox_override("hover", med_sb)
+		med_btn.add_theme_stylebox_override("pressed", med_sb)
+		med_btn.add_theme_color_override("font_color", Color(0.96, 0.82, 0.45, 1.0))
+		med_btn.add_theme_font_size_override("font_size", 24)
+		top_right_box.add_child(med_btn)
+		
+	var l_title = "LUYỆN ĐÀN BẦU"
+	var active_id = SecureDataManager.active_lesson_id
+	if "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
+	elif "bai2" in active_id: l_title = "BÀI 2: ĐIỀU KHIỂN CẦN"
+	elif "bai3" in active_id: l_title = "BÀI 3: BỒI ÂM"
+	elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
+	elif "bai5" in active_id: l_title = "BÀI 5: NÂNG CAO"
+		
+	var title_plaque = PanelContainer.new()
+	title_plaque.name = "TitlePlaque"
+	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
+	title_plaque.offset_left = -265; title_plaque.offset_right = 265
+	title_plaque.offset_top = 24; title_plaque.offset_bottom = 132
+	var pl_sb = StyleBoxFlat.new()
+	pl_sb.bg_color = Color(0.22, 0.14, 0.08, 0.96)
+	pl_sb.border_color = Color(0.88, 0.72, 0.35, 1.0)
+	pl_sb.border_width_left = 3; pl_sb.border_width_right = 3; pl_sb.border_width_top = 3; pl_sb.border_width_bottom = 3
+	pl_sb.corner_radius_top_left = 24; pl_sb.corner_radius_top_right = 24; pl_sb.corner_radius_bottom_left = 24; pl_sb.corner_radius_bottom_right = 24
+	pl_sb.shadow_color = Color(0.2, 0.12, 0.05, 0.35); pl_sb.shadow_size = 12; pl_sb.shadow_offset = Vector2(0, 5)
+	title_plaque.add_theme_stylebox_override("panel", pl_sb)
+	var pl_vbox = VBoxContainer.new()
+	pl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	pl_vbox.add_theme_constant_override("separation", 2)
+	title_plaque.add_child(pl_vbox)
+	var lbl_num = Label.new()
+	lbl_num.text = "BÀI LUYỆN"
+	lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
+	lbl_num.add_theme_font_size_override("font_size", 20)
+	pl_vbox.add_child(lbl_num)
+	var lbl_main = Label.new()
+	lbl_main.text = "🌿   " + l_title + "   🌿"
+	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
+	lbl_main.add_theme_font_size_override("font_size", 34)
+	pl_vbox.add_child(lbl_main)
+	add_child(title_plaque)
+
+	var pill_badge = PanelContainer.new()
+	pill_badge.name = "NotePillBadge"
+	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
+	pill_badge.offset_left = -125; pill_badge.offset_right = 125
+	pill_badge.offset_top = 172; pill_badge.offset_bottom = 220
+	var pill_sb = StyleBoxFlat.new()
+	pill_sb.bg_color = Color(1.0, 0.99, 0.95, 1.0)
+	pill_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+	pill_sb.border_width_left = 2; pill_sb.border_width_right = 2; pill_sb.border_width_top = 2; pill_sb.border_width_bottom = 2
+	pill_sb.corner_radius_top_left = 24; pill_sb.corner_radius_top_right = 24; pill_sb.corner_radius_bottom_left = 24; pill_sb.corner_radius_bottom_right = 24
+	pill_sb.shadow_color = Color(0.3, 0.2, 0.08, 0.2); pill_sb.shadow_size = 6; pill_sb.shadow_offset = Vector2(0, 3)
+	pill_badge.add_theme_stylebox_override("panel", pill_sb)
+	var pill_lbl = Label.new()
+	pill_lbl.text = "🌿  ĐÀN BẦU  🌿"
+	pill_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pill_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pill_lbl.add_theme_color_override("font_color", Color(0.78, 0.55, 0.18, 1.0))
+	pill_lbl.add_theme_font_size_override("font_size", 26)
+	pill_badge.add_child(pill_lbl)
+	add_child(pill_badge)
