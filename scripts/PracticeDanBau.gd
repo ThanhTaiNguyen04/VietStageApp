@@ -649,57 +649,7 @@ func _build_notation_track() -> void:
 		_staff_display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_track_panel.add_child(_staff_display)
 		
-		var sub_instr_row = HBoxContainer.new()
-		sub_instr_row.name = "SubInstrRow"
-		sub_instr_row.custom_minimum_size = Vector2(0, 50)
-		sub_instr_row.alignment = BoxContainer.ALIGNMENT_CENTER
-		var line_left_cont = CenterContainer.new()
-		line_left_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var line_l = ColorRect.new()
-		line_l.custom_minimum_size = Vector2(240, 2)
-		line_l.color = Color(0.85, 0.68, 0.35, 0.75)
-		line_left_cont.add_child(line_l)
-		sub_instr_row.add_child(line_left_cont)
-		var feedback_box = HBoxContainer.new()
-		feedback_box.alignment = BoxContainer.ALIGNMENT_CENTER
-		feedback_box.add_theme_constant_override("separation", 12)
-		
-		var icon_l = Label.new()
-		icon_l.text = "🌿"
-		icon_l.add_theme_font_size_override("font_size", 26)
-		icon_l.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
-		feedback_box.add_child(icon_l)
-		
-		var p_note = Label.new()
-		p_note.text = "Lắng nghe..."
-		p_note.add_theme_color_override("font_color", Color(0.85, 0.5, 0.2, 1.0))
-		p_note.add_theme_font_size_override("font_size", 28)
-		feedback_box.add_child(p_note)
-		
-		var p_status = Label.new()
-		p_status.text = " Hãy gảy đàn"
-		p_status.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
-		p_status.add_theme_font_size_override("font_size", 26)
-		feedback_box.add_child(p_status)
-		
-		var icon_r = Label.new()
-		icon_r.text = "🌿"
-		icon_r.add_theme_font_size_override("font_size", 26)
-		icon_r.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
-		feedback_box.add_child(icon_r)
-		
-		sub_instr_row.add_child(feedback_box)
-		
-		self.pitch_note = p_note
-		self.pitch_status = p_status
-		var line_right_cont = CenterContainer.new()
-		line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var line_r = ColorRect.new()
-		line_r.custom_minimum_size = Vector2(240, 2)
-		line_r.color = Color(0.85, 0.68, 0.35, 0.75)
-		line_right_cont.add_child(line_r)
-		sub_instr_row.add_child(line_right_cont)
-		main_content.add_child(sub_instr_row)
+		# Removed SubInstrRow to prevent overwriting top-left labels
 
 func _set_block_color(block: Panel, color: Color) -> void:
 	if not is_instance_valid(block): return
@@ -1267,7 +1217,7 @@ func _process_real_audio(delta: float) -> void:
 	var pitch: float = visualizer.current_pitch
 	
 	var tone: float = visualizer.current_tone_quality
-	if db > -45.0 and pitch > 50.0 and tone >= 75.0:
+	if db > -45.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
 		var target_idx = NOTES_VN.find(target_note)
 		var expected_freq = _get_node_frequency(target_idx) if target_idx != -1 else 0.0
