@@ -1243,18 +1243,18 @@ func _process_real_audio(delta: float) -> void:
 	if db > -45.0 and pitch > 50.0 and tone >= 75.0:
 		var target_note = sheet_notes[_note_idx]
 		
-		# Find the target frequency based on target note name
-		var target_idx = NOTES_VN.find(target_note)
-		var target_freq = _get_node_frequency(target_idx)
-		
+		# Use the new JSON-backed pitch evaluator
+		var eval_res = DanBauPitchDetector.evaluate_pitch(pitch, target_note)
+		var target_freq = 0.0
+		if eval_res.has("target_freq"):
+			target_freq = eval_res["target_freq"]
+			
 		if target_freq > 0.0:
-			var cents = 1200.0 * log(pitch / target_freq) / log(2.0)
-			var cents_mod = fmod(abs(cents), 1200.0)
-			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
+			var cents = eval_res["cents_error"]
 			
 			# Estimate current bend visually on the board
+			var closest_base_idx := 0
 			if _board:
-				var closest_base_idx := 0
 				var min_diff := 99999.0
 				for i in range(NOTES_VN.size()):
 					var f := _get_node_frequency(i)
@@ -1275,14 +1275,18 @@ func _process_real_audio(delta: float) -> void:
 				_board._is_bending = true
 				_board.queue_redraw()
 				
-			# Pitch tolerance evaluation: ±20 cents or ±15 Hz as per specs
-			var tolerance_cents : float = 20.0 * visualizer.difficulty_tolerance_scale
-			var is_match = DanBauPitchDetector.is_pitch_accurate(pitch, target_freq, tolerance_cents, 15.0)
-			
-			if is_match:
+			if eval_res["is_match"]:
 				pitch_note.text = target_note
-				pitch_status.text = "Chuẩn âm"
-				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+				
+				if eval_res["rank"] == "PERFECT":
+					pitch_status.text = "Hoàn hảo"
+					pitch_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+				elif eval_res["rank"] == "GOOD":
+					pitch_status.text = "Rất tốt"
+					pitch_status.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+				else:
+					pitch_status.text = "Đạt"
+					pitch_status.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
 				
 				_correct_pitch_hold_time += delta
 				if _correct_pitch_hold_time > 0.05:
@@ -1305,44 +1309,25 @@ func _process_real_audio(delta: float) -> void:
 					_refresh_score()
 					
 					if _board:
-						_board.pluck(target_idx)
+						_board.pluck(closest_base_idx)
 						
 					_va_say("Tuyệt vời! Âm sắc chuẩn.")
 					_eval_cooldown = 1.0
 					_teacher_tip_timer = 0.0
 					return
 			else:
-				pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
-				pitch_status.add_theme_color_override("font_color", C_WARN)
+				var status_text = "Cần luyện thêm (Cao)" if cents > 0 else "Cần luyện thêm (Thấp)"
+				pitch_status.text = status_text
+				pitch_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 				pitch_note.add_theme_color_override("font_color", C_WARN)
 				
+				_correct_pitch_hold_time = 0.0
 				_teacher_tip_timer += delta
 				if _teacher_tip_timer > 3.0:
+					var cents_mod = fmod(abs(cents), 1200.0)
+					if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 					_check_teacher_advice(target_note, cents_mod)
 					_teacher_tip_timer = 0.0
-				_tone_scores.append(visualizer.current_tone_quality)
-				
-				# Advance note
-				_note_idx = (_note_idx + 1) % sheet_notes.size()
-				_update_target_indicator()
-				
-				# Dynamic AI scoring
-				var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
-				var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
-				var avg_tone_score = _get_average_score(_tone_scores, 80.0)
-				
-				_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, avg_tone_score, 100.0)
-				_refresh_score()
-			
-
-				
-				# Board interaction effect
-				if _board:
-					_board.pluck(target_idx)
-					
-				_va_say("Tuyệt vời! Âm sắc chuẩn.")
-				_eval_cooldown = 1.0
-				return
 				
 		# Check if it matches another note in the pentatonic scale
 		var detected_note := ""
