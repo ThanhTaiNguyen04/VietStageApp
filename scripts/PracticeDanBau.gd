@@ -1735,7 +1735,7 @@ func _on_resized() -> void:
 		record_btn.size_flags_horizontal = SIZE_EXPAND_FILL
 		record_btn.add_theme_font_size_override("font_size", 16)
 		
-		var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+		var reset_btn := record_h.get_node_or_null("ResetBtn") as Button
 		if reset_btn:
 			reset_btn.custom_minimum_size = Vector2(90, 48)
 			reset_btn.add_theme_font_size_override("font_size", 15)
@@ -1757,7 +1757,7 @@ func _on_resized() -> void:
 		record_btn.size_flags_horizontal = SIZE_SHRINK_CENTER
 		record_btn.add_theme_font_size_override("font_size", 22)
 		
-		var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+		var reset_btn := record_h.get_node_or_null("ResetBtn") as Button
 		if reset_btn:
 			reset_btn.custom_minimum_size = Vector2(150, 52)
 			reset_btn.add_theme_font_size_override("font_size", 18)
