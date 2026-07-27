@@ -1269,9 +1269,11 @@ func _process_real_audio(delta: float) -> void:
 	var tone: float = visualizer.current_tone_quality
 	if db > -45.0 and pitch > 50.0 and tone >= 75.0:
 		var target_note = sheet_notes[_note_idx]
+		var target_idx = NOTES_VN.find(target_note)
+		var expected_freq = _get_node_frequency(target_idx) if target_idx != -1 else 0.0
 		
-		# Use the new JSON-backed pitch evaluator
-		var eval_res = DanBauPitchDetector.evaluate_pitch(pitch, target_note)
+		# Use the robust JSON-backed pitch evaluator by expected frequency
+		var eval_res = DanBauPitchDetector.evaluate_pitch_by_freq(pitch, expected_freq)
 		var target_freq = 0.0
 		if eval_res.has("target_freq"):
 			target_freq = eval_res["target_freq"]

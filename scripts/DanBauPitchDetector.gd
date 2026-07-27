@@ -105,6 +105,48 @@ static func evaluate_pitch(detected_freq: float, target_note_name: String) -> Di
 		"target_freq": target_freq
 	}
 
+static func evaluate_pitch_by_freq(detected_freq: float, expected_target_freq: float) -> Dictionary:
+	var table = get_note_table()
+	if detected_freq <= 0.0 or expected_target_freq <= 0.0:
+		return {"is_match": false, "rank": "FAIL", "cents_error": 9999.0, "target_freq": 0.0}
+		
+	var target = {}
+	for entry in table:
+		if abs(entry["hz"] - expected_target_freq) < 1.0:
+			target = entry
+			break
+			
+	if target.is_empty():
+		return {"is_match": false, "rank": "FAIL", "cents_error": 9999.0, "target_freq": 0.0}
+		
+	var target_freq = target["hz"]
+	var cents_err = get_cents_diff(detected_freq, target_freq)
+	var abs_err = abs(cents_err)
+	
+	var rank = "FAIL"
+	var is_match = false
+	if abs_err <= 5.0:
+		rank = "PERFECT"
+		is_match = true
+	elif abs_err <= 10.0:
+		rank = "GOOD"
+		is_match = true
+	elif abs_err <= 20.0:
+		rank = "PASS"
+		is_match = true
+	elif detected_freq >= target["min_hz"] and detected_freq <= target["max_hz"]:
+		# Within JSON fallback boundaries
+		rank = "PASS"
+		is_match = true
+		
+	return {
+		"is_match": is_match,
+		"rank": rank,
+		"cents_error": cents_err,
+		"abs_cents_error": abs_err,
+		"target_freq": target_freq
+	}
+
 static func is_pitch_accurate(detected_freq: float, target_freq: float, max_cents_tolerance: float = 20.0, max_hz_tolerance: float = 15.0) -> bool:
 	if detected_freq <= 0.0 or target_freq <= 0.0:
 		return false
