@@ -148,9 +148,26 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 		}
 	}
 
-	// Fallback to global minimum if no values fell below the threshold
+	// Fallback to global minimum if no values fell below the threshold, but protect against harmonic period multiples
 	if (best_tau == -1) {
-		best_tau = global_min_tau;
+		if (min_val < 0.35f && global_min_tau > 0) {
+			int candidate_tau = global_min_tau;
+			for (int t = min_period + 1; t <= global_min_tau / 2; ++t) {
+				if (d_prime[t] < 0.35f && t > min_period && t < max_period) {
+					if (d_prime[t] < d_prime[t - 1] && d_prime[t] < d_prime[t + 1]) {
+						float ratio = static_cast<float>(global_min_tau) / static_cast<float>(t);
+						float rounded_r = std::round(ratio);
+						if (rounded_r >= 2.0f && rounded_r <= 4.0f && std::abs(ratio - rounded_r) < 0.15f) {
+							candidate_tau = t;
+							break;
+						}
+					}
+				}
+			}
+			best_tau = candidate_tau;
+		} else {
+			best_tau = global_min_tau;
+		}
 	}
 
 	if (best_tau <= 0 || best_tau >= max_period) {
@@ -404,7 +421,7 @@ Dictionary AudioAnalyzer::detect_dan_tranh_note(const PackedFloat32Array &sample
 	}
 
 	// 1. Detect fundamental pitch using YIN algorithm (range: 120 Hz to 4200 Hz for all 17 strings + harmonics)
-	float freq = analyze_pitch_yin(samples, sample_rate, 0.22f, 120.0f, 4200.0f);
+	float freq = analyze_pitch_yin(samples, sample_rate, 0.15f, 120.0f, 4200.0f);
 
 
 	if (freq <= 0.0f) {
@@ -419,19 +436,19 @@ Dictionary AudioAnalyzer::detect_dan_tranh_note(const PackedFloat32Array &sample
 	} DAN_TRANH_NOTES[] = {
 		{"Sol1", 0,  196.00f},
 		{"La1",  1,  220.00f},
-		{"Đô2",  2,  261.63f},
-		{"Rê2",  3,  293.66f},
-		{"Mi2",  4,  329.63f},
+		{"Đô1",  2,  261.63f},
+		{"Rê1",  3,  293.66f},
+		{"Mi1",  4,  329.63f},
 		{"Sol2", 5,  392.00f},
 		{"La2",  6,  440.00f},
-		{"Đô3",  7,  523.25f},
-		{"Rê3",  8,  587.33f},
-		{"Mi3",  9,  659.25f},
+		{"Đô2",  7,  523.25f},
+		{"Rê2",  8,  587.33f},
+		{"Mi2",  9,  659.25f},
 		{"Sol3", 10, 783.99f},
 		{"La3",  11, 880.00f},
-		{"Đô4",  12, 1046.50f},
-		{"Rê4",  13, 1174.66f},
-		{"Mi4",  14, 1318.51f},
+		{"Đô3",  12, 1046.50f},
+		{"Rê3",  13, 1174.66f},
+		{"Mi3",  14, 1318.51f},
 		{"Sol4", 15, 1567.98f},
 		{"La4",  16, 1760.00f}
 	};

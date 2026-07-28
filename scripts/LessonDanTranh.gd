@@ -94,9 +94,9 @@ var current_speed_multiplier: float = 1.0
 const STRINGS = 17
 
 const ALL_17_NOTES: Array[String] = [
-	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
-	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
-	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
+	"Sol1", "La1", "Đô1", "Rê1", "Mi1",
+	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
+	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
 	"Sol4", "La4"
 ]
 
@@ -106,19 +106,19 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào bạn! Đây là bài học Đàn Tranh đầu tiên. Hôm nay chúng ta sẽ làm quen với lần lượt trọn vẹn 17 dây đàn từ Sol1 đến La4 nhé.", "highlight": -1},
 		{"action": "speak", "text": "Dây 1: Nốt Sol1 (196Hz). Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
 		{"action": "speak", "text": "Dây 2: Nốt La1 (220Hz). Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
-		{"action": "speak", "text": "Dây 3: Nốt Đô2 (261Hz). Hãy gảy nốt Đô2 ở dây thứ 3 trên đàn.", "highlight": 2},
-		{"action": "speak", "text": "Dây 4: Nốt Rê2 (293Hz). Hãy gảy nốt Rê2 ở dây thứ 4 trên đàn.", "highlight": 3},
-		{"action": "speak", "text": "Dây 5: Nốt Mi2 (329Hz). Hãy gảy nốt Mi2 ở dây thứ 5 trên đàn.", "highlight": 4},
+		{"action": "speak", "text": "Dây 3: Nốt Đô1 (261Hz). Hãy gảy nốt Đô1 ở dây thứ 3 trên đàn.", "highlight": 2},
+		{"action": "speak", "text": "Dây 4: Nốt Rê1 (293Hz). Hãy gảy nốt Rê1 ở dây thứ 4 trên đàn.", "highlight": 3},
+		{"action": "speak", "text": "Dây 5: Nốt Mi1 (329Hz). Hãy gảy nốt Mi1 ở dây thứ 5 trên đàn.", "highlight": 4},
 		{"action": "speak", "text": "Dây 6: Nốt Sol2 (392Hz). Bước sang quãng trung với nốt Sol2 ở dây thứ 6 trên đàn.", "highlight": 5},
 		{"action": "speak", "text": "Dây 7: Nốt La2 (440Hz). Hãy gảy nốt La2 ở dây thứ 7 trên đàn.", "highlight": 6},
-		{"action": "speak", "text": "Dây 8: Nốt Đô3 (523Hz). Hãy gảy nốt Đô3 ở dây thứ 8 trên đàn.", "highlight": 7},
-		{"action": "speak", "text": "Dây 9: Nốt Rê3 (587Hz). Hãy gảy nốt Rê3 ở dây thứ 9 trên đàn.", "highlight": 8},
-		{"action": "speak", "text": "Dây 10: Nốt Mi3 (659Hz). Hãy gảy nốt Mi3 ở dây thứ 10 trên đàn.", "highlight": 9},
+		{"action": "speak", "text": "Dây 8: Nốt Đô2 (523Hz). Hãy gảy nốt Đô2 ở dây thứ 8 trên đàn.", "highlight": 7},
+		{"action": "speak", "text": "Dây 9: Nốt Rê2 (587Hz). Hãy gảy nốt Rê2 ở dây thứ 9 trên đàn.", "highlight": 8},
+		{"action": "speak", "text": "Dây 10: Nốt Mi2 (659Hz). Hãy gảy nốt Mi2 ở dây thứ 10 trên đàn.", "highlight": 9},
 		{"action": "speak", "text": "Dây 11: Nốt Sol3 (784Hz). Bước sang quãng cao với nốt Sol3 ở dây thứ 11 trên đàn.", "highlight": 10},
 		{"action": "speak", "text": "Dây 12: Nốt La3 (880Hz). Hãy gảy nốt La3 ở dây thứ 12 trên đàn.", "highlight": 11},
-		{"action": "speak", "text": "Dây 13: Nốt Đô4 (1046Hz). Hãy gảy nốt Đô4 ở dây thứ 13 trên đàn.", "highlight": 12},
-		{"action": "speak", "text": "Dây 14: Nốt Rê4 (1174Hz). Hãy gảy nốt Rê4 ở dây thứ 14 trên đàn.", "highlight": 13},
-		{"action": "speak", "text": "Dây 15: Nốt Mi4 (1318Hz). Hãy gảy nốt Mi4 ở dây thứ 15 trên đàn.", "highlight": 14},
+		{"action": "speak", "text": "Dây 13: Nốt Đô3 (1046Hz). Hãy gảy nốt Đô3 ở dây thứ 13 trên đàn.", "highlight": 12},
+		{"action": "speak", "text": "Dây 14: Nốt Rê3 (1174Hz). Hãy gảy nốt Rê3 ở dây thứ 14 trên đàn.", "highlight": 13},
+		{"action": "speak", "text": "Dây 15: Nốt Mi3 (1318Hz). Hãy gảy nốt Mi3 ở dây thứ 15 trên đàn.", "highlight": 14},
 		{"action": "speak", "text": "Dây 16: Nốt Sol4 (1568Hz). Hãy gảy nốt Sol4 ở dây thứ 16 trên đàn.", "highlight": 15},
 		{"action": "speak", "text": "Dây 17: Nốt La4 (1760Hz). Nốt cao nhất của đàn: hãy gảy nốt La4 ở dây thứ 17 trên đàn.", "highlight": 16},
 		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành xuất sắc gảy trọn vẹn cả 17 dây Đàn Tranh!", "highlight": -1}
@@ -126,7 +126,7 @@ const LESSON_DIALOGUES = {
  
 	"dan_tranh_level_1_bai_2_practice": [
 		{"action": "speak", "text": "Chào mừng bạn đến với bài gảy ngón cơ bản. Hôm nay chúng ta sẽ dùng ngón cái và ngón trỏ để gảy.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ tập luân phiên trên 3 nốt: Đô2, Rê2 và Mi2.", "highlight": 2},
+		{"action": "speak", "text": "Chúng ta sẽ tập luân phiên trên 3 nốt: Đô1, Rê1 và Mi1.", "highlight": 2},
 		{"action": "speak", "text": "Hãy tập trung giữ form bàn tay tròn đều như đang úp quả bóng nhé.", "highlight": -1}
 	],
 	"dan_tranh_level_1_bai_3_practice": [
@@ -136,7 +136,7 @@ const LESSON_DIALOGUES = {
 	],
 	"dan_tranh_level_2_bai_4_practice": [
 		{"action": "speak", "text": "Chào bạn! Chúng ta cùng bước sang cấp độ 2 với bài Vào rừng hoa.", "highlight": -1},
-		{"action": "speak", "text": "Ở đoạn 1 này, chúng ta sẽ tập trung vào quãng âm trung với các nốt Mi2, Sol2, La2 và Đô3.", "highlight": 4},
+		{"action": "speak", "text": "Ở đoạn 1 này, chúng ta sẽ tập trung vào quãng âm trung với các nốt Mi1, Sol2, La2 và Đô2.", "highlight": 4},
 		{"action": "speak", "text": "Hãy chú ý sự liền mạch giữa các nốt khi trôi qua nhé.", "highlight": -1}
 	],
 	"dan_tranh_level_2_bai_5_practice": [
@@ -209,12 +209,12 @@ const LESSON_DIALOGUES = {
 }
 
 const SU_THANH_HOA_SHEET: Array[String] = [
-	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-	"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-	"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-	"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-	"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
+	"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "La2", "Sol2",
+	"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "La2", "Mi2",
+	"Mi2", "Rê2", "Mi2", "Rê2", "Mi2", "Sol3", "Mi2", "Rest", "Mi2", "Mi2", "Rê2",
+	"Đô2", "Mi2", "Rê2", "Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2",
+	"La2", "Sol2", "Sol2", "La2", "Mi2", "Sol3", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2",
+	"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "La2", "Đô2", "Rê2", "Rê2", "Rê2"
 ]
 
 const SU_THANH_HOA_DURATIONS: Array[float] = [
@@ -227,16 +227,16 @@ const SU_THANH_HOA_DURATIONS: Array[float] = [
 ]
 
 const NOTE_TO_STRING = {
-	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4,
-	"Sol2": 5, "La2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9,
-	"Sol3": 10, "La3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
+	"Sol1": 0, "La1": 1, "Đô1": 2, "Rê1": 3, "Mi1": 4,
+	"Sol2": 5, "La2": 6, "Đô2": 7, "Rê2": 8, "Mi2": 9,
+	"Sol3": 10, "La3": 11, "Đô3": 12, "Rê3": 13, "Mi3": 14,
 	"Sol4": 15, "La4": 16
 }
 
 const NOTE_FREQS = {
-	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Sol2": 392.00, "La2": 440.00, "Đô3": 523.25, "Rê3": 587.33, "Mi3": 659.25,
-	"Sol3": 783.99, "La3": 880.00, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51,
+	"Sol1": 196.00, "La1": 220.00, "Đô1": 261.63, "Rê1": 293.66, "Mi1": 329.63,
+	"Sol2": 392.00, "La2": 440.00, "Đô2": 523.25, "Rê2": 587.33, "Mi2": 659.25,
+	"Sol3": 783.99, "La3": 880.00, "Đô3": 1046.50, "Rê3": 1174.66, "Mi3": 1318.51,
 	"Sol4": 1567.98, "La4": 1760.00
 }
 
@@ -294,7 +294,7 @@ func _ready():
 	staff_display.offset_bottom = -280
 	staff_display.visible = false
 	
-	var string_notes: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
+	var string_notes: Array[String] = ["Sol1", "La1", "Đô1", "Rê1", "Mi1", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
 	var string_freqs: Array[float] = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]
 	var string_streams: Array = []
 	string_streams.resize(17)
@@ -499,7 +499,7 @@ func _update_continuous_pitch_hud():
 	var db: float = analyzer.current_amplitude_db
 	var pitch: float = analyzer.current_pitch
 	
-	if db <= -58.0 or pitch <= 0.0:
+	if db <= analyzer.volume_threshold_db or pitch <= 0.0:
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
 			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
 			if pitch_status_lbl:
@@ -532,27 +532,28 @@ func _update_continuous_pitch_hud():
 				break
 				
 	if current_target_hz > 0.0 and pitch > 0.0:
-		var cents_err = 1200.0 * log(pitch / current_target_hz) / log(2.0)
-		while cents_err > 600.0: cents_err -= 1200.0
-		while cents_err < -600.0: cents_err += 1200.0
+		var raw_cents = 1200.0 * log(pitch / current_target_hz) / log(2.0)
+		var cents_meter = raw_cents
+		while cents_meter > 600.0: cents_meter -= 1200.0
+		while cents_meter < -600.0: cents_meter += 1200.0
 		
 		if pitch_meter:
-			pitch_meter.current_cents = cents_err
+			pitch_meter.current_cents = cents_meter
 			pitch_meter.is_active = true
 			pitch_meter.queue_redraw()
 			
-		# Update status label real-time continuously
-		if absf(cents_err) <= 35.0:
+		# Update status label real-time continuously using true pitch difference
+		if absf(raw_cents) <= 35.0 or absf(raw_cents - 1200.0) <= 25.0 or absf(raw_cents + 1200.0) <= 25.0:
 			if pitch_status_lbl:
 				pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
 				pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
-		elif cents_err < -35.0:
+		elif raw_cents < -35.0:
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % cents_err
+				pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % raw_cents
 				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 		else:
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % cents_err
+				pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % raw_cents
 				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 
 func _get_closest_dan_tranh_note_name(freq: float) -> String:
@@ -563,12 +564,36 @@ func _get_closest_dan_tranh_note_name(freq: float) -> String:
 		var ref_f = NOTE_FREQS.get(n, 0.0)
 		if ref_f > 0.0:
 			var c = abs(1200.0 * log(freq / ref_f) / log(2.0))
-			while c > 600.0: c -= 1200.0
-			c = abs(c)
 			if c < min_c:
 				min_c = c
 				best_name = n
 	return best_name if min_c <= 150.0 else ""
+
+func _is_harmonic_or_octave_of_target(det_note: String, det_idx: int, target_note: String, target_idx: int) -> bool:
+	if det_note == target_note or det_idx == target_idx:
+		return true
+	if target_idx < 0 or det_idx < 0:
+		return false
+		
+	var target_freq = NOTE_FREQS.get(target_note, 0.0) if "+" not in target_note else NOTE_FREQS.get(target_note.split("+")[0], 0.0)
+	var det_freq = NOTE_FREQS.get(det_note, 0.0) if "+" not in det_note else NOTE_FREQS.get(det_note.split("+")[0], 0.0)
+	if target_freq <= 0.0 or det_freq <= 0.0:
+		return false
+		
+	var ratio = det_freq / target_freq
+	for h in [0.5, 2.0]:
+		var cents_err = absf(1200.0 * log(ratio / h) / log(2.0))
+		if cents_err <= 35.0:
+			return true
+			
+	var clean_det_root = det_note.strip_edges().rstrip("0123456789")
+	var clean_target_root = target_note.strip_edges().rstrip("0123456789")
+	var cents_diff = absf(1200.0 * log(det_freq / target_freq) / log(2.0))
+	if clean_det_root != "" and clean_det_root == clean_target_root and cents_diff <= 1250.0:
+		return true
+		
+	return false
+
 
 func _start_intro():
 	current_state = State.INTRO
@@ -732,13 +757,24 @@ func _process_practice_single(delta: float) -> void:
 			var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 			var det_name = note_info.get("note_name", "None")
 			var det_idx = note_info.get("string_index", -1)
-			if det_name != "None" and det_name != target_note and det_idx != target_string_idx and det_idx >= 0:
+			var is_wrong = true
+			if det_name == target_note or det_idx == target_string_idx:
+				is_wrong = false
+			elif _is_harmonic_or_octave_of_target(det_name, det_idx, target_note, target_string_idx):
+				is_wrong = false
+			elif time_correct > 0.0:
+				is_wrong = false
+				
+			if det_name != "None" and is_wrong and det_idx >= 0:
 				wrong_note_time += delta
 				if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
 					wrong_note_time = 0.0
 					wrong_note_cooldown = 3.5
 					_on_wrong_note_played(det_name, det_idx, target_note, target_string_idx)
 				return
+			else:
+				wrong_note_time = max(0.0, wrong_note_time - delta * 2.0)
+
 
 
 				
@@ -779,6 +815,7 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
 
 func _on_intro_note_correct(note_name: String) -> void:
+	current_state = State.INTRO
 	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.2)}])
 	var string_idx = NOTE_TO_STRING.get(note_name, 0)
 	zither_board.call("clear_lesson_markers")
@@ -792,7 +829,6 @@ func _on_intro_note_correct(note_name: String) -> void:
 	if ai_audio:
 		ai_audio.speak_vietnamese("Tốt lắm! Chính xác nốt %s." % note_name)
 	get_tree().create_timer(1.8).timeout.connect(func():
-		current_state = State.INTRO
 		_play_next_intro_step()
 	)
 
@@ -844,8 +880,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 				if highlight_idx == idx:
 					_on_intro_note_correct(note_name)
 				else:
-					var string_notes: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
-					var target_note = string_notes[highlight_idx]
+					var target_note = ALL_17_NOTES[highlight_idx]
 					_on_wrong_note_played(note_name, idx, target_note, highlight_idx)
 		else:
 			var target_note = unique_practice_notes[single_practice_idx]
@@ -1059,7 +1094,7 @@ func _process_practice(delta):
 							if det_name in raw_chord_name.split("+"):
 								is_wrong = false
 						else:
-							if det_name == clean_note or det_idx == s_idx:
+							if det_name == clean_note or det_idx == s_idx or _is_harmonic_or_octave_of_target(det_name, det_idx, clean_note, s_idx):
 								is_wrong = false
 								
 						if det_name != "None" and is_wrong and det_idx >= 0:
@@ -1109,8 +1144,8 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
 	
-	# Relaxed volume threshold (-55 dB) to pick up standard acoustic instruments
-	if db <= -55.0:
+	# Relaxed volume threshold to pick up standard acoustic instruments
+	if db <= analyzer.volume_threshold_db:
 		time_correct = 0.0
 		if pitch_meter:
 			pitch_meter.is_active = false
@@ -1151,22 +1186,27 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				pitch_meter.current_cents = cents_error
 				pitch_meter.is_active = true
 				pitch_meter.queue_redraw()
-			if absf(cents_error) <= 25.0:
+			if absf(cents_error) <= 35.0:
 				is_match = true
 			else:
 				# Allow 1st harmonic (octave equivalence) for weak fundamentals
 				var harmonic_error = absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
-				if harmonic_error <= 25.0:
+				if harmonic_error <= 35.0:
 					is_match = true
 				else:
-					# Allow 3rd harmonic (Perfect 12th) which is extremely dominant on Dan Tranh
-					var harmonic3_error = absf(1200.0 * log(pitch / (target_hz * 3.0)) / log(2.0))
-					if harmonic3_error <= 25.0:
+					# Allow sub-harmonic (half frequency) for zither string period doubling
+					var sub_harmonic_error = absf(1200.0 * log(pitch / (target_hz / 2.0)) / log(2.0))
+					if sub_harmonic_error <= 35.0:
 						is_match = true
+					else:
+						# Allow 3rd harmonic (Perfect 12th) which is extremely dominant on Dan Tranh
+						var harmonic3_error = absf(1200.0 * log(pitch / (target_hz * 3.0)) / log(2.0))
+						if harmonic3_error <= 35.0:
+							is_match = true
 							
 		# Fallback to FFT for single notes if YIN completely fails (very common for La 1)
 		# ONLY apply to low strings (< 500 Hz) to prevent sympathetic resonance false-positives on high strings.
-		if not is_match and target_hz < 500.0 and db >= -42.0 and analyzer and analyzer.get("_spectrum") != null:
+		if not is_match and target_hz < 500.0 and db >= analyzer.volume_threshold_db and analyzer and analyzer.get("_spectrum") != null:
 			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
 			if target_hz > 0.0:
 				var mag1 = spec.get_magnitude_for_frequency_range(target_hz * 0.96, target_hz * 1.04).length()
@@ -1176,15 +1216,21 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
 				
 				# If there is a strong peak at the fundamental or major harmonics, accept it!
-				if freq_db >= -40.0:
+				if freq_db >= -52.0:
 					is_match = true
 				
+	var hold_time_needed = REQUIRED_HOLD_TIME
+	if target_hz > 1000.0:
+		hold_time_needed = 0.08  # ~5 frames for extremely high strings (Đô3, Mi3, Sol4, La4)
+	elif target_hz > 600.0:
+		hold_time_needed = 0.12  # ~7 frames for high strings (Sol3, La3)
+
 	if not is_match:
-		time_correct = 0.0
+		time_correct = max(0.0, time_correct - delta * 2.0)
 		return false
 
 	time_correct += delta
-	if time_correct < REQUIRED_HOLD_TIME:
+	if time_correct < hold_time_needed:
 		return false
 
 	time_correct = 0.0

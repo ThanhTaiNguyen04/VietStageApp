@@ -84,7 +84,7 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Sol", "La", "Đô", "Rê", "Mi",
+	"Sol1", "La1", "Đô1", "Rê1", "Mi1",
 	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
 	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
 	"Sol4", "La4" 
@@ -94,8 +94,8 @@ const LEVEL1_LESSON1_ID := "dan_tranh_level_1_bai_1_practice"
 const LEVEL1_LESSON2_ID := "dan_tranh_level_1_bai_2_practice"
 const LEVEL1_LESSON3_ID := "dan_tranh_level_1_bai_3_practice"
 const LEVEL2_LESSON4_ID := "dan_tranh_level_2_bai_4_practice"
-const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
-const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol2", "La2", "Đô2", "Rê2", "Mi2"]
+const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol1", "La1", "Đô1", "Rê1", "Mi1"]
+const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol1", "La1", "Đô1", "Rê1", "Mi1"]
 const FINGER_CUES := [
 	{"id": "circle", "symbol": "●", "shape_name": "hình tròn", "finger_name": "ngón cái"},
 	{"id": "square", "symbol": "■", "shape_name": "hình vuông", "finger_name": "ngón trỏ"},
@@ -104,16 +104,16 @@ const FINGER_CUES := [
 const LEVEL1_CONFIGS := {
 	LEVEL1_LESSON1_ID: {
 		"lesson": 1, "title": "Luyện từng nốt bằng ba ngón", "mode": "explore", "input": "micro",
-		"sheet": ["Sol", "La", "Đô", "Rê", "Mi"], "active_strings": [0, 1, 2, 3, 4],
+		"sheet": ["Sol1", "La1", "Đô1", "Rê1", "Mi1"], "active_strings": [0, 1, 2, 3, 4],
 		"instruction": "Nghe câu nhạc chậm. Khi nhạc dừng, hãy gảy lần lượt Sol – La – Đô – Rê – Mi trên đàn thật.",
 		"bpm": 56.0, "pass_score": 80.0
 	},
 	LEVEL1_LESSON2_ID: {
 		"lesson": 2, "title": "Điền nốt còn thiếu vào bài nhạc", "mode": "fill_melody", "input": "micro",
 		"sheet": [
-			"Sol", "La", "Đô", "La", "Sol", "Rê", "Mi", "Rê",
-			"Đô", "La", "Sol", "Đô", "Rê", "Mi", "Rê", "Đô",
-			"La", "Sol", "La", "Đô", "Mi", "Rê", "Đô", "Sol"
+			"Sol1", "La1", "Đô1", "La1", "Sol1", "Rê1", "Mi1", "Rê1",
+			"Đô1", "La1", "Sol1", "Đô1", "Rê1", "Mi1", "Rê1", "Đô1",
+			"La1", "Sol1", "La1", "Đô1", "Mi1", "Rê1", "Đô1", "Sol1"
 		],
 		"missing_indices": [3, 7, 11, 15, 19, 23],
 		"cues": ["", "", "", "square", "", "", "", "square", "", "", "", "triangle",
@@ -578,7 +578,7 @@ func _ready() -> void:
 		visualizer.set_script(analyzer_script)
 		visualizer.min_frequency = 180.0
 		visualizer.max_frequency = 1900.0
-		visualizer.volume_threshold_db = -55.0
+		visualizer.volume_threshold_db = -58.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -3358,29 +3358,29 @@ func get_string_stream_source(string_index: int) -> String:
 	return _string_stream_sources[string_index]
 
 func _get_string_frequency(idx: int) -> float:
-	# Đàn tranh 17 dây - tần số thực tế từng dây
-	# Dây 1-5 (không số): Sol=G2, La=A2, Đô=C3, Rê=D3, Mi=E3
-	# Dây 6-10 (số 2): Sol2=G3, La2=A3, Đô2=C4, Rê2=D4, Mi2=E4
-	# Dây 11-15 (số 3): Sol3=G4, La3=A4, Đô3=C5, Rê3=D5, Mi3=E5
-	# Dây 16-17 (số 4): Sol4=G5, La4=A5
+	# Đàn tranh 17 dây - tần số chuẩn 17 dây (Sol1 196Hz đến La4 1760Hz)
+	# Dây 1-5: Sol1=196Hz, La1=220Hz, Đô2=261.63Hz, Rê2=293.66Hz, Mi2=329.63Hz
+	# Dây 6-10: Sol2=392Hz, La2=440Hz, Đô3=523.25Hz, Rê3=587.33Hz, Mi3=659.25Hz
+	# Dây 11-15: Sol3=783.99Hz, La3=880Hz, Đô4=1046.5Hz, Rê4=1174.66Hz, Mi4=1318.51Hz
+	# Dây 16-17: Sol4=1567.98Hz, La4=1760Hz
 	const DAN_TRANH_FREQS: Array[float] = [
-		98.00,   # Dây 1 - Sol  (G2)
-		110.00,  # Dây 2 - La   (A2)
-		130.81,  # Dây 3 - Đô   (C3)
-		146.83,  # Dây 4 - Rê   (D3)
-		164.81,  # Dây 5 - Mi   (E3)
-		196.00,  # Dây 6 - Sol2 (G3)
-		220.00,  # Dây 7 - La2  (A3)
-		261.63,  # Dây 8 - Đô2  (C4)
-		293.66,  # Dây 9 - Rê2  (D4)
-		329.63,  # Dây 10- Mi2  (E4)
-		392.00,  # Dây 11- Sol3 (G4)
-		440.00,  # Dây 12- La3  (A4)
-		523.25,  # Dây 13- Đô3  (C5)
-		587.33,  # Dây 14- Rê3  (D5)
-		659.25,  # Dây 15- Mi3  (E5)
-		783.99,  # Dây 16- Sol4 (G5)
-		880.00   # Dây 17- La4  (A5)
+		196.00,  # Dây 1 - Sol1 (G3)
+		220.00,  # Dây 2 - La1  (A3)
+		261.63,  # Dây 3 - Đô2  (C4)
+		293.66,  # Dây 4 - Rê2  (D4)
+		329.63,  # Dây 5 - Mi2  (E4)
+		392.00,  # Dây 6 - Sol2 (G4)
+		440.00,  # Dây 7 - La2  (A4)
+		523.25,  # Dây 8 - Đô3  (C5)
+		587.33,  # Dây 9 - Rê3  (D5)
+		659.25,  # Dây 10- Mi3  (E5)
+		783.99,  # Dây 11- Sol3 (G5)
+		880.00,  # Dây 12- La3  (A5)
+		1046.50, # Dây 13- Đô4  (C6)
+		1174.66, # Dây 14- Rê4  (D6)
+		1318.51, # Dây 15- Mi4  (E6)
+		1567.98, # Dây 16- Sol4 (G6)
+		1760.00  # Dây 17- La4  (A6)
 	]
 	if idx < 0 or idx >= DAN_TRANH_FREQS.size():
 		return 220.0

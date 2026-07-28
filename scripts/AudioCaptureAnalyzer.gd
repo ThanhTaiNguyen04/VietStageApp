@@ -199,22 +199,6 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	if not _pitch_candidates.is_empty():
 		var previous := _pitch_candidates[_pitch_candidates.size() - 1]
 		var jump_cents := absf(1200.0 * log(detected_pitch / previous) / log(2.0))
-		
-		# Normalize octave jumps (harmonic interference typical of Dan Tranh low notes)
-		if jump_cents > 1150.0 and jump_cents < 1250.0:
-			if detected_pitch > previous:
-				detected_pitch /= 2.0
-			else:
-				detected_pitch *= 2.0
-			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
-		# Normalize 3rd harmonic jumps (Perfect 12th = ~1902 cents)
-		elif jump_cents > 1850.0 and jump_cents < 1950.0:
-			if detected_pitch > previous:
-				detected_pitch /= 3.0
-			else:
-				detected_pitch *= 3.0
-			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
-			
 		if jump_cents > PITCH_JUMP_CENTS:
 			_pitch_candidates.clear()
 
@@ -396,19 +380,19 @@ func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: f
 	const DAN_TRANH_NOTES = [
 		{"name": "Sol1", "idx": 0, "freq": 196.00},
 		{"name": "La1",  "idx": 1, "freq": 220.00},
-		{"name": "Đô2",  "idx": 2, "freq": 261.63},
-		{"name": "Rê2",  "idx": 3, "freq": 293.66},
-		{"name": "Mi2",  "idx": 4, "freq": 329.63},
+		{"name": "Đô1",  "idx": 2, "freq": 261.63},
+		{"name": "Rê1",  "idx": 3, "freq": 293.66},
+		{"name": "Mi1",  "idx": 4, "freq": 329.63},
 		{"name": "Sol2", "idx": 5, "freq": 392.00},
 		{"name": "La2",  "idx": 6, "freq": 440.00},
-		{"name": "Đô3",  "idx": 7, "freq": 523.25},
-		{"name": "Rê3",  "idx": 8, "freq": 587.33},
-		{"name": "Mi3",  "idx": 9, "freq": 659.25},
+		{"name": "Đô2",  "idx": 7, "freq": 523.25},
+		{"name": "Rê2",  "idx": 8, "freq": 587.33},
+		{"name": "Mi2",  "idx": 9, "freq": 659.25},
 		{"name": "Sol3", "idx": 10, "freq": 783.99},
 		{"name": "La3",  "idx": 11, "freq": 880.00},
-		{"name": "Đô4",  "idx": 12, "freq": 1046.50},
-		{"name": "Rê4",  "idx": 13, "freq": 1174.66},
-		{"name": "Mi4",  "idx": 14, "freq": 1318.51},
+		{"name": "Đô3",  "idx": 12, "freq": 1046.50},
+		{"name": "Rê3",  "idx": 13, "freq": 1174.66},
+		{"name": "Mi3",  "idx": 14, "freq": 1318.51},
 		{"name": "Sol4", "idx": 15, "freq": 1567.98},
 		{"name": "La4",  "idx": 16, "freq": 1760.00}
 	]
@@ -417,12 +401,9 @@ func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: f
 	var min_ratio_diff := 1e10
 	for item in DAN_TRANH_NOTES:
 		var ref_f = item["freq"]
-		var cents1 = abs(1200.0 * (log(freq / ref_f) / log(2.0)))
-		var cents2 = abs(1200.0 * (log(freq / (ref_f * 2.0)) / log(2.0)))
-		var cents3 = abs(1200.0 * (log(freq / (ref_f * 3.0)) / log(2.0)))
-		var min_c = min(cents1, min(cents2, cents3))
-		if min_c < min_ratio_diff:
-			min_ratio_diff = min_c
+		var cents = abs(1200.0 * (log(freq / ref_f) / log(2.0)))
+		if cents < min_ratio_diff:
+			min_ratio_diff = cents
 			best_item = item
 			
 	# Require strict pitch matching (within 80.0 cents to account for real-world tuning deviations)
@@ -636,8 +617,17 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 			global_min_tau = tau
 			
 	if best_tau == -1:
-		if min_val < 0.25:
-			best_tau = global_min_tau
+		if min_val < 0.35:
+			var candidate_tau := global_min_tau
+			for t in range(min_period + 1, global_min_tau / 2 + 1):
+				if d_prime[t] < 0.35 and t > min_period and t < max_period:
+					if d_prime[t] < d_prime[t - 1] and d_prime[t] < d_prime[t + 1]:
+						var ratio = float(global_min_tau) / float(t)
+						var rounded_r = round(ratio)
+						if rounded_r >= 2.0 and rounded_r <= 4.0 and absf(ratio - rounded_r) < 0.15:
+							candidate_tau = t
+							break
+			best_tau = candidate_tau
 		else:
 			best_tau = -1
 

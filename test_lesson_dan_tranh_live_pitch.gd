@@ -1,9 +1,9 @@
 extends SceneTree
 
 const NOTES := [
-	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
-	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
-	"Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4",
+	"Sol1", "La1", "Đô1", "Rê1", "Mi1",
+	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
+	"Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4",
 ]
 const FREQUENCIES := [
 	196.00, 220.00, 261.63, 293.66, 329.63,
