@@ -1,0 +1,972 @@
+[
+  {
+    "note": "C0",
+    "display": "Đô0",
+    "hz": 16.35,
+    "midi": 12,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 16.21,
+    "max_hz": 16.49
+  },
+  {
+    "note": "C#0",
+    "display": "Đô#0",
+    "hz": 17.32,
+    "midi": 13,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 17.17,
+    "max_hz": 17.47
+  },
+  {
+    "note": "D0",
+    "display": "Rê0",
+    "hz": 18.35,
+    "midi": 14,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 18.2,
+    "max_hz": 18.51
+  },
+  {
+    "note": "D#0",
+    "display": "Rê#0",
+    "hz": 19.45,
+    "midi": 15,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 19.28,
+    "max_hz": 19.61
+  },
+  {
+    "note": "E0",
+    "display": "Mi0",
+    "hz": 20.6,
+    "midi": 16,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 20.42,
+    "max_hz": 20.78
+  },
+  {
+    "note": "F0",
+    "display": "Fa0",
+    "hz": 21.83,
+    "midi": 17,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 21.64,
+    "max_hz": 22.02
+  },
+  {
+    "note": "F#0",
+    "display": "Fa#0",
+    "hz": 23.12,
+    "midi": 18,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 22.93,
+    "max_hz": 23.33
+  },
+  {
+    "note": "G0",
+    "display": "Sol0",
+    "hz": 24.5,
+    "midi": 19,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 24.29,
+    "max_hz": 24.71
+  },
+  {
+    "note": "G#0",
+    "display": "Sol#0",
+    "hz": 25.96,
+    "midi": 20,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 25.73,
+    "max_hz": 26.18
+  },
+  {
+    "note": "A0",
+    "display": "La0",
+    "hz": 27.5,
+    "midi": 21,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 27.26,
+    "max_hz": 27.74
+  },
+  {
+    "note": "A#0",
+    "display": "La#0",
+    "hz": 29.14,
+    "midi": 22,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 28.88,
+    "max_hz": 29.39
+  },
+  {
+    "note": "B0",
+    "display": "Si0",
+    "hz": 30.87,
+    "midi": 23,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 30.6,
+    "max_hz": 31.14
+  },
+  {
+    "note": "C1",
+    "display": "Đô1",
+    "hz": 32.7,
+    "midi": 24,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 32.42,
+    "max_hz": 32.99
+  },
+  {
+    "note": "C#1",
+    "display": "Đô#1",
+    "hz": 34.65,
+    "midi": 25,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 34.35,
+    "max_hz": 34.95
+  },
+  {
+    "note": "D1",
+    "display": "Rê1",
+    "hz": 36.71,
+    "midi": 26,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 36.39,
+    "max_hz": 37.03
+  },
+  {
+    "note": "D#1",
+    "display": "Rê#1",
+    "hz": 38.89,
+    "midi": 27,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 38.56,
+    "max_hz": 39.23
+  },
+  {
+    "note": "E1",
+    "display": "Mi1",
+    "hz": 41.2,
+    "midi": 28,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 40.85,
+    "max_hz": 41.56
+  },
+  {
+    "note": "F1",
+    "display": "Fa1",
+    "hz": 43.65,
+    "midi": 29,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 43.28,
+    "max_hz": 44.03
+  },
+  {
+    "note": "F#1",
+    "display": "Fa#1",
+    "hz": 46.25,
+    "midi": 30,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 45.85,
+    "max_hz": 46.65
+  },
+  {
+    "note": "G1",
+    "display": "Sol1",
+    "hz": 49.0,
+    "midi": 31,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 48.58,
+    "max_hz": 49.43
+  },
+  {
+    "note": "G#1",
+    "display": "Sol#1",
+    "hz": 51.91,
+    "midi": 32,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 51.47,
+    "max_hz": 52.36
+  },
+  {
+    "note": "A1",
+    "display": "La1",
+    "hz": 55.0,
+    "midi": 33,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 54.53,
+    "max_hz": 55.48
+  },
+  {
+    "note": "A#1",
+    "display": "La#1",
+    "hz": 58.27,
+    "midi": 34,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 57.77,
+    "max_hz": 58.78
+  },
+  {
+    "note": "B1",
+    "display": "Si1",
+    "hz": 61.74,
+    "midi": 35,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 61.2,
+    "max_hz": 62.27
+  },
+  {
+    "note": "C2",
+    "display": "Đô2",
+    "hz": 65.41,
+    "midi": 36,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 64.84,
+    "max_hz": 65.98
+  },
+  {
+    "note": "C#2",
+    "display": "Đô#2",
+    "hz": 69.3,
+    "midi": 37,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 68.7,
+    "max_hz": 69.9
+  },
+  {
+    "note": "D2",
+    "display": "Rê2",
+    "hz": 73.42,
+    "midi": 38,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 72.78,
+    "max_hz": 74.06
+  },
+  {
+    "note": "D#2",
+    "display": "Rê#2",
+    "hz": 77.78,
+    "midi": 39,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 77.11,
+    "max_hz": 78.46
+  },
+  {
+    "note": "E2",
+    "display": "Mi2",
+    "hz": 82.41,
+    "midi": 40,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 81.7,
+    "max_hz": 83.12
+  },
+  {
+    "note": "F2",
+    "display": "Fa2",
+    "hz": 87.31,
+    "midi": 41,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 86.55,
+    "max_hz": 88.07
+  },
+  {
+    "note": "F#2",
+    "display": "Fa#2",
+    "hz": 92.5,
+    "midi": 42,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 91.7,
+    "max_hz": 93.3
+  },
+  {
+    "note": "G2",
+    "display": "Sol2",
+    "hz": 98.0,
+    "midi": 43,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 97.15,
+    "max_hz": 98.85
+  },
+  {
+    "note": "G#2",
+    "display": "Sol#2",
+    "hz": 103.83,
+    "midi": 44,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 102.93,
+    "max_hz": 104.73
+  },
+  {
+    "note": "A2",
+    "display": "La2",
+    "hz": 110.0,
+    "midi": 45,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 109.05,
+    "max_hz": 110.96
+  },
+  {
+    "note": "A#2",
+    "display": "La#2",
+    "hz": 116.54,
+    "midi": 46,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 115.54,
+    "max_hz": 117.56
+  },
+  {
+    "note": "B2",
+    "display": "Si2",
+    "hz": 123.47,
+    "midi": 47,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 122.41,
+    "max_hz": 124.55
+  },
+  {
+    "note": "C3",
+    "display": "Đô3",
+    "hz": 130.81,
+    "midi": 48,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 129.68,
+    "max_hz": 131.95
+  },
+  {
+    "note": "C#3",
+    "display": "Đô#3",
+    "hz": 138.59,
+    "midi": 49,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 137.4,
+    "max_hz": 139.8
+  },
+  {
+    "note": "D3",
+    "display": "Rê3",
+    "hz": 146.83,
+    "midi": 50,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 145.57,
+    "max_hz": 148.11
+  },
+  {
+    "note": "D#3",
+    "display": "Rê#3",
+    "hz": 155.56,
+    "midi": 51,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 154.22,
+    "max_hz": 156.92
+  },
+  {
+    "note": "E3",
+    "display": "Mi3",
+    "hz": 164.81,
+    "midi": 52,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 163.39,
+    "max_hz": 166.25
+  },
+  {
+    "note": "F3",
+    "display": "Fa3",
+    "hz": 174.61,
+    "midi": 53,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 173.11,
+    "max_hz": 176.13
+  },
+  {
+    "note": "F#3",
+    "display": "Fa#3",
+    "hz": 185.0,
+    "midi": 54,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 183.4,
+    "max_hz": 186.61
+  },
+  {
+    "note": "G3",
+    "display": "Sol3",
+    "hz": 196.0,
+    "midi": 55,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 194.31,
+    "max_hz": 197.7
+  },
+  {
+    "note": "G#3",
+    "display": "Sol#3",
+    "hz": 207.65,
+    "midi": 56,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 205.86,
+    "max_hz": 209.46
+  },
+  {
+    "note": "A3",
+    "display": "La3",
+    "hz": 220.0,
+    "midi": 57,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 218.1,
+    "max_hz": 221.91
+  },
+  {
+    "note": "A#3",
+    "display": "La#3",
+    "hz": 233.08,
+    "midi": 58,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 231.07,
+    "max_hz": 235.11
+  },
+  {
+    "note": "B3",
+    "display": "Si3",
+    "hz": 246.94,
+    "midi": 59,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 244.81,
+    "max_hz": 249.09
+  },
+  {
+    "note": "C4",
+    "display": "Đô4",
+    "hz": 261.63,
+    "midi": 60,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 259.37,
+    "max_hz": 263.9
+  },
+  {
+    "note": "C#4",
+    "display": "Đô#4",
+    "hz": 277.18,
+    "midi": 61,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 274.79,
+    "max_hz": 279.59
+  },
+  {
+    "note": "D4",
+    "display": "Rê4",
+    "hz": 293.66,
+    "midi": 62,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 291.13,
+    "max_hz": 296.22
+  },
+  {
+    "note": "D#4",
+    "display": "Rê#4",
+    "hz": 311.13,
+    "midi": 63,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 308.44,
+    "max_hz": 313.83
+  },
+  {
+    "note": "E4",
+    "display": "Mi4",
+    "hz": 329.63,
+    "midi": 64,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 326.78,
+    "max_hz": 332.5
+  },
+  {
+    "note": "F4",
+    "display": "Fa4",
+    "hz": 349.23,
+    "midi": 65,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 346.22,
+    "max_hz": 352.27
+  },
+  {
+    "note": "F#4",
+    "display": "Fa#4",
+    "hz": 369.99,
+    "midi": 66,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 366.8,
+    "max_hz": 373.21
+  },
+  {
+    "note": "G4",
+    "display": "Sol4",
+    "hz": 392.0,
+    "midi": 67,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 388.61,
+    "max_hz": 395.41
+  },
+  {
+    "note": "G#4",
+    "display": "Sol#4",
+    "hz": 415.3,
+    "midi": 68,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 411.72,
+    "max_hz": 418.92
+  },
+  {
+    "note": "A4",
+    "display": "La4",
+    "hz": 440.0,
+    "midi": 69,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 436.2,
+    "max_hz": 443.83
+  },
+  {
+    "note": "A#4",
+    "display": "La#4",
+    "hz": 466.16,
+    "midi": 70,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 462.14,
+    "max_hz": 470.22
+  },
+  {
+    "note": "B4",
+    "display": "Si4",
+    "hz": 493.88,
+    "midi": 71,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 489.62,
+    "max_hz": 498.18
+  },
+  {
+    "note": "C5",
+    "display": "Đô5",
+    "hz": 523.25,
+    "midi": 72,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 518.74,
+    "max_hz": 527.8
+  },
+  {
+    "note": "C#5",
+    "display": "Đô#5",
+    "hz": 554.37,
+    "midi": 73,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 549.58,
+    "max_hz": 559.19
+  },
+  {
+    "note": "D5",
+    "display": "Rê5",
+    "hz": 587.33,
+    "midi": 74,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 582.26,
+    "max_hz": 592.44
+  },
+  {
+    "note": "D#5",
+    "display": "Rê#5",
+    "hz": 622.25,
+    "midi": 75,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 616.89,
+    "max_hz": 627.67
+  },
+  {
+    "note": "E5",
+    "display": "Mi5",
+    "hz": 659.26,
+    "midi": 76,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 653.57,
+    "max_hz": 664.99
+  },
+  {
+    "note": "F5",
+    "display": "Fa5",
+    "hz": 698.46,
+    "midi": 77,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 692.43,
+    "max_hz": 704.53
+  },
+  {
+    "note": "F#5",
+    "display": "Fa#5",
+    "hz": 739.99,
+    "midi": 78,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 733.61,
+    "max_hz": 746.43
+  },
+  {
+    "note": "G5",
+    "display": "Sol5",
+    "hz": 783.99,
+    "midi": 79,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 777.23,
+    "max_hz": 790.81
+  },
+  {
+    "note": "G#5",
+    "display": "Sol#5",
+    "hz": 830.61,
+    "midi": 80,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 823.44,
+    "max_hz": 837.84
+  },
+  {
+    "note": "A5",
+    "display": "La5",
+    "hz": 880.0,
+    "midi": 81,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 872.41,
+    "max_hz": 887.66
+  },
+  {
+    "note": "A#5",
+    "display": "La#5",
+    "hz": 932.33,
+    "midi": 82,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 924.28,
+    "max_hz": 940.44
+  },
+  {
+    "note": "B5",
+    "display": "Si5",
+    "hz": 987.77,
+    "midi": 83,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 979.25,
+    "max_hz": 996.36
+  },
+  {
+    "note": "C6",
+    "display": "Đô6",
+    "hz": 1046.5,
+    "midi": 84,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1037.47,
+    "max_hz": 1055.61
+  },
+  {
+    "note": "C#6",
+    "display": "Đô#6",
+    "hz": 1108.73,
+    "midi": 85,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1099.17,
+    "max_hz": 1118.38
+  },
+  {
+    "note": "D6",
+    "display": "Rê6",
+    "hz": 1174.66,
+    "midi": 86,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1164.53,
+    "max_hz": 1184.88
+  },
+  {
+    "note": "D#6",
+    "display": "Rê#6",
+    "hz": 1244.51,
+    "midi": 87,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1233.77,
+    "max_hz": 1255.34
+  },
+  {
+    "note": "E6",
+    "display": "Mi6",
+    "hz": 1318.51,
+    "midi": 88,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1307.14,
+    "max_hz": 1329.98
+  },
+  {
+    "note": "F6",
+    "display": "Fa6",
+    "hz": 1396.91,
+    "midi": 89,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1384.86,
+    "max_hz": 1409.07
+  },
+  {
+    "note": "F#6",
+    "display": "Fa#6",
+    "hz": 1479.98,
+    "midi": 90,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1467.21,
+    "max_hz": 1492.86
+  },
+  {
+    "note": "G6",
+    "display": "Sol6",
+    "hz": 1567.98,
+    "midi": 91,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1554.45,
+    "max_hz": 1581.63
+  },
+  {
+    "note": "G#6",
+    "display": "Sol#6",
+    "hz": 1661.22,
+    "midi": 92,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1646.89,
+    "max_hz": 1675.67
+  },
+  {
+    "note": "A6",
+    "display": "La6",
+    "hz": 1760.0,
+    "midi": 93,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1744.82,
+    "max_hz": 1775.32
+  },
+  {
+    "note": "A#6",
+    "display": "La#6",
+    "hz": 1864.66,
+    "midi": 94,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1848.57,
+    "max_hz": 1880.88
+  },
+  {
+    "note": "B6",
+    "display": "Si6",
+    "hz": 1975.53,
+    "midi": 95,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 1958.49,
+    "max_hz": 1992.72
+  },
+  {
+    "note": "C7",
+    "display": "Đô7",
+    "hz": 2093.0,
+    "midi": 96,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2074.95,
+    "max_hz": 2111.22
+  },
+  {
+    "note": "C#7",
+    "display": "Đô#7",
+    "hz": 2217.46,
+    "midi": 97,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2198.33,
+    "max_hz": 2236.76
+  },
+  {
+    "note": "D7",
+    "display": "Rê7",
+    "hz": 2349.32,
+    "midi": 98,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2329.05,
+    "max_hz": 2369.76
+  },
+  {
+    "note": "D#7",
+    "display": "Rê#7",
+    "hz": 2489.02,
+    "midi": 99,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2467.54,
+    "max_hz": 2510.68
+  },
+  {
+    "note": "E7",
+    "display": "Mi7",
+    "hz": 2637.02,
+    "midi": 100,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2614.27,
+    "max_hz": 2659.97
+  },
+  {
+    "note": "F7",
+    "display": "Fa7",
+    "hz": 2793.83,
+    "midi": 101,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2769.72,
+    "max_hz": 2818.14
+  },
+  {
+    "note": "F#7",
+    "display": "Fa#7",
+    "hz": 2959.96,
+    "midi": 102,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 2934.42,
+    "max_hz": 2985.71
+  },
+  {
+    "note": "G7",
+    "display": "Sol7",
+    "hz": 3135.96,
+    "midi": 103,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 3108.91,
+    "max_hz": 3163.25
+  },
+  {
+    "note": "G#7",
+    "display": "Sol#7",
+    "hz": 3322.44,
+    "midi": 104,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 3293.78,
+    "max_hz": 3351.35
+  },
+  {
+    "note": "A7",
+    "display": "La7",
+    "hz": 3520.0,
+    "midi": 105,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 3489.63,
+    "max_hz": 3550.63
+  },
+  {
+    "note": "A#7",
+    "display": "La#7",
+    "hz": 3729.31,
+    "midi": 106,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 3697.14,
+    "max_hz": 3761.76
+  },
+  {
+    "note": "B7",
+    "display": "Si7",
+    "hz": 3951.07,
+    "midi": 107,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 3916.98,
+    "max_hz": 3985.45
+  },
+  {
+    "note": "C8",
+    "display": "Đô8",
+    "hz": 4186.01,
+    "midi": 108,
+    "min_cent": -15,
+    "max_cent": 15,
+    "min_hz": 4149.9,
+    "max_hz": 4222.44
+  }
+]

@@ -12,51 +12,33 @@ const HARMONIC_NODES = {
 	8: {"name": "Đô 3 (8th Harmonic)", "ratio": "1/8", "note": "C6", "freq": 1046.50}
 }
 
-# ─── STANDARD NOTE FREQUENCY TABLE (Hz & MIDI) ───
-const NOTE_TABLE = [
-	{"note": "A2", "vn_name": "La2", "freq": 110.00, "midi": 45},
-	{"note": "A#2", "vn_name": "La#2", "freq": 116.54, "midi": 46},
-	{"note": "B2", "vn_name": "Si2", "freq": 123.47, "midi": 47},
-	{"note": "C3", "vn_name": "Đồ3", "freq": 130.81, "midi": 48},
-	{"note": "C#3", "vn_name": "Đồ#3", "freq": 138.59, "midi": 49},
-	{"note": "D3", "vn_name": "Rê3", "freq": 146.83, "midi": 50},
-	{"note": "D#3", "vn_name": "Rê#3", "freq": 155.56, "midi": 51},
-	{"note": "E3", "vn_name": "Mi3", "freq": 164.81, "midi": 52},
-	{"note": "F3", "vn_name": "Fa3", "freq": 174.61, "midi": 53},
-	{"note": "F#3", "vn_name": "Fa#3", "freq": 185.00, "midi": 54},
-	{"note": "G3", "vn_name": "Sol3", "freq": 196.00, "midi": 55},
-	{"note": "G#3", "vn_name": "Sol#3", "freq": 207.65, "midi": 56},
-	{"note": "A3", "vn_name": "La3", "freq": 220.00, "midi": 57},
-	{"note": "A#3", "vn_name": "Si giáng 3", "freq": 233.08, "midi": 58},
-	{"note": "B3", "vn_name": "Si3", "freq": 246.94, "midi": 59},
-	{"note": "C4", "vn_name": "Đồ / Đô4", "freq": 261.63, "midi": 60},
-	{"note": "C#4", "vn_name": "Đô#4", "freq": 277.18, "midi": 61},
-	{"note": "D4", "vn_name": "Rê4", "freq": 293.66, "midi": 62},
-	{"note": "D#4", "vn_name": "Rê#4", "freq": 311.13, "midi": 63},
-	{"note": "E4", "vn_name": "Mi4", "freq": 329.63, "midi": 64},
-	{"note": "F4", "vn_name": "Fa4", "freq": 349.23, "midi": 65},
-	{"note": "F#4", "vn_name": "Fa#4", "freq": 369.99, "midi": 66},
-	{"note": "G4", "vn_name": "Sol4", "freq": 392.00, "midi": 67},
-	{"note": "G#4", "vn_name": "Sol#4", "freq": 415.30, "midi": 68},
-	{"note": "A4", "vn_name": "La4", "freq": 440.00, "midi": 69},
-	{"note": "A#4", "vn_name": "Si giáng 4", "freq": 466.16, "midi": 70},
-	{"note": "B4", "vn_name": "Si4", "freq": 493.88, "midi": 71},
-	{"note": "C5", "vn_name": "Đô5", "freq": 523.25, "midi": 72},
-	{"note": "C#5", "vn_name": "Đô#5", "freq": 554.37, "midi": 73},
-	{"note": "D5", "vn_name": "Rê5", "freq": 587.33, "midi": 74},
-	{"note": "D#5", "vn_name": "Rê#5", "freq": 622.25, "midi": 75},
-	{"note": "E5", "vn_name": "Mi5", "freq": 659.25, "midi": 76},
-	{"note": "F5", "vn_name": "Fa5", "freq": 698.46, "midi": 77},
-	{"note": "F#5", "vn_name": "Fa#5", "freq": 739.99, "midi": 78},
-	{"note": "G5", "vn_name": "Sol5", "freq": 783.99, "midi": 79},
-	{"note": "G#5", "vn_name": "Sol#5", "freq": 830.61, "midi": 80},
-	{"note": "A5", "vn_name": "La5", "freq": 880.00, "midi": 81},
-	{"note": "A#5", "vn_name": "Si giáng 5", "freq": 932.33, "midi": 82},
-	{"note": "B5", "vn_name": "Si5", "freq": 987.77, "midi": 83},
-	{"note": "C6", "vn_name": "Đố / Đô6", "freq": 1046.50, "midi": 84}
-]
+
 
 # ─── PITCH CONVERSION HELPER FUNCTIONS ───
+
+static var NOTE_TABLE: Array = []
+static var _is_loaded: bool = false
+static var NOTE_DICT: Dictionary = {}
+
+static func get_note_table() -> Array:
+	if not _is_loaded:
+		_load_data()
+	return NOTE_TABLE
+
+static func _load_data() -> void:
+	var path = "res://data/dan_bau_notes.json"
+	if not FileAccess.file_exists(path):
+		push_error("Missing Dan Bau note data at " + path)
+		return
+	var file = FileAccess.open(path, FileAccess.READ)
+	var json_str = file.get_as_text()
+	file.close()
+	var json = JSON.new()
+	if json.parse(json_str) == OK:
+		NOTE_TABLE = json.get_data()
+		for note in NOTE_TABLE:
+			NOTE_DICT[note["note"]] = note
+	_is_loaded = true
 
 static func hz_to_midi(freq: float) -> float:
 	if freq <= 0.0: return 0.0
@@ -72,21 +54,98 @@ static func get_cents_diff(freq1: float, freq2: float) -> float:
 static func find_nearest_note(freq: float) -> Dictionary:
 	if freq <= 0.0:
 		return {}
-		
+	
+	var table = get_note_table()
 	var best_note: Dictionary = {}
 	var min_cents: float = 99999.0
 	
-	for entry in NOTE_TABLE:
-		var cents = abs(get_cents_diff(freq, entry["freq"]))
+	for entry in table:
+		var cents = abs(get_cents_diff(freq, entry["hz"]))
 		if cents < min_cents:
 			min_cents = cents
 			best_note = entry
 			
 	if best_note.size() > 0:
-		best_note["cents_error"] = get_cents_diff(freq, best_note["freq"])
+		best_note["cents_error"] = get_cents_diff(freq, best_note["hz"])
 		best_note["abs_cents_error"] = min_cents
 		
 	return best_note
+
+static func evaluate_pitch(detected_freq: float, target_note_name: String) -> Dictionary:
+	var table = get_note_table()
+	if not NOTE_DICT.has(target_note_name) or detected_freq <= 0.0:
+		return {"match": false, "rank": "FAIL", "cents_error": 9999.0}
+		
+	var target = NOTE_DICT[target_note_name]
+	var target_freq = target["hz"]
+	var cents_err = get_cents_diff(detected_freq, target_freq)
+	var abs_err = abs(cents_err)
+	
+	var rank = "FAIL"
+	var is_match = false
+	if abs_err <= 5.0:
+		rank = "PERFECT"
+		is_match = true
+	elif abs_err <= 10.0:
+		rank = "GOOD"
+		is_match = true
+	elif abs_err <= 20.0:
+		rank = "PASS"
+		is_match = true
+	elif detected_freq >= target["min_hz"] and detected_freq <= target["max_hz"]:
+		# Within JSON fallback boundaries
+		rank = "PASS"
+		is_match = true
+		
+	return {
+		"is_match": is_match,
+		"rank": rank,
+		"cents_error": cents_err,
+		"abs_cents_error": abs_err,
+		"target_freq": target_freq
+	}
+
+static func evaluate_pitch_by_freq(detected_freq: float, expected_target_freq: float) -> Dictionary:
+	var table = get_note_table()
+	if detected_freq <= 0.0 or expected_target_freq <= 0.0:
+		return {"is_match": false, "rank": "FAIL", "cents_error": 9999.0, "target_freq": 0.0}
+		
+	var target = {}
+	for entry in table:
+		if abs(entry["hz"] - expected_target_freq) < 1.0:
+			target = entry
+			break
+			
+	if target.is_empty():
+		return {"is_match": false, "rank": "FAIL", "cents_error": 9999.0, "target_freq": 0.0}
+		
+	var target_freq = target["hz"]
+	var cents_err = get_cents_diff(detected_freq, target_freq)
+	var abs_err = abs(cents_err)
+	
+	var rank = "FAIL"
+	var is_match = false
+	if abs_err <= 5.0:
+		rank = "PERFECT"
+		is_match = true
+	elif abs_err <= 10.0:
+		rank = "GOOD"
+		is_match = true
+	elif abs_err <= 20.0:
+		rank = "PASS"
+		is_match = true
+	elif detected_freq >= target["min_hz"] and detected_freq <= target["max_hz"]:
+		# Within JSON fallback boundaries
+		rank = "PASS"
+		is_match = true
+		
+	return {
+		"is_match": is_match,
+		"rank": rank,
+		"cents_error": cents_err,
+		"abs_cents_error": abs_err,
+		"target_freq": target_freq
+	}
 
 static func is_pitch_accurate(detected_freq: float, target_freq: float, max_cents_tolerance: float = 20.0, max_hz_tolerance: float = 15.0) -> bool:
 	if detected_freq <= 0.0 or target_freq <= 0.0:

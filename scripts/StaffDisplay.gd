@@ -70,16 +70,16 @@ func set_notes(notes: Array):
 func _draw():
 	var center_y = size.y / 2.0
 	
-	var start_x = 0.0
-	var end_x = size.x
+	var start_x = 35.0
+	var end_x = size.x - 35.0
 	hit_line_x = size.x * 0.25 # Hit line at 25% of screen
 	
-	var line_color = Color(0.1, 0.1, 0.1, 1.0)
+	var line_color = Color(0.2, 0.18, 0.15, 0.95)
 	
 	# Draw 5 lines (0 is bottom line, 4 is top line)
 	for i in range(5):
 		var y = center_y + (2 - i) * line_spacing
-		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.5, true)
+		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.2, true)
 			
 		# Draw treble clef
 		if clef_tex:
@@ -89,14 +89,15 @@ func _draw():
 			# Draw clef near the left edge, before hit line
 			draw_texture_rect(clef_tex, Rect2(hit_line_x - clef_w - 20, clef_y, clef_w, clef_h), false)
 			
-	# Draw hit line
-	draw_line(Vector2(hit_line_x, center_y - 3 * line_spacing), Vector2(hit_line_x, center_y + 3 * line_spacing), Color(0.2, 0.8, 0.2, 0.6), 5.0, true)
+	# Draw hit line with modern glowing effect
+	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
+	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.2, 0.85, 0.3, 0.95), 3.5, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x / 2.0)
-		var n_color = note_data.get("color", Color(0.1, 0.1, 0.1, 1.0))
+		var n_color = note_data.get("color", Color(0.96, 0.75, 0.25, 1.0))
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue)
@@ -121,21 +122,26 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var ly = center_y + (2 - 4 - i) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
-	# Draw duration tail
+	# Draw duration tail (crisp horizontal bar with vertical tick marker)
 	if tail_w > 0.0:
-		var tail_start = note_x + note_width / 2.0 - 5.0 # slightly inside to avoid gaps
+		var tail_start = note_x + note_width / 2.0 - 4.0 # slightly inside to avoid gaps
 		var actual_tail_w = max(0.0, tail_w - (note_width / 2.0))
 		if actual_tail_w > 0.0:
-			var tail_rect = Rect2(tail_start, note_y - note_height/6.0, actual_tail_w + 5.0, note_height/3.0)
-			var tail_color = note_color
-			tail_color.a = 0.4
-			draw_rect(tail_rect, tail_color, true)
-			# Draw end marker
-			draw_line(Vector2(tail_start + actual_tail_w + 5.0, note_y - note_height/2.0), Vector2(tail_start + actual_tail_w + 5.0, note_y + note_height/2.0), note_color, 4.0, true)
+			var end_x_pos = tail_start + actual_tail_w
+			draw_line(Vector2(tail_start, note_y), Vector2(end_x_pos, note_y), note_color, 4.5, true)
+			var tick_h = line_spacing * 0.42
+			draw_line(Vector2(end_x_pos, note_y - tick_h), Vector2(end_x_pos, note_y + tick_h), note_color, 4.0, true)
+			
+	# Draw soft radiating golden halo around notes
+	var glow_color = note_color
+	glow_color.a = 0.25
+	draw_circle(Vector2(note_x, note_y), note_height * 0.82, glow_color)
+	glow_color.a = 0.10
+	draw_circle(Vector2(note_x, note_y), note_height * 1.25, glow_color)
 			
 	# Draw note head (rotated ellipse)
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
-	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
+	_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
 	
 	# Draw fingering cues inside the note if available, else draw text
 	if cue != "":
@@ -161,15 +167,16 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
 			draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 	
-	# Draw stem
-	var stem_len = line_spacing * 2.2
-	var stem_w = max(2.5, line_spacing * 0.08)
-	if pos_idx < 2.0:
-		var stem_x = note_x + note_width/2.0 - 2.0
-		draw_line(Vector2(note_x + note_width/2.0 - 2.0, note_y), Vector2(note_x + note_width/2.0 - 2.0, note_y - stem_len), note_color, stem_w, true)
-	else:
-		var stem_x = note_x - note_width/2.0 + 2.0
-		draw_line(Vector2(note_x - note_width/2.0 + 2.0, note_y), Vector2(note_x - note_width/2.0 + 2.0, note_y + stem_len), note_color, stem_w, true)
+	# Draw stem only for short melodic notes without duration tail
+	if tail_w <= 0.0:
+		var stem_len = line_spacing * 2.2
+		var stem_w = max(2.5, line_spacing * 0.08)
+		if pos_idx < 2.0:
+			var stem_x = note_x + note_width/2.0 - 2.0
+			draw_line(Vector2(note_x + note_width/2.0 - 2.0, note_y), Vector2(note_x + note_width/2.0 - 2.0, note_y - stem_len), note_color, stem_w, true)
+		else:
+			var stem_x = note_x - note_width/2.0 + 2.0
+			draw_line(Vector2(note_x - note_width/2.0 + 2.0, note_y), Vector2(note_x - note_width/2.0 + 2.0, note_y + stem_len), note_color, stem_w, true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()
