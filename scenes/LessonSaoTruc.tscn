@@ -52,7 +52,6 @@ alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.77, 0.58, 0.15, 1.0)
 theme_override_font_sizes/font_size = 48
-text = "Đang tải bài học..."
 horizontal_alignment = 1
 
 [node name="SubInstructionLabel" type="Label" parent="Root/TopMargin"]

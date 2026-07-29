@@ -1,17 +1,31 @@
 extends Control
 
 const NOTE_POSITIONS = {
+	"Đồ": -1.0,
+	"Đổ": -1.0,
 	"Đô": -1.0,
+	"Rề": -0.5,
 	"Rê": -0.5,
+	"Mì": 0.0,
 	"Mi": 0.0,
+	"Fà": 0.5,
 	"Fa": 0.5,
+	"Sò": 1.0,
 	"Sol": 1.0,
+	"Là": 1.5,
 	"La": 1.5,
+	"Sì": 2.0,
 	"Si": 2.0,
+	"Đố": 2.5,
 	"Đô2": 2.5,
+	"Rế": 3.0,
 	"Rê2": 3.0,
+	"Mí": 3.5,
 	"Mi2": 3.5,
+	"Sól": 4.5,
 	"Sol2": 4.5,
+	"Lá": 5.0,
+	"La2": 5.0,
 	
 	# Dan Tranh specific mappings (ZT_)
 	"ZT_Sol1": -2.0,
@@ -34,7 +48,7 @@ const NOTE_POSITIONS = {
 }
 
 var active_note = "Đô"
-var line_spacing = 90.0
+var line_spacing = 65.0
 var clef_tex: Texture2D
 
 func _ready():
@@ -65,7 +79,7 @@ func _draw():
 	# Draw 5 lines (0 is bottom line, 4 is top line)
 	for i in range(5):
 		var y = center_y + (2 - i) * line_spacing
-		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 2.0, true)
+		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.5, true)
 			
 		# Draw treble clef
 		if clef_tex:
@@ -76,7 +90,7 @@ func _draw():
 			draw_texture_rect(clef_tex, Rect2(hit_line_x - clef_w - 20, clef_y, clef_w, clef_h), false)
 			
 	# Draw hit line
-	draw_line(Vector2(hit_line_x, center_y - 3 * line_spacing), Vector2(hit_line_x, center_y + 3 * line_spacing), Color(0.2, 0.8, 0.2, 0.5), 4.0, true)
+	draw_line(Vector2(hit_line_x, center_y - 3 * line_spacing), Vector2(hit_line_x, center_y + 3 * line_spacing), Color(0.2, 0.8, 0.2, 0.6), 5.0, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
@@ -84,27 +98,28 @@ func _draw():
 		var n_x = note_data.get("x", size.x / 2.0)
 		var n_color = note_data.get("color", Color(0.1, 0.1, 0.1, 1.0))
 		var n_tail = note_data.get("tail", 0.0)
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail)
+		var n_cue = note_data.get("cue", "")
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = ""):
 	if not NOTE_POSITIONS.has(note_name): return
 	var pos_idx = NOTE_POSITIONS[note_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
 	
-	var note_width = line_spacing * 1.2
-	var note_height = line_spacing * 0.85
+	var note_width = line_spacing * 1.35
+	var note_height = line_spacing * 0.95
 
 	# Draw ledger lines if outside staff
 	if pos_idx < 0:
 		var ledgers = int(floor(-pos_idx))
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 + i) * line_spacing
-			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
+			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 	elif pos_idx > 4:
 		var ledgers = int(floor(pos_idx - 4))
 		for i in range(1, ledgers + 1):
 			var ly = center_y + (2 - 4 - i) * line_spacing
-			draw_line(Vector2(note_x - note_width, ly), Vector2(note_x + note_width, ly), line_color, 2.0, true)
+			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
 	# Draw duration tail
 	if tail_w > 0.0:
@@ -122,15 +137,39 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
 	_draw_rotated_ellipse(note_rect, deg_to_rad(-20), note_color)
 	
+	# Draw fingering cues inside the note if available, else draw text
+	if cue != "":
+		var center_pt = Vector2(note_x, note_y)
+		var symbol_color = Color.WHITE
+		if cue == "circle":
+			draw_circle(center_pt, note_height * 0.35, symbol_color)
+		elif cue == "square":
+			var sz = note_height * 0.6
+			draw_rect(Rect2(center_pt.x - sz/2.0, center_pt.y - sz/2.0, sz, sz), symbol_color, true)
+		elif cue == "triangle":
+			var sz = note_height * 0.4
+			var p1 = center_pt + Vector2(0, -sz)
+			var p2 = center_pt + Vector2(-sz, sz * 0.8)
+			var p3 = center_pt + Vector2(sz, sz * 0.8)
+			draw_polygon(PackedVector2Array([p1, p2, p3]), PackedColorArray([symbol_color, symbol_color, symbol_color]))
+	else:
+		# Draw bold note name text inside note head
+		var font = ThemeDB.fallback_font
+		if font:
+			var font_size = int(line_spacing * 0.48)
+			var str_size = font.get_string_size(note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+			var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
+			draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
+	
 	# Draw stem
-	var stem_len = line_spacing * 3.0
-	var stem_w = max(2.0, line_spacing * 0.1)
+	var stem_len = line_spacing * 2.2
+	var stem_w = max(2.5, line_spacing * 0.08)
 	if pos_idx < 2.0:
 		var stem_x = note_x + note_width/2.0 - 2.0
-		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y - stem_len), note_color, stem_w, true)
+		draw_line(Vector2(note_x + note_width/2.0 - 2.0, note_y), Vector2(note_x + note_width/2.0 - 2.0, note_y - stem_len), note_color, stem_w, true)
 	else:
 		var stem_x = note_x - note_width/2.0 + 2.0
-		draw_line(Vector2(stem_x, note_y), Vector2(stem_x, note_y + stem_len), note_color, stem_w, true)
+		draw_line(Vector2(note_x - note_width/2.0 + 2.0, note_y), Vector2(note_x - note_width/2.0 + 2.0, note_y + stem_len), note_color, stem_w, true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()

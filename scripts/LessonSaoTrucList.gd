@@ -9,17 +9,8 @@ const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for activ
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
 const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 
-# ─── Drag Tracking Variables
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
-
 # ─── @onready Refs
-@onready var bg_rect           : ColorRect      = $BG
+@onready var bg_rect           : TextureRect      = $BG
 @onready var top_bar           : PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn          : Button         = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title        : Label          = $Root/RightContent/TopBar/TopM/TopH/PageTitle
@@ -35,10 +26,12 @@ var _last_drag_time: float = 0.0
 @onready var btn_songs         : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
 @onready var btn_account       : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 var btn_minigame               : Button
+var btn_leaderboard            : Button
 
 var _sidebar_icons_cache := {}
 
 static var selected_level: int = 1
+var _tap_timer: float = 0.0
 
 # 🗃️ Dynamic Lesson Data (10 Lessons for 5 Levels)
 const ALL_LESSONS = [
@@ -148,9 +141,17 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
 	
 	_build_theme()
 	_connect_buttons()
@@ -164,71 +165,47 @@ func _ready() -> void:
 	
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
-	
-	modulate.a = 0.0
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	var content_margin := lessons_hbox.get_parent() as Control
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.3)
 
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to_scene("res://scenes/LeaderboardScreen.tscn")
+
+func _process(delta: float) -> void:
+	if _tap_timer > 0:
+		_tap_timer -= delta
+
 func _input(event: InputEvent) -> void:
-	if not scroll_container or not is_instance_valid(scroll_container):
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.global_position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.global_position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.global_position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif _is_dragging_scroll:
-		var current_x: float = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		var delta_x := current_x - _drag_start_pos.x
-		if absf(delta_x) > 8.0:
-			_has_dragged_significantly = true
-		if _has_dragged_significantly:
-			var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-			scroll_container.scroll_horizontal = int(clampf(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now := Time.get_ticks_msec() / 1000.0
-			var dt := maxf(0.001, now - _last_drag_time)
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
+	pass
 
 func _build_theme() -> void:
-	bg_rect.color = C_BG
+	bg_rect.texture = load("res://assets/textures/sao_truc_background.png")
 	
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD, 0.28), 0, 0)
+	top_s.border_width_bottom = 1
+	top_s.content_margin_bottom = 0
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	
 	page_title.text = "GIÁO TRÌNH SÁO TRÚC - LEVEL %d" % selected_level
 	page_title.add_theme_color_override("font_color", C_JADE)
@@ -287,19 +264,40 @@ func _connect_buttons() -> void:
 	)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
+	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	side_s.shadow_size = 12
 	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
@@ -307,9 +305,10 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
 	_attach_icon_draw(btn_account,  5)
 
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(b)
 
 	btn_menu.pressed.connect(func() -> void:
@@ -327,6 +326,7 @@ func _build_sidebar() -> void:
 	btn_minigame.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/MiniGame.tscn")
 	)
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/AccountScreen.tscn")
 	)
@@ -336,11 +336,11 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -366,7 +366,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -442,7 +442,7 @@ func _build_lesson_list() -> void:
 			is_unlocked = true
 		else:
 			var prev_id := LESSONS[i - 1]["id"] as String
-			is_unlocked = completed_lessons.has(prev_id) or completed_lessons.has(prev_id + "_practice") or unlocked_lessons.has(id)
+			is_unlocked = true # FORCE UNLOCK
 			
 		var is_completed := completed_lessons.has(id) or completed_lessons.has(id + "_practice")
 		
@@ -472,8 +472,9 @@ func _build_lesson_list() -> void:
 		col.add_child(row)
 		
 		var btn := Button.new()
+		btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		btn.name = "LessonBtn"
-		btn.custom_minimum_size = Vector2(180, 180)
+		btn.custom_minimum_size = Vector2(250, 250)
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -490,11 +491,7 @@ func _build_lesson_list() -> void:
 		row.add_child(btn)
 		
 		btn.pressed.connect(func() -> void:
-			if _has_dragged_significantly or not is_unlocked: return
-			SecureDataManager.active_lesson_id = id
-			
-			SecureDataManager.data["current_song_title"] = lesson_item.get("note", "Bài Tập Cơ Bản")
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			_open_lesson(id)
 		)
 		
 		lessons_hbox.add_child(col)
@@ -510,7 +507,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		border_color = C_GOLD # Gold border
 		text_color = Color.WHITE # White checkmark/text inside
 	elif is_unlocked:
-		bg_color = Color.WHITE # Solid white for active
+		bg_color = Color(1.0, 1.0, 1.0, 0.8) # semi-transparent white for glass effect
 		border_color = C_JADE_LIGHT # Jade border
 		text_color = C_TEXT # Dark charcoal text
 		
@@ -519,8 +516,8 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
-	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
+	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
 	
 	# Glow effect for active step (using softer, wider gold shadow)
 	if is_unlocked and not is_completed:
@@ -532,7 +529,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		if is_completed:
 			s_hover.bg_color = bg_color.lightened(0.1)
 		else:
-			s_hover.bg_color = Color(0.97, 0.97, 0.97, 1.0)
+			s_hover.bg_color = Color(1.0, 1.0, 1.0, 0.95)
 		
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
@@ -546,7 +543,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_font_size_override("font_size", 21)
 	
 	btn.disabled = not is_unlocked
 
@@ -565,30 +562,16 @@ func _draw_connecting_lines() -> void:
 		var row := col.get_node_or_null("Row") as HBoxContainer
 		if not row: continue
 		
-		var v_btn := row.get_node_or_null("VideoBtn") as Button
-		var p_btn := row.get_node_or_null("PracticeBtn") as Button
-		if not v_btn or not p_btn: continue
+		var btn := row.get_node_or_null("LessonBtn") as Button
+		if not btn: continue
 		
 		# Compute centers in HBox local coordinates
-		var v_center := col.position + row.position + v_btn.position + v_btn.size / 2.0
-		var p_center := col.position + row.position + p_btn.position + p_btn.size / 2.0
+		var center := col.position + row.position + btn.position + btn.size / 2.0
 		
-		centers.append(v_center)
-		centers.append(p_center)
+		centers.append(center)
 		
-		var lesson_id := LESSONS[i]["id"] as String
-		var p_id := lesson_id + "_practice"
-		var is_v_unlocked := false
-		if i == 0:
-			is_v_unlocked = true
-		else:
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(lesson_id + "_video") or completed_lessons.has(prev_id + "_practice")
-			
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(lesson_id + "_video") or unlocked_lessons.has(p_id))
-		
-		node_unlocked.append(is_v_unlocked)
-		node_unlocked.append(is_p_unlocked)
+		# Determine unlock status - currently forcing true to match UI
+		node_unlocked.append(true)
 
 	if centers.is_empty():
 		return
@@ -624,10 +607,16 @@ func _apply_responsive_layout() -> void:
 			var row := col.get_node_or_null("Row") as HBoxContainer
 			if row:
 				row.add_theme_constant_override("separation", sep)
-				for btn in row.get_children():
-					if btn is Button:
-						var sz := Vector2(145, 145) if mobile else Vector2(180, 180)
-						btn.custom_minimum_size = sz
+				var btn := row.get_node_or_null("LessonBtn") as Button
+				if btn:
+					var sz := Vector2(180, 180) if mobile else Vector2(250, 250)
+					btn.custom_minimum_size = sz
+					btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
+					var s_normal := btn.get_theme_stylebox("normal") as StyleBoxFlat
+					if s_normal:
+						var rad := 90 if mobile else 125
+						s_normal.corner_radius_top_left = rad; s_normal.corner_radius_top_right = rad
+						s_normal.corner_radius_bottom_left = rad; s_normal.corner_radius_bottom_right = rad
 
 # ─── Helper Functions ─────────────────────────────────────────────────────────
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
@@ -659,3 +648,8 @@ func _make_btn_bouncy(btn: Button) -> void:
 			var target := Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE
 			create_tween().tween_property(btn, "scale", target, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _open_lesson(node_id: String) -> void:
+	SecureDataManager.active_lesson_id = node_id
+	SecureDataManager.data["current_song_title"] = node_id
+	_fade_to("res://scenes/LessonSaoTruc.tscn")

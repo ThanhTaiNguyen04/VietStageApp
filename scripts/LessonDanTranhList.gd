@@ -15,14 +15,6 @@ static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
 
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
-
 const LEVELS := [
 	{
 		"level": 1,
@@ -52,7 +44,22 @@ const LEVELS := [
 				"video": "Nghe từng câu nhạc, quan sát nốt kết câu và phối hợp ba ngón gảy.",
 				"practice": "Cô đàn sáu câu của Sứ Thanh Hoa ở BPM 80; học viên gảy nốt cuối mỗi câu bằng ngón 1, 2, 3 luân phiên.",
 				"practice_title": "Đệm Sứ Thanh Hoa",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"]
+				"sheet": [
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
+				],
+				"durations": [
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
+					0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
+					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
+				]
 			}
 		]
 	},
@@ -103,7 +110,8 @@ const LEVELS := [
 				"video": "Luyện scale, giữ khung tay và di chuyển ổn định giữa các quãng xa.",
 				"practice": "Tập Mã Vũ đoạn 1 với tốc độ luyện tập phù hợp.",
 				"practice_title": "Mã Vũ – Đoạn 1",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "La2", "Sol2", "Mi2", "Rê2"]
+				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
+				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0]
 			},
 			{
 				"number": 8,
@@ -151,7 +159,22 @@ const LEVELS := [
 				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
 				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 với các quãng rộng.",
 				"practice_title": "Sứ Thanh Hoa",
-				"sheet": ["La2", "Đô3", "Rê3", "Mi3", "Sol3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3"]
+				"sheet": [
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
+				],
+				"durations": [
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
+					0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
+					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
+				]
 			},
 			{
 				"number": 12,
@@ -162,10 +185,80 @@ const LEVELS := [
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 			}
 		]
+	},
+	{
+		"level": 6,
+		"title": "HỢP ÂM CƠ BẢN",
+		"sessions": "Bài 1-5",
+		"objective": "Làm quen với khái niệm hợp âm, thực hành gảy song âm, hợp âm Đô trưởng, La thứ và chuyển hợp âm.",
+		"lessons": [
+			{
+				"number": 13,
+				"title": "Bài 1: Hợp âm là gì?",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
+				"practice_title": "Luyện tập: Hợp âm là gì",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
+			},
+			{
+				"number": 14,
+				"title": "Bài 2: Song âm (2 dây)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice_title": "Luyện tập: Song âm",
+				"sheet": [
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
+			},
+			{
+				"number": 15,
+				"title": "Bài 3: Hợp âm Đô trưởng (C)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
+				"practice_title": "Luyện tập: Đô trưởng",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+			},
+			{
+				"number": 16,
+				"title": "Bài 4: Hợp âm La thứ (Am)",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
+				"practice_title": "Luyện tập: La thứ",
+				"sheet": [
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
+			},
+			{
+				"number": 17,
+				"title": "Bài 5: Chuyển hợp âm",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Chuyển mượt mà giữa Đô trưởng (C) và La thứ (Am).",
+				"practice_title": "Luyện tập: Chuyển hợp âm",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
+			}
+		]
 	}
 ]
 
-@onready var bg: ColorRect = $BG
+@onready var bg: TextureRect = $BG
 @onready var sidebar: PanelContainer = $Root/Sidebar
 @onready var btn_menu      : Button         = $Root/Sidebar/SideM/SideV/BtnMenu
 @onready var btn_courses   : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
@@ -173,6 +266,7 @@ const LEVELS := [
 @onready var btn_songs     : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
 @onready var btn_account   : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 var btn_minigame : Button
+var btn_leaderboard : Button
 
 @onready var top_bar: PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn: Button = $Root/RightContent/TopBar/TopM/TopH/BackBtn
@@ -192,9 +286,17 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
 	
 	_build_theme()
 	_build_sidebar()
@@ -204,73 +306,40 @@ func _ready() -> void:
 	_connect_navigation()
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
-	modulate.a = 0.0
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	var content_margin := lessons_hbox.get_parent() as Control
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.28)
-
-func _input(event: InputEvent) -> void:
-	if not scroll_container or not is_instance_valid(scroll_container):
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.global_position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.global_position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.global_position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif _is_dragging_scroll:
-		var current_x: float = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		var delta_x := current_x - _drag_start_pos.x
-		if absf(delta_x) > 8.0:
-			_has_dragged_significantly = true
-		if _has_dragged_significantly:
-			var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-			scroll_container.scroll_horizontal = int(clampf(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now := Time.get_ticks_msec() / 1000.0
-			var dt := maxf(0.001, now - _last_drag_time)
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
 
 static func get_level_data(level_number: int) -> Dictionary:
 	var index := clampi(level_number, 1, LEVELS.size()) - 1
 	return LEVELS[index]
 
 func _build_theme() -> void:
-	bg.color = C_BG
-	top_bar.add_theme_stylebox_override("panel", _flat(Color("#fffdf8"), Color(C_GOLD, 0.28), 0, 1))
+	bg.texture = load("res://assets/textures/dan_tranh_background.png")
+	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD, 0.28), 0, 0)
+	top_s.border_width_bottom = 1
+	top_s.content_margin_bottom = 0
+	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	page_title.add_theme_color_override("font_color", C_JADE)
 	objective_label.add_theme_color_override("font_color", C_MUTED)
 	var heading_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -291,19 +360,40 @@ func _build_theme() -> void:
 	_style_outline_button(change_course_btn)
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color(0.95, 0.93, 0.89, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
+	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
 	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
 	side_s.border_width_right = 2
+	side_s.content_margin_right = 0
 	side_s.shadow_size = 12
 	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
 	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
+
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
@@ -311,9 +401,10 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
 	_attach_icon_draw(btn_account,  5)
 
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_bouncy(b)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
@@ -321,11 +412,11 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -351,7 +442,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -433,7 +524,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 
 func _create_circle_button(action: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(180, 180)
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	button.custom_minimum_size = Vector2(250, 250)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -466,8 +558,8 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
-	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
+	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
 	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
@@ -492,9 +584,12 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		button.add_theme_font_override("font", bold_font)
-	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_font_size_override("font_size", 21)
 	_make_bouncy(button)
 	return button
+
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to("res://scenes/LeaderboardScreen.tscn")
 
 func _draw_lesson_path() -> void:
 	if lessons_hbox.size.x <= 0.0:
@@ -607,6 +702,7 @@ func _create_description(label_text: String, description: String, icon: String) 
 
 func _create_action_button(text_value: String, primary: bool) -> Button:
 	var button := Button.new()
+	button.mouse_filter = Control.MOUSE_FILTER_PASS
 	button.text = text_value
 	button.custom_minimum_size = Vector2(0, 54)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -632,16 +728,14 @@ func _connect_navigation() -> void:
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
 
 func _go_to_levels() -> void:
 	_fade_to("res://scenes/MainMenu.tscn")
 
 func _open_lesson(lesson: Dictionary) -> void:
-	if _has_dragged_significantly:
-		return
 	var lesson_number := int(lesson["number"])
-	SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
 	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])
@@ -649,7 +743,23 @@ func _open_lesson(lesson: Dictionary) -> void:
 	typed_sheet.assign(lesson.get("sheet", []))
 	PracticeRoom.current_song_sheet = typed_sheet
 	
-	_fade_to("res://scenes/LessonDanTranh.tscn")
+	var typed_durations: Array[float] = []
+	typed_durations.assign(lesson.get("durations", []))
+	LessonDanTranh.current_song_durations = typed_durations
+	
+	var typed_cues: Array[String] = []
+	typed_cues.assign(lesson.get("cues", []))
+	LessonDanTranh.current_song_cues = typed_cues
+	
+	if selected_level == 1 and lesson_number in [1, 2, 3]:
+		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
+		var VP = load("res://scripts/VideoPlayer.gd")
+		VP.custom_video_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
+		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
+		_fade_to("res://scenes/VideoPlayer.tscn")
+	else:
+		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
+		_fade_to("res://scenes/LessonDanTranh.tscn")
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
 	return "dan_tranh_level_%d_bai_%d_%s" % [selected_level, lesson_number, activity]
@@ -677,8 +787,9 @@ func _apply_responsive_layout() -> void:
 			col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			var btn := col.get_node_or_null("LessonBtn") as Button
 			if btn:
-				var sz := Vector2(145, 145) if mobile else Vector2(180, 180)
+				var sz := Vector2(180, 180) if mobile else Vector2(250, 250)
 				btn.custom_minimum_size = sz
+				btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
 
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
 	btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())

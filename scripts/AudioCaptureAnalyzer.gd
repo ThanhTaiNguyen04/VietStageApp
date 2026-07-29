@@ -16,6 +16,8 @@ var _sample_history := PackedFloat32Array()
 const MAX_SAMPLES := 180
 
 var current_pitch := 0.0
+var current_pitch_is_reliable := false
+var current_pitch_confidence := 0.0
 var current_amplitude_db := -80.0
 var current_tone_quality := 100.0
 var current_breath_purity := 100.0
@@ -27,13 +29,17 @@ var _analyzer: RefCounted = null
 
 
 # Dynamic configurations for pitch detection and noise gating
-var min_frequency := 200.0
-var max_frequency := 2500.0
+var min_frequency := 140.0
+var max_frequency := 4200.0
 var volume_threshold_db := -55.0
 
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
 var _analysis_buffer := PackedFloat32Array()
+var _pitch_candidates: Array[float] = []
+const PITCH_STABILITY_FRAMES := 4
+const PITCH_STABILITY_CENTS := 24.0
+const PITCH_JUMP_CENTS := 80.0
 
 func _ready() -> void:
 	# Try to instantiate the C++ AudioAnalyzer class from GDExtension
@@ -128,9 +134,10 @@ func _process(delta: float) -> void:
 			# Append to rolling analysis buffer
 			for val in mono_samples:
 				_analysis_buffer.append(val)
-			if _analysis_buffer.size() > 1024:
-				var excess = _analysis_buffer.size() - 1024
+			if _analysis_buffer.size() > 2048:
+				var excess = _analysis_buffer.size() - 2048
 				_analysis_buffer = _analysis_buffer.slice(excess)
+
 				
 			if _analyzer:
 				# Use high-performance GDExtension C++ module for analysis
@@ -138,15 +145,12 @@ func _process(delta: float) -> void:
 				
 				if current_amplitude_db > volume_threshold_db:
 					var detected_pitch = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.08, min_frequency, max_frequency)
-					if detected_pitch > 0.0:
-						current_pitch = detected_pitch
-					else:
-						current_pitch = 0.0
+					_update_reliable_pitch(detected_pitch)
 					
 					current_tone_quality = _analyzer.evaluate_tone_quality(_analysis_buffer)
 					current_breath_purity = _analyzer.analyze_breath_pattern(_analysis_buffer)
 				else:
-					current_pitch = 0.0
+					_clear_pitch_detection()
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 			else:
@@ -154,42 +158,9 @@ func _process(delta: float) -> void:
 				current_amplitude_db = _calculate_peak_db_gdscript(mono_samples)
 				
 				if current_amplitude_db > volume_threshold_db:
-					if _spectrum:
-						var max_mag = 0.0
-						var hz = min_frequency
-						var magnitudes = []
-						# Scan frequencies
-						while hz <= max_frequency:
-							var mag = _spectrum.get_magnitude_for_frequency_range(hz, hz + 10.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
-							magnitudes.append({"hz": hz + 5.0, "mag": mag})
-							if mag > max_mag:
-								max_mag = mag
-							hz += 10.0
-							
-						var best_hz = 0.0
-						if max_mag > 0.0:
-							# Find the lowest frequency that has at least 15% of the peak magnitude (Fundamental)
-							for m in magnitudes:
-								if m["mag"] >= max_mag * 0.15:
-									best_hz = m["hz"]
-									break
-									
-						if best_hz > 0.0:
-							var refine_hz = max(min_frequency, best_hz - 15.0)
-							var end_hz = min(max_frequency, best_hz + 15.0)
-							var refined_max = 0.0
-							var refined_best_hz = best_hz
-							while refine_hz <= end_hz:
-								var mag = _spectrum.get_magnitude_for_frequency_range(refine_hz, refine_hz + 2.0, AudioEffectSpectrumAnalyzerInstance.MAGNITUDE_MAX).length()
-								if mag > refined_max:
-									refined_max = mag
-									refined_best_hz = refine_hz + 1.0
-								refine_hz += 2.0
-								
-							current_pitch = refined_best_hz
-						else:
-							current_pitch = 0.0
-							
+					var detected_pitch := _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
+					_update_reliable_pitch(detected_pitch)
+
 					# Compute other metrics
 					if _time_since_last_pitch >= 0.03:
 						_time_since_last_pitch = 0.0
@@ -197,7 +168,7 @@ func _process(delta: float) -> void:
 							current_tone_quality = _evaluate_tone_quality_gdscript(_analysis_buffer)
 							current_breath_purity = _analyze_breath_pattern_gdscript(_analysis_buffer)
 				else:
-					current_pitch = 0.0
+					_clear_pitch_detection()
 					current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 					current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 				
@@ -210,6 +181,59 @@ func _process(delta: float) -> void:
 				_sample_history.append(val)
 				
 			queue_redraw()
+
+func _clear_pitch_detection() -> void:
+	# Never leave a stale pitch available after the microphone signal vanishes.
+	_pitch_candidates.clear()
+	current_pitch = 0.0
+	current_pitch_confidence = 0.0
+	current_pitch_is_reliable = false
+
+func _update_reliable_pitch(detected_pitch: float) -> void:
+	if detected_pitch < min_frequency or detected_pitch > max_frequency:
+		_clear_pitch_detection()
+		return
+
+	# A new string may be far from the previous pitch. Start a fresh stability
+	# window instead of averaging two notes into a false intermediate pitch.
+	if not _pitch_candidates.is_empty():
+		var previous := _pitch_candidates[_pitch_candidates.size() - 1]
+		var jump_cents := absf(1200.0 * log(detected_pitch / previous) / log(2.0))
+		
+		# Normalize octave jumps (harmonic interference typical of Dan Tranh low notes)
+		if jump_cents > 1150.0 and jump_cents < 1250.0:
+			if detected_pitch > previous:
+				detected_pitch /= 2.0
+			else:
+				detected_pitch *= 2.0
+			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
+		# Normalize 3rd harmonic jumps (Perfect 12th = ~1902 cents)
+		elif jump_cents > 1850.0 and jump_cents < 1950.0:
+			if detected_pitch > previous:
+				detected_pitch /= 3.0
+			else:
+				detected_pitch *= 3.0
+			jump_cents = absf(1200.0 * log(detected_pitch / previous) / log(2.0))
+			
+		if jump_cents > PITCH_JUMP_CENTS:
+			_pitch_candidates.clear()
+
+	_pitch_candidates.append(detected_pitch)
+	if _pitch_candidates.size() > PITCH_STABILITY_FRAMES:
+		_pitch_candidates.pop_front()
+	if _pitch_candidates.size() < PITCH_STABILITY_FRAMES:
+		current_pitch = 0.0
+		current_pitch_confidence = float(_pitch_candidates.size()) / float(PITCH_STABILITY_FRAMES)
+		current_pitch_is_reliable = false
+		return
+
+	var sorted := _pitch_candidates.duplicate()
+	sorted.sort()
+	var median: float = (sorted[1] + sorted[2]) * 0.5
+	var spread_cents := absf(1200.0 * log(sorted[sorted.size() - 1] / sorted[0]) / log(2.0))
+	current_pitch_confidence = clampf(1.0 - spread_cents / PITCH_STABILITY_CENTS, 0.0, 1.0)
+	current_pitch_is_reliable = spread_cents <= PITCH_STABILITY_CENTS
+	current_pitch = median if current_pitch_is_reliable else 0.0
 
 func _detect_pitch_high_res(samples: PackedFloat32Array, sample_rate: float) -> float:
 	var size = samples.size()
@@ -341,6 +365,159 @@ func calculate_composite_score(pitch_score: float, rhythm_score: float, tone_sco
 		return _analyzer.calculate_composite_score(pitch_score, rhythm_score, tone_score, breath_score)
 	return clamp(0.35 * pitch_score + 0.35 * rhythm_score + 0.15 * tone_score + 0.15 * breath_score, 0.0, 100.0)
 
+# Specialized Dan Tranh Note & Duration Recognition API
+func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
+	if _analyzer and _analyzer.has_method("detect_dan_tranh_note"):
+		return _analyzer.detect_dan_tranh_note(samples, sample_rate)
+	return _detect_dan_tranh_note_gdscript(samples, sample_rate)
+
+func detect_note_onset_and_duration(samples: PackedFloat32Array, sample_rate: float, threshold_db: float = -45.0) -> Dictionary:
+	if _analyzer and _analyzer.has_method("detect_note_onset_and_duration"):
+		return _analyzer.detect_note_onset_and_duration(samples, sample_rate, threshold_db)
+	return _detect_note_onset_and_duration_gdscript(samples, sample_rate, threshold_db)
+
+func evaluate_dan_tranh_note_performance(detected_freq: float, detected_duration: float, target_freq: float, target_duration: float, pitch_tolerance_cents: float = 50.0, duration_tolerance_sec: float = 0.3) -> Dictionary:
+	if _analyzer and _analyzer.has_method("evaluate_dan_tranh_note_performance"):
+		return _analyzer.evaluate_dan_tranh_note_performance(detected_freq, detected_duration, target_freq, target_duration, pitch_tolerance_cents, duration_tolerance_sec)
+	return _evaluate_dan_tranh_note_performance_gdscript(detected_freq, detected_duration, target_freq, target_duration, pitch_tolerance_cents, duration_tolerance_sec)
+
+func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
+	var result := {"frequency": 0.0, "note_name": "None", "string_index": -1, "cents_offset": 0.0, "clarity": 0.0}
+	if samples.size() < 256: return result
+	
+	# Reject unpitched wind noise / blowing air into microphone!
+	var clarity = _evaluate_tone_quality_gdscript(samples)
+	if clarity < 0.15:
+		return result
+		
+	var freq = _detect_pitch_yin_gdscript(samples, sample_rate, 0.12)
+	if freq <= 0.0: return result
+	
+	const DAN_TRANH_NOTES = [
+		{"name": "Sol1", "idx": 0, "freq": 196.00},
+		{"name": "La1",  "idx": 1, "freq": 220.00},
+		{"name": "Đô2",  "idx": 2, "freq": 261.63},
+		{"name": "Rê2",  "idx": 3, "freq": 293.66},
+		{"name": "Mi2",  "idx": 4, "freq": 329.63},
+		{"name": "Sol2", "idx": 5, "freq": 392.00},
+		{"name": "La2",  "idx": 6, "freq": 440.00},
+		{"name": "Đô3",  "idx": 7, "freq": 523.25},
+		{"name": "Rê3",  "idx": 8, "freq": 587.33},
+		{"name": "Mi3",  "idx": 9, "freq": 659.25},
+		{"name": "Sol3", "idx": 10, "freq": 783.99},
+		{"name": "La3",  "idx": 11, "freq": 880.00},
+		{"name": "Đô4",  "idx": 12, "freq": 1046.50},
+		{"name": "Rê4",  "idx": 13, "freq": 1174.66},
+		{"name": "Mi4",  "idx": 14, "freq": 1318.51},
+		{"name": "Sol4", "idx": 15, "freq": 1567.98},
+		{"name": "La4",  "idx": 16, "freq": 1760.00}
+	]
+	
+	var best_item = null
+	var min_ratio_diff := 1e10
+	for item in DAN_TRANH_NOTES:
+		var ref_f = item["freq"]
+		var cents1 = abs(1200.0 * (log(freq / ref_f) / log(2.0)))
+		var cents2 = abs(1200.0 * (log(freq / (ref_f * 2.0)) / log(2.0)))
+		var cents3 = abs(1200.0 * (log(freq / (ref_f * 3.0)) / log(2.0)))
+		var min_c = min(cents1, min(cents2, cents3))
+		if min_c < min_ratio_diff:
+			min_ratio_diff = min_c
+			best_item = item
+			
+	# Require strict pitch matching (within 80.0 cents to account for real-world tuning deviations)
+	if best_item and min_ratio_diff <= 80.0:
+		var ref_f = best_item["freq"]
+		var cents_offset = 1200.0 * (log(freq / ref_f) / log(2.0))
+		while cents_offset > 600.0: cents_offset -= 1200.0
+		while cents_offset < -600.0: cents_offset += 1200.0
+		result["frequency"] = freq
+		result["note_name"] = best_item["name"]
+		result["string_index"] = best_item["idx"]
+		result["cents_offset"] = cents_offset
+		result["clarity"] = clarity
+	return result
+
+func _detect_note_onset_and_duration_gdscript(samples: PackedFloat32Array, sample_rate: float, threshold_db: float) -> Dictionary:
+	var result := {"is_onset": false, "duration_sec": 0.0, "peak_db": -80.0, "is_active": false}
+	var size = samples.size()
+	if size < 128: return result
+	
+	var sum_sq := 0.0
+	var peak := 0.0
+	for val in samples:
+		var abs_v = abs(val)
+		sum_sq += abs_v * abs_v
+		if abs_v > peak: peak = abs_v
+		
+	var rms = sqrt(sum_sq / float(size))
+	var peak_db = 20.0 * log(peak) / log(10) if peak > 0.0001 else -80.0
+	result["peak_db"] = peak_db
+	if peak_db < threshold_db: return result
+	
+	result["is_active"] = true
+	var half = size / 2
+	var e_first := 0.0
+	var e_second := 0.0
+	for i in range(half):
+		e_first += samples[i] * samples[i]
+	for i in range(half, size):
+		e_second += samples[i] * samples[i]
+		
+	if e_first > 0.0001 and (e_first / (e_second + 0.0001)) > 2.5:
+		result["is_onset"] = true
+		
+	var active_samples := 0
+	var block := 32
+	for i in range(0, size, block):
+		var b_peak := 0.0
+		var limit = min(size, i + block)
+		for j in range(i, limit):
+			b_peak = max(b_peak, abs(samples[j]))
+		if b_peak > 0.01:
+			active_samples += block
+	result["duration_sec"] = float(active_samples) / sample_rate
+	return result
+
+func _evaluate_dan_tranh_note_performance_gdscript(detected_freq: float, detected_duration: float, target_freq: float, target_duration: float, pitch_tolerance_cents: float, duration_tolerance_sec: float) -> Dictionary:
+	var pitch_score := 0.0
+	var duration_score := 0.0
+	var feedback := "Cần cố gắng thêm"
+	
+	if detected_freq > 0.0 and target_freq > 0.0:
+		var cents_diff = abs(1200.0 * (log(detected_freq / target_freq) / log(2.0)))
+		if cents_diff <= pitch_tolerance_cents:
+			pitch_score = 100.0 * (1.0 - (cents_diff / pitch_tolerance_cents))
+		else:
+			pitch_score = max(0.0, 100.0 - (cents_diff - pitch_tolerance_cents) * 2.0)
+			
+	if target_duration > 0.0:
+		var dur_diff = abs(detected_duration - target_duration)
+		if dur_diff <= duration_tolerance_sec:
+			duration_score = 100.0 * (1.0 - (dur_diff / duration_tolerance_sec))
+		else:
+			duration_score = max(0.0, 100.0 - (dur_diff - duration_tolerance_sec) * 50.0)
+	else:
+		duration_score = 100.0
+		
+	var composite = 0.6 * pitch_score + 0.4 * duration_score
+	if composite >= 90.0:
+		feedback = "Tuyệt vời! Cao độ và trường độ rất chuẩn."
+	elif pitch_score >= 80.0 and duration_score < 70.0:
+		feedback = "Cao độ chuẩn, hãy chú ý ngân đủ trường độ nốt."
+	elif pitch_score < 70.0 and duration_score >= 80.0:
+		feedback = "Trường độ tốt, hãy gảy đúng phím dây đàn."
+	elif composite >= 70.0:
+		feedback = "Khá tốt! Tiếp tục phát huy."
+		
+	return {
+		"pitch_score": clamp(pitch_score, 0.0, 100.0),
+		"duration_score": clamp(duration_score, 0.0, 100.0),
+		"composite_score": clamp(composite, 0.0, 100.0),
+		"feedback": feedback
+	}
+
+
 func add_practice_score(score: float) -> void:
 	recent_scores_history.append(score)
 	if recent_scores_history.size() > 10:
@@ -463,9 +640,11 @@ func _detect_pitch_yin_gdscript(samples: PackedFloat32Array, sample_rate: float,
 			best_tau = global_min_tau
 		else:
 			best_tau = -1
+
 		
 	if best_tau <= 0 or best_tau >= max_period:
 		return 0.0
+
 		
 	# Step 4: Parabolic interpolation
 	var precise_tau = float(best_tau)

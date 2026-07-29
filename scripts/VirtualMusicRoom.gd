@@ -152,7 +152,7 @@ func _ready() -> void:
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
 	_tex_trong = load("res://assets/textures/trong_chau_assetremove.png") as Texture2D
 	_tex_linh = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
-	_tex_player = load("res://assets/textures/virtual_student.png") as Texture2D
+	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
 	_tex_wall = load("res://image/imagesao.png") as Texture2D
 	
 	# Initialize Player Character (Disabled/Removed by design)
@@ -3172,11 +3172,11 @@ func _start_intro_cinematic() -> void:
 	
 	var sub_panel = PanelContainer.new()
 	sub_panel.name = "IntroSubtitle"
-	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
-	sub_panel.offset_left = 150.0
-	sub_panel.offset_right = 750.0
-	sub_panel.offset_top = -120.0
-	sub_panel.offset_bottom = 120.0
+	sub_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	sub_panel.offset_left = -440.0
+	sub_panel.offset_right = 60.0
+	sub_panel.offset_top = -130.0
+	sub_panel.offset_bottom = 90.0
 	sub_panel.z_index = 51
 	sub_panel.modulate = Color(1, 1, 1, 0)
 	
@@ -3216,10 +3216,42 @@ func _start_intro_cinematic() -> void:
 	t.set_parallel(true)
 	t.tween_property(dim_overlay, "color:a", 0.75, 1.0)
 	t.tween_property(sub_panel, "modulate:a", 1.0, 1.0)
-	var vp_size = get_viewport().size
-	t.tween_property(char_linh, "position:x", vp_size.x * 0.5 - 200.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(char_linh, "size", Vector2(400, 400) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "_linh_base_y", vp_size.y * 0.5 - 150.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "position:x", 600.0 - 50.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "size", Vector2(250.0, 250.0) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "_linh_base_y", 370.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	
+	for c in $HUD.get_children():
+		if c is Control and c.name != "IntroSkipBtn":
+			t.tween_property(c, "modulate", Color(0.25, 0.25, 0.25, 1.0), 1.0)
+			
+	var skip_btn = Button.new()
+	skip_btn.name = "IntroSkipBtn"
+	skip_btn.text = "Bỏ qua >>"
+	skip_btn.add_theme_font_size_override("font_size", 16)
+	if _font_body_bold: skip_btn.add_theme_font_override("font", _font_body_bold)
+	
+	var sb_skip = StyleBoxFlat.new()
+	sb_skip.bg_color = Color(0, 0, 0, 0.5)
+	sb_skip.border_color = C_GOLD
+	sb_skip.border_width_left = 2; sb_skip.border_width_right = 2
+	sb_skip.border_width_top = 2; sb_skip.border_width_bottom = 2
+	sb_skip.corner_radius_top_left = 20; sb_skip.corner_radius_top_right = 20
+	sb_skip.corner_radius_bottom_left = 20; sb_skip.corner_radius_bottom_right = 20
+	skip_btn.add_theme_stylebox_override("normal", sb_skip)
+	skip_btn.add_theme_stylebox_override("hover", sb_skip)
+	skip_btn.add_theme_stylebox_override("pressed", sb_skip)
+	
+	skip_btn.modulate = Color(1, 1, 1, 0)
+	$HUD.add_child(skip_btn)
+	
+	skip_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	skip_btn.offset_left = -160
+	skip_btn.offset_right = -32
+	skip_btn.offset_top = -80
+	skip_btn.offset_bottom = -32
+	skip_btn.pressed.connect(_skip_intro_cinematic)
+	
+	t.tween_property(skip_btn, "modulate:a", 1.0, 1.0)
 	t.set_parallel(false)
 	
 	t.tween_callback(func():
@@ -3237,10 +3269,14 @@ func _start_intro_cinematic() -> void:
 				_audio_manager.audio_player.finished.connect(_end_intro_cinematic, CONNECT_ONE_SHOT)
 			
 			var dur = stream.get_length() if stream.has_method("get_length") else 5.0
-			get_tree().create_timer(dur + 0.5).timeout.connect(_end_intro_cinematic)
+			var timer = get_tree().create_timer(dur + 0.5)
+			if not timer.timeout.is_connected(_end_intro_cinematic):
+				timer.timeout.connect(_end_intro_cinematic)
 		else:
 			_audio_manager.speak_vietnamese(subtitle.text)
-			get_tree().create_timer(5.0).timeout.connect(_end_intro_cinematic)
+			var timer = get_tree().create_timer(5.0)
+			if not timer.timeout.is_connected(_end_intro_cinematic):
+				timer.timeout.connect(_end_intro_cinematic)
 	)
 
 func _end_intro_cinematic() -> void:
@@ -3248,14 +3284,26 @@ func _end_intro_cinematic() -> void:
 	_is_in_intro = false
 	var dim_overlay = get_node_or_null("IntroDimOverlay")
 	var subtitle = get_node_or_null("IntroSubtitle")
+	var skip_btn = get_node_or_null("HUD/IntroSkipBtn")
 	var t = create_tween()
 	t.set_parallel(true)
 	if dim_overlay: t.tween_property(dim_overlay, "color:a", 0.0, 1.0)
 	if subtitle: t.tween_property(subtitle, "modulate:a", 0.0, 1.0)
+	if skip_btn: t.tween_property(skip_btn, "modulate:a", 0.0, 1.0)
+	for c in $HUD.get_children():
+		if c is Control and c.name != "IntroSkipBtn":
+			t.tween_property(c, "modulate", Color(1, 1, 1, 1), 1.0)
 	t.set_parallel(false)
 	t.tween_callback(func():
 		if dim_overlay: dim_overlay.queue_free()
 		if subtitle: subtitle.queue_free()
+		if skip_btn: skip_btn.queue_free()
 		char_linh.z_index = 0
 		_on_viewport_size_changed()
 	)
+
+func _skip_intro_cinematic() -> void:
+	if not _is_in_intro: return
+	if is_instance_valid(_audio_manager) and is_instance_valid(_audio_manager.audio_player):
+		_audio_manager.audio_player.stop()
+	_end_intro_cinematic()

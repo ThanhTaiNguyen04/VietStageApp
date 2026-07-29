@@ -48,21 +48,6 @@ custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 alignment = 1
 
-[node name="InstructionLabel" type="Label" parent="Root/TopMargin"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.77, 0.58, 0.15, 1.0)
-theme_override_font_sizes/font_size = 48
-text = "Đang tải bài học..."
-horizontal_alignment = 1
-
-[node name="SubInstructionLabel" type="Label" parent="Root/TopMargin"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.16, 0.10, 1.0)
-theme_override_font_sizes/font_size = 28
-text = "Hãy chú ý cách bấm ngón và làm theo"
-horizontal_alignment = 1
-vertical_alignment = 2
-
 [node name="CenterContainer" type="MarginContainer" parent="Root"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -154,13 +139,16 @@ stretch_mode = 5
 
 [node name="DialogBox" type="PanelContainer" parent="TeacherArea"]
 layout_mode = 1
-anchors_preset = 2
+anchors_preset = 7
+anchor_left = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 320.0
-offset_top = -250.0
-offset_right = 1200.0
+offset_left = -440.0
+offset_top = -180.0
+offset_right = 440.0
 offset_bottom = -50.0
+grow_horizontal = 2
 grow_vertical = 0
 
 [node name="M" type="MarginContainer" parent="TeacherArea/DialogBox"]
@@ -177,11 +165,13 @@ theme_override_constants/separation = 20
 [node name="SpeechText" type="Label" parent="TeacherArea/DialogBox/M/V"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 40
 text = "Chào mừng bạn đến bài học đầu tiên..."
+vertical_alignment = 1
 autowrap_mode = 3
 
 [node name="ModeButtons" type="HBoxContainer" parent="TeacherArea/DialogBox/M/V"]
+visible = false
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 20
@@ -192,7 +182,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
-text = "  Dùng Sáo Thật  "
+text = "  Dùng Đàn Thật  "
 
 [node name="Analyzer" type="Control" parent="."]
 visible = false

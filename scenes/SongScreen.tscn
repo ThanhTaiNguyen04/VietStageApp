@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/SongScreen.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/bg_main_menu.png" id="2_bg"]
 [ext_resource type="FontFile" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="3_font"]
-[ext_resource type="FontFile" path="res://assets/fonts/Lora-Bold.ttf" id="4_font_title"]
+[ext_resource type="FontFile" path="res://assets/fonts/BeVietnamPro-Bold.ttf" id="4_font_title"]
 
 [node name="SongScreen" type="Control"]
 layout_mode = 3

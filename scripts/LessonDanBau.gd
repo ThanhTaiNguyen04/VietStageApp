@@ -11,14 +11,7 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
-# ─── Drag Tracking Variables
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
+var is_unlocked: bool = true
 
 # ─── @onready Refs
 @onready var bg_rect           : ColorRect      = $BG
@@ -37,72 +30,204 @@ var _last_drag_time: float = 0.0
 @onready var btn_songs         : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
 @onready var btn_account       : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 var btn_minigame               : Button
+var btn_leaderboard            : Button
 
 var _sidebar_icons_cache := {}
 
-# ─── Dynamic Lesson Data (3 Lessons Course)
-const LESSONS = [
+static var selected_level: int = 1
+
+const LEVELS := [
 	{
-		"id": "dan_bau_coban_1",
-		"title": "BÀI 1",
-		"note": "Khám phá \"Độc Huyền Cầm\"",
-		"video": "Video hướng dẫn: Giảng viên giới thiệu cấu tạo (Bầu vang, cần đàn, dây, que gảy), tư thế ngồi và cách cầm que gảy tay phải.",
-		"practice": "Thực hành (Tạm thời ở phòng luyện Đàn Bầu ảo): Chế độ \"Exploration\". Người dùng làm quen giao diện màn hình: chạm vào dây đàn ảo để nghe âm thanh dây buông.",
-		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài học đầu tiên: Khám phá Độc Huyền Cầm."},
-			{"start": 2.5, "end": 6.5, "text": "Đàn Bầu gồm Bầu vang, cần đàn, dây, que gảy. Hãy lưu ý tư thế ngồi và cách cầm que gảy tay phải."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy sẵn sàng để bước vào thế giới của Độc Huyền Cầm nhé."}
+		"level": 1,
+		"title": "LÀM QUEN VỚI ĐÀN (NHẬP MÔN)",
+		"objective": "🎯 Mục tiêu: Xem video giới thiệu cấu tạo, tư thế và cách tạo âm chuẩn.",
+		"lessons": [
+			{
+				"id": "dan_bau_level1_bai1_video",
+				"title": "BÀI 1",
+				"type": "video",
+				"note": "Giới thiệu Đàn Bầu",
+				"subtitles": [
+					{"start": 0.0, "end": 2.5, "text": "Chào mừng bạn đến với Bài 1: Lịch sử ngắn và Cấu tạo Đàn Bầu."},
+					{"start": 2.5, "end": 6.5, "text": "Đàn Bầu gồm Bầu vang, vòi/cần đàn, dây đàn, trạc đàn và que gảy."},
+					{"start": 6.5, "end": 10.0, "text": "Hãy quan sát kỹ từng bộ phận trước khi bắt đầu tư thế ngồi nhé."}
+				]
+			}
 		]
 	},
 	{
-		"id": "dan_bau_coban_2",
-		"title": "BÀI 2",
-		"note": "Kỹ thuật tạo Bồi Âm",
-		"video": "Video hướng dẫn: Bí quyết dùng cạnh bàn tay phải chặn nhẹ lên dây và gảy để tạo ra các bồi âm (Harmonics) ở các vị trí nốt khác nhau.",
-		"practice": "Thực hành (Tạm thời ở phòng luyện Đàn Bầu ảo): Mini-game \"Dò đúng nốt\". Ứng dụng chia dây đàn ảo thành các vạch điểm chạm (Nodes). Chạm đúng vạch sáng trên màn hình.",
-		"subtitles": [
-			{"start": 0.0, "end": 2.5, "text": "Chào mừng con đến với Bài 2: Kỹ thuật tạo Bồi Âm."},
-			{"start": 2.5, "end": 6.0, "text": "Bí quyết là dùng cạnh bàn tay phải chặn nhẹ lên dây và gảy."},
-			{"start": 6.0, "end": 10.0, "text": "Điều này sẽ tạo ra các bồi âm ở các vị trí nốt khác nhau. Cùng thử nhé."}
+		"level": 2,
+		"title": "KỸ THUẬT BỒI ÂM CƠ BẢN",
+		"objective": "🎯 Mục tiêu: Biết tạo các bồi âm tự nhiên trên dây đàn.",
+		"lessons": [
+			{
+				"id": "dan_bau_level2_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Bồi âm 1/2 dây (C4)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Bồi âm 1/3 dây (G4)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Bồi âm 1/4 dây (C5)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Ghép chuỗi Bồi Âm",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level2_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🎮 Mini Game: Nhận diện C4",
+				"subtitles": []
+			}
 		]
 	},
 	{
-		"id": "dan_bau_coban_3",
-		"title": "BÀI 3",
-		"note": "Nốt Rê & Mi",
-		"video": "Xem video hướng dẫn nốt Rê & Mi",
-		"practice": "Luyện gảy nốt Rê và Mi",
-		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 3: Hài âm nốt Rê và Mi."},
-			{"start": 3.0, "end": 6.5, "text": "Vị trí hài âm nốt Rê và Mi nằm dịch về phía bên phải một chút so với nốt Đô."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy chạm nhẹ và gảy chính xác để nghe âm vang của hai nốt nhạc này."}
+		"level": 3,
+		"title": "ĐIỀU KHIỂN CẦN ĐÀN",
+		"objective": "🎯 Mục tiêu: Làm chủ cao độ bằng tay trái uốn/nhả cần.",
+		"lessons": [
+			{
+				"id": "dan_bau_level3_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Kéo cần tăng cao độ",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Nhả cần giảm cao độ",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Giữ cao độ ổn định",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Chuyển giữa các cao độ",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level3_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🎮 Mini Game: C4 → C#4 → D4",
+				"subtitles": []
+			}
 		]
 	},
 	{
-		"id": "dan_bau_coban_4",
-		"title": "BÀI 4",
-		"note": "Uốn vòi",
-		"video": "Xem video hướng dẫn uốn vòi đàn",
-		"practice": "Luyện uốn vòi đổi âm",
-		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 4: Học kỹ thuật Uốn vòi cần đàn Đàn Bầu."},
-			{"start": 3.0, "end": 6.5, "text": "Tay trái uốn cần đàn sang trái để kéo căng dây giúp nâng cao cao độ nốt nhạc."},
-			{"start": 6.5, "end": 10.0, "text": "Ngược lại, thả lỏng cần sang phải để giảm độ căng giúp hạ thấp cao độ."}
+		"level": 4,
+		"title": "KỸ THUẬT BIỂU CẢM",
+		"objective": "🎯 Mục tiêu: Chơi có cảm xúc với Rung, Luyến, Vuốt, Ngắt.",
+		"lessons": [
+			{
+				"id": "dan_bau_level4_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Kỹ thuật Rung (Vibrato)",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Kỹ thuật Luyến âm",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Kỹ thuật Vuốt cần",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Kỹ thuật Ngắt tiếng",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level4_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🎮 Mini Game: AI Bắt chước & Chấm điểm",
+				"subtitles": []
+			}
 		]
 	},
 	{
-		"id": "dan_bau_coban_5",
-		"title": "BÀI 5",
-		"note": "Bài mẫu",
-		"video": "Xem video hướng dẫn chơi bài mẫu",
-		"practice": "Luyện chơi bài Bèo Dạt Mây Trôi",
-		"subtitles": [
-			{"start": 0.0, "end": 3.0, "text": "Chào mừng con đến với Bài 5: Luyện tập bài Bèo Dạt Mây Trôi."},
-			{"start": 3.0, "end": 6.5, "text": "Kết hợp kỹ thuật gảy hài âm nốt Đô, Rê, Mi và uốn cần nhịp nhàng."},
-			{"start": 6.5, "end": 10.0, "text": "Hãy cố gắng liên kết các âm vang mềm mại và đúng nhịp điệu bài học nhé."}
+		"level": 5,
+		"title": "CHƠI BÀI HÁT DÂN CA",
+		"objective": "🎯 Mục tiêu: Áp dụng toàn bộ kỹ thuật chơi hoàn chỉnh bài hát.",
+		"lessons": [
+			{
+				"id": "dan_bau_level5_bai1_practice",
+				"title": "BÀI 1",
+				"type": "practice",
+				"note": "Luyện từng câu nhạc",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai2_practice",
+				"title": "BÀI 2",
+				"type": "practice",
+				"note": "Ghép câu & Ghép đoạn",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai3_practice",
+				"title": "BÀI 3",
+				"type": "practice",
+				"note": "Bài Bèo Dạt Mây Trôi",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai4_practice",
+				"title": "BÀI 4",
+				"type": "practice",
+				"note": "Bài Lý Cây Đa & Cò Lả",
+				"subtitles": []
+			},
+			{
+				"id": "dan_bau_level5_bai5_practice",
+				"title": "BÀI 5",
+				"type": "practice",
+				"note": "🏆 Mini Game Cuối: Chơi Cả Bài (AI Chấm 100)",
+				"subtitles": []
+			}
 		]
 	}
 ]
+
+func get_current_lessons() -> Array:
+	var level_idx := clampi(selected_level, 1, LEVELS.size()) - 1
+	return LEVELS[level_idx]["lessons"]
 
 func _ready() -> void:
 	SecureDataManager.load_data()
@@ -112,9 +237,17 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
 	
 	_build_theme()
 	_connect_buttons()
@@ -128,66 +261,18 @@ func _ready() -> void:
 	
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	var content_margin := lessons_hbox.get_parent() as Control
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.3)
 
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to_scene("res://scenes/LeaderboardScreen.tscn")
+
 func _input(event: InputEvent) -> void:
-	if not scroll_container or not is_instance_valid(scroll_container):
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.global_position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.global_position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.global_position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif _is_dragging_scroll:
-		var current_x: float = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		var delta_x := current_x - _drag_start_pos.x
-		if absf(delta_x) > 8.0:
-			_has_dragged_significantly = true
-		if _has_dragged_significantly:
-			var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-			scroll_container.scroll_horizontal = int(clampf(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now := Time.get_ticks_msec() / 1000.0
-			var dt := maxf(0.001, now - _last_drag_time)
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
+	pass
 
 func _build_theme() -> void:
 	bg_rect.color = C_BG
@@ -226,7 +311,9 @@ func _build_theme() -> void:
 	top_bar.add_child(top_blur_rect)
 	top_bar.move_child(top_blur_rect, 0)
 	
-	page_title.text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
+	var level_idx := clampi(selected_level, 1, LEVELS.size()) - 1
+	var level_info: Dictionary = LEVELS[level_idx]
+	page_title.text = "GIÁO TRÌNH ĐÀN BẦU · LEVEL %d: %s" % [selected_level, level_info["title"]]
 	page_title.add_theme_color_override("font_color", C_JADE)
 	
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -313,6 +400,7 @@ func _build_sidebar() -> void:
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
@@ -320,9 +408,10 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
 	_attach_icon_draw(btn_account,  5)
 
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(b)
 
 	btn_menu.pressed.connect(func() -> void:
@@ -340,6 +429,7 @@ func _build_sidebar() -> void:
 	btn_minigame.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/MiniGame.tscn")
 	)
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/AccountScreen.tscn")
 	)
@@ -349,11 +439,11 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -379,7 +469,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -429,37 +519,32 @@ func _flat(bg: Color, border: Color, radius: int, border_width: int = 0) -> Styl
 	return s
 
 func _build_lesson_list() -> void:
-	lessons_hbox.add_theme_constant_override("separation", 120)
+	lessons_hbox.add_theme_constant_override("separation", 100)
 	# Clear existing children
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 		
 	var inst := "dan_bau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_coban_1_video"])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_level1_bai1_video"])
 	
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var lessons_data := get_current_lessons()
 	
-	for i in range(LESSONS.size()):
-		var lesson_item : Dictionary = LESSONS[i]
+	for i in range(lessons_data.size()):
+		var lesson_item : Dictionary = lessons_data[i]
 		var id := lesson_item["id"] as String
-		
-		# Define task status keys
-		var v_id := id + "_video"
-		var p_id := id + "_practice"
+		var type := lesson_item["type"] as String
 		
 		# Unlocking checks
-		var is_v_unlocked := false
+		var is_unlocked := false
 		if i == 0:
-			is_v_unlocked = true
+			is_unlocked = true
 		else:
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(v_id) or completed_lessons.has(prev_id + "_practice")
+			var prev_id := lessons_data[i - 1]["id"] as String
+			is_unlocked = unlocked_lessons.has(id) or completed_lessons.has(prev_id)
 			
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(v_id) or unlocked_lessons.has(p_id))
-		
-		var is_v_completed := completed_lessons.has(v_id)
-		var is_p_completed := completed_lessons.has(p_id)
+		var is_completed := completed_lessons.has(id)
 		
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
@@ -467,55 +552,43 @@ func _build_lesson_list() -> void:
 		col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.add_theme_constant_override("separation", 24)
+		col.add_theme_constant_override("separation", 16)
 		
-		# Top: Lesson Title Label
+		# Top: Lesson Title Label (BÀI 1, BÀI 2, BÀI 3...)
 		var title_lbl := Label.new()
 		title_lbl.text = lesson_item["title"]
 		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_lbl.add_theme_color_override("font_color", C_TEXT if is_v_unlocked else C_TEXT_MUTED)
+		title_lbl.add_theme_color_override("font_color", C_TEXT if is_unlocked else C_TEXT_MUTED)
 		title_lbl.add_theme_font_size_override("font_size", 20)
 		if f_bold:
 			title_lbl.add_theme_font_override("font", f_bold)
 		col.add_child(title_lbl)
 		
-		# Center: Row of circles connected horizontally
+		# Center: Row containing EXACTLY 1 Circle Button per Lesson
 		var row := HBoxContainer.new()
 		row.name = "Row"
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.add_theme_constant_override("separation", 100)
 		col.add_child(row)
 		
-		# 1. Hướng Dẫn Button (Left circle)
-		var v_btn := Button.new()
-		v_btn.name = "VideoBtn"
-		v_btn.custom_minimum_size = Vector2(180, 180)
-		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		v_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var btn := Button.new()
+		btn.name = "LessonBtn"
+		btn.custom_minimum_size = Vector2(180, 180)
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		
-		_setup_circle_btn(v_btn, "Hướng dẫn", lesson_item["note"], is_v_unlocked, is_v_completed, "video")
-		row.add_child(v_btn)
+		_setup_circle_btn(btn, lesson_item["title"], lesson_item["note"], is_unlocked, is_completed, type)
+		row.add_child(btn)
 		
-		v_btn.pressed.connect(_on_video_pressed.bind(v_id, lesson_item["subtitles"], is_v_unlocked))
-		
-		# 2. Thực Hành Button (Right circle)
-		var p_btn := Button.new()
-		p_btn.name = "PracticeBtn"
-		p_btn.custom_minimum_size = Vector2(180, 180)
-		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		p_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		
-		_setup_circle_btn(p_btn, "Thực hành", lesson_item["note"], is_p_unlocked, is_p_completed, "practice")
-		row.add_child(p_btn)
-		
-		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
-		
+		if type == "video":
+			btn.pressed.connect(_on_video_pressed.bind(id, lesson_item.get("subtitles", []), is_unlocked))
+		else:
+			btn.pressed.connect(_on_practice_pressed.bind(id, is_unlocked))
+			
 		lessons_hbox.add_child(col)
 
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
-	if _has_dragged_significantly or not is_unlocked: return
+	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = v_id
 	VideoPlayer.custom_video_path = "res://Video/DanBauDoan12Bai1.ogv"
 	VideoPlayer.custom_subtitles = subtitles
@@ -524,7 +597,7 @@ func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> voi
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn"))
 
 func _on_practice_pressed(p_id: String, is_unlocked: bool) -> void:
-	if _has_dragged_significantly or not is_unlocked: return
+	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = p_id
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
@@ -535,9 +608,9 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	btn.disabled = not unlocked
 
 	if completed:
-		btn.text = "\n\n%s\nHoàn thành" % action
+		btn.text = "\n\n%s\nHoàn thành" % lesson_title
 	elif unlocked:
-		btn.text = "\n\n%s\n(%s)" % [action, lesson_title]
+		btn.text = "\n\n%s" % lesson_title
 	else:
 		btn.text = ""
 
@@ -612,42 +685,36 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 func _draw_connecting_lines() -> void:
 	var inst := "dan_bau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_coban_1_video"])
+	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["dan_bau_level1_bai1_video"])
 
 	var centers : Array[Vector2] = []
 	var node_unlocked : Array[bool] = []
 
+	var lessons_data := get_current_lessons()
 	var cols := lessons_hbox.get_children()
 	for i in range(cols.size()):
+		if i >= lessons_data.size(): break
 		var col := cols[i] as VBoxContainer
 		if not col: continue
 		var row := col.get_node_or_null("Row") as HBoxContainer
 		if not row: continue
 		
-		var v_btn := row.get_node_or_null("VideoBtn") as Button
-		var p_btn := row.get_node_or_null("PracticeBtn") as Button
-		if not v_btn or not p_btn: continue
+		var btn := row.get_node_or_null("LessonBtn") as Button
+		if not btn: continue
 		
-		# Compute centers in HBox local coordinates
-		var v_center := col.position + row.position + v_btn.position + v_btn.size / 2.0
-		var p_center := col.position + row.position + p_btn.position + p_btn.size / 2.0
+		# Compute center in HBox local coordinates
+		var center := col.position + row.position + btn.position + btn.size / 2.0
+		centers.append(center)
 		
-		centers.append(v_center)
-		centers.append(p_center)
-		
-		var lesson_id := LESSONS[i]["id"] as String
-		var p_id := lesson_id + "_practice"
-		var is_v_unlocked := false
+		var lesson_id := lessons_data[i]["id"] as String
+		var is_unlocked := false
 		if i == 0:
-			is_v_unlocked = true
+			is_unlocked = true
 		else:
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(lesson_id + "_video") or completed_lessons.has(prev_id + "_practice")
+			var prev_id := lessons_data[i - 1]["id"] as String
+			is_unlocked = unlocked_lessons.has(lesson_id) or completed_lessons.has(prev_id)
 			
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(lesson_id + "_video") or unlocked_lessons.has(p_id))
-		
-		node_unlocked.append(is_v_unlocked)
-		node_unlocked.append(is_p_unlocked)
+		node_unlocked.append(is_unlocked)
 
 	if centers.is_empty():
 		return

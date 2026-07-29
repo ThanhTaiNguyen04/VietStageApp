@@ -11,14 +11,8 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
-# ─── Drag Tracking Variables
-var _is_dragging_scroll: bool = false
-var _drag_start_pos: Vector2 = Vector2.ZERO
-var _scroll_start_x: float = 0.0
-var _has_dragged_significantly: bool = false
-var _drag_velocity: float = 0.0
-var _last_drag_pos_x: float = 0.0
-var _last_drag_time: float = 0.0
+var selected_level: int = 1
+var is_unlocked: bool = true
 
 # ─── @onready Refs
 @onready var bg_rect           : ColorRect      = $BG
@@ -37,6 +31,7 @@ var _last_drag_time: float = 0.0
 @onready var btn_songs         : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
 @onready var btn_account       : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 var btn_minigame               : Button
+var btn_leaderboard            : Button
 
 var _sidebar_icons_cache := {}
 
@@ -88,9 +83,17 @@ func _ready() -> void:
 	btn_minigame.name = "BtnMiniGame"
 	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
-	btn_minigame.custom_minimum_size = Vector2(220, 140)
+	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
+	
+	btn_leaderboard = Button.new()
+	btn_leaderboard.name = "BtnLeaderboard"
+	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.flat = true
+	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
+	side_v.add_child(btn_leaderboard)
+	side_v.move_child(btn_leaderboard, 6)
 	
 	_build_theme()
 	_connect_buttons()
@@ -104,66 +107,11 @@ func _ready() -> void:
 	
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
-	
-	modulate.a = 0.0
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	var content_margin := lessons_hbox.get_parent() as Control
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.3)
 
-func _input(event: InputEvent) -> void:
-	if not scroll_container or not is_instance_valid(scroll_container):
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.global_position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.global_position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.global_position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif event is InputEventScreenTouch:
-		if event.pressed:
-			if scroll_container.get_global_rect().has_point(event.position):
-				_is_dragging_scroll = true
-				_drag_start_pos = event.position
-				_scroll_start_x = scroll_container.scroll_horizontal
-				_has_dragged_significantly = false
-				_drag_velocity = 0.0
-				_last_drag_pos_x = event.position.x
-				_last_drag_time = Time.get_ticks_msec() / 1000.0
-		else:
-			if _is_dragging_scroll:
-				_is_dragging_scroll = false
-				if _has_dragged_significantly and absf(_drag_velocity) > 50.0:
-					var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-					var target_x := clampf(scroll_container.scroll_horizontal - _drag_velocity * 0.35, 0.0, max_scroll)
-					create_tween().tween_property(scroll_container, "scroll_horizontal", int(target_x), 0.45).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	elif _is_dragging_scroll:
-		var current_x: float = 0.0
-		if event is InputEventMouseMotion:
-			current_x = event.global_position.x
-		elif event is InputEventScreenDrag:
-			current_x = event.position.x
-		else:
-			return
-		var delta_x := current_x - _drag_start_pos.x
-		if absf(delta_x) > 8.0:
-			_has_dragged_significantly = true
-		if _has_dragged_significantly:
-			var max_scroll := maxf(0.0, lessons_hbox.size.x - scroll_container.size.x)
-			scroll_container.scroll_horizontal = int(clampf(_scroll_start_x - delta_x, 0.0, max_scroll))
-			var now := Time.get_ticks_msec() / 1000.0
-			var dt := maxf(0.001, now - _last_drag_time)
-			_drag_velocity = (current_x - _last_drag_pos_x) / dt
-			_last_drag_pos_x = current_x
-			_last_drag_time = now
 
 func _build_theme() -> void:
 	bg_rect.color = C_BG
@@ -289,6 +237,7 @@ func _build_sidebar() -> void:
 	_style_side_icon_btn(btn_room,     false)
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
+	_style_side_icon_btn(btn_leaderboard, false)
 	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
@@ -296,9 +245,10 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_room,     6)
 	_attach_icon_draw(btn_songs,    2)
 	_attach_icon_draw(btn_minigame, 3)
+	_attach_icon_draw(btn_leaderboard, 4)
 	_attach_icon_draw(btn_account,  5)
 
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account]:
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(b)
 
 	btn_menu.pressed.connect(func() -> void:
@@ -316,6 +266,7 @@ func _build_sidebar() -> void:
 	btn_minigame.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/MiniGame.tscn")
 	)
+	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void:
 		_fade_to_scene("res://scenes/AccountScreen.tscn")
 	)
@@ -325,11 +276,11 @@ func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false)
 	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
 
-	bg_n.content_margin_top = 96
+	bg_n.content_margin_top = 64
 	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 96
+	bg_h.content_margin_top = 64
 	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 96
+	bg_p.content_margin_top = 64
 	bg_p.content_margin_bottom = 8
 
 	if is_active:
@@ -355,7 +306,7 @@ func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> 
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
 	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
 	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 12;   ic.offset_bottom = 92
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -464,6 +415,7 @@ func _build_lesson_list() -> void:
 		
 		# 1. Hướng Dẫn Button (Left circle)
 		var v_btn := Button.new()
+		v_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		v_btn.name = "VideoBtn"
 		v_btn.custom_minimum_size = Vector2(180, 180)
 		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -477,6 +429,7 @@ func _build_lesson_list() -> void:
 		
 		# 2. Thực Hành Button (Right circle)
 		var p_btn := Button.new()
+		p_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		p_btn.name = "PracticeBtn"
 		p_btn.custom_minimum_size = Vector2(180, 180)
 		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -491,7 +444,7 @@ func _build_lesson_list() -> void:
 		lessons_hbox.add_child(col)
 
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
-	if _has_dragged_significantly or not is_unlocked: return
+	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = v_id
 	VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
 	VideoPlayer.custom_subtitles = subtitles
@@ -500,7 +453,7 @@ func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> voi
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn"))
 
 func _on_practice_pressed(p_id: String, is_unlocked: bool) -> void:
-	if _has_dragged_significantly or not is_unlocked: return
+	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = p_id
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
@@ -675,6 +628,9 @@ func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> vo
 	btn.add_theme_color_override("font_color", normal_color)
 	btn.add_theme_color_override("font_hover_color", hover_color)
 	btn.add_theme_color_override("font_pressed_color", hover_color.darkened(0.15))
+
+func _on_btn_leaderboard_pressed() -> void:
+	_fade_to_scene("res://scenes/LeaderboardScreen.tscn")
 
 func _make_btn_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
