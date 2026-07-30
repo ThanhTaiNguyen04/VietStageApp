@@ -1,5 +1,7 @@
 extends Control
 
+const ApiClientScript = preload("res://scripts/ApiClient.gd")
+
 # ─── Color Palette ────────────────────────────────────────────────────────────
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
@@ -39,8 +41,11 @@ var _name_edit: LineEdit
 var _main_split: HBoxContainer
 var _left_col: VBoxContainer
 var _right_col: VBoxContainer
+var _api_client = null
 
 func _ready() -> void:
+	_api_client = ApiClientScript.new()
+	add_child(_api_client)
 	SecureDataManager.load_data()
 	_restructure_layout()
 	_populate_data()
@@ -486,6 +491,14 @@ func _go_back() -> void:
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 
 func _on_logout() -> void:
+	logout_btn.disabled = true
+	await _api_client.logout()
+	SecureDataManager.data.erase("user_id")
+	SecureDataManager.data.erase("user_name")
+	SecureDataManager.data.erase("user_email")
+	SecureDataManager.data.erase("user_code")
+	SecureDataManager.data.erase("user_role")
+	SecureDataManager.save_data()
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.25)
 	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn"))
