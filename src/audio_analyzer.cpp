@@ -1,7 +1,8 @@
 #include "audio_analyzer.h"
 #include <godot_cpp/core/class_db.hpp>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <vector>
 
 using namespace godot;
 
@@ -474,7 +475,7 @@ Dictionary AudioAnalyzer::detect_dan_tranh_note(const PackedFloat32Array &sample
 		float tone_q = evaluate_tone_quality(samples);
 
 		result["frequency"] = freq;
-		result["note_name"] = String(DAN_TRANH_NOTES[best_idx].name);
+		result["note_name"] = String::utf8(DAN_TRANH_NOTES[best_idx].name);
 		result["string_index"] = DAN_TRANH_NOTES[best_idx].string_idx;
 		result["cents_offset"] = cents_offset;
 		result["clarity"] = tone_q;

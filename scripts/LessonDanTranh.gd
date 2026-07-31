@@ -510,12 +510,15 @@ func _update_continuous_pitch_hud():
 				pitch_meter.queue_redraw()
 		return
 
-	# Mic has sound -> detect played note continuously 60fps
-	var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
-	var det_name = note_info.get("note_name", "None")
-	if det_name == "None" and pitch > 0.0:
-		det_name = _get_closest_dan_tranh_note_name(pitch)
-		
+	# Use the stabilized pitch first; re-analyzing the rolling buffer can report a stale lower octave.
+	var det_name := _get_closest_dan_tranh_note_name(pitch)
+	if det_name == "":
+		var note_info: Dictionary = analyzer.detect_dan_tranh_note(
+			analyzer._analysis_buffer,
+			AudioServer.get_mix_rate()
+		)
+		det_name = note_info.get("note_name", "None")
+
 	if det_name != "None" and det_name != "":
 		if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + det_name
 	
@@ -536,14 +539,23 @@ func _update_continuous_pitch_hud():
 		var cents_meter = raw_cents
 		while cents_meter > 600.0: cents_meter -= 1200.0
 		while cents_meter < -600.0: cents_meter += 1200.0
+		var target_note_name := ""
+		if current_state == State.PRACTICE_SINGLE and single_practice_idx < unique_practice_notes.size():
+			target_note_name = unique_practice_notes[single_practice_idx].split("+")[0]
+		elif current_state == State.PRACTICE:
+			for note in active_falling_notes:
+				if not note.get("hit", false):
+					target_note_name = note["note"].replace("ZT_", "").split("+")[0]
+					break
+		var robust_match := _is_pitch_match_robust(current_target_hz, target_note_name, pitch)
 		
 		if pitch_meter:
-			pitch_meter.current_cents = cents_meter
+			pitch_meter.current_cents = 0.0 if robust_match else cents_meter
 			pitch_meter.is_active = true
 			pitch_meter.queue_redraw()
 			
-		# Update status label real-time continuously using true pitch difference
-		if absf(raw_cents) <= 35.0 or absf(raw_cents - 1200.0) <= 25.0 or absf(raw_cents + 1200.0) <= 25.0:
+		# Update status label real-time continuously using robust pitch matching.
+		if robust_match:
 			if pitch_status_lbl:
 				pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
 				pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
@@ -569,31 +581,52 @@ func _get_closest_dan_tranh_note_name(freq: float) -> String:
 				best_name = n
 	return best_name if min_c <= 150.0 else ""
 
-func _is_harmonic_or_octave_of_target(det_note: String, det_idx: int, target_note: String, target_idx: int) -> bool:
-	if det_note == target_note or det_idx == target_idx:
-		return true
-	if target_idx < 0 or det_idx < 0:
+func _get_spectrum_band_db(center_hz: float, width_ratio: float = 0.025) -> float:
+	if not analyzer or analyzer.get("_spectrum") == null or center_hz <= 0.0:
+		return -80.0
+	var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
+	var magnitude = spec.get_magnitude_for_frequency_range(
+		center_hz * (1.0 - width_ratio),
+		center_hz * (1.0 + width_ratio)
+	).length()
+	return 20.0 * log(magnitude) / log(10) if magnitude > 0.0001 else -80.0
+
+func _has_clear_spectrum_peak(center_hz: float, min_db: float) -> bool:
+	if center_hz <= 0.0:
 		return false
-		
-	var target_freq = NOTE_FREQS.get(target_note, 0.0) if "+" not in target_note else NOTE_FREQS.get(target_note.split("+")[0], 0.0)
-	var det_freq = NOTE_FREQS.get(det_note, 0.0) if "+" not in det_note else NOTE_FREQS.get(det_note.split("+")[0], 0.0)
-	if target_freq <= 0.0 or det_freq <= 0.0:
+	var main_db := _get_spectrum_band_db(center_hz)
+	if main_db < min_db:
 		return false
-		
-	var ratio = det_freq / target_freq
-	for h in [0.5, 2.0]:
-		var cents_err = absf(1200.0 * log(ratio / h) / log(2.0))
-		if cents_err <= 35.0:
-			return true
-			
-	var clean_det_root = det_note.strip_edges().rstrip("0123456789")
-	var clean_target_root = target_note.strip_edges().rstrip("0123456789")
-	var cents_diff = absf(1200.0 * log(det_freq / target_freq) / log(2.0))
-	if clean_det_root != "" and clean_det_root == clean_target_root and cents_diff <= 1250.0:
+	var semitone_ratio := pow(2.0, 1.0 / 24.0)
+	var lower_db := _get_spectrum_band_db(center_hz / semitone_ratio)
+	var upper_db := _get_spectrum_band_db(center_hz * semitone_ratio)
+	return main_db >= lower_db + 2.0 and main_db >= upper_db + 2.0
+
+func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: float) -> bool:
+	if target_hz <= 0.0 or pitch <= 0.0:
+		return false
+
+	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
+	if cents_error <= 35.0:
 		return true
-		
+
+	# Never accept an octave or harmonic as the requested string. Use the native
+	# detector only as a second exact-frequency measurement of the same note.
+	if analyzer and target_note_name != "":
+		var detected_note: Dictionary = analyzer.detect_dan_tranh_note(
+			analyzer._analysis_buffer,
+			AudioServer.get_mix_rate()
+		)
+		var detected_frequency: float = detected_note.get("frequency", 0.0)
+		if detected_note.get("note_name", "None") == target_note_name and detected_frequency > 0.0:
+			var detected_cents := absf(1200.0 * log(detected_frequency / target_hz) / log(2.0))
+			return detected_cents <= 35.0
+
 	return false
 
+func _is_harmonic_or_octave_of_target(det_note: String, det_idx: int, target_note: String, target_idx: int) -> bool:
+	# Each đàn tranh string is distinct; matching the note root in another octave is incorrect.
+	return det_note == target_note and det_idx == target_idx
 
 func _start_intro():
 	current_state = State.INTRO
@@ -1186,39 +1219,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				pitch_meter.current_cents = cents_error
 				pitch_meter.is_active = true
 				pitch_meter.queue_redraw()
-			if absf(cents_error) <= 35.0:
-				is_match = true
-			else:
-				# Allow 1st harmonic (octave equivalence) for weak fundamentals
-				var harmonic_error = absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
-				if harmonic_error <= 35.0:
-					is_match = true
-				else:
-					# Allow sub-harmonic (half frequency) for zither string period doubling
-					var sub_harmonic_error = absf(1200.0 * log(pitch / (target_hz / 2.0)) / log(2.0))
-					if sub_harmonic_error <= 35.0:
-						is_match = true
-					else:
-						# Allow 3rd harmonic (Perfect 12th) which is extremely dominant on Dan Tranh
-						var harmonic3_error = absf(1200.0 * log(pitch / (target_hz * 3.0)) / log(2.0))
-						if harmonic3_error <= 35.0:
-							is_match = true
-							
-		# Fallback to FFT for single notes if YIN completely fails (very common for La 1)
-		# ONLY apply to low strings (< 500 Hz) to prevent sympathetic resonance false-positives on high strings.
-		if not is_match and target_hz < 500.0 and db >= analyzer.volume_threshold_db and analyzer and analyzer.get("_spectrum") != null:
-			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
-			if target_hz > 0.0:
-				var mag1 = spec.get_magnitude_for_frequency_range(target_hz * 0.96, target_hz * 1.04).length()
-				var mag2 = spec.get_magnitude_for_frequency_range(target_hz * 1.96, target_hz * 2.04).length()
-				var mag3 = spec.get_magnitude_for_frequency_range(target_hz * 2.96, target_hz * 3.04).length()
-				var max_mag = max(mag1, max(mag2, mag3))
-				var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-				
-				# If there is a strong peak at the fundamental or major harmonics, accept it!
-				if freq_db >= -52.0:
-					is_match = true
-				
+			is_match = _is_pitch_match_robust(target_hz, _target_note_name, pitch)
 	var hold_time_needed = REQUIRED_HOLD_TIME
 	if target_hz > 1000.0:
 		hold_time_needed = 0.08  # ~5 frames for extremely high strings (Đô3, Mi3, Sol4, La4)
