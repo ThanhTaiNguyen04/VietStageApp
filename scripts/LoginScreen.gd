@@ -176,7 +176,9 @@ func _setup_extra_ui() -> void:
 	_forgot_btn.add_theme_color_override("font_hover_color", C_PRIMARY_LT)
 	_forgot_btn.add_theme_stylebox_override("normal", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	_forgot_btn.add_theme_stylebox_override("hover",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_forgot_btn.add_theme_stylebox_override("disabled", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	_forgot_btn.add_theme_stylebox_override("focus",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_forgot_btn.add_theme_color_override("font_disabled_color", Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.45))
 	_forgot_btn.pressed.connect(_on_forgot_password_pressed)
 	_pass_row.add_child(_pass_lbl)
 	_pass_row.add_child(_forgot_btn)
@@ -199,6 +201,7 @@ func _setup_extra_ui() -> void:
 	_pass_toggle_btn.offset_bottom = 18
 	_pass_toggle_btn.add_theme_stylebox_override("normal", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	_pass_toggle_btn.add_theme_stylebox_override("hover",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_pass_toggle_btn.add_theme_stylebox_override("disabled", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	_pass_toggle_btn.add_theme_stylebox_override("focus",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	
 	var eye_drawing := Control.new()
@@ -347,11 +350,15 @@ func _create_auth_input(placeholder: String, secret_value: bool) -> LineEdit:
 		edit.add_theme_font_override("font", font)
 	var normal := _pill(Color(0.95, 0.93, 0.89, 0.60), Color(0.13, 0.08, 0.05, 0.15), 28)
 	var focus := _pill(Color.WHITE, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
+	var read_only := _pill(Color(1.0, 1.0, 1.0, 0.76), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 28)
 	normal.content_margin_left = 20
 	focus.content_margin_left = 20
+	read_only.content_margin_left = 20
 	edit.add_theme_stylebox_override("normal", normal)
 	edit.add_theme_stylebox_override("focus", focus)
+	edit.add_theme_stylebox_override("read_only", read_only)
 	edit.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
 	edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	edit.add_theme_color_override("caret_color", C_GOLD)
 	return edit
@@ -485,45 +492,23 @@ func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float,
 # ── Card kính sáng Alabaster Glass ───────────────────────────────────────────
 func _style_card() -> void:
 	var cs := StyleBoxFlat.new()
-	cs.bg_color              = Color(0.95, 0.93, 0.89, 0.75) # Màu nền sidebar Đàn Tranh có alpha
-	cs.border_color          = Color(0.77, 0.59, 0.15, 0.4) # Viền vàng đồng mờ
-	cs.border_width_left     = 2; cs.border_width_right  = 2
-	cs.border_width_top      = 2; cs.border_width_bottom = 2
+	cs.bg_color              = Color(0.98, 0.97, 0.94, 0.88)
+	cs.border_color          = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	cs.border_width_left     = 1; cs.border_width_right  = 1
+	cs.border_width_top      = 1; cs.border_width_bottom = 1
 	cs.corner_radius_top_left     = 32; cs.corner_radius_top_right    = 32
 	cs.corner_radius_bottom_left  = 32; cs.corner_radius_bottom_right = 32
-	cs.shadow_size   = 40
-	cs.shadow_color  = Color(0.09, 0.25, 0.18, 0.15) # Bóng ngả xanh ngọc
-	cs.shadow_offset = Vector2(0, 10)
+	cs.shadow_size   = 24
+	cs.shadow_color  = Color(0.09, 0.25, 0.18, 0.10)
+	cs.shadow_offset = Vector2(0, 8)
 	card.add_theme_stylebox_override("panel", cs)
 	card.pivot_offset = card.size / 2.0
 	card.resized.connect(func() -> void: card.pivot_offset = card.size / 2.0)
-	
-	# Hiệu ứng kính mờ (Glassmorphism)
-	var blur_mat = ShaderMaterial.new()
-	var blur_shader = Shader.new()
-	blur_shader.code = """
-	shader_type canvas_item;
-	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-	uniform float lod: hint_range(0.0, 5.0) = 2.0;
-	void fragment() {
-		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
-	}
-	"""
-	blur_mat.shader = blur_shader
-	var blur_rect = ColorRect.new()
-	blur_rect.material = blur_mat
-	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	blur_rect.show_behind_parent = true
-	
-	# Loại bỏ blur_rect cũ nếu có
+
+	# Screen-texture blur can render as opaque rectangles on mobile renderers.
 	for c in card.get_children():
 		if c is ColorRect and c.name == "BlurRect":
 			c.queue_free()
-			
-	blur_rect.name = "BlurRect"
-	card.add_child(blur_rect)
-	card.move_child(blur_rect, 0)
 
 # ── Tô màu toàn bộ UI theo Cream/Espresso ─────────────────────────────────────
 func _style_all() -> void:
@@ -560,29 +545,37 @@ func _style_all() -> void:
 	# Name & Email: Light warm glass pill
 	var ei_n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(0.13, 0.08, 0.05, 0.15), 28)
 	var ei_f := _pill(Color(1.00, 1.00, 1.00, 1.00),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
+	var ei_ro := _pill(Color(1.00, 1.00, 1.00, 0.76), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 28)
 	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
 	
 	# Add left content padding to line edits to fit the 👤 / 🔒 icons beautifully
 	ei_n.content_margin_left = 46
 	ei_f.content_margin_left = 46
+	ei_ro.content_margin_left = 46
 	
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
+	email_edit.add_theme_stylebox_override("read_only", ei_ro)
 	email_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	email_edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
 	email_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	email_edit.add_theme_color_override("caret_color",       C_GOLD)
 	email_edit.add_theme_font_size_override("font_size", 20)
 
 	name_edit.add_theme_stylebox_override("normal", ei_n)
 	name_edit.add_theme_stylebox_override("focus",  ei_f)
+	name_edit.add_theme_stylebox_override("read_only", ei_ro)
 	name_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	name_edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
 	name_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	name_edit.add_theme_color_override("caret_color",       C_GOLD)
 	name_edit.add_theme_font_size_override("font_size", 20)
 
 	password_edit.add_theme_stylebox_override("normal", ei_n)
 	password_edit.add_theme_stylebox_override("focus",  ei_f)
+	password_edit.add_theme_stylebox_override("read_only", ei_ro)
 	password_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
+	password_edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
 	password_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
 	password_edit.add_theme_color_override("caret_color",       C_GOLD)
 	password_edit.add_theme_font_size_override("font_size", 20)
@@ -594,14 +587,18 @@ func _style_all() -> void:
 	si_h.border_width_left = 2; si_h.border_width_right = 2; si_h.border_width_top = 2; si_h.border_width_bottom = 2
 	var si_p := _pill(C_PRIMARY_DK, Color(1.0, 1.0, 1.0, 1.0), 28)
 	si_p.border_width_left = 2; si_p.border_width_right = 2; si_p.border_width_top = 2; si_p.border_width_bottom = 2
+	var si_d := _pill(Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.78), Color(1.0, 1.0, 1.0, 0.72), 28)
+	si_d.border_width_left = 2; si_d.border_width_right = 2; si_d.border_width_top = 2; si_d.border_width_bottom = 2
 	
 	si_n.shadow_size = 16; si_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.35)
 	si_h.shadow_size = 22; si_h.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.48)
 	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
 	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
 	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
+	sign_in_btn.add_theme_stylebox_override("disabled", si_d)
 	sign_in_btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	sign_in_btn.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.9, 1.0))
+	sign_in_btn.add_theme_color_override("font_disabled_color", Color(1.0, 1.0, 1.0, 0.88))
 	
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
@@ -614,9 +611,11 @@ func _style_all() -> void:
 	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))
 	toggle_mode_btn.add_theme_color_override("font_hover_color",   C_PETAL_1)
 	toggle_mode_btn.add_theme_color_override("font_pressed_color", C_PETAL_2)
+	toggle_mode_btn.add_theme_color_override("font_disabled_color", Color(0.43, 0.38, 0.33, 0.48))
 	toggle_mode_btn.add_theme_stylebox_override("normal",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	toggle_mode_btn.add_theme_stylebox_override("hover",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	toggle_mode_btn.add_theme_stylebox_override("pressed", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_stylebox_override("disabled", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	toggle_mode_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 
 	# Social buttons: Social pills sáng màu
@@ -635,12 +634,15 @@ func _style_social(btn: Button) -> void:
 	var n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20), 18)
 	var h := _pill(Color(0.95, 0.93, 0.89, 0.90),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.36), 18)
 	var p := _pill(Color(0.90, 0.87, 0.82, 1.00),  Color(0,0,0,0), 18)
+	var d := _pill(Color(1.0, 1.0, 1.0, 0.38), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), 18)
 	n.shadow_size = 6; n.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
 	h.shadow_size = 10; h.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
 	btn.add_theme_stylebox_override("normal",  n)
 	btn.add_theme_stylebox_override("hover",   h)
 	btn.add_theme_stylebox_override("pressed", p)
+	btn.add_theme_stylebox_override("disabled", d)
 	btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	btn.add_theme_color_override("font_disabled_color", Color(0.13, 0.08, 0.05, 0.38))
 
 # ── Kết nối sự kiện ──────────────────────────────────────────────────────────
 func _connect_all() -> void:
@@ -900,6 +902,7 @@ func _set_busy(busy: bool) -> void:
 	toggle_mode_btn.disabled = busy
 	_forgot_btn.disabled = busy
 	guest_btn.disabled = busy
+	_pass_toggle_btn.disabled = busy
 	email_edit.editable = not busy and _auth_mode not in [AuthMode.VERIFY_REGISTRATION, AuthMode.RESET_PASSWORD]
 	name_edit.editable = not busy
 	password_edit.editable = not busy

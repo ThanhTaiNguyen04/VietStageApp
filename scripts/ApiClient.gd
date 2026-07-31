@@ -1,13 +1,13 @@
 extends Node
 
-const BASE_URL := "https://vietstage-web-backend.onrender.com"
-const REQUEST_TIMEOUT_SECONDS := 25.0
 const AuthSessionStore = preload("res://scripts/AuthSession.gd")
+const AppConfig = preload("res://scripts/AppConfig.gd")
+const ApiRoutes = preload("res://scripts/ApiRoutes.gd")
 
 
 func login(email: String, password: String) -> Dictionary:
 	return await _request_raw(
-		"/api/auth/login",
+		ApiRoutes.build(ApiRoutes.AUTH_LOGIN),
 		HTTPClient.METHOD_POST,
 		{"email": email, "password": password}
 	)
@@ -15,7 +15,7 @@ func login(email: String, password: String) -> Dictionary:
 
 func register(email: String, password: String, full_name: String) -> Dictionary:
 	return await _request_raw(
-		"/api/auth/register",
+		ApiRoutes.build(ApiRoutes.AUTH_REGISTER),
 		HTTPClient.METHOD_POST,
 		{"email": email, "password": password, "fullName": full_name}
 	)
@@ -23,7 +23,7 @@ func register(email: String, password: String, full_name: String) -> Dictionary:
 
 func verify_registration(email: String, otp_code: String) -> Dictionary:
 	return await _request_raw(
-		"/api/auth/verify-registration",
+		ApiRoutes.build(ApiRoutes.AUTH_VERIFY_REGISTRATION),
 		HTTPClient.METHOD_POST,
 		{"email": email, "otpCode": otp_code}
 	)
@@ -31,7 +31,7 @@ func verify_registration(email: String, otp_code: String) -> Dictionary:
 
 func forgot_password(email: String) -> Dictionary:
 	return await _request_raw(
-		"/api/auth/forgot-password",
+		ApiRoutes.build(ApiRoutes.AUTH_FORGOT_PASSWORD),
 		HTTPClient.METHOD_POST,
 		{"email": email}
 	)
@@ -39,7 +39,7 @@ func forgot_password(email: String) -> Dictionary:
 
 func reset_password(email: String, verification_code: String, new_password: String) -> Dictionary:
 	return await _request_raw(
-		"/api/auth/reset-password",
+		ApiRoutes.build(ApiRoutes.AUTH_RESET_PASSWORD),
 		HTTPClient.METHOD_POST,
 		{
 			"email": email,
@@ -50,14 +50,14 @@ func reset_password(email: String, verification_code: String, new_password: Stri
 
 
 func get_me() -> Dictionary:
-	return await request_json("/api/users/me", HTTPClient.METHOD_GET)
+	return await request_json(ApiRoutes.build(ApiRoutes.USERS_ME), HTTPClient.METHOD_GET)
 
 
 func logout() -> Dictionary:
 	var response := {"status": 200, "body": {}, "message": ""}
 	if AuthSessionStore.has_access_token():
 		response = await _request_raw(
-			"/api/auth/logout",
+			ApiRoutes.build(ApiRoutes.AUTH_LOGOUT),
 			HTTPClient.METHOD_POST,
 			{},
 			true
@@ -93,7 +93,7 @@ func refresh_session() -> Dictionary:
 		}
 
 	var response := await _request_raw(
-		"/api/auth/refresh",
+		ApiRoutes.build(ApiRoutes.AUTH_REFRESH),
 		HTTPClient.METHOD_POST,
 		{
 			"sessionId": AuthSessionStore.session_id,
@@ -130,8 +130,16 @@ func _request_raw(
 	payload: Dictionary = {},
 	with_auth: bool = false
 ) -> Dictionary:
+	var configuration_error := AppConfig.get_api_configuration_error()
+	if not configuration_error.is_empty():
+		return {
+			"status": 0,
+			"body": {},
+			"message": configuration_error,
+		}
+
 	var http := HTTPRequest.new()
-	http.timeout = REQUEST_TIMEOUT_SECONDS
+	http.timeout = AppConfig.get_api_timeout_seconds()
 	add_child(http)
 
 	var headers := PackedStringArray(["Accept: application/json"])
@@ -142,7 +150,8 @@ func _request_raw(
 	if with_auth and AuthSessionStore.has_access_token():
 		headers.append("Authorization: Bearer " + AuthSessionStore.access_token)
 
-	var request_error := http.request(BASE_URL + path, headers, method, body)
+	var request_url := AppConfig.get_api_base_url() + path
+	var request_error := http.request(request_url, headers, method, body)
 	if request_error != OK:
 		http.queue_free()
 		return {

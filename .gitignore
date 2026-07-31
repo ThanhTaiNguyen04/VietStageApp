@@ -8,3 +8,8 @@ godot_check_err.txt
 godot_temp.log
 .sconsign.dblite
 /src/*.os
+
+# Local environment overrides
+.env
+.env.*
+!.env.example
