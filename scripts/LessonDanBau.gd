@@ -665,8 +665,8 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 
 	btn.draw.connect(func():
 		var tex_name = ""
-		if not unlocked: tex_name = "lock"
-		elif completed: tex_name = "check-circle"
+		if not unlocked: tex_name = "music"
+		elif completed: tex_name = "music"
 		else: tex_name = "play-circle" if type == "video" else "music"
 		
 		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
