@@ -19,6 +19,7 @@ const C_GOLD_LIGHT  := Color(0.92, 0.76, 0.30, 1.0)
 const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
+const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
 
 const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
 
@@ -29,10 +30,14 @@ var btn_minigame : Button
 var btn_minigame_mob : Button
 var btn_leaderboard : Button
 var btn_leaderboard_mob : Button
+var _api_client = null
+var _profile_level := 1
+var _account_menu_open := false
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
 @onready var sidebar       : PanelContainer = $Root/Sidebar
+@onready var side_margin   : MarginContainer = $Root/Sidebar/SideM
 @onready var btn_menu      : Button         = $Root/Sidebar/SideM/SideV/BtnMenu
 @onready var btn_courses   : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
 @onready var btn_room      : Button         = $Root/Sidebar/SideM/SideV/BtnRoom
@@ -40,6 +45,7 @@ var btn_leaderboard_mob : Button
 @onready var btn_account   : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
 
 @onready var bottom_bar      : PanelContainer = $Root/RightContent/BottomBar
+@onready var bottom_margin   : MarginContainer = $Root/RightContent/BottomBar/BottomM
 @onready var btn_courses_mob : Button         = $Root/RightContent/BottomBar/BottomM/BottomH/BtnCoursesMobile
 @onready var btn_room_mob    : Button         = $Root/RightContent/BottomBar/BottomM/BottomH/BtnRoomMobile
 @onready var btn_songs_mob   : Button         = $Root/RightContent/BottomBar/BottomM/BottomH/BtnSongsMobile
@@ -47,6 +53,25 @@ var btn_leaderboard_mob : Button
 
 @onready var top_bar       : MarginContainer = $Root/RightContent/TopBar
 @onready var avatar_circle : PanelContainer  = $Root/RightContent/TopBar/TopRow/AvatarCircle
+@onready var profile_menu  : PanelContainer  = $Root/RightContent/TopBar/TopRow/ProfileMenu
+@onready var profile_trigger: Button = $Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerButton
+@onready var mini_avatar_frame: PanelContainer = $Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/MiniAvatarFrame
+@onready var trigger_copy: VBoxContainer = $Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/TriggerCopy
+@onready var trigger_name: Label = $Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/TriggerCopy/TriggerName
+@onready var trigger_level: Label = $Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/TriggerCopy/TriggerLevel
+@onready var trigger_chevron: Label = $Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/Chevron
+
+@onready var account_menu_layer: Control = $AccountMenuLayer
+@onready var dismiss_button: Button = $AccountMenuLayer/DismissButton
+@onready var account_panel: PanelContainer = $AccountMenuLayer/AccountPanel
+@onready var large_avatar_frame: PanelContainer = $AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/LargeAvatarFrame
+@onready var header_name: Label = $AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy/HeaderName
+@onready var header_meta: Label = $AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy/HeaderMeta
+@onready var online_dot: PanelContainer = $AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy/OnlineRow/OnlineDot
+@onready var online_label: Label = $AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy/OnlineRow/OnlineLabel
+@onready var profile_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/ProfileAction
+@onready var achievement_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/AchievementAction
+@onready var settings_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/SettingsAction
 
 @onready var streak_pill   : PanelContainer  = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill
 @onready var sp_label      : Label           = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill/SPMargin/SPLabel
@@ -76,6 +101,10 @@ var btn_leaderboard_mob : Button
 func _ready() -> void:
 	SecureDataManager.load_data()
 	InstrumentSelect.selected_instrument = SecureDataManager.data.get("selected_instrument", "dan_tranh")
+
+	_api_client = preload("res://scripts/ApiClient.gd").new()
+	add_child(_api_client)
+	_fetch_and_sync_progress()
 	
 	# Programmatic instantiation of MiniGame button
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
@@ -115,6 +144,7 @@ func _ready() -> void:
 	_build_sidebar()
 	_build_bottom_bar()
 	_build_top_bar()
+	_build_profile_menu()
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
@@ -127,6 +157,24 @@ func _ready() -> void:
 	_on_viewport_size_changed()
 
 	avatar_circle.hide()
+	btn_account.hide()
+	btn_account_mob.hide()
+
+func _fetch_and_sync_progress() -> void:
+	if _api_client == null:
+		return
+	var response = await _api_client.get_my_progress()
+	if _api_client._is_success(response):
+		var list = response.get("body", {}).get("data", [])
+		SecureDataManager.sync_backend_progress(list)
+		_build_roadmap_cards()
+	var summary_response = await _api_client.get_my_progress_summary()
+	if _api_client._is_success(summary_response):
+		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
+		if summary_data is Dictionary:
+			var total_points := int(summary_data.get("total_points", summary_data.get("totalPoints", 0)))
+			_profile_level = int(total_points / 1000) + 1
+			_update_profile_menu_data()
 
 func _process(delta: float) -> void:
 	_time += delta
@@ -617,6 +665,199 @@ func _build_top_bar() -> void:
 	# Tạm thời ẩn theo yêu cầu
 	streak_pill.visible = false
 	xp_pill.visible = false
+
+func _build_profile_menu() -> void:
+	var top_row := profile_menu.get_parent() as HBoxContainer
+	if top_row:
+		top_row.move_child(profile_menu, top_row.get_child_count() - 1)
+	_update_profile_menu_data()
+	_style_account_menu()
+	profile_trigger.pressed.connect(_toggle_account_menu)
+	dismiss_button.pressed.connect(_close_account_menu)
+	profile_action.pressed.connect(func() -> void: _open_account_destination("profile"))
+	achievement_action.pressed.connect(func() -> void: _open_account_destination("achievements"))
+	settings_action.pressed.connect(func() -> void: _open_account_destination("settings"))
+
+func _update_profile_menu_data() -> void:
+	var player_name := str(SecureDataManager.data.get("user_name", "Học viên VietStage"))
+	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	trigger_name.text = player_name
+	trigger_level.text = "Cấp độ %d" % _profile_level
+	header_name.text = player_name
+	header_meta.text = "Cấp độ %d · Đang học %s" % [_profile_level, _instrument_display_name(instrument)]
+	online_label.text = "Đang hoạt động"
+
+	# Load avatar texture dynamically from local data
+	var avatar_path := str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	var avatar_tex := load(avatar_path) as Texture2D
+	if avatar_tex:
+		var mini_avatar := mini_avatar_frame.get_node_or_null("MiniAvatar") as TextureRect
+		if mini_avatar:
+			mini_avatar.texture = avatar_tex
+		var large_avatar := large_avatar_frame.get_node_or_null("LargeAvatar") as TextureRect
+		if large_avatar:
+			large_avatar.texture = avatar_tex
+
+func _instrument_display_name(instrument: String) -> String:
+	match instrument:
+		"dan_bau": return "Đàn Bầu"
+		"sao_truc": return "Sáo Trúc"
+		"trong_chau": return "Trống Chầu"
+		_: return "Đàn Tranh"
+
+func _style_account_menu() -> void:
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		trigger_name.add_theme_font_override("font", bold_font)
+		header_name.add_theme_font_override("font", bold_font)
+		for button: Button in [profile_action, achievement_action, settings_action]:
+			button.add_theme_font_override("font", bold_font)
+	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), 30)
+	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
+	trigger_style.shadow_size = 10
+	trigger_style.shadow_offset = Vector2(0, 4)
+	profile_menu.add_theme_stylebox_override("panel", trigger_style)
+	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(23, 2))
+	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(36, 3))
+	trigger_name.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	trigger_level.add_theme_color_override("font_color", C_TERRACOTTA)
+	trigger_chevron.add_theme_color_override("font_color", C_TERRACOTTA)
+
+	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 30))
+	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color.TRANSPARENT, 30))
+	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 30))
+	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 30))
+
+	var panel_style := _flat(Color(1.0, 0.99, 0.96, 0.995), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
+	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
+	panel_style.shadow_size = 22
+	panel_style.shadow_offset = Vector2(0, 10)
+	account_panel.add_theme_stylebox_override("panel", panel_style)
+	header_name.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	header_meta.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
+	online_dot.add_theme_stylebox_override("panel", _flat(Color(0.22, 0.72, 0.36, 1.0), Color.WHITE, 4))
+	online_label.add_theme_color_override("font_color", C_RED_SON)
+	_style_account_action(profile_action, "user")
+	_style_account_action(achievement_action, "trophy")
+	_style_account_action(settings_action, "settings")
+	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.01, 0.04, 0.025, 0.10), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.01, 0.04, 0.025, 0.13), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.02, 0.05, 0.03, 0.12), Color.TRANSPARENT, 0))
+
+func _style_account_action(button: Button, icon_name: String) -> void:
+	button.icon = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 23)
+	button.add_theme_constant_override("h_separation", 14)
+	button.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	button.add_theme_color_override("font_hover_color", C_TERRACOTTA)
+	button.add_theme_color_override("icon_normal_color", C_RED_SON)
+	button.add_theme_color_override("icon_hover_color", C_TERRACOTTA)
+	button.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 14))
+	button.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.11), Color.TRANSPARENT, 14))
+	button.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), Color.TRANSPARENT, 14))
+	button.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
+
+func _avatar_menu_style(radius: int, border_width: int) -> StyleBoxFlat:
+	var style := _flat(Color.WHITE, C_GOLD, radius)
+	style.border_width_left = border_width
+	style.border_width_right = border_width
+	style.border_width_top = border_width
+	style.border_width_bottom = border_width
+	return style
+
+func _toggle_account_menu() -> void:
+	if _account_menu_open:
+		_close_account_menu()
+	else:
+		_open_account_menu()
+
+func _open_account_menu() -> void:
+	_account_menu_open = true
+	_update_profile_menu_data()
+	_layout_account_menu(get_viewport().size)
+	account_menu_layer.show()
+	account_menu_layer.modulate.a = 0.0
+	account_panel.scale = Vector2(0.96, 0.96)
+	account_panel.position.y -= 6.0
+	account_panel.pivot_offset = Vector2(account_panel.size.x, 0)
+	trigger_chevron.text = "⌃"
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(account_menu_layer, "modulate:a", 1.0, 0.16)
+	tween.tween_property(account_panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(account_panel, "position:y", account_panel.position.y + 6.0, 0.2).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+
+func _close_account_menu(animated: bool = true) -> void:
+	if not _account_menu_open and not account_menu_layer.visible:
+		return
+	_account_menu_open = false
+	trigger_chevron.text = "⌄"
+	if not animated:
+		account_menu_layer.hide()
+		account_panel.scale = Vector2.ONE
+		return
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(account_menu_layer, "modulate:a", 0.0, 0.12)
+	tween.tween_property(account_panel, "scale", Vector2(0.98, 0.98), 0.12)
+	await tween.finished
+	if not _account_menu_open:
+		account_menu_layer.hide()
+		account_panel.scale = Vector2.ONE
+
+func _open_account_destination(destination: String) -> void:
+	_close_account_menu(false)
+	if destination == "achievements":
+		_go_progress()
+	elif destination == "settings":
+		_go_settings()
+	else:
+		_go_account()
+
+func _layout_account_menu(viewport_size: Vector2) -> void:
+	var safe := _safe_insets(viewport_size)
+	var mobile := _is_mobile_layout(viewport_size)
+	var safe_width := maxf(280.0, viewport_size.x - safe.x - safe.z)
+	var panel_width := minf(360.0 if mobile else 370.0, safe_width - 24.0)
+	var panel_height := account_panel.get_combined_minimum_size().y
+	var panel_left := viewport_size.x - safe.z - panel_width - 12.0
+	var desired_top := profile_menu.global_position.y + profile_menu.size.y + 10.0
+	var max_top := viewport_size.y - safe.w - panel_height - 12.0
+	var panel_top := clampf(desired_top, safe.y + 8.0, maxf(safe.y + 8.0, max_top))
+	if mobile and viewport_size.x < 600.0:
+		panel_left = safe.x + 12.0
+		panel_width = safe_width - 24.0
+		panel_top = maxf(safe.y + 12.0, viewport_size.y - safe.w - panel_height - 12.0)
+	account_panel.position = Vector2(panel_left, panel_top)
+	account_panel.size = Vector2(panel_width, panel_height)
+
+func _is_mobile_layout(viewport_size: Vector2) -> bool:
+	return (
+		OS.has_feature("mobile")
+		or OS.has_feature("android")
+		or OS.has_feature("ios")
+		or viewport_size.x < viewport_size.y
+		or viewport_size.x < 768.0
+	)
+
+func _safe_insets(viewport_size: Vector2) -> Vector4:
+	if not (OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")):
+		return Vector4.ZERO
+	var screen_size := DisplayServer.screen_get_size()
+	var safe_area := DisplayServer.get_display_safe_area()
+	if screen_size.x <= 0 or screen_size.y <= 0 or safe_area.size.x <= 0 or safe_area.size.y <= 0:
+		return Vector4.ZERO
+	var scale_x := viewport_size.x / float(screen_size.x)
+	var scale_y := viewport_size.y / float(screen_size.y)
+	var left := maxf(0.0, float(safe_area.position.x) * scale_x)
+	var top := maxf(0.0, float(safe_area.position.y) * scale_y)
+	var right := maxf(0.0, float(screen_size.x - safe_area.end.x) * scale_x)
+	var bottom := maxf(0.0, float(screen_size.y - safe_area.end.y) * scale_y)
+	return Vector4(left, top, right, bottom)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _account_menu_open and event.is_action_pressed("ui_cancel"):
+		_close_account_menu()
+		get_viewport().set_input_as_handled()
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
 func _build_roadmap_cards() -> void:
@@ -1294,6 +1535,7 @@ func _go_practice_room_for_node(node_index: int) -> void:
 func _go_instruments() -> void: _fade_to("res://scenes/InstrumentSelect.tscn")
 func _go_progress()    -> void: _fade_to("res://scenes/ProgressScreen.tscn")
 func _go_account()     -> void: _fade_to("res://scenes/AccountScreen.tscn")
+func _go_settings()    -> void: _fade_to("res://scenes/AccountSettings.tscn")
 
 func _fade_to(path: String) -> void:
 	var t := create_tween()
@@ -1331,16 +1573,70 @@ func _make_btn_bouncy(btn: Button) -> void:
 	)
 
 func _on_viewport_size_changed() -> void:
-	var viewport_size = get_viewport().size
-	var is_mobile = viewport_size.x < viewport_size.y or viewport_size.x < 768
+	var viewport_size: Vector2 = get_viewport().size
+	var is_mobile := _is_mobile_layout(viewport_size)
+	var safe := _safe_insets(viewport_size)
+	var compact_profile: bool = viewport_size.x < 900.0
+	var safe_left := minf(safe.x, 104.0) if is_mobile else 0.0
+	var rail_width := 168.0 if is_mobile else 220.0
+
+	# Landscape navigation remains on the left; safe padding keeps controls clear
+	# of Dynamic Island and rounded display corners.
+	sidebar.visible = true
+	bottom_bar.visible = false
+	sidebar.custom_minimum_size.x = rail_width + safe_left
+	side_margin.add_theme_constant_override("margin_left", int(safe_left))
+	side_margin.add_theme_constant_override("margin_right", 0)
+	side_margin.add_theme_constant_override("margin_top", int(safe.y + 20.0) if is_mobile else 32)
+	side_margin.add_theme_constant_override("margin_bottom", int(safe.w + 20.0) if is_mobile else 32)
+	var side_button_height := 92.0 if is_mobile else 100.0
+	for button: Button in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard, btn_account]:
+		button.custom_minimum_size = Vector2(rail_width, side_button_height)
+		button.add_theme_font_size_override("font_size", 18 if is_mobile else 22)
+	$Root/Sidebar/SideM/SideV/TopSpacer.custom_minimum_size.y = 14.0 if is_mobile else 32.0
 	
-	sidebar.visible = not is_mobile
-	bottom_bar.visible = is_mobile
-	
+	# Responsive profile button styling
+	var radius := 26 if is_mobile else 30
+	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), radius)
+	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
+	trigger_style.shadow_size = 10
+	trigger_style.shadow_offset = Vector2(0, 4)
+	profile_menu.add_theme_stylebox_override("panel", trigger_style)
+
+	var trigger_m := profile_menu.get_node_or_null("TriggerM") as MarginContainer
+
+	if compact_profile:
+		trigger_copy.visible = false
+		trigger_chevron.visible = false
+		profile_menu.custom_minimum_size = Vector2(54, 54)
+		profile_menu.size = Vector2(54, 54)
+		if trigger_m:
+			trigger_m.add_theme_constant_override("margin_left", 4)
+			trigger_m.add_theme_constant_override("margin_right", 4)
+			trigger_m.add_theme_constant_override("margin_top", 4)
+			trigger_m.add_theme_constant_override("margin_bottom", 4)
+	else:
+		trigger_copy.visible = true
+		trigger_chevron.visible = true
+		profile_menu.custom_minimum_size = Vector2(218, 58) if is_mobile else Vector2(232, 60)
+		if trigger_m:
+			trigger_m.add_theme_constant_override("margin_left", 8)
+			trigger_m.add_theme_constant_override("margin_right", 12)
+			trigger_m.add_theme_constant_override("margin_top", 6)
+			trigger_m.add_theme_constant_override("margin_bottom", 6)
+
+	top_bar.custom_minimum_size.y = (76.0 + safe.y) if is_mobile else 96.0
+	top_bar.add_theme_constant_override("margin_top", int(safe.y + 10.0) if is_mobile else 16)
+	top_bar.add_theme_constant_override("margin_bottom", 8)
+
 	# TopBar scaling
 	if is_mobile:
-		top_bar.add_theme_constant_override("margin_left", 16)
-		top_bar.add_theme_constant_override("margin_right", 16)
+		top_bar.add_theme_constant_override("margin_left", 14)
+		top_bar.add_theme_constant_override("margin_right", int(safe.z + 12.0))
+		bottom_margin.add_theme_constant_override("margin_left", 16)
+		bottom_margin.add_theme_constant_override("margin_right", 16)
+		bottom_margin.add_theme_constant_override("margin_bottom", 0)
+		bottom_bar.custom_minimum_size.y = 80.0
 		sp_label.add_theme_font_size_override("font_size", 14)
 		xp_label.add_theme_font_size_override("font_size", 14)
 		streak_pill.get_node("SPMargin").add_theme_constant_override("margin_left", 12)
@@ -1350,19 +1646,30 @@ func _on_viewport_size_changed() -> void:
 	else:
 		top_bar.add_theme_constant_override("margin_left", 40)
 		top_bar.add_theme_constant_override("margin_right", 40)
+		bottom_margin.add_theme_constant_override("margin_left", 16)
+		bottom_margin.add_theme_constant_override("margin_right", 16)
+		bottom_margin.add_theme_constant_override("margin_bottom", 0)
+		bottom_bar.custom_minimum_size.y = 80.0
 		sp_label.add_theme_font_size_override("font_size", 18)
 		xp_label.add_theme_font_size_override("font_size", 18)
 		streak_pill.get_node("SPMargin").add_theme_constant_override("margin_left", 22)
 		streak_pill.get_node("SPMargin").add_theme_constant_override("margin_right", 22)
 		xp_pill.get_node("XPMargin").add_theme_constant_override("margin_left", 22)
 		xp_pill.get_node("XPMargin").add_theme_constant_override("margin_right", 22)
+
+	var overlay_alpha := 0.22 if is_mobile else 0.10
+	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.01, 0.04, 0.025, overlay_alpha), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.01, 0.04, 0.025, overlay_alpha), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.01, 0.04, 0.025, overlay_alpha + 0.04), Color.TRANSPARENT, 0))
 		
 	# Cards scaling
-	var card_w: float = 300.0 if is_mobile else 460.0
-	var un_card_w: float = 200.0 if is_mobile else 280.0
-	var gap: float = 40.0 if is_mobile else 90.0
+	# Card content has a real minimum width of 460px. Using a smaller layout
+	# step made neighboring cards overlap even though custom_minimum_size changed.
+	var card_w: float = 460.0
+	var un_card_w: float = 280.0
+	var gap: float = 34.0 if is_mobile else 90.0
 	
-	var x_basic: float = 40.0
+	var x_basic: float = 28.0 if is_mobile else 40.0
 	var instrument: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	
 	var y_top: float = 40.0 if is_mobile else 95.0
@@ -1439,6 +1746,12 @@ func _on_viewport_size_changed() -> void:
 	
 	# Redraw to update paths
 	roadmap_content.queue_redraw()
+	if _account_menu_open:
+		call_deferred("_relayout_open_account_menu")
+
+func _relayout_open_account_menu() -> void:
+	if _account_menu_open:
+		_layout_account_menu(get_viewport().size)
 
 # ─── Dan Tranh Level Progress ─────────────────────────────────────────────────
 func _get_dan_tranh_level_status(level_number: int) -> Dictionary:

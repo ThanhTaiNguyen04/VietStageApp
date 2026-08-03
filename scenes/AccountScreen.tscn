@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://account_screen_001"]
 
 [ext_resource type="Script" path="res://scripts/AccountScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/bg_main_menu.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/textures/bon_nhac_cu_background.png" id="2_bg"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
 
 [node name="AccountScreen" type="Control"]
@@ -20,245 +20,244 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 texture = ExtResource("2_bg")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
+mouse_filter = 2
 
 [node name="BGOverlay" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.06, 0.03, 0.012, 0.88)
+color = Color(0.025, 0.068, 0.043, 0.58)
+mouse_filter = 2
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 72)
+custom_minimum_size = Vector2(0, 68)
 layout_mode = 2
 
-[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+[node name="TopMargin" type="MarginContainer" parent="Root/TopBar"]
 layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_right = 32
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_right = 18
 
-[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-size_flags_vertical = 4
-flat = true
-text = "Quay Lai"
-theme_override_font_sizes/font_size = 18
-
-[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 26
-text = "Tai Khoan Cua Toi"
-
-[node name="Content" type="MarginContainer" parent="Root"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/margin_left = 48
-theme_override_constants/margin_right = 48
-theme_override_constants/margin_top = 32
-theme_override_constants/margin_bottom = 32
-
-[node name="ContentV" type="VBoxContainer" parent="Root/Content"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-alignment = 1
-
-[node name="Card" type="PanelContainer" parent="Root/Content/ContentV"]
-layout_mode = 2
-size_flags_horizontal = 4
-custom_minimum_size = Vector2(520, 0)
-
-[node name="CardM" type="MarginContainer" parent="Root/Content/ContentV/Card"]
-layout_mode = 2
-theme_override_constants/margin_left = 56
-theme_override_constants/margin_right = 56
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_bottom = 40
-
-[node name="CardV" type="VBoxContainer" parent="Root/Content/ContentV/Card/CardM"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="ProfileSection" type="VBoxContainer" parent="Root/Content/ContentV/Card/CardM/CardV"]
+[node name="TopRow" type="HBoxContainer" parent="Root/TopBar/TopMargin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="AvatarCircle" type="PanelContainer" parent="Root/Content/ContentV/Card/CardM/CardV/ProfileSection"]
-custom_minimum_size = Vector2(96, 96)
+[node name="BackButton" type="Button" parent="Root/TopBar/TopMargin/TopRow"]
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_vertical = 4
+tooltip_text = "Quay lại"
 
-[node name="Avatar" type="TextureRect" parent="Root/Content/ContentV/Card/CardM/CardV/ProfileSection/AvatarCircle"]
+[node name="Title" type="Label" parent="Root/TopBar/TopMargin/TopRow"]
 layout_mode = 2
-texture = ExtResource("3_avatar")
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 25
+text = "Hồ sơ"
+
+[node name="RefreshButton" type="Button" parent="Root/TopBar/TopMargin/TopRow"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Làm mới"
+
+[node name="ContentMargin" type="MarginContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 22
+
+[node name="Scroll" type="ScrollContainer" parent="Root/ContentMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Center" type="CenterContainer" parent="Root/ContentMargin/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Content" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center"]
+custom_minimum_size = Vector2(760, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StateCard" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StateMargin" type="MarginContainer" parent="Root/ContentMargin/Scroll/Center/Content/StateCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="StateRow" type="HBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/StateCard/StateMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StateIcon" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/StateCard/StateMargin/StateRow"]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+size_flags_vertical = 4
 expand_mode = 1
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/ProfileSection"]
+[node name="StateLabel" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/StateCard/StateMargin/StateRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Google User"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 13
+text = "Đang tải hồ sơ..."
+autowrap_mode = 2
 
-[node name="EmailLabel" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/ProfileSection"]
+[node name="RetryButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/StateCard/StateMargin/StateRow"]
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "user@gmail.com"
-horizontal_alignment = 1
+size_flags_vertical = 4
+tooltip_text = "Thử lại"
+visible = false
 
-[node name="Divider" type="HSeparator" parent="Root/Content/ContentV/Card/CardM/CardV"]
+[node name="ProfileCard" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content"]
 layout_mode = 2
+size_flags_horizontal = 3
+visible = false
 
-[node name="Grid" type="GridContainer" parent="Root/Content/ContentV/Card/CardM/CardV"]
+[node name="CardMargin" type="MarginContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 26
+
+[node name="Card" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Hero" type="BoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="AvatarFrame" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero"]
+clip_contents = true
+custom_minimum_size = Vector2(104, 104)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Avatar" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/AvatarFrame"]
+layout_mode = 2
+texture = ExtResource("3_avatar")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Identity" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 5
+
+[node name="StatusPill" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="StatusMargin" type="MarginContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/StatusPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_bottom = 3
+
+[node name="StatusRow" type="HBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/StatusPill/StatusMargin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="StatusDot" type="ColorRect" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/StatusPill/StatusMargin/StatusRow"]
+custom_minimum_size = Vector2(8, 8)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="StatusLabel" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/StatusPill/StatusMargin/StatusRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Hoạt động"
+
+[node name="Name" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 27
+text = "—"
+autowrap_mode = 2
+
+[node name="Role" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "—"
+
+[node name="Actions" type="BoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 9
+
+[node name="SettingsButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Actions"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Cài đặt tài khoản"
+
+[node name="LogoutButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Actions"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Đăng xuất"
+
+[node name="DividerOne" type="HSeparator" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
+layout_mode = 2
+modulate = Color(0.77, 0.58, 0.15, 0.22)
+
+[node name="AccountTitle" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Thông tin tài khoản"
+
+[node name="InfoGrid" type="GridContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
+layout_mode = 2
 columns = 2
-layout_mode = 2
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
-[node name="G1" type="PanelContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid"]
+[node name="DividerTwo" type="HSeparator" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
 layout_mode = 2
-size_flags_horizontal = 3
+modulate = Color(0.77, 0.58, 0.15, 0.22)
 
-[node name="G1M" type="MarginContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1"]
+[node name="LearningTitle" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_bottom = 14
+theme_override_font_sizes/font_size = 17
+text = "Dấu ấn học tập"
 
-[node name="G1V" type="VBoxContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M"]
+[node name="StatsGrid" type="GridContainer" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
 layout_mode = 2
-theme_override_constants/separation = 4
+columns = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
-[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M/G1V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "F"
-
-[node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M/G1V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "1 Ngay"
-
-[node name="Lbl" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G1/G1M/G1V"]
+[node name="ProgressState" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "Chuoi hoc lien tiep"
-
-[node name="G2" type="PanelContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="G2M" type="MarginContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2"]
-layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_bottom = 14
-
-[node name="G2V" type="VBoxContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M/G2V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "S"
-
-[node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M/G2V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "1240 XP"
-
-[node name="Lbl" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G2/G2M/G2V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Tong diem tich luy"
-
-[node name="G3" type="PanelContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="G3M" type="MarginContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3"]
-layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_bottom = 14
-
-[node name="G3V" type="VBoxContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M/G3V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "T"
-
-[node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M/G3V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "0%"
-
-[node name="Lbl" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G3/G3M/G3V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Tien trinh khoa hoc"
-
-[node name="G4" type="PanelContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="G4M" type="MarginContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4"]
-layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_bottom = 14
-
-[node name="G4V" type="VBoxContainer" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="Icon" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M/G4V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "C"
-
-[node name="Val" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M/G4V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "---"
-
-[node name="Lbl" type="Label" parent="Root/Content/ContentV/Card/CardM/CardV/Grid/G4/G4M/G4V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Ngay gia nhap"
-
-[node name="LogoutBtn" type="Button" parent="Root/Content/ContentV/Card/CardM/CardV"]
-custom_minimum_size = Vector2(0, 46)
-layout_mode = 2
-text = "Dang Xuat"
-theme_override_font_sizes/font_size = 16
-
-[node name="VerLabel" type="Label" parent="Root/Content/ContentV"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 12
-text = "VietStage v1.0.0"
+text = "Đang tải chỉ số học tập..."
 horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="AvatarRequest" type="HTTPRequest" parent="."]
+timeout = 12.0

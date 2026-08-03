@@ -1,0 +1,369 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/AchievementManager.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/bon_nhac_cu_background.png" id="2_bg"]
+
+[node name="AchievementManager" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
+
+[node name="BGOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.03, 0.07, 0.045, 0.42)
+mouse_filter = 2
+
+[node name="Root" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+
+[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+
+[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(126, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Quay lại"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+
+[node name="TitleBox" type="VBoxContainer" parent="Root/TopBar/TopM/TopH"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 0
+
+[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH/TitleBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 27
+text = "Quản lý thành tích"
+
+[node name="PageSubtitle" type="Label" parent="Root/TopBar/TopM/TopH/TitleBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Tạo và cập nhật huy hiệu cho hành trình học tập"
+
+[node name="NewBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
+custom_minimum_size = Vector2(148, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Tạo mới"
+theme_override_font_sizes/font_size = 15
+
+[node name="Content" type="MarginContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="Workspace" type="BoxContainer" parent="Root/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="ListPanel" type="PanelContainer" parent="Root/Content/Workspace"]
+custom_minimum_size = Vector2(510, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListM" type="MarginContainer" parent="Root/Content/Workspace/ListPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="ListV" type="VBoxContainer" parent="Root/Content/Workspace/ListPanel/ListM"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="ListHeader" type="HBoxContainer" parent="Root/Content/Workspace/ListPanel/ListM/ListV"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ListTitle" type="Label" parent="Root/Content/Workspace/ListPanel/ListM/ListV/ListHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Kho thành tích"
+
+[node name="CountLabel" type="Label" parent="Root/Content/Workspace/ListPanel/ListM/ListV/ListHeader"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 13
+text = "0 mục"
+
+[node name="SearchEdit" type="LineEdit" parent="Root/Content/Workspace/ListPanel/ListM/ListV"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+placeholder_text = "Tìm theo tên hoặc mô tả"
+clear_button_enabled = true
+theme_override_font_sizes/font_size = 14
+
+[node name="ListStatus" type="Label" parent="Root/Content/Workspace/ListPanel/ListM/ListV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Đang tải danh sách..."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ItemScroll" type="ScrollContainer" parent="Root/Content/Workspace/ListPanel/ListM/ListV"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Items" type="VBoxContainer" parent="Root/Content/Workspace/ListPanel/ListM/ListV/ItemScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="EditorPanel" type="PanelContainer" parent="Root/Content/Workspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EditorScroll" type="ScrollContainer" parent="Root/Content/Workspace/EditorPanel"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="FormCard" type="MarginContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_bottom = 26
+
+[node name="FormV" type="VBoxContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MobileFormBack" type="Button" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Danh sách thành tích"
+alignment = 0
+
+[node name="FormHeader" type="HBoxContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="IconPreviewFrame" type="PanelContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/FormHeader"]
+custom_minimum_size = Vector2(76, 76)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="IconPreview" type="TextureRect" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/FormHeader/IconPreviewFrame"]
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HeaderCopy" type="VBoxContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/FormHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 3
+
+[node name="FormTitle" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/FormHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Tạo thành tích mới"
+autowrap_mode = 2
+
+[node name="FormHint" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/FormHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Các trường có dấu * là bắt buộc"
+autowrap_mode = 2
+
+[node name="NameLabel" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Tên thành tích *"
+
+[node name="NameEdit" type="LineEdit" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+placeholder_text = "Ví dụ: Nghệ sĩ chăm chỉ"
+max_length = 120
+theme_override_font_sizes/font_size = 15
+
+[node name="DescriptionLabel" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Mô tả"
+
+[node name="DescriptionEdit" type="TextEdit" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+placeholder_text = "Mô tả ngắn để học viên hiểu cách đạt huy hiệu"
+wrap_mode = 1
+scroll_fit_content_height = true
+theme_override_font_sizes/font_size = 14
+
+[node name="IconLabel" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Icon URL *"
+
+[node name="IconRow" type="BoxContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="IconEdit" type="LineEdit" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/IconRow"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "https://.../achievement.png"
+theme_override_font_sizes/font_size = 14
+
+[node name="PreviewBtn" type="Button" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/IconRow"]
+custom_minimum_size = Vector2(126, 50)
+layout_mode = 2
+text = "Xem icon"
+theme_override_font_sizes/font_size = 14
+
+[node name="ConditionHeader" type="HBoxContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ConditionLabel" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/ConditionHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 14
+text = "Điều kiện mở khóa *"
+
+[node name="ConditionMode" type="OptionButton" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/ConditionHeader"]
+custom_minimum_size = Vector2(230, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+
+[node name="PresetBox" type="GridContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+visible = false
+columns = 3
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 8
+
+[node name="TypeOption" type="OptionButton" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/PresetBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TargetEdit" type="LineEdit" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/PresetBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Đối tượng (tùy chọn)"
+
+[node name="ValueSpin" type="SpinBox" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/PresetBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 100000.0
+value = 1.0
+
+[node name="JsonLabel" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "conditionJson · JSON gửi nguyên dạng sang BE"
+
+[node name="JsonEdit" type="TextEdit" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+custom_minimum_size = Vector2(0, 108)
+layout_mode = 2
+text = "{}"
+placeholder_text = "{\"type\": \"...\", \"value\": 1}"
+wrap_mode = 1
+theme_override_font_sizes/font_size = 14
+
+[node name="ValidationLabel" type="Label" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Vui lòng kiểm tra dữ liệu"
+autowrap_mode = 2
+
+[node name="Actions" type="BoxContainer" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CancelBtn" type="Button" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/Actions"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Làm mới form"
+theme_override_font_sizes/font_size = 15
+
+[node name="SaveBtn" type="Button" parent="Root/Content/Workspace/EditorPanel/EditorScroll/FormCard/FormV/Actions"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Tạo thành tích"
+theme_override_font_sizes/font_size = 15
+
+[node name="ToastWrap" type="MarginContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -88.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+z_index = 20
+
+[node name="Center" type="CenterContainer" parent="ToastWrap"]
+layout_mode = 2
+
+[node name="ToastPanel" type="PanelContainer" parent="ToastWrap/Center"]
+custom_minimum_size = Vector2(320, 54)
+layout_mode = 2
+
+[node name="ToastLabel" type="Label" parent="ToastWrap/Center/ToastPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Đã lưu thay đổi"
+horizontal_alignment = 1
+vertical_alignment = 1
+
