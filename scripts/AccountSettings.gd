@@ -2,6 +2,7 @@ extends Control
 
 const ApiClientScript = preload("res://scripts/ApiClient.gd")
 
+const MAX_AVATAR_BYTES := 5 * 1024 * 1024
 const C_GOLD := Color("#C59626")
 const C_JADE := Color("#173F2D")
 const C_INK := Color("#261A13")
@@ -22,35 +23,41 @@ const C_GREEN := Color("#2F8A55")
 @onready var retry_button: Button = $Root/ContentMargin/Scroll/Center/Content/StateCard/StateMargin/StateRow/RetryButton
 @onready var settings_card: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard
 @onready var card_margin: MarginContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin
-@onready var avatar_frame: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarFrame
-@onready var avatar: TextureRect = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarFrame/Avatar
+@onready var avatar_stack: Control = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack
+@onready var avatar_frame: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack/AvatarFrame
+@onready var avatar: TextureRect = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack/AvatarFrame/Avatar
+@onready var edit_avatar_button: Button = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack/EditAvatarButton
 @onready var preview_name: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/PreviewCopy/Name
 @onready var preview_email: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/PreviewCopy/Email
 @onready var preview_code: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/PreviewCopy/Code
+@onready var profile_tab: Button = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Tabs/ProfileTab
+@onready var security_tab: Button = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Tabs/SecurityTab
 @onready var profile_section: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection
-@onready var profile_icon: TextureRect = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/Header/Icon
-@onready var profile_title: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/Header/Title
 @onready var name_label: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/NameLabel
 @onready var name_input: LineEdit = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/NameInput
-@onready var avatar_label: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarLabel
-@onready var avatar_input: LineEdit = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarInput
-@onready var profile_hint: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/ProfileHint
+@onready var avatar_picker: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker
+@onready var avatar_title: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/PickerCopy/AvatarTitle
+@onready var avatar_hint: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/PickerCopy/AvatarHint
+@onready var selected_file: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/PickerCopy/SelectedFile
+@onready var choose_avatar_button: Button = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/ChooseAvatarButton
 @onready var profile_feedback: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/ProfileFeedback
 @onready var save_profile_button: Button = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/SaveProfileButton
 @onready var security_section: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection
-@onready var security_icon: TextureRect = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/Header/Icon
-@onready var security_title: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/Header/Title
+@onready var security_hint: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/SecurityHint
 @onready var old_password: LineEdit = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/OldPassword
 @onready var new_password: LineEdit = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/NewPassword
 @onready var confirm_password: LineEdit = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/ConfirmPassword
-@onready var password_hint: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/PasswordHint
 @onready var password_feedback: Label = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/PasswordFeedback
 @onready var change_password_button: Button = $Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/ChangePasswordButton
 @onready var avatar_request: HTTPRequest = $AvatarRequest
+@onready var avatar_file_dialog: FileDialog = $AvatarFileDialog
 
 var _api_client: Node
 var _profile: Dictionary = {}
 var _loading := false
+var _selected_avatar_bytes := PackedByteArray()
+var _selected_avatar_name := ""
+var _selected_avatar_mime := ""
 
 
 func _ready() -> void:
@@ -60,12 +67,16 @@ func _ready() -> void:
 	back_button.pressed.connect(_go_back)
 	refresh_button.pressed.connect(_load_profile)
 	retry_button.pressed.connect(_load_profile)
+	profile_tab.pressed.connect(func() -> void: _show_tab(true))
+	security_tab.pressed.connect(func() -> void: _show_tab(false))
+	edit_avatar_button.pressed.connect(_open_avatar_picker)
+	choose_avatar_button.pressed.connect(_open_avatar_picker)
+	avatar_file_dialog.file_selected.connect(_on_avatar_file_selected)
 	save_profile_button.pressed.connect(_save_profile)
 	change_password_button.pressed.connect(_change_password)
-	avatar_input.text_submitted.connect(func(_value: String) -> void: _preview_avatar())
-	avatar_input.focus_exited.connect(_preview_avatar)
 	avatar_request.request_completed.connect(_on_avatar_loaded)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
+	_show_tab(true)
 	_apply_responsive_layout()
 	call_deferred("_load_profile")
 
@@ -93,30 +104,79 @@ func _load_profile() -> void:
 func _render_profile() -> void:
 	var full_name := _value_or_dash(_profile.get("fullName"))
 	var email := _value_or_dash(_profile.get("email"))
-	var user_code := _value_or_dash(_profile.get("userCode"))
 	preview_name.text = full_name
 	preview_email.text = email
 	preview_email.tooltip_text = email
-	preview_code.text = user_code
+	preview_code.text = _value_or_dash(_profile.get("userCode"))
 	name_input.text = str(_profile.get("fullName", ""))
-	avatar_input.text = str(_profile.get("avatarUrl", ""))
 	profile_feedback.visible = false
 	password_feedback.visible = false
+	_clear_selected_avatar()
 	avatar.texture = load("res://assets/textures/default_avatar.png") as Texture2D
-	_preview_avatar()
+	_load_remote_avatar(str(_profile.get("avatarUrl", "")))
+
+
+func _open_avatar_picker() -> void:
+	_show_tab(true)
+	profile_feedback.visible = false
+	avatar_file_dialog.popup_centered_ratio(0.88)
+
+
+func _on_avatar_file_selected(path: String) -> void:
+	profile_feedback.visible = false
+	var extension := path.get_extension().to_lower()
+	var mime_types := {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
+	if not mime_types.has(extension):
+		_show_feedback(profile_feedback, "Chỉ hỗ trợ ảnh PNG, JPG hoặc WebP.", false)
+		return
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
+		_show_feedback(profile_feedback, "Không thể đọc ảnh đã chọn.", false)
+		return
+	if bytes.size() > MAX_AVATAR_BYTES:
+		_show_feedback(profile_feedback, "Ảnh vượt quá 5 MB. Vui lòng chọn ảnh nhẹ hơn.", false)
+		return
+	var image := Image.new()
+	if _decode_image(image, bytes, extension) != OK or image.is_empty():
+		_show_feedback(profile_feedback, "Tệp đã chọn không phải ảnh hợp lệ.", false)
+		return
+	if image.get_width() < 128 or image.get_height() < 128:
+		_show_feedback(profile_feedback, "Ảnh cần có kích thước tối thiểu 128 × 128 px.", false)
+		return
+	_selected_avatar_bytes = bytes
+	_selected_avatar_name = path.get_file()
+	_selected_avatar_mime = str(mime_types[extension])
+	avatar_request.cancel_request()
+	avatar.texture = ImageTexture.create_from_image(image)
+	selected_file.text = "%s • %s" % [_selected_avatar_name, _format_file_size(bytes.size())]
+	selected_file.add_theme_color_override("font_color", C_GREEN)
+	choose_avatar_button.text = "Đổi ảnh"
+	_show_feedback(profile_feedback, "Ảnh đã sẵn sàng. Nhấn “Lưu thay đổi” để cập nhật.", true)
 
 
 func _save_profile() -> void:
 	var full_name := name_input.text.strip_edges()
-	var avatar_url := avatar_input.text.strip_edges()
 	profile_feedback.visible = false
 	if full_name.is_empty():
 		_show_feedback(profile_feedback, "Họ và tên không được để trống.", false)
 		return
-	if not avatar_url.is_empty() and not _is_web_url(avatar_url):
-		_show_feedback(profile_feedback, "URL ảnh đại diện phải bắt đầu bằng http:// hoặc https://.", false)
-		return
 	_set_profile_form_enabled(false)
+	var avatar_url := str(_profile.get("avatarUrl", "")).strip_edges()
+	if not _selected_avatar_bytes.is_empty():
+		save_profile_button.text = "Đang tải ảnh..."
+		var upload_response: Dictionary = await _api_client.upload_file(_selected_avatar_bytes, _selected_avatar_name, _selected_avatar_mime)
+		if not _api_client._is_success(upload_response):
+			_set_profile_form_enabled(true)
+			_show_feedback(profile_feedback, _response_message(upload_response, "Không thể tải ảnh lên."), false)
+			return
+		var upload_body: Variant = upload_response.get("body", {})
+		if upload_body is Dictionary:
+			avatar_url = str(upload_body.get("data", "")).strip_edges()
+		if not _is_web_url(avatar_url):
+			_set_profile_form_enabled(true)
+			_show_feedback(profile_feedback, "Máy chủ chưa trả về URL ảnh hợp lệ.", false)
+			return
+		save_profile_button.text = "Đang lưu..."
 	var response: Dictionary = await _api_client.update_profile(full_name, avatar_url)
 	_set_profile_form_enabled(true)
 	if not _api_client._is_success(response):
@@ -129,7 +189,7 @@ func _save_profile() -> void:
 		_profile["fullName"] = full_name
 		_profile["avatarUrl"] = avatar_url
 	_render_profile()
-	_show_feedback(profile_feedback, "Đã cập nhật hồ sơ.", true)
+	_show_feedback(profile_feedback, "Đã cập nhật hồ sơ và ảnh đại diện.", true)
 
 
 func _change_password() -> void:
@@ -158,11 +218,7 @@ func _change_password() -> void:
 	_show_feedback(password_feedback, "Đổi mật khẩu thành công.", true)
 
 
-func _preview_avatar() -> void:
-	var avatar_url := avatar_input.text.strip_edges()
-	if avatar_url.is_empty():
-		avatar.texture = load("res://assets/textures/default_avatar.png") as Texture2D
-		return
+func _load_remote_avatar(avatar_url: String) -> void:
 	if _is_web_url(avatar_url):
 		avatar_request.cancel_request()
 		avatar_request.request(avatar_url)
@@ -176,23 +232,44 @@ func _on_avatar_loaded(_result: int, response_code: int, headers: PackedStringAr
 		if header.to_lower().begins_with("content-type:"):
 			content_type = header.to_lower()
 			break
-	var avatar_image := Image.new()
-	var error := ERR_FILE_UNRECOGNIZED
-	if "jpeg" in content_type or "jpg" in content_type:
-		error = avatar_image.load_jpg_from_buffer(body)
-	elif "webp" in content_type:
-		error = avatar_image.load_webp_from_buffer(body)
-	else:
-		error = avatar_image.load_png_from_buffer(body)
-	if error == OK:
-		avatar.texture = ImageTexture.create_from_image(avatar_image)
+	var image := Image.new()
+	var extension := "jpg" if "jpeg" in content_type or "jpg" in content_type else ("webp" if "webp" in content_type else "png")
+	if _decode_image(image, body, extension) == OK:
+		avatar.texture = ImageTexture.create_from_image(image)
+
+
+func _decode_image(image: Image, bytes: PackedByteArray, extension: String) -> Error:
+	match extension:
+		"jpg", "jpeg":
+			return image.load_jpg_from_buffer(bytes)
+		"webp":
+			return image.load_webp_from_buffer(bytes)
+		_:
+			return image.load_png_from_buffer(bytes)
+
+
+func _clear_selected_avatar() -> void:
+	_selected_avatar_bytes.clear()
+	_selected_avatar_name = ""
+	_selected_avatar_mime = ""
+	selected_file.text = "Chưa chọn ảnh mới"
+	selected_file.add_theme_color_override("font_color", C_MUTED)
+	choose_avatar_button.text = "Chọn ảnh"
+
+
+func _show_tab(show_profile: bool) -> void:
+	profile_section.visible = show_profile
+	security_section.visible = not show_profile
+	_apply_tab_style(profile_tab, show_profile, C_JADE)
+	_apply_tab_style(security_tab, not show_profile, C_GOLD)
 
 
 func _set_profile_form_enabled(enabled: bool) -> void:
 	name_input.editable = enabled
-	avatar_input.editable = enabled
+	choose_avatar_button.disabled = not enabled
+	edit_avatar_button.disabled = not enabled
 	save_profile_button.disabled = not enabled
-	save_profile_button.text = "Lưu hồ sơ" if enabled else "Đang lưu..."
+	save_profile_button.text = "Lưu thay đổi" if enabled else "Đang lưu..."
 
 
 func _set_password_form_enabled(enabled: bool) -> void:
@@ -210,56 +287,79 @@ func _show_feedback(label: Label, message: String, success: bool) -> void:
 
 
 func _build_theme() -> void:
-	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.93), Color(1, 1, 1, 0.25), 0, 0))
+	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.95), Color(1, 1, 1, 0.25), 0, 0))
 	settings_card.add_theme_stylebox_override("panel", _main_card_style())
 	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
 	profile_section.add_theme_stylebox_override("panel", _section_style(C_JADE))
 	security_section.add_theme_stylebox_override("panel", _section_style(C_GOLD))
+	avatar_picker.add_theme_stylebox_override("panel", _flat(Color("#F4F7F2"), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20), 14, 1))
 	avatar_frame.add_theme_stylebox_override("panel", _avatar_style())
 	title_label.add_theme_font_override("font", _font_display())
 	preview_name.add_theme_font_override("font", _font_display())
-	for label: Label in [profile_title, security_title, name_label, avatar_label]:
+	for label: Label in [name_label, avatar_title]:
 		label.add_theme_font_override("font", _font_bold())
 		label.add_theme_color_override("font_color", C_INK)
-	for label: Label in [preview_email, preview_code, profile_hint, password_hint, profile_feedback, password_feedback, state_label]:
+	for label: Label in [preview_email, preview_code, avatar_hint, selected_file, security_hint, profile_feedback, password_feedback, state_label]:
 		label.add_theme_font_override("font", _font_regular())
 	preview_email.add_theme_color_override("font_color", C_MUTED)
 	preview_code.add_theme_color_override("font_color", C_GOLD)
-	profile_hint.add_theme_color_override("font_color", C_MUTED)
-	password_hint.add_theme_color_override("font_color", C_MUTED)
+	avatar_hint.add_theme_color_override("font_color", C_MUTED)
+	selected_file.add_theme_color_override("font_color", C_MUTED)
+	security_hint.add_theme_color_override("font_color", C_MUTED)
 	state_label.add_theme_color_override("font_color", C_JADE)
-	profile_icon.texture = _icon("user")
-	profile_icon.modulate = C_JADE
-	security_icon.texture = _icon("lock")
-	security_icon.modulate = C_GOLD
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
 	_set_icon_button(back_button, "arrow-left", C_JADE)
 	_set_icon_button(refresh_button, "rotate-cw", C_JADE)
 	_set_icon_button(retry_button, "rotate-cw", C_JADE)
-	for field: LineEdit in [name_input, avatar_input, old_password, new_password, confirm_password]:
+	_set_icon_button(edit_avatar_button, "camera", Color.WHITE, C_JADE)
+	choose_avatar_button.icon = _icon("camera")
+	choose_avatar_button.add_theme_constant_override("icon_max_width", 18)
+	_style_secondary_button(choose_avatar_button)
+	for field: LineEdit in [name_input, old_password, new_password, confirm_password]:
 		_style_field(field)
 	_style_primary_button(save_profile_button, C_JADE)
 	_style_primary_button(change_password_button, C_GOLD)
 
 
 func _apply_responsive_layout() -> void:
-	var width := get_viewport_rect().size.x
-	var mobile := width < 720.0 or OS.has_feature("mobile") or OS.has_feature("android")
-	var side := 12 if mobile else 30
-	content.custom_minimum_size.x = minf(680.0, maxf(292.0, width - float(side * 2)))
-	content_margin.add_theme_constant_override("margin_left", side)
-	content_margin.add_theme_constant_override("margin_right", side)
-	content_margin.add_theme_constant_override("margin_top", 12 if mobile else 20)
-	top_margin.add_theme_constant_override("margin_left", 10 if mobile else 22)
-	top_margin.add_theme_constant_override("margin_right", 10 if mobile else 22)
-	card_margin.add_theme_constant_override("margin_left", 14 if mobile else 24)
-	card_margin.add_theme_constant_override("margin_right", 14 if mobile else 24)
-	card_margin.add_theme_constant_override("margin_top", 18 if mobile else 22)
-	card_margin.add_theme_constant_override("margin_bottom", 20 if mobile else 26)
-	title_label.add_theme_font_size_override("font_size", 21 if mobile else 25)
-	preview_name.add_theme_font_size_override("font_size", 19 if mobile else 21)
-	avatar_frame.custom_minimum_size = Vector2(68, 68) if mobile else Vector2(76, 76)
+	var viewport_size := get_viewport_rect().size
+	var safe := _safe_insets()
+	var mobile := viewport_size.x < 760.0 or OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")
+	var side := 12.0 if mobile else 30.0
+	var usable_width := viewport_size.x - safe.x - safe.z - side * 2.0
+	content.custom_minimum_size.x = minf(620.0, maxf(292.0, usable_width))
+	content_margin.add_theme_constant_override("margin_left", int(safe.x + side))
+	content_margin.add_theme_constant_override("margin_right", int(safe.z + side))
+	content_margin.add_theme_constant_override("margin_top", 10 if mobile else 18)
+	content_margin.add_theme_constant_override("margin_bottom", int(safe.w + (12 if mobile else 20)))
+	top_margin.add_theme_constant_override("margin_left", int(safe.x + (10 if mobile else 22)))
+	top_margin.add_theme_constant_override("margin_right", int(safe.z + (10 if mobile else 22)))
+	top_margin.add_theme_constant_override("margin_top", int(safe.y))
+	top_bar.custom_minimum_size.y = 64.0 + safe.y
+	card_margin.add_theme_constant_override("margin_left", 14 if mobile else 22)
+	card_margin.add_theme_constant_override("margin_right", 14 if mobile else 22)
+	card_margin.add_theme_constant_override("margin_top", 16 if mobile else 20)
+	card_margin.add_theme_constant_override("margin_bottom", 18 if mobile else 24)
+	title_label.add_theme_font_size_override("font_size", 20 if mobile else 25)
+	preview_name.add_theme_font_size_override("font_size", 18 if mobile else 21)
+	avatar_stack.custom_minimum_size = Vector2(84, 84)
+
+
+func _safe_insets() -> Vector4:
+	var viewport_size := get_viewport_rect().size
+	var screen_size := Vector2(DisplayServer.screen_get_size())
+	var safe_area := DisplayServer.get_display_safe_area()
+	if screen_size.x <= 0.0 or screen_size.y <= 0.0 or safe_area.size.x <= 0:
+		return Vector4.ZERO
+	var scale_x := viewport_size.x / screen_size.x
+	var scale_y := viewport_size.y / screen_size.y
+	return Vector4(
+		maxf(0.0, float(safe_area.position.x) * scale_x),
+		maxf(0.0, float(safe_area.position.y) * scale_y),
+		maxf(0.0, float(screen_size.x - safe_area.end.x) * scale_x),
+		maxf(0.0, float(screen_size.y - safe_area.end.y) * scale_y)
+	)
 
 
 func _show_state(icon_name: String, message: String, can_retry: bool) -> void:
@@ -271,11 +371,11 @@ func _show_state(icon_name: String, message: String, can_retry: bool) -> void:
 
 func _animate_in() -> void:
 	settings_card.modulate.a = 0.0
-	settings_card.position.y += 10.0
-	var target_y := settings_card.position.y - 10.0
+	settings_card.position.y += 8.0
+	var target_y := settings_card.position.y - 8.0
 	var tween := create_tween().set_parallel(true)
-	tween.tween_property(settings_card, "modulate:a", 1.0, 0.22)
-	tween.tween_property(settings_card, "position:y", target_y, 0.30).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	tween.tween_property(settings_card, "modulate:a", 1.0, 0.20)
+	tween.tween_property(settings_card, "position:y", target_y, 0.28).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 
 
 func _go_back() -> void:
@@ -312,6 +412,10 @@ func _is_web_url(value: String) -> bool:
 	return value.begins_with("https://") or value.begins_with("http://")
 
 
+func _format_file_size(byte_count: int) -> String:
+	return "%.1f MB" % (float(byte_count) / 1048576.0) if byte_count >= 1048576 else "%.0f KB" % (float(byte_count) / 1024.0)
+
+
 func _style_field(field: LineEdit) -> void:
 	field.add_theme_font_override("font", _font_regular())
 	field.add_theme_color_override("font_color", C_INK)
@@ -331,16 +435,35 @@ func _style_primary_button(button: Button, color: Color) -> void:
 	button.add_theme_stylebox_override("pressed", _flat(color.darkened(0.08), color, 14, 0))
 
 
-func _set_icon_button(button: Button, icon_name: String, color: Color) -> void:
+func _style_secondary_button(button: Button) -> void:
+	button.add_theme_font_override("font", _font_bold())
+	button.add_theme_color_override("font_color", C_JADE)
+	button.add_theme_color_override("icon_normal_color", C_JADE)
+	button.add_theme_stylebox_override("normal", _flat(Color.WHITE, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.28), 13, 1))
+	button.add_theme_stylebox_override("hover", _flat(Color("#EAF2EC"), C_JADE, 13, 1))
+	button.add_theme_stylebox_override("pressed", _flat(Color("#DCE9E0"), C_JADE, 13, 1))
+
+
+func _apply_tab_style(button: Button, selected: bool, accent: Color) -> void:
+	button.add_theme_font_override("font", _font_bold())
+	button.add_theme_color_override("font_color", Color.WHITE if selected else C_MUTED)
+	button.add_theme_color_override("font_hover_color", Color.WHITE if selected else C_INK)
+	button.add_theme_stylebox_override("normal", _flat(accent if selected else Color(1, 1, 1, 0.58), Color(accent.r, accent.g, accent.b, 0.24), 14, 1))
+	button.add_theme_stylebox_override("hover", _flat(accent.lightened(0.06) if selected else Color.WHITE, accent, 14, 1))
+	button.add_theme_stylebox_override("pressed", _flat(accent.darkened(0.06), accent, 14, 1))
+
+
+func _set_icon_button(button: Button, icon_name: String, color: Color, background := Color.TRANSPARENT) -> void:
 	button.icon = _icon(icon_name)
 	button.expand_icon = true
 	button.add_theme_color_override("icon_normal_color", color)
 	button.add_theme_color_override("icon_hover_color", color.lightened(0.08))
 	button.add_theme_color_override("icon_pressed_color", color.darkened(0.08))
-	button.add_theme_constant_override("icon_max_width", 21)
-	button.add_theme_stylebox_override("normal", _flat(Color(color.r, color.g, color.b, 0.055), Color(color.r, color.g, color.b, 0.18), 15, 1))
-	button.add_theme_stylebox_override("hover", _flat(Color(color.r, color.g, color.b, 0.11), Color(color.r, color.g, color.b, 0.34), 15, 1))
-	button.add_theme_stylebox_override("pressed", _flat(Color(color.r, color.g, color.b, 0.17), color, 15, 1))
+	button.add_theme_constant_override("icon_max_width", 20)
+	var bg := background if background != Color.TRANSPARENT else Color(color.r, color.g, color.b, 0.055)
+	button.add_theme_stylebox_override("normal", _flat(bg, Color(color.r, color.g, color.b, 0.22), 15, 1))
+	button.add_theme_stylebox_override("hover", _flat(bg.lightened(0.08), Color(color.r, color.g, color.b, 0.40), 15, 1))
+	button.add_theme_stylebox_override("pressed", _flat(bg.darkened(0.08), color, 15, 1))
 
 
 func _icon(name: String) -> Texture2D:
@@ -360,7 +483,7 @@ func _font_regular() -> Font:
 
 
 func _main_card_style() -> StyleBoxFlat:
-	var style := _flat(Color(1.0, 0.992, 0.965, 0.97), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 24, 1)
+	var style := _flat(Color(1.0, 0.992, 0.965, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 24, 1)
 	style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
 	style.shadow_size = 22
 	style.shadow_offset = Vector2(0, 9)

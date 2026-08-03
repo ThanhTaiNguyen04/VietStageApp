@@ -28,7 +28,7 @@ const STAT_FIELDS := [
 @onready var top_bar: PanelContainer = $Root/TopBar
 @onready var top_margin: MarginContainer = $Root/TopBar/TopMargin
 @onready var back_button: Button = $Root/TopBar/TopMargin/TopRow/BackButton
-@onready var refresh_button: Button = $Root/TopBar/TopMargin/TopRow/RefreshButton
+@onready var logout_button: Button = $Root/TopBar/TopMargin/TopRow/LogoutButton
 @onready var title_label: Label = $Root/TopBar/TopMargin/TopRow/Title
 @onready var content_margin: MarginContainer = $Root/ContentMargin
 @onready var content: VBoxContainer = $Root/ContentMargin/Scroll/Center/Content
@@ -47,9 +47,6 @@ const STAT_FIELDS := [
 @onready var status_label: Label = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/StatusPill/StatusMargin/StatusRow/StatusLabel
 @onready var name_label: Label = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/Name
 @onready var role_label: Label = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Identity/Role
-@onready var actions: BoxContainer = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Actions
-@onready var settings_button: Button = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Actions/SettingsButton
-@onready var logout_button: Button = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/Actions/LogoutButton
 @onready var account_title: Label = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/AccountTitle
 @onready var learning_title: Label = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/LearningTitle
 @onready var info_grid: GridContainer = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/InfoGrid
@@ -67,9 +64,7 @@ func _ready() -> void:
 	add_child(_api_client)
 	_build_theme()
 	back_button.pressed.connect(_go_back)
-	refresh_button.pressed.connect(_refresh_from_api)
 	retry_button.pressed.connect(_refresh_from_api)
-	settings_button.pressed.connect(_open_settings)
 	logout_button.pressed.connect(_confirm_logout)
 	avatar_request.request_completed.connect(_on_avatar_loaded)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
@@ -81,7 +76,6 @@ func _refresh_from_api() -> void:
 	if _loading:
 		return
 	_loading = true
-	refresh_button.disabled = true
 	profile_card.visible = false
 	_show_state("hourglass", "Đang tải hồ sơ...", false)
 
@@ -113,7 +107,6 @@ func _refresh_from_api() -> void:
 
 func _finish_loading() -> void:
 	_loading = false
-	refresh_button.disabled = false
 
 
 func _render_profile() -> void:
@@ -153,22 +146,22 @@ func _render_summary(summary: Dictionary) -> void:
 
 func _make_data_card(value: String, caption: String, icon_name: String, accent: Color, compact: bool) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 76 if compact else 80)
+	panel.custom_minimum_size = Vector2(0, 84 if compact else 88)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _data_card_style(accent))
 	var margin := MarginContainer.new()
 	for side: String in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + side, 13)
+		margin.add_theme_constant_override("margin_" + side, 14)
 	for side: String in ["top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 11)
+		margin.add_theme_constant_override("margin_" + side, 12)
 	panel.add_child(margin)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 12)
 	margin.add_child(row)
 	var icon_wrap := PanelContainer.new()
-	icon_wrap.custom_minimum_size = Vector2(36, 36)
+	icon_wrap.custom_minimum_size = Vector2(40, 40)
 	icon_wrap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	icon_wrap.add_theme_stylebox_override("panel", _flat(Color(accent.r, accent.g, accent.b, 0.10), Color.TRANSPARENT, 11, 0))
+	icon_wrap.add_theme_stylebox_override("panel", _flat(Color(accent.r, accent.g, accent.b, 0.10), Color.TRANSPARENT, 12, 0))
 	row.add_child(icon_wrap)
 	var icon := TextureRect.new()
 	icon.texture = _icon(icon_name)
@@ -179,20 +172,20 @@ func _make_data_card(value: String, caption: String, icon_name: String, accent: 
 	var labels := VBoxContainer.new()
 	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	labels.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	labels.add_theme_constant_override("separation", 1)
+	labels.add_theme_constant_override("separation", 2)
 	row.add_child(labels)
 	var value_label := Label.new()
 	value_label.text = value
 	value_label.tooltip_text = value
 	value_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	value_label.add_theme_font_override("font", _font_bold())
-	value_label.add_theme_font_size_override("font_size", 17 if compact else 14)
+	value_label.add_theme_font_size_override("font_size", 18 if compact else 15)
 	value_label.add_theme_color_override("font_color", C_INK)
 	labels.add_child(value_label)
 	var caption_label := Label.new()
 	caption_label.text = caption
 	caption_label.add_theme_font_override("font", _font_regular())
-	caption_label.add_theme_font_size_override("font_size", 10)
+	caption_label.add_theme_font_size_override("font_size", 11)
 	caption_label.add_theme_color_override("font_color", C_MUTED)
 	labels.add_child(caption_label)
 	return panel
@@ -272,9 +265,11 @@ func _build_theme() -> void:
 	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.93), Color(1, 1, 1, 0.25), 0, 0))
 	profile_card.add_theme_stylebox_override("panel", _profile_style())
 	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
-	avatar_frame.add_theme_stylebox_override("panel", _avatar_style())
+	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(120.0))
 	title_label.add_theme_font_override("font", _font_display())
+	title_label.add_theme_color_override("font_color", C_INK)
 	name_label.add_theme_font_override("font", _font_display())
+	name_label.add_theme_color_override("font_color", C_INK)
 	for label: Label in [account_title, learning_title]:
 		label.add_theme_font_override("font", _font_bold())
 		label.add_theme_color_override("font_color", C_INK)
@@ -285,10 +280,8 @@ func _build_theme() -> void:
 	progress_state.add_theme_color_override("font_color", C_MUTED)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_set_icon_button(back_button, "arrow-left", C_JADE)
-	_set_icon_button(refresh_button, "rotate-cw", C_JADE)
-	_set_icon_button(retry_button, "rotate-cw", C_JADE)
-	_set_icon_button(settings_button, "settings", C_JADE)
+	_set_icon_button(back_button, "arrow-left", C_INK)
+	_set_icon_button(retry_button, "rotate-cw", C_INK)
 	_set_icon_button(logout_button, "log-out", C_RED)
 
 
@@ -297,28 +290,29 @@ func _apply_responsive_layout() -> void:
 	var mobile := width < 720.0 or OS.has_feature("mobile") or OS.has_feature("android")
 	var portrait_layout := width < 600.0
 	var side := 12 if mobile else 30
-	content.custom_minimum_size.x = minf(760.0, maxf(292.0, width - float(side * 2)))
+	content.custom_minimum_size.x = minf(780.0, maxf(292.0, width - float(side * 2)))
 	content_margin.add_theme_constant_override("margin_left", side)
 	content_margin.add_theme_constant_override("margin_right", side)
 	content_margin.add_theme_constant_override("margin_top", 12 if mobile else 20)
 	top_margin.add_theme_constant_override("margin_left", 10 if mobile else 22)
 	top_margin.add_theme_constant_override("margin_right", 10 if mobile else 22)
-	card_margin.add_theme_constant_override("margin_left", 16 if mobile else 26)
-	card_margin.add_theme_constant_override("margin_right", 16 if mobile else 26)
-	card_margin.add_theme_constant_override("margin_top", 18 if mobile else 24)
-	card_margin.add_theme_constant_override("margin_bottom", 20 if mobile else 26)
+	card_margin.add_theme_constant_override("margin_left", 16 if mobile else 28)
+	card_margin.add_theme_constant_override("margin_right", 16 if mobile else 28)
+	card_margin.add_theme_constant_override("margin_top", 20 if mobile else 26)
+	card_margin.add_theme_constant_override("margin_bottom", 22 if mobile else 28)
 	hero.vertical = portrait_layout
 	hero.alignment = BoxContainer.ALIGNMENT_CENTER if portrait_layout else BoxContainer.ALIGNMENT_BEGIN
 	identity.alignment = BoxContainer.ALIGNMENT_CENTER
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if portrait_layout else HORIZONTAL_ALIGNMENT_LEFT
 	role_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if portrait_layout else HORIZONTAL_ALIGNMENT_LEFT
 	status_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if portrait_layout else Control.SIZE_SHRINK_BEGIN
-	actions.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if portrait_layout else Control.SIZE_SHRINK_BEGIN
 	info_grid.columns = 1 if width < 440.0 else 2
 	stats_grid.columns = 1 if width < 340.0 else (2 if width < 660.0 else 3)
-	title_label.add_theme_font_size_override("font_size", 22 if mobile else 25)
-	name_label.add_theme_font_size_override("font_size", 23 if mobile else 27)
-	avatar_frame.custom_minimum_size = Vector2(88, 88) if mobile else Vector2(104, 104)
+	title_label.add_theme_font_size_override("font_size", 22 if mobile else 26)
+	name_label.add_theme_font_size_override("font_size", 24 if mobile else 28)
+	var avatar_size := 104.0 if mobile else 120.0
+	avatar_frame.custom_minimum_size = Vector2(avatar_size, avatar_size)
+	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(avatar_size))
 
 
 func _show_state(icon_name: String, message: String, can_retry: bool) -> void:
@@ -336,9 +330,6 @@ func _animate_profile() -> void:
 	tween.tween_property(profile_card, "modulate:a", 1.0, 0.22)
 	tween.tween_property(profile_card, "position:y", target_y, 0.30).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 
-
-func _open_settings() -> void:
-	get_tree().change_scene_to_file("res://scenes/AccountSettings.tscn")
 
 
 func _go_back() -> void:
@@ -394,14 +385,27 @@ func _set_icon_button(button: Button, icon_name: String, color: Color) -> void:
 	button.icon = _icon(icon_name)
 	button.expand_icon = true
 	button.add_theme_color_override("icon_normal_color", color)
-	button.add_theme_color_override("icon_hover_color", color.lightened(0.08))
-	button.add_theme_color_override("icon_pressed_color", color.darkened(0.08))
+	button.add_theme_color_override("icon_hover_color", color.darkened(0.12))
+	button.add_theme_color_override("icon_pressed_color", color.darkened(0.25))
 	button.add_theme_color_override("icon_focus_color", color)
-	button.add_theme_constant_override("icon_max_width", 21)
-	button.add_theme_stylebox_override("normal", _flat(Color(color.r, color.g, color.b, 0.055), Color(color.r, color.g, color.b, 0.18), 15, 1))
-	button.add_theme_stylebox_override("hover", _flat(Color(color.r, color.g, color.b, 0.11), Color(color.r, color.g, color.b, 0.34), 15, 1))
-	button.add_theme_stylebox_override("pressed", _flat(Color(color.r, color.g, color.b, 0.17), color, 15, 1))
-	button.add_theme_stylebox_override("focus", _flat(Color(color.r, color.g, color.b, 0.08), color, 15, 2))
+	button.add_theme_constant_override("icon_max_width", 26)
+
+	var normal_style := _flat(Color(0.96, 0.94, 0.88, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40), 28, 1)
+	normal_style.shadow_color = Color(0.10, 0.08, 0.04, 0.16)
+	normal_style.shadow_size = 6
+	normal_style.shadow_offset = Vector2(0, 2)
+
+	var hover_style := _flat(Color(1.0, 0.992, 0.95, 0.99), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 28, 1)
+	hover_style.shadow_color = Color(0.10, 0.08, 0.04, 0.24)
+	hover_style.shadow_size = 8
+	hover_style.shadow_offset = Vector2(0, 3)
+
+	var pressed_style := _flat(Color(0.90, 0.87, 0.80, 0.98), C_GOLD, 28, 2)
+
+	button.add_theme_stylebox_override("normal", normal_style)
+	button.add_theme_stylebox_override("hover", hover_style)
+	button.add_theme_stylebox_override("pressed", pressed_style)
+	button.add_theme_stylebox_override("focus", normal_style)
 
 
 func _icon(name: String) -> Texture2D:
@@ -428,17 +432,18 @@ func _profile_style() -> StyleBoxFlat:
 	return style
 
 
-func _avatar_style() -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, C_GOLD, 52, 3)
-	style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
-	style.shadow_size = 8
+func _avatar_style(size: float = 104.0) -> StyleBoxFlat:
+	var radius := int(size / 2.0)
+	var style := _flat(Color.WHITE, C_GOLD, radius, 3)
+	style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+	style.shadow_size = 10
 	return style
 
 
 func _data_card_style(accent: Color) -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, Color(accent.r, accent.g, accent.b, 0.22), 16, 1)
-	style.shadow_color = Color(0.12, 0.08, 0.04, 0.05)
-	style.shadow_size = 5
+	var style := _flat(Color.WHITE, Color(accent.r, accent.g, accent.b, 0.24), 18, 1)
+	style.shadow_color = Color(0.12, 0.08, 0.04, 0.06)
+	style.shadow_size = 6
 	style.shadow_offset = Vector2(0, 2)
 	return style
 

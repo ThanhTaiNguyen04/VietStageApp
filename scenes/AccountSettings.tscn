@@ -1,8 +1,14 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/AccountSettings.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/bon_nhac_cu_background.png" id="2_bg"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
+
+[sub_resource type="Shader" id="Shader_avatar_mask"]
+code = "shader_type canvas_item;\n\nvoid fragment() {\n\tvec2 centered = UV - vec2(0.5);\n\tfloat mask = 1.0 - smoothstep(0.48, 0.5, length(centered));\n\tvec4 color = texture(TEXTURE, UV);\n\tcolor.a *= mask;\n\tCOLOR = color;\n}\n"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_avatar_mask"]
+shader = SubResource("Shader_avatar_mask")
 
 [node name="AccountSettings" type="Control"]
 layout_mode = 3
@@ -28,7 +34,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.025, 0.068, 0.043, 0.62)
+color = Color(0.025, 0.068, 0.043, 0.64)
 mouse_filter = 2
 
 [node name="Root" type="VBoxContainer" parent="."]
@@ -77,8 +83,8 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_bottom = 22
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 20
 
 [node name="Scroll" type="ScrollContainer" parent="Root/ContentMargin"]
 layout_mode = 2
@@ -91,7 +97,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="Content" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center"]
-custom_minimum_size = Vector2(680, 0)
+custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -139,10 +145,10 @@ visible = false
 
 [node name="CardMargin" type="MarginContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_top = 22
-theme_override_constants/margin_bottom = 26
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 24
 
 [node name="Card" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin"]
 layout_mode = 2
@@ -152,17 +158,30 @@ theme_override_constants/separation = 14
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="AvatarFrame" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview"]
-clip_contents = true
-custom_minimum_size = Vector2(76, 76)
+[node name="AvatarStack" type="Control" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview"]
+custom_minimum_size = Vector2(84, 84)
 layout_mode = 2
-size_flags_vertical = 4
 
-[node name="Avatar" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarFrame"]
+[node name="AvatarFrame" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack"]
+clip_contents = true
+layout_mode = 0
+offset_right = 76.0
+offset_bottom = 76.0
+
+[node name="Avatar" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack/AvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 texture = ExtResource("3_avatar")
 expand_mode = 1
 stretch_mode = 6
+
+[node name="EditAvatarButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview/AvatarStack"]
+layout_mode = 0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 84.0
+offset_bottom = 84.0
+tooltip_text = "Chọn ảnh đại diện"
 
 [node name="PreviewCopy" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Preview"]
 layout_mode = 2
@@ -187,9 +206,23 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "—"
 
-[node name="Divider" type="HSeparator" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card"]
+[node name="Tabs" type="HBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card"]
 layout_mode = 2
-modulate = Color(0.77, 0.58, 0.15, 0.22)
+theme_override_constants/separation = 8
+
+[node name="ProfileTab" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Tabs"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Hồ sơ"
+
+[node name="SecurityTab" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/Tabs"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Bảo mật"
 
 [node name="ProfileSection" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card"]
 layout_mode = 2
@@ -205,63 +238,75 @@ theme_override_constants/margin_bottom = 18
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Header" type="HBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Icon" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/Header"]
-custom_minimum_size = Vector2(22, 22)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Title" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/Header"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 17
-text = "Hồ sơ"
-
 [node name="NameLabel" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "Họ và tên"
 
 [node name="NameInput" type="LineEdit" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 placeholder_text = "Nhập họ và tên"
 
-[node name="AvatarLabel" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
+[node name="AvatarPicker" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
+layout_mode = 2
+
+[node name="PickerMargin" type="MarginContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 11
+theme_override_constants/margin_bottom = 11
+
+[node name="PickerRow" type="HBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PickerCopy" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 2
+
+[node name="AvatarTitle" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/PickerCopy"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "URL ảnh đại diện"
+text = "Ảnh đại diện"
 
-[node name="AvatarInput" type="LineEdit" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-placeholder_text = "https://..."
-virtual_keyboard_type = 3
-
-[node name="ProfileHint" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
+[node name="AvatarHint" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/PickerCopy"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
-text = "Backend hiện hỗ trợ ảnh qua đường dẫn URL."
+text = "PNG, JPG hoặc WebP • tối đa 5 MB"
 autowrap_mode = 2
+
+[node name="SelectedFile" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow/PickerCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Chưa chọn ảnh mới"
+text_overrun_behavior = 3
+
+[node name="ChooseAvatarButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm/AvatarPicker/PickerMargin/PickerRow"]
+custom_minimum_size = Vector2(118, 48)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 12
+text = "Chọn ảnh"
 
 [node name="ProfileFeedback" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = ""
 autowrap_mode = 2
 visible = false
 
 [node name="SaveProfileButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/ProfileSection/ProfileMargin/ProfileForm"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Lưu hồ sơ"
+text = "Lưu thay đổi"
 
 [node name="SecuritySection" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card"]
 layout_mode = 2
+visible = false
 
 [node name="SecurityMargin" type="MarginContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection"]
 layout_mode = 2
@@ -274,57 +319,50 @@ theme_override_constants/margin_bottom = 18
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Header" type="HBoxContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
+[node name="SecurityHint" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Icon" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/Header"]
-custom_minimum_size = Vector2(22, 22)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Title" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm/Header"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 17
-text = "Bảo mật"
+theme_override_font_sizes/font_size = 11
+text = "Dùng mật khẩu mạnh có ít nhất 8 ký tự."
+autowrap_mode = 2
 
 [node name="OldPassword" type="LineEdit" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 placeholder_text = "Mật khẩu hiện tại"
 secret = true
 
 [node name="NewPassword" type="LineEdit" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 placeholder_text = "Mật khẩu mới"
 secret = true
 
 [node name="ConfirmPassword" type="LineEdit" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 placeholder_text = "Nhập lại mật khẩu mới"
 secret = true
 
-[node name="PasswordHint" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 10
-text = "Tối thiểu 8 ký tự, không chứa khoảng trắng."
-autowrap_mode = 2
-
 [node name="PasswordFeedback" type="Label" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = ""
 autowrap_mode = 2
 visible = false
 
 [node name="ChangePasswordButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card/SecuritySection/SecurityMargin/SecurityForm"]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Đổi mật khẩu"
 
 [node name="AvatarRequest" type="HTTPRequest" parent="."]
 timeout = 12.0
+
+[node name="AvatarFileDialog" type="FileDialog" parent="."]
+title = "Chọn ảnh đại diện"
+size = Vector2i(760, 520)
+initial_position = 2
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.webp ; Ảnh")
+use_native_dialog = true

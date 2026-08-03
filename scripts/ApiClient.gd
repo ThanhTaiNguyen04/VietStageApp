@@ -228,6 +228,15 @@ func update_profile(full_name: String, avatar_url: String = "") -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USERS_ME), HTTPClient.METHOD_PUT, payload)
 
 
+func upload_file(file_bytes: PackedByteArray, file_name: String, mime_type: String) -> Dictionary:
+	var response := await _request_multipart_file(file_bytes, file_name, mime_type)
+	if int(response.get("status", 0)) == 401 and AuthSessionStore.can_refresh():
+		var refresh_response := await refresh_session()
+		if _is_success(refresh_response):
+			return await _request_multipart_file(file_bytes, file_name, mime_type)
+	return response
+
+
 func logout() -> Dictionary:
 	var response := {"status": 200, "body": {}, "message": ""}
 	if AuthSessionStore.has_access_token():
@@ -362,3 +371,54 @@ func _request_raw(
 func _is_success(response: Dictionary) -> bool:
 	var status := int(response.get("status", 0))
 	return status >= 200 and status < 300
+
+
+func _request_multipart_file(
+	file_bytes: PackedByteArray,
+	file_name: String,
+	mime_type: String
+) -> Dictionary:
+	var configuration_error := AppConfig.get_api_configuration_error()
+	if not configuration_error.is_empty():
+		return {"status": 0, "body": {}, "message": configuration_error}
+
+	var boundary := "VietStageBoundary%d" % Time.get_ticks_usec()
+	var safe_name := file_name.replace("\"", "_").replace("\r", "").replace("\n", "")
+	var body := PackedByteArray()
+	var preamble := (
+		"--%s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
+		+ "Content-Type: %s\r\n\r\n"
+	) % [boundary, safe_name, mime_type]
+	body.append_array(preamble.to_utf8_buffer())
+	body.append_array(file_bytes)
+	body.append_array(("\r\n--%s--\r\n" % boundary).to_utf8_buffer())
+
+	var headers := PackedStringArray([
+		"Accept: application/json",
+		"Content-Type: multipart/form-data; boundary=" + boundary,
+	])
+	if AuthSessionStore.has_access_token():
+		headers.append("Authorization: Bearer " + AuthSessionStore.access_token)
+
+	var http := HTTPRequest.new()
+	http.timeout = AppConfig.get_api_timeout_seconds()
+	add_child(http)
+	var request_url := AppConfig.get_api_base_url() + ApiRoutes.build(ApiRoutes.UPLOAD)
+	var request_error := http.request_raw(request_url, headers, HTTPClient.METHOD_POST, body)
+	if request_error != OK:
+		http.queue_free()
+		return {"status": 0, "body": {}, "message": "Không thể gửi ảnh đến máy chủ."}
+
+	var completed: Array = await http.request_completed
+	http.queue_free()
+	var response_bytes: PackedByteArray = completed[3]
+	var response_text := response_bytes.get_string_from_utf8()
+	var parsed = JSON.parse_string(response_text) if not response_text.is_empty() else {}
+	var response_body: Dictionary = parsed if parsed is Dictionary else {}
+	if int(completed[0]) != HTTPRequest.RESULT_SUCCESS:
+		return {
+			"status": 0,
+			"body": response_body,
+			"message": "Kết nối tải ảnh bị gián đoạn. Vui lòng thử lại.",
+		}
+	return {"status": int(completed[1]), "body": response_body, "message": ""}
