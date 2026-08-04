@@ -18,17 +18,17 @@ var is_unlocked: bool = true
 @onready var top_bar           : PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn          : Button         = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title        : Label          = $Root/RightContent/TopBar/TopM/TopH/PageTitle
-@onready var change_course_btn : Button         = $Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
+var change_course_btn : Button
 @onready var scroll_container  : ScrollContainer = $Root/RightContent/ScrollContainer
 @onready var lessons_hbox      : HBoxContainer  = $Root/RightContent/ScrollContainer/MarginContainer/LessonsHBox
 
 # ─── Sidebar @onready Refs
 @onready var sidebar           : PanelContainer = $Root/Sidebar
-@onready var btn_menu          : Button         = $Root/Sidebar/SideM/SideV/BtnMenu
+var btn_menu          : Button
 @onready var btn_courses       : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
 @onready var btn_room          : Button         = $Root/Sidebar/SideM/SideV/BtnRoom
 @onready var btn_songs         : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
-@onready var btn_account       : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
+var btn_account       : Button
 var btn_minigame               : Button
 var btn_leaderboard            : Button
 
@@ -231,6 +231,9 @@ func get_current_lessons() -> Array:
 
 func _ready() -> void:
 	SecureDataManager.load_data()
+	btn_menu = get_node_or_null("Root/Sidebar/SideM/SideV/BtnMenu")
+	btn_account = get_node_or_null("Root/Sidebar/SideM/SideV/BtnAccount")
+	change_course_btn = get_node_or_null("Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn")
 	
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
@@ -347,14 +350,15 @@ func _build_theme() -> void:
 	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
 	s_outline_hover.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08)
 	
-	change_course_btn.text = "Đổi khóa học"
-	change_course_btn.add_theme_stylebox_override("normal", s_outline)
-	change_course_btn.add_theme_stylebox_override("hover", s_outline_hover)
-	change_course_btn.add_theme_stylebox_override("pressed", s_outline)
-	change_course_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	change_course_btn.add_theme_color_override("font_color", C_JADE)
-	change_course_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	_make_btn_bouncy(change_course_btn)
+	if change_course_btn:
+		change_course_btn.text = "Đổi khóa học"
+		change_course_btn.add_theme_stylebox_override("normal", s_outline)
+		change_course_btn.add_theme_stylebox_override("hover", s_outline_hover)
+		change_course_btn.add_theme_stylebox_override("pressed", s_outline)
+		change_course_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		change_course_btn.add_theme_color_override("font_color", C_JADE)
+		change_course_btn.add_theme_color_override("font_hover_color", C_GOLD)
+		_make_btn_bouncy(change_course_btn)
 
 func _connect_buttons() -> void:
 	back_btn.pressed.connect(func() -> void:
@@ -363,11 +367,12 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
 	
-	change_course_btn.pressed.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(self, "modulate:a", 0.0, 0.22)
-		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
-	)
+	if change_course_btn:
+		change_course_btn.pressed.connect(func() -> void:
+			var t := create_tween()
+			t.tween_property(self, "modulate:a", 0.0, 0.22)
+			t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+		)
 
 func _build_sidebar() -> void:
 	var side_s := StyleBoxFlat.new()
@@ -395,44 +400,51 @@ func _build_sidebar() -> void:
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
 
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_leaderboard, false)
-	_style_side_icon_btn(btn_account,  false)
+	if btn_menu: _style_side_icon_btn(btn_menu,     false)
+	if btn_courses: _style_side_icon_btn(btn_courses,  true)
+	if btn_room: _style_side_icon_btn(btn_room,     false)
+	if btn_songs: _style_side_icon_btn(btn_songs,    false)
+	if btn_minigame: _style_side_icon_btn(btn_minigame, false)
+	if btn_leaderboard: _style_side_icon_btn(btn_leaderboard, false)
+	if btn_account: _style_side_icon_btn(btn_account,  false)
 
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_leaderboard, 4)
-	_attach_icon_draw(btn_account,  5)
+	if btn_menu: _attach_icon_draw(btn_menu,     0)
+	if btn_courses: _attach_icon_draw(btn_courses,  1)
+	if btn_room: _attach_icon_draw(btn_room,     6)
+	if btn_songs: _attach_icon_draw(btn_songs,    2)
+	if btn_minigame: _attach_icon_draw(btn_minigame, 3)
+	if btn_leaderboard: _attach_icon_draw(btn_leaderboard, 4)
+	if btn_account: _attach_icon_draw(btn_account,  5)
 
 	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
-		_make_btn_bouncy(b)
+		if b:
+			_make_btn_bouncy(b)
 
-	btn_menu.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/MainMenu.tscn")
-	)
-	btn_courses.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/MainMenu.tscn")
-	)
-	btn_room.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/VirtualMusicRoom.tscn")
-	)
-	btn_songs.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/SongScreen.tscn")
-	)
-	btn_minigame.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/MiniGame.tscn")
-	)
+	if btn_menu:
+		btn_menu.pressed.connect(func() -> void:
+			_fade_to_scene("res://scenes/MainMenu.tscn")
+		)
+	if btn_courses:
+		btn_courses.pressed.connect(func() -> void:
+			_fade_to_scene("res://scenes/MainMenu.tscn")
+		)
+	if btn_room:
+		btn_room.pressed.connect(func() -> void:
+			_fade_to_scene("res://scenes/VirtualMusicRoom.tscn")
+		)
+	if btn_songs:
+		btn_songs.pressed.connect(func() -> void:
+			_fade_to_scene("res://scenes/SongScreen.tscn")
+		)
+	if btn_minigame:
+		btn_minigame.pressed.connect(func() -> void:
+			_fade_to_scene("res://scenes/MiniGame.tscn")
+		)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
-	btn_account.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/AccountScreen.tscn")
-	)
+	if btn_account:
+		btn_account.pressed.connect(func() -> void:
+			_fade_to_scene("res://scenes/AccountScreen.tscn")
+		)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.12), Color(0, 0, 0, 0), 18, 0)
@@ -572,7 +584,7 @@ func _build_lesson_list() -> void:
 		
 		var btn := Button.new()
 		btn.name = "LessonBtn"
-		btn.custom_minimum_size = Vector2(180, 180)
+		btn.custom_minimum_size = Vector2(220, 220)
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -608,14 +620,16 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	btn.disabled = not unlocked
 
 	if completed:
-		btn.text = "\n\n%s\nHoàn thành" % lesson_title
+		btn.text = "✓\n%s\nHoàn thành" % lesson_title
 	elif unlocked:
-		btn.text = "\n\n%s" % lesson_title
+		var icon := "🎬" if type == "video" else "🎵"
+		var act := "Hướng dẫn" if type == "video" else "Luyện tập"
+		btn.text = "%s\n%s\n(%s)" % [icon, act, lesson_title]
 	else:
-		btn.text = ""
+		btn.text = "🔒"
 
-	var bg_color := Color(0.95, 0.93, 0.89, 0.35) # Locked: Glassmorphism
-	var border_color := Color(0.85, 0.82, 0.78, 0.5)
+	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Locked
+	var border_color := Color(0.85, 0.82, 0.78, 1.0)
 	var text_color := Color(C_MUTED, 0.8)
 	
 	if completed:
@@ -623,8 +637,8 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 		border_color = C_GOLD
 		text_color = Color.WHITE
 	elif unlocked:
-		bg_color = C_CARD
-		border_color = C_JADE
+		bg_color = Color.WHITE
+		border_color = C_JADE_LIGHT
 		text_color = C_TEXT
 
 	var s_normal := StyleBoxFlat.new()
@@ -632,8 +646,8 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
-	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	s_normal.corner_radius_top_left = 110; s_normal.corner_radius_top_right = 110
+	s_normal.corner_radius_bottom_left = 110; s_normal.corner_radius_bottom_right = 110
 	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
@@ -650,6 +664,7 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
 	btn.add_theme_stylebox_override("disabled", s_normal)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn.add_theme_color_override("font_color", text_color)
 	
 	var hover_color = text_color
@@ -661,25 +676,7 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
-	btn.add_theme_font_size_override("font_size", 18)
-
-	btn.draw.connect(func():
-		var tex_name = ""
-		if not unlocked: tex_name = "lock"
-		elif completed: tex_name = "check-circle"
-		else: tex_name = "play-circle" if type == "video" else "music"
-		
-		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
-		if tex:
-			var w = 32.0
-			var rect = Rect2((btn.size.x - w) / 2.0, 32.0, w, w)
-			
-			var draw_color = text_color
-			if unlocked and not completed and btn.is_hovered():
-				draw_color = C_JADE
-			
-			btn.draw_texture_rect(tex, rect, false, draw_color)
-	)
+	btn.add_theme_font_size_override("font_size", 16)
 	_make_btn_bouncy(btn)
 
 func _draw_connecting_lines() -> void:
@@ -742,7 +739,8 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_top", 16 if mobile else 24)
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 20 if mobile else 28)
-	change_course_btn.custom_minimum_size.x = 110 if mobile else 180
+	if change_course_btn:
+		change_course_btn.custom_minimum_size.x = 110 if mobile else 180
 	var sep := 65 if mobile else 100
 	lessons_hbox.add_theme_constant_override("separation", sep)
 	for col in lessons_hbox.get_children():

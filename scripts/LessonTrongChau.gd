@@ -417,7 +417,7 @@ func _build_lesson_list() -> void:
 		var v_btn := Button.new()
 		v_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		v_btn.name = "VideoBtn"
-		v_btn.custom_minimum_size = Vector2(180, 180)
+		v_btn.custom_minimum_size = Vector2(220, 220)
 		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		v_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -431,7 +431,7 @@ func _build_lesson_list() -> void:
 		var p_btn := Button.new()
 		p_btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		p_btn.name = "PracticeBtn"
-		p_btn.custom_minimum_size = Vector2(180, 180)
+		p_btn.custom_minimum_size = Vector2(220, 220)
 		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		p_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -464,14 +464,15 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	btn.disabled = not unlocked
 
 	if completed:
-		btn.text = "\n\n%s\nHoàn thành" % action
+		btn.text = "✓\n%s\nHoàn thành" % action
 	elif unlocked:
-		btn.text = "\n\n%s\n(%s)" % [action, lesson_title]
+		var icon := "🎬" if type == "video" else "🎵"
+		btn.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
 	else:
-		btn.text = ""
+		btn.text = "🔒"
 
-	var bg_color := Color(0.95, 0.93, 0.89, 0.35) # Locked: Glassmorphism
-	var border_color := Color(0.85, 0.82, 0.78, 0.5)
+	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Locked
+	var border_color := Color(0.85, 0.82, 0.78, 1.0)
 	var text_color := Color(C_MUTED, 0.8)
 	
 	if completed:
@@ -479,8 +480,8 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 		border_color = C_GOLD
 		text_color = Color.WHITE
 	elif unlocked:
-		bg_color = C_CARD
-		border_color = C_JADE
+		bg_color = Color.WHITE
+		border_color = C_JADE_LIGHT
 		text_color = C_TEXT
 
 	var s_normal := StyleBoxFlat.new()
@@ -488,8 +489,8 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 90; s_normal.corner_radius_top_right = 90
-	s_normal.corner_radius_bottom_left = 90; s_normal.corner_radius_bottom_right = 90
+	s_normal.corner_radius_top_left = 110; s_normal.corner_radius_top_right = 110
+	s_normal.corner_radius_bottom_left = 110; s_normal.corner_radius_bottom_right = 110
 	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
@@ -506,6 +507,7 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
 	btn.add_theme_stylebox_override("disabled", s_normal)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn.add_theme_color_override("font_color", text_color)
 	
 	var hover_color = text_color
@@ -517,25 +519,7 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
-	btn.add_theme_font_size_override("font_size", 18)
-
-	btn.draw.connect(func():
-		var tex_name = ""
-		if not unlocked: tex_name = "lock"
-		elif completed: tex_name = "check-circle"
-		else: tex_name = "play-circle" if type == "video" else "music"
-		
-		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
-		if tex:
-			var w = 32.0
-			var rect = Rect2((btn.size.x - w) / 2.0, 32.0, w, w)
-			
-			var draw_color = text_color
-			if unlocked and not completed and btn.is_hovered():
-				draw_color = C_JADE
-			
-			btn.draw_texture_rect(tex, rect, false, draw_color)
-	)
+	btn.add_theme_font_size_override("font_size", 16)
 	_make_btn_bouncy(btn)
 
 func _draw_connecting_lines() -> void:

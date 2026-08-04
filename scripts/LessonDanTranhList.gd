@@ -264,7 +264,7 @@ const LEVELS := [
 @onready var btn_courses   : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
 @onready var btn_room      : Button         = $Root/Sidebar/SideM/SideV/BtnRoom
 @onready var btn_songs     : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
-@onready var btn_account   : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
+var btn_account   : Button
 var btn_minigame : Button
 var btn_leaderboard : Button
 
@@ -272,11 +272,13 @@ var btn_leaderboard : Button
 @onready var back_btn: Button = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title: Label = $Root/RightContent/TopBar/TopM/TopH/TitleVBox/PageTitle
 @onready var objective_label: Label = $Root/RightContent/TopBar/TopM/TopH/TitleVBox/Objective
-@onready var change_course_btn: Button = $Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
+var change_course_btn: Button
 @onready var scroll_container: ScrollContainer = $Root/RightContent/ScrollContainer
 @onready var lessons_hbox: HBoxContainer = $Root/RightContent/ScrollContainer/ContentMargin/LessonsHBox
 
 func _ready() -> void:
+	btn_account = get_node_or_null("Root/Sidebar/SideM/SideV/BtnAccount")
+	change_course_btn = get_node_or_null("Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn")
 	selected_level = clampi(selected_level, 1, LEVELS.size())
 	InstrumentSelect.selected_instrument = "dan_tranh"
 	SecureDataManager.data["selected_instrument"] = "dan_tranh"
@@ -357,7 +359,8 @@ func _build_theme() -> void:
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_bouncy(back_btn)
 	
-	_style_outline_button(change_course_btn)
+	if change_course_btn:
+		_style_outline_button(change_course_btn)
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
@@ -388,24 +391,25 @@ func _build_sidebar() -> void:
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
 
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_leaderboard, false)
-	_style_side_icon_btn(btn_account,  false)
+	if btn_menu: _style_side_icon_btn(btn_menu,     false)
+	if btn_courses: _style_side_icon_btn(btn_courses,  true)
+	if btn_room: _style_side_icon_btn(btn_room,     false)
+	if btn_songs: _style_side_icon_btn(btn_songs,    false)
+	if btn_minigame: _style_side_icon_btn(btn_minigame, false)
+	if btn_leaderboard: _style_side_icon_btn(btn_leaderboard, false)
+	if btn_account: _style_side_icon_btn(btn_account,  false)
 
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_leaderboard, 4)
-	_attach_icon_draw(btn_account,  5)
+	if btn_menu: _attach_icon_draw(btn_menu,     0)
+	if btn_courses: _attach_icon_draw(btn_courses,  1)
+	if btn_room: _attach_icon_draw(btn_room,     6)
+	if btn_songs: _attach_icon_draw(btn_songs,    2)
+	if btn_minigame: _attach_icon_draw(btn_minigame, 3)
+	if btn_leaderboard: _attach_icon_draw(btn_leaderboard, 4)
+	if btn_account: _attach_icon_draw(btn_account,  5)
 
 	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
-		_make_bouncy(b)
+		if b:
+			_make_bouncy(b)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.12), Color(0, 0, 0, 0), 18, 0)
@@ -722,14 +726,16 @@ func _create_action_button(text_value: String, primary: bool) -> Button:
 
 func _connect_navigation() -> void:
 	back_btn.pressed.connect(_go_to_levels)
-	change_course_btn.pressed.connect(_go_to_levels)
+	if change_course_btn:
+		change_course_btn.pressed.connect(_go_to_levels)
 	btn_menu.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
-	btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
+	if btn_account:
+		btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
 
 func _go_to_levels() -> void:
 	_fade_to("res://scenes/MainMenu.tscn")
@@ -775,8 +781,9 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 19 if mobile else 25)
 	objective_label.visible = not mobile
-	change_course_btn.custom_minimum_size.x = 108 if mobile else 164
-	change_course_btn.text = "Levels" if mobile else "Đổi khóa học"
+	if change_course_btn:
+		change_course_btn.custom_minimum_size.x = 108 if mobile else 164
+		change_course_btn.text = "Levels" if mobile else "Đổi khóa học"
 	var content_margin := $Root/RightContent/ScrollContainer/ContentMargin as MarginContainer
 	content_margin.add_theme_constant_override("margin_left", 18 if mobile else 48)
 	var sep := 32 if mobile else 64

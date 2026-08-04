@@ -158,12 +158,12 @@ func _process(delta: float) -> void:
 				current_amplitude_db = _calculate_peak_db_gdscript(mono_samples)
 				
 				if current_amplitude_db > volume_threshold_db:
-					var detected_pitch := _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
-					_update_reliable_pitch(detected_pitch)
-
-					# Compute other metrics
-					if _time_since_last_pitch >= 0.03:
+					if _time_since_last_pitch >= 0.04:
 						_time_since_last_pitch = 0.0
+						var detected_pitch := _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
+						_update_reliable_pitch(detected_pitch)
+
+						# Compute other metrics
 						if _analysis_buffer.size() >= 512:
 							current_tone_quality = _evaluate_tone_quality_gdscript(_analysis_buffer)
 							current_breath_purity = _analyze_breath_pattern_gdscript(_analysis_buffer)
@@ -352,7 +352,19 @@ func calculate_composite_score(pitch_score: float, rhythm_score: float, tone_sco
 # Specialized Dan Tranh Note & Duration Recognition API
 func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
 	if _analyzer and _analyzer.has_method("detect_dan_tranh_note"):
-		return _analyzer.detect_dan_tranh_note(samples, sample_rate)
+		var result: Dictionary = _analyzer.detect_dan_tranh_note(samples, sample_rate)
+		if result.has("note_name"):
+			var name = result["note_name"]
+			if name == "Đô1": result["note_name"] = "Đô2"
+			elif name == "Rê1": result["note_name"] = "Rê2"
+			elif name == "Mi1": result["note_name"] = "Mi2"
+			elif name == "Đô2": result["note_name"] = "Đô3"
+			elif name == "Rê2": result["note_name"] = "Rê3"
+			elif name == "Mi2": result["note_name"] = "Mi3"
+			elif name == "Đô3": result["note_name"] = "Đô4"
+			elif name == "Rê3": result["note_name"] = "Rê4"
+			elif name == "Mi3": result["note_name"] = "Mi4"
+		return result
 	return _detect_dan_tranh_note_gdscript(samples, sample_rate)
 
 func detect_note_onset_and_duration(samples: PackedFloat32Array, sample_rate: float, threshold_db: float = -45.0) -> Dictionary:

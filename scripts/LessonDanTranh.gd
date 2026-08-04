@@ -19,12 +19,14 @@ var current_state = State.INTRO
 @onready var real_mode_btn = $TeacherArea/DialogBox/M/V/ModeButtons/RealModeBtn
 @onready var analyzer = $Analyzer
 @onready var feedback_area = $FeedbackArea
+@onready var volume_bar = $FeedbackArea/VolumeBar
 var ai_audio = null
 
 var staff_display: Control
 var pitch_box: PanelContainer
 var pitch_note_lbl: Label
 var pitch_status_lbl: Label
+var mic_status_lbl: Label
 var pitch_meter: Control
 var staff_card: PanelContainer
 var title_plaque: PanelContainer
@@ -338,6 +340,7 @@ func _ready():
 	dialog_sb.border_color = C_GOLD
 	
 	_setup_top_pitch_box()
+	_setup_pitch_hud_box()
 	dialog_sb.shadow_color = Color(0, 0, 0, 0.15)
 	dialog_sb.shadow_size = 12
 	dialog_sb.shadow_offset = Vector2(0, 6)
@@ -540,6 +543,95 @@ func _setup_top_pitch_box():
 	pill_badge.visible = false
 	sub_instr_row.visible = false
 
+func _setup_pitch_hud_box():
+	# 1. Position and resize the FeedbackArea container to dock in the empty top-left space (next to the Back button)
+	if feedback_area:
+		feedback_area.custom_minimum_size = Vector2(320, 160)
+		feedback_area.offset_left = 200
+		feedback_area.offset_right = 520
+		feedback_area.offset_top = 20
+		feedback_area.offset_bottom = 180
+		feedback_area.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		feedback_area.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
+	# 2. Hide the volume bar (thanh lực âm thanh) completely
+	if volume_bar:
+		volume_bar.visible = false
+
+	# 3. Create the unified feedback card (pitch_box)
+	pitch_box = PanelContainer.new()
+	pitch_box.name = "PitchBox"
+	pitch_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pitch_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	# Premium lacquer card styling matching the traditional zither theme
+	var pb_style = StyleBoxFlat.new()
+	pb_style.bg_color = Color(0.995, 0.985, 0.96, 0.97) # Aged Parchment / Cream
+	pb_style.border_color = Color(0.88, 0.72, 0.38, 0.7) # Soft gold rim
+	pb_style.border_width_left = 2; pb_style.border_width_right = 2
+	pb_style.border_width_top = 2; pb_style.border_width_bottom = 2
+	pb_style.corner_radius_top_left = 16; pb_style.corner_radius_top_right = 16
+	pb_style.corner_radius_bottom_left = 16; pb_style.corner_radius_bottom_right = 16
+	pb_style.shadow_color = Color(0.18, 0.12, 0.06, 0.12)
+	pb_style.shadow_size = 6
+	pb_style.shadow_offset = Vector2(0, 3)
+	pitch_box.add_theme_stylebox_override("panel", pb_style)
+	
+	var pb_margin = MarginContainer.new()
+	pb_margin.add_theme_constant_override("margin_left", 16)
+	pb_margin.add_theme_constant_override("margin_right", 16)
+	pb_margin.add_theme_constant_override("margin_top", 10)
+	pb_margin.add_theme_constant_override("margin_bottom", 10)
+	pitch_box.add_child(pb_margin)
+	
+	var pb_vbox = VBoxContainer.new()
+	pb_vbox.add_theme_constant_override("separation", 6)
+	pb_margin.add_child(pb_vbox)
+	
+	# Reparent MicStatus label into the unified feedback card for cohesive look
+	var mic_lbl = feedback_area.get_node_or_null("MicStatus") as Label
+	if mic_lbl:
+		feedback_area.remove_child(mic_lbl)
+		pb_vbox.add_child(mic_lbl)
+		mic_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		mic_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		mic_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		mic_lbl.add_theme_font_size_override("font_size", 16)
+		mic_lbl.custom_minimum_size = Vector2(0, 36) # Compact space for 2-line instructions
+		
+		# Divider line below the instruction
+		var divider = ColorRect.new()
+		divider.custom_minimum_size = Vector2(0, 1)
+		divider.color = Color(0.88, 0.72, 0.38, 0.3)
+		pb_vbox.add_child(divider)
+	
+	# Pitch note label
+	pitch_note_lbl = Label.new()
+	pitch_note_lbl.text = "🎵 Nốt: ---"
+	pitch_note_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pitch_note_lbl.add_theme_color_override("font_color", Color(0.28, 0.16, 0.10, 1.0))
+	var f_bold = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if f_bold: pitch_note_lbl.add_theme_font_override("font", f_bold)
+	pitch_note_lbl.add_theme_font_size_override("font_size", 18)
+	pb_vbox.add_child(pitch_note_lbl)
+	
+	# Pitch status label
+	pitch_status_lbl = Label.new()
+	pitch_status_lbl.text = "🎙️ Đang nghe..."
+	pitch_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pitch_status_lbl.add_theme_color_override("font_color", Color(0.45, 0.35, 0.25, 1.0))
+	pitch_status_lbl.add_theme_font_size_override("font_size", 14)
+	pb_vbox.add_child(pitch_status_lbl)
+	
+	# Pitch meter (needle drawing)
+	pitch_meter = PitchMeterDraw.new()
+	pitch_meter.name = "PitchMeter"
+	pitch_meter.custom_minimum_size = Vector2(0, 20)
+	pb_vbox.add_child(pitch_meter)
+	
+	if feedback_area:
+		feedback_area.add_child(pitch_box)
+
 func _process(delta):
 	if is_paused:
 		return
@@ -551,7 +643,20 @@ func _process(delta):
 	_update_continuous_pitch_hud()
 
 func _update_continuous_pitch_hud():
-	if not pitch_box or not pitch_box.visible or not analyzer:
+	if not analyzer:
+		return
+
+	# Cập nhật thanh lực âm thanh (VolumeBar) theo thời gian thực
+	if volume_bar:
+		var db : float = analyzer.current_amplitude_db
+		var threshold : float = analyzer.volume_threshold_db
+		var val := 0.0
+		if db > threshold:
+			var max_expected_db := -10.0
+			val = clampf((db - threshold) / (max_expected_db - threshold), 0.0, 1.0)
+		volume_bar.value = val
+
+	if not pitch_box or not pitch_box.visible:
 		return
 		
 	var db: float = analyzer.current_amplitude_db
@@ -766,7 +871,7 @@ func _start_practice_single():
 	if pause_btn:
 		pause_btn.visible = true
 	if pitch_box:
-		pitch_box.visible = false
+		pitch_box.visible = true
 	
 
 	unique_practice_notes.clear()
@@ -901,10 +1006,9 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	var msg = "Bạn vừa gảy nhầm nốt %s (Dây %d). Hãy gảy nốt %s (Dây %d) nhé!" % [detected_note, detected_idx + 1, target_note, target_idx + 1]
 	speech_text.text = msg
 	
-	var mic_lbl = feedback_area.get_node_or_null("MicStatus") as Label
-	if mic_lbl:
-		mic_lbl.text = "Gảy nhầm %s (Dây %d) ➔ Hãy gảy %s (Dây %d)" % [detected_note, detected_idx + 1, target_note, target_idx + 1]
-		mic_lbl.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
+	if mic_status_lbl:
+		mic_status_lbl.text = "Gảy nhầm %s (Dây %d) ➔ Hãy gảy %s (Dây %d)" % [detected_note, detected_idx + 1, target_note, target_idx + 1]
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
 		
 	# Red staff highlight for wrong note attempt (only in intro/explore static mode)
 	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
@@ -920,10 +1024,9 @@ func _on_intro_note_correct(note_name: String) -> void:
 	zither_board.call("clear_lesson_markers")
 	zither_board.call("set_lesson_marker", string_idx, note_name, 2)
 	
-	var mic_lbl = feedback_area.get_node_or_null("MicStatus") as Label
-	if mic_lbl:
-		mic_lbl.text = "Chính xác! Nốt %s (Dây %d)" % [note_name, string_idx + 1]
-		mic_lbl.add_theme_color_override("font_color", Color(0.18, 0.62, 0.42))
+	if mic_status_lbl:
+		mic_status_lbl.text = "Chính xác! Nốt %s (Dây %d)" % [note_name, string_idx + 1]
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.18, 0.62, 0.42))
 		
 	if ai_audio:
 		ai_audio.speak_vietnamese("Tốt lắm! Chính xác nốt %s." % note_name)
@@ -945,14 +1048,13 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 		
 	staff_display.set_notes(staff_notes)
 	
-	var mic_lbl = feedback_area.get_node_or_null("MicStatus") as Label
-	if mic_lbl:
+	if mic_status_lbl:
 		if notes.size() > 1:
-			mic_lbl.text = "Chính xác hợp âm: %s" % raw_note_name.replace("+", " ")
+			mic_status_lbl.text = "Chính xác hợp âm: %s" % raw_note_name.replace("+", " ")
 		else:
 			var string_idx = NOTE_TO_STRING.get(raw_note_name, 0)
-			mic_lbl.text = "Chính xác! Nốt %s (Dây %d)" % [raw_note_name, string_idx + 1]
-		mic_lbl.add_theme_color_override("font_color", Color(0.18, 0.62, 0.42))
+			mic_status_lbl.text = "Chính xác! Nốt %s (Dây %d)" % [raw_note_name, string_idx + 1]
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.18, 0.62, 0.42))
 		
 	if ai_audio:
 		ai_audio.speak_vietnamese("Tốt lắm!")
@@ -1044,7 +1146,7 @@ func _start_practice():
 	if sub_instr_row: sub_instr_row.visible = true
 	_update_staff_layout()
 	if pitch_box:
-		pitch_box.visible = false
+		pitch_box.visible = true
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
