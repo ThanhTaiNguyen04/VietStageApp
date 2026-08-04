@@ -1465,8 +1465,8 @@ func _toggle_record() -> void:
 		_current_note_elapsed = -4.0
 		_waiting_for_breath_release = false
 		
-		if analyzer_script and analyzer_script.has_method("start_recording") and _mic_mode:
-			analyzer_script.start_recording()
+		if visualizer and visualizer.has_method("start_recording") and _mic_mode:
+			visualizer.start_recording()
 		
 		# Reset AI tracking
 		_practice_time = 0.0
@@ -1485,8 +1485,8 @@ func _toggle_record() -> void:
 		_show_custom_result()
 		_stop_pitch_detection()
 		
-		if analyzer_script and analyzer_script.has_method("stop_recording") and _mic_mode:
-			var stream = analyzer_script.stop_recording()
+		if visualizer and visualizer.has_method("stop_recording") and _mic_mode:
+			var stream = visualizer.stop_recording()
 			if stream:
 				var file_name = "user://practice_record_saotruc_" + str(Time.get_unix_time_from_system()) + ".wav"
 				stream.save_to_wav(file_name)
