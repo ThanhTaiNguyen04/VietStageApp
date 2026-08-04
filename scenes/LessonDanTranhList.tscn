@@ -77,11 +77,6 @@ flat = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="BtnAccount" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=1565692948]
-custom_minimum_size = Vector2(220, 130)
-layout_mode = 2
-text = "Hồ sơ"
-flat = true
 
 [node name="RightContent" type="VBoxContainer" parent="Root" unique_id=1993482093]
 layout_mode = 2

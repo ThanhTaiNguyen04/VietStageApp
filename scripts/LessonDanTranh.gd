@@ -906,8 +906,9 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 		mic_lbl.text = "Gảy nhầm %s (Dây %d) ➔ Hãy gảy %s (Dây %d)" % [detected_note, detected_idx + 1, target_note, target_idx + 1]
 		mic_lbl.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
 		
-	# Red staff highlight for wrong note attempt
-	staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.2, 0.2)}])
+	# Red staff highlight for wrong note attempt (only in intro/explore static mode)
+	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
+		staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.2, 0.2)}])
 	
 	if ai_audio:
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
@@ -1083,15 +1084,6 @@ func _start_practice():
 			for single_note in notes_in_chord:
 				var string_idx = NOTE_TO_STRING.get(single_note, 0)
 				var final_color = note_color
-				if not is_demo_lesson:
-					if single_note.ends_with("1"):
-						final_color = Color("#1e4620") # Octave 1: Rich dark green
-					elif single_note.ends_with("2"):
-						final_color = Color("#b38600") # Octave 2: Warm gold
-					elif single_note.ends_with("3"):
-						final_color = Color("#a62b2b") # Octave 3: Crimson red
-					elif single_note.ends_with("4"):
-						final_color = Color("#2952a3") # Octave 4: Deep blue
 						
 				active_falling_notes.append({
 					"note": "ZT_" + single_note,
@@ -1920,32 +1912,34 @@ func _update_staff_layout() -> void:
 	var v_height = size.y
 	
 	# Responsive positioning
-	var title_top = clampf(v_height * 0.03, 16.0, 32.0)
+	var title_top = clampf(v_height * 0.02, 10.0, 24.0)
 	if title_plaque:
 		title_plaque.offset_top = title_top
-		title_plaque.offset_bottom = title_top + 88.0
+		title_plaque.offset_bottom = title_top + 80.0
 		
 	# Distribute space for staff_card
-	var card_top = clampf(v_height * 0.17, 140.0, 180.0)
-	var card_bottom = v_height - clampf(v_height * 0.15, 110.0, 140.0)
+	var card_top = clampf(v_height * 0.14, 110.0, 135.0)
+	var card_bottom = v_height - clampf(v_height * 0.14, 110.0, 130.0)
 	
-	# Clamp height to be at least 540 to prevent notes from ever being clipped
-	var card_height = maxf(card_bottom - card_top, 540.0)
+	# Clamp height to be at least 620 to prevent notes from ever being clipped
+	var card_height = maxf(card_bottom - card_top, 620.0)
 	card_bottom = card_top + card_height
 	
 	staff_card.offset_top = card_top
 	staff_card.offset_bottom = card_bottom
 	
 	if pill_badge:
-		pill_badge.offset_top = card_top - 24.0
-		pill_badge.offset_bottom = card_top + 24.0
+		pill_badge.offset_top = card_top - 20.0
+		pill_badge.offset_bottom = card_top + 20.0
 		
 	if sub_instr_row:
-		sub_instr_row.offset_top = card_bottom + 18.0
-		sub_instr_row.offset_bottom = card_bottom + 58.0
+		sub_instr_row.offset_top = card_bottom + 12.0
+		sub_instr_row.offset_bottom = card_bottom + 52.0
 
 	# Calculate dynamic optimal spacing for 17 zither notes
-	var max_spacing = (card_height - 90.0) / 12.0
-	var spacing = clampf(max_spacing, 55.0, 78.0)
+	# Zither notes span from Sol_1 (-3.5) to La_4 (7.5), a range of 11.0.
+	# We want them to fit within card_height with comfortable top/bottom padding of 45px.
+	var max_spacing = (card_height - 90.0) / 11.0
+	var spacing = clampf(max_spacing, 46.0, 78.0)
 	staff_display.line_spacing = spacing
 	staff_display.queue_redraw()

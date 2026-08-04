@@ -27,24 +27,24 @@ const NOTE_POSITIONS = {
 	"Lá": 5.0,
 	"La2": 5.0,
 	
-	# Dan Tranh specific mappings ()
-	"Sol_1": -2.0,
-	"La_1": -1.5,
-	"Đô_2": -1.0,
-	"Rê_2": -0.5,
-	"Mi_2": 0.0,
-	"Sol_2": 1.0,
-	"La_2": 1.5,
-	"Đô_3": 2.5,
-	"Rê_3": 3.0,
-	"Mi_3": 3.5,
-	"Sol_3": 4.5,
-	"La_3": 5.0,
-	"Đô_4": 6.0,
-	"Rê_4": 6.5,
-	"Mi_4": 7.0,
-	"Sol_4": 8.0,
-	"La_4": 8.5
+	# Dan Tranh 17 dây - Chuẩn Treble Clef (Khóa Sol chuẩn: E4 = Dòng 1 = 0.0)
+	"Sol_1": -2.5,   # G3: dưới dòng phụ 2 (La_1), cần 2 dòng phụ
+	"La_1": -2.0,    # A3: dòng phụ 2 dưới, cần 2 dòng phụ
+	"Đô_2": -1.0,    # C4: dòng phụ 1 dưới (Middle C), cần 1 dòng phụ
+	"Rê_2": -0.5,    # D4: khe dưới dòng 1, không cần dòng phụ
+	"Mi_2": 0.0,     # E4: Dòng 1
+	"Sol_2": 1.0,    # G4: Dòng 2
+	"La_2": 1.5,     # A4: Khe 2
+	"Đô_3": 2.5,     # C5: Khe 3
+	"Rê_3": 3.0,     # D5: Dòng 4
+	"Mi_3": 3.5,     # E5: Khe 4
+	"Sol_3": 4.5,    # G5: trên dòng 5 (khe trên)
+	"La_3": 5.0,     # A5: dòng phụ 1 trên
+	"Đô_4": 6.0,     # C6: dòng phụ 2 trên
+	"Rê_4": 6.5,     # D6: khe trên dòng phụ 2
+	"Mi_4": 7.0,     # E6: dòng phụ 3 trên
+	"Sol_4": 8.0,    # G6: dòng phụ 4 trên
+	"La_4": 8.5      # A6: khe trên dòng phụ 4
 }
 
 var active_note = "Đô"
@@ -70,6 +70,16 @@ func set_notes(notes: Array):
 func _draw():
 	var center_y = size.y / 2.0
 	
+	# Shift staff center downward slightly if zither notes are present
+	# to accommodate the high octave ledger lines (G3-A6 range is shifted upward).
+	var has_zither_notes = false
+	for note_data in notes_to_draw:
+		if note_data.get("note", "").begins_with("ZT_"):
+			has_zither_notes = true
+			break
+	if has_zither_notes:
+		center_y += line_spacing * 0.45
+		
 	var start_x = 35.0
 	var end_x = size.x - 35.0
 	hit_line_x = size.x * 0.25 # Hit line at 25% of screen
@@ -101,8 +111,12 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
 	
+	var is_zither = note_name.begins_with("ZT_")
 	var mapped_name = clean_name
-	if not NOTE_POSITIONS.has(mapped_name):
+	
+	# For zither notes, prioritize the underscore mapping (e.g. "Đô_2" over "Đô2")
+	# to avoid colliding with old non-zither keys in NOTE_POSITIONS.
+	if is_zither:
 		for i in range(clean_name.length() - 1, -1, -1):
 			if clean_name[i].is_valid_int():
 				var prefix = clean_name.left(i)
@@ -111,12 +125,20 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 				if NOTE_POSITIONS.has(alt):
 					mapped_name = alt
 					break
+	else:
+		if not NOTE_POSITIONS.has(mapped_name):
+			for i in range(clean_name.length() - 1, -1, -1):
+				if clean_name[i].is_valid_int():
+					var prefix = clean_name.left(i)
+					var suffix = clean_name.right(-i)
+					var alt = prefix + "_" + suffix
+					if NOTE_POSITIONS.has(alt):
+						mapped_name = alt
+						break
 					
 	if not NOTE_POSITIONS.has(mapped_name): return
 	var pos_idx = NOTE_POSITIONS[mapped_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
-	
-	var is_zither = note_name.begins_with("ZT_")
 	
 	var display_name = clean_name
 	if is_zither:
@@ -141,16 +163,18 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var note_width = line_spacing * (1.15 if is_zither else 1.35)
 	var note_height = line_spacing * (0.8 if is_zither else 0.95)
 
-	# Draw ledger lines if outside staff
-	if pos_idx < 0:
-		var ledgers = int(floor(-pos_idx))
-		for i in range(1, ledgers + 1):
-			var ly = center_y + (2 + i) * line_spacing
+	# Draw ledger lines for notes outside the 5-line staff
+	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)
+		var num_ledgers = int(abs(ceil(pos_idx)))
+		for i in range(1, num_ledgers + 1):
+			var ld = -i
+			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
-	elif pos_idx > 4:
-		var ledgers = int(floor(pos_idx - 4))
-		for i in range(1, ledgers + 1):
-			var ly = center_y + (2 - 4 - i) * line_spacing
+	elif pos_idx > 4.9: # above first ledger line threshold (pos_idx >= 5.0)
+		var num_ledgers = int(floor(pos_idx)) - 4
+		for i in range(1, num_ledgers + 1):
+			var ld = 4 + i
+			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
 	# Draw duration tail (crisp horizontal bar with vertical tick marker)
