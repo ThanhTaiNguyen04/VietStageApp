@@ -3297,13 +3297,12 @@ func _setup_fullscreen_video_practice(guide_path: String) -> void:
 	# 9. Wait for user to tap Start
 	pass
 
- f u n c   _ s e t u p _ a u d i o _ b u s ( )   - >   v o i d : 
- 	 v a r   b u s _ i d x   =   A u d i o S e r v e r . g e t _ b u s _ i n d e x ( " S l o w M o t i o n " ) 
- 	 i f   b u s _ i d x   = =   - 1 : 
- 	 	 b u s _ i d x   =   A u d i o S e r v e r . b u s _ c o u n t 
- 	 	 A u d i o S e r v e r . a d d _ b u s ( b u s _ i d x ) 
- 	 	 A u d i o S e r v e r . s e t _ b u s _ n a m e ( b u s _ i d x ,   " S l o w M o t i o n " ) 
- 	 	 v a r   p i t c h _ s h i f t   =   A u d i o E f f e c t P i t c h S h i f t . n e w ( ) 
- 	 	 A u d i o S e r v e r . a d d _ b u s _ e f f e c t ( b u s _ i d x ,   p i t c h _ s h i f t ) 
-  
- 
+func _setup_audio_bus() -> void:
+	var bus_idx = AudioServer.get_bus_index("SlowMotion")
+	if bus_idx == -1:
+		bus_idx = AudioServer.bus_count
+		AudioServer.add_bus(bus_idx)
+		AudioServer.set_bus_name(bus_idx, "SlowMotion")
+		var pitch_shift = AudioEffectPitchShift.new()
+		AudioServer.add_bus_effect(bus_idx, pitch_shift)
+
