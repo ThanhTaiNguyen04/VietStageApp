@@ -1465,6 +1465,9 @@ func _toggle_record() -> void:
 		_current_note_elapsed = -4.0
 		_waiting_for_breath_release = false
 		
+		if analyzer_script and analyzer_script.has_method("start_recording") and _mic_mode:
+			analyzer_script.start_recording()
+		
 		# Reset AI tracking
 		_practice_time = 0.0
 		_detected_onsets.clear()
@@ -1478,8 +1481,17 @@ func _toggle_record() -> void:
 		_current_note_elapsed = 0.0
 		if visualizer:
 			visualizer.add_practice_score(_score)
+			visualizer.visible = false
 		_show_custom_result()
 		_stop_pitch_detection()
+		
+		if analyzer_script and analyzer_script.has_method("stop_recording") and _mic_mode:
+			var stream = analyzer_script.stop_recording()
+			if stream:
+				var file_name = "user://practice_record_saotruc_" + str(Time.get_unix_time_from_system()) + ".wav"
+				stream.save_to_wav(file_name)
+				print("Saved practice recording to: ", file_name)
+				_va_say("Đã lưu bản thu âm để giáo viên chấm điểm!")
 		if visualizer: visualizer.visible = false
 		if _active_player and is_instance_valid(_active_player):
 			_active_player.stop()
