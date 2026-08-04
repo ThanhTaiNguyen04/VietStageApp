@@ -201,6 +201,14 @@ func get_all_cosmetics() -> Dictionary:
 func get_my_cosmetics() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.MY_COSMETICS), HTTPClient.METHOD_GET)
 
+## Mua vật phẩm (Unlock)
+func unlock_cosmetic(cosmetic_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS)
+	var payload = {
+		"cosmeticId": cosmetic_id
+	}
+	return await request_json(path, HTTPClient.METHOD_POST, payload)
+
 ## Trang bị / Tháo bỏ vật phẩm trang trí
 func equip_cosmetic(cosmetic_id: int, is_equipped: bool) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS) + "/" + str(cosmetic_id)
@@ -257,6 +265,34 @@ func request_json(
 	retry_after_refresh: bool = true
 ) -> Dictionary:
 	var response := await _request_raw(path, method, payload, true)
+	
+	# Xử lý Offline Mode (Lỗi kết nối / Mất mạng)
+	if int(response.get("status", 0)) == 0:
+		if method == HTTPClient.METHOD_GET:
+			var cached_body = _read_cache(path)
+			if typeof(cached_body) == TYPE_DICTIONARY and not cached_body.is_empty():
+				print("OFFLINE MODE: Serving cached data for ", path)
+				return {
+					"status": 200,
+					"body": cached_body,
+					"message": "Đang chạy chế độ Ngoại tuyến (Offline)."
+				}
+		elif method in [HTTPClient.METHOD_POST, HTTPClient.METHOD_PUT, HTTPClient.METHOD_PATCH]:
+			print("OFFLINE MODE: Queuing request for ", path)
+			_add_to_sync_queue(path, method, payload)
+			return {
+				"status": 202,
+				"body": {},
+				"message": "Đã lưu kết quả cục bộ. Sẽ đồng bộ khi có mạng."
+			}
+
+	# Nếu request GET thành công, lưu cache và xử lý hàng đợi đồng bộ
+	if method == HTTPClient.METHOD_GET and _is_success(response):
+		var body = response.get("body", {})
+		if typeof(body) == TYPE_DICTIONARY and not body.is_empty():
+			_write_cache(path, body)
+		_process_sync_queue()
+
 	if (
 		int(response.get("status", 0)) == 401
 		and retry_after_refresh
@@ -266,6 +302,77 @@ func request_json(
 		if _is_success(refresh_response):
 			return await _request_raw(path, method, payload, true)
 	return response
+
+# ── OFFLINE MODE HELPERS ──────────────────────────────────────────────
+
+func _get_cache_path() -> String:
+	return "user://offline_cache.json"
+	
+func _get_sync_queue_path() -> String:
+	return "user://offline_sync_queue.json"
+
+func _read_cache(path: String) -> Dictionary:
+	var cache_file = _get_cache_path()
+	if not FileAccess.file_exists(cache_file):
+		return {}
+	var file = FileAccess.open(cache_file, FileAccess.READ)
+	if not file: return {}
+	var content = file.get_as_text()
+	var json = JSON.parse_string(content)
+	if typeof(json) != TYPE_DICTIONARY: return {}
+	if json.has(path) and typeof(json[path]) == TYPE_DICTIONARY:
+		return json[path]
+	return {}
+
+func _write_cache(path: String, body: Dictionary) -> void:
+	var cache_file = _get_cache_path()
+	var json = {}
+	if FileAccess.file_exists(cache_file):
+		var file = FileAccess.open(cache_file, FileAccess.READ)
+		if file:
+			var content = file.get_as_text()
+			var parsed = JSON.parse_string(content)
+			if typeof(parsed) == TYPE_DICTIONARY:
+				json = parsed
+	json[path] = body
+	var file_out = FileAccess.open(cache_file, FileAccess.WRITE)
+	if file_out:
+		file_out.store_string(JSON.stringify(json))
+
+func _add_to_sync_queue(path: String, method: HTTPClient.Method, payload: Dictionary) -> void:
+	var sync_file = _get_sync_queue_path()
+	var queue = []
+	if FileAccess.file_exists(sync_file):
+		var file = FileAccess.open(sync_file, FileAccess.READ)
+		if file:
+			var content = file.get_as_text()
+			var parsed = JSON.parse_string(content)
+			if typeof(parsed) == TYPE_ARRAY:
+				queue = parsed
+	queue.append({
+		"path": path,
+		"method": method,
+		"payload": payload
+	})
+	var file_out = FileAccess.open(sync_file, FileAccess.WRITE)
+	if file_out:
+		file_out.store_string(JSON.stringify(queue))
+
+func _process_sync_queue() -> void:
+	var sync_file = _get_sync_queue_path()
+	if not FileAccess.file_exists(sync_file): return
+	var file = FileAccess.open(sync_file, FileAccess.READ)
+	if not file: return
+	var content = file.get_as_text()
+	var queue = JSON.parse_string(content)
+	if typeof(queue) != TYPE_ARRAY or queue.size() == 0: return
+	
+	# Xoá queue file để tránh lặp vô hạn
+	var clear_file = FileAccess.open(sync_file, FileAccess.WRITE)
+	if clear_file: clear_file.store_string("[]")
+	
+	for item in queue:
+		_request_raw(item.path, int(item.method), item.payload, true)
 
 
 func refresh_session() -> Dictionary:

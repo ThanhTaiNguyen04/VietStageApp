@@ -3084,11 +3084,17 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 		return
 	
 	if not owned:
-		var response = await _api_client.equip_cosmetic(cosmetic_id, true)
+		var response = await _api_client.unlock_cosmetic(cosmetic_id)
 		if _api_client._is_success(response):
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
+			# Khấu trừ sao ngay lập tức để cập nhật mượt hơn
+			var cost = int(item.get("unlockValue", 0))
+			var current_stars = SecureDataManager.get_total_stars()
+			SecureDataManager.data["total_stars"] = max(0, current_stars - cost)
+			SecureDataManager.save_data()
+			_update_star_badge()
 			_fetch_cosmetics_data()
 	else:
 		var is_equipped = item.get("isEquipped", false)

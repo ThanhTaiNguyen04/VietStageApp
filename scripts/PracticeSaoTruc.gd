@@ -246,6 +246,7 @@ func _process_rest_note(delta: float) -> bool:
 	return true
 
 func _ready() -> void:
+	_setup_audio_bus()
 	# Setup collapsible LinhPanel system
 	_setup_collapsible_linh()
 	
@@ -726,8 +727,9 @@ func _process(delta: float) -> void:
 			else:
 				# If we are in Touch Mode, we still want Auto Scroll / Demo Mode to work!
 				if not _is_wait_mode or _is_demo_mode:
+					var effective_bpm = _song_bpm * _speed_scale
 					_current_note_elapsed += effective_delta
-					var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
+					var target_duration = sheet_durations[_note_idx] * (60.0 / effective_bpm)
 					
 					# Demo Mode: automatically play note sounds
 					if _is_demo_mode:
@@ -3020,14 +3022,25 @@ func _play_intro_flute_sound_briefly(note: String, volume: float = -12.0) -> voi
 		_active_player.queue_free()
 		_active_player = null
 		
-	_active_player = AudioStreamPlayer.new()
-	_active_player.stream = _flute_streams[note]
-	_active_player.volume_db = volume
-	add_child(_active_player)
-	_active_player.play()
+	var new_player = AudioStreamPlayer.new()
+	new_player.stream = _flute_streams[note]
+	new_player.volume_db = -10.0
+		
+	# Slow-motion Pitch-preserving time stretch
+	new_player.bus = "SlowMotion"
+	new_player.pitch_scale = _speed_scale
+	var bus_idx = AudioServer.get_bus_index("SlowMotion")
+	if bus_idx != -1:
+		var effect = AudioServer.get_bus_effect(bus_idx, 0) as AudioEffectPitchShift
+		if effect:
+			effect.pitch_scale = 1.0 / _speed_scale
+				
+	add_child(new_player)
+	new_player.play()
+	_active_player = new_player
 	
 	var ft = create_tween()
-	ft.tween_interval(2.2)
+	ft.tween_interval(2.2 / _speed_scale)
 	ft.tween_property(_active_player, "volume_db", -80.0, 0.5)
 	ft.tween_callback(func() -> void:
 		if _active_player and is_instance_valid(_active_player):
@@ -3283,3 +3296,14 @@ func _setup_fullscreen_video_practice(guide_path: String) -> void:
 		
 	# 9. Wait for user to tap Start
 	pass
+
+ f u n c   _ s e t u p _ a u d i o _ b u s ( )   - >   v o i d : 
+ 	 v a r   b u s _ i d x   =   A u d i o S e r v e r . g e t _ b u s _ i n d e x ( " S l o w M o t i o n " ) 
+ 	 i f   b u s _ i d x   = =   - 1 : 
+ 	 	 b u s _ i d x   =   A u d i o S e r v e r . b u s _ c o u n t 
+ 	 	 A u d i o S e r v e r . a d d _ b u s ( b u s _ i d x ) 
+ 	 	 A u d i o S e r v e r . s e t _ b u s _ n a m e ( b u s _ i d x ,   " S l o w M o t i o n " ) 
+ 	 	 v a r   p i t c h _ s h i f t   =   A u d i o E f f e c t P i t c h S h i f t . n e w ( ) 
+ 	 	 A u d i o S e r v e r . a d d _ b u s _ e f f e c t ( b u s _ i d x ,   p i t c h _ s h i f t ) 
+  
+ 

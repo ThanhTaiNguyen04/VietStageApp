@@ -1492,9 +1492,19 @@ func _start_rhythm_game():
 	has_rhythm_completed = false
 	for note in melody_sequence:
 		total_rhythm_duration += note.get("duration", 1.0)
+		
+	if analyzer and analyzer.has_method("start_recording"):
+		analyzer.start_recording()
 
 
 func _complete_lesson():
+	if analyzer and analyzer.has_method("stop_recording"):
+		var stream = analyzer.stop_recording()
+		if stream:
+			var filename = "user://saotruc_record_" + str(active_node_id) + ".wav"
+			stream.save_to_wav(filename)
+			print("Saved recording for teacher grading to: ", filename)
+			
 	current_state = State.COMPLETED
 	feedback_area.visible = false
 	analyzer.visible = false

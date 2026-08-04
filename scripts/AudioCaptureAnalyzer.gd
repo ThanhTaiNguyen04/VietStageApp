@@ -64,7 +64,29 @@ func _setup_audio_bus() -> void:
 	AudioServer.set_bus_mute(_bus_index, false)
 	AudioServer.set_bus_volume_db(_bus_index, -80.0)
 	
-	# Add AudioEffectCapture if not already present
+	# 1. Thêm bộ lọc tần số thấp (HighPassFilter) để cắt tạp âm quạt/gió/hơi thở
+	var hp_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectHighPassFilter:
+			hp_idx = i
+			break
+	if hp_idx == -1:
+		var hp = AudioEffectHighPassFilter.new()
+		hp.cutoff_hz = 300.0 # Sáo trúc thường không có nốt nào dưới 390Hz
+		AudioServer.add_bus_effect(_bus_index, hp, 0)
+		
+	# 2. Thêm bộ lọc tần số cao (LowPassFilter) để cắt tiếng xì/rè
+	var lp_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectLowPassFilter:
+			lp_idx = i
+			break
+	if lp_idx == -1:
+		var lp = AudioEffectLowPassFilter.new()
+		lp.cutoff_hz = 4000.0 # Cắt các tần số cao không cần thiết
+		AudioServer.add_bus_effect(_bus_index, lp, 1)
+
+	# 3. Add AudioEffectCapture if not already present
 	var effect_index := -1
 	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
 		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectCapture:
@@ -74,7 +96,7 @@ func _setup_audio_bus() -> void:
 	if effect_index == -1:
 		_effect = AudioEffectCapture.new()
 		_effect.buffer_length = 0.5 # 500ms buffer
-		AudioServer.add_bus_effect(_bus_index, _effect, 0)
+		AudioServer.add_bus_effect(_bus_index, _effect) # Không ép index 0 nữa để nó nằm sau filter
 	else:
 		_effect = AudioServer.get_bus_effect(_bus_index, effect_index) as AudioEffectCapture
 		
