@@ -63,7 +63,7 @@ theme_override_constants/separation = 10
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 4
-tooltip_text = "Quay lại hồ sơ"
+tooltip_text = "Quay lại"
 
 [node name="Title" type="Label" parent="Root/TopBar/TopMargin/TopRow"]
 layout_mode = 2
@@ -72,11 +72,6 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 25
 text = "Cài đặt tài khoản"
 
-[node name="RefreshButton" type="Button" parent="Root/TopBar/TopMargin/TopRow"]
-custom_minimum_size = Vector2(48, 48)
-layout_mode = 2
-size_flags_vertical = 4
-tooltip_text = "Tải lại dữ liệu"
 
 [node name="ContentMargin" type="MarginContainer" parent="Root"]
 layout_mode = 2
@@ -222,7 +217,7 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 13
-text = "Bảo mật"
+text = "Đổi mật khẩu"
 
 [node name="ProfileSection" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content/SettingsCard/CardMargin/Card"]
 layout_mode = 2

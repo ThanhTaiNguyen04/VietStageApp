@@ -13,7 +13,7 @@ const C_GREEN := Color("#2F8A55")
 @onready var top_bar: PanelContainer = $Root/TopBar
 @onready var top_margin: MarginContainer = $Root/TopBar/TopMargin
 @onready var back_button: Button = $Root/TopBar/TopMargin/TopRow/BackButton
-@onready var refresh_button: Button = $Root/TopBar/TopMargin/TopRow/RefreshButton
+
 @onready var title_label: Label = $Root/TopBar/TopMargin/TopRow/Title
 @onready var content_margin: MarginContainer = $Root/ContentMargin
 @onready var content: VBoxContainer = $Root/ContentMargin/Scroll/Center/Content
@@ -65,7 +65,7 @@ func _ready() -> void:
 	add_child(_api_client)
 	_build_theme()
 	back_button.pressed.connect(_go_back)
-	refresh_button.pressed.connect(_load_profile)
+
 	retry_button.pressed.connect(_load_profile)
 	profile_tab.pressed.connect(func() -> void: _show_tab(true))
 	security_tab.pressed.connect(func() -> void: _show_tab(false))
@@ -85,12 +85,12 @@ func _load_profile() -> void:
 	if _loading:
 		return
 	_loading = true
-	refresh_button.disabled = true
+
 	settings_card.visible = false
 	_show_state("hourglass", "Đang tải tài khoản...", false)
 	var response: Dictionary = await _api_client.get_me()
 	_loading = false
-	refresh_button.disabled = false
+
 	if not _api_client._is_success(response):
 		_show_state("rotate-cw", _response_message(response, "Không thể tải tài khoản."), true)
 		return
@@ -188,6 +188,9 @@ func _save_profile() -> void:
 	else:
 		_profile["fullName"] = full_name
 		_profile["avatarUrl"] = avatar_url
+	SecureDataManager.data["user_name"] = str(_profile.get("fullName", full_name))
+	SecureDataManager.data["user_avatar_url"] = str(_profile.get("avatarUrl", avatar_url)).strip_edges()
+	SecureDataManager.save_data()
 	_render_profile()
 	_show_feedback(profile_feedback, "Đã cập nhật hồ sơ và ảnh đại diện.", true)
 
@@ -309,8 +312,8 @@ func _build_theme() -> void:
 	state_label.add_theme_color_override("font_color", C_JADE)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_set_icon_button(back_button, "arrow-left", C_JADE)
-	_set_icon_button(refresh_button, "rotate-cw", C_JADE)
+	_style_back_button(back_button, C_JADE)
+
 	_set_icon_button(retry_button, "rotate-cw", C_JADE)
 	_set_icon_button(edit_avatar_button, "camera", Color.WHITE, C_JADE)
 	choose_avatar_button.icon = _icon("camera")
@@ -379,7 +382,7 @@ func _animate_in() -> void:
 
 
 func _go_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn")
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
 func _extract_data(response: Dictionary) -> Dictionary:
@@ -451,6 +454,21 @@ func _apply_tab_style(button: Button, selected: bool, accent: Color) -> void:
 	button.add_theme_stylebox_override("normal", _flat(accent if selected else Color(1, 1, 1, 0.58), Color(accent.r, accent.g, accent.b, 0.24), 14, 1))
 	button.add_theme_stylebox_override("hover", _flat(accent.lightened(0.06) if selected else Color.WHITE, accent, 14, 1))
 	button.add_theme_stylebox_override("pressed", _flat(accent.darkened(0.06), accent, 14, 1))
+
+
+func _style_back_button(button: Button, color: Color) -> void:
+	button.icon = _icon("arrow-left")
+	button.expand_icon = true
+	button.add_theme_color_override("icon_normal_color", color)
+	button.add_theme_color_override("icon_hover_color", C_GOLD)
+	button.add_theme_color_override("icon_pressed_color", color)
+	button.add_theme_color_override("icon_focus_color", color)
+	button.add_theme_constant_override("icon_max_width", 26)
+
+	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
 func _set_icon_button(button: Button, icon_name: String, color: Color, background := Color.TRANSPARENT) -> void:

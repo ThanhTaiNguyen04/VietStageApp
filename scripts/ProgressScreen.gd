@@ -24,7 +24,6 @@ const STAT_DEFINITIONS := [
 @onready var title_v: VBoxContainer = $Root/TopBar/TopM/TopH/TitleV
 @onready var page_title: Label = $Root/TopBar/TopM/TopH/TitleV/PageTitle
 @onready var page_subtitle: Label = $Root/TopBar/TopM/TopH/TitleV/PageSubtitle
-@onready var refresh_btn: Button = $Root/TopBar/TopM/TopH/RefreshBtn
 @onready var body_margin: MarginContainer = $Root/BodyMargin
 @onready var content_v: VBoxContainer = $Root/BodyMargin/Scroll/Center/ContentV
 @onready var hero_card: PanelContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard
@@ -32,6 +31,7 @@ const STAT_DEFINITIONS := [
 @onready var hero_h: BoxContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH
 @onready var profile_block: HBoxContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock
 @onready var avatar_frame: PanelContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/AvatarFrame
+@onready var avatar: TextureRect = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/AvatarFrame/Avatar
 @onready var user_kicker: Label = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/UserKicker
 @onready var user_name: Label = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/UserName
 @onready var level_pill: PanelContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/LevelPill
@@ -58,6 +58,7 @@ const STAT_DEFINITIONS := [
 @onready var state_label: Label = $Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/StateLabel
 @onready var achievement_grid: GridContainer = $Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/AchievementGrid
 @onready var footer_note: Label = $Root/BodyMargin/Scroll/Center/ContentV/FooterNote
+@onready var avatar_request: HTTPRequest = $AvatarRequest
 
 var _api_client: Node
 var _achievements: Array[Dictionary] = []
@@ -68,6 +69,7 @@ var _achievement_error := ""
 var _stat_values: Dictionary = {}
 var _icon_cache: Dictionary = {}
 var _card_width := 320.0
+var _requested_avatar_url := ""
 
 
 func _ready() -> void:
@@ -77,6 +79,7 @@ func _ready() -> void:
 	_build_theme()
 	_build_stat_cards()
 	_setup_interactions()
+	avatar_request.request_completed.connect(_on_avatar_loaded)
 	_apply_profile_data()
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
@@ -86,7 +89,6 @@ func _ready() -> void:
 
 func _setup_interactions() -> void:
 	back_btn.pressed.connect(_go_back)
-	refresh_btn.pressed.connect(_refresh_data)
 	var filter_group := ButtonGroup.new()
 	filter_group.allow_unpress = false
 	for button: Button in [all_btn, earned_btn, locked_btn]:
@@ -110,12 +112,23 @@ func _refresh_data() -> void:
 		return
 	_is_loading = true
 	_achievement_error = ""
-	refresh_btn.disabled = true
-	refresh_btn.text = "Đang tải..."
 	state_label.text = "Đang mở bộ sưu tập thành tựu..."
 	state_label.show()
 	achievement_grid.hide()
 	_apply_responsive_layout()
+
+	var profile_response: Dictionary = await _api_client.get_me()
+	if _api_client._is_success(profile_response):
+		var profile_body: Variant = profile_response.get("body", {})
+		var profile: Variant = profile_body.get("data", {}) if profile_body is Dictionary else {}
+		if profile is Dictionary:
+			var full_name := str(profile.get("fullName", "")).strip_edges()
+			var avatar_url := str(profile.get("avatarUrl", "")).strip_edges()
+			if not full_name.is_empty():
+				SecureDataManager.data["user_name"] = full_name
+			SecureDataManager.data["user_avatar_url"] = avatar_url
+			SecureDataManager.save_data()
+			_load_avatar(avatar_url)
 
 	var achievement_response: Dictionary = await _api_client.get_my_achievements()
 	if _api_client._is_success(achievement_response):
@@ -141,7 +154,7 @@ func _refresh_data() -> void:
 		_summary = {}
 
 	_is_loading = false
-	refresh_btn.disabled = false
+	_render_achievements()
 	_apply_profile_data()
 	_apply_responsive_layout()
 
@@ -179,6 +192,7 @@ func _normalize_achievement(item: Dictionary, earned: bool) -> Dictionary:
 
 
 func _apply_profile_data() -> void:
+	_load_avatar(str(SecureDataManager.data.get("user_avatar_url", "")))
 	user_name.text = str(SecureDataManager.data.get("user_name", "Học viên VietStage"))
 	var total_points := _summary_value(["total_points", "totalPoints"])
 	var streak := _summary_value(["current_streak", "currentStreak"])
@@ -197,6 +211,33 @@ func _apply_profile_data() -> void:
 	_set_stat_value("lessons", _format_number(completed))
 	_set_stat_value("record", _format_number(longest))
 	_update_achievement_summary()
+
+
+func _load_avatar(avatar_url: String) -> void:
+	if not avatar_url.begins_with("https://") and not avatar_url.begins_with("http://"):
+		return
+	if avatar_url == _requested_avatar_url:
+		return
+	_requested_avatar_url = avatar_url
+	avatar_request.cancel_request()
+	if avatar_request.request(avatar_url) != OK:
+		_requested_avatar_url = ""
+
+
+func _on_avatar_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or body.is_empty():
+		_requested_avatar_url = ""
+		return
+	var image := Image.new()
+	var decode_error := image.load_png_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_jpg_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_webp_from_buffer(body)
+	if decode_error == OK:
+		avatar.texture = ImageTexture.create_from_image(image)
+	else:
+		_requested_avatar_url = ""
 
 
 func _summary_value(keys: Array[String]) -> int:
@@ -484,8 +525,6 @@ func _apply_responsive_layout() -> void:
 	top_bar.custom_minimum_size.y = 64.0 if compact else 76.0
 	back_btn.custom_minimum_size.x = 48.0 if viewport.x < 520.0 else 126.0
 	back_btn.text = "" if viewport.x < 520.0 else "Quay lại"
-	refresh_btn.custom_minimum_size.x = 50.0 if viewport.x < 520.0 else 132.0
-	refresh_btn.text = "" if viewport.x < 520.0 else ("Đang tải..." if _is_loading else "Làm mới")
 	title_v.visible = viewport.x >= 390.0
 	page_subtitle.visible = not compact
 	page_title.add_theme_font_size_override("font_size", 22 if compact else 27)
@@ -535,7 +574,7 @@ func _build_theme() -> void:
 		user_name.add_theme_font_override("font", display_font)
 		collection_title.add_theme_font_override("font", display_font)
 	if bold_font:
-		for control: Control in [back_btn, refresh_btn, level_label, progress_title, xp_label, summary_label, all_btn, earned_btn, locked_btn]:
+		for control: Control in [back_btn, level_label, progress_title, xp_label, summary_label, all_btn, earned_btn, locked_btn]:
 			control.add_theme_font_override("font", bold_font)
 	if regular_font:
 		for control: Control in [page_subtitle, user_kicker, level_hint, collection_subtitle, state_label, footer_note]:
@@ -565,9 +604,7 @@ func _build_theme() -> void:
 	footer_note.add_theme_color_override("font_color", Color(1, 1, 1, 0.78))
 
 	_style_back_button(back_btn)
-	_style_secondary_button(refresh_btn)
 	_set_button_icon(back_btn, "arrow-left")
-	_set_button_icon(refresh_btn, "rotate-cw")
 	for button: Button in [all_btn, earned_btn, locked_btn]:
 		_style_filter_button(button)
 
@@ -597,12 +634,15 @@ func _set_button_icon(button: Button, icon_name: String) -> void:
 
 
 func _style_back_button(button: Button) -> void:
-	button.add_theme_color_override("font_color", C_JADE)
-	button.add_theme_color_override("font_hover_color", C_GOLD)
-	button.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 12, 0))
-	button.add_theme_stylebox_override("hover", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08), Color.TRANSPARENT, 12, 0))
-	button.add_theme_stylebox_override("pressed", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.14), Color.TRANSPARENT, 12, 0))
-	button.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12, 2))
+	button.add_theme_color_override("icon_normal_color", C_JADE)
+	button.add_theme_color_override("icon_hover_color", C_GOLD)
+	button.add_theme_color_override("icon_pressed_color", C_JADE)
+	button.add_theme_color_override("icon_focus_color", C_JADE)
+	
+	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
 func _style_secondary_button(button: Button) -> void:

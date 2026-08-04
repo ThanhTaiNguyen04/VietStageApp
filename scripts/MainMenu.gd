@@ -33,6 +33,9 @@ var btn_leaderboard_mob : Button
 var _api_client = null
 var _profile_level := 1
 var _account_menu_open := false
+var _avatar_request: HTTPRequest
+var _remote_avatar_texture: Texture2D
+var _requested_avatar_url := ""
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -72,6 +75,7 @@ var _account_menu_open := false
 @onready var profile_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/ProfileAction
 @onready var achievement_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/AchievementAction
 @onready var settings_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/SettingsAction
+@onready var logout_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/LogoutAction
 
 @onready var streak_pill   : PanelContainer  = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill
 @onready var sp_label      : Label           = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill/SPMargin/SPLabel
@@ -104,7 +108,11 @@ func _ready() -> void:
 
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
+	_avatar_request = HTTPRequest.new()
+	_avatar_request.request_completed.connect(_on_profile_avatar_loaded)
+	add_child(_avatar_request)
 	_fetch_and_sync_progress()
+	_fetch_profile_identity()
 	
 	# Programmatic instantiation of MiniGame button
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
@@ -175,6 +183,25 @@ func _fetch_and_sync_progress() -> void:
 			var total_points := int(summary_data.get("total_points", summary_data.get("totalPoints", 0)))
 			_profile_level = int(total_points / 1000) + 1
 			_update_profile_menu_data()
+
+func _fetch_profile_identity() -> void:
+	if _api_client == null:
+		return
+	var response: Dictionary = await _api_client.get_me()
+	if not _api_client._is_success(response):
+		_load_profile_avatar(str(SecureDataManager.data.get("user_avatar_url", "")))
+		return
+	var body: Variant = response.get("body", {})
+	var profile: Variant = body.get("data", {}) if body is Dictionary else {}
+	if not profile is Dictionary:
+		return
+	var full_name := str(profile.get("fullName", "")).strip_edges()
+	var avatar_url := str(profile.get("avatarUrl", "")).strip_edges()
+	if not full_name.is_empty():
+		SecureDataManager.data["user_name"] = full_name
+	SecureDataManager.data["user_avatar_url"] = avatar_url
+	SecureDataManager.save_data()
+	_update_profile_menu_data()
 
 func _process(delta: float) -> void:
 	_time += delta
@@ -677,6 +704,7 @@ func _build_profile_menu() -> void:
 	profile_action.pressed.connect(func() -> void: _open_account_destination("profile"))
 	achievement_action.pressed.connect(func() -> void: _open_account_destination("achievements"))
 	settings_action.pressed.connect(func() -> void: _open_account_destination("settings"))
+	logout_action.pressed.connect(func() -> void: _open_account_destination("logout"))
 
 func _update_profile_menu_data() -> void:
 	var player_name := str(SecureDataManager.data.get("user_name", "Học viên VietStage"))
@@ -687,16 +715,53 @@ func _update_profile_menu_data() -> void:
 	header_meta.text = "Cấp độ %d · Đang học %s" % [_profile_level, _instrument_display_name(instrument)]
 	online_label.text = "Đang hoạt động"
 
-	# Load avatar texture dynamically from local data
-	var avatar_path := str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
-	var avatar_tex := load(avatar_path) as Texture2D
-	if avatar_tex:
-		var mini_avatar := mini_avatar_frame.get_node_or_null("MiniAvatar") as TextureRect
-		if mini_avatar:
-			mini_avatar.texture = avatar_tex
-		var large_avatar := large_avatar_frame.get_node_or_null("LargeAvatar") as TextureRect
-		if large_avatar:
-			large_avatar.texture = avatar_tex
+	var avatar_source := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
+	if avatar_source.is_empty():
+		avatar_source = str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	var avatar_tex := _remote_avatar_texture
+	if avatar_tex == null and avatar_source.begins_with("res://"):
+		avatar_tex = load(avatar_source) as Texture2D
+	if avatar_tex == null:
+		avatar_tex = load("res://assets/textures/default_avatar.png") as Texture2D
+	_set_profile_avatar_texture(avatar_tex)
+	_load_profile_avatar(avatar_source)
+
+func _set_profile_avatar_texture(texture: Texture2D) -> void:
+	if texture == null:
+		return
+	var mini_avatar := mini_avatar_frame.get_node_or_null("MiniAvatar") as TextureRect
+	if mini_avatar:
+		mini_avatar.texture = texture
+	var large_avatar := large_avatar_frame.get_node_or_null("LargeAvatar") as TextureRect
+	if large_avatar:
+		large_avatar.texture = texture
+
+func _load_profile_avatar(avatar_url: String) -> void:
+	if not avatar_url.begins_with("https://") and not avatar_url.begins_with("http://"):
+		return
+	if avatar_url == _requested_avatar_url:
+		return
+	_requested_avatar_url = avatar_url
+	_avatar_request.cancel_request()
+	var request_error := _avatar_request.request(avatar_url)
+	if request_error != OK:
+		_requested_avatar_url = ""
+
+func _on_profile_avatar_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or body.is_empty():
+		_requested_avatar_url = ""
+		return
+	var image := Image.new()
+	var decode_error := image.load_png_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_jpg_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_webp_from_buffer(body)
+	if decode_error != OK:
+		_requested_avatar_url = ""
+		return
+	_remote_avatar_texture = ImageTexture.create_from_image(image)
+	_set_profile_avatar_texture(_remote_avatar_texture)
 
 func _instrument_display_name(instrument: String) -> String:
 	match instrument:
@@ -710,7 +775,7 @@ func _style_account_menu() -> void:
 	if bold_font:
 		trigger_name.add_theme_font_override("font", bold_font)
 		header_name.add_theme_font_override("font", bold_font)
-		for button: Button in [profile_action, achievement_action, settings_action]:
+		for button: Button in [profile_action, achievement_action, settings_action, logout_action]:
 			button.add_theme_font_override("font", bold_font)
 	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), 30)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
@@ -740,6 +805,10 @@ func _style_account_menu() -> void:
 	_style_account_action(profile_action, "user")
 	_style_account_action(achievement_action, "trophy")
 	_style_account_action(settings_action, "settings")
+	_style_account_action(logout_action, "log-out")
+	logout_action.add_theme_color_override("font_color", C_TERRACOTTA)
+	logout_action.add_theme_color_override("icon_normal_color", C_TERRACOTTA)
+	
 	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.01, 0.04, 0.025, 0.10), Color.TRANSPARENT, 0))
 	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.01, 0.04, 0.025, 0.13), Color.TRANSPARENT, 0))
 	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.02, 0.05, 0.03, 0.12), Color.TRANSPARENT, 0))
@@ -780,7 +849,6 @@ func _open_account_menu() -> void:
 	account_menu_layer.modulate.a = 0.0
 	account_panel.scale = Vector2(0.96, 0.96)
 	account_panel.position.y -= 6.0
-	account_panel.pivot_offset = Vector2(account_panel.size.x, 0)
 	trigger_chevron.text = "⌃"
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(account_menu_layer, "modulate:a", 1.0, 0.16)
@@ -810,25 +878,150 @@ func _open_account_destination(destination: String) -> void:
 		_go_progress()
 	elif destination == "settings":
 		_go_settings()
+	elif destination == "logout":
+		_confirm_logout()
 	else:
 		_go_account()
+
+func _confirm_logout() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	
+	var overlay := ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(overlay)
+	
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	
+	var panel := PanelContainer.new()
+	var p_style := _flat(Color(1.0, 0.99, 0.96, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24)
+	p_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
+	p_style.shadow_size = 30
+	p_style.shadow_offset = Vector2(0, 10)
+	panel.add_theme_stylebox_override("panel", p_style)
+	panel.custom_minimum_size = Vector2(340, 0)
+	center.add_child(panel)
+	
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 32)
+	margin.add_theme_constant_override("margin_right", 32)
+	margin.add_theme_constant_override("margin_top", 32)
+	margin.add_theme_constant_override("margin_bottom", 32)
+	panel.add_child(margin)
+	
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 24)
+	margin.add_child(vbox)
+	
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	
+	var title := Label.new()
+	title.text = "Đăng xuất"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if bold_font: title.add_theme_font_override("font", bold_font)
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	vbox.add_child(title)
+	
+	var msg := Label.new()
+	msg.text = "Kết thúc phiên đăng nhập hiện tại?"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.add_theme_font_size_override("font_size", 16)
+	msg.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
+	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(msg)
+	
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+	vbox.add_child(hbox)
+	
+	var btn_cancel := Button.new()
+	btn_cancel.text = "Ở lại"
+	btn_cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_cancel.custom_minimum_size.y = 48
+	var cancel_normal := _flat(Color(0.9, 0.88, 0.84, 1.0), Color.TRANSPARENT, 14)
+	var cancel_hover := _flat(Color(0.85, 0.83, 0.79, 1.0), Color.TRANSPARENT, 14)
+	btn_cancel.add_theme_stylebox_override("normal", cancel_normal)
+	btn_cancel.add_theme_stylebox_override("hover", cancel_hover)
+	btn_cancel.add_theme_stylebox_override("pressed", cancel_hover)
+	btn_cancel.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
+	btn_cancel.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
+	btn_cancel.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	if bold_font: btn_cancel.add_theme_font_override("font", bold_font)
+	hbox.add_child(btn_cancel)
+	
+	var btn_logout := Button.new()
+	btn_logout.text = "Đăng xuất"
+	btn_logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_logout.custom_minimum_size.y = 48
+	var logout_normal := _flat(C_TERRACOTTA, C_TERRACOTTA, 14)
+	var logout_hover := _flat(C_TERRACOTTA.lightened(0.1), C_TERRACOTTA, 14)
+	btn_logout.add_theme_stylebox_override("normal", logout_normal)
+	btn_logout.add_theme_stylebox_override("hover", logout_hover)
+	btn_logout.add_theme_stylebox_override("pressed", logout_hover)
+	btn_logout.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
+	btn_logout.add_theme_color_override("font_color", Color.WHITE)
+	btn_logout.add_theme_color_override("font_hover_color", Color.WHITE)
+	if bold_font: btn_logout.add_theme_font_override("font", bold_font)
+	hbox.add_child(btn_logout)
+	
+	add_child(layer)
+	
+	btn_cancel.pressed.connect(func() -> void:
+		_close_custom_dialog(layer, overlay, panel)
+	)
+	btn_logout.pressed.connect(func() -> void:
+		_close_custom_dialog(layer, overlay, panel)
+		_logout()
+	)
+	
+	overlay.modulate.a = 0.0
+	panel.scale = Vector2(0.9, 0.9)
+	panel.pivot_offset = panel.custom_minimum_size / 2.0
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(overlay, "modulate:a", 1.0, 0.2)
+	tw.tween_property(panel, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _close_custom_dialog(layer: CanvasLayer, overlay: ColorRect, panel: PanelContainer) -> void:
+	if not is_instance_valid(layer):
+		return
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(overlay, "modulate:a", 0.0, 0.15)
+	tw.tween_property(panel, "scale", Vector2(0.95, 0.95), 0.15)
+	tw.chain().tween_callback(layer.queue_free)
+
+func _logout() -> void:
+	logout_action.disabled = true
+	await _api_client.logout()
+	get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn")
+
 
 func _layout_account_menu(viewport_size: Vector2) -> void:
 	var safe := _safe_insets(viewport_size)
 	var mobile := _is_mobile_layout(viewport_size)
-	var safe_width := maxf(280.0, viewport_size.x - safe.x - safe.z)
-	var panel_width := minf(360.0 if mobile else 370.0, safe_width - 24.0)
 	var panel_height := account_panel.get_combined_minimum_size().y
-	var panel_left := viewport_size.x - safe.z - panel_width - 12.0
-	var desired_top := profile_menu.global_position.y + profile_menu.size.y + 10.0
-	var max_top := viewport_size.y - safe.w - panel_height - 12.0
-	var panel_top := clampf(desired_top, safe.y + 8.0, maxf(safe.y + 8.0, max_top))
-	if mobile and viewport_size.x < 600.0:
-		panel_left = safe.x + 12.0
-		panel_width = safe_width - 24.0
-		panel_top = maxf(safe.y + 12.0, viewport_size.y - safe.w - panel_height - 12.0)
-	account_panel.position = Vector2(panel_left, panel_top)
-	account_panel.size = Vector2(panel_width, panel_height)
+	
+	if mobile:
+		var safe_width := viewport_size.x - safe.x - safe.z
+		var panel_width := minf(380.0, safe_width - 32.0)
+		var panel_left := safe.x + (safe_width - panel_width) / 2.0
+		var panel_top := safe.y + (viewport_size.y - safe.y - safe.w - panel_height) / 2.0
+		account_panel.position = Vector2(panel_left, panel_top)
+		account_panel.size = Vector2(panel_width, panel_height)
+		account_panel.pivot_offset = Vector2(panel_width / 2.0, panel_height / 2.0)
+	else:
+		var safe_width := maxf(280.0, viewport_size.x - safe.x - safe.z)
+		var panel_width := minf(370.0, safe_width - 24.0)
+		var panel_left := viewport_size.x - safe.z - panel_width - 12.0
+		var desired_top := profile_menu.global_position.y + profile_menu.size.y + 10.0
+		var max_top := viewport_size.y - safe.w - panel_height - 12.0
+		var panel_top := clampf(desired_top, safe.y + 8.0, maxf(safe.y + 8.0, max_top))
+		account_panel.position = Vector2(panel_left, panel_top)
+		account_panel.size = Vector2(panel_width, panel_height)
+		account_panel.pivot_offset = Vector2(panel_width, 0)
 
 func _is_mobile_layout(viewport_size: Vector2) -> bool:
 	return (

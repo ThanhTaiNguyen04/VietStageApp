@@ -673,12 +673,15 @@ func _set_button_icon(button: Button, icon_name: String) -> void:
 
 
 func _style_back_button(button: Button) -> void:
-	button.add_theme_color_override("font_color", C_JADE)
-	button.add_theme_color_override("font_hover_color", C_GOLD)
-	button.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 12, 0))
-	button.add_theme_stylebox_override("hover", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08), Color.TRANSPARENT, 12, 0))
-	button.add_theme_stylebox_override("pressed", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.14), Color.TRANSPARENT, 12, 0))
-	button.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12, 2))
+	button.add_theme_color_override("icon_normal_color", C_JADE)
+	button.add_theme_color_override("icon_hover_color", C_GOLD)
+	button.add_theme_color_override("icon_pressed_color", C_JADE)
+	button.add_theme_color_override("icon_focus_color", C_JADE)
+	
+	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
 func _style_primary_button(button: Button) -> void:

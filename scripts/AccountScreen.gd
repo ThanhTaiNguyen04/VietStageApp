@@ -28,7 +28,6 @@ const STAT_FIELDS := [
 @onready var top_bar: PanelContainer = $Root/TopBar
 @onready var top_margin: MarginContainer = $Root/TopBar/TopMargin
 @onready var back_button: Button = $Root/TopBar/TopMargin/TopRow/BackButton
-@onready var logout_button: Button = $Root/TopBar/TopMargin/TopRow/LogoutButton
 @onready var title_label: Label = $Root/TopBar/TopMargin/TopRow/Title
 @onready var content_margin: MarginContainer = $Root/ContentMargin
 @onready var content: VBoxContainer = $Root/ContentMargin/Scroll/Center/Content
@@ -65,7 +64,6 @@ func _ready() -> void:
 	_build_theme()
 	back_button.pressed.connect(_go_back)
 	retry_button.pressed.connect(_refresh_from_api)
-	logout_button.pressed.connect(_confirm_logout)
 	avatar_request.request_completed.connect(_on_avatar_loaded)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
@@ -241,26 +239,6 @@ func _on_avatar_loaded(_result: int, response_code: int, headers: PackedStringAr
 	if error == OK:
 		avatar.texture = ImageTexture.create_from_image(avatar_image)
 
-
-func _confirm_logout() -> void:
-	var dialog := ConfirmationDialog.new()
-	dialog.title = "Đăng xuất"
-	dialog.dialog_text = "Kết thúc phiên đăng nhập hiện tại?"
-	dialog.ok_button_text = "Đăng xuất"
-	dialog.cancel_button_text = "Ở lại"
-	dialog.confirmed.connect(_logout)
-	dialog.canceled.connect(dialog.queue_free)
-	dialog.close_requested.connect(dialog.queue_free)
-	add_child(dialog)
-	dialog.popup_centered(Vector2i(mini(340, int(get_viewport_rect().size.x - 28.0)), 0))
-
-
-func _logout() -> void:
-	logout_button.disabled = true
-	await _api_client.logout()
-	get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn")
-
-
 func _build_theme() -> void:
 	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.93), Color(1, 1, 1, 0.25), 0, 0))
 	profile_card.add_theme_stylebox_override("panel", _profile_style())
@@ -280,9 +258,8 @@ func _build_theme() -> void:
 	progress_state.add_theme_color_override("font_color", C_MUTED)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_set_icon_button(back_button, "arrow-left", C_INK)
+	_style_back_button(back_button, C_INK)
 	_set_icon_button(retry_button, "rotate-cw", C_INK)
-	_set_icon_button(logout_button, "log-out", C_RED)
 
 
 func _apply_responsive_layout() -> void:
@@ -379,6 +356,21 @@ func _clear_children(parent: Node) -> void:
 	for child: Node in parent.get_children():
 		parent.remove_child(child)
 		child.queue_free()
+
+
+func _style_back_button(button: Button, color: Color) -> void:
+	button.icon = _icon("arrow-left")
+	button.expand_icon = true
+	button.add_theme_color_override("icon_normal_color", color)
+	button.add_theme_color_override("icon_hover_color", C_GOLD)
+	button.add_theme_color_override("icon_pressed_color", color)
+	button.add_theme_color_override("icon_focus_color", color)
+	button.add_theme_constant_override("icon_max_width", 26)
+
+	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
 func _set_icon_button(button: Button, icon_name: String, color: Color) -> void:

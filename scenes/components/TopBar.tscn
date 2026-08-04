@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://top_bar"]
+[gd_scene load_steps=5 format=3 uid="uid://top_bar"]
 
 [ext_resource type="Script" path="res://scripts/TopBar.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="2_avatar"]
+[ext_resource type="Shader" path="res://assets/shaders/circular_avatar.gdshader" id="3_avatar_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_avatar_mask"]
+shader = ExtResource("3_avatar_shader")
 
 [node name="TopBar" type="MarginContainer"]
 layout_mode = 3
@@ -31,6 +35,7 @@ size_flags_vertical = 4
 clip_contents = true
 
 [node name="AvatarThumb" type="TextureRect" parent="Inner/AvatarCircle"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 texture = ExtResource("2_avatar")
 expand_mode = 1

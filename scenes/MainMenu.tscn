@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://main_menu_001"]
+[gd_scene load_steps=5 format=3 uid="uid://main_menu_001"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
+[ext_resource type="Shader" path="res://assets/shaders/circular_avatar.gdshader" id="4_avatar_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_avatar_mask"]
+shader = ExtResource("4_avatar_shader")
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -115,6 +119,7 @@ size_flags_vertical = 4
 clip_contents = true
 
 [node name="AvatarThumb" type="TextureRect" parent="Root/RightContent/TopBar/TopRow/AvatarCircle"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 texture = ExtResource("3_avatar")
 expand_mode = 1
@@ -149,6 +154,7 @@ mouse_filter = 2
 clip_contents = true
 
 [node name="MiniAvatar" type="TextureRect" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/MiniAvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("3_avatar")
@@ -714,6 +720,7 @@ layout_mode = 2
 clip_contents = true
 
 [node name="LargeAvatar" type="TextureRect" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/LargeAvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 texture = ExtResource("3_avatar")
 expand_mode = 1
@@ -774,3 +781,11 @@ layout_mode = 2
 text = "Cài đặt tài khoản"
 theme_override_font_sizes/font_size = 15
 alignment = 0
+
+[node name="LogoutAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Đăng xuất"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+

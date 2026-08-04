@@ -1,8 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://account_screen_001"]
+[gd_scene load_steps=6 format=3 uid="uid://account_screen_001"]
 
 [ext_resource type="Script" path="res://scripts/AccountScreen.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/bon_nhac_cu_background.png" id="2_bg"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
+[ext_resource type="Shader" path="res://assets/shaders/circular_avatar.gdshader" id="4_avatar_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_avatar_mask"]
+shader = ExtResource("4_avatar_shader")
 
 [node name="AccountScreen" type="Control"]
 layout_mode = 3
@@ -66,11 +70,7 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 25
 text = "Hồ sơ"
 
-[node name="LogoutButton" type="Button" parent="Root/TopBar/TopMargin/TopRow"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 2
-size_flags_vertical = 4
-tooltip_text = "Đăng xuất"
+
 
 [node name="ContentMargin" type="MarginContainer" parent="Root"]
 layout_mode = 2
@@ -159,6 +159,7 @@ layout_mode = 2
 size_flags_vertical = 4
 
 [node name="Avatar" type="TextureRect" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/Hero/AvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 texture = ExtResource("3_avatar")
 expand_mode = 1
