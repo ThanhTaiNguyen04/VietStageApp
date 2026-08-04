@@ -84,9 +84,9 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Sol1", "La1", "Đô1", "Rê1", "Mi1",
-	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
-	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
+	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
+	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
+	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
 	"Sol4", "La4" 
 ]
 
@@ -94,8 +94,8 @@ const LEVEL1_LESSON1_ID := "dan_tranh_level_1_bai_1_practice"
 const LEVEL1_LESSON2_ID := "dan_tranh_level_1_bai_2_practice"
 const LEVEL1_LESSON3_ID := "dan_tranh_level_1_bai_3_practice"
 const LEVEL2_LESSON4_ID := "dan_tranh_level_2_bai_4_practice"
-const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol1", "La1", "Đô1", "Rê1", "Mi1"]
-const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol1", "La1", "Đô1", "Rê1", "Mi1"]
+const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
+const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
 const FINGER_CUES := [
 	{"id": "circle", "symbol": "●", "shape_name": "hình tròn", "finger_name": "ngón cái"},
 	{"id": "square", "symbol": "■", "shape_name": "hình vuông", "finger_name": "ngón trỏ"},
@@ -104,16 +104,16 @@ const FINGER_CUES := [
 const LEVEL1_CONFIGS := {
 	LEVEL1_LESSON1_ID: {
 		"lesson": 1, "title": "Luyện từng nốt bằng ba ngón", "mode": "explore", "input": "micro",
-		"sheet": ["Sol1", "La1", "Đô1", "Rê1", "Mi1"], "active_strings": [0, 1, 2, 3, 4],
+		"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "active_strings": [0, 1, 2, 3, 4],
 		"instruction": "Nghe câu nhạc chậm. Khi nhạc dừng, hãy gảy lần lượt Sol – La – Đô – Rê – Mi trên đàn thật.",
 		"bpm": 56.0, "pass_score": 80.0
 	},
 	LEVEL1_LESSON2_ID: {
 		"lesson": 2, "title": "Điền nốt còn thiếu vào bài nhạc", "mode": "fill_melody", "input": "micro",
 		"sheet": [
-			"Sol1", "La1", "Đô1", "La1", "Sol1", "Rê1", "Mi1", "Rê1",
-			"Đô1", "La1", "Sol1", "Đô1", "Rê1", "Mi1", "Rê1", "Đô1",
-			"La1", "Sol1", "La1", "Đô1", "Mi1", "Rê1", "Đô1", "Sol1"
+			"Sol1", "La1", "Đô2", "La1", "Sol1", "Rê2", "Mi2", "Rê2",
+			"Đô2", "La1", "Sol1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2",
+			"La1", "Sol1", "La1", "Đô2", "Mi2", "Rê2", "Đô2", "Sol1"
 		],
 		"missing_indices": [3, 7, 11, 15, 19, 23],
 		"cues": ["", "", "", "square", "", "", "", "square", "", "", "", "triangle",

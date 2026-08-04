@@ -331,7 +331,7 @@ func _apply_responsive_layout() -> void:
 	var mobile := viewport_size.x < 760.0 or OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")
 	var side := 12.0 if mobile else 30.0
 	var usable_width := viewport_size.x - safe.x - safe.z - side * 2.0
-	content.custom_minimum_size.x = minf(620.0, maxf(292.0, usable_width))
+	content.custom_minimum_size.x = minf(740.0, maxf(360.0, usable_width))
 	content_margin.add_theme_constant_override("margin_left", int(safe.x + side))
 	content_margin.add_theme_constant_override("margin_right", int(safe.z + side))
 	content_margin.add_theme_constant_override("margin_top", 10 if mobile else 18)
@@ -339,14 +339,35 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_left", int(safe.x + (10 if mobile else 22)))
 	top_margin.add_theme_constant_override("margin_right", int(safe.z + (10 if mobile else 22)))
 	top_margin.add_theme_constant_override("margin_top", int(safe.y))
-	top_bar.custom_minimum_size.y = 64.0 + safe.y
+	top_bar.custom_minimum_size.y = 80.0 + safe.y
 	card_margin.add_theme_constant_override("margin_left", 14 if mobile else 22)
 	card_margin.add_theme_constant_override("margin_right", 14 if mobile else 22)
 	card_margin.add_theme_constant_override("margin_top", 16 if mobile else 20)
 	card_margin.add_theme_constant_override("margin_bottom", 18 if mobile else 24)
-	title_label.add_theme_font_size_override("font_size", 20 if mobile else 25)
-	preview_name.add_theme_font_size_override("font_size", 18 if mobile else 21)
-	avatar_stack.custom_minimum_size = Vector2(84, 84)
+	title_label.add_theme_font_size_override("font_size", 24 if mobile else 28)
+	preview_name.add_theme_font_size_override("font_size", 22 if mobile else 26)
+	avatar_stack.custom_minimum_size = Vector2(100, 100)
+	back_button.custom_minimum_size = Vector2(56, 56) if mobile else Vector2(64, 64)
+	for label: Label in [name_label, avatar_title]:
+		label.add_theme_font_size_override("font_size", 14 if mobile else 16)
+	for label: Label in [preview_email, preview_code]:
+		label.add_theme_font_size_override("font_size", 14 if mobile else 16)
+	for label: Label in [avatar_hint, security_hint]:
+		label.add_theme_font_size_override("font_size", 12 if mobile else 14)
+	for label: Label in [selected_file, profile_feedback, password_feedback, state_label]:
+		label.add_theme_font_size_override("font_size", 13 if mobile else 15)
+	for btn: Button in [profile_tab, security_tab]:
+		btn.add_theme_font_size_override("font_size", 15 if mobile else 17)
+		btn.custom_minimum_size.y = 52.0 if mobile else 60.0
+	for btn: Button in [choose_avatar_button]:
+		btn.add_theme_font_size_override("font_size", 14 if mobile else 16)
+		btn.custom_minimum_size.y = 48.0 if mobile else 56.0
+	for btn: Button in [save_profile_button, change_password_button]:
+		btn.add_theme_font_size_override("font_size", 16 if mobile else 18)
+		btn.custom_minimum_size.y = 56.0 if mobile else 64.0
+	for field: LineEdit in [name_input, old_password, new_password, confirm_password]:
+		field.add_theme_font_size_override("font_size", 15 if mobile else 17)
+		field.custom_minimum_size.y = 56.0 if mobile else 64.0
 
 
 func _safe_insets() -> Vector4:

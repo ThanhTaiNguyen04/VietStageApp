@@ -30,21 +30,21 @@ const NOTE_POSITIONS = {
 	# Dan Tranh specific mappings ()
 	"Sol_1": -2.0,
 	"La_1": -1.5,
-	"Đô_1": -1.0,
-	"Rê_1": -0.5,
-	"Mi_1": 0.0,
+	"Đô_2": -1.0,
+	"Rê_2": -0.5,
+	"Mi_2": 0.0,
 	"Sol_2": 1.0,
 	"La_2": 1.5,
-	"Đô_2": 2.5,
-	"Rê_2": 3.0,
-	"Mi_2": 3.5,
+	"Đô_3": 2.5,
+	"Rê_3": 3.0,
+	"Mi_3": 3.5,
 	"Sol_3": 4.5,
 	"La_3": 5.0,
-	"Đô_3": 6.0,
-	"Rê_3": 6.5,
-	"Mi_3": 7.0,
+	"Đô_4": 6.0,
+	"Rê_4": 6.5,
+	"Mi_4": 7.0,
 	"Sol_4": 8.0,
-	"La4": 8.5
+	"La_4": 8.5
 }
 
 var active_note = "Đô"
@@ -52,8 +52,8 @@ var line_spacing = 65.0
 var clef_tex: Texture2D
 
 func _ready():
-	if ResourceLoader.exists("res://image/khungnhac.png"):
-		clef_tex = load("res://image/khungnhac.png")
+	if ResourceLoader.exists("res://image/khung nhav.png"):
+		clef_tex = load("res://image/khung nhav.png")
 	resized.connect(queue_redraw)
 
 var notes_to_draw: Array = []
@@ -81,13 +81,7 @@ func _draw():
 		var y = center_y + (2 - i) * line_spacing
 		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.2, true)
 			
-		# Draw treble clef
-		if clef_tex:
-			var clef_w = line_spacing * 3.5
-			var clef_h = line_spacing * 7.5
-			var clef_y = center_y - clef_h * 0.45
-			# Draw clef near the left edge, before hit line
-			draw_texture_rect(clef_tex, Rect2(hit_line_x - clef_w - 20, clef_y, clef_w, clef_h), false)
+	# Treble clef drawing removed for synchronized clean staff design
 			
 	# Draw hit line with modern glowing effect
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
@@ -103,12 +97,49 @@ func _draw():
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue)
 
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = ""):
-	if not NOTE_POSITIONS.has(note_name): return
-	var pos_idx = NOTE_POSITIONS[note_name]
+	var clean_name = note_name
+	if clean_name.begins_with("ZT_"):
+		clean_name = clean_name.right(-3)
+	
+	var mapped_name = clean_name
+	if not NOTE_POSITIONS.has(mapped_name):
+		for i in range(clean_name.length() - 1, -1, -1):
+			if clean_name[i].is_valid_int():
+				var prefix = clean_name.left(i)
+				var suffix = clean_name.right(-i)
+				var alt = prefix + "_" + suffix
+				if NOTE_POSITIONS.has(alt):
+					mapped_name = alt
+					break
+					
+	if not NOTE_POSITIONS.has(mapped_name): return
+	var pos_idx = NOTE_POSITIONS[mapped_name]
 	var note_y = center_y + (2 - pos_idx) * line_spacing
 	
-	var note_width = line_spacing * 1.35
-	var note_height = line_spacing * 0.95
+	var is_zither = note_name.begins_with("ZT_")
+	
+	var display_name = clean_name
+	if is_zither:
+		# Use unicode subscripts for octave registers on zither notes
+		if display_name.ends_with("1"):
+			display_name = display_name.left(-1) + "₁"
+		elif display_name.ends_with("2"):
+			display_name = display_name.left(-1) + "₂"
+		elif display_name.ends_with("3"):
+			display_name = display_name.left(-1) + "₃"
+		elif display_name.ends_with("4"):
+			display_name = display_name.left(-1) + "₄"
+	else:
+		# Standard layout cleans up numbers entirely
+		for i in range(display_name.length() - 1, -1, -1):
+			var char_val = display_name[i]
+			if char_val.is_valid_int() or char_val == "_":
+				display_name = display_name.left(i)
+			else:
+				break
+	
+	var note_width = line_spacing * (1.15 if is_zither else 1.35)
+	var note_height = line_spacing * (0.8 if is_zither else 0.95)
 
 	# Draw ledger lines if outside staff
 	if pos_idx < 0:
@@ -162,10 +193,10 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		# Draw bold note name text inside note head
 		var font = ThemeDB.fallback_font
 		if font:
-			var font_size = int(line_spacing * 0.48)
-			var str_size = font.get_string_size(note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+			var font_size = int(line_spacing * (0.42 if is_zither else 0.48))
+			var str_size = font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 			var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
-			draw_string(font, text_pos, note_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
+			draw_string(font, text_pos, display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
 	
 	# Draw stem only for short melodic notes without duration tail
 	if tail_w <= 0.0:

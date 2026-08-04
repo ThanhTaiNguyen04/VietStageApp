@@ -844,7 +844,7 @@ func _toggle_account_menu() -> void:
 func _open_account_menu() -> void:
 	_account_menu_open = true
 	_update_profile_menu_data()
-	_layout_account_menu(get_viewport().size)
+	_layout_account_menu(get_viewport_rect().size)
 	account_menu_layer.show()
 	account_menu_layer.modulate.a = 0.0
 	account_panel.scale = Vector2(0.96, 0.96)
@@ -1766,7 +1766,7 @@ func _make_btn_bouncy(btn: Button) -> void:
 	)
 
 func _on_viewport_size_changed() -> void:
-	var viewport_size: Vector2 = get_viewport().size
+	var viewport_size: Vector2 = get_viewport_rect().size
 	var is_mobile := _is_mobile_layout(viewport_size)
 	var safe := _safe_insets(viewport_size)
 	var compact_profile: bool = viewport_size.x < 900.0
@@ -1944,7 +1944,7 @@ func _on_viewport_size_changed() -> void:
 
 func _relayout_open_account_menu() -> void:
 	if _account_menu_open:
-		_layout_account_menu(get_viewport().size)
+		_layout_account_menu(get_viewport_rect().size)
 
 # ─── Dan Tranh Level Progress ─────────────────────────────────────────────────
 func _get_dan_tranh_level_status(level_number: int) -> Dictionary:

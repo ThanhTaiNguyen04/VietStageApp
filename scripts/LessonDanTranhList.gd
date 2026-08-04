@@ -28,15 +28,15 @@ const LEVELS := [
 				"video": "Lịch sử đàn tranh, 17 dây đàn và thang ngũ cung Sol – La – Đô – Rê – Mi.",
 				"practice": "Nghe mẫu và gảy lại lần lượt 5 nốt Sol – La – Đô – Rê – Mi trên đàn thật; hệ thống nhận diện cao độ, báo đúng/sai và tô xanh nốt đúng.",
 				"practice_title": "Làm quen 5 nốt cơ bản",
-				"sheet": ["Sol1", "La1", "Đô1", "Rê1", "Mi1"]
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
 			},
 			{
 				"number": 2,
 				"title": "Gảy ngón cơ bản (Ngón 1 & 2)",
 				"video": "Kỹ thuật gảy ngón cái, ngón trỏ, ngón giữa và góc tiếp xúc của móng gảy.",
-				"practice": "Ba lượt Hứng nốt với Đô1 – Rê1 – Mi1, ký hiệu Ngón 1/Ngón 2 và tốc độ tăng dần; đạt 80% để qua bài.",
+				"practice": "Ba lượt Hứng nốt với Đô2 – Rê2 – Mi2, ký hiệu Ngón 1/Ngón 2 và tốc độ tăng dần; đạt 80% để qua bài.",
 				"practice_title": "Gảy ngón cơ bản",
-				"sheet": ["Đô1", "Rê1", "Mi1", "Rê1", "Đô1", "Mi1"]
+				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Mi2"]
 			},
 			{
 				"number": 3,
@@ -45,12 +45,12 @@ const LEVELS := [
 				"practice": "Cô đàn sáu câu của Sứ Thanh Hoa ở BPM 80; học viên gảy nốt cuối mỗi câu bằng ngón 1, 2, 3 luân phiên.",
 				"practice_title": "Đệm Sứ Thanh Hoa",
 				"sheet": [
-					"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "La2", "Sol2",
-					"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "La2", "Mi2",
-					"Mi2", "Rê2", "Mi2", "Rê2", "Mi2", "Sol3", "Mi2", "Rest", "Mi2", "Mi2", "Rê2",
-					"Đô2", "Mi2", "Rê2", "Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2",
-					"La2", "Sol2", "Sol2", "La2", "Mi2", "Sol3", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2",
-					"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "La2", "Đô2", "Rê2", "Rê2", "Rê2"
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
 				],
 				"durations": [
 					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
@@ -76,8 +76,8 @@ const LEVELS := [
 				"practice": "Luyện đúng đoạn đầu Mi – Sol – Sol | Mi – Sol – Sol | La – Đố – La – Đố | La – Sol – Sol theo nhịp 2/4; đúng hoặc sai đều chuyển tiếp, sai lần thứ sáu sẽ làm lại.",
 				"practice_title": "Vào rừng hoa – Đoạn 1",
 				"sheet": [
-					"Mi1", "Sol2", "Sol2", "Mi1", "Sol2", "Sol2",
-					"La2", "Đô2", "La2", "Đô2", "La2", "Sol2", "Sol2"
+					"Mi2", "Sol2", "Sol2", "Mi2", "Sol2", "Sol2",
+					"La2", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2"
 				]
 			},
 			{
@@ -86,7 +86,7 @@ const LEVELS := [
 				"video": "Điều tiết lực tay để giai điệu tự nhiên và giàu cảm xúc.",
 				"practice": "Chơi ở BPM 70 và nhận đánh giá Perfect, Great hoặc Miss.",
 				"practice_title": "Vào rừng hoa",
-				"sheet": ["Sol1", "La1", "Đô1", "Rê1", "Mi1", "Sol2", "Mi1", "Rê1", "Đô1", "La1", "Sol1"]
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"]
 			},
 			{
 				"number": 6,
@@ -94,7 +94,7 @@ const LEVELS := [
 				"video": "Âm sắc Nam Bộ và cách gảy các nốt luyến đặc trưng của điệu Xàng Xê.",
 				"practice": "Tập Xàng Xê với tên nốt hiển thị trực tiếp trên dây đàn.",
 				"practice_title": "Xàng Xê",
-				"sheet": ["Đô1", "Rê1", "Mi1", "Sol2", "La2", "Sol2", "Mi1", "Rê1", "Đô1"]
+				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2"]
 			}
 		]
 	},
@@ -110,7 +110,7 @@ const LEVELS := [
 				"video": "Luyện scale, giữ khung tay và di chuyển ổn định giữa các quãng xa.",
 				"practice": "Tập Mã Vũ đoạn 1 với tốc độ luyện tập phù hợp.",
 				"practice_title": "Mã Vũ – Đoạn 1",
-				"sheet": ["Đô1", "Rê1", "Mi1", "Rê1", "Đô1", "La2", "Sol2", "Sol2", "Đô1", "Rê1", "Mi1", "Sol2", "Mi1", "Rê1", "Đô1", "Đô1", "La2", "Sol2", "Sol2", "Sol2", "Đô1", "Rê1", "Đô1", "Sol2"],
+				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
 				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0]
 			},
 			{
@@ -119,7 +119,7 @@ const LEVELS := [
 				"video": "Nhấn nhá và luyến láy đặc trưng của Quan họ Bắc Ninh.",
 				"practice": "Luyện sheet Lý Cây Đa và hướng tới độ chính xác cao.",
 				"practice_title": "Lý Cây Đa",
-				"sheet": ["Sol2", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "La2", "Đô2", "Sol2"]
+				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"]
 			}
 		]
 	},
@@ -135,7 +135,7 @@ const LEVELS := [
 				"video": "Cách nhấn dây, kiểm soát độ sâu và tạo độ rung bằng tay trái.",
 				"practice": "Giữ các nốt dài để luyện cảm giác rung và độ ngân.",
 				"practice_title": "Kỹ thuật Rung tay trái",
-				"sheet": ["Đô1", "Đô1", "Rê1", "Rê1", "Mi1", "Mi1", "Sol2", "Sol2"]
+				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"]
 			},
 			{
 				"number": 10,
@@ -143,7 +143,7 @@ const LEVELS := [
 				"video": "Nghe nhạc nền, giữ nhịp và làm nổi bật giai điệu chính khi hòa tấu.",
 				"practice": "Đóng vai trò đàn tranh lead trong một bài dân ca có sẵn.",
 				"practice_title": "Lý Cây Bông",
-				"sheet": ["Mi1", "Sol2", "La2", "Sol2", "Mi1", "Rê1", "Đô1", "Rê1", "Mi1", "Sol2", "La2", "Sol2"]
+				"sheet": ["Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2"]
 			}
 		]
 	},
@@ -157,15 +157,15 @@ const LEVELS := [
 				"number": 11,
 				"title": "Nhạc hiện đại – Sứ Thanh Hoa",
 				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
-				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 với các quãng rộng.",
+				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 with các quãng rộng.",
 				"practice_title": "Sứ Thanh Hoa",
 				"sheet": [
-					"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "La2", "Sol2",
-					"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "La2", "Mi2",
-					"Mi2", "Rê2", "Mi2", "Rê2", "Mi2", "Sol3", "Mi2", "Rest", "Mi2", "Mi2", "Rê2",
-					"Đô2", "Mi2", "Rê2", "Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2",
-					"La2", "Sol2", "Sol2", "La2", "Mi2", "Sol3", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2",
-					"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "La2", "Đô2", "Rê2", "Rê2", "Rê2"
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
 				],
 				"durations": [
 					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
@@ -182,7 +182,7 @@ const LEVELS := [
 				"video": "",
 				"practice": "Chọn một bài đã học và biểu diễn bằng giao diện luyện tập hiện có.",
 				"practice_title": "Thử thách sinh tồn 17 dây",
-				"sheet": ["Sol1", "La1", "Đô1", "Rê1", "Mi1", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 			}
 		]
 	},
@@ -198,7 +198,7 @@ const LEVELS := [
 				"video": "res://Video/DanBauDoan12Bai1.ogv",
 				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
 				"practice_title": "Luyện tập: Hợp âm là gì",
-				"sheet": ["Sol1", "La1", "Đô1", "Rê1", "Mi1", "Mi1", "Đô1", "La1", "Sol1", "Rê1", "Đô1+Mi1+Sol2"],
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
 				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
 			},
 			{
@@ -208,10 +208,10 @@ const LEVELS := [
 				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
 				"practice_title": "Luyện tập: Song âm",
 				"sheet": [
-					"Đô1+Mi1", "Đô1+Mi1", "Đô1+Mi1",
-					"Mi1+Sol2", "Mi1+Sol2", "Mi1+Sol2",
-					"La1+Đô1", "La1+Đô1", "La1+Đô1",
-					"Đô1+Mi1", "Mi1+Sol2", "La1+Đô1"
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
 				],
 				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
 			},
@@ -222,9 +222,9 @@ const LEVELS := [
 				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
 				"practice_title": "Luyện tập: Đô trưởng",
 				"sheet": [
-					"Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2", 
-					"Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2",
-					"Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2"
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
 				],
 				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
 			},
@@ -235,9 +235,9 @@ const LEVELS := [
 				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
 				"practice_title": "Luyện tập: La thứ",
 				"sheet": [
-					"La1+Đô1+Mi1", "La1+Đô1+Mi1", "La1+Đô1+Mi1",
-					"Đô1+Mi1+Sol2", "La1+Đô1+Mi1", "Đô1+Mi1+Sol2", "La1+Đô1+Mi1",
-					"La1+Đô1+Mi1", "La1+Đô1+Mi1", "La1+Đô1+Mi1", "La1+Đô1+Mi1"
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
 				],
 				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
 			},
@@ -248,9 +248,9 @@ const LEVELS := [
 				"practice": "Chuyển mượt mà giữa Đô trưởng (C) và La thứ (Am).",
 				"practice_title": "Luyện tập: Chuyển hợp âm",
 				"sheet": [
-					"Đô1+Mi1+Sol2", "La1+Đô1+Mi1", "Đô1+Mi1+Sol2", "La1+Đô1+Mi1",
-					"Đô1+Mi1+Sol2", "La1+Đô1+Mi1", "Đô1+Mi1+Sol2", "La1+Đô1+Mi1",
-					"Đô1+Mi1+Sol2", "La1+Đô1+Mi1", "La1+Đô1+Mi1", "Đô1+Mi1+Sol2", "Đô1+Mi1+Sol2", "La1+Đô1+Mi1"
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"
 				],
 				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
 			}
