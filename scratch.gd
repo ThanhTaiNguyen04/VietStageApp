@@ -85,7 +85,7 @@ const LESSON_NOTES = {
 	"Node6": {"note": "Mi", "desc": "Bấm ngón tay vào 4 lỗ", "fingers": [true, true, true, true, false, false]},
 	"Node7": {"note": "Rê", "desc": "Bấm ngón tay vào 5 lỗ", "fingers": [true, true, true, true, true, false]},
 	"Node8": {"note": "Đô", "desc": "Bấm cả 6 lỗ và thổi nhẹ", "fingers": [true, true, true, true, true, true]},
-		"Node9": {"note": "Đô", "desc": "Tập thổi nốt Đô", "fingers": [true, true, true, true, true, true]},
+	"Node9": {"note": "Đô", "desc": "Tập thổi nốt Đô", "fingers": [true, true, true, true, true, true]},
 	"Node10": {"note": "Sol", "desc": "Tập thổi nốt Sol", "fingers": [true, true, false, false, false, false]},
 	"Node11": {"note": "Đô", "desc": "Ghép Đô và Sol", "fingers": [true, true, true, true, true, true]},
 	"Node12": {"note": "La", "desc": "Tập thổi nốt La", "fingers": [true, false, false, false, false, false]},

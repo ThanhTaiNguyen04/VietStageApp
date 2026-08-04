@@ -29,6 +29,10 @@ var current_state = State.INTRO
 @onready var volume_bar = $FeedbackArea/VolumeBar
 
 var staff_display: Control
+var staff_card: PanelContainer
+var title_plaque: PanelContainer
+var pill_badge: PanelContainer
+var sub_instr_row: HBoxContainer
 
 var active_note := "Si"
 var active_node_id := "Node2"
@@ -485,7 +489,7 @@ func _setup_premium_practice_ui():
 	elif LESSON_NOTES.has(active_node_id) and LESSON_NOTES[active_node_id].has("title"):
 		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
 		
-	var title_plaque = PanelContainer.new()
+	title_plaque = PanelContainer.new()
 	title_plaque.name = "TitlePlaque"
 	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
 	title_plaque.offset_left = -265; title_plaque.offset_right = 265
@@ -515,7 +519,7 @@ func _setup_premium_practice_ui():
 	pl_vbox.add_child(lbl_main)
 	add_child(title_plaque)
 	
-	var staff_card = PanelContainer.new()
+	staff_card = PanelContainer.new()
 	staff_card.name = "StaffCard"
 	staff_card.anchor_left = 0.0; staff_card.anchor_right = 1.0
 	staff_card.offset_left = 55; staff_card.offset_right = -55
@@ -537,7 +541,7 @@ func _setup_premium_practice_ui():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	staff_card.add_child(staff_display)
 	
-	var pill_badge = PanelContainer.new()
+	pill_badge = PanelContainer.new()
 	pill_badge.name = "NotePillBadge"
 	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
 	pill_badge.offset_left = -125; pill_badge.offset_right = 125
@@ -558,7 +562,7 @@ func _setup_premium_practice_ui():
 	pill_badge.add_child(pill_lbl)
 	add_child(pill_badge)
 	
-	var sub_instr_row = HBoxContainer.new()
+	sub_instr_row = HBoxContainer.new()
 	sub_instr_row.name = "SubInstrRow"
 	sub_instr_row.anchor_left = 0.0; sub_instr_row.anchor_right = 1.0
 	sub_instr_row.offset_left = 90; sub_instr_row.offset_right = -90
@@ -584,6 +588,9 @@ func _setup_premium_practice_ui():
 	line_right_cont.add_child(line_r)
 	sub_instr_row.add_child(line_right_cont)
 	add_child(sub_instr_row)
+	
+	_update_staff_layout()
+	get_viewport().size_changed.connect(_update_staff_layout)
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):
@@ -1772,3 +1779,40 @@ func _on_complete():
 
 func _on_retry():
 	get_tree().reload_current_scene()
+
+func _update_staff_layout() -> void:
+	if not staff_card or not staff_display: return
+	var size = get_viewport_rect().size
+	var v_height = size.y
+	
+	# Responsive positioning
+	var title_top = clampf(v_height * 0.03, 16.0, 32.0)
+	if title_plaque:
+		title_plaque.offset_top = title_top
+		title_plaque.offset_bottom = title_top + 88.0
+		
+	# Distribute space for staff_card
+	var card_top = clampf(v_height * 0.17, 140.0, 180.0)
+	var card_bottom = v_height - clampf(v_height * 0.15, 110.0, 140.0)
+	
+	# Clamp height to be at least 540 to prevent notes from ever being clipped
+	var card_height = maxf(card_bottom - card_top, 540.0)
+	card_bottom = card_top + card_height
+	
+	staff_card.offset_top = card_top
+	staff_card.offset_bottom = card_bottom
+	
+	if pill_badge:
+		pill_badge.offset_top = card_top - 24.0
+		pill_badge.offset_bottom = card_top + 24.0
+		
+	if sub_instr_row:
+		sub_instr_row.offset_top = card_bottom + 18.0
+		sub_instr_row.offset_bottom = card_bottom + 58.0
+
+	# Calculate dynamic optimal spacing for flute notes (typically spans less range than zither)
+	# Spanning typical range of 7 notes, let's keep line spacing generous yet readable.
+	var max_spacing = (card_height - 90.0) / 10.0
+	var spacing = clampf(max_spacing, 55.0, 78.0)
+	staff_display.line_spacing = spacing
+	staff_display.queue_redraw()

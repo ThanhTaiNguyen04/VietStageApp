@@ -1915,4 +1915,37 @@ func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool,
 	return btn
 
 func _update_staff_layout() -> void:
-	pass
+	if not staff_card or not staff_display: return
+	var size = get_viewport_rect().size
+	var v_height = size.y
+	
+	# Responsive positioning
+	var title_top = clampf(v_height * 0.03, 16.0, 32.0)
+	if title_plaque:
+		title_plaque.offset_top = title_top
+		title_plaque.offset_bottom = title_top + 88.0
+		
+	# Distribute space for staff_card
+	var card_top = clampf(v_height * 0.17, 140.0, 180.0)
+	var card_bottom = v_height - clampf(v_height * 0.15, 110.0, 140.0)
+	
+	# Clamp height to be at least 540 to prevent notes from ever being clipped
+	var card_height = maxf(card_bottom - card_top, 540.0)
+	card_bottom = card_top + card_height
+	
+	staff_card.offset_top = card_top
+	staff_card.offset_bottom = card_bottom
+	
+	if pill_badge:
+		pill_badge.offset_top = card_top - 24.0
+		pill_badge.offset_bottom = card_top + 24.0
+		
+	if sub_instr_row:
+		sub_instr_row.offset_top = card_bottom + 18.0
+		sub_instr_row.offset_bottom = card_bottom + 58.0
+
+	# Calculate dynamic optimal spacing for 17 zither notes
+	var max_spacing = (card_height - 90.0) / 12.0
+	var spacing = clampf(max_spacing, 55.0, 78.0)
+	staff_display.line_spacing = spacing
+	staff_display.queue_redraw()
