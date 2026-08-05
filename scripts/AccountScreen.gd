@@ -240,7 +240,9 @@ func _on_avatar_loaded(_result: int, response_code: int, headers: PackedStringAr
 		avatar.texture = ImageTexture.create_from_image(avatar_image)
 
 func _build_theme() -> void:
-	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.93), Color(1, 1, 1, 0.25), 0, 0))
+	var top_s := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 0, 0)
+	top_s.border_width_bottom = 1
+	top_bar.add_theme_stylebox_override("panel", top_s)
 	profile_card.add_theme_stylebox_override("panel", _profile_style())
 	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
 	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(120.0))
@@ -417,7 +419,7 @@ func _font_regular() -> Font:
 
 
 func _profile_style() -> StyleBoxFlat:
-	var style := _flat(Color(1.0, 0.992, 0.965, 0.97), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 25, 1)
+	var style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 25, 1)
 	style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
 	style.shadow_size = 22
 	style.shadow_offset = Vector2(0, 9)
@@ -433,7 +435,7 @@ func _avatar_style(size: float = 104.0) -> StyleBoxFlat:
 
 
 func _data_card_style(accent: Color) -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, Color(accent.r, accent.g, accent.b, 0.24), 18, 1)
+	var style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(accent.r, accent.g, accent.b, 0.24), 18, 1)
 	style.shadow_color = Color(0.12, 0.08, 0.04, 0.06)
 	style.shadow_size = 6
 	style.shadow_offset = Vector2(0, 2)

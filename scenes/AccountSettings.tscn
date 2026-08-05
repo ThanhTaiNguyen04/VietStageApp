@@ -34,7 +34,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.025, 0.068, 0.043, 0.64)
+color = Color(0, 0, 0, 0)
 mouse_filter = 2
 
 [node name="Root" type="VBoxContainer" parent="."]

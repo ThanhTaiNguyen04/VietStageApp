@@ -777,7 +777,7 @@ func _style_account_menu() -> void:
 		header_name.add_theme_font_override("font", bold_font)
 		for button: Button in [profile_action, achievement_action, settings_action, logout_action]:
 			button.add_theme_font_override("font", bold_font)
-	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), 30)
+	var trigger_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), 30)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
 	trigger_style.shadow_size = 10
 	trigger_style.shadow_offset = Vector2(0, 4)
@@ -793,7 +793,7 @@ func _style_account_menu() -> void:
 	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 30))
 	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 30))
 
-	var panel_style := _flat(Color(1.0, 0.99, 0.96, 0.995), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
+	var panel_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
 	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
 	panel_style.shadow_size = 22
 	panel_style.shadow_offset = Vector2(0, 10)
@@ -897,7 +897,7 @@ func _confirm_logout() -> void:
 	layer.add_child(center)
 	
 	var panel := PanelContainer.new()
-	var p_style := _flat(Color(1.0, 0.99, 0.96, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24)
+	var p_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24)
 	p_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
 	p_style.shadow_size = 30
 	p_style.shadow_offset = Vector2(0, 10)
@@ -1790,7 +1790,7 @@ func _on_viewport_size_changed() -> void:
 	
 	# Responsive profile button styling
 	var radius := 26 if is_mobile else 30
-	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), radius)
+	var trigger_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), radius)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
 	trigger_style.shadow_size = 10
 	trigger_style.shadow_offset = Vector2(0, 4)

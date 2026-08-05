@@ -290,7 +290,9 @@ func _show_feedback(label: Label, message: String, success: bool) -> void:
 
 
 func _build_theme() -> void:
-	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.95), Color(1, 1, 1, 0.25), 0, 0))
+	var top_s := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 0, 0)
+	top_s.border_width_bottom = 1
+	top_bar.add_theme_stylebox_override("panel", top_s)
 	settings_card.add_theme_stylebox_override("panel", _main_card_style())
 	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
 	profile_section.add_theme_stylebox_override("panel", _section_style(C_JADE))
@@ -522,7 +524,7 @@ func _font_regular() -> Font:
 
 
 func _main_card_style() -> StyleBoxFlat:
-	var style := _flat(Color(1.0, 0.992, 0.965, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 24, 1)
+	var style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 24, 1)
 	style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
 	style.shadow_size = 22
 	style.shadow_offset = Vector2(0, 9)
@@ -530,7 +532,7 @@ func _main_card_style() -> StyleBoxFlat:
 
 
 func _section_style(accent: Color) -> StyleBoxFlat:
-	return _flat(Color.WHITE, Color(accent.r, accent.g, accent.b, 0.20), 17, 1)
+	return _flat(Color(0.93, 0.91, 0.87, 0.6), Color(accent.r, accent.g, accent.b, 0.20), 17, 1)
 
 
 func _avatar_style() -> StyleBoxFlat:
