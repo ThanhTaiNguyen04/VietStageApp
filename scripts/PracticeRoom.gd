@@ -576,6 +576,19 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		profile.notes.assign(["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"])
+		profile.frequencies = PackedFloat32Array([196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00])
+		profile.physical_mappings = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		profile.min_frequency = 180.0
+		profile.max_frequency = 1900.0
+		profile.volume_threshold_db = -58.0
+		profile.cents_tolerance = 35.0
+		profile.hold_time_sec = 0.20
+		profile.is_plucked_instrument = true
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 180.0
 		visualizer.max_frequency = 1900.0
 		visualizer.volume_threshold_db = -58.0

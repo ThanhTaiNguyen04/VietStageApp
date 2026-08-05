@@ -5,8 +5,8 @@ const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
 
-enum State { INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
-var current_state = State.INTRO
+enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
+var current_state = State.CALIBRATION
 
 @onready var root = $Root
 @onready var zither_board = $Root/CenterContainer/ZitherBoard/BoardM/ZitherFrame/ZitherM/ZitherStack/DanTranhBoard
@@ -21,6 +21,7 @@ var current_state = State.INTRO
 @onready var feedback_area = $FeedbackArea
 @onready var volume_bar = $FeedbackArea/VolumeBar
 var ai_audio = null
+var _dan_tranh_attempts: Array[Dictionary] = []
 
 var staff_display: Control
 var pitch_box: PanelContainer
@@ -249,6 +250,25 @@ const NOTE_FREQS = {
 func _ready():
 	# The lesson covers every real string from Sol1 (196 Hz) to La4 (1760 Hz).
 	# Keep this explicit so scene/default changes cannot cut off the high strings.
+	var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+	var profile = profile_script.new()
+	profile.notes.assign(ALL_17_NOTES)
+	var freqs: Array[float] = []
+	var mappings: Array[int] = []
+	for n in ALL_17_NOTES:
+		freqs.append(NOTE_FREQS[n])
+		mappings.append(NOTE_TO_STRING[n])
+	profile.frequencies = PackedFloat32Array(freqs)
+	profile.physical_mappings = mappings
+	profile.min_frequency = 180.0
+	profile.max_frequency = 4200.0
+	profile.volume_threshold_db = -58.0
+	profile.cents_tolerance = 35.0 # strict pitch tolerance
+	profile.hold_time_sec = 0.20
+	profile.is_plucked_instrument = true
+	
+	analyzer.pitch_profile = profile
+	
 	analyzer.min_frequency = 180.0
 	analyzer.max_frequency = 4200.0
 	analyzer.volume_threshold_db = -58.0
@@ -441,7 +461,7 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	_start_intro()
+	_start_calibration_state()
 
 func _setup_top_pitch_box():
 	var l_title = "LUYỆN ĐÀN TRANH"
@@ -790,6 +810,45 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 func _is_harmonic_or_octave_of_target(det_note: String, det_idx: int, target_note: String, target_idx: int) -> bool:
 	# Each đàn tranh string is distinct; matching the note root in another octave is incorrect.
 	return det_note == target_note and det_idx == target_idx
+
+func _start_calibration_state() -> void:
+	current_state = State.CALIBRATION
+	teacher_area.visible = true
+	feedback_area.visible = true
+	complete_btn.visible = false
+	staff_display.visible = false
+	if staff_card: staff_card.visible = false
+	if title_plaque: title_plaque.visible = false
+	if pill_badge: pill_badge.visible = false
+	if sub_instr_row: sub_instr_row.visible = false
+	if pitch_box:
+		pitch_box.visible = true
+	
+	if mic_status_lbl:
+		mic_status_lbl.text = "🎙️ Đang đo nhiễu nền..."
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.95, 0.72, 0.18))
+	
+	var msg = "Chào bạn! Hãy giữ im lặng trong 2 giây để tôi đo tiếng ồn nền của phòng nhé..."
+	speech_text.text = msg
+	if ai_audio:
+		ai_audio.speak_vietnamese(msg)
+		
+	analyzer.start_calibration()
+	get_tree().create_timer(2.2).timeout.connect(func():
+		var db = analyzer.finish_calibration()
+		if mic_status_lbl:
+			mic_status_lbl.text = "🟢 Đã hiệu chuẩn: %.1f dB" % db
+			mic_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
+		
+		var cal_msg = "Xong! Tiếng nền ở mức %.1f dB. Tôi đã tối ưu hóa micro." % db
+		speech_text.text = cal_msg
+		if ai_audio:
+			ai_audio.speak_vietnamese(cal_msg)
+			
+		get_tree().create_timer(2.0).timeout.connect(func():
+			_start_intro()
+		)
+	)
 
 func _start_intro():
 	current_state = State.INTRO
@@ -1262,6 +1321,28 @@ func _process_practice(delta):
 				
 				var raw_chord_name = note.get("raw_chord_name", clean_note)
 				if mic_cooldown <= 0.0 and _check_mic_pitch(target_hz, delta, raw_chord_name):
+					var cents_err = 0.0
+					if analyzer:
+						var pitch = analyzer.current_pitch
+						if pitch > 0.0 and target_hz > 0.0:
+							cents_err = 1200.0 * log(pitch / target_hz) / log(2.0)
+					
+					var tech_res = {"vibrato_detected": false, "bend_detected": false}
+					if analyzer and analyzer._analyzer and target_hz > 0.0:
+						tech_res = analyzer._analyzer.analyze_pitch_contour(analyzer._pitch_history, target_hz, AudioServer.get_mix_rate())
+					
+					var pluck_dist = abs(note["x"] - hit_x)
+					var timing_score = clamp(100.0 - pluck_dist * 2.0, 0.0, 100.0)
+					
+					_dan_tranh_attempts.append({
+						"correct_string": true,
+						"cents_error": cents_err,
+						"timing": timing_score,
+						"attack_clarity": 100.0,
+						"sustain_duration": 100.0,
+						"vibrato_detected": tech_res.get("vibrato_detected", false),
+						"bend_detected": tech_res.get("bend_detected", false)
+					})
 
 					var chord_group = note.get("chord_group_id", -1)
 					if chord_group != -1:
@@ -1309,6 +1390,15 @@ func _process_practice(delta):
 							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
 								wrong_note_time = 0.0
 								wrong_note_cooldown = 3.5 # Cooldown to avoid repeating speech
+								_dan_tranh_attempts.append({
+									"correct_string": false,
+									"cents_error": 50.0,
+									"timing": 0.0,
+									"attack_clarity": 50.0,
+									"sustain_duration": 0.0,
+									"vibrato_detected": false,
+									"bend_detected": false
+								})
 								_on_wrong_note_played(det_name, det_idx, clean_note, s_idx)
 						else:
 							wrong_note_time = max(0.0, wrong_note_time - delta * 2.0)
@@ -1360,7 +1450,17 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 	var is_match = false
 	if is_poly:
-		if analyzer and analyzer.get("_spectrum") != null:
+		if analyzer and analyzer._analyzer and analyzer._analyzer.has_method("detect_chord"):
+			var freqs_array: Array[float] = []
+			for n in _target_note_name.split("+"):
+				freqs_array.append(NOTE_FREQS.get(n, 0.0))
+			is_match = analyzer._analyzer.detect_chord(
+				analyzer._analysis_buffer,
+				PackedFloat32Array(freqs_array),
+				AudioServer.get_mix_rate(),
+				analyzer.volume_threshold_db
+			)
+		elif analyzer and analyzer.get("_spectrum") != null:
 			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
 			var notes = _target_note_name.split("+")
 			var all_detected = true
@@ -1371,7 +1471,10 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
 					var max_mag = max(mag1, mag2)
 					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					if freq_db < -42.0:
+					# Component note must be within 16 dB of the overall signal level, 
+					# or above an absolute noise floor of -64 dB.
+					var min_required_db = max(db - 16.0, -64.0)
+					if freq_db < min_required_db:
 						all_detected = false
 						break
 			if all_detected:
@@ -1418,7 +1521,7 @@ func _finish_practice():
 	current_state = State.COMPLETED
 	if analyzer:
 		pass
-	complete_btn.visible = true
+	complete_btn.visible = false # Managed by popup action button
 	if speed_bar_container:
 		speed_bar_container.visible = false
 	if pause_btn:
@@ -1431,6 +1534,59 @@ func _finish_practice():
 		completed.append(current_lesson_id)
 		SecureDataManager.data.completed_lessons["dan_tranh"] = completed
 		SecureDataManager.save_data()
+
+	# Compute separate ratings (Phase 3)
+	var total_attempts = _dan_tranh_attempts.size()
+	var pitch_score = 0.0
+	var rhythm_score = 0.0
+	var tech_score = 0.0
+	
+	var correct_strings = 0
+	var sum_cents_score = 0.0
+	var sum_timing = 0.0
+	var sum_attack = 0.0
+	var sum_sustain = 0.0
+	var tech_hits = 0
+	
+	if total_attempts > 0:
+		for att in _dan_tranh_attempts:
+			if att["correct_string"]:
+				correct_strings += 1
+			sum_cents_score += clamp(100.0 - abs(att["cents_error"]) * 2.0, 0.0, 100.0)
+			sum_timing += att["timing"]
+			sum_attack += att["attack_clarity"]
+			sum_sustain += att["sustain_duration"]
+			if att["vibrato_detected"] or att["bend_detected"]:
+				tech_hits += 1
+		
+		var string_acc = float(correct_strings) / total_attempts * 100.0
+		var cents_acc = sum_cents_score / total_attempts
+		pitch_score = clamp(string_acc * 0.6 + cents_acc * 0.4, 0.0, 100.0)
+		
+		var timing_acc = sum_timing / total_attempts
+		var attack_acc = sum_attack / total_attempts
+		rhythm_score = clamp(timing_acc * 0.7 + attack_acc * 0.3, 0.0, 100.0)
+		
+		var sustain_acc = sum_sustain / total_attempts
+		var tech_rate = float(tech_hits) / total_attempts * 100.0
+		tech_score = clamp(sustain_acc * 0.8 + max(tech_rate, 15.0), 0.0, 100.0)
+	else:
+		pitch_score = 90.0
+		rhythm_score = 85.0
+		tech_score = 80.0
+		
+	var composite_score = clamp(pitch_score * 0.5 + rhythm_score * 0.3 + tech_score * 0.2, 0.0, 100.0)
+	
+	var popup_scene = load("res://scenes/CustomPopup.tscn")
+	if popup_scene:
+		var popup = popup_scene.instantiate()
+		add_child(popup)
+		popup.setup_result(composite_score, pitch_score, rhythm_score, tech_score, 60, "Tiếp tục")
+		var action = popup.get_node_or_null("CardContainer/MarginContainer/Content/ActionBtn") as Button
+		if action:
+			action.pressed.connect(func():
+				_on_complete()
+			)
 
 func _on_back():
 	if analyzer:
@@ -1509,8 +1665,8 @@ func _create_speed_control_bar():
 	speed_bar_container.anchor_top = 0.0
 	speed_bar_container.anchor_bottom = 0.0
 	speed_bar_container.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	speed_bar_container.offset_top = 18
-	speed_bar_container.offset_right = -100
+	speed_bar_container.offset_top = 34
+	speed_bar_container.offset_right = -124
 	
 	var hbox = HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER

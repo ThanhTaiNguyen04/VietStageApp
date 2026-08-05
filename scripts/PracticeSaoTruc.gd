@@ -536,6 +536,26 @@ func _ready() -> void:
 		visualizer.name = "WaveformVisualizer"
 		visualizer.custom_minimum_size = Vector2(0, 93)
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		profile.notes.assign(FREQS.keys())
+		var freqs_array: Array[float] = []
+		var mappings_array: Array[int] = []
+		var keys = FREQS.keys()
+		for i in range(keys.size()):
+			freqs_array.append(FREQS[keys[i]])
+			mappings_array.append(i)
+		profile.frequencies = PackedFloat32Array(freqs_array)
+		profile.physical_mappings = mappings_array
+		
+		profile.min_frequency = 250.0
+		profile.max_frequency = 2200.0
+		profile.volume_threshold_db = -45.0
+		profile.cents_tolerance = 40.0
+		profile.hold_time_sec = 0.40
+		profile.is_plucked_instrument = false
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 250.0
 		visualizer.max_frequency = 2200.0
 		visualizer.volume_threshold_db = -45.0

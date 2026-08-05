@@ -245,6 +245,28 @@ const NOTE_FREQS = {
 }
 
 func _ready():
+	# Configure InstrumentPitchProfile for Sao Truc (Flute)
+	var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+	var profile = profile_script.new()
+	profile.notes.assign(NOTE_FREQS.keys())
+	var freqs_array: Array[float] = []
+	var mappings_array: Array[int] = []
+	var keys = NOTE_FREQS.keys()
+	for i in range(keys.size()):
+		freqs_array.append(NOTE_FREQS[keys[i]])
+		mappings_array.append(i)
+	profile.frequencies = PackedFloat32Array(freqs_array)
+	profile.physical_mappings = mappings_array
+	
+	profile.min_frequency = 250.0
+	profile.max_frequency = 2200.0
+	profile.volume_threshold_db = -45.0
+	profile.cents_tolerance = 40.0
+	profile.hold_time_sec = 0.40
+	profile.is_plucked_instrument = false
+	
+	analyzer.pitch_profile = profile
+	
 	volume_bar.visible = false
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = -5.0

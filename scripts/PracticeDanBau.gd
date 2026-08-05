@@ -198,6 +198,34 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		var file = FileAccess.open("res://data/dan_bau_notes.json", FileAccess.READ)
+		if file:
+			var json_str = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_str) == OK:
+				var table = json.get_data()
+				var p_notes: Array[String] = []
+				var p_freqs: Array[float] = []
+				var p_mappings: Array[int] = []
+				for entry in table:
+					p_notes.append(entry["note"])
+					p_freqs.append(entry["hz"])
+					p_mappings.append(entry["midi"])
+				profile.notes = p_notes
+				profile.frequencies = PackedFloat32Array(p_freqs)
+				profile.physical_mappings = p_mappings
+		
+		profile.min_frequency = 85.0
+		profile.max_frequency = 1100.0
+		profile.volume_threshold_db = -45.0
+		profile.cents_tolerance = 25.0
+		profile.hold_time_sec = 0.20
+		profile.is_plucked_instrument = true
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 85.0
 		visualizer.max_frequency = 1100.0
 		visualizer.volume_threshold_db = -45.0

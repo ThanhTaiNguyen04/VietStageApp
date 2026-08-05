@@ -34,6 +34,11 @@ public:
 	Dictionary detect_dan_tranh_note(const PackedFloat32Array &samples, float sample_rate);
 	Dictionary detect_note_onset_and_duration(const PackedFloat32Array &samples, float sample_rate, float threshold_db);
 	Dictionary evaluate_dan_tranh_note_performance(float detected_freq, float detected_duration, float target_freq, float target_duration, float pitch_tolerance_cents, float duration_tolerance_sec);
+
+	// Unified & Advanced DSP methods
+	float correct_octave_doubling(float detected_pitch, const PackedFloat32Array &samples, float sample_rate);
+	bool detect_chord(const PackedFloat32Array &samples, const PackedFloat32Array &target_frequencies, float sample_rate, float threshold_db);
+	Dictionary analyze_pitch_contour(const PackedFloat32Array &pitch_history, float target_freq, float sample_rate);
 };
 
 
