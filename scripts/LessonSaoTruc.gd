@@ -799,7 +799,7 @@ func _process(delta):
 				var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
 				var duration = note_data.get("duration", 1.0)
 				var tail_w = duration * 300.0
-				var color = Color(0.96, 0.75, 0.25)
+				var color = Color(0.1, 0.1, 0.1, 1.0) if sample_active else Color(0.6, 0.6, 0.6, 0.9)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
 				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w})
@@ -849,18 +849,18 @@ func _process_rhythm(delta, rect):
 					
 		if is_correct:
 			time_delta = delta
-			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
+			current_overlapping_note["color"] = Color(0.2, 0.8, 0.3, 1.0)
 			mic_status.text = "Tuyệt! Giữ nốt..."
-			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.3))
 		else:
 			time_delta = -delta * 1.5
 			wrong_rhythm_duration += delta
-			current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
+			current_overlapping_note["color"] = Color(0.9, 0.15, 0.15, 1.0)
 			if is_blowing:
 				mic_status.text = "Sai ngón! Thổi lại..."
 			else:
 				mic_status.text = ""
-			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+			mic_status.add_theme_color_override("font_color", Color(0.9, 0.15, 0.15))
 	else:
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
@@ -1373,27 +1373,27 @@ func _check_advance(delta: float, state: int):
 		_practice_time += delta
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
+		_set_note_color(Color(0.6, 0.6, 0.6, 0.9)) # Xám ban đầu
 	else:
 		if state == 1:
 			_practice_time += delta
-			_set_note_color(Color(0.2, 0.8, 0.2)) # Xanh lá
+			_set_note_color(Color(0.2, 0.8, 0.3, 1.0)) # Xanh lá
 			var time_left = max(0, step_decimals(end_time - _practice_time))
 			mic_status.text = "Thổi tốt! Giữ thêm " + str(time_left) + "s..."
-			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.3))
 			
 			if _practice_time >= end_time:
 				_advance_practice_note()
 		elif state == -1:
 			# Lùi thời gian về lại vị trí bắt đầu nốt (rewind)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
-			_set_note_color(Color(0.9, 0.2, 0.2)) # Đỏ
+			_set_note_color(Color(0.9, 0.15, 0.15, 1.0)) # Đỏ
 			mic_status.text = "Sai nốt rồi! Hãy sửa lại."
-			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+			mic_status.add_theme_color_override("font_color", Color(0.9, 0.15, 0.15))
 		else:
 			# state == 0 (idle)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
-			_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
+			_set_note_color(Color(0.6, 0.6, 0.6, 0.9)) # Xám ban đầu
 			mic_status.text = ""
 
 
@@ -1514,7 +1514,7 @@ func _start_rhythm_game():
 			"time": note["time"],
 			"duration": note.get("duration", 1.0),
 			"note_name": note["note"],
-			"color": Color(0.96, 0.75, 0.25),
+			"color": Color(0.6, 0.6, 0.6, 0.9),
 			"hit": false,
 			"failed": false
 		})

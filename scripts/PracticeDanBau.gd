@@ -338,11 +338,9 @@ func _process(delta: float) -> void:
 			var note_x = hit_x + (note_time - _current_time_beats) * pixels_per_beat
 			var tail_w = min(120.0, duration * 120.0) # Discrete tail per beat instead of long connecting bar
 			
-			var col = Color("#d6a033") # Golden note color
-			if i == _note_idx:
-				col = Color("#e53935") # Highlight active note
-			elif i < _note_idx:
-				col = Color("#388e3c") # Played note
+			var col = Color(0.6, 0.6, 0.6, 0.9) # Gray by default for unplayed notes
+			if i < _note_idx:
+				col = Color(0.2, 0.8, 0.3, 1.0) # Played/correct note
 				
 			if note_x < _staff_display.size.x + 400 and note_x > -300:
 				notes_for_staff.append({

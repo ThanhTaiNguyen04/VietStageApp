@@ -974,7 +974,7 @@ func _schedule_next_single_note():
 		
 	var staff_notes = []
 	for n in notes:
-		staff_notes.append({"note": "ZT_" + n, "x": staff_display.hit_line_x, "color": C_JADE})
+		staff_notes.append({"note": "ZT_" + n, "x": staff_display.hit_line_x, "color": Color(0.6, 0.6, 0.6, 0.9)})
 	staff_display.set_notes(staff_notes)
 
 func _process_practice_single(delta: float) -> void:
@@ -1054,7 +1054,7 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	# Turn note head RED on staff to signal wrong note, but DO NOT advance!
 	for note in active_falling_notes:
 		if not note.get("hit", false):
-			note["color"] = Color(0.95, 0.25, 0.25) # Red note head
+			note["color"] = Color(0.9, 0.15, 0.15, 1.0) # Red note head
 			break
 			
 	zither_board.call("clear_lesson_markers")
@@ -1071,14 +1071,14 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 		
 	# Red staff highlight for wrong note attempt (only in intro/explore static mode)
 	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
-		staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.2, 0.2)}])
+		staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.15, 0.15, 1.0)}])
 	
 	if ai_audio:
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
 
 func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
-	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.2)}])
+	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.3, 1.0)}])
 	var string_idx = NOTE_TO_STRING.get(note_name, 0)
 	zither_board.call("clear_lesson_markers")
 	zither_board.call("set_lesson_marker", string_idx, note_name, 2)
@@ -1101,7 +1101,7 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 	zither_board.call("clear_lesson_markers")
 	
 	for n in notes:
-		staff_notes.append({"note": "ZT_" + n, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.2)})
+		staff_notes.append({"note": "ZT_" + n, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.3, 1.0)})
 		var string_idx = NOTE_TO_STRING.get(n, 0)
 		zither_board.call("set_lesson_marker", string_idx, n, 2)
 		
@@ -1164,7 +1164,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		for note in active_falling_notes:
 			if note.get("is_missing", false) and not note.get("hit", false) and not note.get("missed", false):
 				if note["target_string"] == idx and abs(note["x"] - hit_x) < 40.0:
-					note["color"] = Color(0.2, 0.8, 0.2)
+					note["color"] = Color(0.2, 0.8, 0.3, 1.0)
 					note["hit"] = true
 					consecutive_hits += 1
 					consecutive_misses = 0
@@ -1234,11 +1234,11 @@ func _start_practice():
 			var tail_len = 0.0 # Dan Tranh is a plucked zither instrument, so no extended hold tail!
 			var is_demo_lesson = (current_lesson_id == "dan_tranh_level_1_bai_3_practice")
 			var missing = true
-			var note_color = C_JADE
+			var note_color = Color(0.6, 0.6, 0.6, 0.9) # Gray by default for fill-in notes
 			
 			if is_demo_lesson:
 				missing = _is_note_missing(i)
-				note_color = Color(1.0, 0.45, 0.0) if missing else Color(0.7, 0.7, 0.7, 0.5)
+				note_color = Color(0.6, 0.6, 0.6, 0.9) if missing else Color(0.1, 0.1, 0.1, 1.0)
 				
 			var cue_name = current_song_cues[i] if i < current_song_cues.size() else ""
 			
@@ -1348,11 +1348,11 @@ func _process_practice(delta):
 					if chord_group != -1:
 						for other_note in active_falling_notes:
 							if other_note.get("chord_group_id", -1) == chord_group:
-								other_note["color"] = Color(0.2, 0.8, 0.2)
+								other_note["color"] = Color(0.2, 0.8, 0.3, 1.0)
 								other_note["hit"] = true
 								zither_board.call("pluck", other_note["target_string"])
 					else:
-						note["color"] = Color(0.2, 0.8, 0.2)
+						note["color"] = Color(0.2, 0.8, 0.3, 1.0)
 						note["hit"] = true
 						zither_board.call("pluck", s_idx)
 						
@@ -1407,7 +1407,7 @@ func _process_practice(delta):
 		if not is_wait_mode and not is_sample_mode and not note.get("hit", false) and not note.get("missed", false) and note["x"] < hit_x - 30.0:
 
 			note["missed"] = true
-			note["color"] = Color(0.9, 0.1, 0.1, 1.0) # Solid bright red for missed/wrong note
+			note["color"] = Color(0.9, 0.15, 0.15, 1.0) # Solid red for missed/wrong note
 			zither_board.call("clear_lesson_markers")
 			
 			# Dynamic tempo & Fail state logic
