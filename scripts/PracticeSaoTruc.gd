@@ -54,7 +54,7 @@ var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _breath_scores : Array[float] = []
 
-var _is_wait_mode := true
+var _is_wait_mode := false
 var _is_demo_mode := false
 var _speed_scale := 1.0
 var _total_mistakes := 0
@@ -1663,15 +1663,15 @@ func _process_real_audio(delta: float) -> void:
 					pitch_note.text = detected_note + ("²" if is_overblowing else "")
 				else:
 					pitch_note.text = "—"
-				pitch_status.text = "Chưa đúng nốt"
+				pitch_status.text = "Lệch âm: %s (Cần: %s)" % [detected_note if detected_note != "" else "?", target_note + ("²" if is_overblowing else "")]
 				pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 				pitch_note.add_theme_color_override("font_color", C_RED_ERR)
 			else:
 				# Silence
 				pitch_note.text = "—"
 				pitch_status.text = "Đang nghe..."
-				pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
-				pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+				pitch_status.add_theme_color_override("font_color", C_GOLD)
+				pitch_note.add_theme_color_override("font_color", C_GOLD)
 			
 		if _current_note_elapsed >= target_duration:
 			var accuracy := 0.0
@@ -1825,8 +1825,8 @@ func _process_real_audio(delta: float) -> void:
 	else:
 		pitch_note.text = "—"
 		pitch_status.text = "Đang nghe..."
-		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
-		pitch_note.add_theme_color_override("font_color", C_TEXT_MUTED)
+		pitch_status.add_theme_color_override("font_color", C_GOLD)
+		pitch_note.add_theme_color_override("font_color", C_GOLD)
 		_active_note_is_correct = false
 		_active_note_is_heard = false
 
