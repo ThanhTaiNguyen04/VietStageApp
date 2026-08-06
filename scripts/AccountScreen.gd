@@ -2,6 +2,13 @@ extends Control
 
 const ApiClientScript = preload("res://scripts/ApiClient.gd")
 
+# Minimalist UI colors
+const C_BG_WARM := Color("#F7F6F3")       # Bone background
+const C_CARD_BG := Color("#FFFFFF")       # Pure White background
+const C_BORDER := Color("#EAEAEA")        # Crisp light border
+const C_TEXT_MAIN := Color("#111111")     # Charcoal main text
+const C_TEXT_MUTED := Color("#787774")    # Gray muted text
+
 const C_GOLD := Color("#C59626")
 const C_JADE := Color("#173F2D")
 const C_INK := Color("#261A13")
@@ -9,26 +16,31 @@ const C_MUTED := Color("#75685E")
 const C_RED := Color("#A63D32")
 const C_GREEN := Color("#2F8A55")
 
+# Spot pastels for status
+const C_PASTEL_GREEN_BG := Color("#EDF3EC")
+const C_PASTEL_GREEN_TXT := Color("#346538")
+const C_PASTEL_RED_BG := Color("#FDEBEC")
+const C_PASTEL_RED_TXT := Color("#9F2F2D")
+
+# Format: [key, title, icon_name, icon_color, pastel_bg_color]
 const INFO_FIELDS := [
-	["email", "Email", "mail", Color("#386B86")],
-	["userCode", "Mã tài khoản", "hash", Color("#9A6B16")],
-	["id", "ID hệ thống", "user", Color("#6A5A92")],
-	["createdAt", "Ngày tham gia", "calendar-days", Color("#5876B7")],
+	["email", "Email", "mail", Color("#1F6C9F"), Color("#E1F3FE")],
+	["userCode", "Mã tài khoản", "hash", Color("#956400"), Color("#FBF3DB")],
+	["id", "ID hệ thống", "user", Color("#5C5870"), Color("#F1F0F5")],
+	["createdAt", "Ngày tham gia", "calendar-days", Color("#4B617D"), Color("#EAEFF5")],
 ]
 
 const STAT_FIELDS := [
-	["total_points", "Điểm", "sparkles", Color("#C59626")],
-	["total_stars", "Sao", "star", Color("#D59420")],
-	["completed_lessons", "Bài học", "graduation-cap", Color("#319365")],
-	["current_streak", "Chuỗi hiện tại", "flame", Color("#D9683A")],
-	["longest_streak", "Kỷ lục", "trophy", Color("#8A6330")],
-	["adaptive_difficulty", "Độ khó", "gauge", Color("#5876B7")],
+	["total_points", "Điểm", "sparkles", Color("#956400"), Color("#FBF3DB")],
+	["total_stars", "Sao", "star", Color("#956400"), Color("#FBF3DB")],
+	["completed_lessons", "Bài học", "graduation-cap", Color("#346538"), Color("#EDF3EC")],
+	["current_streak", "Chuỗi hiện tại", "flame", Color("#9F2F2D"), Color("#FDEBEC")],
+	["longest_streak", "Kỷ lục", "trophy", Color("#956400"), Color("#FBF3DB")],
+	["adaptive_difficulty", "Độ khó", "gauge", Color("#1F6C9F"), Color("#E1F3FE")],
 ]
 
-@onready var top_bar: PanelContainer = $Root/TopBar
-@onready var top_margin: MarginContainer = $Root/TopBar/TopMargin
-@onready var back_button: Button = $Root/TopBar/TopMargin/TopRow/BackButton
-@onready var title_label: Label = $Root/TopBar/TopMargin/TopRow/Title
+@onready var back_button: Button = $FloatingMargin/BackButton
+@onready var title_label: Label = $Root/ContentMargin/Scroll/Center/Content/Title
 @onready var content_margin: MarginContainer = $Root/ContentMargin
 @onready var content: VBoxContainer = $Root/ContentMargin/Scroll/Center/Content
 @onready var state_card: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/StateCard
@@ -67,6 +79,23 @@ func _ready() -> void:
 	avatar_request.request_completed.connect(_on_avatar_loaded)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
+	
+	# Bouncy hover/press micro-interactions for the floating back button
+	back_button.pivot_offset = Vector2(40, 40)
+	back_button.mouse_entered.connect(func() -> void:
+		create_tween().tween_property(back_button, "scale", Vector2(1.15, 1.15), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	back_button.mouse_exited.connect(func() -> void:
+		create_tween().tween_property(back_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	back_button.button_down.connect(func() -> void:
+		create_tween().tween_property(back_button, "scale", Vector2(0.9, 0.9), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	)
+	back_button.button_up.connect(func() -> void:
+		var tgt := Vector2(1.15, 1.15) if back_button.is_hovered() else Vector2.ONE
+		create_tween().tween_property(back_button, "scale", tgt, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	
 	call_deferred("_refresh_from_api")
 
 
@@ -112,18 +141,17 @@ func _render_profile() -> void:
 	role_label.text = _role_name(str(_profile.get("role", "")))
 	var active: bool = bool(_profile.get("active", false))
 	status_label.text = "Hoạt động" if active else "Tạm khóa"
-	var status_color := C_GREEN if active else C_RED
-	status_dot.color = status_color
-	status_label.add_theme_color_override("font_color", C_JADE if active else C_RED)
-	status_pill.add_theme_stylebox_override("panel", _flat(
-		Color(status_color.r, status_color.g, status_color.b, 0.10),
-		Color(status_color.r, status_color.g, status_color.b, 0.25), 14, 1
-	))
+	
+	var status_bg := C_PASTEL_GREEN_BG if active else C_PASTEL_RED_BG
+	var status_fg := C_PASTEL_GREEN_TXT if active else C_PASTEL_RED_TXT
+	status_dot.color = status_fg
+	status_label.add_theme_color_override("font_color", status_fg)
+	status_pill.add_theme_stylebox_override("panel", _flat(status_bg, C_BORDER, 14, 1))
 
 	_clear_children(info_grid)
 	for field: Array in INFO_FIELDS:
 		var value := _format_profile_value(str(field[0]), _profile.get(field[0]))
-		info_grid.add_child(_make_data_card(value, str(field[1]), str(field[2]), field[3], false))
+		info_grid.add_child(_make_data_card(value, str(field[1]), str(field[2]), field[3], field[4], false))
 
 	avatar.texture = load("res://assets/textures/default_avatar.png") as Texture2D
 	var avatar_url := str(_profile.get("avatarUrl", "")).strip_edges()
@@ -137,29 +165,29 @@ func _render_summary(summary: Dictionary) -> void:
 	for field: Array in STAT_FIELDS:
 		var raw_value: Variant = summary.get(field[0], null)
 		var value := "—" if raw_value == null else _format_number(int(raw_value))
-		stats_grid.add_child(_make_data_card(value, str(field[1]), str(field[2]), field[3], true))
+		stats_grid.add_child(_make_data_card(value, str(field[1]), str(field[2]), field[3], field[4], true))
 	progress_state.visible = false
 	stats_grid.visible = true
 
 
-func _make_data_card(value: String, caption: String, icon_name: String, accent: Color, compact: bool) -> PanelContainer:
+func _make_data_card(value: String, caption: String, icon_name: String, accent: Color, bg_pastel: Color, compact: bool) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 84 if compact else 88)
+	panel.custom_minimum_size = Vector2(0, 92 if compact else 96)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _data_card_style(accent))
 	var margin := MarginContainer.new()
 	for side: String in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + side, 14)
+		margin.add_theme_constant_override("margin_" + side, 16)
 	for side: String in ["top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 12)
+		margin.add_theme_constant_override("margin_" + side, 14)
 	panel.add_child(margin)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
+	row.add_theme_constant_override("separation", 14)
 	margin.add_child(row)
 	var icon_wrap := PanelContainer.new()
-	icon_wrap.custom_minimum_size = Vector2(40, 40)
+	icon_wrap.custom_minimum_size = Vector2(46, 46)
 	icon_wrap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	icon_wrap.add_theme_stylebox_override("panel", _flat(Color(accent.r, accent.g, accent.b, 0.10), Color.TRANSPARENT, 12, 0))
+	icon_wrap.add_theme_stylebox_override("panel", _flat(bg_pastel, Color.TRANSPARENT, 12, 0))
 	row.add_child(icon_wrap)
 	var icon := TextureRect.new()
 	icon.texture = _icon(icon_name)
@@ -170,21 +198,21 @@ func _make_data_card(value: String, caption: String, icon_name: String, accent: 
 	var labels := VBoxContainer.new()
 	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	labels.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	labels.add_theme_constant_override("separation", 2)
+	labels.add_theme_constant_override("separation", 3)
 	row.add_child(labels)
 	var value_label := Label.new()
 	value_label.text = value
 	value_label.tooltip_text = value
 	value_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	value_label.add_theme_font_override("font", _font_bold())
-	value_label.add_theme_font_size_override("font_size", 18 if compact else 15)
-	value_label.add_theme_color_override("font_color", C_INK)
+	value_label.add_theme_font_size_override("font_size", 22 if compact else 18)
+	value_label.add_theme_color_override("font_color", C_TEXT_MAIN)
 	labels.add_child(value_label)
 	var caption_label := Label.new()
 	caption_label.text = caption
 	caption_label.add_theme_font_override("font", _font_regular())
-	caption_label.add_theme_font_size_override("font_size", 11)
-	caption_label.add_theme_color_override("font_color", C_MUTED)
+	caption_label.add_theme_font_size_override("font_size", 13)
+	caption_label.add_theme_color_override("font_color", C_TEXT_MUTED)
 	labels.add_child(caption_label)
 	return panel
 
@@ -239,29 +267,27 @@ func _on_avatar_loaded(_result: int, response_code: int, headers: PackedStringAr
 	if error == OK:
 		avatar.texture = ImageTexture.create_from_image(avatar_image)
 
+
 func _build_theme() -> void:
-	var top_s := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 0, 0)
-	top_s.border_width_bottom = 1
-	top_bar.add_theme_stylebox_override("panel", top_s)
 	profile_card.add_theme_stylebox_override("panel", _profile_style())
 	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
 	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(120.0))
 	title_label.add_theme_font_override("font", _font_display())
-	title_label.add_theme_color_override("font_color", C_INK)
+	title_label.add_theme_color_override("font_color", C_TEXT_MAIN)
 	name_label.add_theme_font_override("font", _font_display())
-	name_label.add_theme_color_override("font_color", C_INK)
+	name_label.add_theme_color_override("font_color", C_TEXT_MAIN)
 	for label: Label in [account_title, learning_title]:
 		label.add_theme_font_override("font", _font_bold())
-		label.add_theme_color_override("font_color", C_INK)
+		label.add_theme_color_override("font_color", C_TEXT_MAIN)
 	for label: Label in [role_label, status_label, state_label, progress_state]:
 		label.add_theme_font_override("font", _font_regular())
-	role_label.add_theme_color_override("font_color", C_MUTED)
+	role_label.add_theme_color_override("font_color", C_TEXT_MUTED)
 	state_label.add_theme_color_override("font_color", C_JADE)
-	progress_state.add_theme_color_override("font_color", C_MUTED)
+	progress_state.add_theme_color_override("font_color", C_TEXT_MUTED)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_style_back_button(back_button, C_INK)
-	_set_icon_button(retry_button, "rotate-cw", C_INK)
+	_style_back_button(back_button, Color.WHITE)
+	_set_icon_button(retry_button, "rotate-cw", C_TEXT_MAIN)
 
 
 func _apply_responsive_layout() -> void:
@@ -272,9 +298,7 @@ func _apply_responsive_layout() -> void:
 	content.custom_minimum_size.x = minf(780.0, maxf(292.0, width - float(side * 2)))
 	content_margin.add_theme_constant_override("margin_left", side)
 	content_margin.add_theme_constant_override("margin_right", side)
-	content_margin.add_theme_constant_override("margin_top", 12 if mobile else 20)
-	top_margin.add_theme_constant_override("margin_left", 10 if mobile else 22)
-	top_margin.add_theme_constant_override("margin_right", 10 if mobile else 22)
+	content_margin.add_theme_constant_override("margin_top", 32 if mobile else 48)
 	card_margin.add_theme_constant_override("margin_left", 16 if mobile else 28)
 	card_margin.add_theme_constant_override("margin_right", 16 if mobile else 28)
 	card_margin.add_theme_constant_override("margin_top", 20 if mobile else 26)
@@ -287,8 +311,8 @@ func _apply_responsive_layout() -> void:
 	status_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if portrait_layout else Control.SIZE_SHRINK_BEGIN
 	info_grid.columns = 1 if width < 440.0 else 2
 	stats_grid.columns = 1 if width < 340.0 else (2 if width < 660.0 else 3)
-	title_label.add_theme_font_size_override("font_size", 22 if mobile else 26)
-	name_label.add_theme_font_size_override("font_size", 24 if mobile else 28)
+	title_label.add_theme_font_size_override("font_size", 30 if mobile else 40)
+	name_label.add_theme_font_size_override("font_size", 28 if mobile else 34)
 	var avatar_size := 104.0 if mobile else 120.0
 	avatar_frame.custom_minimum_size = Vector2(avatar_size, avatar_size)
 	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(avatar_size))
@@ -308,7 +332,6 @@ func _animate_profile() -> void:
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(profile_card, "modulate:a", 1.0, 0.22)
 	tween.tween_property(profile_card, "position:y", target_y, 0.30).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-
 
 
 func _go_back() -> void:
@@ -364,10 +387,10 @@ func _style_back_button(button: Button, color: Color) -> void:
 	button.icon = _icon("arrow-left")
 	button.expand_icon = true
 	button.add_theme_color_override("icon_normal_color", color)
-	button.add_theme_color_override("icon_hover_color", C_GOLD)
-	button.add_theme_color_override("icon_pressed_color", color)
+	button.add_theme_color_override("icon_hover_color", Color.WHITE.darkened(0.15))
+	button.add_theme_color_override("icon_pressed_color", Color.WHITE.darkened(0.3))
 	button.add_theme_color_override("icon_focus_color", color)
-	button.add_theme_constant_override("icon_max_width", 26)
+	button.add_theme_constant_override("icon_max_width", 78)
 
 	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
@@ -419,25 +442,25 @@ func _font_regular() -> Font:
 
 
 func _profile_style() -> StyleBoxFlat:
-	var style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 25, 1)
-	style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
-	style.shadow_size = 22
-	style.shadow_offset = Vector2(0, 9)
+	var style := _flat(Color(0.99, 0.99, 0.98, 0.85), Color(0, 0, 0, 0.08), 20, 1)
+	style.shadow_color = Color(0, 0, 0, 0.02)
+	style.shadow_size = 12
+	style.shadow_offset = Vector2(0, 4)
 	return style
 
 
 func _avatar_style(size: float = 104.0) -> StyleBoxFlat:
 	var radius := int(size / 2.0)
-	var style := _flat(Color.WHITE, C_GOLD, radius, 3)
-	style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
-	style.shadow_size = 10
+	var style := _flat(Color.WHITE, C_BORDER, radius, 2)
+	style.shadow_color = Color(0, 0, 0, 0.04)
+	style.shadow_size = 6
 	return style
 
 
 func _data_card_style(accent: Color) -> StyleBoxFlat:
-	var style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(accent.r, accent.g, accent.b, 0.24), 18, 1)
-	style.shadow_color = Color(0.12, 0.08, 0.04, 0.06)
-	style.shadow_size = 6
+	var style := _flat(C_CARD_BG, C_BORDER, 12, 1)
+	style.shadow_color = Color(0, 0, 0, 0.03)
+	style.shadow_size = 4
 	style.shadow_offset = Vector2(0, 2)
 	return style
 

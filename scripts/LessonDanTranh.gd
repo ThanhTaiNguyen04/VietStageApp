@@ -110,108 +110,69 @@ const ALL_17_NOTES: Array[String] = [
 
 const LESSON_DIALOGUES = {
 	"dan_tranh_level_1_bai_1_practice": [
-		{"action": "speak", "text": "Chào bạn! Đây là bài học Đàn Tranh đầu tiên. Hôm nay chúng ta sẽ làm quen với lần lượt trọn vẹn 17 dây đàn từ Sol1 đến La4 nhé.", "highlight": -1},
-		{"action": "speak", "text": "Dây 1: Nốt Sol1 (196Hz). Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
-		{"action": "speak", "text": "Dây 2: Nốt La1 (220Hz). Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
-		{"action": "speak", "text": "Dây 3: Nốt Đô2 (261Hz). Hãy gảy nốt Đô2 ở dây thứ 3 trên đàn.", "highlight": 2},
-		{"action": "speak", "text": "Dây 4: Nốt Rê2 (293Hz). Hãy gảy nốt Rê2 ở dây thứ 4 trên đàn.", "highlight": 3},
-		{"action": "speak", "text": "Dây 5: Nốt Mi2 (329Hz). Hãy gảy nốt Mi2 ở dây thứ 5 trên đàn.", "highlight": 4},
-		{"action": "speak", "text": "Dây 6: Nốt Sol2 (392Hz). Bước sang quãng trung với nốt Sol2 ở dây thứ 6 trên đàn.", "highlight": 5},
-		{"action": "speak", "text": "Dây 7: Nốt La2 (440Hz). Hãy gảy nốt La2 ở dây thứ 7 trên đàn.", "highlight": 6},
-		{"action": "speak", "text": "Dây 8: Nốt Đô3 (523Hz). Hãy gảy nốt Đô3 ở dây thứ 8 trên đàn.", "highlight": 7},
-		{"action": "speak", "text": "Dây 9: Nốt Rê3 (587Hz). Hãy gảy nốt Rê3 ở dây thứ 9 trên đàn.", "highlight": 8},
-		{"action": "speak", "text": "Dây 10: Nốt Mi3 (659Hz). Hãy gảy nốt Mi3 ở dây thứ 10 trên đàn.", "highlight": 9},
-		{"action": "speak", "text": "Dây 11: Nốt Sol3 (784Hz). Bước sang quãng cao với nốt Sol3 ở dây thứ 11 trên đàn.", "highlight": 10},
-		{"action": "speak", "text": "Dây 12: Nốt La3 (880Hz). Hãy gảy nốt La3 ở dây thứ 12 trên đàn.", "highlight": 11},
-		{"action": "speak", "text": "Dây 13: Nốt Đô4 (1046Hz). Hãy gảy nốt Đô4 ở dây thứ 13 trên đàn.", "highlight": 12},
-		{"action": "speak", "text": "Dây 14: Nốt Rê4 (1174Hz). Hãy gảy nốt Rê4 ở dây thứ 14 trên đàn.", "highlight": 13},
-		{"action": "speak", "text": "Dây 15: Nốt Mi4 (1318Hz). Hãy gảy nốt Mi4 ở dây thứ 15 trên đàn.", "highlight": 14},
-		{"action": "speak", "text": "Dây 16: Nốt Sol4 (1568Hz). Hãy gảy nốt Sol4 ở dây thứ 16 trên đàn.", "highlight": 15},
-		{"action": "speak", "text": "Dây 17: Nốt La4 (1760Hz). Nốt cao nhất của đàn: hãy gảy nốt La4 ở dây thứ 17 trên đàn.", "highlight": 16},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành xuất sắc gảy trọn vẹn cả 17 dây Đàn Tranh!", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với bài học Đàn Tranh đầu tiên. Hôm nay chúng ta sẽ làm quen với tư thế ngồi thẳng lưng và cách đặt đàn nhé.", "highlight": -1},
+		{"action": "speak", "text": "Đầu tiên, hãy làm quen với âm sắc của 5 nốt cơ bản nhất ở quãng trầm của đàn.", "highlight": -1},
+		{"action": "speak", "text": "Dây 1: Nốt Sol1. Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
+		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
+		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy nốt Đô2 ở dây thứ 3 trên đàn.", "highlight": 2},
+		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy nốt Rê2 ở dây thứ 4 trên đàn.", "highlight": 3},
+		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy nốt Mi2 ở dây thứ 5 trên đàn.", "highlight": 4},
+		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành gảy 5 nốt cơ bản đầu tiên của Đàn Tranh!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài gảy ngón cơ bản. Hôm nay chúng ta sẽ dùng ngón cái và ngón trỏ để gảy.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ tập luân phiên trên 3 nốt: Đô2, Rê2 và Mi2.", "highlight": 2},
-		{"action": "speak", "text": "Hãy tập trung giữ form bàn tay tròn đều như đang úp quả bóng nhé.", "highlight": -1}
+		{"action": "speak", "text": "Hôm nay chúng ta sẽ làm quen với cách đọc các nốt rơi trên khuông nhạc.", "highlight": -1},
+		{"action": "speak", "text": "Hãy tập trung gảy đúng nốt Đô2, Rê2, Mi2 tương ứng khi chúng trôi chạm vạch phách nhé.", "highlight": -1}
 	],
+
 	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với Bài 3! Hôm nay chúng ta sẽ cùng đệm giai điệu bài Sứ Thanh Hoa.", "highlight": -1},
-		{"action": "speak", "text": "Tôi sẽ gảy mẫu phần lớn giai điệu chính (nốt màu bạc). Bạn chỉ cần chú ý gảy các nốt khuyết màu vàng cam khi chúng chạm vạch nhé.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chuẩn bị tay và bắt đầu nào!", "highlight": -1}
+		{"action": "speak", "text": "Đàn Tranh 17 dây có cao độ trải rộng từ trầm đến cao.", "highlight": -1},
+		{"action": "speak", "text": "Tôi sẽ gảy giai điệu chính, bạn hãy gảy đệm nốt cuối mỗi câu nhạc khi nốt màu bạc chạm vạch nhé.", "highlight": -1}
 	],
+
 	"dan_tranh_level_2_bai_4_practice": [
-		{"action": "speak", "text": "Chào bạn! Chúng ta cùng bước sang cấp độ 2 với bài Vào rừng hoa.", "highlight": -1},
-		{"action": "speak", "text": "Ở đoạn 1 này, chúng ta sẽ tập trung vào quãng âm trung với các nốt Mi2, Sol2, La2 và Đô3.", "highlight": 4},
-		{"action": "speak", "text": "Hãy chú ý sự liền mạch giữa các nốt khi trôi qua nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn học về trường độ nốt Đen (1 phách) và nốt Trắng (2 phách).", "highlight": -1},
+		{"action": "speak", "text": "Nốt trắng sẽ kéo dài gấp đôi nốt đen. Hãy chú ý giữ âm vang của dây khi gảy nốt trắng nhé.", "highlight": -1}
 	],
+
 	"dan_tranh_level_2_bai_5_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ ghép hoàn chỉnh bài Vào Rừng Hoa.", "highlight": -1},
-		{"action": "speak", "text": "Bài nhạc này đòi hỏi bạn di chuyển tay linh hoạt từ nốt trầm Sol1 lên quãng cao hơn.", "highlight": 0},
-		{"action": "speak", "text": "Hãy hít thở sâu và gảy thật uyển chuyển nào.", "highlight": -1}
+		{"action": "speak", "text": "Hôm nay chúng ta học về nốt Móc Đơn và nốt Móc Kép (Móc Đôi) có tốc độ nhanh hơn.", "highlight": -1},
+		{"action": "speak", "text": "Hãy gảy dứt khoát và đều tay để theo kịp tốc độ của nốt rơi trên khuông nhạc.", "highlight": -1}
 	],
+
 	"dan_tranh_level_2_bai_6_practice": [
-		{"action": "speak", "text": "Chúng ta sẽ khám phá điệu Xàng Xê của Nam Bộ.", "highlight": -1},
-		{"action": "speak", "text": "Điệu nhạc này mang sắc thái khoan thai, mộc mạc và đầy chất thơ.", "highlight": -1},
-		{"action": "speak", "text": "Hãy cùng cảm nhận giai điệu ngũ cung vô cùng độc đáo này.", "highlight": -1}
+		{"action": "speak", "text": "Hãy làm quen với nhịp 4/4 tiêu chuẩn và khuông nhạc khóa Sol.", "highlight": -1},
+		{"action": "speak", "text": "Mỗi ô nhịp có 4 phách. Hãy tập trung nghe nhịp gõ và gảy thật đều đặn.", "highlight": -1}
 	],
+
 	"dan_tranh_level_3_bai_7_practice": [
-		{"action": "speak", "text": "Chào mừng đến với thử thách tốc độ cao với bài nhạc Mã Vũ.", "highlight": -1},
-		{"action": "speak", "text": "Bạn cần gảy nốt nhanh và dứt khoát hơn để ra đúng chất hành khúc.", "highlight": -1},
-		{"action": "speak", "text": "Hãy giữ khung tay thật vững chãi nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng đến với thử thách luyện ngón tốc độ cao với bài nhạc Mã Vũ.", "highlight": -1},
+		{"action": "speak", "text": "Bạn cần gảy nhanh, dứt khoát và di chuyển ngón tay linh hoạt qua các quãng xa.", "highlight": -1}
 	],
+
 	"dan_tranh_level_3_bai_8_practice": [
 		{"action": "speak", "text": "Hôm nay chúng ta sẽ tập bài dân ca Quan họ Bắc Ninh nổi tiếng: Lý Cây Đa.", "highlight": -1},
-		{"action": "speak", "text": "Giai điệu cần sự lả lướt, duyên dáng.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chú ý giữ đúng nhịp của bài.", "highlight": -1}
+		{"action": "speak", "text": "Giai điệu cần sự lả lướt, duyên dáng và đúng nhịp điệu.", "highlight": -1}
 	],
+
 	"dan_tranh_level_4_bai_9_practice": [
-		{"action": "speak", "text": "Chào bạn! Hôm nay chúng ta sẽ làm quen với kỹ thuật Rung đặc trưng của Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Sau khi gảy nốt bằng tay phải, hãy dùng tay trái nhấn nhẹ liên tục vào phần dây bên trái nhạn đàn.", "highlight": -1},
-		{"action": "speak", "text": "Tiếng đàn ngân lên rung động chính là linh hồn của nhạc cụ này.", "highlight": -1}
+		{"action": "speak", "text": "Hôm nay chúng ta sẽ học kỹ thuật nhấn Rung tay trái đặc trưng của Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Sau khi tay phải gảy nốt, hãy dùng các ngón tay trái nhấn nhẹ liên tục lên phần dây bên trái nhạn đàn.", "highlight": -1}
 	],
+
 	"dan_tranh_level_4_bai_10_practice": [
-		{"action": "speak", "text": "Chúng ta sẽ tập hòa tấu bài dân ca Nam Bộ: Lý Cây Bông.", "highlight": -1},
-		{"action": "speak", "text": "Hãy lắng nghe nhạc nền thật kỹ để gảy các nốt hòa quyện vào nhịp trống.", "highlight": -1},
-		{"action": "speak", "text": "Bắt đầu gảy thử nào.", "highlight": -1}
+		{"action": "speak", "text": "Chúng ta sẽ làm quen với Song âm và Hợp âm Đô Trưởng.", "highlight": -1},
+		{"action": "speak", "text": "Đặt ngón cái, ngón trỏ và ngón giữa để gảy vang đồng thời cả ba nốt Đô, Mi và Sol cùng một lúc.", "highlight": -1}
 	],
+
 	"dan_tranh_level_5_bai_11_practice": [
-		{"action": "speak", "text": "Chào mừng bạn tới cấp độ Master. Chúng ta sẽ chinh phục bài nhạc hiện đại Sứ Thanh Hoa hoàn chỉnh.", "highlight": -1},
-		{"action": "speak", "text": "Giai điệu bài này chuyển quãng rất rộng và nhanh.", "highlight": -1},
-		{"action": "speak", "text": "Hãy tập trung cao độ và phô diễn hết kỹ thuật nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với cấp độ Master. Chúng ta bắt đầu chinh phục đoạn nhạc mở đầu của tác phẩm Sứ Thanh Hoa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy tập trung gảy đúng giai điệu dạo đầu với các quãng nhảy nốt rộng.", "highlight": -1}
 	],
+
 	"dan_tranh_level_5_bai_12_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập cuối cùng của khóa học Đàn Tranh!", "highlight": -1},
-		{"action": "speak", "text": "Bạn sẽ cần gảy lần lượt toàn bộ 17 dây đàn từ cực trầm đến cực cao.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chứng minh bạn đã hoàn toàn làm chủ cây Đàn Tranh này nào!", "highlight": -1}
-	],
-	"dan_tranh_level_6_bai_13_practice": [
-		{"action": "speak", "text": "Chào em! Hôm nay chúng ta sẽ bắt đầu làm quen với hợp âm trên đàn tranh.", "highlight": -1},
-		{"action": "speak", "text": "Trước đây, em đã học cách gảy từng dây để tạo nên giai điệu. Còn hôm nay, chúng ta sẽ học cách gảy nhiều dây cùng một lúc.", "highlight": -1},
-		{"action": "speak", "text": "Khi em gảy một dây, em sẽ nghe một nốt nhạc. Nhưng khi em gảy hai hoặc nhiều dây cùng lúc, âm thanh sẽ đầy đặn và vang hơn. Đó chính là hợp âm.", "highlight": -1},
-		{"action": "speak", "text": "Trong bài học này, em chỉ cần làm quen với khái niệm hợp âm và ôn lại cách gảy từng dây thật chính xác trước khi học các kỹ thuật mới.", "highlight": -1}
-	],
-	"dan_tranh_level_6_bai_14_practice": [
-		{"action": "speak", "text": "Trước khi học hợp âm ba nốt, chúng ta sẽ làm quen với song âm.", "highlight": -1},
-		{"action": "speak", "text": "Song âm là khi hai dây được gảy cùng một lúc. Đây là bước chuyển tiếp giữa việc gảy một dây và gảy hợp âm.", "highlight": -1},
-		{"action": "speak", "text": "Khi chơi song âm, em hãy sử dụng ngón cái và ngón trỏ của tay phải. Đặt mỗi ngón lên một dây, sau đó gảy đồng thời để hai âm thanh vang lên cùng lúc.", "highlight": -1},
-		{"action": "speak", "text": "Khi đã quen với song âm, em sẽ dễ dàng học các hợp âm ba nốt ở những bài tiếp theo.", "highlight": -1}
-	],
-	"dan_tranh_level_6_bai_15_practice": [
-		{"action": "speak", "text": "Bây giờ chúng ta sẽ học hợp âm đầu tiên, đó là hợp âm Đô trưởng.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm Đô trưởng gồm ba nốt: Đô, Mi và Sol. Em hãy đặt ngón cái lên dây Đô, ngón trỏ lên dây Mi và ngón giữa lên dây Sol.", "highlight": -1},
-		{"action": "speak", "text": "Sau đó gảy cả ba dây cùng một lúc. Hãy nhớ rằng chúng ta không gảy từng dây riêng lẻ, mà gảy đồng thời để tạo thành một hợp âm hoàn chỉnh.", "highlight": -1}
-	],
-	"dan_tranh_level_6_bai_16_practice": [
-		{"action": "speak", "text": "Tiếp theo là hợp âm La thứ. Hợp âm này gồm ba nốt: La, Đô và Mi.", "highlight": -1},
-		{"action": "speak", "text": "Cách đặt tay giống như hợp âm Đô trưởng, chỉ thay đổi vị trí các dây.", "highlight": -1},
-		{"action": "speak", "text": "Sau bài này, em sẽ biết hai hợp âm cơ bản thường gặp nhất trên đàn tranh.", "highlight": -1}
-	],
-	"dan_tranh_level_6_bai_17_practice": [
-		{"action": "speak", "text": "Trong một bản nhạc, hợp âm sẽ thay đổi theo từng câu để phù hợp với giai điệu.", "highlight": -1},
-		{"action": "speak", "text": "Hôm nay, chúng ta sẽ luyện chuyển giữa hợp âm Đô trưởng và hợp âm La thứ.", "highlight": -1},
-		{"action": "speak", "text": "Ban đầu, em hãy chuyển thật chậm để nhớ vị trí các dây. Khi đã quen, em có thể tăng dần tốc độ.", "highlight": -1}
+		{"action": "speak", "text": "Thử thách độc tấu trọn vẹn tác phẩm Sứ Thanh Hoa!", "highlight": -1},
+		{"action": "speak", "text": "Hãy kết hợp toàn bộ kỹ thuật tay phải gảy ngón và nhấn rung tay trái để hoàn thành bài nhạc xuất sắc nhất.", "highlight": -1}
 	]
 }
 
@@ -276,18 +237,27 @@ func _ready():
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
 		
-	if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
-		lesson_sheet.assign(ALL_17_NOTES)
-		var d_arr: Array[float] = []
-		for i in range(17):
-			d_arr.append(1.5)
-		lesson_durations.assign(d_arr)
-	elif current_lesson_id == "dan_tranh_level_5_bai_11_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice" or PracticeRoom.current_song_sheet.is_empty():
-		lesson_sheet.assign(SU_THANH_HOA_SHEET)
-		lesson_durations.assign(SU_THANH_HOA_DURATIONS)
-	else:
+	if not PracticeRoom.current_song_sheet.is_empty():
 		lesson_sheet.assign(PracticeRoom.current_song_sheet)
 		lesson_durations.assign(current_song_durations)
+	else:
+		# Fallback defaults for direct testing/debug
+		if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+			var intro_5 = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
+			lesson_sheet.assign(intro_5)
+			var d_arr: Array[float] = []
+			for i in range(intro_5.size()):
+				d_arr.append(1.5)
+			lesson_durations.assign(d_arr)
+		elif current_lesson_id == "dan_tranh_level_5_bai_12_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice":
+			lesson_sheet.assign(SU_THANH_HOA_SHEET)
+			lesson_durations.assign(SU_THANH_HOA_DURATIONS)
+		else:
+			lesson_sheet.assign(ALL_17_NOTES)
+			var d_arr: Array[float] = []
+			for i in range(ALL_17_NOTES.size()):
+				d_arr.append(1.5)
+			lesson_durations.assign(d_arr)
 
 	
 	staff_display = load("res://scripts/StaffDisplay.gd").new()
@@ -1175,7 +1145,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 func _is_note_missing(note_idx: int) -> bool:
 	if current_lesson_id != "dan_tranh_level_1_bai_3_practice":
 		return false
-	# Mỗi nốt màu cam cách nhau 15 nốt bạc (tức là nốt khuyết xuất hiện sau mỗi 16 nốt: chỉ số 15, 31, 47, 63...)
+	# Mỗi nốt màu bạc cách nhau 15 nốt đen (tức là nốt khuyết xuất hiện sau mỗi 16 nốt: chỉ số 15, 31, 47, 63...)
 	return note_idx % 16 == 15
 
 

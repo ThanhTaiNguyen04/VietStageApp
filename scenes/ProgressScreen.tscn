@@ -46,45 +46,21 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 76)
-layout_mode = 2
+[node name="FloatingMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 24
+offset_top = 24
+offset_right = 104
+offset_bottom = 104
 
-[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+[node name="BackBtn" type="Button" parent="FloatingMargin"]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_right = 28
-
-[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(126, 50)
-layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 4
-text = "Quay lại"
-theme_override_font_sizes/font_size = 15
-alignment = 0
+tooltip_text = "Quay lại"
 
-[node name="TitleV" type="VBoxContainer" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 0
-
-[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH/TitleV"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 27
-text = "Thành tựu"
-
-[node name="PageSubtitle" type="Label" parent="Root/TopBar/TopM/TopH/TitleV"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Dấu ấn trên hành trình âm nhạc Việt"
-
-[node name="Spacer" type="Control" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
 
 
 
@@ -110,6 +86,20 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(1480, 0)
 layout_mode = 2
 theme_override_constants/separation = 18
+
+[node name="TitleV" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PageTitle" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/TitleV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Thành tựu"
+
+[node name="PageSubtitle" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/TitleV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Dấu ấn trên hành trình âm nhạc Việt"
 
 [node name="HeroCard" type="PanelContainer" parent="Root/BodyMargin/Scroll/Center/ContentV"]
 layout_mode = 2

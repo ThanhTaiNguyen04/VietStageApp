@@ -3244,9 +3244,9 @@ func _start_intro_cinematic() -> void:
 	
 	var subtitle = Label.new()
 	subtitle.name = "TextLabel"
-	subtitle.text = "Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì?"
+	subtitle.text = "Chào mừng bạn đến với lớp học nhạc cụ dân tộc. Hôm nay bạn muốn học gì?"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER	
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD
 	subtitle.add_theme_font_size_override("font_size", 38)
 	subtitle.add_theme_color_override("font_color", Color.WHITE)

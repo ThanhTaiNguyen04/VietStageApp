@@ -1095,7 +1095,7 @@ func _confirm_logout() -> void:
 	layer.layer = 100
 	
 	var overlay := ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.color = Color(0, 0, 0, 0.4)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(overlay)
 	
@@ -1104,10 +1104,11 @@ func _confirm_logout() -> void:
 	layer.add_child(center)
 	
 	var panel := PanelContainer.new()
-	var p_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24)
-	p_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
-	p_style.shadow_size = 30
-	p_style.shadow_offset = Vector2(0, 10)
+	# Minimalist white card style with thin border
+	var p_style := _flat(Color.WHITE, Color("#EAEAEA"), 16)
+	p_style.shadow_color = Color(0, 0, 0, 0.05)
+	p_style.shadow_size = 16
+	p_style.shadow_offset = Vector2(0, 4)
 	panel.add_theme_stylebox_override("panel", p_style)
 	panel.custom_minimum_size = Vector2(340, 0)
 	center.add_child(panel)
@@ -1130,14 +1131,14 @@ func _confirm_logout() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if bold_font: title.add_theme_font_override("font", bold_font)
 	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	title.add_theme_color_override("font_color", Color("#111111")) # Charcoal black
 	vbox.add_child(title)
 	
 	var msg := Label.new()
 	msg.text = "Kết thúc phiên đăng nhập hiện tại?"
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	msg.add_theme_font_size_override("font_size", 16)
-	msg.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
+	msg.add_theme_color_override("font_color", Color("#787774")) # Muted gray
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(msg)
 	
@@ -1149,14 +1150,15 @@ func _confirm_logout() -> void:
 	btn_cancel.text = "Ở lại"
 	btn_cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_cancel.custom_minimum_size.y = 48
-	var cancel_normal := _flat(Color(0.9, 0.88, 0.84, 1.0), Color.TRANSPARENT, 14)
-	var cancel_hover := _flat(Color(0.85, 0.83, 0.79, 1.0), Color.TRANSPARENT, 14)
+	# White button with thin border
+	var cancel_normal := _flat(Color.WHITE, Color("#EAEAEA"), 12)
+	var cancel_hover := _flat(Color("#F7F6F3"), Color("#EAEAEA"), 12)
 	btn_cancel.add_theme_stylebox_override("normal", cancel_normal)
 	btn_cancel.add_theme_stylebox_override("hover", cancel_hover)
 	btn_cancel.add_theme_stylebox_override("pressed", cancel_hover)
-	btn_cancel.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
-	btn_cancel.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
-	btn_cancel.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn_cancel.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12))
+	btn_cancel.add_theme_color_override("font_color", Color("#111111"))
+	btn_cancel.add_theme_color_override("font_hover_color", Color("#111111"))
 	if bold_font: btn_cancel.add_theme_font_override("font", bold_font)
 	hbox.add_child(btn_cancel)
 	
@@ -1164,12 +1166,13 @@ func _confirm_logout() -> void:
 	btn_logout.text = "Đăng xuất"
 	btn_logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_logout.custom_minimum_size.y = 48
-	var logout_normal := _flat(C_TERRACOTTA, C_TERRACOTTA, 14)
-	var logout_hover := _flat(C_TERRACOTTA.lightened(0.1), C_TERRACOTTA, 14)
+	# Solid charcoal button
+	var logout_normal := _flat(Color("#111111"), Color("#111111"), 12)
+	var logout_hover := _flat(Color("#111111").lightened(0.15), Color("#111111"), 12)
 	btn_logout.add_theme_stylebox_override("normal", logout_normal)
 	btn_logout.add_theme_stylebox_override("hover", logout_hover)
 	btn_logout.add_theme_stylebox_override("pressed", logout_hover)
-	btn_logout.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
+	btn_logout.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12))
 	btn_logout.add_theme_color_override("font_color", Color.WHITE)
 	btn_logout.add_theme_color_override("font_hover_color", Color.WHITE)
 	if bold_font: btn_logout.add_theme_font_override("font", bold_font)
