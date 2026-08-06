@@ -11,6 +11,8 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
+const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+
 var selected_level: int = 1
 var is_unlocked: bool = true
 
@@ -97,6 +99,7 @@ func _ready() -> void:
 	
 	_build_theme()
 	_connect_buttons()
+	_build_quiz_btn()
 	_build_lesson_list()
 	_build_sidebar()
 	
@@ -205,6 +208,51 @@ func _connect_buttons() -> void:
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
+
+func _build_quiz_btn() -> void:
+	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
+	if toph == null:
+		return
+	var s_outline := StyleBoxFlat.new()
+	s_outline.bg_color = Color(0, 0, 0, 0)
+	s_outline.border_color = C_JADE
+	s_outline.border_width_left = 3
+	s_outline.border_width_right = 3
+	s_outline.border_width_top = 3
+	s_outline.border_width_bottom = 3
+	s_outline.corner_radius_top_left = 24
+	s_outline.corner_radius_top_right = 24
+	s_outline.corner_radius_bottom_left = 24
+	s_outline.corner_radius_bottom_right = 24
+	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
+	s_outline_hover.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
+
+	var quiz_btn := Button.new()
+	quiz_btn.name = "QuizBtn"
+	quiz_btn.text = "📝 Quiz"
+	quiz_btn.custom_minimum_size = Vector2(148, 48)
+	quiz_btn.add_theme_stylebox_override("normal", s_outline)
+	quiz_btn.add_theme_stylebox_override("hover", s_outline_hover)
+	quiz_btn.add_theme_stylebox_override("pressed", s_outline)
+	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	quiz_btn.add_theme_color_override("font_color", C_JADE)
+	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
+	quiz_btn.add_theme_font_size_override("font_size", 17)
+	quiz_btn.pressed.connect(_open_quiz)
+	_make_btn_bouncy(quiz_btn)
+	toph.add_child(quiz_btn)
+	toph.move_child(quiz_btn, change_course_btn.get_index())
+
+func _open_quiz() -> void:
+	var ids: Array[String] = []
+	for lesson: Dictionary in LESSONS:
+		var lid := str(lesson.get("id", ""))
+		if not lid.is_empty():
+			ids.append(lid)
+	QuizScreenScript.quiz_instrument = "trong_chau"
+	QuizScreenScript.quiz_local_ids = ids
+	QuizScreenScript.quiz_return_scene = "res://scenes/LessonTrongChau.tscn"
+	_fade_to_scene("res://scenes/QuizScreen.tscn")
 
 func _build_sidebar() -> void:
 	var side_s := StyleBoxFlat.new()

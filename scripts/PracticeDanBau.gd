@@ -71,6 +71,7 @@ var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
 var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
+var _last_rhythm_score := 80.0
 
 # Notation Track Variables
 var _current_time_beats := 0.0
@@ -348,7 +349,8 @@ func _process(delta: float) -> void:
 					"note": n_name,
 					"x": note_x,
 					"color": col,
-					"tail": tail_w
+					"tail": tail_w,
+					"duration": duration
 				})
 				
 		_staff_display.set_notes(notes_for_staff)
@@ -1307,8 +1309,9 @@ func _process_real_audio(delta: float) -> void:
 					_pitch_scores.append(pitch_err)
 					_tone_scores.append(visualizer.current_tone_quality)
 					
-					# Dynamic AI scoring
+# Dynamic AI scoring
 					var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+					_last_rhythm_score = rhythm_score
 					var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
 					var avg_tone_score = _get_average_score(_tone_scores, 80.0)
 					
@@ -1480,6 +1483,7 @@ func _show_custom_result() -> void:
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
+		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -1503,6 +1507,19 @@ func _show_custom_result() -> void:
 		popup.closed.connect(func() -> void:
 			_go_back()
 		)
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+		"pitch": _get_average_score(_pitch_scores, 80.0),
+		"rhythm": _last_rhythm_score,
+		"dynamics": 0.0,
+		"tonal_quality": _get_average_score(_tone_scores, 80.0),
+		"breath": 0.0,
+	})
+	if not result.get("submitted", false):
+		push_warning("[PracticeDanBau] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _go_back() -> void:
 	var t := create_tween()

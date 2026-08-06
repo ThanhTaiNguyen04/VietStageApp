@@ -69,6 +69,7 @@ var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
 var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
+var _last_rhythm_score := 80.0
 
 var _string_streams: Array[AudioStreamWAV] = []
 var _string_stream_sources: Array[String] = []
@@ -2743,6 +2744,7 @@ func _finish_level1_sequence() -> void:
 	var passed := _score >= float(_level1_config["pass_score"])
 	if passed:
 		SecureDataManager.complete_lesson("dan_tranh", SecureDataManager.active_lesson_id, 3 if _score >= 90.0 else 2)
+		_sync_practice_to_backend("dan_tranh", SecureDataManager.active_lesson_id, _level1_config)
 	if _board:
 		_board.set_target(-1)
 		_board.is_active = false
@@ -3790,6 +3792,7 @@ func _process_real_audio(delta: float) -> void:
 				
 				# Dynamic AI scoring
 				var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+				_last_rhythm_score = rhythm_score
 				var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
 				var avg_tone_score = _get_average_score(_tone_scores, 80.0)
 				
@@ -4018,6 +4021,7 @@ func _show_custom_result() -> void:
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
+		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id, {})
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -4031,6 +4035,25 @@ func _show_custom_result() -> void:
 			next_lesson_name = "Song Thanh"
 			
 		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_config: Dictionary) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var scores := {
+		"pitch": _get_average_score(_pitch_scores, 80.0),
+		"rhythm": _last_rhythm_score,
+		"dynamics": 0.0,
+		"tonal_quality": _get_average_score(_tone_scores, 80.0),
+		"breath": 0.0,
+	}
+	if not level1_config.is_empty():
+		var accuracy := float(_level1_correct_count) / float(maxi(1, _level1_total_attempts)) * 100.0
+		scores["pitch"] = accuracy
+		scores["rhythm"] = _get_average_score(_level1_timing_scores, accuracy)
+		scores["tonal_quality"] = 0.0
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, scores)
+	if not result.get("submitted", false):
+		push_warning("[PracticeRoom] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _go_back() -> void:
 	var t := create_tween()

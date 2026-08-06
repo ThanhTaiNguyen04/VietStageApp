@@ -177,7 +177,9 @@ func _process(delta: float) -> void:
 	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	
 	if profile_plucked:
-		if is_onset and not pluck_locked:
+		if is_onset and (not pluck_locked or pitch_estimation_done or time_since_onset > 0.15):
+			if _dan_tranh_note_active:
+				_finish_dan_tranh_note()
 			onset_detected = true
 			time_since_onset = 0.0
 			pitch_estimation_done = false
@@ -187,14 +189,14 @@ func _process(delta: float) -> void:
 		if onset_detected:
 			time_since_onset += delta
 	
-	# Step 4: Pitch Estimation
+	# Step 4: Pitch Estimation (estimate every frame inside the 30-150 ms onset
+	# window so the stability gate can accumulate PITCH_STABILITY_FRAMES candidates)
 	var raw_pitch := 0.0
 	if profile_plucked:
-		# Estimate pitch only in the 30-150 ms region (Phase 2)
 		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.15:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
-				if raw_pitch > 0.0:
+				if raw_pitch > 0.0 and current_pitch_is_reliable:
 					pitch_estimation_done = true
 	else:
 		raw_pitch = _estimate_pitch(samples)
@@ -673,6 +675,17 @@ func _draw() -> void:
 
 func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
 	if pitch_profile:
+		# Reject silence and continuous/non-plucked signals (voice hum, sustained
+		# tones, room tone): a real pluck is a sharp attack followed by decay, so
+		# the front half of the analysis window must clearly dominate the tail.
+		if _calculate_amplitude_db(samples) < pitch_profile.volume_threshold_db:
+			return {}
+		if not _has_pluck_attack(samples):
+			return {}
+		# Reject transient clicks/taps: they are front-loaded but aperiodic,
+		# so their autocorrelation periodicity score is far below a real tone.
+		if _evaluate_tone_quality_gdscript(samples) < 50.0:
+			return {}
 		var f := 0.0
 		if _analyzer:
 			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.08, min_frequency, max_frequency)
@@ -680,3 +693,18 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.08)
 		return pitch_profile.match_pitch(f)
 	return {}
+
+func _has_pluck_attack(samples: PackedFloat32Array) -> bool:
+	var size : int = samples.size()
+	if size < 256:
+		return false
+	var half : int = size / 2
+	var e_first := 0.0
+	var e_second := 0.0
+	for i in range(half):
+		e_first += samples[i] * samples[i]
+	for i in range(half, size):
+		e_second += samples[i] * samples[i]
+	if e_second <= 0.000001:
+		return e_first > 0.000001
+	return e_first / e_second > 1.8

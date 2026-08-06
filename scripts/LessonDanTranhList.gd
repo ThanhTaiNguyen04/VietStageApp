@@ -11,6 +11,8 @@ const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
 
+const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
@@ -303,6 +305,7 @@ func _ready() -> void:
 	_build_theme()
 	_build_sidebar()
 	_build_lessons()
+	_build_quiz_btn()
 	lessons_hbox.draw.connect(_draw_lesson_path)
 	lessons_hbox.sort_children.connect(func() -> void: lessons_hbox.queue_redraw())
 	_connect_navigation()
@@ -769,6 +772,38 @@ func _open_lesson(lesson: Dictionary) -> void:
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
 	return "dan_tranh_level_%d_bai_%d_%s" % [selected_level, lesson_number, activity]
+
+func _build_quiz_btn() -> void:
+	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
+	if toph == null or change_course_btn == null:
+		return
+	var quiz_btn := Button.new()
+	quiz_btn.name = "QuizBtn"
+	quiz_btn.text = "📝 Quiz"
+	quiz_btn.custom_minimum_size = Vector2(148, 48)
+	quiz_btn.add_theme_font_size_override("font_size", 17)
+	quiz_btn.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, C_JADE, 18, 2))
+	quiz_btn.add_theme_stylebox_override("hover", _flat(Color(C_GOLD, 0.12), C_GOLD, 18, 2))
+	quiz_btn.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD, 0.15), C_GOLD, 18, 2))
+	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	quiz_btn.add_theme_color_override("font_color", C_JADE)
+	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
+	quiz_btn.pressed.connect(_open_quiz)
+	_make_bouncy(quiz_btn)
+	toph.add_child(quiz_btn)
+	toph.move_child(quiz_btn, change_course_btn.get_index())
+
+func _open_quiz() -> void:
+	var ids: Array[String] = []
+	var level_data := get_level_data(selected_level)
+	for lesson: Dictionary in level_data.get("lessons", []):
+		var number := int(lesson.get("number", 0))
+		if number > 0:
+			ids.append(_lesson_id(number, "practice"))
+	QuizScreenScript.quiz_instrument = "dan_tranh"
+	QuizScreenScript.quiz_local_ids = ids
+	QuizScreenScript.quiz_return_scene = "res://scenes/LessonDanTranhList.tscn"
+	_fade_to("res://scenes/QuizScreen.tscn")
 
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size

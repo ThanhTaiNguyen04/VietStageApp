@@ -7,6 +7,8 @@ class_name LessonSaoTruc
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)
 
+const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+
 enum State { INTRO, PRACTICE, MID_INTRO, RHYTHM_GAME, COMPLETED }
 var current_state = State.INTRO
 
@@ -77,6 +79,8 @@ var _current_note_color: Color = Color(0.96, 0.75, 0.25)
 const HIT_WINDOW := 0.5 # Nới lỏng thời gian chấm điểm thêm nữa
 
 var melody_sequence = []
+
+var _lesson_accuracy := 100.0
 
 const HOLES = 6
 
@@ -887,7 +891,13 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * 300.0
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w})
+			notes_for_staff.append({
+				"note": note_data["note_name"],
+				"x": note_x,
+				"color": note_data.get("color", Color(0.96, 0.75, 0.25)),
+				"tail": tail_w,
+				"duration": duration
+			})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
@@ -1539,6 +1549,7 @@ func _show_completion_modal():
 	var acc = 1.0
 	if total_rhythm_duration > 0.0:
 		acc = clamp(1.0 - (wrong_rhythm_duration / (total_rhythm_duration * 3.0)), 0.0, 1.0)
+	_lesson_accuracy = acc * 100.0
 		
 	if complete_overlay:
 		complete_overlay.visible = true
@@ -1695,6 +1706,27 @@ func _build_complete_overlay():
 	hbox.add_child(finish_btn)
 	
 	vbox.add_child(hbox)
+
+	var quiz_sb := StyleBoxFlat.new()
+	quiz_sb.bg_color = Color(0.09, 0.27, 0.18, 0.25)
+	quiz_sb.border_width_left = 2; quiz_sb.border_width_top = 2
+	quiz_sb.border_width_right = 2; quiz_sb.border_width_bottom = 2
+	quiz_sb.border_color = C_GOLD
+	quiz_sb.corner_radius_top_left = 20; quiz_sb.corner_radius_top_right = 20
+	quiz_sb.corner_radius_bottom_left = 20; quiz_sb.corner_radius_bottom_right = 20
+	quiz_sb.content_margin_left = 40; quiz_sb.content_margin_right = 40
+	quiz_sb.content_margin_top = 14; quiz_sb.content_margin_bottom = 14
+
+	var quiz_btn := Button.new()
+	quiz_btn.text = "📝 Kiểm Tra Kiến Thức"
+	quiz_btn.add_theme_stylebox_override("normal", quiz_sb)
+	quiz_btn.add_theme_stylebox_override("hover", quiz_sb)
+	quiz_btn.add_theme_stylebox_override("pressed", quiz_sb)
+	quiz_btn.add_theme_font_size_override("font_size", 22)
+	quiz_btn.add_theme_color_override("font_color", C_GOLD)
+	quiz_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	quiz_btn.pressed.connect(_open_quiz)
+	vbox.add_child(quiz_btn)
 	
 	add_child(complete_overlay)
 
@@ -1794,10 +1826,34 @@ func _play_recording():
 func _on_back():
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
+func _open_quiz() -> void:
+	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
+	QuizScreenScript.quiz_instrument = inst
+	QuizScreenScript.quiz_local_ids = [active_node_id]
+	QuizScreenScript.quiz_return_scene = "res://scenes/LessonSaoTruc.tscn"
+	var tw := create_tween()
+	tw.tween_property(self, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/QuizScreen.tscn"))
+
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
 	SecureDataManager.complete_lesson(inst, active_node_id, 3)
+	_sync_practice_to_backend(inst, active_node_id)
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var acc := _lesson_accuracy
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+		"pitch": acc,
+		"rhythm": acc,
+		"dynamics": 0.0,
+		"tonal_quality": 0.0,
+		"breath": acc,
+	})
+	if not result.get("submitted", false):
+		push_warning("[LessonSaoTruc] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _on_retry():
 	get_tree().reload_current_scene()

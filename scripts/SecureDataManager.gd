@@ -374,3 +374,116 @@ static func mark_intro_viewed(instrument: String) -> void:
 	if not data["viewed_intros"].has(instrument):
 		data["viewed_intros"].append(instrument)
 		save_data()
+
+
+# ── Backend catalog bridge ──────────────────────────────────────────────
+# The local lesson maps (Node1..NodeN, dan_tranh_level_*_bai_*_*) are offline
+# content. When a learner is signed in, this bridge tries to resolve the local
+# lesson to a BE lessonId/exerciseId so practice/minigame attempts can be
+# written to the backend. If no reliable bind exists, callers must skip
+# submission gracefully and keep the local save as source of truth.
+
+static var be_instruments: Array = []
+static var be_catalog: Array = []
+static var be_exercises: Dictionary = {}   # lesson_id -> Array[exercise]
+static var be_minigames: Dictionary = {}   # lesson_id -> Array[minigame]
+static var be_quizzes: Dictionary = {}     # lesson_id -> Array[quiz]
+
+## Ghi nhận catalog từ GET /api/instruments và GET /api/lessons.
+static func install_be_catalog(instruments: Array, lessons: Array) -> void:
+	be_instruments = instruments
+	be_catalog = lessons
+	be_exercises.clear()
+	be_minigames.clear()
+	be_quizzes.clear()
+	save_data()
+
+
+static func cache_be_exercises(lesson_id: int, exercises: Array) -> void:
+	be_exercises[lesson_id] = exercises
+
+static func cache_be_minigames(lesson_id: int, minigames: Array) -> void:
+	be_minigames[lesson_id] = minigames
+
+static func cache_be_quizzes(lesson_id: int, quizzes: Array) -> void:
+	be_quizzes[lesson_id] = quizzes
+
+
+## Tra cứu instrumentId (số) từ key nội bộ ("dan_tranh", "sao_truc", …).
+static func be_instrument_id(instrument_key: String) -> int:
+	var normalized := _normalize_instrument_key(instrument_key)
+	for item: Variant in be_instruments:
+		if not item is Dictionary:
+			continue
+		var code := str(item.get("instrumentCode", item.get("name", "")).to_lower()).replace("-", "_").replace(" ", "_")
+		if _normalize_instrument_key(code) == normalized:
+			return int(item.get("id", 0))
+	return 0
+
+
+## Số bài nội bộ từ local_lesson_id (NodeN, dan_*_bai_N_*, …) hoặc 0.
+static func local_lesson_number(local_lesson_id: String) -> int:
+	var matcher := RegEx.new()
+	matcher.compile("(?:Node|bai|bài|lesson)[ _-]*(\\d+)")
+	var result := matcher.search(str(local_lesson_id))
+	if result:
+		return int(result.get_string(1))
+	return 0
+
+
+## Chọn BE lesson khớp nhất với local lesson của một nhạc cụ.
+static func resolve_be_lesson(instrument_key: String, local_lesson_id: String) -> Dictionary:
+	if be_catalog.is_empty():
+		return {}
+	var inst := _normalize_instrument_key(instrument_key)
+	var local_number := local_lesson_number(local_lesson_id)
+	var candidates: Array = []
+	for item: Variant in be_catalog:
+		if not item is Dictionary:
+			continue
+		var lesson: Dictionary = item
+		if _lesson_matches_instrument(lesson, inst):
+			candidates.append(lesson)
+	if candidates.is_empty():
+		return {}
+	if local_number > 0:
+		for lesson: Dictionary in candidates:
+			if int(lesson.get("orderIndex", 0)) == local_number:
+				return lesson
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("orderIndex", 0)) < int(b.get("orderIndex", 0))
+	)
+	return candidates[0]
+
+
+## Tra exercise (ưu tiên orderIndex trùng với local_number, rồi exercise đầu tiên).
+static func resolve_be_exercise(lesson_id: int, local_lesson_id: String = "") -> Dictionary:
+	var exercises: Array = be_exercises.get(lesson_id, [])
+	if exercises.is_empty():
+		return {}
+	var desired := local_lesson_number(local_lesson_id)
+	for ex: Variant in exercises:
+		if ex is Dictionary and desired > 0 and int(ex.get("orderIndex", 0)) == desired:
+			return ex
+	for ex: Variant in exercises:
+		if ex is Dictionary:
+			return ex
+	return {}
+
+
+static func resolve_be_minigame(lesson_id: int) -> Dictionary:
+	var minigames: Array = be_minigames.get(lesson_id, [])
+	for mg: Variant in minigames:
+		if mg is Dictionary:
+			return mg
+	return {}
+
+
+static func _lesson_matches_instrument(lesson: Dictionary, inst: String) -> bool:
+	var instrument_value: Variant = lesson.get("instrument", {})
+	var code := ""
+	if instrument_value is Dictionary:
+		code = _normalize_instrument_key(str(instrument_value.get("instrumentCode", instrument_value.get("name", ""))))
+	if code.is_empty():
+		code = _normalize_instrument_key(str(lesson.get("instrumentKey", "")))
+	return not code.is_empty() and code == inst

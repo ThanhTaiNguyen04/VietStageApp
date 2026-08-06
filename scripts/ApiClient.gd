@@ -71,13 +71,26 @@ func get_my_leaderboard() -> Dictionary:
 func get_instruments() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.INSTRUMENTS), HTTPClient.METHOD_GET)
 
-## Lấy danh sách bài học (Lọc theo nhạc cụ và trình độ)
-func get_lessons(instrument_id: int = 0, skill_level_id: int = 0) -> Dictionary:
+## Lấy tất cả trình độ (PUBLIC)
+func get_skill_levels() -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.SKILL_LEVELS), HTTPClient.METHOD_GET)
+
+## Lấy danh sách kỹ thuật (PUBLIC, lọc theo nhạc cụ)
+func get_techniques(instrument_id: int = 0) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.TECHNIQUES)
+	if instrument_id > 0:
+		path += "?instrument_id=" + str(instrument_id)
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Lấy danh sách bài học (Lọc theo nhạc cụ / kỹ thuật / trình độ)
+func get_lessons(instrument_id: int = 0, skill_level_id: int = 0, technique_id: int = 0) -> Dictionary:
 	var query_params := []
 	if instrument_id > 0:
-		query_params.append("instrument_id=" + str(instrument_id))
+		query_params.append("instrumentId=" + str(instrument_id))
 	if skill_level_id > 0:
-		query_params.append("skill_level_id=" + str(skill_level_id))
+		query_params.append("skillLevelId=" + str(skill_level_id))
+	if technique_id > 0:
+		query_params.append("techniqueId=" + str(technique_id))
 	
 	var path := ApiRoutes.build(ApiRoutes.LESSONS)
 	if query_params.size() > 0:
@@ -90,6 +103,55 @@ func get_lesson_detail(lesson_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.LESSONS) + "/" + str(lesson_id)
 	return await request_json(path, HTTPClient.METHOD_GET)
 
+## Lấy danh sách assets (âm thanh / beat map) của bài học
+func get_lesson_assets(lesson_id: int, asset_type: String = "") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_ASSETS % str(lesson_id))
+	if not asset_type.is_empty():
+		path += "?type=" + asset_type
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Lấy danh sách bài tập (exercises) của bài học
+func get_lesson_exercises(lesson_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_EXERCISES % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Lấy danh sách câu hỏi trắc nghiệm của bài học
+func get_lesson_quizzes(lesson_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_QUIZZES % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Nộp đáp án câu hỏi trắc nghiệm
+func submit_quiz_attempt(quiz_id: int, selected_answer: String) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.QUIZ_ATTEMPTS % str(quiz_id))
+	return await request_json(path, HTTPClient.METHOD_POST, {"selectedAnswer": selected_answer})
+
+## Lấy danh sách minigame của bài học
+func get_lesson_minigames(lesson_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_MINIGAMES % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Nộp kết quả minigame
+func submit_minigame_attempt(
+	minigame_id: int,
+	score: int,
+	stars_earned: int,
+	started_at: String,
+	completed_at: String
+) -> Dictionary:
+	var payload := {
+		"score": score,
+		"starsEarned": stars_earned,
+		"startedAt": started_at,
+		"completedAt": completed_at,
+	}
+	var path := ApiRoutes.build(ApiRoutes.MINIGAME_ATTEMPTS % str(minigame_id))
+	return await request_json(path, HTTPClient.METHOD_POST, payload)
+
+## Tiến độ của một học viên trong một bài học (INSTRUCTOR)
+func get_learner_lesson_progress(lesson_id: int, learner_id: int) -> Dictionary:
+	var path := "/lessons/%d/learners/%d/progress" % [lesson_id, learner_id]
+	return await request_json(ApiRoutes.build(path), HTTPClient.METHOD_GET)
+
 
 # ── PRACTICE SESSIONS & ATTEMPTS APIs ─────────────────────────────────
 
@@ -100,13 +162,8 @@ func start_practice_session() -> Dictionary:
 ## Kết thúc phiên tập luyện
 func end_practice_session(session_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.PRACTICE_SESSIONS) + "/" + str(session_id)
-	var current_time = Time.get_datetime_dict_from_system()
-	var iso_time = "%d-%02d-%02dT%02d:%02d:%02dZ" % [
-		current_time.year, current_time.month, current_time.day,
-		current_time.hour, current_time.minute, current_time.second
-	]
 	var payload = {
-		"ended_at": iso_time
+		"ended_at": _iso_now()
 	}
 	return await request_json(path, HTTPClient.METHOD_PUT, payload)
 
@@ -118,7 +175,9 @@ func submit_practice_attempt(
 	rhythm: float,
 	dynamics: float = 0.0,
 	tonal_quality: float = 0.0,
-	breath: float = 0.0
+	breath: float = 0.0,
+	client_uuid: String = "",
+	created_at: String = ""
 ) -> Dictionary:
 	var payload = {
 		"session_id": session_id,
@@ -127,9 +186,28 @@ func submit_practice_attempt(
 		"rhythm_score": rhythm,
 		"dynamics_score": dynamics,
 		"tonal_quality_score": tonal_quality,
-		"breath_score": breath
+		"breath_score": breath,
 	}
+	if not client_uuid.is_empty():
+		payload["client_uuid"] = client_uuid
+	if not created_at.is_empty():
+		payload["created_at"] = created_at
 	return await request_json(ApiRoutes.build(ApiRoutes.PRACTICE_ATTEMPTS), HTTPClient.METHOD_POST, payload)
+
+## Lấy lịch sử lượt tập (hỗ trợ adaptive difficulty — 10 lượt gần nhất)
+func get_practice_attempts(exercise_id: int = 0, page: int = 0, size: int = 10) -> Dictionary:
+	var query_params := []
+	if exercise_id > 0:
+		query_params.append("exercise_id=" + str(exercise_id))
+	query_params.append("page=" + str(page))
+	query_params.append("size=" + str(size))
+	var path := ApiRoutes.build(ApiRoutes.PRACTICE_ATTEMPTS) + "?" + "&".join(query_params)
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Gửi phản hồi văn bản cho một lượt tập (INSTRUCTOR)
+func submit_attempt_feedback(attempt_id: int, comment: String) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.PRACTICE_ATTEMPT_FEEDBACK % str(attempt_id))
+	return await request_json(path, HTTPClient.METHOD_POST, {"comment": comment})
 
 
 # ── PROGRESS & ACHIEVEMENTS APIs ──────────────────────────────────────
@@ -189,6 +267,77 @@ func get_my_achievements() -> Dictionary:
 func revoke_achievement(learner_id: int, achievement_id: int) -> Dictionary:
 	var path := ApiRoutes.build("/users/%d/achievements/%d" % [learner_id, achievement_id])
 	return await request_json(path, HTTPClient.METHOD_DELETE)
+
+
+# ── DAILY CHALLENGES & CONFIGS APIs ───────────────────────────────────
+
+## Lấy thử thách hằng ngày
+func get_daily_challenges(date: String = "") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.DAILY_CHALLENGES)
+	if not date.is_empty():
+		path += "?date=" + date
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Hoàn thành thử thách hằng ngày (nhận điểm thưởng)
+func complete_daily_challenge(challenge_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.DAILY_CHALLENGE_COMPLETIONS % str(challenge_id))
+	return await request_json(path, HTTPClient.METHOD_POST, {})
+
+## Lấy cấu hình công khai cho game engine (độ khó, feature toggles, …)
+func get_configs(group: String = "") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.CONFIGS)
+	if not group.is_empty():
+		path += "?group=" + group
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+
+# ── NOTIFICATIONS APIs ────────────────────────────────────────────────
+
+## Lấy thông báo của người dùng
+func get_notifications(is_read: int = -1, page: int = 0, size: int = 20) -> Dictionary:
+	var query_params := []
+	if is_read >= 0:
+		query_params.append("isRead=" + str(is_read))
+	query_params.append("page=" + str(page))
+	query_params.append("size=" + str(size))
+	var path := ApiRoutes.build(ApiRoutes.NOTIFICATIONS) + "?" + "&".join(query_params)
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Đánh dấu một thông báo đã đọc
+func mark_notification_read(notification_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.NOTIFICATIONS) + "/" + str(notification_id)
+	return await request_json(path, HTTPClient.METHOD_PUT, {})
+
+## Đánh dấu tất cả thông báo đã đọc
+func mark_all_notifications_read() -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.NOTIFICATIONS), HTTPClient.METHOD_PUT, {})
+
+
+# ── ADMIN APIs ────────────────────────────────────────────────────────
+
+## Điều hành: danh sách người dùng
+func admin_get_users(page: int = 0, size: int = 50, search: String = "", role: String = "") -> Dictionary:
+	var query_params := ["page=" + str(page), "size=" + str(size)]
+	if not search.is_empty():
+		query_params.append("search=" + search)
+	if not role.is_empty():
+		query_params.append("role=" + role)
+	var path := ApiRoutes.build(ApiRoutes.ADMIN_USERS) + "?" + "&".join(query_params)
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Điều hành: kích hoạt / khóa tài khoản
+func admin_update_user_status(user_id: int, status: String) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.ADMIN_USER_STATUS % str(user_id))
+	return await request_json(path, HTTPClient.METHOD_PUT, {"status": status})
+
+## Điều hành: thống kê hệ thống
+func admin_get_dashboard() -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.ADMIN_DASHBOARD), HTTPClient.METHOD_GET)
+
+## Điều hành: cập nhật cấu hình hệ thống
+func admin_update_config(config_key: String, value: String) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.ADMIN_CONFIGS) + "/" + config_key
+	return await request_json(path, HTTPClient.METHOD_PUT, {"value": value})
 
 
 # ── COSMETICS APIs ────────────────────────────────────────────────────
@@ -296,6 +445,14 @@ func refresh_session() -> Dictionary:
 	elif int(response.get("status", 0)) in [401, 403]:
 		AuthSessionStore.clear_session()
 	return response
+
+
+static func _iso_now() -> String:
+	var current_time = Time.get_datetime_dict_from_system()
+	return "%d-%02d-%02dT%02d:%02d:%02dZ" % [
+		current_time.year, current_time.month, current_time.day,
+		current_time.hour, current_time.minute, current_time.second
+	]
 
 
 func error_message(response: Dictionary, fallback: String) -> String:

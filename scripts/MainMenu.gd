@@ -36,6 +36,11 @@ var _account_menu_open := false
 var _avatar_request: HTTPRequest
 var _remote_avatar_texture: Texture2D
 var _requested_avatar_url := ""
+var _summary_data := {}
+var _daily_challenges: Array = []
+var _daily_pill: PanelContainer = null
+var _daily_pill_label: Button = null
+var _daily_overlay: ColorRect = null
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -180,9 +185,16 @@ func _fetch_and_sync_progress() -> void:
 	if _api_client._is_success(summary_response):
 		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
 		if summary_data is Dictionary:
+			_summary_data = summary_data
 			var total_points := int(summary_data.get("total_points", summary_data.get("totalPoints", 0)))
 			_profile_level = int(total_points / 1000) + 1
 			_update_profile_menu_data()
+			_apply_stat_pills(summary_data)
+			if streak_pill and xp_pill:
+				streak_pill.visible = true
+				xp_pill.visible = true
+	_fetch_daily_challenges()
+	BackendReport.fetch_and_install_catalog()
 
 func _fetch_profile_identity() -> void:
 	if _api_client == null:
@@ -686,12 +698,207 @@ func _build_top_bar() -> void:
 	xp_pill.add_theme_stylebox_override("panel", xp_s)
 	xp_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
-	var total_xp : int = 1240 + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
-	xp_label.text = str(total_xp) + " XP"
-	
-	# Tạm thời ẩn theo yêu cầu
+	var local_xp : int = int(SecureDataManager.data.get("total_points", 0)) + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
+	xp_label.text = str(local_xp) + " XP"
+
+	# Giá trị từ BE sẽ đè lên khi _fetch_and_sync_progress() thành công.
+	# Ẩn khi chưa có dữ liệu BE để tránh hiện số liệu mặc định gây hiểu nhầm.
 	streak_pill.visible = false
 	xp_pill.visible = false
+
+	_build_daily_challenge_pill()
+
+func _apply_stat_pills(summary: Dictionary) -> void:
+	var streak := int(summary.get("current_streak", summary.get("currentStreak", 0)))
+	var points := int(summary.get("total_points", summary.get("totalPoints", 0)))
+	if sp_label:
+		sp_label.text = "%d ngày" % streak
+	if xp_label:
+		xp_label.text = "%d XP" % points
+
+# ── Daily challenges ──────────────────────────────────────────────────────────
+
+func _build_daily_challenge_pill() -> void:
+	var stats_row := $Root/RightContent/TopBar/TopRow/StatsRow as HBoxContainer
+	if stats_row == null:
+		return
+	_daily_pill = PanelContainer.new()
+	_daily_pill.name = "DailyChallengePill"
+	_daily_pill.visible = false
+	_daily_pill.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.92), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 22))
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	var btn := Button.new()
+	btn.flat = true
+	btn.add_theme_font_size_override("font_size", 17)
+	btn.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	btn.add_theme_color_override("font_hover_color", C_GOLD)
+	btn.pressed.connect(_show_daily_challenges_popup)
+	_daily_pill_label = btn
+	margin.add_child(btn)
+	_daily_pill.add_child(margin)
+	stats_row.add_child(_daily_pill)
+
+func _fetch_daily_challenges() -> void:
+	if not BackendReport.is_signed_in():
+		return
+	_daily_challenges = await BackendReport.fetch_daily_challenges()
+	_refresh_daily_pill_text()
+	if _daily_pill:
+		_daily_pill.visible = not _daily_challenges.is_empty()
+
+func _refresh_daily_pill_text() -> void:
+	if _daily_pill_label == null:
+		return
+	var pending := 0
+	for challenge: Variant in _daily_challenges:
+		if challenge is Dictionary:
+			if not bool(challenge.get("is_completed", challenge.get("completed", false))):
+				pending += 1
+	if pending > 0:
+		_daily_pill_label.text = "🔥 Thử thách hôm nay · %d" % pending
+	else:
+		_daily_pill_label.text = "🔥 Thử thách hôm nay"
+
+func _show_daily_challenges_popup() -> void:
+	if _daily_challenges.is_empty():
+		return
+	if _daily_overlay != null and is_instance_valid(_daily_overlay):
+		_daily_overlay.queue_free()
+		_daily_overlay = null
+
+	_daily_overlay = ColorRect.new()
+	_daily_overlay.name = "DailyChallengeOverlay"
+	_daily_overlay.color = Color(0.05, 0.02, 0.01, 0.72)
+	_daily_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_daily_overlay.z_index = 300
+	add_child(_daily_overlay)
+	_daily_overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			_close_daily_challenges_popup()
+	)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_daily_overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _flat(Color(0.10, 0.05, 0.02, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24))
+	panel.custom_minimum_size = Vector2(560, 0)
+	center.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 28)
+	margin.add_theme_constant_override("margin_right", 28)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "🎯 THỬ THÁCH HÔM NAY"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Hoàn thành thử thách để nhận điểm thưởng, tích lũy chuỗi luyện tập."
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 15)
+	subtitle.add_theme_color_override("font_color", Color(1, 1, 1, 0.72))
+	vbox.add_child(subtitle)
+
+	for challenge: Variant in _daily_challenges:
+		if challenge is Dictionary:
+			_build_daily_challenge_row(vbox, challenge)
+
+	var close_btn := Button.new()
+	close_btn.text = "ĐÓNG"
+	close_btn.custom_minimum_size = Vector2(200, 54)
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close_btn.add_theme_font_size_override("font_size", 18)
+	close_btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, C_GOLD, 16))
+	close_btn.add_theme_color_override("font_color", Color.WHITE)
+	close_btn.add_theme_stylebox_override("hover", _flat(C_RED_SON.lightened(0.12), C_GOLD_LIGHT, 16))
+	close_btn.pressed.connect(_close_daily_challenges_popup)
+	vbox.add_child(close_btn)
+
+func _build_daily_challenge_row(vbox: VBoxContainer, challenge: Dictionary) -> void:
+	var is_done := bool(challenge.get("is_completed", challenge.get("completed", false)))
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", _flat(Color(1, 1, 1, 0.05), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 14))
+	var row_m := MarginContainer.new()
+	row_m.add_theme_constant_override("margin_left", 18)
+	row_m.add_theme_constant_override("margin_right", 18)
+	row_m.add_theme_constant_override("margin_top", 12)
+	row_m.add_theme_constant_override("margin_bottom", 12)
+	row.add_child(row_m)
+	var row_h := HBoxContainer.new()
+	row_h.add_theme_constant_override("separation", 16)
+	row_m.add_child(row_h)
+
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row_title := Label.new()
+	row_title.text = str(challenge.get("title", "Thử thách"))
+	row_title.add_theme_font_size_override("font_size", 19)
+	row_title.add_theme_color_override("font_color", C_CREAM)
+	copy.add_child(row_title)
+	var row_desc := Label.new()
+	row_desc.text = "%s · Thưởng +%d điểm" % [str(challenge.get("description", "")), int(challenge.get("reward_points", 0))]
+	row_desc.add_theme_font_size_override("font_size", 14)
+	row_desc.add_theme_color_override("font_color", Color(1, 1, 1, 0.62))
+	copy.add_child(row_desc)
+	row_h.add_child(copy)
+
+	if is_done:
+		var done_lbl := Label.new()
+		done_lbl.text = "✓ HOÀN THÀNH"
+		done_lbl.add_theme_font_size_override("font_size", 15)
+		done_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6, 1.0))
+		done_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row_h.add_child(done_lbl)
+	else:
+		var claim_btn := Button.new()
+		claim_btn.text = "NHẬN THƯỞNG"
+		claim_btn.custom_minimum_size = Vector2(170, 44)
+		claim_btn.add_theme_font_size_override("font_size", 15)
+		claim_btn.add_theme_stylebox_override("normal", _flat(C_GOLD, Color.TRANSPARENT, 12))
+		claim_btn.add_theme_color_override("font_color", C_GOLD_DARK)
+		var challenge_id := int(challenge.get("id", 0))
+		claim_btn.pressed.connect(func() -> void: _complete_daily_challenge(challenge_id))
+		row_h.add_child(claim_btn)
+	vbox.add_child(row)
+
+func _complete_daily_challenge(challenge_id: int) -> void:
+	var result: Dictionary = await BackendReport.complete_daily_challenge(challenge_id)
+	if not result.get("submitted", false):
+		push_warning("[MainMenu] Không nhận được thưởng thử thách: %s" % str(result.get("message", "")))
+		return
+	for challenge: Variant in _daily_challenges:
+		if challenge is Dictionary and int(challenge.get("id", 0)) == challenge_id:
+			challenge["is_completed"] = true
+			break
+	_refresh_daily_pill_text()
+	# Làm mới điểm từ BE để cập nhật ngay XP trên thanh thống kê
+	var summary_response = await _api_client.get_my_progress_summary()
+	if _api_client != null and _api_client._is_success(summary_response):
+		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
+		if summary_data is Dictionary:
+			_apply_stat_pills(summary_data)
+	_show_daily_challenges_popup()
+
+func _close_daily_challenges_popup() -> void:
+	if _daily_overlay != null and is_instance_valid(_daily_overlay):
+		_daily_overlay.queue_free()
+		_daily_overlay = null
 
 func _build_profile_menu() -> void:
 	var top_row := profile_menu.get_parent() as HBoxContainer
