@@ -817,7 +817,7 @@ func _process_rhythm(delta, rect):
 			break
 			
 	if current_overlapping_note != null:
-		var is_blowing = amp > -55.0 # Lenient volume threshold
+		var is_blowing = amp > -35.0 # Lenient volume threshold
 		var is_correct = false
 		
 		if is_blowing and hz > 150.0:
@@ -832,15 +832,17 @@ func _process_rhythm(delta, rect):
 			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
-		else:
+		elif is_blowing:
 			time_delta = -delta * 1.5
 			wrong_rhythm_duration += delta
 			current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
-			if is_blowing:
-				mic_status.text = "Sai ngón! Thổi lại..."
-			else:
-				mic_status.text = ""
+			mic_status.text = "Sai ngón! Thổi lại..."
 			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+		else:
+			time_delta = 0
+			current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
+			mic_status.text = "Đang đợi..."
+			mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	else:
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
@@ -1395,7 +1397,7 @@ func _process_real(delta):
 	
 	if _current_practice_idx >= _practice_sequence.size(): return
 	
-	if amp > -55.0 and hz > 0:
+	if amp > -35.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
 		if hz > 150.0:
 			var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
