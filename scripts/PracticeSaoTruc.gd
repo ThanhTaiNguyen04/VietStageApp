@@ -1649,10 +1649,10 @@ func _process_real_audio(delta: float) -> void:
 		if pitch > 0.0:
 			cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
 			
-		var is_pitch_ok = db > -32.0 and pitch > 50.0 and abs(cents) < 75.0
+		var is_pitch_ok = db > -32.0 and pitch > 50.0 and abs(cents) < 150.0
 		var is_correct_note = false
 		if is_pitch_ok:
-			var tolerance_cents = 25.0 / visualizer.difficulty_tolerance_scale
+			var tolerance_cents = 100.0 / visualizer.difficulty_tolerance_scale
 			if abs(cents) < tolerance_cents:
 				is_correct_note = true
 				
@@ -1782,9 +1782,9 @@ func _process_real_audio(delta: float) -> void:
 		var effective_target_freq : float = target_freq * scale_mult
 		
 		var cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
-		var tolerance_cents = 25.0 / visualizer.difficulty_tolerance_scale
+		var tolerance_cents = 100.0 / visualizer.difficulty_tolerance_scale
 		
-		if abs(cents) < 75.0:
+		if abs(cents) < 150.0:
 			pitch_note.text = target_note + ("²" if is_overblowing else "")
 			if abs(cents) < tolerance_cents:
 				pitch_status.text = "Đúng cao độ" + (" (Quãng 2)" if is_overblowing else "")
