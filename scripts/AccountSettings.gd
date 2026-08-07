@@ -343,7 +343,7 @@ func _build_theme() -> void:
 	state_label.add_theme_color_override("font_color", C_PASTEL_GREEN_TXT)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_style_back_button(back_button, Color.WHITE)
+	_style_back_button(back_button, C_TEXT_MAIN)
 
 	_set_icon_button(retry_button, "rotate-cw", C_TEXT_MAIN)
 	_set_icon_button(edit_avatar_button, "camera", Color.WHITE, C_TEXT_MAIN)
@@ -365,7 +365,7 @@ func _apply_responsive_layout() -> void:
 	content.custom_minimum_size.x = minf(740.0, maxf(360.0, usable_width))
 	content_margin.add_theme_constant_override("margin_left", int(safe.x + side))
 	content_margin.add_theme_constant_override("margin_right", int(safe.z + side))
-	content_margin.add_theme_constant_override("margin_top", 32 if mobile else 48) # Generous top padding
+	content_margin.add_theme_constant_override("margin_top", 112 if mobile else 120) # Push content below floating back button
 	content_margin.add_theme_constant_override("margin_bottom", int(safe.w + (12 if mobile else 20)))
 	card_margin.add_theme_constant_override("margin_left", 14 if mobile else 22)
 	card_margin.add_theme_constant_override("margin_right", 14 if mobile else 22)
@@ -421,6 +421,8 @@ func _show_state(icon_name: String, message: String, can_retry: bool) -> void:
 
 func _animate_in() -> void:
 	settings_card.modulate.a = 0.0
+	if is_inside_tree():
+		await get_tree().process_frame
 	settings_card.position.y += 8.0
 	var target_y := settings_card.position.y - 8.0
 	var tween := create_tween().set_parallel(true)
@@ -514,10 +516,11 @@ func _style_back_button(button: Button, color: Color) -> void:
 	button.add_theme_color_override("icon_focus_color", color)
 	button.add_theme_constant_override("icon_max_width", 78)
 
-	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var empty := _flat(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("hover", empty)
+	button.add_theme_stylebox_override("pressed", empty)
+	button.add_theme_stylebox_override("focus", empty)
 
 
 func _set_icon_button(button: Button, icon_name: String, color: Color, background := Color.TRANSPARENT) -> void:

@@ -31,8 +31,8 @@ const INSTRUMENTS := [
 
 
 # ── Node refs ──────────────────────────────────────────────────────────
-@onready var back_btn  : Button = $Root/TopBar/TopM/TopH/BackBtn
-@onready var top_title : Label  = $Root/TopBar/TopM/TopH/Title
+@onready var back_btn  : Button = $FloatingMargin/BackBtn
+@onready var top_title : Label  = $Root/TitleMargin/Title
 
 # will be populated dynamically
 var _tab_btns   : Array[Button] = []
@@ -98,53 +98,28 @@ func _draw() -> void:
 # TOP BAR
 # ──────────────────────────────────────────────────────────────────────
 func _build_topbar() -> void:
-	var top_bar = $Root/TopBar
-
-	# Frosted glass shader
-	if not top_bar.has_node("BlurRect"):
-		var blur_mat := ShaderMaterial.new()
-		var blur_sh  := Shader.new()
-		blur_sh.code = """
-		shader_type canvas_item;
-		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-		uniform float lod : hint_range(0.0,5.0) = 2.0;
-		void fragment() { COLOR = textureLod(screen_texture, SCREEN_UV, lod); }
-		"""
-		blur_mat.shader = blur_sh
-		var blur := ColorRect.new()
-		blur.name = "BlurRect"
-		blur.material = blur_mat
-		blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blur.show_behind_parent = true
-		blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		blur.offset_bottom = -1
-		top_bar.add_child(blur)
-
-	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 0)
-	top_s.border_width_bottom = 1
-	top_s.content_margin_bottom = 0
-	top_bar.add_theme_stylebox_override("panel", top_s)
-
-	var spacer = $Root/TopBar/TopM/TopH/Spacer
-	if spacer: spacer.hide()
-	var spacer_right = $Root/TopBar/TopM/TopH/SpacerRight
-	if spacer_right: spacer_right.hide()
-
 	top_title.text = " BẢNG XẾP HẠNG"
 	top_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	top_title.add_theme_color_override("font_color", C_GREEN)
 	if font_bold: top_title.add_theme_font_override("font", font_bold)
 
-	var toph := $Root/TopBar/TopM/TopH
-	if toph.has_node("TitleIcon"):
-		toph.get_node("TitleIcon").queue_free()
-
 	var back_tex := load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back_btn.icon = back_tex
 	back_btn.text = ""
-	back_btn.flat = true
-	back_btn.custom_minimum_size = Vector2(50, 50)
+	back_btn.expand_icon = true
+	back_btn.add_theme_constant_override("icon_max_width", 78)
+	
 	back_btn.add_theme_color_override("icon_normal_color", C_GREEN)
+	back_btn.add_theme_color_override("icon_hover_color", C_GREEN.lightened(0.2))
+	back_btn.add_theme_color_override("icon_pressed_color", C_GREEN.darkened(0.2))
+	back_btn.add_theme_color_override("icon_focus_color", C_GREEN)
+	
+	var empty := _flat(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
+	back_btn.add_theme_stylebox_override("normal", empty)
+	back_btn.add_theme_stylebox_override("hover", empty)
+	back_btn.add_theme_stylebox_override("pressed", empty)
+	back_btn.add_theme_stylebox_override("focus", empty)
+
 	back_btn.pressed.connect(_go_back)
 	_make_btn_bouncy(back_btn)
 
@@ -271,27 +246,12 @@ func _build_content() -> void:
 	sep2.color = Color(C_TEXT_MUT.r, C_TEXT_MUT.g, C_TEXT_MUT.b, 0.18)
 	inner.add_child(sep2)
 
-	# ── Rank list (4+) ──
-	_list_vbox = VBoxContainer.new()
-	_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_list_vbox.add_theme_constant_override("separation", 0)
-	inner.add_child(_list_vbox)
-
-	_populate_list()
-	
-	var sticky_bar := _build_sticky_bar()
-	if sticky_bar: gv.add_child(sticky_bar)
-
-# ──────────────────────────────────────────────────────────────────────
-# PODIUM  (top 3 visually)
-# ──────────────────────────────────────────────────────────────────────
 func _populate_list() -> void:
 	if _list_vbox == null:
 		return
 	for c in _list_vbox.get_children():
 		c.queue_free()
 
-	# Vẽ dữ liệu thật lấy từ API
 	if _leaderboard_list.size() > 0:
 		for i in range(_leaderboard_list.size()):
 			var p : Dictionary = _leaderboard_list[i]
@@ -301,38 +261,36 @@ func _populate_list() -> void:
 				is_me = (rk == int(_my_rank_info.get("rank", -1)))
 			_list_vbox.add_child(_create_list_row(p, rk, is_me))
 
-	# Bottom padding
 	var bottom := Control.new()
 	bottom.custom_minimum_size = Vector2(0, 16)
 	_list_vbox.add_child(bottom)
+
 
 func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	var row_margin := MarginContainer.new()
 	row_margin.add_theme_constant_override("margin_left",  20)
 	row_margin.add_theme_constant_override("margin_right", 20)
-	row_margin.add_theme_constant_override("margin_top",    4)
-	row_margin.add_theme_constant_override("margin_bottom", 4)
+	row_margin.add_theme_constant_override("margin_top",    6)
+	row_margin.add_theme_constant_override("margin_bottom", 6)
 
 	var row_bg := PanelContainer.new()
 	var rs : StyleBoxFlat
 	if is_me:
-		rs = _flat(Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.12), Color(0, 0, 0, 0), 12)
-		rs.border_width_left = 6
-		rs.border_color = C_GOLD
+		rs = _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), C_GOLD, 16, 2)
 	else:
-		rs = _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 12)
+		rs = _flat(Color(1.0, 1.0, 1.0, 0.45), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 16, 1)
 	row_bg.add_theme_stylebox_override("panel", rs)
 	row_margin.add_child(row_bg)
 
 	var inner := MarginContainer.new()
-	inner.add_theme_constant_override("margin_left",  12)
-	inner.add_theme_constant_override("margin_right", 12)
-	inner.add_theme_constant_override("margin_top",    8)
-	inner.add_theme_constant_override("margin_bottom", 8)
+	inner.add_theme_constant_override("margin_left",  20)
+	inner.add_theme_constant_override("margin_right", 20)
+	inner.add_theme_constant_override("margin_top",    12)
+	inner.add_theme_constant_override("margin_bottom", 12)
 	row_bg.add_child(inner)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 10)
+	hbox.add_theme_constant_override("separation", 16)
 	inner.add_child(hbox)
 
 	var rk_lbl := Label.new()
@@ -340,22 +298,22 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	rk_lbl.custom_minimum_size = Vector2(56, 0)
 	rk_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rk_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
-	rk_lbl.add_theme_font_size_override("font_size", 20)
+	rk_lbl.add_theme_font_size_override("font_size", 22)
 	if font_bold: rk_lbl.add_theme_font_override("font", font_bold)
 	hbox.add_child(rk_lbl)
 
-	var mini_av := _make_mini_avatar(32, C_GREEN_MID)
+	var mini_av := _make_mini_avatar(48, C_GREEN_MID)
 	hbox.add_child(mini_av)
 
 	var name_hbox := HBoxContainer.new()
-	name_hbox.add_theme_constant_override("separation", 6)
+	name_hbox.add_theme_constant_override("separation", 8)
 	name_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(name_hbox)
 
 	var name_lbl := Label.new()
 	name_lbl.text = p.get("learner_name", p.get("name", "Ẩn danh"))
 	name_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
-	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.add_theme_font_size_override("font_size", 16)
 	if font_bold and is_me:
 		name_lbl.add_theme_font_override("font", font_bold)
 	elif font_regular:
@@ -382,7 +340,7 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	lv_lbl.custom_minimum_size = Vector2(100, 0)
 	lv_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	lv_lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-	lv_lbl.add_theme_font_size_override("font_size", 12)
+	lv_lbl.add_theme_font_size_override("font_size", 15)
 	if font_regular: lv_lbl.add_theme_font_override("font", font_regular)
 	hbox.add_child(lv_lbl)
 
@@ -390,19 +348,19 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	star_hbox.custom_minimum_size = Vector2(60, 0)
 	star_hbox.alignment = BoxContainer.ALIGNMENT_END
 	hbox.add_child(star_hbox)
-	
+
 	var star_ic := TextureRect.new()
 	star_ic.texture = load("res://assets/textures/lucide/star.svg")
-	star_ic.custom_minimum_size = Vector2(14, 14)
+	star_ic.custom_minimum_size = Vector2(18, 18)
 	star_ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	star_ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	star_ic.modulate = C_GOLD
 	star_hbox.add_child(star_ic)
-	
+
 	var star_lbl := Label.new()
 	star_lbl.text = str(int(p.get("total_points", p.get("stars", 0))))
 	star_lbl.add_theme_color_override("font_color", C_GOLD)
-	star_lbl.add_theme_font_size_override("font_size", 13)
+	star_lbl.add_theme_font_size_override("font_size", 16)
 	if font_bold: star_lbl.add_theme_font_override("font", font_bold)
 	star_hbox.add_child(star_lbl)
 

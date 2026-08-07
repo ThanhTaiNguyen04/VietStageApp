@@ -38,7 +38,7 @@ const STAT_DEFINITIONS := [
 @onready var back_btn: Button = $FloatingMargin/BackBtn
 @onready var title_v: VBoxContainer = $Root/BodyMargin/Scroll/Center/ContentV/TitleV
 @onready var page_title: Label = $Root/BodyMargin/Scroll/Center/ContentV/TitleV/PageTitle
-@onready var page_subtitle: Label = $Root/BodyMargin/Scroll/Center/ContentV/TitleV/PageSubtitle
+@onready var page_subtitle: Label = get_node_or_null("Root/BodyMargin/Scroll/Center/ContentV/TitleV/PageSubtitle")
 @onready var body_margin: MarginContainer = $Root/BodyMargin
 @onready var content_v: VBoxContainer = $Root/BodyMargin/Scroll/Center/ContentV
 @onready var hero_card: PanelContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard
@@ -47,7 +47,7 @@ const STAT_DEFINITIONS := [
 @onready var profile_block: HBoxContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock
 @onready var avatar_frame: PanelContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/AvatarFrame
 @onready var avatar: TextureRect = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/AvatarFrame/Avatar
-@onready var user_kicker: Label = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/UserKicker
+@onready var user_kicker: Label = get_node_or_null("Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/UserKicker")
 @onready var user_name: Label = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/UserName
 @onready var level_pill: PanelContainer = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/LevelPill
 @onready var level_label: Label = $Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/LevelPill/PillM/LevelLabel
@@ -475,21 +475,40 @@ func _load_remote_icon(url: String, target: TextureRect, _earned: bool) -> void:
 
 func _parse_achievements(data: Variant) -> void:
 	_achievements.clear()
-	if data is Array:
+	var raw_items: Array = []
+	if data is Dictionary:
+		var earned_list = data.get("earned", [])
+		var locked_list = data.get("locked", [])
+		if earned_list is Array:
+			for item: Variant in earned_list:
+				if item is Dictionary:
+					var copy: Dictionary = item.duplicate()
+					copy["earned"] = true
+					raw_items.append(copy)
+		if locked_list is Array:
+			for item: Variant in locked_list:
+				if item is Dictionary:
+					var copy: Dictionary = item.duplicate()
+					copy["earned"] = false
+					raw_items.append(copy)
+	elif data is Array:
 		for item: Variant in data:
 			if item is Dictionary:
-				var achievement := {
-					"id": str(item.get("achievementId", "")),
-					"name": str(item.get("name", "Thành tựu chưa đặt tên")),
-					"description": str(item.get("description", "")),
-					"icon_url": str(item.get("iconUrl", "")),
-					"earned": bool(item.get("earned", false)),
-					"earned_at": str(item.get("earnedAt", "")),
-					"requirement_type": str(item.get("requirementType", "")),
-					"target_value": int(item.get("targetValue", 0)),
-					"current_value": int(item.get("currentValue", 0))
-				}
-				_achievements.append(achievement)
+				raw_items.append(item)
+				
+	for item: Dictionary in raw_items:
+		var achievement := {
+			"id": str(item.get("id", item.get("achievementId", ""))),
+			"name": str(item.get("name", "Thành tựu chưa đặt tên")),
+			"description": str(item.get("description", "")),
+			"icon_url": str(item.get("iconUrl", "")),
+			"earned": bool(item.get("earned", false)),
+			"earned_at": str(item.get("earnedAt", "")),
+			"requirement_type": str(item.get("requirementType", "")),
+			"target_value": int(item.get("targetValue", 0)),
+			"current_value": int(item.get("currentValue", 0))
+		}
+		_achievements.append(achievement)
 
 
 func _parse_progress_summary(data: Variant) -> void:
@@ -561,7 +580,7 @@ func _apply_responsive_layout() -> void:
 	content_v.custom_minimum_size.x = minf(1480.0, available_width)
 	body_margin.add_theme_constant_override("margin_left", horizontal_padding)
 	body_margin.add_theme_constant_override("margin_right", horizontal_padding)
-	body_margin.add_theme_constant_override("margin_top", 32 if compact else 48) # Generous top padding
+	body_margin.add_theme_constant_override("margin_top", 112 if compact else 120) # Push content below floating back button
 	body_margin.add_theme_constant_override("margin_bottom", 20)
 
 	hero_h.vertical = compact or medium
@@ -613,7 +632,8 @@ func _build_theme() -> void:
 			control.add_theme_font_override("font", bold_font)
 	if regular_font:
 		for control: Control in [page_subtitle, user_kicker, level_hint, collection_subtitle, state_label, footer_note]:
-			control.add_theme_font_override("font", regular_font)
+			if control:
+				control.add_theme_font_override("font", regular_font)
 
 	hero_card.add_theme_stylebox_override("panel", _surface_style())
 	collection_card.add_theme_stylebox_override("panel", _surface_style())
@@ -624,8 +644,10 @@ func _build_theme() -> void:
 	xp_bar.add_theme_stylebox_override("fill", _flat(C_GOLD, Color.TRANSPARENT, 7, 0))
 
 	page_title.add_theme_color_override("font_color", C_TEXT_MAIN)
-	page_subtitle.add_theme_color_override("font_color", C_TEXT_MUTED)
-	user_kicker.add_theme_color_override("font_color", C_GOLD)
+	if page_subtitle:
+		page_subtitle.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if user_kicker:
+		user_kicker.add_theme_color_override("font_color", C_GOLD)
 	user_name.add_theme_color_override("font_color", C_TEXT_MAIN)
 	level_label.add_theme_color_override("font_color", C_PASTEL_GREEN_TXT)
 	progress_title.add_theme_color_override("font_color", C_TEXT_MAIN)
@@ -678,15 +700,16 @@ func _set_button_icon(button: Button, icon_name: String) -> void:
 
 
 func _style_back_button(button: Button) -> void:
-	button.add_theme_color_override("icon_normal_color", Color.WHITE)
-	button.add_theme_color_override("icon_hover_color", Color.WHITE.darkened(0.15))
-	button.add_theme_color_override("icon_pressed_color", Color.WHITE.darkened(0.3))
-	button.add_theme_color_override("icon_focus_color", Color.WHITE)
+	button.add_theme_color_override("icon_normal_color", C_TEXT_MAIN)
+	button.add_theme_color_override("icon_hover_color", C_TEXT_MAIN.lightened(0.2))
+	button.add_theme_color_override("icon_pressed_color", C_TEXT_MAIN.darkened(0.2))
+	button.add_theme_color_override("icon_focus_color", C_TEXT_MAIN)
 	
-	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var empty := _flat(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("hover", empty)
+	button.add_theme_stylebox_override("pressed", empty)
+	button.add_theme_stylebox_override("focus", empty)
 
 
 func _style_secondary_button(button: Button) -> void:

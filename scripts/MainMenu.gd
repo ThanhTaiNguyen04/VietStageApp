@@ -191,8 +191,8 @@ func _fetch_and_sync_progress() -> void:
 			_update_profile_menu_data()
 			_apply_stat_pills(summary_data)
 			if streak_pill and xp_pill:
-				streak_pill.visible = true
-				xp_pill.visible = true
+				streak_pill.visible = false
+				xp_pill.visible = false
 	_fetch_daily_challenges()
 	BackendReport.fetch_and_install_catalog()
 
@@ -984,21 +984,21 @@ func _style_account_menu() -> void:
 		header_name.add_theme_font_override("font", bold_font)
 		for button: Button in [profile_action, achievement_action, settings_action, logout_action]:
 			button.add_theme_font_override("font", bold_font)
-	var trigger_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), 30)
+	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), 35)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
 	trigger_style.shadow_size = 10
 	trigger_style.shadow_offset = Vector2(0, 4)
 	profile_menu.add_theme_stylebox_override("panel", trigger_style)
-	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(23, 2))
-	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(36, 3))
-	trigger_name.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	trigger_level.add_theme_color_override("font_color", C_TERRACOTTA)
-	trigger_chevron.add_theme_color_override("font_color", C_TERRACOTTA)
+	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(35, 0, Color.TRANSPARENT))
+	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(36, 3, Color.WHITE))
+	trigger_name.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92, 1.0))
+	trigger_level.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	trigger_chevron.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
-	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 30))
-	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color.TRANSPARENT, 30))
-	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 30))
-	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 30))
+	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 35))
+	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color.TRANSPARENT, 35))
+	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 35))
+	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 35))
 
 	var panel_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
 	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
@@ -1034,8 +1034,8 @@ func _style_account_action(button: Button, icon_name: String) -> void:
 	button.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), Color.TRANSPARENT, 14))
 	button.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
 
-func _avatar_menu_style(radius: int, border_width: int) -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, C_GOLD, radius)
+func _avatar_menu_style(radius: int, border_width: int, bg_color := Color.WHITE) -> StyleBoxFlat:
+	var style := _flat(bg_color, C_GOLD, radius)
 	style.border_width_left = border_width
 	style.border_width_right = border_width
 	style.border_width_top = border_width
@@ -1167,8 +1167,8 @@ func _confirm_logout() -> void:
 	btn_logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_logout.custom_minimum_size.y = 48
 	# Solid charcoal button
-	var logout_normal := _flat(Color("#111111"), Color("#111111"), 12)
-	var logout_hover := _flat(Color("#111111").lightened(0.15), Color("#111111"), 12)
+	var logout_normal := _flat(Color("#f90606"), Color("#f80707"), 12)
+	var logout_hover := _flat(Color("#f90606").lightened(0.15), Color("#f80707"), 12)
 	btn_logout.add_theme_stylebox_override("normal", logout_normal)
 	btn_logout.add_theme_stylebox_override("hover", logout_hover)
 	btn_logout.add_theme_stylebox_override("pressed", logout_hover)
@@ -1979,7 +1979,7 @@ func _on_viewport_size_changed() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var is_mobile := _is_mobile_layout(viewport_size)
 	var safe := _safe_insets(viewport_size)
-	var compact_profile: bool = viewport_size.x < 900.0
+	var compact_profile := false
 	var safe_left := minf(safe.x, 104.0) if is_mobile else 0.0
 	var rail_width := 168.0 if is_mobile else 220.0
 
@@ -1999,8 +1999,8 @@ func _on_viewport_size_changed() -> void:
 	$Root/Sidebar/SideM/SideV/TopSpacer.custom_minimum_size.y = 14.0 if is_mobile else 32.0
 	
 	# Responsive profile button styling
-	var radius := 26 if is_mobile else 30
-	var trigger_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), radius)
+	var radius := 35
+	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), radius)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
 	trigger_style.shadow_size = 10
 	trigger_style.shadow_offset = Vector2(0, 4)
@@ -2008,25 +2008,15 @@ func _on_viewport_size_changed() -> void:
 
 	var trigger_m := profile_menu.get_node_or_null("TriggerM") as MarginContainer
 
-	if compact_profile:
-		trigger_copy.visible = false
-		trigger_chevron.visible = false
-		profile_menu.custom_minimum_size = Vector2(54, 54)
-		profile_menu.size = Vector2(54, 54)
-		if trigger_m:
-			trigger_m.add_theme_constant_override("margin_left", 4)
-			trigger_m.add_theme_constant_override("margin_right", 4)
-			trigger_m.add_theme_constant_override("margin_top", 4)
-			trigger_m.add_theme_constant_override("margin_bottom", 4)
-	else:
-		trigger_copy.visible = true
-		trigger_chevron.visible = true
-		profile_menu.custom_minimum_size = Vector2(218, 58) if is_mobile else Vector2(232, 60)
-		if trigger_m:
-			trigger_m.add_theme_constant_override("margin_left", 8)
-			trigger_m.add_theme_constant_override("margin_right", 12)
-			trigger_m.add_theme_constant_override("margin_top", 6)
-			trigger_m.add_theme_constant_override("margin_bottom", 6)
+	trigger_copy.visible = false
+	trigger_chevron.visible = false
+	profile_menu.custom_minimum_size = Vector2(70, 70)
+	profile_menu.size = Vector2(70, 70)
+	if trigger_m:
+		trigger_m.add_theme_constant_override("margin_left", 0)
+		trigger_m.add_theme_constant_override("margin_right", 0)
+		trigger_m.add_theme_constant_override("margin_top", 0)
+		trigger_m.add_theme_constant_override("margin_bottom", 0)
 
 	top_bar.custom_minimum_size.y = (76.0 + safe.y) if is_mobile else 96.0
 	top_bar.add_theme_constant_override("margin_top", int(safe.y + 10.0) if is_mobile else 16)

@@ -286,7 +286,7 @@ func _build_theme() -> void:
 	progress_state.add_theme_color_override("font_color", C_TEXT_MUTED)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_style_back_button(back_button, Color.WHITE)
+	_style_back_button(back_button, C_TEXT_MAIN)
 	_set_icon_button(retry_button, "rotate-cw", C_TEXT_MAIN)
 
 
@@ -298,7 +298,7 @@ func _apply_responsive_layout() -> void:
 	content.custom_minimum_size.x = minf(780.0, maxf(292.0, width - float(side * 2)))
 	content_margin.add_theme_constant_override("margin_left", side)
 	content_margin.add_theme_constant_override("margin_right", side)
-	content_margin.add_theme_constant_override("margin_top", 32 if mobile else 48)
+	content_margin.add_theme_constant_override("margin_top", 112 if mobile else 120) # Push content below floating back button
 	card_margin.add_theme_constant_override("margin_left", 16 if mobile else 28)
 	card_margin.add_theme_constant_override("margin_right", 16 if mobile else 28)
 	card_margin.add_theme_constant_override("margin_top", 20 if mobile else 26)
@@ -392,10 +392,11 @@ func _style_back_button(button: Button, color: Color) -> void:
 	button.add_theme_color_override("icon_focus_color", color)
 	button.add_theme_constant_override("icon_max_width", 78)
 
-	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var empty := _flat(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("hover", empty)
+	button.add_theme_stylebox_override("pressed", empty)
+	button.add_theme_stylebox_override("focus", empty)
 
 
 func _set_icon_button(button: Button, icon_name: String, color: Color) -> void:

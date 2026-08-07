@@ -110,7 +110,7 @@ const ALL_17_NOTES: Array[String] = [
 
 const LESSON_DIALOGUES = {
 	"dan_tranh_level_1_bai_1_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học Đàn Tranh đầu tiên. Hôm nay chúng ta sẽ làm quen với tư thế ngồi thẳng lưng và cách đặt đàn nhé.", "highlight": -1},
+		{"action": "speak", "text": "Chào mừng bạn đến với bài học Đàn Tranh đầu tiên. Hãy ngồi thẳng lưng và đặt đàn trước mặt. Bên lớn hơn được gọi là đầu đàn sẽ nằm bên phía tay phải nhé. Chúng ta sẽ gảy đàn bằng tay phải và tay trái ấn, giữ dây đàn để tạo âm vang.", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên, hãy làm quen với âm sắc của 5 nốt cơ bản nhất ở quãng trầm của đàn.", "highlight": -1},
 		{"action": "speak", "text": "Dây 1: Nốt Sol1. Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
 		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},

@@ -34,7 +34,7 @@ const LEVELS := [
 			},
 			{
 				"number": 2,
-				"title": "Giao diện nốt rơi & Cách đọc",
+				"title": "Học tiếp các nốt còn lại trên đàn tranh",
 				"video": "Kỹ thuật gảy ngón cái, ngón trỏ và cách nhận diện hướng rơi của các nốt nhạc trên khuông nhạc ứng dụng.",
 				"practice": "Luyện tập đọc nốt rơi trên màn hình: gảy các nốt nhạc tương ứng khi chạm vạch phách.",
 				"practice_title": "Luyện đọc nốt rơi",
