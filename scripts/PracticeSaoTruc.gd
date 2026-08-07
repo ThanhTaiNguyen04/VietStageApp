@@ -548,7 +548,7 @@ func _ready() -> void:
 		visualizer.set_script(analyzer_script)
 		visualizer.min_frequency = 250.0
 		visualizer.max_frequency = 2200.0
-		visualizer.volume_threshold_db = -45.0
+		visualizer.volume_threshold_db = -32.0
 		visualizer.visible = false
 		settings_ctrl_btns.add_child(visualizer)
 		_waveform_visualizer = visualizer
@@ -877,7 +877,7 @@ func _process(delta: float) -> void:
 			var db = visualizer.current_amplitude_db if visualizer else -99.0
 			var pitch = visualizer.current_pitch if visualizer else 0.0
 			
-			if _recording and _mic_mode and not _is_demo_mode and db > -45.0 and pitch > 50.0:
+			if _recording and _mic_mode and not _is_demo_mode and db > -32.0 and pitch > 50.0:
 				needle.visible = true
 				
 				# Find closest note in FREQS
@@ -1649,7 +1649,7 @@ func _process_real_audio(delta: float) -> void:
 		if pitch > 0.0:
 			cents = 1200.0 * log(pitch / effective_target_freq) / log(2.0)
 			
-		var is_pitch_ok = db > -45.0 and pitch > 50.0 and abs(cents) < 75.0
+		var is_pitch_ok = db > -32.0 and pitch > 50.0 and abs(cents) < 75.0
 		var is_correct_note = false
 		if is_pitch_ok:
 			var tolerance_cents = 25.0 / visualizer.difficulty_tolerance_scale
@@ -1659,7 +1659,7 @@ func _process_real_audio(delta: float) -> void:
 		var is_breath_ok = _breath_pressure >= 12.0 and _breath_pressure <= 85.0
 		
 		_active_note_is_correct = is_correct_note and is_breath_ok
-		_active_note_is_heard = db > -45.0 and pitch > 50.0
+		_active_note_is_heard = db > -32.0 and pitch > 50.0
 		
 		if is_correct_note and is_breath_ok:
 			_current_note_correct_frames += 1
@@ -1678,7 +1678,7 @@ func _process_real_audio(delta: float) -> void:
 			pitch_status.add_theme_color_override("font_color", C_WARN)
 			pitch_note.add_theme_color_override("font_color", C_WARN)
 		else:
-			if db > -45.0 and pitch > 50.0:
+			if db > -32.0 and pitch > 50.0:
 				var detected_note = _detect_note_from_pitch(pitch, scale_mult)
 				if detected_note != "":
 					pitch_note.text = detected_note + ("²" if is_overblowing else "")
@@ -1740,7 +1740,7 @@ func _process_real_audio(delta: float) -> void:
 	var db = visualizer.current_amplitude_db
 	var pitch = visualizer.current_pitch
 	
-	_active_note_is_heard = db > -45.0 and pitch > 50.0
+	_active_note_is_heard = db > -32.0 and pitch > 50.0
 	
 	# Rule: Articulation check / Cách hơi (Ngắt hơi giữa các nốt)
 	if _waiting_for_breath_release:
@@ -1775,7 +1775,7 @@ func _process_real_audio(delta: float) -> void:
 			pitch_note.add_theme_color_override("font_color", C_GOLD)
 			return
 			
-	if db > -45.0 and pitch > 50.0:
+	if db > -32.0 and pitch > 50.0:
 		var target_freq = FREQS.get(target_note, 261.63)
 		var is_overblowing := _breath_pressure > 82.0
 		var scale_mult := 2.0 if is_overblowing else 1.0
