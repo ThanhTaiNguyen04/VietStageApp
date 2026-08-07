@@ -823,7 +823,7 @@ func _process_rhythm(delta, rect):
 		if is_blowing and hz > 150.0:
 			var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
 			if target_hz_note > 0.0:
-				var tol = target_hz_note * 0.06 # 6% tolerance (~1 semitone)
+				var tol = target_hz_note * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
 				if abs(hz - target_hz_note) < tol or abs(hz / 2.0 - target_hz_note) < tol or abs(hz * 2.0 - target_hz_note) < tol:
 					is_correct = true
 					
@@ -1400,7 +1400,7 @@ func _process_real(delta):
 		if hz > 150.0:
 			var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
 			if target_hz > 0.0:
-				var tol = target_hz * 0.06 # 6% tolerance (~1 semitone)
+				var tol = target_hz * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
 				if abs(hz - target_hz) < tol or abs(hz / 2.0 - target_hz) < tol or abs(hz * 2.0 - target_hz) < tol:
 					# Đúng nốt -> Tiến lên
 					_check_advance(delta, 1)
