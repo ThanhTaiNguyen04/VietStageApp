@@ -270,7 +270,7 @@ func _setup_drawing_callbacks() -> void:
 			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("essentials")
 			pct = stats["pct"]
 		else:
-			if SecureDataManager.is_lesson_completed(inst, "Node2"): pct += 50.0
+			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
 			
 		var angle_fill := (pct / 100.0) * TAU
@@ -1302,7 +1302,7 @@ func _build_roadmap_cards() -> void:
 			var stars_n3: int = inst_stars.get("Node3", 0)
 			var total_stars = stars_n2 + stars_n3
 			var pct = 0.0
-			if SecureDataManager.is_lesson_completed(instrument, "Node2"): pct += 50.0
+			if SecureDataManager.is_lesson_completed(instrument, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(instrument, "Node3"): pct += 50.0
 			_set_details_text(ess_details, 3, total_stars, int(pct), false)
 	
@@ -1450,11 +1450,11 @@ func _connect_buttons() -> void:
 				if not is_ess_unlocked:
 					_virtual_artist_play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
 					return
-				if SecureDataManager.is_lesson_completed(inst, "Node2"):
+				if SecureDataManager.is_lesson_completed(inst, "Node1"):
 					SecureDataManager.active_lesson_id = "Node3"
 					_go_practice_room_for_node(3)
 				else:
-					SecureDataManager.active_lesson_id = "Node2"
+					SecureDataManager.active_lesson_id = "Node1"
 					_go_practice_room_for_node(2)
 	)
 	
@@ -2132,7 +2132,7 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	if card_type == "basic":
 		steps_to_check = ["sao_truc_level1_1_video"]
 	elif card_type == "essentials":
-		steps_to_check = ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
+		steps_to_check = ["Node1", "Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
 	elif card_type == "soloist":
 		steps_to_check = ["sao_truc_level3_1", "sao_truc_level3_2"]
 	elif card_type == "chords":
