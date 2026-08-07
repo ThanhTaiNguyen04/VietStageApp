@@ -54,6 +54,9 @@ var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _breath_scores : Array[float] = []
 
+
+var _count_in_timer := 3.0
+var _count_in_step := 3
 var _is_wait_mode := false
 var _is_demo_mode := false
 var _speed_scale := 1.0
@@ -361,6 +364,12 @@ func _ready() -> void:
 				if i % 2 == 0:
 					note_container.draw_rect(Rect2(0, y, w, lane_h), Color(1.0, 1.0, 1.0, 0.018))
 				note_container.draw_string(theme_font, Vector2(10, y + (lane_h / 2.0) + 4.0), LANES[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1.0, 1.0, 1.0, 0.45))
+		
+		# Draw Clef and Time signature on the left
+		note_container.draw_string(theme_font, Vector2(5, 120), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, 70, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.7))
+		note_container.draw_string(theme_font, Vector2(35, 100), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, 40, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.7))
+		note_container.draw_string(theme_font, Vector2(35, 140), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, 40, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.7))
+
 	)
 	track_panel.add_child(note_container)
 	
@@ -691,6 +700,18 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var effective_delta = delta * _speed_scale
+	if not _is_wait_mode and not _is_demo_mode and _count_in_timer > 0.0:
+		_count_in_timer -= effective_delta
+		var current_step = int(ceil(_count_in_timer))
+		if current_step != _count_in_step:
+			_count_in_step = current_step
+			pitch_note.text = str(_count_in_step) if _count_in_step > 0 else "Bắt đầu!"
+			pitch_status.text = "Chuẩn bị vào nhịp..."
+			pitch_status.add_theme_color_override("font_color", C_GOLD)
+			pitch_note.add_theme_color_override("font_color", C_GOLD)
+		if _count_in_timer > 0.0:
+			return # Pause the game while counting in
+
 	if _recording:
 		_practice_time += effective_delta
 		if _current_note_elapsed < 0.0:
@@ -1190,8 +1211,8 @@ func _build_flute() -> void:
 		hs.corner_radius_bottom_left = 38; hs.corner_radius_bottom_right = 38
 		
 		if _covered_states[i]:
-			hs.bg_color = C_GOLD
-			hs.border_color = C_GOLD_LIGHT
+			hs.bg_color = Color.RED
+			hs.border_color = Color.INDIAN_RED
 		else:
 			hs.bg_color = Color(0.04, 0.02, 0.01)
 			hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
@@ -1338,8 +1359,8 @@ func _toggle_hole_state(idx: int, hole: PanelContainer, hs: StyleBoxFlat) -> voi
 	var is_covered = _covered_states[idx]
 	
 	if is_covered:
-		hs.bg_color = C_GOLD
-		hs.border_color = C_GOLD_LIGHT
+		hs.bg_color = Color.RED
+		hs.border_color = Color.INDIAN_RED
 	else:
 		hs.bg_color = Color(0.04, 0.02, 0.01)
 		hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
@@ -2345,8 +2366,8 @@ func _update_virtual_holes(note_name: String) -> void:
 			if hs:
 				var is_covered = fingering[i]
 				if is_covered:
-					hs.bg_color = C_GOLD
-					hs.border_color = C_GOLD_LIGHT
+					hs.bg_color = Color.RED
+					hs.border_color = Color.INDIAN_RED
 				else:
 					hs.bg_color = Color(0.04, 0.02, 0.01)
 					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
@@ -2359,8 +2380,8 @@ func _update_virtual_holes_to_clicked_states() -> void:
 			if hs:
 				var is_covered = _covered_states[i]
 				if is_covered:
-					hs.bg_color = C_GOLD
-					hs.border_color = C_GOLD_LIGHT
+					hs.bg_color = Color.RED
+					hs.border_color = Color.INDIAN_RED
 				else:
 					hs.bg_color = Color(0.04, 0.02, 0.01)
 					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
@@ -2679,8 +2700,16 @@ func _build_notation_track() -> void:
 		
 		note_container.add_child(block)
 		note_visuals[i] = block
-		
 		time_beats += duration
+		
+		if fmod(time_beats, 4.0) == 0.0:
+			var bar_line = ColorRect.new()
+			bar_line.color = Color(1, 1, 1, 0.4)
+			bar_line.custom_minimum_size = Vector2(2, 400)
+			bar_line.set_meta("is_bar_line", true)
+			bar_line.set_meta("note_time", time_beats)
+			note_container.add_child(bar_line)
+
 
 func _set_block_color(block: Panel, color: Color) -> void:
 	if not is_instance_valid(block): return
@@ -3119,8 +3148,8 @@ func _update_cinematic_step(step_idx: int) -> void:
 			var hs = hole.get_theme_stylebox("panel") as StyleBoxFlat
 			if hs:
 				if is_covered:
-					hs.bg_color = C_GOLD
-					hs.border_color = C_GOLD_LIGHT
+					hs.bg_color = Color.RED
+					hs.border_color = Color.INDIAN_RED
 				else:
 					hs.bg_color = Color(0.04, 0.02, 0.01)
 					hs.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
@@ -3135,9 +3164,9 @@ func _update_cinematic_step(step_idx: int) -> void:
 					line.color = C_GOLD_LIGHT
 					
 				if hs:
-					hs.border_color = C_GOLD_LIGHT
+					hs.border_color = Color.INDIAN_RED
 					if i == active_hole:
-						hs.bg_color = C_GOLD_LIGHT
+						hs.bg_color = Color.RED_LIGHT
 				
 				var ht := create_tween()
 				ht.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.15)

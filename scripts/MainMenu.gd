@@ -1203,7 +1203,7 @@ func _build_roadmap_cards() -> void:
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
 		
-		basic_title.text = "LEVEL 1: NHẬP MÔN SÁO TRÚC"
+		basic_title.text = "LEVEL 1: KHẨU HÌNH MÔI & TẠO ÂM"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
 		# basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 		

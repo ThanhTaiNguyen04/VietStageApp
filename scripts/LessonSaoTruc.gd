@@ -85,6 +85,7 @@ const HOLE_PROPS_X = [0.3335, 0.4080, 0.4787, 0.5512, 0.6237, 0.7030]
 const HOLE_PROP_Y = 0.375
 
 const LESSON_NOTES = {
+	"Node1": {"note": "Đô", "desc": "Kỹ thuật đặt sáo vào môi và cách thổi sao cho ra âm thanh (tạo khẩu hình môi).", "fingers": [true, true, true, true, true, true]},
 	"Node2": {"note": "Si", "desc": "Mở toàn bộ 6 lỗ, không che lỗ nào", "fingers": [false, false, false, false, false, false]}, # Si
 	"Node3": {"note": "La", "desc": "Bấm ngón tay vào lỗ đầu tiên", "fingers": [true, false, false, false, false, false]},
 	"Node4": {"note": "Sol", "desc": "Bấm ngón tay vào 2 lỗ đầu tiên", "fingers": [true, true, false, false, false, false]},
@@ -115,8 +116,12 @@ const LESSON_NOTES = {
 }
 
 const LESSON_DIALOGUES = {
+	"Node1": {
+		"intro": "Chào bạn! Bài học quan trọng nhất của Sáo Trúc là kỹ thuật đặt khẩu hình môi. Hãy mỉm cười nhẹ, đặt lỗ thổi lên môi dưới, hướng luồng hơi cắt ngang qua lỗ thổi nhé!",
+		"mid": "Tuyệt vời! Bạn đã thổi ra tiếng sáo chuẩn xác chứ không chỉ là tiếng gió. Giờ chúng ta sẽ bắt đầu học bấm ngón nhé!"
+	},
 	"Node2": {
-		"intro": "Chào bạn! Đây là bài học Sáo Trúc đầu tiên. Nốt Si là nốt cơ bản nhất, âm thanh thanh thoát và nhẹ nhàng. Để thổi nốt Si, bạn chỉ cần mở toàn bộ 6 lỗ, không che lỗ nào. Hãy cầm sáo lên và thổi một luồng hơi ấm dịu nhé!",
+		"intro": "Chào bạn! Đây là bài học Sáo Trúc thứ 2. Nốt Si là nốt cơ bản nhất, âm thanh thanh thoát và nhẹ nhàng. Để thổi nốt Si, bạn chỉ cần mở toàn bộ 6 lỗ, không che lỗ nào. Hãy cầm sáo lên và thổi một luồng hơi ấm dịu nhé!",
 		"mid": "Tuyệt vời! Bạn có thấy âm thanh nốt Si thật trong trẻo không? Bây giờ, hãy cùng chơi một bản nhạc nhỏ để làm quen với nhịp điệu nhé!"
 	},
 	"Node3": {
@@ -473,7 +478,8 @@ func _setup_premium_practice_ui():
 		top_right_box.add_child(med_btn)
 		
 	var lesson_map = {
-		"Node2": {"num": "BÀI 1", "title": "LUYỆN NỐT SI"},
+		"Node1": {"num": "BÀI 1", "title": "KHẨU HÌNH MÔI"},
+		"Node2": {"num": "BÀI 2", "title": "LUYỆN NỐT SI"},
 		"Node3": {"num": "BÀI 2", "title": "LUYỆN NỐT LA"},
 		"Node4": {"num": "BÀI 3", "title": "LUYỆN NỐT SOL"},
 		"Node5": {"num": "BÀI 4", "title": "LUYỆN NỐT FA"},
