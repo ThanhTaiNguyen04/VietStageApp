@@ -2068,3 +2068,34 @@ func _setup_premium_practice_ui():
 	
 	self.pitch_note = p_note
 	self.pitch_status = p_status
+
+	var sub_instr_row = HBoxContainer.new()
+	sub_instr_row.name = "SubInstrRow"
+	sub_instr_row.anchor_left = 0.0; sub_instr_row.anchor_right = 1.0
+	sub_instr_row.offset_left = 90; sub_instr_row.offset_right = -90
+	sub_instr_row.offset_top = 698; sub_instr_row.offset_bottom = 738
+	sub_instr_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	
+	var line_left_cont = CenterContainer.new()
+	line_left_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_l = ColorRect.new()
+	line_l.custom_minimum_size = Vector2(240, 2)
+	line_l.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_left_cont.add_child(line_l)
+	sub_instr_row.add_child(line_left_cont)
+	
+	var sub_lbl = Label.new()
+	sub_lbl.text = "   🌿   Gảy dây, uốn cần và lắng nghe bồi âm   🌿   "
+	sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+	sub_lbl.add_theme_font_size_override("font_size", 26)
+	sub_instr_row.add_child(sub_lbl)
+	
+	var line_right_cont = CenterContainer.new()
+	line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_r = ColorRect.new()
+	line_r.custom_minimum_size = Vector2(240, 2)
+	line_r.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_right_cont.add_child(line_r)
+	sub_instr_row.add_child(line_right_cont)
+	
+	add_child(sub_instr_row)

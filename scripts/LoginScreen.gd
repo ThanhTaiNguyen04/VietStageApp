@@ -884,6 +884,7 @@ func _save_profile(response: Dictionary) -> void:
 	SecureDataManager.data["user_email"] = email
 	SecureDataManager.data["user_code"] = str(profile.get("userCode", AuthSessionStore.user_code))
 	SecureDataManager.data["user_role"] = str(profile.get("role", AuthSessionStore.role))
+	SecureDataManager.data["user_avatar_url"] = str(profile.get("avatarUrl", "")).strip_edges()
 	SecureDataManager.save_data()
 
 

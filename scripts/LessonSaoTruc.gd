@@ -29,6 +29,10 @@ var current_state = State.INTRO
 @onready var volume_bar = $FeedbackArea/VolumeBar
 
 var staff_display: Control
+var staff_card: PanelContainer
+var title_plaque: PanelContainer
+var pill_badge: PanelContainer
+var sub_instr_row: HBoxContainer
 
 var active_note := "Si"
 var active_node_id := "Node2"
@@ -81,6 +85,7 @@ const HOLE_PROPS_X = [0.3335, 0.4080, 0.4787, 0.5512, 0.6237, 0.7030]
 const HOLE_PROP_Y = 0.375
 
 const LESSON_NOTES = {
+	"Node1": {"note": "Đô", "desc": "Kỹ thuật đặt sáo vào môi và cách thổi sao cho ra âm thanh (tạo khẩu hình môi).", "fingers": [true, true, true, true, true, true]},
 	"Node2": {"note": "Si", "desc": "Mở toàn bộ 6 lỗ, không che lỗ nào", "fingers": [false, false, false, false, false, false]}, # Si
 	"Node3": {"note": "La", "desc": "Bấm ngón tay vào lỗ đầu tiên", "fingers": [true, false, false, false, false, false]},
 	"Node4": {"note": "Sol", "desc": "Bấm ngón tay vào 2 lỗ đầu tiên", "fingers": [true, true, false, false, false, false]},
@@ -111,8 +116,12 @@ const LESSON_NOTES = {
 }
 
 const LESSON_DIALOGUES = {
+	"Node1": {
+		"intro": "Chào bạn! Bài học quan trọng nhất của Sáo Trúc là kỹ thuật đặt khẩu hình môi. Hãy mỉm cười nhẹ, đặt lỗ thổi lên môi dưới, hướng luồng hơi cắt ngang qua lỗ thổi nhé!",
+		"mid": "Tuyệt vời! Bạn đã thổi ra tiếng sáo chuẩn xác chứ không chỉ là tiếng gió. Giờ chúng ta sẽ bắt đầu học bấm ngón nhé!"
+	},
 	"Node2": {
-		"intro": "Chào bạn! Đây là bài học Sáo Trúc đầu tiên. Nốt Si là nốt cơ bản nhất, âm thanh thanh thoát và nhẹ nhàng. Để thổi nốt Si, bạn chỉ cần mở toàn bộ 6 lỗ, không che lỗ nào. Hãy cầm sáo lên và thổi một luồng hơi ấm dịu nhé!",
+		"intro": "Chào bạn! Đây là bài học Sáo Trúc thứ 2. Nốt Si là nốt cơ bản nhất, âm thanh thanh thoát và nhẹ nhàng. Để thổi nốt Si, bạn chỉ cần mở toàn bộ 6 lỗ, không che lỗ nào. Hãy cầm sáo lên và thổi một luồng hơi ấm dịu nhé!",
 		"mid": "Tuyệt vời! Bạn có thấy âm thanh nốt Si thật trong trẻo không? Bây giờ, hãy cùng chơi một bản nhạc nhỏ để làm quen với nhịp điệu nhé!"
 	},
 	"Node3": {
@@ -469,7 +478,8 @@ func _setup_premium_practice_ui():
 		top_right_box.add_child(med_btn)
 		
 	var lesson_map = {
-		"Node2": {"num": "BÀI 1", "title": "LUYỆN NỐT SI"},
+		"Node1": {"num": "BÀI 1", "title": "KHẨU HÌNH MÔI"},
+		"Node2": {"num": "BÀI 2", "title": "LUYỆN NỐT SI"},
 		"Node3": {"num": "BÀI 2", "title": "LUYỆN NỐT LA"},
 		"Node4": {"num": "BÀI 3", "title": "LUYỆN NỐT SOL"},
 		"Node5": {"num": "BÀI 4", "title": "LUYỆN NỐT FA"},
@@ -485,7 +495,7 @@ func _setup_premium_practice_ui():
 	elif LESSON_NOTES.has(active_node_id) and LESSON_NOTES[active_node_id].has("title"):
 		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
 		
-	var title_plaque = PanelContainer.new()
+	title_plaque = PanelContainer.new()
 	title_plaque.name = "TitlePlaque"
 	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
 	title_plaque.offset_left = -265; title_plaque.offset_right = 265
@@ -515,7 +525,7 @@ func _setup_premium_practice_ui():
 	pl_vbox.add_child(lbl_main)
 	add_child(title_plaque)
 	
-	var staff_card = PanelContainer.new()
+	staff_card = PanelContainer.new()
 	staff_card.name = "StaffCard"
 	staff_card.anchor_left = 0.0; staff_card.anchor_right = 1.0
 	staff_card.offset_left = 55; staff_card.offset_right = -55
@@ -537,7 +547,7 @@ func _setup_premium_practice_ui():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	staff_card.add_child(staff_display)
 	
-	var pill_badge = PanelContainer.new()
+	pill_badge = PanelContainer.new()
 	pill_badge.name = "NotePillBadge"
 	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
 	pill_badge.offset_left = -125; pill_badge.offset_right = 125
@@ -558,7 +568,7 @@ func _setup_premium_practice_ui():
 	pill_badge.add_child(pill_lbl)
 	add_child(pill_badge)
 	
-	var sub_instr_row = HBoxContainer.new()
+	sub_instr_row = HBoxContainer.new()
 	sub_instr_row.name = "SubInstrRow"
 	sub_instr_row.anchor_left = 0.0; sub_instr_row.anchor_right = 1.0
 	sub_instr_row.offset_left = 90; sub_instr_row.offset_right = -90
@@ -584,6 +594,9 @@ func _setup_premium_practice_ui():
 	line_right_cont.add_child(line_r)
 	sub_instr_row.add_child(line_right_cont)
 	add_child(sub_instr_row)
+	
+	_update_staff_layout()
+	get_viewport().size_changed.connect(_update_staff_layout)
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):
@@ -804,13 +817,13 @@ func _process_rhythm(delta, rect):
 			break
 			
 	if current_overlapping_note != null:
-		var is_blowing = amp > -55.0 # Lenient volume threshold
+		var is_blowing = amp > -35.0 # Lenient volume threshold
 		var is_correct = false
 		
 		if is_blowing and hz > 150.0:
 			var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
 			if target_hz_note > 0.0:
-				var tol = target_hz_note * 0.06 # 6% tolerance (~1 semitone)
+				var tol = target_hz_note * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
 				if abs(hz - target_hz_note) < tol or abs(hz / 2.0 - target_hz_note) < tol or abs(hz * 2.0 - target_hz_note) < tol:
 					is_correct = true
 					
@@ -819,15 +832,17 @@ func _process_rhythm(delta, rect):
 			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
-		else:
+		elif is_blowing:
 			time_delta = -delta * 1.5
 			wrong_rhythm_duration += delta
 			current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
-			if is_blowing:
-				mic_status.text = "Sai ngón! Thổi lại..."
-			else:
-				mic_status.text = ""
+			mic_status.text = "Sai ngón! Thổi lại..."
 			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+		else:
+			time_delta = 0
+			current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
+			mic_status.text = "Đang đợi..."
+			mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	else:
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
@@ -1382,12 +1397,12 @@ func _process_real(delta):
 	
 	if _current_practice_idx >= _practice_sequence.size(): return
 	
-	if amp > -55.0 and hz > 0:
+	if amp > -35.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
 		if hz > 150.0:
 			var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
 			if target_hz > 0.0:
-				var tol = target_hz * 0.06 # 6% tolerance (~1 semitone)
+				var tol = target_hz * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
 				if abs(hz - target_hz) < tol or abs(hz / 2.0 - target_hz) < tol or abs(hz * 2.0 - target_hz) < tol:
 					# Đúng nốt -> Tiến lên
 					_check_advance(delta, 1)
@@ -1485,9 +1500,19 @@ func _start_rhythm_game():
 	has_rhythm_completed = false
 	for note in melody_sequence:
 		total_rhythm_duration += note.get("duration", 1.0)
+		
+	if analyzer and analyzer.has_method("start_recording"):
+		analyzer.start_recording()
 
 
 func _complete_lesson():
+	if analyzer and analyzer.has_method("stop_recording"):
+		var stream = analyzer.stop_recording()
+		if stream:
+			var filename = "user://saotruc_record_" + str(active_node_id) + ".wav"
+			stream.save_to_wav(filename)
+			print("Saved recording for teacher grading to: ", filename)
+			
 	current_state = State.COMPLETED
 	feedback_area.visible = false
 	analyzer.visible = false
@@ -1772,3 +1797,40 @@ func _on_complete():
 
 func _on_retry():
 	get_tree().reload_current_scene()
+
+func _update_staff_layout() -> void:
+	if not staff_card or not staff_display: return
+	var size = get_viewport_rect().size
+	var v_height = size.y
+	
+	# Responsive positioning
+	var title_top = clampf(v_height * 0.03, 16.0, 32.0)
+	if title_plaque:
+		title_plaque.offset_top = title_top
+		title_plaque.offset_bottom = title_top + 88.0
+		
+	# Distribute space for staff_card
+	var card_top = clampf(v_height * 0.17, 140.0, 180.0)
+	var card_bottom = v_height - clampf(v_height * 0.15, 110.0, 140.0)
+	
+	# Clamp height to be at least 540 to prevent notes from ever being clipped
+	var card_height = maxf(card_bottom - card_top, 540.0)
+	card_bottom = card_top + card_height
+	
+	staff_card.offset_top = card_top
+	staff_card.offset_bottom = card_bottom
+	
+	if pill_badge:
+		pill_badge.offset_top = card_top - 24.0
+		pill_badge.offset_bottom = card_top + 24.0
+		
+	if sub_instr_row:
+		sub_instr_row.offset_top = card_bottom + 18.0
+		sub_instr_row.offset_bottom = card_bottom + 58.0
+
+	# Calculate dynamic optimal spacing for flute notes (typically spans less range than zither)
+	# Spanning typical range of 7 notes, let's keep line spacing generous yet readable.
+	var max_spacing = (card_height - 90.0) / 10.0
+	var spacing = clampf(max_spacing, 55.0, 78.0)
+	staff_display.line_spacing = spacing
+	staff_display.queue_redraw()

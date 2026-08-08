@@ -26,6 +26,10 @@ var pitch_box: PanelContainer
 var pitch_note_lbl: Label
 var pitch_status_lbl: Label
 var pitch_meter: Control
+var staff_card: PanelContainer
+var title_plaque: PanelContainer
+var pill_badge: PanelContainer
+var sub_instr_row: HBoxContainer
 
 class PitchMeterDraw extends Control:
 	var current_cents: float = 0.0
@@ -94,9 +98,9 @@ var current_speed_multiplier: float = 1.0
 const STRINGS = 17
 
 const ALL_17_NOTES: Array[String] = [
-	"Sol1", "La1", "Đô1", "Rê1", "Mi1",
-	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
-	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
+	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
+	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
+	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
 	"Sol4", "La4"
 ]
 
@@ -106,27 +110,27 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào bạn! Đây là bài học Đàn Tranh đầu tiên. Hôm nay chúng ta sẽ làm quen với lần lượt trọn vẹn 17 dây đàn từ Sol1 đến La4 nhé.", "highlight": -1},
 		{"action": "speak", "text": "Dây 1: Nốt Sol1 (196Hz). Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
 		{"action": "speak", "text": "Dây 2: Nốt La1 (220Hz). Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
-		{"action": "speak", "text": "Dây 3: Nốt Đô1 (261Hz). Hãy gảy nốt Đô1 ở dây thứ 3 trên đàn.", "highlight": 2},
-		{"action": "speak", "text": "Dây 4: Nốt Rê1 (293Hz). Hãy gảy nốt Rê1 ở dây thứ 4 trên đàn.", "highlight": 3},
-		{"action": "speak", "text": "Dây 5: Nốt Mi1 (329Hz). Hãy gảy nốt Mi1 ở dây thứ 5 trên đàn.", "highlight": 4},
+		{"action": "speak", "text": "Dây 3: Nốt Đô2 (261Hz). Hãy gảy nốt Đô2 ở dây thứ 3 trên đàn.", "highlight": 2},
+		{"action": "speak", "text": "Dây 4: Nốt Rê2 (293Hz). Hãy gảy nốt Rê2 ở dây thứ 4 trên đàn.", "highlight": 3},
+		{"action": "speak", "text": "Dây 5: Nốt Mi2 (329Hz). Hãy gảy nốt Mi2 ở dây thứ 5 trên đàn.", "highlight": 4},
 		{"action": "speak", "text": "Dây 6: Nốt Sol2 (392Hz). Bước sang quãng trung với nốt Sol2 ở dây thứ 6 trên đàn.", "highlight": 5},
 		{"action": "speak", "text": "Dây 7: Nốt La2 (440Hz). Hãy gảy nốt La2 ở dây thứ 7 trên đàn.", "highlight": 6},
-		{"action": "speak", "text": "Dây 8: Nốt Đô2 (523Hz). Hãy gảy nốt Đô2 ở dây thứ 8 trên đàn.", "highlight": 7},
-		{"action": "speak", "text": "Dây 9: Nốt Rê2 (587Hz). Hãy gảy nốt Rê2 ở dây thứ 9 trên đàn.", "highlight": 8},
-		{"action": "speak", "text": "Dây 10: Nốt Mi2 (659Hz). Hãy gảy nốt Mi2 ở dây thứ 10 trên đàn.", "highlight": 9},
+		{"action": "speak", "text": "Dây 8: Nốt Đô3 (523Hz). Hãy gảy nốt Đô3 ở dây thứ 8 trên đàn.", "highlight": 7},
+		{"action": "speak", "text": "Dây 9: Nốt Rê3 (587Hz). Hãy gảy nốt Rê3 ở dây thứ 9 trên đàn.", "highlight": 8},
+		{"action": "speak", "text": "Dây 10: Nốt Mi3 (659Hz). Hãy gảy nốt Mi3 ở dây thứ 10 trên đàn.", "highlight": 9},
 		{"action": "speak", "text": "Dây 11: Nốt Sol3 (784Hz). Bước sang quãng cao với nốt Sol3 ở dây thứ 11 trên đàn.", "highlight": 10},
 		{"action": "speak", "text": "Dây 12: Nốt La3 (880Hz). Hãy gảy nốt La3 ở dây thứ 12 trên đàn.", "highlight": 11},
-		{"action": "speak", "text": "Dây 13: Nốt Đô3 (1046Hz). Hãy gảy nốt Đô3 ở dây thứ 13 trên đàn.", "highlight": 12},
-		{"action": "speak", "text": "Dây 14: Nốt Rê3 (1174Hz). Hãy gảy nốt Rê3 ở dây thứ 14 trên đàn.", "highlight": 13},
-		{"action": "speak", "text": "Dây 15: Nốt Mi3 (1318Hz). Hãy gảy nốt Mi3 ở dây thứ 15 trên đàn.", "highlight": 14},
+		{"action": "speak", "text": "Dây 13: Nốt Đô4 (1046Hz). Hãy gảy nốt Đô4 ở dây thứ 13 trên đàn.", "highlight": 12},
+		{"action": "speak", "text": "Dây 14: Nốt Rê4 (1174Hz). Hãy gảy nốt Rê4 ở dây thứ 14 trên đàn.", "highlight": 13},
+		{"action": "speak", "text": "Dây 15: Nốt Mi4 (1318Hz). Hãy gảy nốt Mi4 ở dây thứ 15 trên đàn.", "highlight": 14},
 		{"action": "speak", "text": "Dây 16: Nốt Sol4 (1568Hz). Hãy gảy nốt Sol4 ở dây thứ 16 trên đàn.", "highlight": 15},
 		{"action": "speak", "text": "Dây 17: Nốt La4 (1760Hz). Nốt cao nhất của đàn: hãy gảy nốt La4 ở dây thứ 17 trên đàn.", "highlight": 16},
 		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành xuất sắc gảy trọn vẹn cả 17 dây Đàn Tranh!", "highlight": -1}
 	],
- 
+
 	"dan_tranh_level_1_bai_2_practice": [
 		{"action": "speak", "text": "Chào mừng bạn đến với bài gảy ngón cơ bản. Hôm nay chúng ta sẽ dùng ngón cái và ngón trỏ để gảy.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ tập luân phiên trên 3 nốt: Đô1, Rê1 và Mi1.", "highlight": 2},
+		{"action": "speak", "text": "Chúng ta sẽ tập luân phiên trên 3 nốt: Đô2, Rê2 và Mi2.", "highlight": 2},
 		{"action": "speak", "text": "Hãy tập trung giữ form bàn tay tròn đều như đang úp quả bóng nhé.", "highlight": -1}
 	],
 	"dan_tranh_level_1_bai_3_practice": [
@@ -136,7 +140,7 @@ const LESSON_DIALOGUES = {
 	],
 	"dan_tranh_level_2_bai_4_practice": [
 		{"action": "speak", "text": "Chào bạn! Chúng ta cùng bước sang cấp độ 2 với bài Vào rừng hoa.", "highlight": -1},
-		{"action": "speak", "text": "Ở đoạn 1 này, chúng ta sẽ tập trung vào quãng âm trung với các nốt Mi1, Sol2, La2 và Đô2.", "highlight": 4},
+		{"action": "speak", "text": "Ở đoạn 1 này, chúng ta sẽ tập trung vào quãng âm trung với các nốt Mi2, Sol2, La2 và Đô3.", "highlight": 4},
 		{"action": "speak", "text": "Hãy chú ý sự liền mạch giữa các nốt khi trôi qua nhé.", "highlight": -1}
 	],
 	"dan_tranh_level_2_bai_5_practice": [
@@ -209,12 +213,12 @@ const LESSON_DIALOGUES = {
 }
 
 const SU_THANH_HOA_SHEET: Array[String] = [
-	"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "La2", "Sol2",
-	"Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2", "Đô2", "Mi2", "Rê2", "Đô2", "Sol2", "La2", "Mi2",
-	"Mi2", "Rê2", "Mi2", "Rê2", "Mi2", "Sol3", "Mi2", "Rest", "Mi2", "Mi2", "Rê2",
-	"Đô2", "Mi2", "Rê2", "Rê2", "Đô2", "La2", "Đô2", "Đô2", "La2", "Đô2",
-	"La2", "Sol2", "Sol2", "La2", "Mi2", "Sol3", "Sol3", "Mi2", "Sol3", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2",
-	"Rê2", "Đô2", "Rê2", "Mi2", "Rê2", "Rê2", "Đô2", "Rê2", "Đô2", "Rê2", "Đô2", "Đô2", "La2", "Đô2", "Rê2", "Rê2", "Rê2"
+	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
+	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
+	"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
+	"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
+	"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
+	"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
 ]
 
 const SU_THANH_HOA_DURATIONS: Array[float] = [
@@ -227,16 +231,16 @@ const SU_THANH_HOA_DURATIONS: Array[float] = [
 ]
 
 const NOTE_TO_STRING = {
-	"Sol1": 0, "La1": 1, "Đô1": 2, "Rê1": 3, "Mi1": 4,
-	"Sol2": 5, "La2": 6, "Đô2": 7, "Rê2": 8, "Mi2": 9,
-	"Sol3": 10, "La3": 11, "Đô3": 12, "Rê3": 13, "Mi3": 14,
+	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4,
+	"Sol2": 5, "La2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9,
+	"Sol3": 10, "La3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
 	"Sol4": 15, "La4": 16
 }
 
 const NOTE_FREQS = {
-	"Sol1": 196.00, "La1": 220.00, "Đô1": 261.63, "Rê1": 293.66, "Mi1": 329.63,
-	"Sol2": 392.00, "La2": 440.00, "Đô2": 523.25, "Rê2": 587.33, "Mi2": 659.25,
-	"Sol3": 783.99, "La3": 880.00, "Đô3": 1046.50, "Rê3": 1174.66, "Mi3": 1318.51,
+	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
+	"Sol2": 392.00, "La2": 440.00, "Đô3": 523.25, "Rê3": 587.33, "Mi3": 659.25,
+	"Sol3": 783.99, "La3": 880.00, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51,
 	"Sol4": 1567.98, "La4": 1760.00
 }
 
@@ -285,16 +289,32 @@ func _ready():
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
-	string_overlay.add_child(staff_display)
-	staff_display.anchor_right = 1.0
-	staff_display.anchor_bottom = 1.0
-	staff_display.offset_left = 0
-	staff_display.offset_top = -280
-	staff_display.offset_right = 0
-	staff_display.offset_bottom = -280
-	staff_display.visible = false
+	staff_card = PanelContainer.new()
+	staff_card.name = "StaffCard"
+	staff_card.anchor_left = 0.0; staff_card.anchor_right = 1.0
+	staff_card.offset_left = 55; staff_card.offset_right = -55
+	staff_card.offset_top = 195; staff_card.offset_bottom = 675
+	staff_card.clip_contents = true
+	var card_sb = StyleBoxFlat.new()
+	card_sb.bg_color = Color(0.995, 0.98, 0.93, 0.96)
+	card_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
+	card_sb.border_width_left = 3; card_sb.border_width_right = 3; card_sb.border_width_top = 3; card_sb.border_width_bottom = 3
+	card_sb.corner_radius_top_left = 18; card_sb.corner_radius_top_right = 18; card_sb.corner_radius_bottom_left = 18; card_sb.corner_radius_bottom_right = 18
+	card_sb.shadow_color = Color(0.45, 0.30, 0.12, 0.25); card_sb.shadow_size = 14; card_sb.shadow_offset = Vector2(0, 6)
+	staff_card.add_theme_stylebox_override("panel", card_sb)
+	add_child(staff_card)
+	move_child(staff_card, get_node("Root").get_index())
 	
-	var string_notes: Array[String] = ["Sol1", "La1", "Đô1", "Rê1", "Mi1", "Sol2", "La2", "Đô2", "Rê2", "Mi2", "Sol3", "La3", "Đô3", "Rê3", "Mi3", "Sol4", "La4"]
+	staff_card.add_child(staff_display)
+	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	_update_staff_layout()
+	get_viewport().size_changed.connect(_update_staff_layout)
+	staff_card.visible = false
+	staff_display.visible = true
+	
+	var string_notes: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 	var string_freqs: Array[float] = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]
 	var string_streams: Array = []
 	string_streams.resize(17)
@@ -421,66 +441,104 @@ func _ready():
 	_start_intro()
 
 func _setup_top_pitch_box():
-	pitch_box = PanelContainer.new()
-	pitch_box.name = "PitchFeedbackBox"
-	pitch_box.anchor_left = 0.5
-	pitch_box.anchor_right = 0.5
-	pitch_box.anchor_top = 0.0
-	pitch_box.anchor_bottom = 0.0
-	pitch_box.offset_left = -280
-	pitch_box.offset_right = 280
-	pitch_box.offset_top = 55
-	pitch_box.offset_bottom = 135
+	var l_title = "LUYỆN ĐÀN TRANH"
+	var active_id = SecureDataManager.active_lesson_id
+	if active_id:
+		if "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
+		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
+		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
+		elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
+		elif "bai5" in active_id: l_title = "BÀI 5: NÂNG CAO"
+
+	title_plaque = PanelContainer.new()
+	title_plaque.name = "TitlePlaque"
+	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
+	title_plaque.offset_left = -250; title_plaque.offset_right = 250
+	title_plaque.offset_top = 32; title_plaque.offset_bottom = 120
+	var tp_sb = StyleBoxFlat.new()
+	tp_sb.bg_color = Color(0.24, 0.16, 0.10, 0.95)
+	tp_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
+	tp_sb.border_width_left = 3; tp_sb.border_width_right = 3; tp_sb.border_width_top = 3; tp_sb.border_width_bottom = 3
+	tp_sb.corner_radius_top_left = 16; tp_sb.corner_radius_top_right = 16; tp_sb.corner_radius_bottom_left = 16; tp_sb.corner_radius_bottom_right = 16
+	tp_sb.shadow_color = Color(0.15, 0.10, 0.05, 0.4); tp_sb.shadow_size = 10; tp_sb.shadow_offset = Vector2(0, 4)
+	title_plaque.add_theme_stylebox_override("panel", tp_sb)
 	
-	var sb = StyleBoxFlat.new()
-	sb.bg_color = Color(0.10, 0.22, 0.14, 0.95) # Dark jade theme
-	sb.border_width_left = 3; sb.border_width_right = 3
-	sb.border_width_top = 3; sb.border_width_bottom = 3
-	sb.border_color = C_GOLD
-	sb.set_corner_radius_all(18)
-	sb.shadow_color = Color(0, 0, 0, 0.4)
-	sb.shadow_size = 8
-	sb.shadow_offset = Vector2(0, 3)
-	pitch_box.add_theme_stylebox_override("panel", sb)
+	var pl_vbox = VBoxContainer.new()
+	pl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	pl_vbox.add_theme_constant_override("separation", 2)
+	title_plaque.add_child(pl_vbox)
 	
-	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	pitch_box.add_child(margin)
+	var lbl_num = Label.new()
+	lbl_num.text = "BÀI LUYỆN"
+	lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
+	lbl_num.add_theme_font_size_override("font_size", 20)
+	pl_vbox.add_child(lbl_num)
 	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
-	margin.add_child(vbox)
+	var lbl_main = Label.new()
+	lbl_main.text = "🌿   " + l_title + "   🌿"
+	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
+	lbl_main.add_theme_font_size_override("font_size", 34)
+	pl_vbox.add_child(lbl_main)
+	add_child(title_plaque)
 	
-	var hbox = HBoxContainer.new()
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 24)
-	vbox.add_child(hbox)
+	pill_badge = PanelContainer.new()
+	pill_badge.name = "NotePillBadge"
+	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
+	pill_badge.offset_left = -125; pill_badge.offset_right = 125
+	pill_badge.offset_top = 172; pill_badge.offset_bottom = 220
+	var pill_sb = StyleBoxFlat.new()
+	pill_sb.bg_color = Color(1.0, 0.99, 0.95, 1.0)
+	pill_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+	pill_sb.border_width_left = 2; pill_sb.border_width_right = 2; pill_sb.border_width_top = 2; pill_sb.border_width_bottom = 2
+	pill_sb.corner_radius_top_left = 24; pill_sb.corner_radius_top_right = 24; pill_sb.corner_radius_bottom_left = 24; pill_sb.corner_radius_bottom_right = 24
+	pill_sb.shadow_color = Color(0.3, 0.2, 0.08, 0.2); pill_sb.shadow_size = 6; pill_sb.shadow_offset = Vector2(0, 3)
+	pill_badge.add_theme_stylebox_override("panel", pill_sb)
 	
-	pitch_note_lbl = Label.new()
-	pitch_note_lbl.text = "🎵 Nốt: ---"
-	pitch_note_lbl.add_theme_font_size_override("font_size", 22)
-	pitch_note_lbl.add_theme_color_override("font_color", C_GOLD)
-	hbox.add_child(pitch_note_lbl)
+	var pill_lbl = Label.new()
+	pill_lbl.text = "🌿    ĐÀN TRANH    🌿"
+	pill_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pill_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pill_lbl.add_theme_color_override("font_color", Color(0.78, 0.55, 0.18, 1.0))
+	pill_lbl.add_theme_font_size_override("font_size", 26)
+	pill_badge.add_child(pill_lbl)
+	add_child(pill_badge)
 	
-	var sep = VSeparator.new()
-	sep.modulate.a = 0.4
-	hbox.add_child(sep)
+	sub_instr_row = HBoxContainer.new()
+	sub_instr_row.name = "SubInstrRow"
+	sub_instr_row.anchor_left = 0.0; sub_instr_row.anchor_right = 1.0
+	sub_instr_row.offset_left = 90; sub_instr_row.offset_right = -90
+	sub_instr_row.offset_top = 698; sub_instr_row.offset_bottom = 738
+	sub_instr_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	
-	pitch_status_lbl = Label.new()
-	pitch_status_lbl.text = "🎙️ Đang nghe..."
-	pitch_status_lbl.add_theme_font_size_override("font_size", 22)
-	pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
-	hbox.add_child(pitch_status_lbl)
+	var line_left_cont = CenterContainer.new()
+	line_left_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_l = ColorRect.new()
+	line_l.custom_minimum_size = Vector2(240, 2)
+	line_l.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_left_cont.add_child(line_l)
+	sub_instr_row.add_child(line_left_cont)
 	
-	pitch_meter = PitchMeterDraw.new()
-	pitch_meter.custom_minimum_size = Vector2(480, 20)
-	vbox.add_child(pitch_meter)
+	var sub_lbl = Label.new()
+	sub_lbl.text = "   🌿   Gảy đúng dây và lắng nghe âm thanh   🌿   "
+	sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+	sub_lbl.add_theme_font_size_override("font_size", 26)
+	sub_instr_row.add_child(sub_lbl)
 	
-	add_child(pitch_box)
-	pitch_box.visible = false
+	var line_right_cont = CenterContainer.new()
+	line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_r = ColorRect.new()
+	line_r.custom_minimum_size = Vector2(240, 2)
+	line_r.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_right_cont.add_child(line_r)
+	sub_instr_row.add_child(line_right_cont)
+	
+	add_child(sub_instr_row)
+	
+	title_plaque.visible = false
+	pill_badge.visible = false
+	sub_instr_row.visible = false
 
 func _process(delta):
 	if is_paused:
@@ -635,6 +693,10 @@ func _start_intro():
 	feedback_area.visible = false
 	complete_btn.visible = false
 	staff_display.visible = false
+	if staff_card: staff_card.visible = false
+	if title_plaque: title_plaque.visible = false
+	if pill_badge: pill_badge.visible = false
+	if sub_instr_row: sub_instr_row.visible = false
 	if speed_bar_container:
 		speed_bar_container.visible = false
 	if skip_intro_btn:
@@ -670,8 +732,8 @@ func _play_next_intro_step():
 				current_state = State.PRACTICE_SINGLE
 				var target_note = ALL_17_NOTES[highlight_idx]
 				staff_display.visible = true
-				staff_display.offset_top = -280
-				staff_display.offset_bottom = -280
+				if staff_card: staff_card.visible = true
+				_update_staff_layout()
 				staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": C_GOLD}])
 				intro_step += 1
 				return
@@ -692,16 +754,19 @@ func _play_next_intro_step():
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
 	teacher_area.visible = true
-	feedback_area.visible = false
+	feedback_area.visible = true
 	staff_display.visible = true
-	staff_display.offset_top = -280
-	staff_display.offset_bottom = -280
+	if staff_card: staff_card.visible = true
+	if title_plaque: title_plaque.visible = true
+	if pill_badge: pill_badge.visible = true
+	if sub_instr_row: sub_instr_row.visible = true
+	_update_staff_layout()
 	if skip_intro_btn:
 		skip_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
 	if pitch_box:
-		pitch_box.visible = true
+		pitch_box.visible = false
 	
 
 	unique_practice_notes.clear()
@@ -841,8 +906,9 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 		mic_lbl.text = "Gảy nhầm %s (Dây %d) ➔ Hãy gảy %s (Dây %d)" % [detected_note, detected_idx + 1, target_note, target_idx + 1]
 		mic_lbl.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
 		
-	# Red staff highlight for wrong note attempt
-	staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.2, 0.2)}])
+	# Red staff highlight for wrong note attempt (only in intro/explore static mode)
+	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
+		staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.2, 0.2)}])
 	
 	if ai_audio:
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
@@ -955,7 +1021,7 @@ func _is_note_missing(note_idx: int) -> bool:
 func _start_practice():
 	current_state = State.PRACTICE
 	teacher_area.visible = false
-	feedback_area.visible = false
+	feedback_area.visible = true
 	practice_idx = 0
 	practice_time = 0.0
 	active_falling_notes.clear()
@@ -972,10 +1038,13 @@ func _start_practice():
 	
 	# Căn giữa khuôn nhạc khi bắt đầu thực hành chính thức
 	staff_display.visible = true
-	staff_display.offset_top = 0
-	staff_display.offset_bottom = 0
+	if staff_card: staff_card.visible = true
+	if title_plaque: title_plaque.visible = true
+	if pill_badge: pill_badge.visible = true
+	if sub_instr_row: sub_instr_row.visible = true
+	_update_staff_layout()
 	if pitch_box:
-		pitch_box.visible = true
+		pitch_box.visible = false
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
@@ -1014,10 +1083,12 @@ func _start_practice():
 			
 			for single_note in notes_in_chord:
 				var string_idx = NOTE_TO_STRING.get(single_note, 0)
+				var final_color = note_color
+						
 				active_falling_notes.append({
 					"note": "ZT_" + single_note,
 					"x": start_x + cur_beat * distance_per_beat,
-					"color": note_color,
+					"color": final_color,
 					"target_string": string_idx,
 					"hit": false,
 					"duration": dur,
@@ -1834,3 +1905,41 @@ func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool,
 	
 	_make_btn_bouncy(btn)
 	return btn
+
+func _update_staff_layout() -> void:
+	if not staff_card or not staff_display: return
+	var size = get_viewport_rect().size
+	var v_height = size.y
+	
+	# Responsive positioning
+	var title_top = clampf(v_height * 0.02, 10.0, 24.0)
+	if title_plaque:
+		title_plaque.offset_top = title_top
+		title_plaque.offset_bottom = title_top + 80.0
+		
+	# Distribute space for staff_card
+	var card_top = clampf(v_height * 0.14, 110.0, 135.0)
+	var card_bottom = v_height - clampf(v_height * 0.14, 110.0, 130.0)
+	
+	# Clamp height to be at least 620 to prevent notes from ever being clipped
+	var card_height = maxf(card_bottom - card_top, 620.0)
+	card_bottom = card_top + card_height
+	
+	staff_card.offset_top = card_top
+	staff_card.offset_bottom = card_bottom
+	
+	if pill_badge:
+		pill_badge.offset_top = card_top - 20.0
+		pill_badge.offset_bottom = card_top + 20.0
+		
+	if sub_instr_row:
+		sub_instr_row.offset_top = card_bottom + 12.0
+		sub_instr_row.offset_bottom = card_bottom + 52.0
+
+	# Calculate dynamic optimal spacing for 17 zither notes
+	# Zither notes span from Sol_1 (-3.5) to La_4 (7.5), a range of 11.0.
+	# We want them to fit within card_height with comfortable top/bottom padding of 45px.
+	var max_spacing = (card_height - 90.0) / 11.0
+	var spacing = clampf(max_spacing, 46.0, 78.0)
+	staff_display.line_spacing = spacing
+	staff_display.queue_redraw()

@@ -5,6 +5,16 @@ class_name SecureDataManager
 const SAVE_FILE_PATH := "user://vietstage_progress.dat"
 const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLearning"
 
+# Remove this map after BE exposes canonical instrumentCode and lessonCode for
+# every progress record and the production data migration is complete.
+const LEGACY_BACKEND_LESSON_MAP := {
+	1: {"instrument": "dan_tranh", "node_id": "Node1"},
+	2: {"instrument": "dan_tranh", "node_id": "Node2"},
+	3: {"instrument": "sao_truc", "node_id": "Node1"},
+	5: {"instrument": "dan_tranh", "node_id": "Node3"},
+}
+const SUPPORTED_INSTRUMENTS := ["dan_tranh", "sao_truc", "dan_bau", "trong_chau"]
+
 # Progression session state (migrated from CourseMap)
 static var video_completed := false
 static var active_lesson_id := "Node2"
@@ -57,12 +67,12 @@ static func load_data() -> void:
 		# Default initialization
 		save_data()
 		return
-		
+
 	var file := FileAccess.open_encrypted_with_pass(SAVE_FILE_PATH, FileAccess.READ, ENCRYPTION_KEY)
 	if file:
 		var json_str := file.get_as_text()
 		file.close()
-		
+
 		var json := JSON.new()
 		var parse_err := json.parse(json_str)
 		if parse_err == OK:
@@ -78,6 +88,158 @@ static func load_data() -> void:
 	else:
 		printerr("Failed to decrypt secure offline data. Resetting data.")
 		save_data()
+
+static func sync_backend_progress(progress_list: Array) -> void:
+	_ensure_progress_containers()
+	_reset_backend_progress_cache()
+
+	for raw_item: Variant in progress_list:
+		if not raw_item is Dictionary:
+			push_warning("Ignoring malformed progress item: expected an object.")
+			continue
+		var item: Dictionary = raw_item
+		var resolved: Dictionary = resolve_backend_progress_item(item)
+		if resolved.is_empty():
+			push_warning("Ignoring unmapped BE progress lessonId=%s title=%s" % [
+				str(item.get("lessonId", "?")),
+				str(item.get("title", "")),
+			])
+			continue
+		if not bool(item.get("completed", false)):
+			continue
+		_apply_backend_completion(
+			str(resolved["instrument"]),
+			str(resolved["node_id"]),
+			maxi(0, int(item.get("stars", 0)))
+		)
+
+	save_data()
+
+
+# Resolves the BE contract without mutating local progress. Canonical fields are
+# preferred; numeric IDs only bridge the current inconsistent production data.
+static func resolve_backend_progress_item(item: Dictionary) -> Dictionary:
+	var direct_instrument := _normalize_instrument_key(str(item.get("instrumentKey", "")))
+	if direct_instrument.is_empty():
+		direct_instrument = _normalize_instrument_key(str(item.get("instrumentCode", "")))
+	var direct_node := _extract_node_id(item)
+	if not direct_instrument.is_empty() and not direct_node.is_empty():
+		return {"instrument": direct_instrument, "node_id": direct_node, "source": "canonical"}
+
+	var lesson_id := int(item.get("lessonId", 0))
+	if LEGACY_BACKEND_LESSON_MAP.has(lesson_id):
+		var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[lesson_id]
+		return {
+			"instrument": str(legacy["instrument"]),
+			"node_id": str(legacy["node_id"]),
+			"source": "legacy_lesson_id",
+		}
+
+	var nested_instrument := ""
+	var instrument_value: Variant = item.get("instrument", {})
+	if instrument_value is Dictionary:
+		var instrument_data: Dictionary = instrument_value
+		nested_instrument = _normalize_instrument_key(str(instrument_data.get("instrumentCode", "")))
+		if nested_instrument.is_empty():
+			nested_instrument = _normalize_instrument_key(str(instrument_data.get("name", "")))
+	if direct_node.is_empty():
+		direct_node = _extract_node_from_text(str(item.get("title", "")), str(item.get("lessonCode", "")))
+	if not nested_instrument.is_empty() and not direct_node.is_empty():
+		return {"instrument": nested_instrument, "node_id": direct_node, "source": "nested_metadata"}
+
+	var title_instrument := _normalize_instrument_key(str(item.get("title", "")))
+	if not title_instrument.is_empty() and not direct_node.is_empty():
+		return {"instrument": title_instrument, "node_id": direct_node, "source": "title_fallback"}
+	return {}
+
+
+static func _ensure_progress_containers() -> void:
+	if not data.has("completed_lessons"):
+		data["completed_lessons"] = {}
+	if not data.has("unlocked_lessons"):
+		data["unlocked_lessons"] = {}
+	if not data.has("stars"):
+		data["stars"] = {}
+
+
+static func _reset_backend_progress_cache() -> void:
+	for instrument: String in SUPPORTED_INSTRUMENTS:
+		data["completed_lessons"][instrument] = []
+		data["stars"][instrument] = {}
+		match instrument:
+			"dan_bau":
+				data["unlocked_lessons"][instrument] = ["Node1", "dan_bau_coban_1_video"]
+			"trong_chau":
+				data["unlocked_lessons"][instrument] = ["Node1", "trong_chau_coban_1_video"]
+			_:
+				data["unlocked_lessons"][instrument] = ["Node1"]
+
+
+static func _apply_backend_completion(instrument: String, node_id: String, stars: int) -> void:
+	if instrument == "trong_chau":
+		var lesson_number := clampi(int(node_id.trim_prefix("Node")), 1, 3)
+		var base_id := "trong_chau_coban_%d" % lesson_number
+		_record_completed(instrument, base_id + "_video", stars)
+		_record_completed(instrument, base_id + "_practice", stars)
+		if lesson_number < 3:
+			_unlock_lesson(instrument, "trong_chau_coban_%d_video" % (lesson_number + 1))
+		return
+
+	if instrument == "dan_bau" and node_id == "Node1":
+		_record_completed(instrument, "Node1", stars)
+		return
+
+	_record_completed(instrument, node_id, stars)
+	var node_number := int(node_id.trim_prefix("Node"))
+	if node_number >= 1 and node_number < 5:
+		_unlock_lesson(instrument, "Node%d" % (node_number + 1))
+
+
+static func _record_completed(instrument: String, lesson_id: String, stars: int) -> void:
+	if not data["completed_lessons"][instrument].has(lesson_id):
+		data["completed_lessons"][instrument].append(lesson_id)
+	data["stars"][instrument][lesson_id] = stars
+
+
+static func _unlock_lesson(instrument: String, lesson_id: String) -> void:
+	if not data["unlocked_lessons"][instrument].has(lesson_id):
+		data["unlocked_lessons"][instrument].append(lesson_id)
+
+
+static func _extract_node_id(item: Dictionary) -> String:
+	for key: String in ["clientLessonId", "lessonKey", "nodeId"]:
+		var value := str(item.get(key, "")).strip_edges()
+		if value.begins_with("Node") and int(value.trim_prefix("Node")) > 0:
+			return value
+	var order_index := int(item.get("orderIndex", 0))
+	if order_index > 0 and order_index <= 99:
+		return "Node%d" % order_index
+	return ""
+
+
+static func _extract_node_from_text(title: String, lesson_code: String) -> String:
+	var matcher := RegEx.new()
+	matcher.compile("(?:bài|bai|lesson|[_-]b)[ _-]*(\\d+)")
+	for value: String in [lesson_code.to_lower(), title.to_lower()]:
+		var result := matcher.search(value)
+		if result:
+			var number := int(result.get_string(1))
+			if number > 0:
+				return "Node%d" % number
+	return ""
+
+
+static func _normalize_instrument_key(value: String) -> String:
+	var normalized := value.strip_edges().to_lower().replace("-", "_").replace(" ", "_")
+	if "dan_tranh" in normalized or "đàn_tranh" in normalized:
+		return "dan_tranh"
+	if "sao_truc" in normalized or "sáo_trúc" in normalized or "sáo_truc" in normalized:
+		return "sao_truc"
+	if "dan_bau" in normalized or "đàn_bầu" in normalized or "đàn_bau" in normalized:
+		return "dan_bau"
+	if "trong_chau" in normalized or "trống_chầu" in normalized or normalized == "trong":
+		return "trong_chau"
+	return ""
 
 static func is_lesson_completed(instrument: String, lesson_id: String) -> bool:
 	if data.completed_lessons.has(instrument):
@@ -98,11 +260,11 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 
 	if not data.unlocked_lessons.has(instrument):
 		data.unlocked_lessons[instrument] = []
-		
+
 	if not data.stars.has(instrument):
 		data.stars[instrument] = {}
 	data.stars[instrument][lesson_id] = max(stars, data.stars[instrument].get(lesson_id, 0))
-	
+
 	# Unlock the next lesson in sequence (e.g. Node1 -> unlocks Node2, Node2 -> unlocks Node3)
 	var next_lesson_id := ""
 	if lesson_id == "Node1":
@@ -120,7 +282,7 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 			var idx := int(lesson_id.replace("dan_bau_coban_", "").replace("_practice", ""))
 			if idx < 5:
 				next_lesson_id = "dan_bau_coban_" + str(idx + 1) + "_video"
-		
+
 	if next_lesson_id != "" and not data.unlocked_lessons[instrument].has(next_lesson_id):
 		data.unlocked_lessons[instrument].append(next_lesson_id)
 
@@ -128,10 +290,22 @@ static func complete_lesson(instrument: String, lesson_id: String, stars: int) -
 
 static func get_course_progress(instrument: String) -> float:
 	var completed := 0
-	var core_nodes := ["Node1", "Node2", "Node3", "Node4", "Node5"]
+	var core_nodes := []
+
+	if instrument == "dan_tranh" or instrument == "sao_truc":
+		core_nodes = ["Node1", "Node2", "Node3", "Node4", "Node5"]
+	elif instrument == "dan_bau":
+		core_nodes = ["Node1", "dan_bau_coban_1_practice", "dan_bau_coban_2_practice", "dan_bau_coban_3_practice"]
+	elif instrument == "trong_chau":
+		core_nodes = ["trong_chau_coban_1_practice", "trong_chau_coban_2_practice", "trong_chau_coban_3_practice"]
+
+	if core_nodes.is_empty():
+		return 0.0
+
 	for node in core_nodes:
 		if is_lesson_completed(instrument, node):
 			completed += 1
+
 	return float(completed) / float(core_nodes.size()) * 100.0
 
 static func is_instrument_unlocked(instrument: String) -> bool:
@@ -161,10 +335,10 @@ static func unlock_decoration(decor_id: String, cost: int) -> bool:
 		data["unlocked_decorations"] = []
 	if not data.has("active_decorations"):
 		data["active_decorations"] = []
-		
+
 	if data["unlocked_decorations"].has(decor_id):
 		return true
-		
+
 	var stars = get_total_stars()
 	if stars >= cost:
 		data["unlocked_decorations"].append(decor_id)
@@ -179,10 +353,10 @@ static func toggle_decoration(decor_id: String) -> void:
 		data["unlocked_decorations"] = []
 	if not data.has("active_decorations"):
 		data["active_decorations"] = []
-		
+
 	if not data["unlocked_decorations"].has(decor_id):
 		return
-		
+
 	if data["active_decorations"].has(decor_id):
 		data["active_decorations"].erase(decor_id)
 	else:

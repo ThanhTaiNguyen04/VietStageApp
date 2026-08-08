@@ -29,41 +29,6 @@ const INSTRUMENTS := [
 	{"id": "trong_chau", "label": "Trống Chầu"},
 ]
 
-# ── Mock data (keyed by instrument id) ───────────────────────────────
-const MOCK := {
-	"dan_tranh": [
-		{"name": "Nguyễn Văn A", "level": 4, "lesson": 2, "stars": 18},
-		{"name": "Trần Thị B",   "level": 3, "lesson": 5, "stars": 15},
-		{"name": "Lê Văn C",     "level": 3, "lesson": 1, "stars": 12},
-		{"name": "Phạm D",       "level": 2, "lesson": 4, "stars":  9},
-		{"name": "Hoàng E",      "level": 2, "lesson": 2, "stars":  7},
-		{"name": "Vũ F",         "level": 1, "lesson": 5, "stars":  5},
-		{"name": "Ngô G",        "level": 1, "lesson": 3, "stars":  3},
-		{"name": "Đỗ H",         "level": 1, "lesson": 1, "stars":  1},
-	],
-	"dan_bau": [
-		{"name": "Hoàng Thị M",  "level": 3, "lesson": 3, "stars": 13},
-		{"name": "Bùi Văn N",    "level": 2, "lesson": 4, "stars": 10},
-		{"name": "Đặng O",       "level": 2, "lesson": 2, "stars":  8},
-		{"name": "Vũ Thị P",     "level": 1, "lesson": 5, "stars":  6},
-		{"name": "Trương Q",     "level": 1, "lesson": 3, "stars":  4},
-	],
-	"sao_truc": [
-		{"name": "Ngô Thị R",    "level": 4, "lesson": 1, "stars": 16},
-		{"name": "Lý Văn S",     "level": 3, "lesson": 2, "stars": 11},
-		{"name": "Mai T",        "level": 2, "lesson": 3, "stars":  8},
-		{"name": "Cao U",        "level": 1, "lesson": 4, "stars":  5},
-	],
-	"trong_chau": [
-		{"name": "Đinh Thị V",   "level": 3, "lesson": 4, "stars": 14},
-		{"name": "Lưu W",        "level": 2, "lesson": 5, "stars":  9},
-		{"name": "Phan X",       "level": 2, "lesson": 1, "stars":  7},
-		{"name": "Tô Y",         "level": 1, "lesson": 2, "stars":  3},
-	],
-}
-
-# My fake rank position for demo ("BẠN" highlight)
-const MY_RANK := 5
 
 # ── Node refs ──────────────────────────────────────────────────────────
 @onready var back_btn  : Button = $Root/TopBar/TopM/TopH/BackBtn
@@ -72,6 +37,9 @@ const MY_RANK := 5
 # will be populated dynamically
 var _tab_btns   : Array[Button] = []
 var _list_vbox  : VBoxContainer = null
+var _api_client = null
+var _leaderboard_list: Array = []
+var _my_rank_info: Dictionary = {}
 
 func _ready() -> void:
 	if has_node("BG"):
@@ -85,11 +53,35 @@ func _ready() -> void:
 
 	bg_texture = load("res://assets/textures/bon_nhac_cu_background.png") as Texture2D
 
+	_api_client = preload("res://scripts/ApiClient.gd").new()
+	add_child(_api_client)
+
 	_build_topbar()
 	_build_content()
 
+	_fetch_leaderboard_data()
+
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
+
+func _fetch_leaderboard_data() -> void:
+	var response = await _api_client.get_top_leaderboard(100)
+	if _api_client._is_success(response):
+		_leaderboard_list = response.get("body", {}).get("data", [])
+	else:
+		print("Failed to fetch leaderboard: ", _api_client.error_message(response, "Unknown error"))
+		_leaderboard_list = []
+
+	var me_response = await _api_client.get_my_leaderboard()
+	if _api_client._is_success(me_response):
+		_my_rank_info = me_response.get("body", {}).get("data", {})
+	else:
+		_my_rank_info = {}
+
+	_populate_list()
+	
+	# Rebuild content to update sticky bar
+	_rebuild_all()
 
 func _draw() -> void:
 	var sz := get_rect().size
@@ -212,7 +204,7 @@ func _build_content() -> void:
 		tb.custom_minimum_size = Vector2(100, 42)
 		_style_tab(tb, inst["id"] == instrument_id)
 		if font_bold: tb.add_theme_font_override("font", font_bold)
-		tb.add_theme_font_size_override("font_size", 14)
+		tb.add_theme_font_size_override("font_size", 20)
 		var iid : String = inst["id"]
 		tb.pressed.connect(func(): _switch_instrument(iid))
 		_make_btn_bouncy(tb)
@@ -243,8 +235,8 @@ func _build_content() -> void:
 	var hdr := HBoxContainer.new()
 	hdr.add_theme_constant_override("separation", 10)
 	header_margin.add_child(hdr)
-	for col in [["Hạng",56, HORIZONTAL_ALIGNMENT_CENTER], ["Người chơi",0, HORIZONTAL_ALIGNMENT_LEFT], ["Level",100, HORIZONTAL_ALIGNMENT_RIGHT], ["Sao",60, HORIZONTAL_ALIGNMENT_RIGHT]]:
-		if col[0] == "Sao":
+	for col in [["Hạng",56, HORIZONTAL_ALIGNMENT_CENTER], ["Người chơi",0, HORIZONTAL_ALIGNMENT_LEFT], ["Chuỗi ngày",100, HORIZONTAL_ALIGNMENT_RIGHT], ["Điểm",60, HORIZONTAL_ALIGNMENT_RIGHT]]:
+		if col[0] == "Điểm":
 			var col_hb := HBoxContainer.new()
 			col_hb.custom_minimum_size = Vector2(col[1], 0)
 			col_hb.alignment = BoxContainer.ALIGNMENT_END
@@ -258,7 +250,7 @@ func _build_content() -> void:
 			var lbl := Label.new()
 			lbl.text = col[0]
 			lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-			lbl.add_theme_font_size_override("font_size", 12)
+			lbl.add_theme_font_size_override("font_size", 20)
 			if font_regular: lbl.add_theme_font_override("font", font_regular)
 			col_hb.add_child(lbl)
 			hdr.add_child(col_hb)
@@ -269,7 +261,7 @@ func _build_content() -> void:
 			elif col[1] == 0: lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			lbl.horizontal_alignment = col[2]
 			lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-			lbl.add_theme_font_size_override("font_size", 12)
+			lbl.add_theme_font_size_override("font_size", 20)
 			if font_regular: lbl.add_theme_font_override("font", font_regular)
 			hdr.add_child(lbl)
 
@@ -299,13 +291,15 @@ func _populate_list() -> void:
 	for c in _list_vbox.get_children():
 		c.queue_free()
 
-	var players = MOCK.get(instrument_id, [])
-	
-	for i in range(players.size()):
-		var p   : Dictionary = players[i]
-		var rk  : int = i + 1
-		var is_me := (rk == MY_RANK)
-		_list_vbox.add_child(_create_list_row(p, rk, is_me))
+	# Vẽ dữ liệu thật lấy từ API
+	if _leaderboard_list.size() > 0:
+		for i in range(_leaderboard_list.size()):
+			var p : Dictionary = _leaderboard_list[i]
+			var rk : int = int(p.get("rank", i + 1))
+			var is_me := false
+			if _my_rank_info.size() > 0:
+				is_me = (rk == int(_my_rank_info.get("rank", -1)))
+			_list_vbox.add_child(_create_list_row(p, rk, is_me))
 
 	# Bottom padding
 	var bottom := Control.new()
@@ -346,7 +340,7 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	rk_lbl.custom_minimum_size = Vector2(56, 0)
 	rk_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rk_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
-	rk_lbl.add_theme_font_size_override("font_size", 14)
+	rk_lbl.add_theme_font_size_override("font_size", 20)
 	if font_bold: rk_lbl.add_theme_font_override("font", font_bold)
 	hbox.add_child(rk_lbl)
 
@@ -359,7 +353,7 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	hbox.add_child(name_hbox)
 
 	var name_lbl := Label.new()
-	name_lbl.text = p["name"]
+	name_lbl.text = p.get("learner_name", p.get("name", "Ẩn danh"))
 	name_lbl.add_theme_color_override("font_color", C_GREEN if is_me else C_TEXT_MUT)
 	name_lbl.add_theme_font_size_override("font_size", 14)
 	if font_bold and is_me:
@@ -379,7 +373,12 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 		name_hbox.add_child(me_badge)
 
 	var lv_lbl := Label.new()
-	lv_lbl.text = "Lv.%d · Bài %d" % [p["level"], p["lesson"]]
+	var streak : int = 0
+	if p.has("current_streak"):
+		streak = int(p.get("current_streak", 0))
+	elif p.has("level"):
+		streak = int(p.get("level", 1)) * 2
+	lv_lbl.text = "%d ngày" % streak
 	lv_lbl.custom_minimum_size = Vector2(100, 0)
 	lv_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	lv_lbl.add_theme_color_override("font_color", C_TEXT_MUT)
@@ -401,7 +400,7 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	star_hbox.add_child(star_ic)
 	
 	var star_lbl := Label.new()
-	star_lbl.text = str(p["stars"])
+	star_lbl.text = str(int(p.get("total_points", p.get("stars", 0))))
 	star_lbl.add_theme_color_override("font_color", C_GOLD)
 	star_lbl.add_theme_font_size_override("font_size", 13)
 	if font_bold: star_lbl.add_theme_font_override("font", font_bold)
@@ -410,19 +409,36 @@ func _create_list_row(p: Dictionary, rk: int, is_me: bool) -> Control:
 	return row_margin
 
 func _build_sticky_bar() -> Control:
-	var players = MOCK.get(instrument_id, [])
-	if MY_RANK > 0 and MY_RANK <= players.size():
-		var p = players[MY_RANK - 1]
+	if _my_rank_info.size() > 0 and _my_rank_info.get("rank", 0) > 0:
+		var rk = int(_my_rank_info.get("rank", 0))
+		var total_pts = int(_my_rank_info.get("total_points", 0))
+		
+		# Tìm thông tin người chơi hiện tại trong list (để lấy streak, tên)
+		var me_name = SecureDataManager.data.get("user_name", "BẠN")
+		var me_streak = 0
+		for item in _leaderboard_list:
+			if int(item.get("rank", 0)) == rk:
+				me_name = item.get("learner_name", me_name)
+				me_streak = int(item.get("current_streak", 0))
+				break
+				
+		var p = {
+			"learner_name": me_name,
+			"total_points": total_pts,
+			"current_streak": me_streak
+		}
+		
 		var wrapper = PanelContainer.new()
 		var s = _flat(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 0)
 		s.border_width_top = 2
 		wrapper.add_theme_stylebox_override("panel", s)
 		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var row = _create_list_row(p, MY_RANK, true)
+		var row = _create_list_row(p, rk, true)
 		row.add_theme_constant_override("margin_top", 12)
 		row.add_theme_constant_override("margin_bottom", 12)
 		wrapper.add_child(row)
 		return wrapper
+
 	return null
 
 # ──────────────────────────────────────────────────────────────────────
@@ -476,8 +492,8 @@ func _rebuild_all() -> void:
 	var hdr := HBoxContainer.new()
 	hdr.add_theme_constant_override("separation", 10)
 	header_margin.add_child(hdr)
-	for col in [["Hạng",56, HORIZONTAL_ALIGNMENT_CENTER], ["Người chơi",0, HORIZONTAL_ALIGNMENT_LEFT], ["Level",100, HORIZONTAL_ALIGNMENT_RIGHT], ["Sao",60, HORIZONTAL_ALIGNMENT_RIGHT]]:
-		if col[0] == "Sao":
+	for col in [["Hạng",56, HORIZONTAL_ALIGNMENT_CENTER], ["Người chơi",0, HORIZONTAL_ALIGNMENT_LEFT], ["Chuỗi ngày",100, HORIZONTAL_ALIGNMENT_RIGHT], ["Điểm",60, HORIZONTAL_ALIGNMENT_RIGHT]]:
+		if col[0] == "Điểm":
 			var col_hb := HBoxContainer.new()
 			col_hb.custom_minimum_size = Vector2(col[1], 0)
 			col_hb.alignment = BoxContainer.ALIGNMENT_END

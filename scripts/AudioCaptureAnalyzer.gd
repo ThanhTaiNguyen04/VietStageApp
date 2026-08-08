@@ -64,7 +64,29 @@ func _setup_audio_bus() -> void:
 	AudioServer.set_bus_mute(_bus_index, false)
 	AudioServer.set_bus_volume_db(_bus_index, -80.0)
 	
-	# Add AudioEffectCapture if not already present
+	# 1. Thêm bộ lọc tần số thấp (HighPassFilter) để cắt tạp âm quạt/gió/hơi thở
+	var hp_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectHighPassFilter:
+			hp_idx = i
+			break
+	if hp_idx == -1:
+		var hp = AudioEffectHighPassFilter.new()
+		hp.cutoff_hz = 300.0 # Sáo trúc thường không có nốt nào dưới 390Hz
+		AudioServer.add_bus_effect(_bus_index, hp, 0)
+		
+	# 2. Thêm bộ lọc tần số cao (LowPassFilter) để cắt tiếng xì/rè
+	var lp_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectLowPassFilter:
+			lp_idx = i
+			break
+	if lp_idx == -1:
+		var lp = AudioEffectLowPassFilter.new()
+		lp.cutoff_hz = 4000.0 # Cắt các tần số cao không cần thiết
+		AudioServer.add_bus_effect(_bus_index, lp, 1)
+
+	# 3. Add AudioEffectCapture if not already present
 	var effect_index := -1
 	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
 		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectCapture:
@@ -74,7 +96,7 @@ func _setup_audio_bus() -> void:
 	if effect_index == -1:
 		_effect = AudioEffectCapture.new()
 		_effect.buffer_length = 0.5 # 500ms buffer
-		AudioServer.add_bus_effect(_bus_index, _effect, 0)
+		AudioServer.add_bus_effect(_bus_index, _effect) # Không ép index 0 nữa để nó nằm sau filter
 	else:
 		_effect = AudioServer.get_bus_effect(_bus_index, effect_index) as AudioEffectCapture
 		
@@ -380,19 +402,19 @@ func _detect_dan_tranh_note_gdscript(samples: PackedFloat32Array, sample_rate: f
 	const DAN_TRANH_NOTES = [
 		{"name": "Sol1", "idx": 0, "freq": 196.00},
 		{"name": "La1",  "idx": 1, "freq": 220.00},
-		{"name": "Đô1",  "idx": 2, "freq": 261.63},
-		{"name": "Rê1",  "idx": 3, "freq": 293.66},
-		{"name": "Mi1",  "idx": 4, "freq": 329.63},
+		{"name": "Đô2",  "idx": 2, "freq": 261.63},
+		{"name": "Rê2",  "idx": 3, "freq": 293.66},
+		{"name": "Mi2",  "idx": 4, "freq": 329.63},
 		{"name": "Sol2", "idx": 5, "freq": 392.00},
 		{"name": "La2",  "idx": 6, "freq": 440.00},
-		{"name": "Đô2",  "idx": 7, "freq": 523.25},
-		{"name": "Rê2",  "idx": 8, "freq": 587.33},
-		{"name": "Mi2",  "idx": 9, "freq": 659.25},
+		{"name": "Đô3",  "idx": 7, "freq": 523.25},
+		{"name": "Rê3",  "idx": 8, "freq": 587.33},
+		{"name": "Mi3",  "idx": 9, "freq": 659.25},
 		{"name": "Sol3", "idx": 10, "freq": 783.99},
 		{"name": "La3",  "idx": 11, "freq": 880.00},
-		{"name": "Đô3",  "idx": 12, "freq": 1046.50},
-		{"name": "Rê3",  "idx": 13, "freq": 1174.66},
-		{"name": "Mi3",  "idx": 14, "freq": 1318.51},
+		{"name": "Đô4",  "idx": 12, "freq": 1046.50},
+		{"name": "Rê4",  "idx": 13, "freq": 1174.66},
+		{"name": "Mi4",  "idx": 14, "freq": 1318.51},
 		{"name": "Sol4", "idx": 15, "freq": 1567.98},
 		{"name": "La4",  "idx": 16, "freq": 1760.00}
 	]
