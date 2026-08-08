@@ -144,7 +144,8 @@ func _build_ui() -> void:
 	main_panel.offset_top = -300; main_panel.offset_bottom = 300
 	main_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	main_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	main_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, Color(1.0, 1.0, 1.0, 0.78), 22, true, 2))
+	# Frosted-glass dialogue surface: the virtual room remains visible behind it.
+	main_panel.add_theme_stylebox_override("panel", _flat_sb(Color(0.91, 0.97, 0.93, 0.48), Color(1.0, 1.0, 1.0, 0.72), 24, true, 0))
 	ai_chat_popup_root.add_child(main_panel)
 	
 	var margin = MarginContainer.new()
@@ -166,7 +167,7 @@ func _build_ui() -> void:
 	title_lbl.text = "Trò chuyện với Giáo viên ảo Mai"
 	title_lbl.add_theme_font_override("font", _font_title)
 	title_lbl.add_theme_font_size_override("font_size", 26)
-	title_lbl.add_theme_color_override("font_color", C_RED_SON)
+	title_lbl.add_theme_color_override("font_color", C_CREAM)
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title_lbl)
 	
@@ -175,7 +176,7 @@ func _build_ui() -> void:
 	settings_btn.flat = true
 	settings_btn.add_theme_font_override("font", _font_body_bold)
 	settings_btn.add_theme_font_size_override("font_size", 14)
-	settings_btn.add_theme_color_override("font_color", C_RED_SON)
+	settings_btn.add_theme_color_override("font_color", C_CREAM)
 	settings_btn.pressed.connect(_toggle_ai_settings)
 	header.add_child(settings_btn)
 	_make_btn_bouncy(settings_btn)
@@ -184,7 +185,7 @@ func _build_ui() -> void:
 	close_btn.text = "❌"
 	close_btn.flat = true
 	close_btn.add_theme_font_size_override("font_size", 16)
-	close_btn.add_theme_color_override("font_color", C_RED_SON)
+	close_btn.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	close_btn.pressed.connect(_close_ai_chat)
 	header.add_child(close_btn)
 	_make_btn_bouncy(close_btn)
@@ -195,16 +196,16 @@ func _build_ui() -> void:
 	main_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(main_split)
 	
-	# Left Column (Teacher Portrait)
+	# Teacher portrait sits on the left, alongside the dialogue.
 	var left_col = VBoxContainer.new()
-	left_col.custom_minimum_size = Vector2(250, 0)
+	left_col.custom_minimum_size = Vector2(290, 0)
 	left_col.add_theme_constant_override("separation", 12)
 	main_split.add_child(left_col)
 	
 	var frame = PanelContainer.new()
 	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	frame.clip_contents = true
-	frame.add_theme_stylebox_override("panel", _flat_sb(Color(0.93, 0.97, 0.94, 0.82), Color(0.50, 0.76, 0.60, 0.48), 18, false, 0))
+	frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	left_col.add_child(frame)
 	
 	ai_portrait = Control.new()
@@ -219,9 +220,15 @@ func _build_ui() -> void:
 	ai_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ai_status_lbl.add_theme_font_override("font", _font_body_bold)
 	ai_status_lbl.add_theme_font_size_override("font_size", 13)
-	ai_status_lbl.add_theme_color_override("font_color", C_RED_SON)
+	ai_status_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	left_col.add_child(ai_status_lbl)
-	
+
+	var dialogue_divider := ColorRect.new()
+	dialogue_divider.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	dialogue_divider.custom_minimum_size = Vector2(1, 0)
+	dialogue_divider.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_split.add_child(dialogue_divider)
+
 	# Right Column (Chat Logs & Input)
 	var right_col = VBoxContainer.new()
 	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -230,7 +237,7 @@ func _build_ui() -> void:
 	
 	var log_panel = PanelContainer.new()
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_panel.add_theme_stylebox_override("panel", _flat_sb(Color(1.0, 1.0, 1.0, 0.68), Color(0.50, 0.76, 0.60, 0.42), 18, false, 0))
+	log_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	right_col.add_child(log_panel)
 	
 	var log_margin = MarginContainer.new()
@@ -247,8 +254,17 @@ func _build_ui() -> void:
 	ai_chat_log.add_theme_font_override("bold_font", _font_body_bold)
 	ai_chat_log.add_theme_font_override("italics_font", _font_body)
 	ai_chat_log.add_theme_font_size_override("normal_font_size", 16)
-	ai_chat_log.add_theme_color_override("default_color", C_RED_DK)
+	ai_chat_log.add_theme_color_override("default_color", C_CREAM)
 	log_margin.add_child(ai_chat_log)
+
+	# Suggested prompts preserve free-form chat while giving learners an easy starting point.
+	var quick_actions = HFlowContainer.new()
+	quick_actions.add_theme_constant_override("h_separation", 8)
+	quick_actions.add_theme_constant_override("v_separation", 8)
+	right_col.add_child(quick_actions)
+	_add_quick_prompt(quick_actions, "Chọn nhạc cụ", "Cô Mai, hãy giới thiệu các nhạc cụ trong phòng học.")
+	_add_quick_prompt(quick_actions, "Kỹ thuật cơ bản", "Cô Mai, hãy hướng dẫn cho em một kỹ thuật cơ bản.")
+	_add_quick_prompt(quick_actions, "Bắt đầu luyện tập", "Cô Mai, em nên bắt đầu luyện tập như thế nào?")
 	
 	var input_row = HBoxContainer.new()
 	input_row.add_theme_constant_override("separation", 10)
@@ -263,7 +279,7 @@ func _build_ui() -> void:
 	_make_btn_bouncy(ai_mic_btn)
 	
 	ai_input = LineEdit.new()
-	ai_input.placeholder_text = "Nhập tin nhắn..."
+	ai_input.placeholder_text = "Hỏi cô Mai..."
 	ai_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ai_input.add_theme_font_override("font", _font_body)
 	ai_input.add_theme_font_size_override("font_size", 14)
@@ -271,14 +287,18 @@ func _build_ui() -> void:
 	input_row.add_child(ai_input)
 	
 	var le_style = StyleBoxFlat.new()
-	le_style.bg_color = Color(1.0, 1.0, 1.0, 0.82)
-	le_style.border_color = Color(0.50, 0.76, 0.60, 0.58)
+	le_style.bg_color = Color(1.0, 1.0, 1.0, 0.76)
+	le_style.border_color = Color(1.0, 1.0, 1.0, 0.88)
 	le_style.border_width_left = 1; le_style.border_width_right = 1
 	le_style.border_width_top = 1; le_style.border_width_bottom = 1
 	le_style.corner_radius_top_left = 12; le_style.corner_radius_top_right = 12
 	le_style.corner_radius_bottom_left = 12; le_style.corner_radius_bottom_right = 12
 	le_style.content_margin_left = 12; le_style.content_margin_right = 12
 	ai_input.add_theme_stylebox_override("normal", le_style)
+	ai_input.add_theme_color_override("font_color", C_RED_DK)
+	ai_input.add_theme_color_override("font_placeholder_color", Color(0.12, 0.27, 0.19, 0.58))
+	# Layout: question field → microphone → send.
+	input_row.move_child(ai_mic_btn, 1)
 	
 	ai_send_btn = Button.new()
 	ai_send_btn.text = "Gửi"
@@ -287,6 +307,8 @@ func _build_ui() -> void:
 	input_row.add_child(ai_send_btn)
 	_style_ai_button(ai_send_btn, true)
 	_make_btn_bouncy(ai_send_btn)
+
+	# Dialogue follows the reference layout: conversation on the left, Cô Mai on the right.
 	
 	# Settings Panel setup
 	settings_panel = PanelContainer.new()
@@ -463,12 +485,31 @@ func _close_ai_chat() -> void:
 func _toggle_ai_settings() -> void:
 	settings_panel.visible = not settings_panel.visible
 
+
+func _add_quick_prompt(container: HFlowContainer, label: String, prompt: String) -> void:
+	var button := Button.new()
+	button.text = label
+	button.custom_minimum_size = Vector2(172, 38)
+	button.add_theme_font_override("font", _font_body_bold)
+	button.add_theme_font_size_override("font_size", 13)
+	button.add_theme_stylebox_override("normal", _flat_sb(Color(0.18, 0.48, 0.31, 0.94), C_GOLD_LIGHT, 18, true, 0))
+	button.add_theme_stylebox_override("hover", _flat_sb(Color(0.25, 0.60, 0.39, 1.0), Color.WHITE, 18, true, 0))
+	button.add_theme_stylebox_override("pressed", _flat_sb(Color(0.10, 0.34, 0.21, 1.0), C_GOLD, 18, false, 0))
+	button.add_theme_color_override("font_color", C_CREAM)
+	button.pressed.connect(func() -> void:
+		ai_input.text = prompt
+		_submit_chat()
+	)
+	container.add_child(button)
+	_make_btn_bouncy(button)
+
+
 func _style_ai_button(btn: Button, primary: bool) -> void:
-	var bg := C_RED_SON if primary else Color(1.0, 1.0, 1.0, 0.76)
-	var border := C_RED_SON if primary else Color(0.50, 0.76, 0.60, 0.62)
+	var bg := Color(0.16, 0.47, 0.30, 0.98) if primary else Color(1.0, 1.0, 1.0, 0.76)
+	var border := C_GOLD_LIGHT if primary else Color(1.0, 1.0, 1.0, 0.82)
 	var fg := C_CREAM if primary else C_RED_SON
-	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 12, primary, 1))
-	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.10), border.lightened(0.08), 12, primary, 1))
+	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 12, true, 0))
+	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.14), Color.WHITE if primary else C_GOLD_LIGHT, 12, true, 0))
 	btn.add_theme_stylebox_override("pressed", _flat_sb(bg.darkened(0.10), border, 12, false, 0))
 	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color", fg)
@@ -504,8 +545,8 @@ func _draw_mai_chat_portrait() -> void:
 			frame_width,
 			frame_height
 		)
-		# A square destination preserves the portrait's original proportion in a tall panel.
-		var draw_size := minf(portrait_size.x, portrait_size.y)
+		# Keep the source frame square, but enlarge it slightly for the dialogue-character layout.
+		var draw_size := minf(portrait_size.y, portrait_size.x * 1.22)
 		var destination_rect := Rect2(
 			(portrait_size.x - draw_size) * 0.5,
 			(portrait_size.y - draw_size) * 0.5,
