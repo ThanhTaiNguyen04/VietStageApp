@@ -70,8 +70,14 @@ var _tex_sao : Texture2D
 var _tex_bau : Texture2D
 var _tex_trong : Texture2D
 var _tex_linh : Texture2D
+var _tex_linh_talk : Texture2D
+var _tex_linh_walk_down : Texture2D
+var _tex_linh_walk_up : Texture2D
+var _tex_linh_walk_left : Texture2D
+var _tex_linh_walk_right : Texture2D
 var _tex_player : Texture2D
 var _tex_wall : Texture2D
+var _linh_walk_direction : String = "down"
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
 var _is_blinking : bool = false
@@ -184,6 +190,11 @@ func _ready() -> void:
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
 	_tex_trong = load("res://assets/textures/trong_chau_assetremove.png") as Texture2D
 	_tex_linh = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
+	_tex_linh_talk = load("res://assets/textures/coMai/mai_talk_sheet.png") as Texture2D
+	_tex_linh_walk_down = load("res://assets/textures/coMai/mai_walk_down_sheet.png") as Texture2D
+	_tex_linh_walk_up = load("res://assets/textures/coMai/mai_walk_up_sheet.png") as Texture2D
+	_tex_linh_walk_left = load("res://assets/textures/coMai/mai_walk_left_sheet.png") as Texture2D
+	_tex_linh_walk_right = load("res://assets/textures/coMai/mai_walk_right_sheet.png") as Texture2D
 	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
 	_tex_wall = load("res://assets/textures/backgroundphonghocao.png") as Texture2D
 	
@@ -767,7 +778,6 @@ func _on_floor_gui_input(event: InputEvent) -> void:
 		_close_dialogue()
 
 func _move_linh_to_station(station_code: String, show_popup_after_move: bool = true) -> void:
-	_linh_is_moving = true
 	if _linh_tween:
 		_linh_tween.kill()
 	
@@ -780,6 +790,13 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 		"trong":       target_feet = _get_station_floor_center(s_trong)
 	
 	var linh_feet_offset := _get_linh_feet_offset()
+	var current_feet := char_linh.position + linh_feet_offset
+	var move_delta := target_feet - current_feet
+	if absf(move_delta.x) > absf(move_delta.y):
+		_linh_walk_direction = "right" if move_delta.x >= 0.0 else "left"
+	else:
+		_linh_walk_direction = "down" if move_delta.y >= 0.0 else "up"
+	_linh_is_moving = true
 	var target_x := target_feet.x - linh_feet_offset.x
 	var target_y := target_feet.y - linh_feet_offset.y
 	
@@ -1498,7 +1515,19 @@ func _draw_linh(c: Control) -> void:
 	var base_pos := Vector2(cx, cy + 74.0)
 	c.draw_set_transform(base_pos + Vector2(0.0, bob - 74.0), rot, scale_vec)
 	
-	if _tex_linh:
+	var animation_sheet : Texture2D = null
+	if _linh_is_moving:
+		match _linh_walk_direction:
+			"up": animation_sheet = _tex_linh_walk_up
+			"left": animation_sheet = _tex_linh_walk_left
+			"right": animation_sheet = _tex_linh_walk_right
+			_: animation_sheet = _tex_linh_walk_down
+	elif is_speaking:
+		animation_sheet = _tex_linh_talk
+
+	if animation_sheet:
+		_draw_linh_sheet_frame(c, animation_sheet, sz, int(_time * 8.0) % 6)
+	elif _tex_linh:
 		var img_w := sz.x
 		var img_h := sz.y
 		var tex_ratio := _tex_linh.get_width() / float(_tex_linh.get_height())
@@ -1551,6 +1580,24 @@ func _draw_linh(c: Control) -> void:
 		c.draw_arc(head_c + Vector2(-10, -2), 3.5, PI, TAU, 8, Color.BLACK, 2.0)
 		c.draw_arc(head_c + Vector2(10, -2), 3.5, PI, TAU, 8, Color.BLACK, 2.0)
 		c.draw_arc(head_c + Vector2(0, 5), 4.5, 0, PI, 8, C_RED_SON, 2.0)
+
+
+func _draw_linh_sheet_frame(c: Control, sheet: Texture2D, size: Vector2, frame_index: int) -> void:
+	# Each Cô Mai sheet is a 3-column × 2-row grid, containing six animation frames.
+	var frame_width := sheet.get_width() / 3.0
+	var frame_height := sheet.get_height() / 2.0
+	var frame := posmod(frame_index, 6)
+	var source_rect := Rect2(
+		float(frame % 3) * frame_width,
+		float(frame / 3) * frame_height,
+		frame_width,
+		frame_height
+	)
+	# Keep the same tall visual proportion as the former static illustration.
+	var image_height := size.y
+	var image_width := image_height * (2.0 / 3.0)
+	var destination_rect := Rect2(-image_width * 0.5, 74.0 - image_height, image_width, image_height)
+	c.draw_texture_rect_region(sheet, destination_rect, source_rect)
 
 func _draw_capsule(c: Control, p1: Vector2, p2: Vector2, color: Color, width: float) -> void:
 	c.draw_line(p1, p2, color, width)
