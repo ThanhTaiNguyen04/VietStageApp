@@ -3346,4 +3346,3 @@ func _setup_audio_bus() -> void:
 		AudioServer.set_bus_name(bus_idx, "SlowMotion")
 		var pitch_shift = AudioEffectPitchShift.new()
 		AudioServer.add_bus_effect(bus_idx, pitch_shift)
-

@@ -540,6 +540,7 @@ func _style_all() -> void:
 
 	or_label.add_theme_color_override("font_color",    Color(0.43, 0.38, 0.33, 1.0))
 	error_label.add_theme_color_override("font_color", C_ERR)
+	error_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	guest_lbl.add_theme_color_override("font_color",   Color(0.43, 0.38, 0.33, 1.0))
 
 	# Name & Email: Light warm glass pill

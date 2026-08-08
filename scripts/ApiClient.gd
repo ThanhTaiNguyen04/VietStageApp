@@ -406,13 +406,32 @@ func refresh_session() -> Dictionary:
 
 
 func error_message(response: Dictionary, fallback: String) -> String:
+	var status = int(response.get("status", 0))
+	if status == 500:
+		return "Đã xảy ra lỗi kết nối hệ thống. Vui lòng thử lại sau."
+		
 	var body = response.get("body", {})
+	var message := ""
 	if body is Dictionary:
-		var body_message := str(body.get("message", ""))
-		if not body_message.is_empty():
-			return body_message
-	var message := str(response.get("message", ""))
-	return message if not message.is_empty() else fallback
+		message = str(body.get("message", ""))
+	if message.is_empty():
+		message = str(response.get("message", ""))
+		
+	if message.is_empty():
+		return fallback
+
+	# Check for technical jargon or backend database errors
+	var technical_keywords = [
+		"internal server error", "jdbc", "sql", "exception", "database", "postgres", 
+		"mysql", "syntax", "column", "table", "relation", "constraint", "connection",
+		"refused", "driver", "hibernate", "entity", "jpa", "server error"
+	]
+	var lower_msg = message.to_lower()
+	for kw in technical_keywords:
+		if kw in lower_msg:
+			return "Đã xảy ra lỗi kết nối hệ thống. Vui lòng thử lại sau."
+			
+	return message
 
 
 func _request_raw(
