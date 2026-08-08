@@ -91,9 +91,15 @@ func _draw():
 		var y = center_y + (2 - i) * line_spacing
 		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.2, true)
 			
-	# Treble clef drawing removed for synchronized clean staff design
+	# Draw Clef and Time signature on the left
+	var font = ThemeDB.fallback_font
+	if font:
+		# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom)
+		draw_string(font, Vector2(10, center_y + line_spacing * 2.2), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 3.5), Color.BLACK)
+		draw_string(font, Vector2(55, center_y - line_spacing * 0.1), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 0.8), Color.BLACK)
+		draw_string(font, Vector2(55, center_y + line_spacing * 0.9), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 0.8), Color.BLACK)
 			
-	# Draw hit line with modern glowing effect
+	# Draw hit line with modern glowing effect (kept as it is for timing)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.2, 0.85, 0.3, 0.95), 3.5, true)
 		
@@ -101,12 +107,20 @@ func _draw():
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x / 2.0)
-		var n_color = note_data.get("color", Color(0.96, 0.75, 0.25, 1.0))
+		var n_color = Color.BLACK # Force note color to black for all level 2 lessons
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue)
+		var n_type = note_data.get("type", "quarter")
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		
+	# Draw simple metronome
+	var beat_time = fmod(Time.get_ticks_msec() / 1000.0 * (100.0 / 60.0), 1.0) # 100 BPM
+	var metronome_radius = 15.0 + sin(beat_time * PI) * 5.0
+	var metronome_alpha = 1.0 - beat_time
+	draw_circle(Vector2(size.x - 50, 50), metronome_radius, Color(0.9, 0.2, 0.2, metronome_alpha))
+	draw_arc(Vector2(size.x - 50, 50), 20.0, 0, TAU, 32, Color(0.8, 0.1, 0.1, 0.5), 2.0, true)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = ""):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
@@ -177,61 +191,54 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
-	# Draw duration tail (crisp horizontal bar with vertical tick marker)
-	if tail_w > 0.0:
-		var tail_start = note_x + note_width / 2.0 - 4.0 # slightly inside to avoid gaps
-		var actual_tail_w = max(0.0, tail_w - (note_width / 2.0))
-		if actual_tail_w > 0.0:
-			var end_x_pos = tail_start + actual_tail_w
-			draw_line(Vector2(tail_start, note_y), Vector2(end_x_pos, note_y), note_color, 4.5, true)
-			var tick_h = line_spacing * 0.42
-			draw_line(Vector2(end_x_pos, note_y - tick_h), Vector2(end_x_pos, note_y + tick_h), note_color, 4.0, true)
+	# Duration tail drawing removed per user request
 			
-	# Draw soft radiating golden halo around notes
-	var glow_color = note_color
-	glow_color.a = 0.25
-	draw_circle(Vector2(note_x, note_y), note_height * 0.82, glow_color)
-	glow_color.a = 0.10
-	draw_circle(Vector2(note_x, note_y), note_height * 1.25, glow_color)
+	# Draw soft radiating halo around notes removed since notes are now black
 			
 	# Draw note head (rotated ellipse)
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
-	_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
-	
-	# Draw fingering cues inside the note if available, else draw text
-	if cue != "":
-		var center_pt = Vector2(note_x, note_y)
-		var symbol_color = Color.WHITE
-		if cue == "circle":
-			draw_circle(center_pt, note_height * 0.35, symbol_color)
-		elif cue == "square":
-			var sz = note_height * 0.6
-			draw_rect(Rect2(center_pt.x - sz/2.0, center_pt.y - sz/2.0, sz, sz), symbol_color, true)
-		elif cue == "triangle":
-			var sz = note_height * 0.4
-			var p1 = center_pt + Vector2(0, -sz)
-			var p2 = center_pt + Vector2(-sz, sz * 0.8)
-			var p3 = center_pt + Vector2(sz, sz * 0.8)
-			draw_polygon(PackedVector2Array([p1, p2, p3]), PackedColorArray([symbol_color, symbol_color, symbol_color]))
+	if note_type == "whole" or note_type == "half":
+		_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
+		# Make it hollow
+		var inner_rect = Rect2(note_x - note_width/2.5, note_y - note_height/2.5, note_width * 0.8, note_height * 0.8)
+		var bg_color = Color(0.995, 0.98, 0.93, 1.0) # Matches StaffCard bg
+		_draw_rotated_ellipse(inner_rect, deg_to_rad(-18), bg_color)
 	else:
-		# Draw bold note name text inside note head
-		var font = ThemeDB.fallback_font
-		if font:
-			var font_size = int(line_spacing * (0.42 if is_zither else 0.48))
-			var str_size = font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-			var text_pos = Vector2(note_x - str_size.x / 2.0, note_y + str_size.y * 0.35)
-			draw_string(font, text_pos, display_name, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color.WHITE)
+		_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
 	
-	# Draw stem only for short melodic notes without duration tail
-	if tail_w <= 0.0:
+	# Draw stem and flags
+	if note_type != "whole":
 		var stem_len = line_spacing * 2.2
 		var stem_w = max(2.5, line_spacing * 0.08)
-		if pos_idx < 2.0:
-			var stem_x = note_x + note_width/2.0 - 2.0
-			draw_line(Vector2(note_x + note_width/2.0 - 2.0, note_y), Vector2(note_x + note_width/2.0 - 2.0, note_y - stem_len), note_color, stem_w, true)
+		var stem_x = 0.0
+		var stem_end_y = 0.0
+		var is_stem_up = pos_idx < 2.0
+		
+		if is_stem_up:
+			stem_x = note_x + note_width/2.0 - 2.0
+			stem_end_y = note_y - stem_len
+			draw_line(Vector2(stem_x, note_y), Vector2(stem_x, stem_end_y), note_color, stem_w, true)
 		else:
-			var stem_x = note_x - note_width/2.0 + 2.0
-			draw_line(Vector2(note_x - note_width/2.0 + 2.0, note_y), Vector2(note_x - note_width/2.0 + 2.0, note_y + stem_len), note_color, stem_w, true)
+			stem_x = note_x - note_width/2.0 + 2.0
+			stem_end_y = note_y + stem_len
+			draw_line(Vector2(stem_x, note_y), Vector2(stem_x, stem_end_y), note_color, stem_w, true)
+			
+		# Draw flags (móc)
+		if note_type == "eighth" or note_type == "sixteenth":
+			var flag_w = note_width * 0.8
+			var flag_h = stem_len * 0.4
+			var hook_dir = 1.0 if is_stem_up else -1.0
+			
+			# Flag 1
+			var f1_start = Vector2(stem_x, stem_end_y)
+			var f1_end = Vector2(stem_x + flag_w, stem_end_y + flag_h * hook_dir)
+			draw_line(f1_start, f1_end, note_color, stem_w, true)
+			
+			# Flag 2
+			if note_type == "sixteenth":
+				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.2 * hook_dir)
+				var f2_end = Vector2(stem_x + flag_w, f2_start.y + flag_h * hook_dir)
+				draw_line(f2_start, f2_end, note_color, stem_w, true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()

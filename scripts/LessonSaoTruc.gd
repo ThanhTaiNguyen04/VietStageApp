@@ -619,7 +619,14 @@ func _start_practice():
 		
 	# Populate practice sequence
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
-		_practice_sequence = [{"note": active_note, "duration": REQUIRED_HOLD_TIME, "time": 0.0}]
+		_practice_sequence = [
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 0.0},
+			{"note": active_note, "type": "whole", "duration": 4.0, "time": 2.5},
+			{"note": active_note, "type": "half", "duration": 2.0, "time": 8.0},
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 11.5},
+			{"note": active_note, "type": "eighth", "duration": 0.5, "time": 14.0},
+			{"note": active_note, "type": "sixteenth", "duration": 0.25, "time": 16.0}
+		]
 	else:
 		_practice_sequence = _generate_melody(active_node_id)
 		if _practice_sequence.is_empty():
@@ -782,7 +789,7 @@ func _process(delta):
 				var color = Color(0.96, 0.75, 0.25)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
-				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w})
+				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w, "type": note_data.get("type", "quarter")})
 			staff_display.set_notes(notes)
 					
 		if sample_active:
@@ -873,7 +880,7 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * 300.0
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w})
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter")})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
