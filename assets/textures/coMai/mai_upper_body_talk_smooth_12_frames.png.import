@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dnhwmcisjfb2h"
-path="res://.godot/imported/6frameWalkDown_asset.png-f174d74eeb06d98ee9d45823042e1577.ctex"
+uid="uid://dnqu43elvkf06"
+path="res://.godot/imported/mai_upper_body_talk_smooth_12_frames.png-2933eae4a2be54dfc25b858efa71ed8c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/coMai/6frameWalkDown_asset.png"
-dest_files=["res://.godot/imported/6frameWalkDown_asset.png-f174d74eeb06d98ee9d45823042e1577.ctex"]
+source_file="res://assets/textures/coMai/mai_upper_body_talk_smooth_12_frames.png"
+dest_files=["res://.godot/imported/mai_upper_body_talk_smooth_12_frames.png-2933eae4a2be54dfc25b858efa71ed8c.ctex"]
 
 [params]
 

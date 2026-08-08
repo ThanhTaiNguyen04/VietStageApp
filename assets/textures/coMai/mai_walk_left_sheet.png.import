@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://djboffe4k5m4a"
-path="res://.godot/imported/IdleDown_asset.png-7581a67f42848d10a211d3c94748774d.ctex"
+uid="uid://5trclglwoxui"
+path="res://.godot/imported/mai_walk_left_sheet.png-ca718be6e364507903e3c98ed5ad820a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/coMai/IdleDown_asset.png"
-dest_files=["res://.godot/imported/IdleDown_asset.png-7581a67f42848d10a211d3c94748774d.ctex"]
+source_file="res://assets/textures/coMai/mai_walk_left_sheet.png"
+dest_files=["res://.godot/imported/mai_walk_left_sheet.png-ca718be6e364507903e3c98ed5ad820a.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cr8pxww2gwie2"
-path="res://.godot/imported/IdleUp.png-e63cb223ac015f45ae20647e94272bf5.ctex"
+uid="uid://brp0o13bk633y"
+path="res://.godot/imported/imagesao.png-0b6a4651d98edcd75bd2a761f60247d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/coMai/IdleUp.png"
-dest_files=["res://.godot/imported/IdleUp.png-e63cb223ac015f45ae20647e94272bf5.ctex"]
+source_file="res://assets/textures/imagesao.png"
+dest_files=["res://.godot/imported/imagesao.png-0b6a4651d98edcd75bd2a761f60247d9.ctex"]
 
 [params]
 
