@@ -36,10 +36,10 @@ var _tex_fallback : Texture2D
 var _portrait_is_talking := false
 var _portrait_frame := 0
 var _portrait_frame_elapsed := 0.0
-const PORTRAIT_FRAME_DURATION := 0.10
-const PORTRAIT_FRAME_COUNT := 18
-const PORTRAIT_SHEET_COLUMNS := 3
-const PORTRAIT_SHEET_ROWS := 6
+const PORTRAIT_FRAME_DURATION := 0.08
+const PORTRAIT_FRAME_COUNT := 16
+const PORTRAIT_SHEET_COLUMNS := 4
+const PORTRAIT_SHEET_ROWS := 4
 
 # Fonts
 var _font_title : Font
@@ -68,7 +68,7 @@ var _instrument_context: String = "general"
 
 func _ready() -> void:
 	# Load assets
-	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_smooth_12_frames.png") as Texture2D
+	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
 	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
 	
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -548,23 +548,25 @@ func _draw_mai_chat_portrait() -> void:
 			frame_width,
 			frame_height
 		)
-		# Keep the source frame square, but enlarge it slightly for the dialogue-character layout.
-		var draw_size := minf(portrait_size.y, portrait_size.x * 1.22)
+		# Preserve each portrait frame's aspect ratio to prevent adjacent cells
+		# in the sprite sheet from appearing in the chat portrait.
+		var aspect_ratio := frame_width / frame_height
+		var draw_width := minf(portrait_size.x, portrait_size.y * aspect_ratio)
+		var draw_height := draw_width / aspect_ratio
 		var destination_rect := Rect2(
-			(portrait_size.x - draw_size) * 0.5,
-			(portrait_size.y - draw_size) * 0.5,
-			draw_size,
-			draw_size
+			(portrait_size.x - draw_width) * 0.5,
+			(portrait_size.y - draw_height) * 0.5,
+			draw_width,
+			draw_height
 		)
 		ai_portrait.draw_texture_rect_region(_tex_mai_talk_sheet, destination_rect, source_rect)
 	elif _tex_fallback:
 		ai_portrait.draw_texture_rect(_tex_fallback, Rect2(Vector2.ZERO, portrait_size), false)
 
 
-func _on_audio_amplitude_updated(amplitude: float) -> void:
-	_portrait_is_talking = amplitude > 0.05
-	if not _portrait_is_talking:
-		_portrait_frame_elapsed = 0.0
+func _on_audio_amplitude_updated(_amplitude: float) -> void:
+	# TTS start/finish owns the talking state.  Do not stop the animation on
+	# brief silent samples between words, otherwise the portrait visibly jitters.
 	if is_instance_valid(ai_portrait):
 		ai_portrait.queue_redraw()
 
