@@ -36,7 +36,10 @@ var _tex_fallback : Texture2D
 var _portrait_is_talking := false
 var _portrait_frame := 0
 var _portrait_frame_elapsed := 0.0
-const PORTRAIT_FRAME_DURATION := 0.14
+const PORTRAIT_FRAME_DURATION := 0.10
+const PORTRAIT_FRAME_COUNT := 18
+const PORTRAIT_SHEET_COLUMNS := 3
+const PORTRAIT_SHEET_ROWS := 6
 
 # Fonts
 var _font_title : Font
@@ -65,7 +68,7 @@ var _instrument_context: String = "general"
 
 func _ready() -> void:
 	# Load assets
-	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_sheet.png") as Texture2D
+	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_smooth_12_frames.png") as Texture2D
 	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
 	
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -127,7 +130,7 @@ func _build_ui() -> void:
 	
 	# Dim backdrop
 	var overlay = ColorRect.new()
-	overlay.color = Color(0.03, 0.10, 0.07, 0.48)
+	overlay.color = Color.TRANSPARENT
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ai_chat_popup_root.add_child(overlay)
 	overlay.gui_input.connect(func(event):
@@ -524,7 +527,7 @@ func _process(delta: float) -> void:
 		_portrait_frame_elapsed += delta
 		if _portrait_frame_elapsed >= PORTRAIT_FRAME_DURATION:
 			_portrait_frame_elapsed = 0.0
-			_portrait_frame = (_portrait_frame + 1) % 6
+			_portrait_frame = (_portrait_frame + 1) % PORTRAIT_FRAME_COUNT
 			ai_portrait.queue_redraw()
 	elif _portrait_frame != 0:
 		_portrait_frame = 0
@@ -536,12 +539,12 @@ func _draw_mai_chat_portrait() -> void:
 		return
 	var portrait_size := ai_portrait.size
 	if _tex_mai_talk_sheet:
-		# The sheet is 3 columns × 2 rows, containing six upper-body talking poses.
-		var frame_width := _tex_mai_talk_sheet.get_width() / 3.0
-		var frame_height := _tex_mai_talk_sheet.get_height() / 2.0
+		# The smooth sheet is a 3-column × 6-row grid of upper-body talking poses.
+		var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
+		var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
 		var source_rect := Rect2(
-			float(_portrait_frame % 3) * frame_width,
-			float(_portrait_frame / 3) * frame_height,
+			float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
+			float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
 			frame_width,
 			frame_height
 		)
