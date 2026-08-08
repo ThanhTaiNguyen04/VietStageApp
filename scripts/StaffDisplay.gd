@@ -58,6 +58,7 @@ func _ready():
 
 var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
+var show_metronome: bool = true
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -116,25 +117,26 @@ func _draw():
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
 		
 	# Draw 4-beat Metronome above the hit line
-	var bpm = 60.0
-	var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
-	var current_beat = int(floor(beat_time_total)) % 4
-	var beat_fraction = fmod(beat_time_total, 1.0)
-	
-	var metro_start_x = hit_line_x - 60.0
-	var metro_y = center_y - 3.8 * line_spacing
-	for b in range(4):
-		var bx = metro_start_x + b * 40.0
-		var c = Color(0.5, 0.5, 0.5, 0.3)
-		var r = 8.0
-		if b == current_beat:
-			c = Color(0.9, 0.2, 0.2, 1.0 - beat_fraction * 0.3)
-			r = 12.0 + sin(beat_fraction * PI) * 4.0
-		elif b == 0:
-			c = Color(0.9, 0.5, 0.2, 0.6) # Highlight the first beat of the measure
-		draw_circle(Vector2(bx, metro_y), r, c)
-		if b == current_beat:
-			draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
+	if show_metronome:
+		var bpm = 60.0
+		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
+		var current_beat = int(floor(beat_time_total)) % 4
+		var beat_fraction = fmod(beat_time_total, 1.0)
+		
+		var metro_start_x = hit_line_x - 60.0
+		var metro_y = center_y - 3.8 * line_spacing
+		for b in range(4):
+			var bx = metro_start_x + b * 40.0
+			var c = Color(0.5, 0.5, 0.5, 0.3)
+			var r = 8.0
+			if b == current_beat:
+				c = Color(0.9, 0.2, 0.2, 1.0 - beat_fraction * 0.3)
+				r = 12.0 + sin(beat_fraction * PI) * 4.0
+			elif b == 0:
+				c = Color(0.9, 0.5, 0.2, 0.6) # Highlight the first beat of the measure
+			draw_circle(Vector2(bx, metro_y), r, c)
+			if b == current_beat:
+				draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
 
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
 	var clean_name = note_name
