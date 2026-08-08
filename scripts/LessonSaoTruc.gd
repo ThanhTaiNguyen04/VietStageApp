@@ -902,6 +902,17 @@ func _generate_melody(target_note_key: String) -> Array:
 	var seq = []
 	var time = 1.0
 	
+	# Helper lambda to add type based on duration
+	var add_note = func(n_name, n_time, n_dur):
+		var n_type = "quarter"
+		if n_dur >= 3.0: n_type = "whole"
+		elif n_dur >= 2.0: n_type = "half"
+		elif n_dur >= 1.0: n_type = "quarter"
+		elif n_dur >= 0.5: n_type = "eighth"
+		else: n_type = "sixteenth"
+		seq.append({"note": n_name, "time": n_time, "duration": n_dur, "type": n_type})
+
+	
 	
 	if target_note_key == "Node9":
 		# Đô, Sol
