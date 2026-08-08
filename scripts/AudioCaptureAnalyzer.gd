@@ -29,7 +29,10 @@ var _analyzer: RefCounted = null
 
 
 # Dynamic configurations for pitch detection and noise gating
-var min_frequency := 140.0
+var min_frequency := 140.0:
+	set(val):
+		min_frequency = val
+		_update_hp_cutoff()
 var max_frequency := 4200.0
 var volume_threshold_db := -55.0
 
@@ -72,8 +75,10 @@ func _setup_audio_bus() -> void:
 			break
 	if hp_idx == -1:
 		var hp = AudioEffectHighPassFilter.new()
-		hp.cutoff_hz = 300.0 # Sáo trúc thường không có nốt nào dưới 390Hz
+		hp.cutoff_hz = clampf(min_frequency * 0.8, 20.0, 300.0)
 		AudioServer.add_bus_effect(_bus_index, hp, 0)
+	else:
+		_update_hp_cutoff()
 		
 	# 2. Thêm bộ lọc tần số cao (LowPassFilter) để cắt tiếng xì/rè
 	var lp_idx := -1
@@ -738,6 +743,16 @@ func _analyze_breath_pattern_gdscript(samples: PackedFloat32Array) -> float:
 		purity_factor = max(0.0, 1.0 - (residual_energy / total_energy))
 		
 	return clamp((0.7 * purity_factor + 0.3 * stability_factor) * 100.0, 0.0, 100.0)
+
+
+func _update_hp_cutoff() -> void:
+	if _bus_index == -1:
+		return
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		var effect = AudioServer.get_bus_effect(_bus_index, i)
+		if effect is AudioEffectHighPassFilter:
+			effect.cutoff_hz = clampf(min_frequency * 0.8, 20.0, 300.0)
+			break
 
 
 

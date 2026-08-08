@@ -712,7 +712,10 @@ func _start_intro():
 func _play_next_intro_step():
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
-		_start_practice()
+		if current_lesson_id.begins_with("dan_tranh_level_6"):
+			_start_practice_single()
+		else:
+			_start_practice()
 		return
 		
 	var step_data = dialogues[intro_step]
@@ -964,11 +967,6 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 	)
 
 func _on_string_plucked(idx: int, note_name: String) -> void:
-	# On-screen strings are reference sounds only. Practice completion must come
-	# from a stable, correctly pitched signal captured by the microphone.
-	if current_state in [State.PRACTICE_SINGLE, State.PRACTICE]:
-		speech_text.text = "Âm mẫu · Hãy gảy nốt này trên đàn thật để micro nhận diện."
-		return
 	if current_state == State.PRACTICE_SINGLE:
 		if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
@@ -1258,9 +1256,9 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 	var is_match = false
 	if is_poly:
+		var notes = _target_note_name.split("+")
 		if analyzer and analyzer.get("_spectrum") != null:
 			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
-			var notes = _target_note_name.split("+")
 			var all_detected = true
 			for n in notes:
 				var freq = NOTE_FREQS.get(n, 0.0)
@@ -1269,18 +1267,20 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
 					var max_mag = max(mag1, mag2)
 					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					if freq_db < -42.0:
+					# Relaxed threshold to -52.0 dB to prevent soft pluck chord recognition failure
+					if freq_db < -52.0:
 						all_detected = false
 						break
 			if all_detected:
 				is_match = true
-		else:
-			var notes = _target_note_name.split("+")
+		
+		# Fallback to monophonic YIN match of any note in the chord if spectrum analyzer did not match
+		if not is_match:
 			for n in notes:
 				var freq = NOTE_FREQS.get(n, 0.0)
 				if freq > 0.0 and pitch > 0.0:
 					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-					if cents_error <= 25.0:
+					if cents_error <= 35.0: # Match robust threshold
 						is_match = true
 						break
 	else:
