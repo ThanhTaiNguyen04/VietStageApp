@@ -562,6 +562,9 @@ func _setup_premium_practice_ui():
 	staff_display.name = "StaffDisplay"
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Level 4 lessons use 2/4 time signature
+	if active_node_id.begins_with("sao_truc_level4_"):
+		staff_display.beats_per_measure = 2
 	if active_node_id in ["sao_truc_level3_6", "sao_truc_level4_5"] or active_node_id.begins_with("sao_truc_level5_"):
 		staff_display.show_metronome = false
 	staff_card.add_child(staff_display)

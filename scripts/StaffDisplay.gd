@@ -58,6 +58,7 @@ func _ready():
 
 var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
+var beats_per_measure: int = 4
 var show_metronome: bool = true
 
 func set_note(note_name: String):
@@ -98,8 +99,9 @@ func _draw():
 		# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom)
 		draw_string(font, Vector2(10, center_y + line_spacing * 2.35), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 6.5), Color.BLACK)
 		
-		# Time signature 4/4
-		draw_string(font, Vector2(120, center_y - line_spacing * 0.05), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
+		# Time signature dynamic
+		var ts = str(beats_per_measure)
+		draw_string(font, Vector2(120, center_y - line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
 		draw_string(font, Vector2(120, center_y + line_spacing * 1.95), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
 			
 	# Draw hit line with modern glowing effect (kept as it is for timing)
@@ -120,12 +122,12 @@ func _draw():
 	if show_metronome:
 		var bpm = 60.0
 		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
-		var current_beat = int(floor(beat_time_total)) % 4
+		var current_beat = int(floor(beat_time_total)) % beats_per_measure
 		var beat_fraction = fmod(beat_time_total, 1.0)
 		
 		var metro_start_x = hit_line_x - 60.0
 		var metro_y = center_y - 3.8 * line_spacing
-		for b in range(4):
+		for b in range(beats_per_measure):
 			var bx = metro_start_x + b * 40.0
 			var c = Color(0.5, 0.5, 0.5, 0.3)
 			var r = 8.0
