@@ -185,7 +185,7 @@ func _ready() -> void:
 	_tex_trong = load("res://assets/textures/trong_chau_assetremove.png") as Texture2D
 	_tex_linh = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
 	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
-	_tex_wall = load("res://image/imagesao.png") as Texture2D
+	_tex_wall = load("res://assets/textures/backgroundphonghocao.png") as Texture2D
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
