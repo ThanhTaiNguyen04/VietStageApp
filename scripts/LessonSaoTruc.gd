@@ -597,6 +597,9 @@ func _setup_premium_practice_ui():
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
+	
+	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		sub_instr_row.visible = false
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):

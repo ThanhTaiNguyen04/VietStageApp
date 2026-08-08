@@ -95,9 +95,11 @@ func _draw():
 	var font = ThemeDB.fallback_font
 	if font:
 		# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom)
-		draw_string(font, Vector2(10, center_y + line_spacing * 2.2), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 3.5), Color.BLACK)
-		draw_string(font, Vector2(55, center_y - line_spacing * 0.1), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 0.8), Color.BLACK)
-		draw_string(font, Vector2(55, center_y + line_spacing * 0.9), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 0.8), Color.BLACK)
+		draw_string(font, Vector2(10, center_y + line_spacing * 2.35), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 6.5), Color.BLACK)
+		
+		# Time signature 4/4
+		draw_string(font, Vector2(120, center_y - line_spacing * 0.05), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
+		draw_string(font, Vector2(120, center_y + line_spacing * 1.95), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
 			
 	# Draw hit line with modern glowing effect (kept as it is for timing)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
@@ -113,12 +115,26 @@ func _draw():
 		var n_type = note_data.get("type", "quarter")
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
 		
-	# Draw simple metronome
-	var beat_time = fmod(Time.get_ticks_msec() / 1000.0 * (100.0 / 60.0), 1.0) # 100 BPM
-	var metronome_radius = 15.0 + sin(beat_time * PI) * 5.0
-	var metronome_alpha = 1.0 - beat_time
-	draw_circle(Vector2(size.x - 50, 50), metronome_radius, Color(0.9, 0.2, 0.2, metronome_alpha))
-	draw_arc(Vector2(size.x - 50, 50), 20.0, 0, TAU, 32, Color(0.8, 0.1, 0.1, 0.5), 2.0, true)
+	# Draw 4-beat Metronome above the hit line
+	var bpm = 60.0
+	var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
+	var current_beat = int(floor(beat_time_total)) % 4
+	var beat_fraction = fmod(beat_time_total, 1.0)
+	
+	var metro_start_x = hit_line_x - 60.0
+	var metro_y = center_y - 3.8 * line_spacing
+	for b in range(4):
+		var bx = metro_start_x + b * 40.0
+		var c = Color(0.5, 0.5, 0.5, 0.3)
+		var r = 8.0
+		if b == current_beat:
+			c = Color(0.9, 0.2, 0.2, 1.0 - beat_fraction * 0.3)
+			r = 12.0 + sin(beat_fraction * PI) * 4.0
+		elif b == 0:
+			c = Color(0.9, 0.5, 0.2, 0.6) # Highlight the first beat of the measure
+		draw_circle(Vector2(bx, metro_y), r, c)
+		if b == current_beat:
+			draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
 
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
 	var clean_name = note_name
