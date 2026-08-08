@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wyx78mry0kht"
-path="res://.godot/imported/6frameWalkRight.png-8aceb9bcbb969a9de8f8ccfac70ecb4c.ctex"
+uid="uid://cewv821xlqk1p"
+path="res://.godot/imported/mai_walk_up_sheet.png-96dc072d0d29c6680e3f40763537957e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/coMai/6frameWalkRight.png"
-dest_files=["res://.godot/imported/6frameWalkRight.png-8aceb9bcbb969a9de8f8ccfac70ecb4c.ctex"]
+source_file="res://assets/textures/coMai/mai_walk_up_sheet.png"
+dest_files=["res://.godot/imported/mai_walk_up_sheet.png-96dc072d0d29c6680e3f40763537957e.ctex"]
 
 [params]
 

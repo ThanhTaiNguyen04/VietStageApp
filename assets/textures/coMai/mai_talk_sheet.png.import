@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://7tlyks2mamff"
-path="res://.godot/imported/IdleUp_asset.png-026103b931863aa4432ee5112c7ad7a8.ctex"
+uid="uid://cfls1dy5n6ikx"
+path="res://.godot/imported/mai_talk_sheet.png-5717a20b2810bb54a00035aa4ab663fe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/coMai/IdleUp_asset.png"
-dest_files=["res://.godot/imported/IdleUp_asset.png-026103b931863aa4432ee5112c7ad7a8.ctex"]
+source_file="res://assets/textures/coMai/mai_talk_sheet.png"
+dest_files=["res://.godot/imported/mai_talk_sheet.png-5717a20b2810bb54a00035aa4ab663fe.ctex"]
 
 [params]
 
