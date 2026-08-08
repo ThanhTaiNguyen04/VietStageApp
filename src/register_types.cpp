@@ -2,6 +2,7 @@
 
 #include "audio_analyzer.h"
 #include "dan_tranh_audio_engine.h"
+#include "instrument_pitch_profile.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -16,6 +17,7 @@ void initialize_vietstage_module(ModuleInitializationLevel p_level) {
 
 	ClassDB::register_class<AudioAnalyzer>();
 	ClassDB::register_class<DanTranhAudioEngine>();
+	ClassDB::register_class<NativeInstrumentPitchProfile>();
 }
 
 void uninitialize_vietstage_module(ModuleInitializationLevel p_level) {

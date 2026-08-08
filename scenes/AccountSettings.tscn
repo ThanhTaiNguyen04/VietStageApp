@@ -29,14 +29,6 @@ expand_mode = 1
 stretch_mode = 6
 mouse_filter = 2
 
-[node name="BGOverlay" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-color = Color(0.025, 0.068, 0.043, 0.64)
-mouse_filter = 2
-
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -46,31 +38,20 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 68)
-layout_mode = 2
+[node name="FloatingMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 24
+offset_top = 24
+offset_right = 104
+offset_bottom = 104
 
-[node name="TopMargin" type="MarginContainer" parent="Root/TopBar"]
+[node name="BackButton" type="Button" parent="FloatingMargin"]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-
-[node name="TopRow" type="HBoxContainer" parent="Root/TopBar/TopMargin"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="BackButton" type="Button" parent="Root/TopBar/TopMargin/TopRow"]
-custom_minimum_size = Vector2(48, 48)
-layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 4
 tooltip_text = "Quay lại"
-
-[node name="Title" type="Label" parent="Root/TopBar/TopMargin/TopRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 25
-text = "Cài đặt tài khoản"
 
 
 [node name="ContentMargin" type="MarginContainer" parent="Root"]
@@ -78,7 +59,7 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 14
+theme_override_constants/margin_top = 120
 theme_override_constants/margin_bottom = 20
 
 [node name="Scroll" type="ScrollContainer" parent="Root/ContentMargin"]
@@ -87,14 +68,22 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Center" type="CenterContainer" parent="Root/ContentMargin/Scroll"]
+[node name="Center" type="MarginContainer" parent="Root/ContentMargin/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="Content" type="VBoxContainer" parent="Root/ContentMargin/Scroll/Center"]
 custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Root/ContentMargin/Scroll/Center/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Cài đặt tài khoản"
 
 [node name="StateCard" type="PanelContainer" parent="Root/ContentMargin/Scroll/Center/Content"]
 layout_mode = 2

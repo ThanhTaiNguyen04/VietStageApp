@@ -36,6 +36,11 @@ var _account_menu_open := false
 var _avatar_request: HTTPRequest
 var _remote_avatar_texture: Texture2D
 var _requested_avatar_url := ""
+var _summary_data := {}
+var _daily_challenges: Array = []
+var _daily_pill: PanelContainer = null
+var _daily_pill_label: Button = null
+var _daily_overlay: ColorRect = null
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -180,9 +185,16 @@ func _fetch_and_sync_progress() -> void:
 	if _api_client._is_success(summary_response):
 		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
 		if summary_data is Dictionary:
+			_summary_data = summary_data
 			var total_points := int(summary_data.get("total_points", summary_data.get("totalPoints", 0)))
 			_profile_level = int(total_points / 1000) + 1
 			_update_profile_menu_data()
+			_apply_stat_pills(summary_data)
+			if streak_pill and xp_pill:
+				streak_pill.visible = false
+				xp_pill.visible = false
+	_fetch_daily_challenges()
+	BackendReport.fetch_and_install_catalog()
 
 func _fetch_profile_identity() -> void:
 	if _api_client == null:
@@ -686,12 +698,207 @@ func _build_top_bar() -> void:
 	xp_pill.add_theme_stylebox_override("panel", xp_s)
 	xp_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
-	var total_xp : int = 1240 + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
-	xp_label.text = str(total_xp) + " XP"
-	
-	# Tạm thời ẩn theo yêu cầu
+	var local_xp : int = int(SecureDataManager.data.get("total_points", 0)) + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
+	xp_label.text = str(local_xp) + " XP"
+
+	# Giá trị từ BE sẽ đè lên khi _fetch_and_sync_progress() thành công.
+	# Ẩn khi chưa có dữ liệu BE để tránh hiện số liệu mặc định gây hiểu nhầm.
 	streak_pill.visible = false
 	xp_pill.visible = false
+
+	_build_daily_challenge_pill()
+
+func _apply_stat_pills(summary: Dictionary) -> void:
+	var streak := int(summary.get("current_streak", summary.get("currentStreak", 0)))
+	var points := int(summary.get("total_points", summary.get("totalPoints", 0)))
+	if sp_label:
+		sp_label.text = "%d ngày" % streak
+	if xp_label:
+		xp_label.text = "%d XP" % points
+
+# ── Daily challenges ──────────────────────────────────────────────────────────
+
+func _build_daily_challenge_pill() -> void:
+	var stats_row := $Root/RightContent/TopBar/TopRow/StatsRow as HBoxContainer
+	if stats_row == null:
+		return
+	_daily_pill = PanelContainer.new()
+	_daily_pill.name = "DailyChallengePill"
+	_daily_pill.visible = false
+	_daily_pill.add_theme_stylebox_override("panel", _flat(Color(0.13, 0.08, 0.05, 0.92), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 22))
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	var btn := Button.new()
+	btn.flat = true
+	btn.add_theme_font_size_override("font_size", 17)
+	btn.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	btn.add_theme_color_override("font_hover_color", C_GOLD)
+	btn.pressed.connect(_show_daily_challenges_popup)
+	_daily_pill_label = btn
+	margin.add_child(btn)
+	_daily_pill.add_child(margin)
+	stats_row.add_child(_daily_pill)
+
+func _fetch_daily_challenges() -> void:
+	if not BackendReport.is_signed_in():
+		return
+	_daily_challenges = await BackendReport.fetch_daily_challenges()
+	_refresh_daily_pill_text()
+	if _daily_pill:
+		_daily_pill.visible = not _daily_challenges.is_empty()
+
+func _refresh_daily_pill_text() -> void:
+	if _daily_pill_label == null:
+		return
+	var pending := 0
+	for challenge: Variant in _daily_challenges:
+		if challenge is Dictionary:
+			if not bool(challenge.get("is_completed", challenge.get("completed", false))):
+				pending += 1
+	if pending > 0:
+		_daily_pill_label.text = "🔥 Thử thách hôm nay · %d" % pending
+	else:
+		_daily_pill_label.text = "🔥 Thử thách hôm nay"
+
+func _show_daily_challenges_popup() -> void:
+	if _daily_challenges.is_empty():
+		return
+	if _daily_overlay != null and is_instance_valid(_daily_overlay):
+		_daily_overlay.queue_free()
+		_daily_overlay = null
+
+	_daily_overlay = ColorRect.new()
+	_daily_overlay.name = "DailyChallengeOverlay"
+	_daily_overlay.color = Color(0.05, 0.02, 0.01, 0.72)
+	_daily_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_daily_overlay.z_index = 300
+	add_child(_daily_overlay)
+	_daily_overlay.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			_close_daily_challenges_popup()
+	)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_daily_overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _flat(Color(0.10, 0.05, 0.02, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24))
+	panel.custom_minimum_size = Vector2(560, 0)
+	center.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 28)
+	margin.add_theme_constant_override("margin_right", 28)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "🎯 THỬ THÁCH HÔM NAY"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Hoàn thành thử thách để nhận điểm thưởng, tích lũy chuỗi luyện tập."
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 15)
+	subtitle.add_theme_color_override("font_color", Color(1, 1, 1, 0.72))
+	vbox.add_child(subtitle)
+
+	for challenge: Variant in _daily_challenges:
+		if challenge is Dictionary:
+			_build_daily_challenge_row(vbox, challenge)
+
+	var close_btn := Button.new()
+	close_btn.text = "ĐÓNG"
+	close_btn.custom_minimum_size = Vector2(200, 54)
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close_btn.add_theme_font_size_override("font_size", 18)
+	close_btn.add_theme_stylebox_override("normal", _flat(C_RED_SON, C_GOLD, 16))
+	close_btn.add_theme_color_override("font_color", Color.WHITE)
+	close_btn.add_theme_stylebox_override("hover", _flat(C_RED_SON.lightened(0.12), C_GOLD_LIGHT, 16))
+	close_btn.pressed.connect(_close_daily_challenges_popup)
+	vbox.add_child(close_btn)
+
+func _build_daily_challenge_row(vbox: VBoxContainer, challenge: Dictionary) -> void:
+	var is_done := bool(challenge.get("is_completed", challenge.get("completed", false)))
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", _flat(Color(1, 1, 1, 0.05), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 14))
+	var row_m := MarginContainer.new()
+	row_m.add_theme_constant_override("margin_left", 18)
+	row_m.add_theme_constant_override("margin_right", 18)
+	row_m.add_theme_constant_override("margin_top", 12)
+	row_m.add_theme_constant_override("margin_bottom", 12)
+	row.add_child(row_m)
+	var row_h := HBoxContainer.new()
+	row_h.add_theme_constant_override("separation", 16)
+	row_m.add_child(row_h)
+
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row_title := Label.new()
+	row_title.text = str(challenge.get("title", "Thử thách"))
+	row_title.add_theme_font_size_override("font_size", 19)
+	row_title.add_theme_color_override("font_color", C_CREAM)
+	copy.add_child(row_title)
+	var row_desc := Label.new()
+	row_desc.text = "%s · Thưởng +%d điểm" % [str(challenge.get("description", "")), int(challenge.get("reward_points", 0))]
+	row_desc.add_theme_font_size_override("font_size", 14)
+	row_desc.add_theme_color_override("font_color", Color(1, 1, 1, 0.62))
+	copy.add_child(row_desc)
+	row_h.add_child(copy)
+
+	if is_done:
+		var done_lbl := Label.new()
+		done_lbl.text = "✓ HOÀN THÀNH"
+		done_lbl.add_theme_font_size_override("font_size", 15)
+		done_lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6, 1.0))
+		done_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row_h.add_child(done_lbl)
+	else:
+		var claim_btn := Button.new()
+		claim_btn.text = "NHẬN THƯỞNG"
+		claim_btn.custom_minimum_size = Vector2(170, 44)
+		claim_btn.add_theme_font_size_override("font_size", 15)
+		claim_btn.add_theme_stylebox_override("normal", _flat(C_GOLD, Color.TRANSPARENT, 12))
+		claim_btn.add_theme_color_override("font_color", C_GOLD_DARK)
+		var challenge_id := int(challenge.get("id", 0))
+		claim_btn.pressed.connect(func() -> void: _complete_daily_challenge(challenge_id))
+		row_h.add_child(claim_btn)
+	vbox.add_child(row)
+
+func _complete_daily_challenge(challenge_id: int) -> void:
+	var result: Dictionary = await BackendReport.complete_daily_challenge(challenge_id)
+	if not result.get("submitted", false):
+		push_warning("[MainMenu] Không nhận được thưởng thử thách: %s" % str(result.get("message", "")))
+		return
+	for challenge: Variant in _daily_challenges:
+		if challenge is Dictionary and int(challenge.get("id", 0)) == challenge_id:
+			challenge["is_completed"] = true
+			break
+	_refresh_daily_pill_text()
+	# Làm mới điểm từ BE để cập nhật ngay XP trên thanh thống kê
+	var summary_response = await _api_client.get_my_progress_summary()
+	if _api_client != null and _api_client._is_success(summary_response):
+		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
+		if summary_data is Dictionary:
+			_apply_stat_pills(summary_data)
+	_show_daily_challenges_popup()
+
+func _close_daily_challenges_popup() -> void:
+	if _daily_overlay != null and is_instance_valid(_daily_overlay):
+		_daily_overlay.queue_free()
+		_daily_overlay = null
 
 func _build_profile_menu() -> void:
 	var top_row := profile_menu.get_parent() as HBoxContainer
@@ -777,23 +984,23 @@ func _style_account_menu() -> void:
 		header_name.add_theme_font_override("font", bold_font)
 		for button: Button in [profile_action, achievement_action, settings_action, logout_action]:
 			button.add_theme_font_override("font", bold_font)
-	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), 30)
+	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), 35)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
 	trigger_style.shadow_size = 10
 	trigger_style.shadow_offset = Vector2(0, 4)
 	profile_menu.add_theme_stylebox_override("panel", trigger_style)
-	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(23, 2))
-	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(36, 3))
-	trigger_name.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	trigger_level.add_theme_color_override("font_color", C_TERRACOTTA)
-	trigger_chevron.add_theme_color_override("font_color", C_TERRACOTTA)
+	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(35, 0, Color.TRANSPARENT))
+	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(36, 3, Color.WHITE))
+	trigger_name.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92, 1.0))
+	trigger_level.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	trigger_chevron.add_theme_color_override("font_color", C_GOLD_LIGHT)
 
-	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 30))
-	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color.TRANSPARENT, 30))
-	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 30))
-	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 30))
+	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 35))
+	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color.TRANSPARENT, 35))
+	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 35))
+	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 35))
 
-	var panel_style := _flat(Color(1.0, 0.99, 0.96, 0.995), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
+	var panel_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
 	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
 	panel_style.shadow_size = 22
 	panel_style.shadow_offset = Vector2(0, 10)
@@ -827,8 +1034,8 @@ func _style_account_action(button: Button, icon_name: String) -> void:
 	button.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), Color.TRANSPARENT, 14))
 	button.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
 
-func _avatar_menu_style(radius: int, border_width: int) -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, C_GOLD, radius)
+func _avatar_menu_style(radius: int, border_width: int, bg_color := Color.WHITE) -> StyleBoxFlat:
+	var style := _flat(bg_color, C_GOLD, radius)
 	style.border_width_left = border_width
 	style.border_width_right = border_width
 	style.border_width_top = border_width
@@ -888,7 +1095,7 @@ func _confirm_logout() -> void:
 	layer.layer = 100
 	
 	var overlay := ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.5)
+	overlay.color = Color(0, 0, 0, 0.4)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(overlay)
 	
@@ -897,10 +1104,11 @@ func _confirm_logout() -> void:
 	layer.add_child(center)
 	
 	var panel := PanelContainer.new()
-	var p_style := _flat(Color(1.0, 0.99, 0.96, 1.0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5), 24)
-	p_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
-	p_style.shadow_size = 30
-	p_style.shadow_offset = Vector2(0, 10)
+	# Minimalist white card style with thin border
+	var p_style := _flat(Color.WHITE, Color("#EAEAEA"), 16)
+	p_style.shadow_color = Color(0, 0, 0, 0.05)
+	p_style.shadow_size = 16
+	p_style.shadow_offset = Vector2(0, 4)
 	panel.add_theme_stylebox_override("panel", p_style)
 	panel.custom_minimum_size = Vector2(340, 0)
 	center.add_child(panel)
@@ -923,14 +1131,14 @@ func _confirm_logout() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if bold_font: title.add_theme_font_override("font", bold_font)
 	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	title.add_theme_color_override("font_color", Color("#111111")) # Charcoal black
 	vbox.add_child(title)
 	
 	var msg := Label.new()
 	msg.text = "Kết thúc phiên đăng nhập hiện tại?"
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	msg.add_theme_font_size_override("font_size", 16)
-	msg.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
+	msg.add_theme_color_override("font_color", Color("#787774")) # Muted gray
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(msg)
 	
@@ -942,14 +1150,15 @@ func _confirm_logout() -> void:
 	btn_cancel.text = "Ở lại"
 	btn_cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_cancel.custom_minimum_size.y = 48
-	var cancel_normal := _flat(Color(0.9, 0.88, 0.84, 1.0), Color.TRANSPARENT, 14)
-	var cancel_hover := _flat(Color(0.85, 0.83, 0.79, 1.0), Color.TRANSPARENT, 14)
+	# White button with thin border
+	var cancel_normal := _flat(Color.WHITE, Color("#EAEAEA"), 12)
+	var cancel_hover := _flat(Color("#F7F6F3"), Color("#EAEAEA"), 12)
 	btn_cancel.add_theme_stylebox_override("normal", cancel_normal)
 	btn_cancel.add_theme_stylebox_override("hover", cancel_hover)
 	btn_cancel.add_theme_stylebox_override("pressed", cancel_hover)
-	btn_cancel.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
-	btn_cancel.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
-	btn_cancel.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn_cancel.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12))
+	btn_cancel.add_theme_color_override("font_color", Color("#111111"))
+	btn_cancel.add_theme_color_override("font_hover_color", Color("#111111"))
 	if bold_font: btn_cancel.add_theme_font_override("font", bold_font)
 	hbox.add_child(btn_cancel)
 	
@@ -957,12 +1166,13 @@ func _confirm_logout() -> void:
 	btn_logout.text = "Đăng xuất"
 	btn_logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_logout.custom_minimum_size.y = 48
-	var logout_normal := _flat(C_TERRACOTTA, C_TERRACOTTA, 14)
-	var logout_hover := _flat(C_TERRACOTTA.lightened(0.1), C_TERRACOTTA, 14)
+	# Solid charcoal button
+	var logout_normal := _flat(Color("#f90606"), Color("#f80707"), 12)
+	var logout_hover := _flat(Color("#f90606").lightened(0.15), Color("#f80707"), 12)
 	btn_logout.add_theme_stylebox_override("normal", logout_normal)
 	btn_logout.add_theme_stylebox_override("hover", logout_hover)
 	btn_logout.add_theme_stylebox_override("pressed", logout_hover)
-	btn_logout.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
+	btn_logout.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12))
 	btn_logout.add_theme_color_override("font_color", Color.WHITE)
 	btn_logout.add_theme_color_override("font_hover_color", Color.WHITE)
 	if bold_font: btn_logout.add_theme_font_override("font", bold_font)
@@ -1769,7 +1979,7 @@ func _on_viewport_size_changed() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var is_mobile := _is_mobile_layout(viewport_size)
 	var safe := _safe_insets(viewport_size)
-	var compact_profile: bool = viewport_size.x < 900.0
+	var compact_profile := false
 	var safe_left := minf(safe.x, 104.0) if is_mobile else 0.0
 	var rail_width := 168.0 if is_mobile else 220.0
 
@@ -1789,8 +1999,8 @@ func _on_viewport_size_changed() -> void:
 	$Root/Sidebar/SideM/SideV/TopSpacer.custom_minimum_size.y = 14.0 if is_mobile else 32.0
 	
 	# Responsive profile button styling
-	var radius := 26 if is_mobile else 30
-	var trigger_style := _flat(Color(1.0, 0.985, 0.94, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.52), radius)
+	var radius := 35
+	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), radius)
 	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
 	trigger_style.shadow_size = 10
 	trigger_style.shadow_offset = Vector2(0, 4)
@@ -1798,25 +2008,15 @@ func _on_viewport_size_changed() -> void:
 
 	var trigger_m := profile_menu.get_node_or_null("TriggerM") as MarginContainer
 
-	if compact_profile:
-		trigger_copy.visible = false
-		trigger_chevron.visible = false
-		profile_menu.custom_minimum_size = Vector2(54, 54)
-		profile_menu.size = Vector2(54, 54)
-		if trigger_m:
-			trigger_m.add_theme_constant_override("margin_left", 4)
-			trigger_m.add_theme_constant_override("margin_right", 4)
-			trigger_m.add_theme_constant_override("margin_top", 4)
-			trigger_m.add_theme_constant_override("margin_bottom", 4)
-	else:
-		trigger_copy.visible = true
-		trigger_chevron.visible = true
-		profile_menu.custom_minimum_size = Vector2(218, 58) if is_mobile else Vector2(232, 60)
-		if trigger_m:
-			trigger_m.add_theme_constant_override("margin_left", 8)
-			trigger_m.add_theme_constant_override("margin_right", 12)
-			trigger_m.add_theme_constant_override("margin_top", 6)
-			trigger_m.add_theme_constant_override("margin_bottom", 6)
+	trigger_copy.visible = false
+	trigger_chevron.visible = false
+	profile_menu.custom_minimum_size = Vector2(70, 70)
+	profile_menu.size = Vector2(70, 70)
+	if trigger_m:
+		trigger_m.add_theme_constant_override("margin_left", 0)
+		trigger_m.add_theme_constant_override("margin_right", 0)
+		trigger_m.add_theme_constant_override("margin_top", 0)
+		trigger_m.add_theme_constant_override("margin_bottom", 0)
 
 	top_bar.custom_minimum_size.y = (76.0 + safe.y) if is_mobile else 96.0
 	top_bar.add_theme_constant_override("margin_top", int(safe.y + 10.0) if is_mobile else 16)

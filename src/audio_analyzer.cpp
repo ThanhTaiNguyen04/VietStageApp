@@ -20,6 +20,10 @@ void AudioAnalyzer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("detect_dan_tranh_note", "samples", "sample_rate"), &AudioAnalyzer::detect_dan_tranh_note);
 	ClassDB::bind_method(D_METHOD("detect_note_onset_and_duration", "samples", "sample_rate", "threshold_db"), &AudioAnalyzer::detect_note_onset_and_duration);
 	ClassDB::bind_method(D_METHOD("evaluate_dan_tranh_note_performance", "detected_freq", "detected_duration", "target_freq", "target_duration", "pitch_tolerance_cents", "duration_tolerance_sec"), &AudioAnalyzer::evaluate_dan_tranh_note_performance);
+
+	ClassDB::bind_method(D_METHOD("correct_octave_doubling", "detected_pitch", "samples", "sample_rate"), &AudioAnalyzer::correct_octave_doubling);
+	ClassDB::bind_method(D_METHOD("detect_chord", "samples", "target_frequencies", "sample_rate", "threshold_db"), &AudioAnalyzer::detect_chord);
+	ClassDB::bind_method(D_METHOD("analyze_pitch_contour", "pitch_history", "target_freq", "sample_rate"), &AudioAnalyzer::analyze_pitch_contour);
 }
 
 AudioAnalyzer::AudioAnalyzer() {
@@ -188,7 +192,8 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 	}
 
 	if (precise_tau > 0.0f) {
-		return sample_rate / precise_tau;
+		float freq = sample_rate / precise_tau;
+		return correct_octave_doubling(freq, samples, sample_rate);
 	}
 	return 0.0f;
 }
@@ -468,7 +473,7 @@ Dictionary AudioAnalyzer::detect_dan_tranh_note(const PackedFloat32Array &sample
 		}
 	}
 
-	if (best_idx >= 0 && min_ratio_diff < 600.0f) { // Map any pitch in spectrum to nearest 17-string note
+	if (best_idx >= 0 && min_ratio_diff <= 80.0f) { // Strict open-string mapping, consistent with GDScript
 
 		float ref_freq = DAN_TRANH_NOTES[best_idx].freq;
 		float cents_offset = 1200.0f * std::log2(freq / ref_freq);
@@ -601,6 +606,141 @@ Dictionary AudioAnalyzer::evaluate_dan_tranh_note_performance(
 	result["duration_score"] = std::clamp(duration_score, 0.0f, 100.0f);
 	result["composite_score"] = std::clamp(composite, 0.0f, 100.0f);
 	result["feedback"] = feedback;
+
+	return result;
+}
+
+// Goertzel helper algorithm to calculate spectral magnitude at a specific target frequency
+static float goertzel_magnitude(const PackedFloat32Array &samples, float target_freq, float sample_rate) {
+	int num_samples = samples.size();
+	if (num_samples == 0 || target_freq <= 0.0f) return 0.0f;
+
+	float k = (num_samples * target_freq) / sample_rate;
+	float omega = (2.0f * 3.14159265359f * k) / num_samples;
+	float sine = std::sin(omega);
+	float cosine = std::cos(omega);
+	float coeff = 2.0f * cosine;
+
+	float q0 = 0.0f;
+	float q1 = 0.0f;
+	float q2 = 0.0f;
+
+	for (int i = 0; i < num_samples; ++i) {
+		q0 = coeff * q1 - q2 + samples[i];
+		q2 = q1;
+		q1 = q0;
+	}
+
+	float real = q1 - q2 * cosine;
+	float imag = q2 * sine;
+	return std::sqrt(real * real + imag * imag);
+}
+
+float AudioAnalyzer::correct_octave_doubling(float detected_pitch, const PackedFloat32Array &samples, float sample_rate) {
+	if (detected_pitch <= 0.0f) return 0.0f;
+
+	float cand_freq = detected_pitch / 2.0f;
+	if (cand_freq < 120.0f) {
+		return detected_pitch; // Too low for a valid Dan Tranh note fundamental (Sol1 is 196Hz)
+	}
+
+	float mag_yin = goertzel_magnitude(samples, detected_pitch, sample_rate);
+	float mag_cand = goertzel_magnitude(samples, cand_freq, sample_rate);
+
+	// If there is significant energy at half the detected pitch, it's highly likely octave doubling occurred.
+	if (mag_yin > 0.0f && (mag_cand / mag_yin) > 0.30f) {
+		return cand_freq;
+	}
+
+	return detected_pitch;
+}
+
+bool AudioAnalyzer::detect_chord(const PackedFloat32Array &samples, const PackedFloat32Array &target_frequencies, float sample_rate, float threshold_db) {
+	if (samples.size() == 0 || target_frequencies.size() == 0) return false;
+
+	float peak_db = calculate_peak_db(samples);
+	if (peak_db < threshold_db) return false;
+
+	for (int i = 0; i < target_frequencies.size(); ++i) {
+		float freq = target_frequencies[i];
+		if (freq <= 0.0f) continue;
+
+		float mag = goertzel_magnitude(samples, freq, sample_rate);
+		float norm_amp = (2.0f * mag) / samples.size();
+		float freq_db = (norm_amp > 0.0001f) ? 20.0f * std::log10(norm_amp) : -80.0f;
+
+		// Component must be within 16 dB of the overall pluck peak level or above an absolute threshold
+		float min_required_db = std::max(peak_db - 16.0f, -65.0f);
+		if (freq_db < min_required_db) {
+			return false;
+		}
+	}
+	return true;
+}
+
+Dictionary AudioAnalyzer::analyze_pitch_contour(const PackedFloat32Array &pitch_history, float target_freq, float sample_rate) {
+	Dictionary result;
+	result["vibrato_detected"] = false;
+	result["vibrato_freq"] = 0.0f;
+	result["vibrato_depth_cents"] = 0.0f;
+	result["bend_detected"] = false;
+	result["bend_cents"] = 0.0f;
+	result["slide_detected"] = false;
+
+	int count = pitch_history.size();
+	if (count < 12 || target_freq <= 0.0f) {
+		return result;
+	}
+
+	std::vector<float> cents_history(count);
+	float cents_sum = 0.0f;
+	for (int i = 0; i < count; ++i) {
+		if (pitch_history[i] > 0.0f) {
+			cents_history[i] = 1200.0f * std::log2(pitch_history[i] / target_freq);
+		} else {
+			cents_history[i] = (i > 0) ? cents_history[i - 1] : 0.0f;
+		}
+		cents_sum += cents_history[i];
+	}
+	float cents_mean = cents_sum / count;
+
+	float max_cents = -1e10f;
+	float min_cents = 1e10f;
+	for (float c : cents_history) {
+		if (c > max_cents) max_cents = c;
+		if (c < min_cents) min_cents = c;
+	}
+
+	// Detect Bend: average pitch is at least 35 cents sharp and final pitch is higher than start pitch
+	if (cents_mean > 35.0f && cents_history[count - 1] - cents_history[0] > 25.0f) {
+		result["bend_detected"] = true;
+		result["bend_cents"] = cents_mean;
+	}
+
+	// Detect Vibrato: periodic pitch modulation
+	std::vector<float> ac_cents(count);
+	for (int i = 0; i < count; ++i) {
+		ac_cents[i] = cents_history[i] - cents_mean;
+	}
+
+	int zero_crossings = 0;
+	for (int i = 1; i < count; ++i) {
+		if ((ac_cents[i - 1] < 0.0f && ac_cents[i] >= 0.0f) ||
+			(ac_cents[i - 1] >= 0.0f && ac_cents[i] < 0.0f)) {
+			zero_crossings++;
+		}
+	}
+
+	// Frame duration assumes ~40 ms analysis rate or count-based estimation
+	float duration = count * 0.025f; // assume approx 25ms per history step
+	float vib_freq = (zero_crossings / 2.0f) / duration;
+	float vib_depth = max_cents - min_cents;
+
+	if (vib_freq >= 4.0f && vib_freq <= 8.5f && vib_depth >= 12.0f && vib_depth <= 70.0f) {
+		result["vibrato_detected"] = true;
+		result["vibrato_freq"] = vib_freq;
+		result["vibrato_depth_cents"] = vib_depth;
+	}
 
 	return result;
 }

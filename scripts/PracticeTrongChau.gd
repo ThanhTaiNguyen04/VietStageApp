@@ -289,6 +289,7 @@ func _on_drum_hit(hit_type: String) -> void:
 			record_btn.text = "Hoàn Thành!"
 			_va_say("Chúc mừng bạn đã đánh chính xác toàn bộ bản nhạc Trống Chầu!")
 			SecureDataManager.complete_lesson("trong_chau", SecureDataManager.active_lesson_id, 3)
+			_sync_practice_to_backend()
 			
 			get_tree().create_timer(1.8).timeout.connect(func() -> void:
 				_fade_to("res://scenes/MainMenu.tscn")
@@ -300,6 +301,17 @@ func _on_drum_hit(hit_type: String) -> void:
 		score_num.text = str(int(_score))
 		rhythm_acc.text = "SAI NHỊP!"
 		rhythm_acc.add_theme_color_override("font_color", C_RED_ERR)
+
+func _sync_practice_to_backend() -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var result: Dictionary = await BackendReport.report_practice(
+		"trong_chau",
+		SecureDataManager.active_lesson_id,
+		{"pitch": _score, "rhythm": _score, "dynamics": 0.0, "tonal_quality": 0.0, "breath": 0.0}
+	)
+	if not result.get("submitted", false):
+		push_warning("[PracticeTrongChau] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _connect_buttons() -> void:
 	var back_btn := $Root/TopBar/TopM/TopH/BackBtn as Button

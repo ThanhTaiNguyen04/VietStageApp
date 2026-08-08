@@ -71,6 +71,7 @@ var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
 var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
+var _last_rhythm_score := 80.0
 
 # Notation Track Variables
 var _current_time_beats := 0.0
@@ -198,6 +199,34 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		var file = FileAccess.open("res://data/dan_bau_notes.json", FileAccess.READ)
+		if file:
+			var json_str = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_str) == OK:
+				var table = json.get_data()
+				var p_notes: Array[String] = []
+				var p_freqs: Array[float] = []
+				var p_mappings: Array[int] = []
+				for entry in table:
+					p_notes.append(entry["note"])
+					p_freqs.append(entry["hz"])
+					p_mappings.append(entry["midi"])
+				profile.notes = p_notes
+				profile.frequencies = PackedFloat32Array(p_freqs)
+				profile.physical_mappings = p_mappings
+		
+		profile.min_frequency = 85.0
+		profile.max_frequency = 1100.0
+		profile.volume_threshold_db = -45.0
+		profile.cents_tolerance = 25.0
+		profile.hold_time_sec = 0.20
+		profile.is_plucked_instrument = true
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 85.0
 		visualizer.max_frequency = 1100.0
 		visualizer.volume_threshold_db = -45.0
@@ -309,18 +338,17 @@ func _process(delta: float) -> void:
 			var note_x = hit_x + (note_time - _current_time_beats) * pixels_per_beat
 			var tail_w = min(120.0, duration * 120.0) # Discrete tail per beat instead of long connecting bar
 			
-			var col = Color("#d6a033") # Golden note color
-			if i == _note_idx:
-				col = Color("#e53935") # Highlight active note
-			elif i < _note_idx:
-				col = Color("#388e3c") # Played note
+			var col = Color(0.6, 0.6, 0.6, 0.9) # Gray by default for unplayed notes
+			if i < _note_idx:
+				col = Color(0.2, 0.8, 0.3, 1.0) # Played/correct note
 				
 			if note_x < _staff_display.size.x + 400 and note_x > -300:
 				notes_for_staff.append({
 					"note": n_name,
 					"x": note_x,
 					"color": col,
-					"tail": tail_w
+					"tail": tail_w,
+					"duration": duration
 				})
 				
 		_staff_display.set_notes(notes_for_staff)
@@ -1279,8 +1307,9 @@ func _process_real_audio(delta: float) -> void:
 					_pitch_scores.append(pitch_err)
 					_tone_scores.append(visualizer.current_tone_quality)
 					
-					# Dynamic AI scoring
+# Dynamic AI scoring
 					var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+					_last_rhythm_score = rhythm_score
 					var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
 					var avg_tone_score = _get_average_score(_tone_scores, 80.0)
 					
@@ -1452,6 +1481,7 @@ func _show_custom_result() -> void:
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
+		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -1475,6 +1505,19 @@ func _show_custom_result() -> void:
 		popup.closed.connect(func() -> void:
 			_go_back()
 		)
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+		"pitch": _get_average_score(_pitch_scores, 80.0),
+		"rhythm": _last_rhythm_score,
+		"dynamics": 0.0,
+		"tonal_quality": _get_average_score(_tone_scores, 80.0),
+		"breath": 0.0,
+	})
+	if not result.get("submitted", false):
+		push_warning("[PracticeDanBau] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _go_back() -> void:
 	var t := create_tween()

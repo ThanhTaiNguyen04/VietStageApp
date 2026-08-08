@@ -69,6 +69,7 @@ var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
 var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
+var _last_rhythm_score := 80.0
 
 var _string_streams: Array[AudioStreamWAV] = []
 var _string_stream_sources: Array[String] = []
@@ -576,6 +577,19 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		profile.notes.assign(["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"])
+		profile.frequencies = PackedFloat32Array([196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00])
+		profile.physical_mappings = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		profile.min_frequency = 180.0
+		profile.max_frequency = 1900.0
+		profile.volume_threshold_db = -58.0
+		profile.cents_tolerance = 35.0
+		profile.hold_time_sec = 0.20
+		profile.is_plucked_instrument = true
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 180.0
 		visualizer.max_frequency = 1900.0
 		visualizer.volume_threshold_db = -58.0
@@ -2730,6 +2744,7 @@ func _finish_level1_sequence() -> void:
 	var passed := _score >= float(_level1_config["pass_score"])
 	if passed:
 		SecureDataManager.complete_lesson("dan_tranh", SecureDataManager.active_lesson_id, 3 if _score >= 90.0 else 2)
+		_sync_practice_to_backend("dan_tranh", SecureDataManager.active_lesson_id, _level1_config)
 	if _board:
 		_board.set_target(-1)
 		_board.is_active = false
@@ -3777,6 +3792,7 @@ func _process_real_audio(delta: float) -> void:
 				
 				# Dynamic AI scoring
 				var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+				_last_rhythm_score = rhythm_score
 				var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
 				var avg_tone_score = _get_average_score(_tone_scores, 80.0)
 				
@@ -4005,6 +4021,7 @@ func _show_custom_result() -> void:
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
+		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id, {})
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -4018,6 +4035,25 @@ func _show_custom_result() -> void:
 			next_lesson_name = "Song Thanh"
 			
 		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_config: Dictionary) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var scores := {
+		"pitch": _get_average_score(_pitch_scores, 80.0),
+		"rhythm": _last_rhythm_score,
+		"dynamics": 0.0,
+		"tonal_quality": _get_average_score(_tone_scores, 80.0),
+		"breath": 0.0,
+	}
+	if not level1_config.is_empty():
+		var accuracy := float(_level1_correct_count) / float(maxi(1, _level1_total_attempts)) * 100.0
+		scores["pitch"] = accuracy
+		scores["rhythm"] = _get_average_score(_level1_timing_scores, accuracy)
+		scores["tonal_quality"] = 0.0
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, scores)
+	if not result.get("submitted", false):
+		push_warning("[PracticeRoom] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _go_back() -> void:
 	var t := create_tween()

@@ -1085,6 +1085,7 @@ func _show_end_summary() -> void:
 		
 	if score >= 200:
 		SecureDataManager.complete_lesson(inst, "Node3", 3) # Unlocks Node 4!
+		_sync_minigame_to_backend(inst, score, 3)
 		result_lbl.text = "Bạn đạt được %d điểm! Rất đáng khen ngợi.\n+ %d XP  ·  Mở Khóa Học Tiếp!" % [score, earned_xp]
 	else:
 		result_lbl.text = "Bạn đạt được %d điểm! Hãy cố gắng luyện tập thêm tai nhạc nữa nhé." % score
@@ -1104,6 +1105,13 @@ func _show_end_summary() -> void:
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_make_button_bouncy(btn)
 	$Root/Card/CardM/GameVBox.add_child(btn)
+
+func _sync_minigame_to_backend(inst: String, final_score: int, stars: int) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var result: Dictionary = await BackendReport.report_minigame(inst, "Node3", final_score, stars)
+	if not result.get("submitted", false):
+		push_warning("[MiniGame] Không đồng bộ điểm minigame: %s" % str(result.get("reason", "")))
 
 # ─── Style & Helpers ──────────────────────────────────────────────────────────
 func _flat(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:

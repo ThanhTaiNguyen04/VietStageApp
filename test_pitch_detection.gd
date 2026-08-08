@@ -72,8 +72,7 @@ func _init() -> void:
 		var samples = generate_sine_wave(expected_freq, duration, sample_rate)
 		
 		# Use the production class methods to filter and detect pitch
-		var filtered = visualizer._filter_background_noise_gdscript(samples, 0.005)
-		var detected = visualizer._detect_pitch_yin_gdscript(filtered, sample_rate, threshold)
+		var detected = visualizer._detect_pitch_yin_gdscript(samples, sample_rate, threshold)
 		
 		# Calculate error in cents
 		var cents := 0.0

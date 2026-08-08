@@ -130,7 +130,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="ProfileMenu" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow"]
-custom_minimum_size = Vector2(232, 60)
+custom_minimum_size = Vector2(70, 70)
 layout_mode = 2
 size_flags_vertical = 4
 
@@ -148,7 +148,7 @@ mouse_filter = 2
 theme_override_constants/separation = 10
 
 [node name="MiniAvatarFrame" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH"]
-custom_minimum_size = Vector2(46, 46)
+custom_minimum_size = Vector2(70, 70)
 layout_mode = 2
 mouse_filter = 2
 clip_contents = true

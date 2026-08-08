@@ -23,6 +23,7 @@ driver/enable_input=true
 [autoload]
 
 DS="*res://scripts/DS.gd"
+BackendReport="*res://scripts/BackendReport.gd"
 
 [display]
 

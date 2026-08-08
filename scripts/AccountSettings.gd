@@ -3,6 +3,14 @@ extends Control
 const ApiClientScript = preload("res://scripts/ApiClient.gd")
 
 const MAX_AVATAR_BYTES := 5 * 1024 * 1024
+
+# Minimalist UI colors
+const C_BG_WARM := Color("#F7F6F3")       # Bone background
+const C_CARD_BG := Color("#FFFFFF")       # Pure White background
+const C_BORDER := Color("#EAEAEA")        # Crisp light border
+const C_TEXT_MAIN := Color("#111111")     # Charcoal main text
+const C_TEXT_MUTED := Color("#787774")    # Gray muted text
+
 const C_GOLD := Color("#C59626")
 const C_JADE := Color("#173F2D")
 const C_INK := Color("#261A13")
@@ -10,11 +18,16 @@ const C_MUTED := Color("#75685E")
 const C_RED := Color("#A63D32")
 const C_GREEN := Color("#2F8A55")
 
-@onready var top_bar: PanelContainer = $Root/TopBar
-@onready var top_margin: MarginContainer = $Root/TopBar/TopMargin
-@onready var back_button: Button = $Root/TopBar/TopMargin/TopRow/BackButton
+# Spot pastels
+const C_PASTEL_GREEN_BG := Color("#EDF3EC")
+const C_PASTEL_GREEN_TXT := Color("#346538")
+const C_PASTEL_RED_BG := Color("#FDEBEC")
+const C_PASTEL_RED_TXT := Color("#9F2F2D")
+const C_PASTEL_YELLOW_BG := Color("#FBF3DB")
+const C_PASTEL_YELLOW_TXT := Color("#956400")
 
-@onready var title_label: Label = $Root/TopBar/TopMargin/TopRow/Title
+@onready var back_button: Button = $FloatingMargin/BackButton
+@onready var title_label: Label = $Root/ContentMargin/Scroll/Center/Content/Title
 @onready var content_margin: MarginContainer = $Root/ContentMargin
 @onready var content: VBoxContainer = $Root/ContentMargin/Scroll/Center/Content
 @onready var state_card: PanelContainer = $Root/ContentMargin/Scroll/Center/Content/StateCard
@@ -76,6 +89,23 @@ func _ready() -> void:
 	change_password_button.pressed.connect(_change_password)
 	avatar_request.request_completed.connect(_on_avatar_loaded)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
+	
+	# Bouncy hover/press micro-interactions for the floating back button
+	back_button.pivot_offset = Vector2(40, 40)
+	back_button.mouse_entered.connect(func() -> void:
+		create_tween().tween_property(back_button, "scale", Vector2(1.15, 1.15), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	back_button.mouse_exited.connect(func() -> void:
+		create_tween().tween_property(back_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	back_button.button_down.connect(func() -> void:
+		create_tween().tween_property(back_button, "scale", Vector2(0.9, 0.9), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	)
+	back_button.button_up.connect(func() -> void:
+		var tgt := Vector2(1.15, 1.15) if back_button.is_hovered() else Vector2.ONE
+		create_tween().tween_property(back_button, "scale", tgt, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	)
+	
 	_show_tab(true)
 	_apply_responsive_layout()
 	call_deferred("_load_profile")
@@ -149,7 +179,7 @@ func _on_avatar_file_selected(path: String) -> void:
 	avatar_request.cancel_request()
 	avatar.texture = ImageTexture.create_from_image(image)
 	selected_file.text = "%s • %s" % [_selected_avatar_name, _format_file_size(bytes.size())]
-	selected_file.add_theme_color_override("font_color", C_GREEN)
+	selected_file.add_theme_color_override("font_color", C_PASTEL_GREEN_TXT)
 	choose_avatar_button.text = "Đổi ảnh"
 	_show_feedback(profile_feedback, "Ảnh đã sẵn sàng. Nhấn “Lưu thay đổi” để cập nhật.", true)
 
@@ -256,15 +286,15 @@ func _clear_selected_avatar() -> void:
 	_selected_avatar_name = ""
 	_selected_avatar_mime = ""
 	selected_file.text = "Chưa chọn ảnh mới"
-	selected_file.add_theme_color_override("font_color", C_MUTED)
+	selected_file.add_theme_color_override("font_color", C_TEXT_MUTED)
 	choose_avatar_button.text = "Chọn ảnh"
 
 
 func _show_tab(show_profile: bool) -> void:
 	profile_section.visible = show_profile
 	security_section.visible = not show_profile
-	_apply_tab_style(profile_tab, show_profile, C_JADE)
-	_apply_tab_style(security_tab, not show_profile, C_GOLD)
+	_apply_tab_style(profile_tab, show_profile, C_TEXT_MAIN)
+	_apply_tab_style(security_tab, not show_profile, C_TEXT_MAIN)
 
 
 func _set_profile_form_enabled(enabled: bool) -> void:
@@ -285,44 +315,45 @@ func _set_password_form_enabled(enabled: bool) -> void:
 
 func _show_feedback(label: Label, message: String, success: bool) -> void:
 	label.text = message
-	label.add_theme_color_override("font_color", C_GREEN if success else C_RED)
+	label.add_theme_color_override("font_color", C_PASTEL_GREEN_TXT if success else C_PASTEL_RED_TXT)
 	label.visible = true
 
 
 func _build_theme() -> void:
-	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.95), Color(1, 1, 1, 0.25), 0, 0))
 	settings_card.add_theme_stylebox_override("panel", _main_card_style())
 	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
-	profile_section.add_theme_stylebox_override("panel", _section_style(C_JADE))
-	security_section.add_theme_stylebox_override("panel", _section_style(C_GOLD))
-	avatar_picker.add_theme_stylebox_override("panel", _flat(Color("#F4F7F2"), Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20), 14, 1))
+	profile_section.add_theme_stylebox_override("panel", _section_style(C_TEXT_MAIN))
+	security_section.add_theme_stylebox_override("panel", _section_style(C_TEXT_MAIN))
+	avatar_picker.add_theme_stylebox_override("panel", _flat(C_PASTEL_GREEN_BG, C_BORDER, 14, 1))
 	avatar_frame.add_theme_stylebox_override("panel", _avatar_style())
 	title_label.add_theme_font_override("font", _font_display())
+	title_label.add_theme_color_override("font_color", C_TEXT_MAIN)
 	preview_name.add_theme_font_override("font", _font_display())
+	preview_name.add_theme_color_override("font_color", C_TEXT_MAIN)
 	for label: Label in [name_label, avatar_title]:
 		label.add_theme_font_override("font", _font_bold())
-		label.add_theme_color_override("font_color", C_INK)
+		label.add_theme_color_override("font_color", C_TEXT_MAIN)
 	for label: Label in [preview_email, preview_code, avatar_hint, selected_file, security_hint, profile_feedback, password_feedback, state_label]:
 		label.add_theme_font_override("font", _font_regular())
-	preview_email.add_theme_color_override("font_color", C_MUTED)
-	preview_code.add_theme_color_override("font_color", C_GOLD)
-	avatar_hint.add_theme_color_override("font_color", C_MUTED)
-	selected_file.add_theme_color_override("font_color", C_MUTED)
-	security_hint.add_theme_color_override("font_color", C_MUTED)
-	state_label.add_theme_color_override("font_color", C_JADE)
+	preview_email.add_theme_color_override("font_color", C_TEXT_MUTED)
+	preview_code.add_theme_color_override("font_color", C_PASTEL_YELLOW_TXT)
+	avatar_hint.add_theme_color_override("font_color", C_TEXT_MUTED)
+	selected_file.add_theme_color_override("font_color", C_TEXT_MUTED)
+	security_hint.add_theme_color_override("font_color", C_TEXT_MUTED)
+	state_label.add_theme_color_override("font_color", C_PASTEL_GREEN_TXT)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_style_back_button(back_button, C_JADE)
+	_style_back_button(back_button, C_TEXT_MAIN)
 
-	_set_icon_button(retry_button, "rotate-cw", C_JADE)
-	_set_icon_button(edit_avatar_button, "camera", Color.WHITE, C_JADE)
+	_set_icon_button(retry_button, "rotate-cw", C_TEXT_MAIN)
+	_set_icon_button(edit_avatar_button, "camera", Color.WHITE, C_TEXT_MAIN)
 	choose_avatar_button.icon = _icon("camera")
 	choose_avatar_button.add_theme_constant_override("icon_max_width", 18)
 	_style_secondary_button(choose_avatar_button)
 	for field: LineEdit in [name_input, old_password, new_password, confirm_password]:
 		_style_field(field)
-	_style_primary_button(save_profile_button, C_JADE)
-	_style_primary_button(change_password_button, C_GOLD)
+	_style_primary_button(save_profile_button, C_TEXT_MAIN)
+	_style_primary_button(change_password_button, C_TEXT_MAIN)
 
 
 func _apply_responsive_layout() -> void:
@@ -334,20 +365,15 @@ func _apply_responsive_layout() -> void:
 	content.custom_minimum_size.x = minf(740.0, maxf(360.0, usable_width))
 	content_margin.add_theme_constant_override("margin_left", int(safe.x + side))
 	content_margin.add_theme_constant_override("margin_right", int(safe.z + side))
-	content_margin.add_theme_constant_override("margin_top", 10 if mobile else 18)
+	content_margin.add_theme_constant_override("margin_top", 112 if mobile else 120) # Push content below floating back button
 	content_margin.add_theme_constant_override("margin_bottom", int(safe.w + (12 if mobile else 20)))
-	top_margin.add_theme_constant_override("margin_left", int(safe.x + (10 if mobile else 22)))
-	top_margin.add_theme_constant_override("margin_right", int(safe.z + (10 if mobile else 22)))
-	top_margin.add_theme_constant_override("margin_top", int(safe.y))
-	top_bar.custom_minimum_size.y = 80.0 + safe.y
 	card_margin.add_theme_constant_override("margin_left", 14 if mobile else 22)
 	card_margin.add_theme_constant_override("margin_right", 14 if mobile else 22)
 	card_margin.add_theme_constant_override("margin_top", 16 if mobile else 20)
 	card_margin.add_theme_constant_override("margin_bottom", 18 if mobile else 24)
-	title_label.add_theme_font_size_override("font_size", 24 if mobile else 28)
-	preview_name.add_theme_font_size_override("font_size", 22 if mobile else 26)
+	title_label.add_theme_font_size_override("font_size", 30 if mobile else 40) # Larger size
+	preview_name.add_theme_font_size_override("font_size", 24 if mobile else 28)
 	avatar_stack.custom_minimum_size = Vector2(100, 100)
-	back_button.custom_minimum_size = Vector2(56, 56) if mobile else Vector2(64, 64)
 	for label: Label in [name_label, avatar_title]:
 		label.add_theme_font_size_override("font_size", 14 if mobile else 16)
 	for label: Label in [preview_email, preview_code]:
@@ -395,6 +421,8 @@ func _show_state(icon_name: String, message: String, can_retry: bool) -> void:
 
 func _animate_in() -> void:
 	settings_card.modulate.a = 0.0
+	if is_inside_tree():
+		await get_tree().process_frame
 	settings_card.position.y += 8.0
 	var target_y := settings_card.position.y - 8.0
 	var tween := create_tween().set_parallel(true)
@@ -442,54 +470,57 @@ func _format_file_size(byte_count: int) -> String:
 
 func _style_field(field: LineEdit) -> void:
 	field.add_theme_font_override("font", _font_regular())
-	field.add_theme_color_override("font_color", C_INK)
-	field.add_theme_color_override("font_placeholder_color", Color(C_MUTED.r, C_MUTED.g, C_MUTED.b, 0.72))
-	field.add_theme_stylebox_override("normal", _flat(Color.WHITE, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.22), 13, 1))
-	field.add_theme_stylebox_override("focus", _flat(Color.WHITE, C_GOLD, 13, 2))
-	field.add_theme_stylebox_override("read_only", _flat(Color(0.95, 0.95, 0.92, 1.0), Color(C_MUTED.r, C_MUTED.g, C_MUTED.b, 0.18), 13, 1))
+	field.add_theme_color_override("font_color", C_TEXT_MAIN)
+	field.add_theme_color_override("font_placeholder_color", Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.72))
+	field.add_theme_stylebox_override("normal", _flat(Color.WHITE, C_BORDER, 12, 1))
+	field.add_theme_stylebox_override("focus", _flat(Color.WHITE, C_GOLD, 12, 2))
+	field.add_theme_stylebox_override("read_only", _flat(C_BG_WARM, C_BORDER, 12, 1))
 
 
-func _style_primary_button(button: Button, color: Color) -> void:
+func _style_primary_button(button: Button, _color: Color) -> void:
 	button.add_theme_font_override("font", _font_bold())
 	button.add_theme_color_override("font_color", Color.WHITE)
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color.WHITE)
-	button.add_theme_stylebox_override("normal", _flat(color, color, 14, 0))
-	button.add_theme_stylebox_override("hover", _flat(color.lightened(0.08), color.lightened(0.14), 14, 1))
-	button.add_theme_stylebox_override("pressed", _flat(color.darkened(0.08), color, 14, 0))
+	button.add_theme_stylebox_override("normal", _flat(C_TEXT_MAIN, C_TEXT_MAIN, 12, 0))
+	button.add_theme_stylebox_override("hover", _flat(C_TEXT_MAIN.lightened(0.15), C_TEXT_MAIN, 12, 0))
+	button.add_theme_stylebox_override("pressed", _flat(C_TEXT_MAIN.darkened(0.15), C_TEXT_MAIN, 12, 0))
 
 
 func _style_secondary_button(button: Button) -> void:
 	button.add_theme_font_override("font", _font_bold())
-	button.add_theme_color_override("font_color", C_JADE)
-	button.add_theme_color_override("icon_normal_color", C_JADE)
-	button.add_theme_stylebox_override("normal", _flat(Color.WHITE, Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.28), 13, 1))
-	button.add_theme_stylebox_override("hover", _flat(Color("#EAF2EC"), C_JADE, 13, 1))
-	button.add_theme_stylebox_override("pressed", _flat(Color("#DCE9E0"), C_JADE, 13, 1))
+	button.add_theme_color_override("font_color", C_TEXT_MAIN)
+	button.add_theme_color_override("icon_normal_color", C_TEXT_MAIN)
+	button.add_theme_stylebox_override("normal", _flat(C_CARD_BG, C_BORDER, 12, 1))
+	button.add_theme_stylebox_override("hover", _flat(C_BG_WARM, C_BORDER, 12, 1))
+	button.add_theme_stylebox_override("pressed", _flat(C_BORDER, C_BORDER, 12, 1))
 
 
 func _apply_tab_style(button: Button, selected: bool, accent: Color) -> void:
 	button.add_theme_font_override("font", _font_bold())
-	button.add_theme_color_override("font_color", Color.WHITE if selected else C_MUTED)
-	button.add_theme_color_override("font_hover_color", Color.WHITE if selected else C_INK)
-	button.add_theme_stylebox_override("normal", _flat(accent if selected else Color(1, 1, 1, 0.58), Color(accent.r, accent.g, accent.b, 0.24), 14, 1))
-	button.add_theme_stylebox_override("hover", _flat(accent.lightened(0.06) if selected else Color.WHITE, accent, 14, 1))
-	button.add_theme_stylebox_override("pressed", _flat(accent.darkened(0.06), accent, 14, 1))
+	button.add_theme_color_override("font_color", Color.WHITE if selected else C_TEXT_MUTED)
+	button.add_theme_color_override("font_hover_color", Color.WHITE if selected else C_TEXT_MAIN)
+	var bg := C_TEXT_MAIN if selected else C_CARD_BG
+	var brd := C_TEXT_MAIN if selected else C_BORDER
+	button.add_theme_stylebox_override("normal", _flat(bg, brd, 14, 1))
+	button.add_theme_stylebox_override("hover", _flat(C_TEXT_MAIN.lightened(0.12) if selected else C_BG_WARM, brd, 14, 1))
+	button.add_theme_stylebox_override("pressed", _flat(C_TEXT_MAIN.darkened(0.12) if selected else C_BORDER, brd, 14, 1))
 
 
 func _style_back_button(button: Button, color: Color) -> void:
 	button.icon = _icon("arrow-left")
 	button.expand_icon = true
 	button.add_theme_color_override("icon_normal_color", color)
-	button.add_theme_color_override("icon_hover_color", C_GOLD)
-	button.add_theme_color_override("icon_pressed_color", color)
+	button.add_theme_color_override("icon_hover_color", Color.WHITE.darkened(0.15))
+	button.add_theme_color_override("icon_pressed_color", Color.WHITE.darkened(0.3))
 	button.add_theme_color_override("icon_focus_color", color)
-	button.add_theme_constant_override("icon_max_width", 26)
+	button.add_theme_constant_override("icon_max_width", 78)
 
-	button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var empty := _flat(Color.TRANSPARENT, Color.TRANSPARENT, 0, 0)
+	button.add_theme_stylebox_override("normal", empty)
+	button.add_theme_stylebox_override("hover", empty)
+	button.add_theme_stylebox_override("pressed", empty)
+	button.add_theme_stylebox_override("focus", empty)
 
 
 func _set_icon_button(button: Button, icon_name: String, color: Color, background := Color.TRANSPARENT) -> void:
@@ -522,20 +553,20 @@ func _font_regular() -> Font:
 
 
 func _main_card_style() -> StyleBoxFlat:
-	var style := _flat(Color(1.0, 0.992, 0.965, 0.98), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 24, 1)
-	style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
-	style.shadow_size = 22
-	style.shadow_offset = Vector2(0, 9)
+	var style := _flat(Color(0.99, 0.99, 0.98, 0.85), Color(0, 0, 0, 0.08), 20, 1)
+	style.shadow_color = Color(0, 0, 0, 0.02)
+	style.shadow_size = 12
+	style.shadow_offset = Vector2(0, 4)
 	return style
 
 
 func _section_style(accent: Color) -> StyleBoxFlat:
-	return _flat(Color.WHITE, Color(accent.r, accent.g, accent.b, 0.20), 17, 1)
+	return _flat(C_CARD_BG, C_BORDER, 16, 1)
 
 
 func _avatar_style() -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, C_GOLD, 38, 2)
-	style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.20)
+	var style := _flat(Color.WHITE, C_BORDER, 38, 2)
+	style.shadow_color = Color(0, 0, 0, 0.04)
 	style.shadow_size = 6
 	return style
 

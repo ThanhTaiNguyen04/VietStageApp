@@ -611,7 +611,9 @@ func _build_theme() -> void:
 		for control: Control in [page_subtitle, form_hint, list_status, validation_label, json_label]:
 			control.add_theme_font_override("font", font_regular)
 
-	top_bar.add_theme_stylebox_override("panel", _flat(Color(1.0, 0.985, 0.94, 0.92), Color(1, 1, 1, 0.34), 0, 0))
+	var top_s := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 0, 0)
+	top_s.border_width_bottom = 1
+	top_bar.add_theme_stylebox_override("panel", top_s)
 	list_panel.add_theme_stylebox_override("panel", _surface_style())
 	editor_panel.add_theme_stylebox_override("panel", _surface_style())
 	icon_preview_frame.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.10), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.42), 20, 1))
@@ -703,7 +705,7 @@ func _style_secondary_button(button: Button) -> void:
 
 
 func _surface_style() -> StyleBoxFlat:
-	var style := _flat(Color(1.0, 0.992, 0.965, 0.97), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.34), 24, 1)
+	var style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.34), 24, 1)
 	style.shadow_color = Color(0.02, 0.06, 0.035, 0.24)
 	style.shadow_size = 18
 	style.shadow_offset = Vector2(0, 8)
@@ -711,7 +713,7 @@ func _surface_style() -> StyleBoxFlat:
 
 
 func _list_card_style(selected: bool) -> StyleBoxFlat:
-	var background := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.11) if selected else Color.WHITE
+	var background := Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.11) if selected else Color(0.93, 0.91, 0.87, 0.6)
 	var border := C_GOLD if selected else Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.14)
 	var style := _flat(background, border, 18, 2 if selected else 1)
 	style.shadow_color = Color(0.12, 0.08, 0.04, 0.06)
