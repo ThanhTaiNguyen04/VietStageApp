@@ -32,7 +32,10 @@ var difficulty_tolerance_scale := 1.0
 var _analyzer: RefCounted = null
 
 # Dynamic configurations for pitch detection and noise gating
-var min_frequency := 140.0
+var min_frequency := 140.0:
+	set(val):
+		min_frequency = val
+		_update_hp_cutoff()
 var max_frequency := 4200.0
 var volume_threshold_db := -55.0
 
@@ -82,6 +85,31 @@ func _setup_audio_bus() -> void:
 	AudioServer.set_bus_mute(_bus_index, false)
 	AudioServer.set_bus_volume_db(_bus_index, -80.0)
 	
+	# 1. Thêm bộ lọc tần số thấp (HighPassFilter) để cắt tạp âm quạt/gió/hơi thở
+	var hp_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectHighPassFilter:
+			hp_idx = i
+			break
+	if hp_idx == -1:
+		var hp = AudioEffectHighPassFilter.new()
+		hp.cutoff_hz = clampf(min_frequency * 0.8, 20.0, 300.0)
+		AudioServer.add_bus_effect(_bus_index, hp, 0)
+	else:
+		_update_hp_cutoff()
+		
+	# 2. Thêm bộ lọc tần số cao (LowPassFilter) để cắt tiếng xì/rè
+	var lp_idx := -1
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectLowPassFilter:
+			lp_idx = i
+			break
+	if lp_idx == -1:
+		var lp = AudioEffectLowPassFilter.new()
+		lp.cutoff_hz = 4000.0 # Cắt các tần số cao không cần thiết
+		AudioServer.add_bus_effect(_bus_index, lp, 1)
+
+	# 3. Add AudioEffectCapture if not already present
 	var effect_index := -1
 	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
 		if AudioServer.get_bus_effect(_bus_index, i) is AudioEffectCapture:
@@ -90,8 +118,8 @@ func _setup_audio_bus() -> void:
 			
 	if effect_index == -1:
 		_effect = AudioEffectCapture.new()
-		_effect.buffer_length = 0.5
-		AudioServer.add_bus_effect(_bus_index, _effect, 0)
+		_effect.buffer_length = 0.5 # 500ms buffer
+		AudioServer.add_bus_effect(_bus_index, _effect) # Không ép index 0 nữa để nó nằm sau filter
 	else:
 		_effect = AudioServer.get_bus_effect(_bus_index, effect_index) as AudioEffectCapture
 		
@@ -708,3 +736,13 @@ func _has_pluck_attack(samples: PackedFloat32Array) -> bool:
 	if e_second <= 0.000001:
 		return e_first > 0.000001
 	return e_first / e_second > 1.8
+
+
+func _update_hp_cutoff() -> void:
+	if _bus_index == -1:
+		return
+	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
+		var effect = AudioServer.get_bus_effect(_bus_index, i)
+		if effect is AudioEffectHighPassFilter:
+			effect.cutoff_hz = clampf(min_frequency * 0.8, 20.0, 300.0)
+			break
