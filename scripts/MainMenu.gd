@@ -104,6 +104,7 @@ var _daily_overlay: ColorRect = null
 @onready var card_chords_skills: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills
 @onready var card_classical : PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical
 @onready var card_pop_chords: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords
+var card_string_roll: PanelContainer
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 
@@ -158,6 +159,7 @@ func _ready() -> void:
 	_build_bottom_bar()
 	_build_top_bar()
 	_build_profile_menu()
+	_create_dan_tranh_level7_card()
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
@@ -389,6 +391,7 @@ func _draw_roadmap_paths() -> void:
 	var p_cho_sk := card_chords_skills.position + card_chords_skills.size / 2.0
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
+	var p_string_roll := card_string_roll.position + card_string_roll.size / 2.0 if is_instance_valid(card_string_roll) else p_class
 		
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_bau" or inst == "dan_tranh" or inst == "sao_truc":
@@ -399,6 +402,7 @@ func _draw_roadmap_paths() -> void:
 		p_cho_sk.y = straight_y
 		p_pop.y = straight_y
 		p_class.y = straight_y
+		p_string_roll.y = straight_y
 		
 		# Đường thẳng duy nhất nằm ngang
 		_draw_thick_path(p_basic, p_ess)
@@ -407,6 +411,7 @@ func _draw_roadmap_paths() -> void:
 		_draw_thick_path(p_cho_sk, p_pop)
 		if inst == "dan_tranh":
 			_draw_thick_path(p_pop, p_class)
+			_draw_thick_path(p_class, p_string_roll)
 	else:
 		# Draw roadmap line segments connecting cards
 		# Basic Card -> Essentials Card -> Split point
@@ -1263,6 +1268,36 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
+func _create_dan_tranh_level7_card() -> void:
+	# Reuse the existing roadmap card design so Level 7 remains visually
+	# consistent while being a distinct, clickable course entry.
+	card_string_roll = card_classical.duplicate() as PanelContainer
+	card_string_roll.name = "CardDanTranhLevel7"
+	roadmap_content.add_child(card_string_roll)
+
+	var title := card_string_roll.get_node("Margin/HBox/TextV/Title") as Label
+	var description := card_string_roll.get_node("Margin/HBox/TextV/BulletList") as Label
+	title.text = "LEVEL 7: KỸ NĂNG VÊ DÂY"
+	description.text = "✓ Tư thế tay phải khi vê dây\n✓ Vê đều theo chiều lên và xuống\n✓ Kiểm soát lực gảy, giữ âm liền mạch"
+	title.add_theme_color_override("font_color", C_RED_SON)
+	description.add_theme_color_override("font_color", C_RED_DK)
+	card_string_roll.modulate = Color.WHITE
+	card_string_roll.self_modulate = Color.WHITE
+
+	card_string_roll.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			_open_dan_tranh_level7()
+	)
+	var play_button := card_string_roll.get_node("Margin/HBox/BtnPlay") as Button
+	play_button.pressed.connect(_open_dan_tranh_level7)
+	_make_btn_bouncy(play_button)
+
+func _open_dan_tranh_level7() -> void:
+	if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) != "dan_tranh":
+		return
+	DAN_TRANH_LESSON_SCRIPT.selected_level = 7
+	_fade_to("res://scenes/LessonDanTranhList.tscn")
+
 func _build_roadmap_cards() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
@@ -1316,6 +1351,7 @@ func _build_roadmap_cards() -> void:
 	card_soloist_unlock.show()
 	card_chords_unlock.show()
 	card_classical.show()
+	card_string_roll.hide()
 	path_soloist_title.show()
 	path_chords_title.show()
 	
@@ -1329,6 +1365,7 @@ func _build_roadmap_cards() -> void:
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
 		card_classical.show()
+		card_string_roll.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 		
@@ -1336,6 +1373,7 @@ func _build_roadmap_cards() -> void:
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
 		card_classical.position = Vector2(2590, 275)
+		card_string_roll.position = Vector2(3100, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
@@ -1542,7 +1580,7 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords, card_string_roll]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -2077,9 +2115,10 @@ func _on_viewport_size_changed() -> void:
 		var x_ch: float = x_sk + card_w + gap
 		var x_pop: float = x_ch + card_w + gap
 		var x_class: float = x_pop + card_w + gap
+		var x_string_roll: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var total_w: float = x_class + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		var total_w: float = x_string_roll + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 		
 		card_basic.position = Vector2(x_basic, y_mid)
@@ -2099,6 +2138,8 @@ func _on_viewport_size_changed() -> void:
 		
 		card_classical.position = Vector2(x_class, y_mid)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
+		card_string_roll.position = Vector2(x_string_roll, y_mid)
+		card_string_roll.custom_minimum_size = Vector2(card_w, card_string_roll.custom_minimum_size.y)
 	else:
 		var x_ess: float = x_basic + card_w + gap
 		x_un = x_ess + card_w + gap

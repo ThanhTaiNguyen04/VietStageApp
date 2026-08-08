@@ -260,6 +260,24 @@ const LEVELS := [
 				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
 			}
 		]
+	},
+	{
+		"level": 7,
+		"title": "KỸ NĂNG VÊ DÂY ĐÀN TRANH",
+		"sessions": "Bài 1",
+		"objective": "Làm chủ kỹ thuật vê dây bằng tay phải để tạo chuỗi âm đều, liền mạch và kiểm soát lực gảy.",
+		"lessons": [
+			{
+				"number": 18,
+				"title": "Bài 1: Kỹ năng vê dây Đàn Tranh",
+				"video": "",
+				"practice": "Luyện vê lần lượt các dây theo chiều đi lên và đi xuống. Giữ cổ tay thả lỏng, vê đều từng dây và lắng nghe độ liền mạch của âm thanh.",
+				"practice_title": "Luyện kỹ năng vê dây Đàn Tranh",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"],
+				"durations": [0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "circle", "circle", "circle", "circle", "triangle"]
+			}
+		]
 	}
 ]
 
@@ -492,6 +510,7 @@ func _build_lessons() -> void:
 	var level_data := get_level_data(selected_level)
 	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % selected_level
 	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
+	page_title.text = "GIÁO TRÌNH ĐÀN TRANH - LEVEL %d" % selected_level
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
 	for index in range(lessons.size()):
