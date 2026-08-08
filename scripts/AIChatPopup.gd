@@ -2,10 +2,10 @@ class_name AIChatPopup
 extends CanvasLayer
 
 # ─── Color Palette (Traditional Vietnamese Lacquer Red & Gold Theme) ───────────
-const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige
-const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0) # vermilion lacquer red
-const C_RED_DK      := Color(0.38, 0.06, 0.04, 0.96) # deep red
+const C_BG_DARK     := Color(0.95, 0.98, 0.96, 0.94)
+const C_BG_DARKER   := Color(1.00, 1.00, 1.00, 0.92)
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_DK      := Color(0.04, 0.15, 0.10, 0.96)
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # golden yellow
 const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0) # bright gold
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
@@ -127,7 +127,7 @@ func _build_ui() -> void:
 	
 	# Dim backdrop
 	var overlay = ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.55)
+	overlay.color = Color(0.03, 0.10, 0.07, 0.48)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ai_chat_popup_root.add_child(overlay)
 	overlay.gui_input.connect(func(event):
@@ -144,18 +144,18 @@ func _build_ui() -> void:
 	main_panel.offset_top = -300; main_panel.offset_bottom = 300
 	main_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	main_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	main_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, C_RED_SON, 18, true, 4))
+	main_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, Color(1.0, 1.0, 1.0, 0.78), 22, true, 2))
 	ai_chat_popup_root.add_child(main_panel)
 	
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
 	main_panel.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
+	vbox.add_theme_constant_override("separation", 16)
 	margin.add_child(vbox)
 	
 	# Header HBox
@@ -165,7 +165,7 @@ func _build_ui() -> void:
 	var title_lbl = Label.new()
 	title_lbl.text = "Trò chuyện với Giáo viên ảo Mai"
 	title_lbl.add_theme_font_override("font", _font_title)
-	title_lbl.add_theme_font_size_override("font_size", 24)
+	title_lbl.add_theme_font_size_override("font_size", 26)
 	title_lbl.add_theme_color_override("font_color", C_RED_SON)
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title_lbl)
@@ -191,19 +191,20 @@ func _build_ui() -> void:
 	
 	# Body HBox Split
 	var main_split = HBoxContainer.new()
-	main_split.add_theme_constant_override("separation", 20)
+	main_split.add_theme_constant_override("separation", 24)
 	main_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(main_split)
 	
 	# Left Column (Teacher Portrait)
 	var left_col = VBoxContainer.new()
-	left_col.custom_minimum_size = Vector2(280, 0)
-	left_col.add_theme_constant_override("separation", 10)
+	left_col.custom_minimum_size = Vector2(250, 0)
+	left_col.add_theme_constant_override("separation", 12)
 	main_split.add_child(left_col)
 	
 	var frame = PanelContainer.new()
 	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	frame.add_theme_stylebox_override("panel", _flat_sb(Color.BLACK, C_GOLD, 12, false, 2))
+	frame.clip_contents = true
+	frame.add_theme_stylebox_override("panel", _flat_sb(Color(0.93, 0.97, 0.94, 0.82), Color(0.50, 0.76, 0.60, 0.48), 18, false, 0))
 	left_col.add_child(frame)
 	
 	ai_portrait = Control.new()
@@ -217,26 +218,26 @@ func _build_ui() -> void:
 	ai_status_lbl.text = "Sẵn sàng"
 	ai_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ai_status_lbl.add_theme_font_override("font", _font_body_bold)
-	ai_status_lbl.add_theme_font_size_override("font_size", 14)
-	ai_status_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	ai_status_lbl.add_theme_font_size_override("font_size", 13)
+	ai_status_lbl.add_theme_color_override("font_color", C_RED_SON)
 	left_col.add_child(ai_status_lbl)
 	
 	# Right Column (Chat Logs & Input)
 	var right_col = VBoxContainer.new()
 	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_col.add_theme_constant_override("separation", 10)
+	right_col.add_theme_constant_override("separation", 12)
 	main_split.add_child(right_col)
 	
 	var log_panel = PanelContainer.new()
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, false, 1))
+	log_panel.add_theme_stylebox_override("panel", _flat_sb(Color(1.0, 1.0, 1.0, 0.68), Color(0.50, 0.76, 0.60, 0.42), 18, false, 0))
 	right_col.add_child(log_panel)
 	
 	var log_margin = MarginContainer.new()
-	log_margin.add_theme_constant_override("margin_left", 8)
-	log_margin.add_theme_constant_override("margin_right", 8)
-	log_margin.add_theme_constant_override("margin_top", 8)
-	log_margin.add_theme_constant_override("margin_bottom", 8)
+	log_margin.add_theme_constant_override("margin_left", 16)
+	log_margin.add_theme_constant_override("margin_right", 16)
+	log_margin.add_theme_constant_override("margin_top", 14)
+	log_margin.add_theme_constant_override("margin_bottom", 14)
 	log_panel.add_child(log_margin)
 	
 	ai_chat_log = RichTextLabel.new()
@@ -245,11 +246,12 @@ func _build_ui() -> void:
 	ai_chat_log.add_theme_font_override("normal_font", _font_body)
 	ai_chat_log.add_theme_font_override("bold_font", _font_body_bold)
 	ai_chat_log.add_theme_font_override("italics_font", _font_body)
-	ai_chat_log.add_theme_font_size_override("normal_font_size", 15)
+	ai_chat_log.add_theme_font_size_override("normal_font_size", 16)
+	ai_chat_log.add_theme_color_override("default_color", C_RED_DK)
 	log_margin.add_child(ai_chat_log)
 	
 	var input_row = HBoxContainer.new()
-	input_row.add_theme_constant_override("separation", 8)
+	input_row.add_theme_constant_override("separation", 10)
 	right_col.add_child(input_row)
 	
 	ai_mic_btn = Button.new()
@@ -269,12 +271,12 @@ func _build_ui() -> void:
 	input_row.add_child(ai_input)
 	
 	var le_style = StyleBoxFlat.new()
-	le_style.bg_color = C_BG_DARK
-	le_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
+	le_style.bg_color = Color(1.0, 1.0, 1.0, 0.82)
+	le_style.border_color = Color(0.50, 0.76, 0.60, 0.58)
 	le_style.border_width_left = 1; le_style.border_width_right = 1
 	le_style.border_width_top = 1; le_style.border_width_bottom = 1
-	le_style.corner_radius_top_left = 8; le_style.corner_radius_top_right = 8
-	le_style.corner_radius_bottom_left = 8; le_style.corner_radius_bottom_right = 8
+	le_style.corner_radius_top_left = 12; le_style.corner_radius_top_right = 12
+	le_style.corner_radius_bottom_left = 12; le_style.corner_radius_bottom_right = 12
 	le_style.content_margin_left = 12; le_style.content_margin_right = 12
 	ai_input.add_theme_stylebox_override("normal", le_style)
 	
@@ -462,12 +464,12 @@ func _toggle_ai_settings() -> void:
 	settings_panel.visible = not settings_panel.visible
 
 func _style_ai_button(btn: Button, primary: bool) -> void:
-	var bg := C_RED_SON if primary else Color(0, 0, 0, 0)
-	var border := C_GOLD if primary else C_RED_SON
+	var bg := C_RED_SON if primary else Color(1.0, 1.0, 1.0, 0.76)
+	var border := C_RED_SON if primary else Color(0.50, 0.76, 0.60, 0.62)
 	var fg := C_CREAM if primary else C_RED_SON
-	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 10, primary, 2))
-	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.12), border.lightened(0.1), 10, primary, 2))
-	btn.add_theme_stylebox_override("pressed", _flat_sb(bg.darkened(0.12), border, 10, false, 1))
+	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 12, primary, 1))
+	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.10), border.lightened(0.08), 12, primary, 1))
+	btn.add_theme_stylebox_override("pressed", _flat_sb(bg.darkened(0.10), border, 12, false, 0))
 	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color", fg)
 	btn.add_theme_color_override("font_hover_color", fg)
