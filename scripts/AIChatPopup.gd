@@ -168,6 +168,7 @@ func _build_ui() -> void:
 	
 	var title_lbl = Label.new()
 	title_lbl.text = "Trò chuyện với Giáo viên ảo Mai"
+	title_lbl.text = "Trò chuyện với nghệ sĩ ảo cô Mai"
 	title_lbl.add_theme_font_override("font", _font_title)
 	title_lbl.add_theme_font_size_override("font_size", 26)
 	title_lbl.add_theme_color_override("font_color", C_CREAM)
@@ -177,6 +178,7 @@ func _build_ui() -> void:
 	var settings_btn = Button.new()
 	settings_btn.text = "⚙️ Cài đặt"
 	settings_btn.flat = true
+	settings_btn.visible = false
 	settings_btn.add_theme_font_override("font", _font_body_bold)
 	settings_btn.add_theme_font_size_override("font_size", 14)
 	settings_btn.add_theme_color_override("font_color", C_CREAM)
@@ -187,6 +189,7 @@ func _build_ui() -> void:
 	var close_btn = Button.new()
 	close_btn.text = "❌"
 	close_btn.flat = true
+	close_btn.visible = false
 	close_btn.add_theme_font_size_override("font_size", 16)
 	close_btn.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	close_btn.pressed.connect(_close_ai_chat)
@@ -217,6 +220,16 @@ func _build_ui() -> void:
 	ai_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ai_portrait.draw.connect(_draw_mai_chat_portrait)
 	frame.add_child(ai_portrait)
+
+	var artist_caption = Label.new()
+	artist_caption.text = "Nghệ sĩ ảo - Cô Mai"
+	artist_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	artist_caption.add_theme_font_override("font", _font_body_bold)
+	artist_caption.add_theme_font_size_override("font_size", 16)
+	artist_caption.add_theme_color_override("font_color", Color(1.0, 0.92, 0.67, 1.0))
+	artist_caption.add_theme_color_override("font_outline_color", Color(0.05, 0.16, 0.10, 0.95))
+	artist_caption.add_theme_constant_override("outline_size", 4)
+	left_col.add_child(artist_caption)
 	
 	ai_status_lbl = Label.new()
 	ai_status_lbl.text = "Sẵn sàng"
@@ -240,7 +253,7 @@ func _build_ui() -> void:
 	
 	var log_panel = PanelContainer.new()
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	log_panel.add_theme_stylebox_override("panel", _flat_sb(Color(0.03, 0.14, 0.09, 0.88), Color(0.96, 0.78, 0.30, 0.78), 16, true, 1))
 	right_col.add_child(log_panel)
 	
 	var log_margin = MarginContainer.new()
@@ -256,8 +269,11 @@ func _build_ui() -> void:
 	ai_chat_log.add_theme_font_override("normal_font", _font_body)
 	ai_chat_log.add_theme_font_override("bold_font", _font_body_bold)
 	ai_chat_log.add_theme_font_override("italics_font", _font_body)
-	ai_chat_log.add_theme_font_size_override("normal_font_size", 16)
-	ai_chat_log.add_theme_color_override("default_color", C_CREAM)
+	ai_chat_log.add_theme_font_size_override("normal_font_size", 18)
+	ai_chat_log.add_theme_color_override("default_color", Color(1.0, 1.0, 0.96, 1.0))
+	ai_chat_log.add_theme_color_override("font_outline_color", Color(0.0, 0.05, 0.02, 1.0))
+	ai_chat_log.add_theme_constant_override("outline_size", 2)
+	ai_chat_log.add_theme_constant_override("line_separation", 8)
 	log_margin.add_child(ai_chat_log)
 
 	# Suggested prompts preserve free-form chat while giving learners an easy starting point.
