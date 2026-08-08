@@ -18,7 +18,7 @@ var audio_manager : AIAudioManager
 
 # UI Nodes
 var ai_chat_popup_root : Control
-var ai_portrait : TextureRect
+var ai_portrait : Control
 var ai_chat_log : RichTextLabel
 var ai_input : LineEdit
 var ai_send_btn : Button
@@ -31,10 +31,12 @@ var model_name_input : LineEdit
 var stt_url_input : LineEdit
 
 # Textures
-var _tex_mai_idle : Texture2D
-var _tex_mai_talking : Texture2D
-var _tex_mai_happy : Texture2D
+var _tex_mai_talk_sheet : Texture2D
 var _tex_fallback : Texture2D
+var _portrait_is_talking := false
+var _portrait_frame := 0
+var _portrait_frame_elapsed := 0.0
+const PORTRAIT_FRAME_DURATION := 0.14
 
 # Fonts
 var _font_title : Font
@@ -63,14 +65,8 @@ var _instrument_context: String = "general"
 
 func _ready() -> void:
 	# Load assets
-	_tex_mai_idle = load("res://assets/textures/mai_idle.jpg") as Texture2D
-	_tex_mai_talking = load("res://assets/textures/mai_talking.jpg") as Texture2D
-	_tex_mai_happy = load("res://assets/textures/mai_happy.jpg") as Texture2D
+	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_sheet.png") as Texture2D
 	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
-	
-	if not _tex_mai_idle: _tex_mai_idle = _tex_fallback
-	if not _tex_mai_talking: _tex_mai_talking = _tex_fallback
-	if not _tex_mai_happy: _tex_mai_happy = _tex_fallback
 	
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
 	_font_body = load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
@@ -210,10 +206,11 @@ func _build_ui() -> void:
 	frame.add_theme_stylebox_override("panel", _flat_sb(Color.BLACK, C_GOLD, 12, false, 2))
 	left_col.add_child(frame)
 	
-	ai_portrait = TextureRect.new()
-	ai_portrait.texture = _tex_mai_idle
-	ai_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ai_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	ai_portrait = Control.new()
+	ai_portrait.name = "MaiTalkingPortrait"
+	ai_portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	ai_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ai_portrait.draw.connect(_draw_mai_chat_portrait)
 	frame.add_child(ai_portrait)
 	
 	ai_status_lbl = Label.new()
@@ -476,18 +473,60 @@ func _style_ai_button(btn: Button, primary: bool) -> void:
 	btn.add_theme_color_override("font_hover_color", fg)
 	btn.add_theme_color_override("font_pressed_color", fg)
 
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(ai_portrait):
+		return
+	if _portrait_is_talking:
+		_portrait_frame_elapsed += delta
+		if _portrait_frame_elapsed >= PORTRAIT_FRAME_DURATION:
+			_portrait_frame_elapsed = 0.0
+			_portrait_frame = (_portrait_frame + 1) % 6
+			ai_portrait.queue_redraw()
+	elif _portrait_frame != 0:
+		_portrait_frame = 0
+		ai_portrait.queue_redraw()
+
+
+func _draw_mai_chat_portrait() -> void:
+	if not is_instance_valid(ai_portrait):
+		return
+	var portrait_size := ai_portrait.size
+	if _tex_mai_talk_sheet:
+		# The sheet is 3 columns × 2 rows, containing six upper-body talking poses.
+		var frame_width := _tex_mai_talk_sheet.get_width() / 3.0
+		var frame_height := _tex_mai_talk_sheet.get_height() / 2.0
+		var source_rect := Rect2(
+			float(_portrait_frame % 3) * frame_width,
+			float(_portrait_frame / 3) * frame_height,
+			frame_width,
+			frame_height
+		)
+		# A square destination preserves the portrait's original proportion in a tall panel.
+		var draw_size := minf(portrait_size.x, portrait_size.y)
+		var destination_rect := Rect2(
+			(portrait_size.x - draw_size) * 0.5,
+			(portrait_size.y - draw_size) * 0.5,
+			draw_size,
+			draw_size
+		)
+		ai_portrait.draw_texture_rect_region(_tex_mai_talk_sheet, destination_rect, source_rect)
+	elif _tex_fallback:
+		ai_portrait.draw_texture_rect(_tex_fallback, Rect2(Vector2.ZERO, portrait_size), false)
+
+
 func _on_audio_amplitude_updated(amplitude: float) -> void:
-	if amplitude > 0.05:
-		if ai_portrait.texture != _tex_mai_talking:
-			ai_portrait.texture = _tex_mai_talking
-	else:
-		_update_portrait_by_emotion()
+	_portrait_is_talking = amplitude > 0.05
+	if not _portrait_is_talking:
+		_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 
 func _update_portrait_by_emotion() -> void:
-	if ai_manager.parsed_emotion == "joy" or ai_manager.parsed_emotion == "happy":
-		ai_portrait.texture = _tex_mai_happy
-	else:
-		ai_portrait.texture = _tex_mai_idle
+	_portrait_is_talking = false
+	_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 
 func _on_ai_mic_pressed() -> void:
 	if current_voice_state == VoiceState.LISTENING:
@@ -629,10 +668,18 @@ func _on_ai_request_failed(reason: String) -> void:
 	_start_waking_loop()
 
 func _on_tts_started() -> void:
+	_portrait_is_talking = true
+	_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 	if current_voice_state == VoiceState.THINKING:
 		_transition_to_state(VoiceState.SPEAKING)
 
 func _on_tts_finished() -> void:
+	_portrait_is_talking = false
+	_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 	_update_status("Sẵn sàng")
 	_update_portrait_by_emotion()
 	
