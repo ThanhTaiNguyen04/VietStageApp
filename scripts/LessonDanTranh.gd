@@ -15,6 +15,7 @@ var current_state = State.CALIBRATION
 @onready var back_btn = $BackBtn
 @onready var complete_btn = $CompleteBtn
 @onready var teacher_area = $TeacherArea
+@onready var teacher_char = $TeacherArea/TeacherChar
 @onready var speech_text = $TeacherArea/DialogBox/M/V/SpeechText
 @onready var real_mode_btn = $TeacherArea/DialogBox/M/V/ModeButtons/RealModeBtn
 @onready var analyzer = $Analyzer
@@ -22,6 +23,17 @@ var current_state = State.CALIBRATION
 @onready var volume_bar = $FeedbackArea/VolumeBar
 var ai_audio = null
 var _dan_tranh_attempts: Array[Dictionary] = []
+
+# Virtual Teacher Portrait Animation States
+var _tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
+var _teacher_atlas : AtlasTexture
+var _portrait_is_talking := false
+var _portrait_frame := 0
+var _portrait_frame_elapsed := 0.0
+const PORTRAIT_FRAME_DURATION := 0.08
+const PORTRAIT_FRAME_COUNT := 16
+const PORTRAIT_SHEET_COLUMNS := 4
+const PORTRAIT_SHEET_ROWS := 4
 
 var staff_display: Control
 var pitch_box: PanelContainer
@@ -281,6 +293,12 @@ func _ready():
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
+	
+	if teacher_char and _tex_mai_talk_sheet:
+		_teacher_atlas = AtlasTexture.new()
+		_teacher_atlas.atlas = _tex_mai_talk_sheet
+		teacher_char.texture = _teacher_atlas
+		_update_teacher_frame()
 	staff_card = PanelContainer.new()
 	staff_card.name = "StaffCard"
 	staff_card.anchor_left = 0.0; staff_card.anchor_right = 1.0
@@ -623,6 +641,22 @@ func _setup_pitch_hud_box():
 		feedback_area.add_child(pitch_box)
 
 func _process(delta):
+	# Update teacher talking animation
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		_portrait_is_talking = ai_audio.audio_player.is_playing()
+	else:
+		_portrait_is_talking = false
+		
+	if _portrait_is_talking:
+		_portrait_frame_elapsed += delta
+		if _portrait_frame_elapsed >= PORTRAIT_FRAME_DURATION:
+			_portrait_frame_elapsed = 0.0
+			_portrait_frame = (_portrait_frame + 1) % PORTRAIT_FRAME_COUNT
+			_update_teacher_frame()
+	elif _portrait_frame != 0:
+		_portrait_frame = 0
+		_update_teacher_frame()
+
 	if is_paused:
 		return
 	if current_state == State.PRACTICE_SINGLE:
@@ -631,6 +665,19 @@ func _process(delta):
 		_process_practice(delta)
 	
 	_update_continuous_pitch_hud()
+
+func _update_teacher_frame() -> void:
+	if not _teacher_atlas or not _tex_mai_talk_sheet:
+		return
+	var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
+	var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
+	var source_rect := Rect2(
+		float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
+		float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
+		frame_width,
+		frame_height
+	)
+	_teacher_atlas.region = source_rect
 
 func _update_continuous_pitch_hud():
 	if not analyzer:
