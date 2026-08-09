@@ -697,5 +697,20 @@ func _make_btn_bouncy(btn: Button) -> void:
 
 func _open_lesson(node_id: String) -> void:
 	SecureDataManager.active_lesson_id = node_id
-	SecureDataManager.data["current_song_title"] = node_id
+	
+	var song_title = node_id
+	var song_frame = ""
+	for l in ALL_LESSONS:
+		if l["id"] == node_id:
+			var note_str = l.get("note", "")
+			if "(" in note_str:
+				var parts = note_str.split("(")
+				song_title = parts[0].strip_edges()
+				song_frame = parts[1].replace(")", "").strip_edges()
+			else:
+				song_title = note_str
+			break
+			
+	SecureDataManager.data["current_song_title"] = song_title
+	SecureDataManager.data["current_song_frame"] = song_frame
 	_fade_to("res://scenes/LessonSaoTruc.tscn")

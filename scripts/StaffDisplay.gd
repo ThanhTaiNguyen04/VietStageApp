@@ -64,6 +64,8 @@ func _ready():
 
 var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
+var beats_per_measure: int = 4
+var show_metronome: bool = true
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -97,7 +99,7 @@ func _draw():
 		var y = center_y + (2 - i) * line_spacing
 		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.2, true)
 			
-	# Draw Treble clef and Time Signature 4/4 at the start of the staff
+	# Draw Treble clef and Time Signature at the start of the staff
 	# We place it before the hit line so it remains static
 	var clef_x = start_x + 15.0
 	
@@ -119,23 +121,24 @@ func _draw():
 		else:
 			_draw_vector_clef(clef_x, center_y, line_color, line_spacing)
 			
-		# Draw Time Signature 4/4 (text fallback)
+		# Draw Time Signature (text fallback)
 		var ts_x = clef_x + clef_w + 12.0
 		var font = ThemeDB.fallback_font
 		if font:
 			var ts_font_size = int(line_spacing * 1.5)
-			var ts_string = "4"
+			var ts_string = str(beats_per_measure)
 			var ts_w = font.get_string_size(ts_string, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size).x
 			
-			# Top 4: from line 2 to line 4, vertical center is center_y - line_spacing
+			# Top
 			var top_y = center_y - line_spacing * 1.0 + font.get_string_size(ts_string, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size).y * 0.35
 			draw_string(font, Vector2(ts_x - ts_w/2.0, top_y), ts_string, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size, line_color)
 			
-			# Bottom 4: from line 0 to line 2, vertical center is center_y + line_spacing
-			var bottom_y = center_y + line_spacing * 1.0 + font.get_string_size(ts_string, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size).y * 0.35
-			draw_string(font, Vector2(ts_x - ts_w/2.0, bottom_y), ts_string, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size, line_color)
+			# Bottom 4
+			var ts_string_bottom = "4"
+			var bottom_y = center_y + line_spacing * 1.0 + font.get_string_size(ts_string_bottom, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size).y * 0.35
+			draw_string(font, Vector2(ts_x - ts_w/2.0, bottom_y), ts_string_bottom, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_font_size, line_color)
 			
-	# Draw hit line with modern glowing effect
+	# Draw hit line with modern glowing effect (kept as it is for timing)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.2, 0.85, 0.3, 0.95), 3.5, true)
 		
@@ -143,13 +146,36 @@ func _draw():
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x / 2.0)
-		var n_color = note_data.get("color", Color(0.96, 0.75, 0.25, 1.0))
+		var n_color = Color.BLACK # Force note color to black for all level 2 lessons
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		var n_duration = note_data.get("duration", 1.0)
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_duration)
+		var n_type = note_data.get("type", "quarter")
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_duration, n_type)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", duration: float = 1.0):
+	# Draw 4-beat Metronome above the hit line
+	if show_metronome:
+		var bpm = 60.0
+		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
+		var current_beat = int(floor(beat_time_total)) % beats_per_measure
+		var beat_fraction = fmod(beat_time_total, 1.0)
+		
+		var metro_start_x = hit_line_x - 60.0
+		var metro_y = center_y - 3.8 * line_spacing
+		for b in range(beats_per_measure):
+			var bx = metro_start_x + b * 40.0
+			var c = Color(0.5, 0.5, 0.5, 0.3)
+			var r = 8.0
+			if b == current_beat:
+				c = Color(0.9, 0.2, 0.2, 1.0 - beat_fraction * 0.3)
+				r = 12.0 + sin(beat_fraction * PI) * 4.0
+			elif b == 0:
+				c = Color(0.9, 0.5, 0.2, 0.6) # Highlight the first beat of the measure
+			draw_circle(Vector2(bx, metro_y), r, c)
+			if b == current_beat:
+				draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
+
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", duration: float = 1.0, note_type: String = "quarter"):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)

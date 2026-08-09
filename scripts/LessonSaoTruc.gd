@@ -401,7 +401,11 @@ func _ready():
 		target_hz = NOTE_FREQS.get(active_note, 0.0)
 		
 		var title = SecureDataManager.data.get("current_song_title", "Bài tập")
-		txt = "Chào mừng bạn đến với bài học " + title + "! Hãy chuẩn bị sẵn sàng sáo trúc và làm theo các nốt nhạc rơi xuống nhé."
+		var s_frame = SecureDataManager.data.get("current_song_frame", "")
+		var full_name = title
+		if s_frame != "":
+			full_name += " " + s_frame
+		txt = "Chào mừng bạn đến với bài học " + full_name + "! Hãy chuẩn bị sẵn sàng sáo trúc và làm theo các nốt nhạc rơi xuống nhé."
 
 	speech_text.text = txt
 	
@@ -515,11 +519,19 @@ func _setup_premium_practice_ui():
 	}
 	var l_num = "BÀI LUYỆN"
 	var l_title = "LUYỆN NỐT " + active_note.to_upper()
+	var l_pill = active_note.to_upper()
+	
 	if lesson_map.has(active_node_id):
 		l_num = lesson_map[active_node_id]["num"]
 		l_title = lesson_map[active_node_id]["title"]
 	elif LESSON_NOTES.has(active_node_id) and LESSON_NOTES[active_node_id].has("title"):
 		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
+	else:
+		l_num = "" # Hide BÀI LUYỆN
+		l_title = SecureDataManager.data.get("current_song_title", "BÀI TẬP").to_upper()
+		var s_frame = SecureDataManager.data.get("current_song_frame", "")
+		if s_frame != "":
+			l_pill = s_frame.to_upper()
 		
 	title_plaque = PanelContainer.new()
 	title_plaque.name = "TitlePlaque"
@@ -537,12 +549,17 @@ func _setup_premium_practice_ui():
 	pl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	pl_vbox.add_theme_constant_override("separation", 2)
 	title_plaque.add_child(pl_vbox)
+	
 	var lbl_num = Label.new()
-	lbl_num.text = l_num
-	lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
-	lbl_num.add_theme_font_size_override("font_size", 20)
-	pl_vbox.add_child(lbl_num)
+	if l_num == "":
+		lbl_num.visible = false
+	else:
+		lbl_num.text = l_num
+		lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
+		lbl_num.add_theme_font_size_override("font_size", 20)
+		pl_vbox.add_child(lbl_num)
+		
 	var lbl_main = Label.new()
 	lbl_main.text = "🌿   " + l_title + "   🌿"
 	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -571,6 +588,11 @@ func _setup_premium_practice_ui():
 	staff_display.name = "StaffDisplay"
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Level 4 lessons use 2/4 time signature
+	if active_node_id.begins_with("sao_truc_level4_"):
+		staff_display.beats_per_measure = 2
+	if active_node_id in ["sao_truc_level3_6", "sao_truc_level4_5"] or active_node_id.begins_with("sao_truc_level5_"):
+		staff_display.show_metronome = false
 	staff_card.add_child(staff_display)
 	
 	pill_badge = PanelContainer.new()
@@ -586,7 +608,7 @@ func _setup_premium_practice_ui():
 	pill_sb.shadow_color = Color(0.3, 0.2, 0.08, 0.2); pill_sb.shadow_size = 6; pill_sb.shadow_offset = Vector2(0, 3)
 	pill_badge.add_theme_stylebox_override("panel", pill_sb)
 	var pill_lbl = Label.new()
-	pill_lbl.text = "🌿    " + active_note.to_upper() + "    🌿"
+	pill_lbl.text = "🌿    " + l_pill + "    🌿"
 	pill_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pill_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	pill_lbl.add_theme_color_override("font_color", Color(0.78, 0.55, 0.18, 1.0))
@@ -623,6 +645,10 @@ func _setup_premium_practice_ui():
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
+	
+	if sub_instr_row:
+		sub_instr_row.visible = false
+
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):
@@ -645,7 +671,14 @@ func _start_practice():
 		
 	# Populate practice sequence
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
-		_practice_sequence = [{"note": active_note, "duration": REQUIRED_HOLD_TIME, "time": 0.0}]
+		_practice_sequence = [
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 0.0},
+			{"note": active_note, "type": "whole", "duration": 4.0, "time": 2.5},
+			{"note": active_note, "type": "half", "duration": 2.0, "time": 8.0},
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 11.5},
+			{"note": active_note, "type": "eighth", "duration": 0.5, "time": 14.0},
+			{"note": active_note, "type": "sixteenth", "duration": 0.25, "time": 16.0}
+		]
 	else:
 		_practice_sequence = _generate_melody(active_node_id)
 		if _practice_sequence.is_empty():
@@ -808,7 +841,7 @@ func _process(delta):
 				var color = Color(0.1, 0.1, 0.1, 1.0) if sample_active else Color(0.6, 0.6, 0.6, 0.9)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
-				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w})
+				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w, "type": note_data.get("type", "quarter")})
 			staff_display.set_notes(notes)
 					
 		if sample_active:
@@ -904,7 +937,8 @@ func _process_rhythm(delta, rect):
 				"x": note_x,
 				"color": note_data.get("color", Color(0.96, 0.75, 0.25)),
 				"tail": tail_w,
-				"duration": duration
+				"duration": duration,
+				"type": note_data.get("type", "quarter")
 			})
 		
 		if time_diff < -(duration + 0.1):
@@ -923,6 +957,17 @@ func _process_rhythm(delta, rect):
 func _generate_melody(target_note_key: String) -> Array:
 	var seq = []
 	var time = 1.0
+	
+	# Helper lambda to add type based on duration
+	var add_note = func(n_name, n_time, n_dur):
+		var n_type = "quarter"
+		if n_dur >= 3.0: n_type = "whole"
+		elif n_dur >= 2.0: n_type = "half"
+		elif n_dur >= 1.0: n_type = "quarter"
+		elif n_dur >= 0.5: n_type = "eighth"
+		else: n_type = "sixteenth"
+		seq.append({"note": n_name, "time": n_time, "duration": n_dur, "type": n_type})
+
 	
 	
 	if target_note_key == "Node9":
