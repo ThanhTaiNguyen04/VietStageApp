@@ -101,8 +101,14 @@ func _draw():
 		
 		# Time signature dynamic
 		var ts = str(beats_per_measure)
-		draw_string(font, Vector2(120, center_y - line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
-		draw_string(font, Vector2(120, center_y + line_spacing * 1.95), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
+		var ts_size = int(line_spacing * 2.3)
+		var ts_color = Color(0.15, 0.15, 0.15, 0.95)
+		var ts_x = 110.0
+		# The standard time signature uses numbers that fill exactly two staff spaces each.
+		# Top digit: occupies top two spaces (between line 3 and line 5). Baseline sits near the middle line.
+		draw_string(font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_CENTER, -1, ts_size, ts_color)
+		# Bottom digit: occupies bottom two spaces (between line 1 and line 3). Baseline sits near the bottom line.
+		draw_string(font, Vector2(ts_x, center_y + line_spacing * 2.05), "4", HORIZONTAL_ALIGNMENT_CENTER, -1, ts_size, ts_color)
 			
 	# Draw hit line with modern glowing effect (kept as it is for timing)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
