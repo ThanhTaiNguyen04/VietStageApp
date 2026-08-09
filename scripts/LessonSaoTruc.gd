@@ -817,19 +817,6 @@ func _process(delta):
 
 	_process_sample(delta)
 
-func _update_teacher_frame() -> void:
-	if not _teacher_atlas or not _tex_mai_talk_sheet:
-		return
-	var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
-	var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
-	var source_rect := Rect2(
-		float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
-		float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
-		frame_width,
-		frame_height
-	)
-	_teacher_atlas.region = source_rect
-
 	var rect = _get_flute_draw_rect()
 	if rect.size.x == 0: return
 	
@@ -869,6 +856,19 @@ func _update_teacher_frame() -> void:
 			_process_real(delta)
 	elif current_state == State.RHYTHM_GAME:
 		_process_rhythm(delta, rect)
+
+func _update_teacher_frame() -> void:
+	if not _teacher_atlas or not _tex_mai_talk_sheet:
+		return
+	var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
+	var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
+	var source_rect := Rect2(
+		float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
+		float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
+		frame_width,
+		frame_height
+	)
+	_teacher_atlas.region = source_rect
 
 func _process_rhythm(delta, rect):
 	if has_rhythm_completed:
