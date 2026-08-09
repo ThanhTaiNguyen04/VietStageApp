@@ -107,7 +107,7 @@ func _draw():
 		var ts = str(beats_per_measure)
 		var ts_size = int(line_spacing * 2.3)
 		var ts_color = Color(0.15, 0.15, 0.15, 0.95)
-		var ts_x = 165.0
+		var ts_x = 220.0
 		# The standard time signature uses numbers that fill exactly two staff spaces each.
 		# Top digit: occupies top two spaces (between line 3 and line 5). Baseline sits near the middle line.
 		draw_string(font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)

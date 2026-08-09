@@ -20,48 +20,89 @@ var _sidebar_icon_cache: Dictionary = {}
 const LEVELS := [
 	{
 		"level": 1,
-		"title": "NHẬP MÔN ĐÀN TRANH & CÁCH ĐỌC NỐT",
-		"sessions": "Bài 1–3",
-		"objective": "Làm quen tư thế ngồi, đặt đàn, giới thiệu nhạc cụ 17 dây và làm quen giao diện ứng dụng.",
+		"title": "LÝ THUYẾT VÀ NHẠC LÝ CƠ BẢN",
+		"sessions": "Bài 1–9",
+		"objective": "Xem hướng dẫn lý thuyết cơ bản, nhạc lý đàn tranh, học tư thế ngồi và làm quen các quãng nốt.",
 		"lessons": [
 			{
 				"number": 1,
-				"title": "Tư thế ngồi & Đặt đàn tay trên Tranh",
-				"video": "Hướng dẫn tư thế ngồi thẳng lưng, cách đặt đàn lên giá đỡ, giới thiệu các bộ phận của Đàn Tranh 17 dây.",
-				"practice": "Nhận biết âm sắc dây đàn: thực hành gảy các nốt cơ bản Sol1 – La1 – Đô2 – Rê2 – Mi2 lần lượt từ dây trầm.",
-				"practice_title": "Tư thế & Làm quen 5 nốt cơ bản",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
+				"title": "Xem video hướng dẫn lý thuyết & nhạc lý",
+				"video": "Xem video hướng dẫn lý thuyết nhạc lý cơ bản dành cho người mới bắt đầu.",
+				"practice": "Nhận biết âm sắc dây đàn và tìm hiểu nhạc cụ 17 dây.",
+				"practice_title": "Video lý thuyết nhạc lý",
+				"sheet": []
 			},
 			{
 				"number": 2,
-				"title": "Học tiếp các nốt còn lại trên đàn tranh",
-				"video": "Kỹ thuật gảy ngón cái, ngón trỏ và cách nhận diện hướng rơi của các nốt nhạc trên khuông nhạc ứng dụng.",
-				"practice": "Luyện tập đọc nốt rơi trên màn hình: gảy các nốt nhạc tương ứng khi chạm vạch phách.",
-				"practice_title": "Luyện đọc nốt rơi",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Mi2"]
+				"title": "Luyện tập 10 nốt cơ bản quãng thấp & trung",
+				"video": "Cách nhận diện cao độ 10 nốt nhạc cơ bản ở quãng thấp và trung trên Đàn Tranh.",
+				"practice": "Gảy lần lượt từng nốt: Sol1, La1, Đô2, Rê2, Mi2, Sol2, La2, Đô3, Rê3, Mi3.",
+				"practice_title": "Luyện tập 10 nốt cơ bản",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 			},
 			{
 				"number": 3,
-				"title": "Nhận diện cao độ 17 dây đàn",
-				"video": "Giới thiệu cao độ của 17 dây đàn Tranh từ trầm đến cao và mối liên hệ giữa nốt nhạc trên giấy với phím đàn thật.",
-				"practice": "Thực hành đệm theo câu bài Sứ Thanh Hoa: gảy các nốt khuyết tương ứng cao độ dây để học thuộc vị trí.",
-				"practice_title": "Học cao độ qua đệm Sứ Thanh Hoa",
-				"sheet": [
-					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
-				],
-				"durations": [
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
-					0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
-					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
-				]
+				"title": "Luyện tập 7 nốt quãng cao",
+				"video": "Cách nhận diện cao độ 7 nốt nhạc ở quãng cao trên khuông nhạc.",
+				"practice": "Gảy lần lượt từng nốt: Sol3, La3, Đô4, Rê4, Mi4, Sol4, La4.",
+				"practice_title": "Luyện tập 7 nốt quãng cao",
+				"sheet": ["Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+			},
+			{
+				"number": 4,
+				"title": "Nhạc lý: Trường độ nốt nhạc",
+				"video": "Tìm hiểu về trường độ nốt nhạc: nốt đen, nốt móc đơn, nốt trắng, nốt móc kép.",
+				"practice": "Luyện tập gảy phân biệt các nốt có độ dài (trường độ) khác nhau.",
+				"practice_title": "Trường độ nốt nhạc",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
+			},
+			{
+				"number": 5,
+				"title": "Tempo, khóa sol và số chỉ nhịp 4/4, 2/4",
+				"video": "Tìm hiểu định nghĩa Tempo, Khóa Sol, Nhịp 4/4 và Nhịp 2/4.",
+				"practice": "Luyện tập giữ nhịp độ đều đặn theo máy đếm nhịp.",
+				"practice_title": "Tempo, Khóa Sol & Số chỉ nhịp",
+				"sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
+			},
+			{
+				"number": 6,
+				"title": "Cấu tạo quãng thấp, cao, trầm",
+				"video": "Tìm hiểu về cấu tạo các quãng âm trên Đàn Tranh và cách nhận biết các quãng trầm, trung, cao.",
+				"practice": "Nhận biết âm vực quãng bằng cách gảy các dây tương ứng trên đàn.",
+				"practice_title": "Cấu tạo quãng âm",
+				"sheet": ["Sol1", "Sol2", "Sol3", "La1", "La2", "La3"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+			},
+			{
+				"number": 7,
+				"title": "Vai trò hai tay & số ngón",
+				"video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.",
+				"practice": "Luyện tập tư thế tay phối hợp cơ bản.",
+				"practice_title": "Kỹ thuật hai tay & Số ngón",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
+			},
+			{
+				"number": 8,
+				"title": "Tư thế tay và tư thế đặt đàn",
+				"video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.",
+				"practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.",
+				"practice_title": "Tư thế đặt đàn & Tay gảy",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
+			},
+			{
+				"number": 9,
+				"title": "Luyện ngón 1 ngón, 2 ngón, 3 ngón",
+				"video": "Bài tập luyện ngón chạy dây cơ bản sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải.",
+				"practice": "Thực hành gảy chuỗi nốt chạy đều sử dụng kỹ thuật luyện ngón phối hợp.",
+				"practice_title": "Chạy ngón phối hợp",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 			}
 		]
 	},
@@ -763,12 +804,23 @@ func _open_lesson(lesson: Dictionary) -> void:
 	typed_cues.assign(lesson.get("cues", []))
 	LessonDanTranh.current_song_cues = typed_cues
 	
-	if (selected_level == 1 and lesson_number in [1, 2, 3]) or (selected_level == 2 and lesson_number == 5):
+	var is_video := false
+	if selected_level == 1:
+		is_video = lesson_number in [1, 4, 5, 6, 7, 8]
+	elif selected_level == 2:
+		is_video = lesson_number == 5
+		
+	if is_video:
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
 		var VP = load("res://scripts/VideoPlayer.gd")
-		var v_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv" if selected_level == 1 else "res://Video/DT_LV2_B2.ogv"
+		var v_path := ""
+		if selected_level == 1:
+			v_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
+		elif selected_level == 2:
+			v_path = "res://Video/DT_LV2_B2.ogv"
+			
 		if not ResourceLoader.exists(v_path):
-			v_path = "res://Video/giang_vien_dan_tranh_1942.ogv"
+			v_path = "res://Video/DT_LV1_B1.ogv"
 		VP.custom_video_path = v_path
 		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
 		_fade_to("res://scenes/VideoPlayer.tscn")

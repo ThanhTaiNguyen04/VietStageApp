@@ -133,13 +133,28 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ làm quen với cách đọc các nốt rơi trên khuông nhạc.", "highlight": -1},
-		{"action": "speak", "text": "Hãy tập trung gảy đúng nốt Đô2, Rê2, Mi2 tương ứng khi chúng trôi chạm vạch phách nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 10 nốt cơ bản quãng thấp và trung. Chúng ta sẽ làm quen và gảy từng nốt tương ứng với từng dây nhé.", "highlight": -1},
+		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
+		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
+		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
+		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy dây 4.", "highlight": 3, "note": "Rê2"},
+		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy dây 5.", "highlight": 4, "note": "Mi2"},
+		{"action": "speak", "text": "Dây 6: Nốt Sol2. Hãy gảy dây 6.", "highlight": 5, "note": "Sol2"},
+		{"action": "speak", "text": "Dây 7: Nốt La2. Hãy gảy dây 7.", "highlight": 6, "note": "La2"},
+		{"action": "speak", "text": "Dây 8: Nốt Đô3. Hãy gảy dây 8.", "highlight": 7, "note": "Đô3"},
+		{"action": "speak", "text": "Dây 9: Nốt Rê3. Hãy gảy dây 9.", "highlight": 8, "note": "Rê3"},
+		{"action": "speak", "text": "Dây 10: Nốt Mi3. Hãy gảy dây 10.", "highlight": 9, "note": "Mi3"},
+		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 10 nốt cơ bản quãng thấp và trung!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Đàn Tranh 17 dây có cao độ trải rộng từ trầm đến cao.", "highlight": -1},
-		{"action": "speak", "text": "Tôi sẽ gảy giai điệu chính, bạn hãy gảy đệm nốt cuối mỗi câu nhạc khi nốt màu bạc chạm vạch nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 7 nốt quãng cao trên Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Hãy gảy lần lượt từng nốt từ Sol3 đến La4 khi chúng chạm vạch phách nhé.", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_9_practice": [
+		{"action": "speak", "text": "Chào mừng bạn đến với bài Luyện ngón cơ bản.", "highlight": -1},
+		{"action": "speak", "text": "Chúng ta sẽ sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải để gảy chuỗi nốt chạy đều đặn nhé.", "highlight": -1}
 	],
 
 	"dan_tranh_level_2_bai_4_practice": [
@@ -253,7 +268,7 @@ func _ready():
 	profile.min_frequency = 180.0
 	profile.max_frequency = 4200.0
 	profile.volume_threshold_db = -58.0
-	profile.cents_tolerance = 35.0 # strict pitch tolerance
+	profile.cents_tolerance = 45.0 # robust pitch tolerance
 	profile.hold_time_sec = 0.20
 	profile.is_plucked_instrument = true
 	
@@ -278,6 +293,13 @@ func _ready():
 			for i in range(intro_5.size()):
 				d_arr.append(1.5)
 			lesson_durations.assign(d_arr)
+		elif current_lesson_id == "dan_tranh_level_1_bai_2_practice":
+			var intro_10 = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"]
+			lesson_sheet.assign(intro_10)
+			var d_arr: Array[float] = []
+			for i in range(intro_10.size()):
+				d_arr.append(1.5)
+			lesson_durations.assign(d_arr)
 		elif current_lesson_id == "dan_tranh_level_2_bai_5_practice":
 			var intro_8 = ["Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"]
 			lesson_sheet.assign(intro_8)
@@ -285,7 +307,7 @@ func _ready():
 			for i in range(intro_8.size()):
 				d_arr.append(1.5)
 			lesson_durations.assign(d_arr)
-		elif current_lesson_id == "dan_tranh_level_5_bai_12_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice":
+		elif current_lesson_id == "dan_tranh_level_5_bai_12_practice":
 			lesson_sheet.assign(SU_THANH_HOA_SHEET)
 			lesson_durations.assign(SU_THANH_HOA_DURATIONS)
 		else:
@@ -831,7 +853,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		return false
 
 	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
-	if cents_error <= 35.0:
+	if cents_error <= 45.0:
 		return true
 
 	# Never accept an octave or harmonic as the requested string. Use the native
@@ -844,7 +866,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		var detected_frequency: float = detected_note.get("frequency", 0.0)
 		if detected_note.get("note_name", "None") == target_note_name and detected_frequency > 0.0:
 			var detected_cents := absf(1200.0 * log(detected_frequency / target_hz) / log(2.0))
-			return detected_cents <= 35.0
+			return detected_cents <= 45.0
 
 	return false
 
@@ -935,8 +957,8 @@ func _play_next_intro_step():
 		if highlight_idx >= 0:
 			zither_board.call("set_lesson_marker", highlight_idx, "Gảy", 1)
 			
-			# Redesign lesson 1 level 1 and lesson 5 level 2 to wait for player input on note introduction steps!
-			if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
+			# Redesign lesson 1 level 1, lesson 2 level 1 and lesson 5 level 2 to wait for player input on note introduction steps!
+			if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_2_bai_5_practice"]:
 				current_state = State.PRACTICE_SINGLE
 				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
 				staff_display.visible = true
@@ -1027,7 +1049,7 @@ func _process_practice_single(delta: float) -> void:
 	var target_note := ""
 	var target_string_idx := 0
 	
-	if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
+	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_2_bai_5_practice"]:
 		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx < 0 or prev_step_idx >= dialogues.size():
@@ -1050,7 +1072,7 @@ func _process_practice_single(delta: float) -> void:
 	# 1. Check if user played correct pitch
 	if _check_mic_pitch(target_hz, delta, target_note):
 
-		if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_2_bai_5_practice"]:
 			_on_intro_note_correct(target_note)
 		else:
 			_on_single_note_correct(target_note)
@@ -1170,7 +1192,7 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 
 func _on_string_plucked(idx: int, note_name: String) -> void:
 	if current_state == State.PRACTICE_SINGLE:
-		if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_2_bai_5_practice"]:
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
@@ -1272,7 +1294,7 @@ func _start_practice():
 		if raw_note_name != "Rest" and raw_note_name != "-":
 			var notes_in_chord = raw_note_name.split("+")
 			var tail_len = 0.0 # Dan Tranh is a plucked zither instrument, so no extended hold tail!
-			var is_demo_lesson = (current_lesson_id == "dan_tranh_level_1_bai_3_practice")
+			var is_demo_lesson = false
 			var missing = true
 			var note_color = Color(0.6, 0.6, 0.6, 0.9) # Gray by default for fill-in notes
 			
@@ -1514,7 +1536,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				var freq = NOTE_FREQS.get(n, 0.0)
 				if freq > 0.0 and pitch > 0.0:
 					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-					if cents_error <= 35.0: # Match robust threshold
+					if cents_error <= 45.0: # Match robust threshold
 						is_match = true
 						break
 	else:
