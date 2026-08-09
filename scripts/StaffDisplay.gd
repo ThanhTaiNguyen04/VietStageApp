@@ -33,13 +33,17 @@ const NOTE_POSITIONS = {
 	"Đô_2": -1.0,    # C4: dòng phụ 1 dưới (Middle C), cần 1 dòng phụ
 	"Rê_2": -0.5,    # D4: khe dưới dòng 1, không cần dòng phụ
 	"Mi_2": 0.0,     # E4: Dòng 1
+	"Fa_2": 0.5,     # F4: Khe 1
 	"Sol_2": 1.0,    # G4: Dòng 2
 	"La_2": 1.5,     # A4: Khe 2
+	"Si_2": 2.0,     # B4: Dòng 3
 	"Đô_3": 2.5,     # C5: Khe 3
 	"Rê_3": 3.0,     # D5: Dòng 4
 	"Mi_3": 3.5,     # E5: Khe 4
+	"Fa_3": 4.0,     # F5: Dòng 5
 	"Sol_3": 4.5,    # G5: trên dòng 5 (khe trên)
 	"La_3": 5.0,     # A5: dòng phụ 1 trên
+	"Si_3": 5.5,     # B5: Khe trên dòng phụ 1
 	"Đô_4": 6.0,     # C6: dòng phụ 2 trên
 	"Rê_4": 6.5,     # D6: khe trên dòng phụ 2
 	"Mi_4": 7.0,     # E6: dòng phụ 3 trên

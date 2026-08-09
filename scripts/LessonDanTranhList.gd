@@ -82,12 +82,12 @@ const LEVELS := [
 			},
 			{
 				"number": 5,
-				"title": "Làm quen nốt Móc Đơn và Móc Kép",
-				"video": "Nhạc lý về nốt Móc Đơn (nửa phách) và nốt Móc Kép / Móc Đôi (một phần tư phách). Kỹ thuật gảy ngón tay linh hoạt tốc độ nhanh.",
-				"practice": "Chơi các mẫu chạy nốt nhanh dần đều sử dụng kết hợp nốt móc đơn và móc kép.",
-				"practice_title": "Luyện tập móc đơn & móc kép",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"],
-				"durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 1.0]
+				"title": "Bài 2.2 – Xác định vị trí nốt & Hệ thống nốt cơ bản",
+				"video": "Nhạc lý về hệ thống 7 nốt nhạc cơ bản Đô-Rê-Mi-Fa-Sol-La-Si (C-D-E-F-G-A-B) trên khuông nhạc, bàn đàn và vị trí dây tương ứng.",
+				"practice": "Nhìn tên nốt, nghe giáo viên gảy và gảy lặp lại các nốt nhạc để nhận diện cao độ và vị trí dây, tham gia mini-game tìm nốt Sol trên đàn.",
+				"practice_title": "Nhận diện & Luyện tập 7 nốt cơ bản",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 			},
 			{
 				"number": 6,
@@ -763,10 +763,13 @@ func _open_lesson(lesson: Dictionary) -> void:
 	typed_cues.assign(lesson.get("cues", []))
 	LessonDanTranh.current_song_cues = typed_cues
 	
-	if selected_level == 1 and lesson_number in [1, 2, 3]:
+	if (selected_level == 1 and lesson_number in [1, 2, 3]) or (selected_level == 2 and lesson_number == 5):
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
 		var VP = load("res://scripts/VideoPlayer.gd")
-		VP.custom_video_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
+		var v_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv" if selected_level == 1 else "res://Video/DT_LV2_B2.ogv"
+		if not ResourceLoader.exists(v_path):
+			v_path = "res://Video/giang_vien_dan_tranh_1942.ogv"
+		VP.custom_video_path = v_path
 		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
 		_fade_to("res://scenes/VideoPlayer.tscn")
 	else:

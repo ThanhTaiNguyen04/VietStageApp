@@ -148,8 +148,24 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_2_bai_5_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta học về nốt Móc Đơn và nốt Móc Kép (Móc Đôi) có tốc độ nhanh hơn.", "highlight": -1},
-		{"action": "speak", "text": "Hãy gảy dứt khoát và đều tay để theo kịp tốc độ của nốt rơi trên khuông nhạc.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với Bài 5: Hệ thống nốt cơ bản và xác định vị trí nốt trên Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Đàn Tranh của chúng ta có 17 dây, được lên theo thang ngũ cung: Sol - La - Đô - Rê - Mi ở các quãng khác nhau.", "highlight": -1},
+		{"action": "speak", "text": "Trong âm nhạc chuẩn quốc tế có 7 nốt cơ bản: Đô, Rê, Mi, Fa, Sol, La, Si ký hiệu lần lượt là C, D, E, F, G, A, B.", "highlight": -1},
+		{"action": "speak", "text": "Để chơi các nốt Fa và Si trên đàn Tranh, ta sẽ gảy các dây Mi và La tương ứng rồi dùng tay trái nhấn nhẹ dây bên trái nhạn đàn để nâng cao độ.", "highlight": -1},
+		{"action": "speak", "text": "Bây giờ, chúng ta sẽ tập luyện xác định vị trí nốt. Tôi sẽ gảy trước một nốt, sau đó bạn hãy gảy lặp lại nốt đó nhé. Đầu tiên là nốt Đô 2 ở dây số 3.", "highlight": 2, "note": "Đô2"},
+		{"action": "speak", "text": "Tiếp theo là nốt Rê 2 ở dây số 4.", "highlight": 3, "note": "Rê2"},
+		{"action": "speak", "text": "Nốt Mi 2 ở dây số 5.", "highlight": 4, "note": "Mi2"},
+		{"action": "speak", "text": "Nốt Fa 2. Hãy gảy dây Mi 2 (dây 5) và nhấn nhẹ tay trái để tạo ra cao độ nốt Fa 2 nhé.", "highlight": 4, "note": "Fa2"},
+		{"action": "speak", "text": "Nốt Sol 2 ở dây số 6.", "highlight": 5, "note": "Sol2"},
+		{"action": "speak", "text": "Nốt La 2 ở dây số 7.", "highlight": 6, "note": "La2"},
+		{"action": "speak", "text": "Nốt Si 2. Hãy gảy dây La 2 (dây 7) và dùng tay trái nhấn để tạo ra cao độ nốt Si 2.", "highlight": 6, "note": "Si2"},
+		{"action": "speak", "text": "Và nốt Đô 3 ở dây số 8.", "highlight": 7, "note": "Đô3"},
+		{"action": "speak", "text": "Sau đây là thử thách Mini Game: Hãy tìm nốt Sol 2 trên đàn và chọn gảy dây tương ứng nhé!", "highlight": 5, "note": "Sol2"},
+		{"action": "speak", "text": "Rất tốt! Tiếp theo là Bài 2.3: Học viên nhận biết các nốt cùng tên ở các quãng khác nhau (khác cao độ).", "highlight": -1},
+		{"action": "speak", "text": "Ví dụ: Đô thấp ở dây số 3. Hãy gảy nốt Đô 2.", "highlight": 2, "note": "Đô2"},
+		{"action": "speak", "text": "Đô trung ở dây số 8. Hãy gảy nốt Đô 3.", "highlight": 7, "note": "Đô3"},
+		{"action": "speak", "text": "Và Đô cao ở dây số 13. Hãy gảy nốt Đô 4.", "highlight": 12, "note": "Đô4"},
+		{"action": "speak", "text": "Tuyệt vời! Nhận biết nốt cùng tên ở các quãng khác nhau là kiến thức nền để học các kỹ thuật: Song thanh, Vê, Quãng, Chuyển âm vực sau này. Bây giờ hãy luyện tập chơi chuỗi nốt nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_2_bai_6_practice": [
@@ -207,17 +223,18 @@ const SU_THANH_HOA_DURATIONS: Array[float] = [
 ]
 
 const NOTE_TO_STRING = {
-	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4,
-	"Sol2": 5, "La2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9,
-	"Sol3": 10, "La3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
+	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4, "Fa2": 4,
+	"Sol2": 5, "La2": 6, "Si2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9, "Fa3": 9,
+	"Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
 	"Sol4": 15, "La4": 16
 }
 
 const NOTE_FREQS = {
 	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Sol2": 392.00, "La2": 440.00, "Đô3": 523.25, "Rê3": 587.33, "Mi3": 659.25,
-	"Sol3": 783.99, "La3": 880.00, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51,
-	"Sol4": 1567.98, "La4": 1760.00
+	"Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88, "Đô3": 523.25,
+	"Rê3": 587.33, "Mi3": 659.25, "Fa3": 698.46, "Sol3": 783.99, "La3": 880.00,
+	"Si3": 987.77, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51, "Sol4": 1567.98,
+	"La4": 1760.00
 }
 
 func _ready():
@@ -259,6 +276,13 @@ func _ready():
 			lesson_sheet.assign(intro_5)
 			var d_arr: Array[float] = []
 			for i in range(intro_5.size()):
+				d_arr.append(1.5)
+			lesson_durations.assign(d_arr)
+		elif current_lesson_id == "dan_tranh_level_2_bai_5_practice":
+			var intro_8 = ["Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"]
+			lesson_sheet.assign(intro_8)
+			var d_arr: Array[float] = []
+			for i in range(intro_8.size()):
 				d_arr.append(1.5)
 			lesson_durations.assign(d_arr)
 		elif current_lesson_id == "dan_tranh_level_5_bai_12_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice":
@@ -911,10 +935,10 @@ func _play_next_intro_step():
 		if highlight_idx >= 0:
 			zither_board.call("set_lesson_marker", highlight_idx, "Gảy", 1)
 			
-			# Redesign lesson 1 level 1 to wait for player input on note introduction steps!
-			if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+			# Redesign lesson 1 level 1 and lesson 5 level 2 to wait for player input on note introduction steps!
+			if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
 				current_state = State.PRACTICE_SINGLE
-				var target_note = ALL_17_NOTES[highlight_idx]
+				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
 				staff_display.visible = true
 				if staff_card: staff_card.visible = true
 				_update_staff_layout()
@@ -1003,7 +1027,7 @@ func _process_practice_single(delta: float) -> void:
 	var target_note := ""
 	var target_string_idx := 0
 	
-	if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+	if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
 		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx < 0 or prev_step_idx >= dialogues.size():
@@ -1013,8 +1037,8 @@ func _process_practice_single(delta: float) -> void:
 		if highlight_idx < 0:
 			return
 			
-		target_note = ALL_17_NOTES[highlight_idx]
-		target_string_idx = highlight_idx
+		target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
+		target_string_idx = NOTE_TO_STRING.get(target_note, highlight_idx)
 
 	else:
 		if single_practice_idx >= unique_practice_notes.size(): return
@@ -1026,7 +1050,7 @@ func _process_practice_single(delta: float) -> void:
 	# 1. Check if user played correct pitch
 	if _check_mic_pitch(target_hz, delta, target_note):
 
-		if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+		if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
 			_on_intro_note_correct(target_note)
 		else:
 			_on_single_note_correct(target_note)
@@ -1146,17 +1170,18 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 
 func _on_string_plucked(idx: int, note_name: String) -> void:
 	if current_state == State.PRACTICE_SINGLE:
-		if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+		if current_lesson_id == "dan_tranh_level_1_bai_1_practice" or current_lesson_id == "dan_tranh_level_2_bai_5_practice":
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 				var step_data = dialogues[prev_step_idx]
 				var highlight_idx = step_data.get("highlight", -1)
-				if highlight_idx == idx:
-					_on_intro_note_correct(note_name)
+				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
+				var target_string_idx = NOTE_TO_STRING.get(target_note, highlight_idx)
+				if target_string_idx == idx:
+					_on_intro_note_correct(target_note)
 				else:
-					var target_note = ALL_17_NOTES[highlight_idx]
-					_on_wrong_note_played(note_name, idx, target_note, highlight_idx)
+					_on_wrong_note_played(note_name, idx, target_note, target_string_idx)
 		else:
 			var target_note = unique_practice_notes[single_practice_idx]
 			var is_correct = false
