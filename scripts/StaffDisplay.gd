@@ -211,7 +211,13 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
-	# Duration tail drawing removed per user request
+	# Draw duration tail
+	if tail_w > 0.0:
+		var tail_y = note_y
+		var tail_color = note_color
+		tail_color.a = 0.35 # Semi-transparent
+		var tail_h = line_spacing * 0.4
+		draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, tail_w, tail_h), tail_color)
 			
 	# Draw soft radiating halo around notes removed since notes are now black
 			
