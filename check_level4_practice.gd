@@ -30,8 +30,8 @@ func _run_check() -> void:
 		_fail("lesson 4 mode or BPM is incorrect")
 		return
 	var expected_notes := [
-		"Mi2", "Sol2", "Sol2", "Mi2", "Sol2", "Sol2",
-		"La2", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2"
+		"Mi1", "Sol2", "Sol2", "Mi1", "Sol2", "Sol2",
+		"La2", "Đô2", "La2", "Đô2", "La2", "Sol2", "Sol2"
 	]
 	var expected_durations := [
 		0.5, 0.5, 1.0, 0.5, 0.5, 1.0,

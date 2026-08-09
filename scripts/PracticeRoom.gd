@@ -69,6 +69,7 @@ var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
 var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
+var _last_rhythm_score := 80.0
 
 var _string_streams: Array[AudioStreamWAV] = []
 var _string_stream_sources: Array[String] = []
@@ -84,9 +85,9 @@ var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
 const NOTES_VN : Array[String] = [
-	"Sol", "La", "Đô", "Rê", "Mi",
-	"Sol2", "La2", "Đô2", "Rê2", "Mi2",
-	"Sol3", "La3", "Đô3", "Rê3", "Mi3",
+	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
+	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
+	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
 	"Sol4", "La4" 
 ]
 
@@ -94,8 +95,8 @@ const LEVEL1_LESSON1_ID := "dan_tranh_level_1_bai_1_practice"
 const LEVEL1_LESSON2_ID := "dan_tranh_level_1_bai_2_practice"
 const LEVEL1_LESSON3_ID := "dan_tranh_level_1_bai_3_practice"
 const LEVEL2_LESSON4_ID := "dan_tranh_level_2_bai_4_practice"
-const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol", "La", "Đô", "Rê", "Mi"]
-const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol2", "La2", "Đô2", "Rê2", "Mi2"]
+const LEVEL1_LESSON1_NOTES: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
+const LEVEL1_LESSON1_LABELS: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
 const FINGER_CUES := [
 	{"id": "circle", "symbol": "●", "shape_name": "hình tròn", "finger_name": "ngón cái"},
 	{"id": "square", "symbol": "■", "shape_name": "hình vuông", "finger_name": "ngón trỏ"},
@@ -104,16 +105,16 @@ const FINGER_CUES := [
 const LEVEL1_CONFIGS := {
 	LEVEL1_LESSON1_ID: {
 		"lesson": 1, "title": "Luyện từng nốt bằng ba ngón", "mode": "explore", "input": "micro",
-		"sheet": ["Sol", "La", "Đô", "Rê", "Mi"], "active_strings": [0, 1, 2, 3, 4],
+		"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "active_strings": [0, 1, 2, 3, 4],
 		"instruction": "Nghe câu nhạc chậm. Khi nhạc dừng, hãy gảy lần lượt Sol – La – Đô – Rê – Mi trên đàn thật.",
 		"bpm": 56.0, "pass_score": 80.0
 	},
 	LEVEL1_LESSON2_ID: {
 		"lesson": 2, "title": "Điền nốt còn thiếu vào bài nhạc", "mode": "fill_melody", "input": "micro",
 		"sheet": [
-			"Sol", "La", "Đô", "La", "Sol", "Rê", "Mi", "Rê",
-			"Đô", "La", "Sol", "Đô", "Rê", "Mi", "Rê", "Đô",
-			"La", "Sol", "La", "Đô", "Mi", "Rê", "Đô", "Sol"
+			"Sol1", "La1", "Đô2", "La1", "Sol1", "Rê2", "Mi2", "Rê2",
+			"Đô2", "La1", "Sol1", "Đô2", "Rê2", "Mi2", "Rê2", "Đô2",
+			"La1", "Sol1", "La1", "Đô2", "Mi2", "Rê2", "Đô2", "Sol1"
 		],
 		"missing_indices": [3, 7, 11, 15, 19, 23],
 		"cues": ["", "", "", "square", "", "", "", "square", "", "", "", "triangle",
@@ -576,9 +577,22 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		profile.notes.assign(["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"])
+		profile.frequencies = PackedFloat32Array([196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00])
+		profile.physical_mappings = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		profile.min_frequency = 180.0
+		profile.max_frequency = 1900.0
+		profile.volume_threshold_db = -58.0
+		profile.cents_tolerance = 35.0
+		profile.hold_time_sec = 0.20
+		profile.is_plucked_instrument = true
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 180.0
 		visualizer.max_frequency = 1900.0
-		visualizer.volume_threshold_db = -55.0
+		visualizer.volume_threshold_db = -58.0
 		visualizer.visible = false
 		record_hbox.add_child(visualizer)
 		record_hbox.move_child(visualizer, 1) # Positioned beautifully between RecordBtn and ResetBtn
@@ -2730,6 +2744,7 @@ func _finish_level1_sequence() -> void:
 	var passed := _score >= float(_level1_config["pass_score"])
 	if passed:
 		SecureDataManager.complete_lesson("dan_tranh", SecureDataManager.active_lesson_id, 3 if _score >= 90.0 else 2)
+		_sync_practice_to_backend("dan_tranh", SecureDataManager.active_lesson_id, _level1_config)
 	if _board:
 		_board.set_target(-1)
 		_board.is_active = false
@@ -3358,29 +3373,29 @@ func get_string_stream_source(string_index: int) -> String:
 	return _string_stream_sources[string_index]
 
 func _get_string_frequency(idx: int) -> float:
-	# Đàn tranh 17 dây - tần số thực tế từng dây
-	# Dây 1-5 (không số): Sol=G2, La=A2, Đô=C3, Rê=D3, Mi=E3
-	# Dây 6-10 (số 2): Sol2=G3, La2=A3, Đô2=C4, Rê2=D4, Mi2=E4
-	# Dây 11-15 (số 3): Sol3=G4, La3=A4, Đô3=C5, Rê3=D5, Mi3=E5
-	# Dây 16-17 (số 4): Sol4=G5, La4=A5
+	# Đàn tranh 17 dây - tần số chuẩn 17 dây (Sol1 196Hz đến La4 1760Hz)
+	# Dây 1-5: Sol1=196Hz, La1=220Hz, Đô2=261.63Hz, Rê2=293.66Hz, Mi2=329.63Hz
+	# Dây 6-10: Sol2=392Hz, La2=440Hz, Đô3=523.25Hz, Rê3=587.33Hz, Mi3=659.25Hz
+	# Dây 11-15: Sol3=783.99Hz, La3=880Hz, Đô4=1046.5Hz, Rê4=1174.66Hz, Mi4=1318.51Hz
+	# Dây 16-17: Sol4=1567.98Hz, La4=1760Hz
 	const DAN_TRANH_FREQS: Array[float] = [
-		98.00,   # Dây 1 - Sol  (G2)
-		110.00,  # Dây 2 - La   (A2)
-		130.81,  # Dây 3 - Đô   (C3)
-		146.83,  # Dây 4 - Rê   (D3)
-		164.81,  # Dây 5 - Mi   (E3)
-		196.00,  # Dây 6 - Sol2 (G3)
-		220.00,  # Dây 7 - La2  (A3)
-		261.63,  # Dây 8 - Đô2  (C4)
-		293.66,  # Dây 9 - Rê2  (D4)
-		329.63,  # Dây 10- Mi2  (E4)
-		392.00,  # Dây 11- Sol3 (G4)
-		440.00,  # Dây 12- La3  (A4)
-		523.25,  # Dây 13- Đô3  (C5)
-		587.33,  # Dây 14- Rê3  (D5)
-		659.25,  # Dây 15- Mi3  (E5)
-		783.99,  # Dây 16- Sol4 (G5)
-		880.00   # Dây 17- La4  (A5)
+		196.00,  # Dây 1 - Sol1 (G3)
+		220.00,  # Dây 2 - La1  (A3)
+		261.63,  # Dây 3 - Đô2  (C4)
+		293.66,  # Dây 4 - Rê2  (D4)
+		329.63,  # Dây 5 - Mi2  (E4)
+		392.00,  # Dây 6 - Sol2 (G4)
+		440.00,  # Dây 7 - La2  (A4)
+		523.25,  # Dây 8 - Đô3  (C5)
+		587.33,  # Dây 9 - Rê3  (D5)
+		659.25,  # Dây 10- Mi3  (E5)
+		783.99,  # Dây 11- Sol3 (G5)
+		880.00,  # Dây 12- La3  (A5)
+		1046.50, # Dây 13- Đô4  (C6)
+		1174.66, # Dây 14- Rê4  (D6)
+		1318.51, # Dây 15- Mi4  (E6)
+		1567.98, # Dây 16- Sol4 (G6)
+		1760.00  # Dây 17- La4  (A6)
 	]
 	if idx < 0 or idx >= DAN_TRANH_FREQS.size():
 		return 220.0
@@ -3777,6 +3792,7 @@ func _process_real_audio(delta: float) -> void:
 				
 				# Dynamic AI scoring
 				var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+				_last_rhythm_score = rhythm_score
 				var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
 				var avg_tone_score = _get_average_score(_tone_scores, 80.0)
 				
@@ -4005,6 +4021,7 @@ func _show_custom_result() -> void:
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
+		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id, {})
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -4018,6 +4035,25 @@ func _show_custom_result() -> void:
 			next_lesson_name = "Song Thanh"
 			
 		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_config: Dictionary) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var scores := {
+		"pitch": _get_average_score(_pitch_scores, 80.0),
+		"rhythm": _last_rhythm_score,
+		"dynamics": 0.0,
+		"tonal_quality": _get_average_score(_tone_scores, 80.0),
+		"breath": 0.0,
+	}
+	if not level1_config.is_empty():
+		var accuracy := float(_level1_correct_count) / float(maxi(1, _level1_total_attempts)) * 100.0
+		scores["pitch"] = accuracy
+		scores["rhythm"] = _get_average_score(_level1_timing_scores, accuracy)
+		scores["tonal_quality"] = 0.0
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, scores)
+	if not result.get("submitted", false):
+		push_warning("[PracticeRoom] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _go_back() -> void:
 	var t := create_tween()

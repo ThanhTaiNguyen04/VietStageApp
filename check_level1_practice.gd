@@ -4,7 +4,7 @@ func _init() -> void:
 	SecureDataManager.active_lesson_id = "dan_tranh_level_1_bai_1_practice"
 	InstrumentSelect.selected_instrument = "dan_tranh"
 	PracticeRoom.current_song_title = "Làm quen 5 nốt cơ bản"
-	PracticeRoom.current_song_sheet.assign(["Sol1", "La1", "Đô2", "Rê2", "Mi2"])
+	PracticeRoom.current_song_sheet.assign(["Sol1", "La1", "Đô1", "Rê1", "Mi1"])
 	call_deferred("_run_check")
 
 func _run_check() -> void:

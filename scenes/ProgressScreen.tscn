@@ -1,7 +1,12 @@
-[gd_scene load_steps=3 format=3 uid="uid://progress_screen_001"]
+[gd_scene load_steps=6 format=3 uid="uid://progress_screen_001"]
 
-[ext_resource type="Script"    path="res://scripts/ProgressScreen.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="2_char"]
+[ext_resource type="Script" path="res://scripts/ProgressScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/bon_nhac_cu_background.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
+[ext_resource type="Shader" path="res://assets/shaders/circular_avatar.gdshader" id="4_avatar_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_avatar_mask"]
+shader = ExtResource("4_avatar_shader")
 
 [node name="ProgressScreen" type="Control"]
 layout_mode = 3
@@ -12,300 +17,295 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="BG" type="ColorRect" parent="."]
+[node name="AvatarRequest" type="HTTPRequest" parent="."]
+
+[node name="BG" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.07, 0.04, 0.015, 1.0)
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+mouse_filter = 2
+
+[node name="BGOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0)
+mouse_filter = 2
 
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 80)
-layout_mode = 2
+[node name="FloatingMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 24
+offset_top = 24
+offset_right = 104
+offset_bottom = 104
 
-[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
+[node name="BackBtn" type="Button" parent="FloatingMargin"]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_bottom = 0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+tooltip_text = "Quay lại"
 
-[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
+
+
+
+[node name="BodyMargin" type="MarginContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_bottom = 24
+
+[node name="Scroll" type="ScrollContainer" parent="Root/BodyMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Center" type="MarginContainer" parent="Root/BodyMargin/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ContentV" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center"]
+custom_minimum_size = Vector2(1480, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 18
+
+[node name="TitleV" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PageTitle" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/TitleV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Thành tựu"
+
+
+[node name="HeroCard" type="PanelContainer" parent="Root/BodyMargin/Scroll/Center/ContentV"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HeroM" type="MarginContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="HeroH" type="BoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM"]
 layout_mode = 2
 theme_override_constants/separation = 24
 
-[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(160, 0)
+[node name="ProfileBlock" type="HBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH"]
+custom_minimum_size = Vector2(330, 0)
 layout_mode = 2
 size_flags_vertical = 4
-flat = true
-text = "Back"
-theme_override_font_sizes/font_size = 20
-
-[node name="ExportBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-size_flags_vertical = 4
-flat = true
-text = "Xuất"
-theme_override_font_sizes/font_size = 16
-
-[node name="PageTitle" type="Label" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 32
-text = "Tiến độ"
-
-[node name="Content" type="BoxContainer" parent="Root"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 0
-
-[node name="ProfilePanel" type="PanelContainer" parent="Root/Content"]
-custom_minimum_size = Vector2(340, 0)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ProfileM" type="MarginContainer" parent="Root/Content/ProfilePanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 28
-theme_override_constants/margin_right = 28
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_bottom = 28
-
-[node name="ProfileV" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM"]
-layout_mode = 2
 theme_override_constants/separation = 16
-alignment = 1
 
-[node name="AvatarCircle" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-custom_minimum_size = Vector2(130, 130)
+[node name="AvatarFrame" type="PanelContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock"]
+custom_minimum_size = Vector2(86, 86)
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_vertical = 4
+clip_contents = true
 
-[node name="AvatarThumb" type="TextureRect" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/AvatarCircle"]
+[node name="Avatar" type="TextureRect" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/AvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
-texture = ExtResource("2_char")
+texture = ExtResource("3_avatar")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PlayerName" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Linh"
-horizontal_alignment = 1
-
-[node name="LevelBadge" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-layout_mode = 2
-size_flags_horizontal = 4
-
-[node name="LBM" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge"]
-layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_bottom = 8
-
-[node name="LBLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LevelBadge/LBM"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Cấp độ 8"
-horizontal_alignment = 1
-
-[node name="Sep" type="HSeparator" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-layout_mode = 2
-
-[node name="LvlHBox" type="HBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-layout_mode = 2
-
-[node name="LvlLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox"]
+[node name="ProfileCopy" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
-text = "Cấp độ 8"
+size_flags_vertical = 4
+theme_override_constants/separation = 3
 
-[node name="XpLabel" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/LvlHBox"]
+[node name="UserName" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "1.240 / 2.000 XP"
+theme_override_font_sizes/font_size = 24
+text = "Học viên VietStage"
+text_overrun_behavior = 3
 
-[node name="LvlBar" type="ProgressBar" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-custom_minimum_size = Vector2(0, 16)
+[node name="LevelPill" type="PanelContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy"]
 layout_mode = 2
-value = 62.0
+size_flags_horizontal = 0
+
+[node name="PillM" type="MarginContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/LevelPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="LevelLabel" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProfileBlock/ProfileCopy/LevelPill/PillM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Cấp độ 1"
+
+[node name="HeroDivider" type="VSeparator" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH"]
+layout_mode = 2
+
+[node name="ProgressBlock" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="LevelRow" type="HBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProgressBlock"]
+layout_mode = 2
+
+[node name="ProgressTitle" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProgressBlock/LevelRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "Tiến độ cấp độ"
+
+[node name="XpLabel" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProgressBlock/LevelRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "0 / 1000 XP"
+
+[node name="XpBar" type="ProgressBar" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProgressBlock"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+max_value = 1000.0
 show_percentage = false
 
-[node name="StatGrid" type="GridContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV"]
-columns = 2
-layout_mode = 2
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-
-[node name="S1" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
-layout_mode = 2
-
-[node name="S1M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="S1V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-alignment = 1
-
-[node name="S1Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "F"
-horizontal_alignment = 1
-
-[node name="S1Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "7"
-horizontal_alignment = 1
-
-[node name="S1Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S1/S1M/S1V"]
+[node name="LevelHint" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH/ProgressBlock"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "Ngày"
-horizontal_alignment = 1
+text = "Mỗi bài học đưa bạn gần hơn tới huy hiệu tiếp theo"
+autowrap_mode = 2
 
-[node name="S2" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
+[node name="HeroDivider2" type="VSeparator" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH"]
 layout_mode = 2
 
-[node name="S2M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="S2V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-alignment = 1
-
-[node name="S2Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "*"
-horizontal_alignment = 1
-
-[node name="S2Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "1.240"
-horizontal_alignment = 1
-
-[node name="S2Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S2/S2M/S2V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "XP"
-horizontal_alignment = 1
-
-[node name="S3" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
-layout_mode = 2
-
-[node name="S3M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="S3V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-alignment = 1
-
-[node name="S3Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "T"
-horizontal_alignment = 1
-
-[node name="S3Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "14h"
-horizontal_alignment = 1
-
-[node name="S3Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S3/S3M/S3V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Luyện tập"
-horizontal_alignment = 1
-
-[node name="S4" type="PanelContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid"]
-layout_mode = 2
-
-[node name="S4M" type="MarginContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="S4V" type="VBoxContainer" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M"]
-layout_mode = 2
-theme_override_constants/separation = 4
-alignment = 1
-
-[node name="S4Icon" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "A"
-horizontal_alignment = 1
-
-[node name="S4Val" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "78%"
-horizontal_alignment = 1
-
-[node name="S4Lbl" type="Label" parent="Root/Content/ProfilePanel/ProfileM/ProfileV/StatGrid/S4/S4M/S4V"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Chính xác"
-horizontal_alignment = 1
-
-[node name="AchPanel" type="PanelContainer" parent="Root/Content"]
+[node name="StatGrid" type="GridContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/HeroCard/HeroM/HeroH"]
+columns = 4
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
+size_flags_vertical = 4
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
-[node name="AchM" type="MarginContainer" parent="Root/Content/AchPanel"]
+[node name="CollectionCard" type="PanelContainer" parent="Root/BodyMargin/Scroll/Center/ContentV"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CardM" type="MarginContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 28
 theme_override_constants/margin_right = 28
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_bottom = 28
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_bottom = 30
 
-[node name="AchV" type="VBoxContainer" parent="Root/Content/AchPanel/AchM"]
+[node name="CardV" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM"]
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 18
+theme_override_constants/separation = 16
 
-[node name="AchTitle" type="Label" parent="Root/Content/AchPanel/AchM/AchV"]
+[node name="CollectionHeader" type="BoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "Huy hiệu"
+theme_override_constants/separation = 14
 
-[node name="AchGrid" type="GridContainer" parent="Root/Content/AchPanel/AchM/AchV"]
+[node name="HeaderCopy" type="VBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/CollectionHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="CollectionTitle" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/CollectionHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Bộ sưu tập thành tựu"
+
+[node name="CollectionSubtitle" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/CollectionHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Mỗi huy hiệu ghi lại một cột mốc đáng nhớ"
+
+[node name="SummaryPill" type="PanelContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/CollectionHeader"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="SummaryM" type="MarginContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/CollectionHeader/SummaryPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="SummaryLabel" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/CollectionHeader/SummaryPill/SummaryM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "0 / 0 đã đạt"
+
+[node name="Filters" type="HBoxContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AllBtn" type="Button" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/Filters"]
+custom_minimum_size = Vector2(116, 46)
+layout_mode = 2
+text = "Tất cả"
+toggle_mode = true
+button_pressed = true
+theme_override_font_sizes/font_size = 14
+
+[node name="EarnedBtn" type="Button" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/Filters"]
+custom_minimum_size = Vector2(116, 46)
+layout_mode = 2
+text = "Đã đạt"
+toggle_mode = true
+theme_override_font_sizes/font_size = 14
+
+[node name="LockedBtn" type="Button" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV/Filters"]
+custom_minimum_size = Vector2(116, 46)
+layout_mode = 2
+text = "Chưa đạt"
+toggle_mode = true
+theme_override_font_sizes/font_size = 14
+
+[node name="Divider" type="HSeparator" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV"]
+layout_mode = 2
+
+[node name="StateLabel" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Đang tải thành tựu..."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="AchievementGrid" type="GridContainer" parent="Root/BodyMargin/Scroll/Center/ContentV/CollectionCard/CardM/CardV"]
+visible = false
 columns = 4
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+
+[node name="FooterNote" type="Label" parent="Root/BodyMargin/Scroll/Center/ContentV"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "VietStage · Gìn giữ âm sắc Việt qua từng cột mốc"
+horizontal_alignment = 1

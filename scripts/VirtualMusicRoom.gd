@@ -70,8 +70,14 @@ var _tex_sao : Texture2D
 var _tex_bau : Texture2D
 var _tex_trong : Texture2D
 var _tex_linh : Texture2D
+var _tex_linh_talk : Texture2D
+var _tex_linh_walk_down : Texture2D
+var _tex_linh_walk_up : Texture2D
+var _tex_linh_walk_left : Texture2D
+var _tex_linh_walk_right : Texture2D
 var _tex_player : Texture2D
 var _tex_wall : Texture2D
+var _linh_walk_direction : String = "down"
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
 var _is_blinking : bool = false
@@ -109,6 +115,32 @@ var dialogue_lbl : Label
 var btn_dialogue_close : Button
 
 var shop_popup : Control = null
+var _api_client = null
+var _cosmetics_all: Array = []
+var _cosmetics_owned: Array = []
+var _cosmetics_locked: Array = []
+var _instruments_data: Dictionary = {
+	"tranh": {
+		"name": "Đàn Tranh",
+		"desc": "Đàn Tranh sử dụng thang âm chuẩn với các nốt nhạc: Đô - Rê - Mi - Fa - Sol - La - Si (tương đương với các tần số C3 - D3 - E3 - F3 - G3 - A3 - B3). Nhấn vào dây đàn bên phải nhạn để gảy âm.",
+		"fingering": "Kỹ thuật tay phải: Sử dụng ngón cái (1), ngón trỏ (2) và ngón giữa (3) đeo móng gảy để gảy dây đàn hướng vào lòng.\nKỹ thuật tay trái: Nhấn và rung dây ở phía bên trái nhạn đàn để tạo âm rung cảm xúc."
+	},
+	"sao": {
+		"name": "Sáo Trúc",
+		"desc": "Sáo Trúc sử dụng thang âm tự nhiên. Bằng cách lấy hơi bụng tròn trịa và hé/bịt các lỗ bấm, người thổi có thể tạo ra các nốt Đô - Rê - Mi - Fa - Sol - La chuẩn âm điệu dân tộc.",
+		"fingering": "Kỹ thuật ngón: Đặt môi đều vào lỗ thổi. Bịt kín lỗ ngón bằng đầu ngón tay mềm mại (không dùng đốt ngón tay). Thổi hơi đều để âm thanh không bị rè."
+	},
+	"bau": {
+		"name": "Đàn Bầu",
+		"desc": "Đàn Bầu (Độc huyền cầm) chỉ sử dụng một dây tơ duy nhất căng trên thân tre gỗ. Các nốt nhạc được tạo ra bằng cách gảy vào các điểm hài âm và uốn vòi đàn để đổi cao độ.",
+		"fingering": "Tay phải: Dùng que gảy nhỏ gảy vào dây đồng thời chạm cạnh bàn tay vào điểm hài âm để tạo tiếng bầu trầm bổng.\nTay trái: Cầm vòi đàn uốn về phía trước (giảm cao độ) hoặc kéo về sau (tăng cao độ)."
+	},
+	"trong": {
+		"name": "Trống Chầu",
+		"desc": "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền. Mặt trống bằng da bò căng chặt tạo tiếng vang đanh thép rực lửa.",
+		"fingering": "Gõ vào tâm mặt trống tạo tiếng 'Tịch' trầm sâu. Gõ vào vành gỗ trống bằng dùi chầu gỗ tạo tiếng 'Cắc' vang dội réo rắt báo hiệu đổi làn điệu."
+	}
+}
 
 var _font_title : Font
 var _font_body : Font
@@ -145,6 +177,12 @@ func _ready() -> void:
 		focus_scroll.custom_minimum_size = Vector2(920, 580)
 
 	SecureDataManager.load_data()
+	
+	_api_client = preload("res://scripts/ApiClient.gd").new()
+	add_child(_api_client)
+	_fetch_cosmetics_data()
+	_fetch_instruments_data()
+	
 	_spawn_decorations()
 	_setup_hud_shop_button()
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
@@ -152,8 +190,13 @@ func _ready() -> void:
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
 	_tex_trong = load("res://assets/textures/trong_chau_assetremove.png") as Texture2D
 	_tex_linh = load("res://assets/textures/cogiaoMai_asset.png") as Texture2D
+	_tex_linh_talk = load("res://assets/textures/coMai/mai_talk_sheet.png") as Texture2D
+	_tex_linh_walk_down = load("res://assets/textures/coMai/mai_walk_down_sheet.png") as Texture2D
+	_tex_linh_walk_up = load("res://assets/textures/coMai/mai_walk_up_sheet.png") as Texture2D
+	_tex_linh_walk_left = load("res://assets/textures/coMai/mai_walk_left_sheet.png") as Texture2D
+	_tex_linh_walk_right = load("res://assets/textures/coMai/mai_walk_right_sheet.png") as Texture2D
 	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
-	_tex_wall = load("res://image/imagesao.png") as Texture2D
+	_tex_wall = load("res://assets/textures/backgroundphonghocao.png") as Texture2D
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
@@ -216,10 +259,10 @@ func _ready() -> void:
 	s_bau.size = Vector2(400, 240)
 	s_trong.size = Vector2(400, 240)
 	
-	_setup_station_button(s_tranh, "tranh", "Đàn Tranh", _draw_tranh)
-	_setup_station_button(s_sao, "sao", "Sáo Trúc", _draw_sao)
-	_setup_station_button(s_bau, "bau", "Đàn Bầu", _draw_bau)
-	_setup_station_button(s_trong, "trong", "Trống Chầu", _draw_trong)
+	_setup_station_button(s_tranh, "tranh", _draw_tranh)
+	_setup_station_button(s_sao, "sao", _draw_sao)
+	_setup_station_button(s_bau, "bau", _draw_bau)
+	_setup_station_button(s_trong, "trong", _draw_trong)
 	
 	# Setup Linh Assist
 	char_linh.draw.connect(_draw_linh.bind(char_linh))
@@ -548,9 +591,9 @@ func _process(delta: float) -> void:
 	# 		_show_dialogue(LINH_TIPS.pick_random())
 
 # ─── Tooltip & Affordance Interactive Stations ─────────────────────────────────
-func _setup_station_button(btn: Button, code_name: String, displayName: String, draw_func: Callable) -> void:
+func _setup_station_button(btn: Button, code_name: String, draw_func: Callable) -> void:
 	btn.pivot_offset = btn.size / 2.0
-	btn.draw.connect(_on_station_draw.bind(btn, displayName, draw_func))
+	btn.draw.connect(_on_station_draw.bind(btn, code_name, draw_func))
 	
 	# Override button styles to flat/empty to remove ugly Godot grey boxes
 	var empty_sb := StyleBoxEmpty.new()
@@ -560,11 +603,12 @@ func _setup_station_button(btn: Button, code_name: String, displayName: String, 
 	btn.add_theme_stylebox_override("focus", empty_sb)
 	btn.flat = true
 	
-	btn.mouse_entered.connect(_on_station_mouse_entered.bind(btn, code_name, displayName))
+	btn.mouse_entered.connect(_on_station_mouse_entered.bind(btn, code_name))
 	btn.mouse_exited.connect(_on_station_mouse_exited.bind(btn, code_name))
 	btn.pressed.connect(_on_station_pressed.bind(btn, code_name))
 
-func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> void:
+func _on_station_draw(btn: Button, code_name: String, draw_func: Callable) -> void:
+	var displayName : String = _instruments_data.get(code_name, {}).get("name", "")
 	var sz := btn.size
 	var is_hov := btn.is_hovered()
 	
@@ -574,7 +618,7 @@ func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> 
 	# Draw instrument name label at the bottom of the card using _font_body_bold
 	var font := _font_body_bold if _font_body_bold else btn.get_theme_default_font()
 	if font:
-		var name_str := displayName
+		var name_str : String = displayName
 		if displayName.contains(" (Sắp ra mắt)"):
 			name_str = displayName.replace(" (Sắp ra mắt)", "")
 			
@@ -599,8 +643,9 @@ func _on_station_draw(btn: Button, displayName: String, draw_func: Callable) -> 
 		btn.draw_string(font, Vector2(lbl_x, lbl_y), name_str,
 			HORIZONTAL_ALIGNMENT_CENTER, sz.x, label_font_size, text_col)
 
-func _on_station_mouse_entered(btn: Button, code_name: String, displayName: String) -> void:
+func _on_station_mouse_entered(btn: Button, code_name: String) -> void:
 	_hovered_station = code_name
+	var displayName : String = _instruments_data.get(code_name, {}).get("name", "")
 	
 	# Bouncy scale up and request redraw for glows
 	var t := create_tween().set_parallel(true)
@@ -733,7 +778,6 @@ func _on_floor_gui_input(event: InputEvent) -> void:
 		_close_dialogue()
 
 func _move_linh_to_station(station_code: String, show_popup_after_move: bool = true) -> void:
-	_linh_is_moving = true
 	if _linh_tween:
 		_linh_tween.kill()
 	
@@ -746,6 +790,13 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 		"trong":       target_feet = _get_station_floor_center(s_trong)
 	
 	var linh_feet_offset := _get_linh_feet_offset()
+	var current_feet := char_linh.position + linh_feet_offset
+	var move_delta := target_feet - current_feet
+	if absf(move_delta.x) > absf(move_delta.y):
+		_linh_walk_direction = "right" if move_delta.x >= 0.0 else "left"
+	else:
+		_linh_walk_direction = "down" if move_delta.y >= 0.0 else "up"
+	_linh_is_moving = true
 	var target_x := target_feet.x - linh_feet_offset.x
 	var target_y := target_feet.y - linh_feet_offset.y
 	
@@ -833,31 +884,14 @@ func _open_focus_mode_popup(inst: String) -> void:
 	_player_expression = "focused"
 	_toggle_popup_tab(true)
 	
-	# Configure labels and details based on instrument
-	if inst == "tranh":
-		popup_title.text = "Giới Thiệu Đàn Tranh"
-		text_theory.text = "Đàn Tranh sử dụng thang âm chuẩn với các nốt nhạc: Đô - Rê - Mi - Fa - Sol - La - Si (tương đương với các tần số C3 - D3 - E3 - F3 - G3 - A3 - B3). Nhấn vào dây đàn bên phải nhạn để gảy âm."
-		text_fingering.text = "Kỹ thuật tay phải: Sử dụng ngón cái (1), ngón trỏ (2) và ngón giữa (3) đeo móng gảy để gảy dây đàn hướng vào lòng.\nKỹ thuật tay trái: Nhấn và rung dây ở phía bên trái nhạn đàn để tạo âm rung cảm xúc."
+	# Configure labels and details based on instrument from dynamic data
+	if _instruments_data.has(inst):
+		var data = _instruments_data[inst]
+		popup_title.text = "Giới Thiệu " + data.get("name", "")
+		text_theory.text = data.get("desc", "")
+		text_fingering.text = data.get("fingering", "")
 		btn_popup_play.visible = true
 		btn_popup_play.text = "VÀO HỌC"
-	elif inst == "sao":
-		popup_title.text = "Giới Thiệu Sáo Trúc"
-		text_theory.text = "Sáo Trúc sử dụng thang âm tự nhiên. Bằng cách lấy hơi bụng tròn trịa và hé/bịt các lỗ bấm, người thổi có thể tạo ra các nốt Đô - Rê - Mi - Fa - Sol - La chuẩn âm điệu dân tộc."
-		text_fingering.text = "Kỹ thuật ngón: Đặt môi đều vào lỗ thổi. Bịt kín lỗ ngón bằng đầu ngón tay mềm mại (không dùng đốt ngón tay). Thổi hơi đều để âm thanh không bị rè."
-		btn_popup_play.visible = true
-		btn_popup_play.text = "VÀO HỌC"
-	elif inst == "bau":
-		popup_title.text = "Giới Thiệu Đàn Bầu"
-		text_theory.text = "Đàn Bầu (Độc huyền cầm) chỉ sử dụng một dây tơ duy nhất căng trên thân tre gỗ. Các nốt nhạc được tạo ra bằng cách gảy vào các điểm hài âm và uốn vòi đàn để đổi cao độ."
-		text_fingering.text = "Tay phải: Dùng que gảy nhỏ gảy vào dây đồng thời chạm cạnh bàn tay vào điểm hài âm để tạo tiếng bầu trầm bổng.\nTay trái: Cầm vòi đàn uốn về phía trước (giảm cao độ) hoặc kéo về sau (tăng cao độ)."
-		btn_popup_play.visible = true
-		btn_popup_play.text = "VÀO HỌC"
-	elif inst == "trong":
-		popup_title.text = "Giới Thiệu Trống Chầu"
-		text_theory.text = "Trống Chầu đóng vai trò giữ nhịp điệu rộn ràng cho các điệu hát chèo, hát đào cổ truyền. Mặt trống bằng da bò căng chặt tạo tiếng vang đanh thép rực lửa."
-		text_fingering.text = "Gõ vào tâm mặt trống tạo tiếng 'Tịch' trầm sâu. Gõ vào vành gỗ trống bằng dùi chầu gỗ tạo tiếng 'Cắc' vang dội réo rắt báo hiệu đổi làn điệu."
-		btn_popup_play.visible = true
-		btn_popup_play.text = "VÀO HỌC" # locked
 	else:
 		popup_title.text = "Giới Thiệu Nhạc Cụ"
 		text_theory.text = ""
@@ -1481,7 +1515,19 @@ func _draw_linh(c: Control) -> void:
 	var base_pos := Vector2(cx, cy + 74.0)
 	c.draw_set_transform(base_pos + Vector2(0.0, bob - 74.0), rot, scale_vec)
 	
-	if _tex_linh:
+	var animation_sheet : Texture2D = null
+	if _linh_is_moving:
+		match _linh_walk_direction:
+			"up": animation_sheet = _tex_linh_walk_up
+			"left": animation_sheet = _tex_linh_walk_left
+			"right": animation_sheet = _tex_linh_walk_right
+			_: animation_sheet = _tex_linh_walk_down
+	elif is_speaking:
+		animation_sheet = _tex_linh_talk
+
+	if animation_sheet:
+		_draw_linh_sheet_frame(c, animation_sheet, sz, int(_time * 8.0) % 6)
+	elif _tex_linh:
 		var img_w := sz.x
 		var img_h := sz.y
 		var tex_ratio := _tex_linh.get_width() / float(_tex_linh.get_height())
@@ -1534,6 +1580,24 @@ func _draw_linh(c: Control) -> void:
 		c.draw_arc(head_c + Vector2(-10, -2), 3.5, PI, TAU, 8, Color.BLACK, 2.0)
 		c.draw_arc(head_c + Vector2(10, -2), 3.5, PI, TAU, 8, Color.BLACK, 2.0)
 		c.draw_arc(head_c + Vector2(0, 5), 4.5, 0, PI, 8, C_RED_SON, 2.0)
+
+
+func _draw_linh_sheet_frame(c: Control, sheet: Texture2D, size: Vector2, frame_index: int) -> void:
+	# Each Cô Mai sheet is a 3-column × 2-row grid, containing six animation frames.
+	var frame_width := sheet.get_width() / 3.0
+	var frame_height := sheet.get_height() / 2.0
+	var frame := posmod(frame_index, 6)
+	var source_rect := Rect2(
+		float(frame % 3) * frame_width,
+		float(frame / 3) * frame_height,
+		frame_width,
+		frame_height
+	)
+	# Keep the same tall visual proportion as the former static illustration.
+	var image_height := size.y
+	var image_width := image_height * (2.0 / 3.0)
+	var destination_rect := Rect2(-image_width * 0.5, 74.0 - image_height, image_width, image_height)
+	c.draw_texture_rect_region(sheet, destination_rect, source_rect)
 
 func _draw_capsule(c: Control, p1: Vector2, p2: Vector2, color: Color, width: float) -> void:
 	c.draw_line(p1, p2, color, width)
@@ -2453,6 +2517,70 @@ func _make_btn_bouncy(btn: Button) -> void:
 		btn.scale = Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE
 	)
 
+
+func _fetch_cosmetics_data() -> void:
+	if _api_client == null:
+		return
+	var response = await _api_client.get_all_cosmetics()
+	if _api_client._is_success(response):
+		_cosmetics_all = response.get("body", {}).get("data", [])
+	else:
+		_cosmetics_all = []
+		
+	var my_response = await _api_client.get_my_cosmetics()
+	if _api_client._is_success(my_response):
+		var body = my_response.get("body", {}).get("data", {})
+		_cosmetics_owned = body.get("owned", [])
+		_cosmetics_locked = body.get("locked", [])
+	else:
+		_cosmetics_owned = []
+		_cosmetics_locked = []
+		
+	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
+	_spawn_decorations()
+	if shop_popup and shop_popup.visible:
+		_update_shop_items()
+
+func _get_draw_key(item: Dictionary) -> String:
+	var asset_url := str(item.get("assetUrl", "")).to_lower()
+	var item_name := str(item.get("name", "")).to_lower()
+	
+	if "painting" in asset_url or "painting" in item_name or "tranh" in item_name:
+		return "painting"
+	elif "vase" in asset_url or "vase" in item_name or "bình" in item_name or "hoa" in item_name:
+		return "vase"
+	elif "bamboo" in asset_url or "bamboo" in item_name or "trúc" in item_name:
+		return "bamboo"
+	elif "drum" in asset_url or "drum" in item_name or "trống" in item_name:
+		return "bronze_drum"
+	return "painting"
+
+func _fetch_instruments_data() -> void:
+	if _api_client == null:
+		return
+	var response = await _api_client.get_instruments()
+	if _api_client._is_success(response):
+		var list = response.get("body", {}).get("data", [])
+		for item in list:
+			var code = _get_instrument_code_mapping(item.get("instrumentCode", ""))
+			if code != "":
+				_instruments_data[code] = {
+					"name": item.get("name", _instruments_data[code]["name"]),
+					"desc": item.get("description", _instruments_data[code]["desc"])
+				}
+
+func _get_instrument_code_mapping(api_code: String) -> String:
+	var c = api_code.to_lower()
+	if "tranh" in c:
+		return "tranh"
+	elif "sao" in c:
+		return "sao"
+	elif "bau" in c:
+		return "bau"
+	elif "trong" in c:
+		return "trong"
+	return ""
+
 # ─── Decoration Shop & Reward Helpers ──────────────────────────────────────────
 
 func _setup_hud_shop_button() -> void:
@@ -2525,28 +2653,29 @@ func _spawn_decorations() -> void:
 		if c.name.begins_with("Decor_"):
 			c.queue_free()
 			
-	var active_decor = SecureDataManager.data.get("active_decorations", [])
-	for item_id in active_decor:
-		var ctrl := Control.new()
-		ctrl.name = "Decor_" + item_id
-		
-		# Define sizes and positions for room layout
-		match item_id:
-			"painting":
-				ctrl.position = Vector2(180, 55)
-				ctrl.size = Vector2(80, 120)
-			"vase":
-				ctrl.position = Vector2(390, 420)
-				ctrl.size = Vector2(70, 90)
-			"bamboo":
-				ctrl.position = Vector2(50, 240)
-				ctrl.size = Vector2(80, 110)
-			"bronze_drum":
-				ctrl.position = Vector2(600 - 150, 800 - 180) # Center bottom
-				ctrl.size = Vector2(300, 180)
-				
-		room_content.add_child(ctrl)
-		ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id, false))
+	for item in _cosmetics_owned:
+		if item.get("isEquipped", false):
+			var item_id = _get_draw_key(item)
+			var ctrl := Control.new()
+			ctrl.name = "Decor_" + str(item.get("id"))
+			
+			# Define sizes and positions for room layout
+			match item_id:
+				"painting":
+					ctrl.position = Vector2(180, 55)
+					ctrl.size = Vector2(80, 120)
+				"vase":
+					ctrl.position = Vector2(390, 420)
+					ctrl.size = Vector2(70, 90)
+				"bamboo":
+					ctrl.position = Vector2(50, 240)
+					ctrl.size = Vector2(80, 110)
+				"bronze_drum":
+					ctrl.position = Vector2(600 - 150, 800 - 180) # Center bottom
+					ctrl.size = Vector2(300, 180)
+					
+			room_content.add_child(ctrl)
+			ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id, false))
 	
 	_sort_room_elements()
 
@@ -2981,79 +3110,6 @@ func _setup_shop_popup() -> void:
 	grid.add_theme_constant_override("v_separation", 16)
 	scroll_content.add_child(grid)
 	
-	var items = [
-		{"id": "painting", "name": "Tranh Tố Nữ Cổ Phong", "cost": 3, "desc": "Tranh dân gian Hàng Trống phác họa thiếu nữ chơi nhạc cụ truyền thống."}
-	]
-	
-	for item in items:
-		var card := PanelContainer.new()
-		card.name = "Card_" + item.id
-		card.custom_minimum_size = Vector2(360, 150)
-		var sb := _flat_sb(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, true, 1.5)
-		card.add_theme_stylebox_override("panel", sb)
-		grid.add_child(card)
-		
-		var margin := MarginContainer.new()
-		margin.name = "Margin"
-		margin.add_theme_constant_override("margin_left", 12)
-		margin.add_theme_constant_override("margin_right", 12)
-		margin.add_theme_constant_override("margin_top", 10)
-		margin.add_theme_constant_override("margin_bottom", 10)
-		card.add_child(margin)
-		
-		var hbox := HBoxContainer.new()
-		hbox.name = "HBox"
-		hbox.add_theme_constant_override("separation", 16)
-		margin.add_child(hbox)
-		
-		var preview := Control.new()
-		preview.name = "Preview"
-		preview.custom_minimum_size = Vector2(90, 110)
-		preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		hbox.add_child(preview)
-		preview.draw.connect(_draw_decor_node.bind(preview, item.id, true))
-		
-		var vbox := VBoxContainer.new()
-		vbox.name = "VBox"
-		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		vbox.add_theme_constant_override("separation", 6)
-		hbox.add_child(vbox)
-		
-		var name_lbl := Label.new()
-		name_lbl.text = item.name
-		name_lbl.add_theme_font_size_override("font_size", 16)
-		name_lbl.add_theme_color_override("font_color", C_RED_DK)
-		if _font_body_bold:
-			name_lbl.add_theme_font_override("font", _font_body_bold)
-		vbox.add_child(name_lbl)
-		
-		var cost_lbl := Label.new()
-		cost_lbl.name = "CostLabel"
-		cost_lbl.text = "Yêu cầu: ⭐ %d Sao" % item.cost
-		cost_lbl.add_theme_font_size_override("font_size", 13)
-		cost_lbl.add_theme_color_override("font_color", C_GOLD)
-		if _font_body_bold:
-			cost_lbl.add_theme_font_override("font", _font_body_bold)
-		vbox.add_child(cost_lbl)
-		
-		var desc_lbl := Label.new()
-		desc_lbl.text = item.desc
-		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-		desc_lbl.add_theme_font_size_override("font_size", 12)
-		desc_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
-		if _font_body:
-			desc_lbl.add_theme_font_override("font", _font_body)
-		vbox.add_child(desc_lbl)
-		
-		var btn := Button.new()
-		btn.name = "BtnAction"
-		btn.custom_minimum_size = Vector2(0, 36)
-		vbox.add_child(btn)
-		_style_popup_button(btn, true)
-		_make_btn_bouncy(btn)
-		
-		btn.pressed.connect(_on_shop_action_pressed.bind(item.id, item.cost))
-		
 	var btn_close := Button.new()
 	btn_close.text = "ĐÓNG"
 	btn_close.custom_minimum_size = Vector2(180, 46)
@@ -3069,21 +3125,29 @@ func _setup_shop_popup() -> void:
 		t.tween_callback(func() -> void: shop_popup.visible = false)
 	)
 
-func _on_shop_action_pressed(item_id: String, cost: int) -> void:
-	var unlocked = SecureDataManager.data.unlocked_decorations.has(item_id)
-	if not unlocked:
-		var success = SecureDataManager.unlock_decoration(item_id, cost)
-		if success:
+func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
+	var cosmetic_id = int(item.get("id", 0))
+	if cosmetic_id == 0:
+		return
+	
+	if not owned:
+		var response = await _api_client.unlock_cosmetic(cosmetic_id)
+		if _api_client._is_success(response):
 			_card_particle_timer = 999.0
-			_update_shop_items()
-			_update_star_badge()
-			_spawn_decorations()
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
+			# Khấu trừ sao ngay lập tức để cập nhật mượt hơn
+			var cost = int(item.get("unlockValue", 0))
+			var current_stars = SecureDataManager.get_total_stars()
+			SecureDataManager.data["total_stars"] = max(0, current_stars - cost)
+			SecureDataManager.save_data()
+			_update_star_badge()
+			_fetch_cosmetics_data()
 	else:
-		SecureDataManager.toggle_decoration(item_id)
-		_update_shop_items()
-		_spawn_decorations()
+		var is_equipped = item.get("isEquipped", false)
+		var response = await _api_client.equip_cosmetic(cosmetic_id, not is_equipped)
+		if _api_client._is_success(response):
+			_fetch_cosmetics_data()
 
 func _update_shop_items() -> void:
 	var stars = SecureDataManager.get_total_stars()
@@ -3091,38 +3155,108 @@ func _update_shop_items() -> void:
 	if stars_label:
 		stars_label.text = "Bạn có: ⭐ %d Sao" % stars
 		
-	var items = ["painting"]
-	for item_id in items:
-		var card = shop_popup.get_node("ScrollPanel/ScrollContent/Grid/Card_" + item_id)
-		if not card: continue
+	var grid = shop_popup.get_node("ScrollPanel/ScrollContent/Grid") as GridContainer
+	if not grid:
+		return
+	
+	# Xóa các thẻ bài cũ
+	for c in grid.get_children():
+		c.queue_free()
 		
-		var btn = card.get_node("Margin/HBox/VBox/BtnAction") as Button
-		var unlocked = SecureDataManager.data.unlocked_decorations.has(item_id)
-		var active = SecureDataManager.data.active_decorations.has(item_id)
+	# 1. Vẽ các vật phẩm đã sở hữu
+	for item in _cosmetics_owned:
+		var card = _create_shop_card(item, true, stars)
+		grid.add_child(card)
 		
-		if not unlocked:
-			btn.text = "MỞ KHÓA"
-			var cost = 3
-			match item_id:
-				"painting": cost = 3
-				"vase": cost = 5
-				"bamboo": cost = 8
-				"bronze_drum": cost = 12
-				
-			if stars >= cost:
-				_style_popup_button(btn, true)
-				btn.disabled = false
-			else:
-				_style_disabled_button(btn)
-				btn.disabled = true
-		else:
+	# 2. Vẽ các vật phẩm chưa sở hữu
+	for item in _cosmetics_locked:
+		var card = _create_shop_card(item, false, stars)
+		grid.add_child(card)
+
+func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContainer:
+	var item_id = _get_draw_key(item)
+	var name = item.get("name", "Vật phẩm")
+	var cost = int(item.get("unlockValue", 3))
+	var desc = item.get("description", "Vật phẩm trang trí cho phòng nhạc.")
+	
+	var card := PanelContainer.new()
+	card.name = "Card_" + str(item.get("id"))
+	card.custom_minimum_size = Vector2(360, 150)
+	var sb := _flat_sb(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, true, 1.5)
+	card.add_theme_stylebox_override("panel", sb)
+	
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	card.add_child(margin)
+	
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 16)
+	margin.add_child(hbox)
+	
+	var preview := Control.new()
+	preview.custom_minimum_size = Vector2(90, 110)
+	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(preview)
+	preview.draw.connect(_draw_decor_node.bind(preview, item_id, true))
+	
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 6)
+	hbox.add_child(vbox)
+	
+	var name_lbl := Label.new()
+	name_lbl.text = name
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", C_RED_DK)
+	if _font_body_bold:
+		name_lbl.add_theme_font_override("font", _font_body_bold)
+	vbox.add_child(name_lbl)
+	
+	var cost_lbl := Label.new()
+	cost_lbl.text = "Yêu cầu: ⭐ %d Sao" % cost
+	cost_lbl.add_theme_font_size_override("font_size", 13)
+	cost_lbl.add_theme_color_override("font_color", C_GOLD)
+	if _font_body_bold:
+		cost_lbl.add_theme_font_override("font", _font_body_bold)
+	vbox.add_child(cost_lbl)
+	
+	var desc_lbl := Label.new()
+	desc_lbl.text = desc
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	desc_lbl.add_theme_font_size_override("font_size", 12)
+	desc_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	if _font_body:
+		desc_lbl.add_theme_font_override("font", _font_body)
+	vbox.add_child(desc_lbl)
+	
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(0, 36)
+	vbox.add_child(btn)
+	_make_btn_bouncy(btn)
+	
+	if not owned:
+		btn.text = "MỞ KHÓA"
+		if stars >= cost:
+			_style_popup_button(btn, true)
 			btn.disabled = false
-			if active:
-				btn.text = "CẤT ĐI 📦"
-				_style_popup_button(btn, false)
-			else:
-				btn.text = "TRƯNG BÀY ✨"
-				_style_popup_button(btn, true)
+		else:
+			_style_disabled_button(btn)
+			btn.disabled = true
+	else:
+		btn.disabled = false
+		var active = item.get("isEquipped", false)
+		if active:
+			btn.text = "CẤT ĐI 📦"
+			_style_popup_button(btn, false)
+		else:
+			btn.text = "TRƯNG BÀY ✨"
+			_style_popup_button(btn, true)
+			
+	btn.pressed.connect(_on_shop_action_pressed.bind(item, owned))
+	return card
 
 func _style_disabled_button(btn: Button) -> void:
 	var s := StyleBoxFlat.new()
@@ -3198,7 +3332,7 @@ func _start_intro_cinematic() -> void:
 	
 	var subtitle = Label.new()
 	subtitle.name = "TextLabel"
-	subtitle.text = "Chào mừng bạn đến với lớp học nhạc cụ dân tộc của Mai, hôm nay bạn muốn học gì?"
+	subtitle.text = "Chào mừng bạn đến với lớp học nhạc cụ dân tộc. Hôm nay bạn muốn học gì?"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD

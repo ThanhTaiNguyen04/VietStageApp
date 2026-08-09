@@ -2,10 +2,10 @@ class_name AIChatPopup
 extends CanvasLayer
 
 # ─── Color Palette (Traditional Vietnamese Lacquer Red & Gold Theme) ───────────
-const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige
-const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
-const C_RED_SON     := Color(0.70, 0.12, 0.08, 1.0) # vermilion lacquer red
-const C_RED_DK      := Color(0.38, 0.06, 0.04, 0.96) # deep red
+const C_BG_DARK     := Color(0.95, 0.98, 0.96, 0.94)
+const C_BG_DARKER   := Color(1.00, 1.00, 1.00, 0.92)
+const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
+const C_RED_DK      := Color(0.04, 0.15, 0.10, 0.96)
 const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # golden yellow
 const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0) # bright gold
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
@@ -18,7 +18,7 @@ var audio_manager : AIAudioManager
 
 # UI Nodes
 var ai_chat_popup_root : Control
-var ai_portrait : TextureRect
+var ai_portrait : Control
 var ai_chat_log : RichTextLabel
 var ai_input : LineEdit
 var ai_send_btn : Button
@@ -31,10 +31,15 @@ var model_name_input : LineEdit
 var stt_url_input : LineEdit
 
 # Textures
-var _tex_mai_idle : Texture2D
-var _tex_mai_talking : Texture2D
-var _tex_mai_happy : Texture2D
+var _tex_mai_talk_sheet : Texture2D
 var _tex_fallback : Texture2D
+var _portrait_is_talking := false
+var _portrait_frame := 0
+var _portrait_frame_elapsed := 0.0
+const PORTRAIT_FRAME_DURATION := 0.10
+const PORTRAIT_FRAME_COUNT := 18
+const PORTRAIT_SHEET_COLUMNS := 3
+const PORTRAIT_SHEET_ROWS := 6
 
 # Fonts
 var _font_title : Font
@@ -63,14 +68,8 @@ var _instrument_context: String = "general"
 
 func _ready() -> void:
 	# Load assets
-	_tex_mai_idle = load("res://assets/textures/mai_idle.jpg") as Texture2D
-	_tex_mai_talking = load("res://assets/textures/mai_talking.jpg") as Texture2D
-	_tex_mai_happy = load("res://assets/textures/mai_happy.jpg") as Texture2D
+	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_smooth_12_frames.png") as Texture2D
 	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
-	
-	if not _tex_mai_idle: _tex_mai_idle = _tex_fallback
-	if not _tex_mai_talking: _tex_mai_talking = _tex_fallback
-	if not _tex_mai_happy: _tex_mai_happy = _tex_fallback
 	
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
 	_font_body = load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
@@ -131,7 +130,7 @@ func _build_ui() -> void:
 	
 	# Dim backdrop
 	var overlay = ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.55)
+	overlay.color = Color.TRANSPARENT
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ai_chat_popup_root.add_child(overlay)
 	overlay.gui_input.connect(func(event):
@@ -148,18 +147,19 @@ func _build_ui() -> void:
 	main_panel.offset_top = -300; main_panel.offset_bottom = 300
 	main_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	main_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	main_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, C_RED_SON, 18, true, 4))
+	# Frosted-glass dialogue surface: the virtual room remains visible behind it.
+	main_panel.add_theme_stylebox_override("panel", _flat_sb(Color(0.91, 0.97, 0.93, 0.48), Color(1.0, 1.0, 1.0, 0.72), 24, true, 0))
 	ai_chat_popup_root.add_child(main_panel)
 	
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
 	main_panel.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
+	vbox.add_theme_constant_override("separation", 16)
 	margin.add_child(vbox)
 	
 	# Header HBox
@@ -167,10 +167,10 @@ func _build_ui() -> void:
 	vbox.add_child(header)
 	
 	var title_lbl = Label.new()
-	title_lbl.text = "Trò chuyện với Nghệ sĩ ảo Mai"
+	title_lbl.text = "Trò chuyện với Giáo viên ảo Mai"
 	title_lbl.add_theme_font_override("font", _font_title)
-	title_lbl.add_theme_font_size_override("font_size", 24)
-	title_lbl.add_theme_color_override("font_color", C_RED_SON)
+	title_lbl.add_theme_font_size_override("font_size", 26)
+	title_lbl.add_theme_color_override("font_color", C_CREAM)
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title_lbl)
 	
@@ -179,7 +179,7 @@ func _build_ui() -> void:
 	settings_btn.flat = true
 	settings_btn.add_theme_font_override("font", _font_body_bold)
 	settings_btn.add_theme_font_size_override("font_size", 14)
-	settings_btn.add_theme_color_override("font_color", C_RED_SON)
+	settings_btn.add_theme_color_override("font_color", C_CREAM)
 	settings_btn.pressed.connect(_toggle_ai_settings)
 	header.add_child(settings_btn)
 	_make_btn_bouncy(settings_btn)
@@ -188,58 +188,66 @@ func _build_ui() -> void:
 	close_btn.text = "❌"
 	close_btn.flat = true
 	close_btn.add_theme_font_size_override("font_size", 16)
-	close_btn.add_theme_color_override("font_color", C_RED_SON)
+	close_btn.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	close_btn.pressed.connect(_close_ai_chat)
 	header.add_child(close_btn)
 	_make_btn_bouncy(close_btn)
 	
 	# Body HBox Split
 	var main_split = HBoxContainer.new()
-	main_split.add_theme_constant_override("separation", 20)
+	main_split.add_theme_constant_override("separation", 24)
 	main_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(main_split)
 	
-	# Left Column (Teacher Portrait)
+	# Teacher portrait sits on the left, alongside the dialogue.
 	var left_col = VBoxContainer.new()
-	left_col.custom_minimum_size = Vector2(280, 0)
-	left_col.add_theme_constant_override("separation", 10)
+	left_col.custom_minimum_size = Vector2(290, 0)
+	left_col.add_theme_constant_override("separation", 12)
 	main_split.add_child(left_col)
 	
 	var frame = PanelContainer.new()
 	frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	frame.add_theme_stylebox_override("panel", _flat_sb(Color.BLACK, C_GOLD, 12, false, 2))
+	frame.clip_contents = true
+	frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	left_col.add_child(frame)
 	
-	ai_portrait = TextureRect.new()
-	ai_portrait.texture = _tex_mai_idle
-	ai_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ai_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	ai_portrait = Control.new()
+	ai_portrait.name = "MaiTalkingPortrait"
+	ai_portrait.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	ai_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ai_portrait.draw.connect(_draw_mai_chat_portrait)
 	frame.add_child(ai_portrait)
 	
 	ai_status_lbl = Label.new()
 	ai_status_lbl.text = "Sẵn sàng"
 	ai_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ai_status_lbl.add_theme_font_override("font", _font_body_bold)
-	ai_status_lbl.add_theme_font_size_override("font_size", 14)
-	ai_status_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	ai_status_lbl.add_theme_font_size_override("font_size", 13)
+	ai_status_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	left_col.add_child(ai_status_lbl)
-	
+
+	var dialogue_divider := ColorRect.new()
+	dialogue_divider.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	dialogue_divider.custom_minimum_size = Vector2(1, 0)
+	dialogue_divider.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_split.add_child(dialogue_divider)
+
 	# Right Column (Chat Logs & Input)
 	var right_col = VBoxContainer.new()
 	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_col.add_theme_constant_override("separation", 10)
+	right_col.add_theme_constant_override("separation", 12)
 	main_split.add_child(right_col)
 	
 	var log_panel = PanelContainer.new()
 	log_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	log_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, false, 1))
+	log_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	right_col.add_child(log_panel)
 	
 	var log_margin = MarginContainer.new()
-	log_margin.add_theme_constant_override("margin_left", 8)
-	log_margin.add_theme_constant_override("margin_right", 8)
-	log_margin.add_theme_constant_override("margin_top", 8)
-	log_margin.add_theme_constant_override("margin_bottom", 8)
+	log_margin.add_theme_constant_override("margin_left", 16)
+	log_margin.add_theme_constant_override("margin_right", 16)
+	log_margin.add_theme_constant_override("margin_top", 14)
+	log_margin.add_theme_constant_override("margin_bottom", 14)
 	log_panel.add_child(log_margin)
 	
 	ai_chat_log = RichTextLabel.new()
@@ -248,11 +256,21 @@ func _build_ui() -> void:
 	ai_chat_log.add_theme_font_override("normal_font", _font_body)
 	ai_chat_log.add_theme_font_override("bold_font", _font_body_bold)
 	ai_chat_log.add_theme_font_override("italics_font", _font_body)
-	ai_chat_log.add_theme_font_size_override("normal_font_size", 15)
+	ai_chat_log.add_theme_font_size_override("normal_font_size", 16)
+	ai_chat_log.add_theme_color_override("default_color", C_CREAM)
 	log_margin.add_child(ai_chat_log)
+
+	# Suggested prompts preserve free-form chat while giving learners an easy starting point.
+	var quick_actions = HFlowContainer.new()
+	quick_actions.add_theme_constant_override("h_separation", 8)
+	quick_actions.add_theme_constant_override("v_separation", 8)
+	right_col.add_child(quick_actions)
+	_add_quick_prompt(quick_actions, "Chọn nhạc cụ", "Cô Mai, hãy giới thiệu các nhạc cụ trong phòng học.")
+	_add_quick_prompt(quick_actions, "Kỹ thuật cơ bản", "Cô Mai, hãy hướng dẫn cho em một kỹ thuật cơ bản.")
+	_add_quick_prompt(quick_actions, "Bắt đầu luyện tập", "Cô Mai, em nên bắt đầu luyện tập như thế nào?")
 	
 	var input_row = HBoxContainer.new()
-	input_row.add_theme_constant_override("separation", 8)
+	input_row.add_theme_constant_override("separation", 10)
 	right_col.add_child(input_row)
 	
 	ai_mic_btn = Button.new()
@@ -264,7 +282,7 @@ func _build_ui() -> void:
 	_make_btn_bouncy(ai_mic_btn)
 	
 	ai_input = LineEdit.new()
-	ai_input.placeholder_text = "Nhập tin nhắn..."
+	ai_input.placeholder_text = "Hỏi cô Mai..."
 	ai_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ai_input.add_theme_font_override("font", _font_body)
 	ai_input.add_theme_font_size_override("font_size", 14)
@@ -272,14 +290,18 @@ func _build_ui() -> void:
 	input_row.add_child(ai_input)
 	
 	var le_style = StyleBoxFlat.new()
-	le_style.bg_color = C_BG_DARK
-	le_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4)
+	le_style.bg_color = Color(1.0, 1.0, 1.0, 0.76)
+	le_style.border_color = Color(1.0, 1.0, 1.0, 0.88)
 	le_style.border_width_left = 1; le_style.border_width_right = 1
 	le_style.border_width_top = 1; le_style.border_width_bottom = 1
-	le_style.corner_radius_top_left = 8; le_style.corner_radius_top_right = 8
-	le_style.corner_radius_bottom_left = 8; le_style.corner_radius_bottom_right = 8
+	le_style.corner_radius_top_left = 12; le_style.corner_radius_top_right = 12
+	le_style.corner_radius_bottom_left = 12; le_style.corner_radius_bottom_right = 12
 	le_style.content_margin_left = 12; le_style.content_margin_right = 12
 	ai_input.add_theme_stylebox_override("normal", le_style)
+	ai_input.add_theme_color_override("font_color", C_RED_DK)
+	ai_input.add_theme_color_override("font_placeholder_color", Color(0.12, 0.27, 0.19, 0.58))
+	# Layout: question field → microphone → send.
+	input_row.move_child(ai_mic_btn, 1)
 	
 	ai_send_btn = Button.new()
 	ai_send_btn.text = "Gửi"
@@ -288,6 +310,8 @@ func _build_ui() -> void:
 	input_row.add_child(ai_send_btn)
 	_style_ai_button(ai_send_btn, true)
 	_make_btn_bouncy(ai_send_btn)
+
+	# Dialogue follows the reference layout: conversation on the left, Cô Mai on the right.
 	
 	# Settings Panel setup
 	settings_panel = PanelContainer.new()
@@ -401,7 +425,7 @@ func open_chat(instrument_context: String) -> void:
 	match instrument_context:
 		"dan_tranh":
 			sys_instr = (
-				"Bạn là Mai - nghệ sĩ ảo dạy Đàn Tranh Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
+				"Bạn là Mai - giáo viên ảo dạy Đàn Tranh Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Trọng tâm của bạn là chỉ dạy học viên học chơi Đàn Tranh: hệ thống 16/17/19 dây, thang ngũ âm Hò Xự Xang Xê Cống. Kỹ thuật tay phải đeo móng gảy (ngón 1, 2, 3), lướt ngón á. Kỹ thuật tay trái rung dây, nhấn dây đổi cao độ (tạo điệu oán, điệu xuân). " +
@@ -411,7 +435,7 @@ func open_chat(instrument_context: String) -> void:
 			tts_greeting = "Chào bạn! Hôm nay chúng ta cùng học và luyện tập Đàn Tranh nhé. Bạn cần Mai hỗ trợ gì về kỹ thuật gảy hay bấm dây không?"
 		"sao_truc":
 			sys_instr = (
-				"Bạn là Mai - nghệ sĩ ảo dạy Sáo Trúc Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
+				"Bạn là Mai - giáo viên ảo dạy Sáo Trúc Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Trọng tâm của bạn là chỉ dạy thổi Sáo Trúc: kỹ thuật lấy hơi bụng, cách đặt môi góc 45 độ, bấm kín các lỗ ngón. Các kỹ thuật sáo như lưỡi đơn (Tờ), lưỡi kép (Tờ-Cờ), rung hơi bụng, vuốt ngón, gõ ngón láy nhanh. " +
@@ -421,7 +445,7 @@ func open_chat(instrument_context: String) -> void:
 			tts_greeting = "Chào bạn! Bạn đang tập thổi Sáo Trúc đúng không? Mai sẵn sàng giải đáp các thắc mắc về thế bấm lỗ sáo và cách lấy hơi bụng nhé!"
 		"dan_bau":
 			sys_instr = (
-				"Bạn là Mai - nghệ sĩ ảo dạy Đàn Bầu (Độc Huyền Cầm) Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
+				"Bạn là Mai - giáo viên ảo dạy Đàn Bầu (Độc Huyền Cầm) Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Trọng tâm của bạn là chỉ dạy Đàn Bầu: một dây đồng, thùng tre/gỗ, vòi đàn bằng sừng trâu và quả bầu. Kỹ thuật tay phải dùng que gảy chạm nhẹ cạnh bàn tay vào điểm hài âm (tỷ lệ 1/2, 1/3, 1/4 dây). Kỹ thuật tay trái uốn vòi đàn về trước (giảm cao độ) hoặc kéo ra sau (tăng cao độ) tạo âm rung. " +
@@ -464,30 +488,91 @@ func _close_ai_chat() -> void:
 func _toggle_ai_settings() -> void:
 	settings_panel.visible = not settings_panel.visible
 
+
+func _add_quick_prompt(container: HFlowContainer, label: String, prompt: String) -> void:
+	var button := Button.new()
+	button.text = label
+	button.custom_minimum_size = Vector2(172, 38)
+	button.add_theme_font_override("font", _font_body_bold)
+	button.add_theme_font_size_override("font_size", 13)
+	button.add_theme_stylebox_override("normal", _flat_sb(Color(0.18, 0.48, 0.31, 0.94), C_GOLD_LIGHT, 18, true, 0))
+	button.add_theme_stylebox_override("hover", _flat_sb(Color(0.25, 0.60, 0.39, 1.0), Color.WHITE, 18, true, 0))
+	button.add_theme_stylebox_override("pressed", _flat_sb(Color(0.10, 0.34, 0.21, 1.0), C_GOLD, 18, false, 0))
+	button.add_theme_color_override("font_color", C_CREAM)
+	button.pressed.connect(func() -> void:
+		ai_input.text = prompt
+		_submit_chat()
+	)
+	container.add_child(button)
+	_make_btn_bouncy(button)
+
+
 func _style_ai_button(btn: Button, primary: bool) -> void:
-	var bg := C_RED_SON if primary else Color(0, 0, 0, 0)
-	var border := C_GOLD if primary else C_RED_SON
+	var bg := Color(0.16, 0.47, 0.30, 0.98) if primary else Color(1.0, 1.0, 1.0, 0.76)
+	var border := C_GOLD_LIGHT if primary else Color(1.0, 1.0, 1.0, 0.82)
 	var fg := C_CREAM if primary else C_RED_SON
-	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 10, primary, 2))
-	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.12), border.lightened(0.1), 10, primary, 2))
-	btn.add_theme_stylebox_override("pressed", _flat_sb(bg.darkened(0.12), border, 10, false, 1))
+	btn.add_theme_stylebox_override("normal", _flat_sb(bg, border, 12, true, 0))
+	btn.add_theme_stylebox_override("hover", _flat_sb(bg.lightened(0.14), Color.WHITE if primary else C_GOLD_LIGHT, 12, true, 0))
+	btn.add_theme_stylebox_override("pressed", _flat_sb(bg.darkened(0.10), border, 12, false, 0))
 	btn.add_theme_stylebox_override("focus", _flat_sb(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_color", fg)
 	btn.add_theme_color_override("font_hover_color", fg)
 	btn.add_theme_color_override("font_pressed_color", fg)
 
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(ai_portrait):
+		return
+	if _portrait_is_talking:
+		_portrait_frame_elapsed += delta
+		if _portrait_frame_elapsed >= PORTRAIT_FRAME_DURATION:
+			_portrait_frame_elapsed = 0.0
+			_portrait_frame = (_portrait_frame + 1) % PORTRAIT_FRAME_COUNT
+			ai_portrait.queue_redraw()
+	elif _portrait_frame != 0:
+		_portrait_frame = 0
+		ai_portrait.queue_redraw()
+
+
+func _draw_mai_chat_portrait() -> void:
+	if not is_instance_valid(ai_portrait):
+		return
+	var portrait_size := ai_portrait.size
+	if _tex_mai_talk_sheet:
+		# The smooth sheet is a 3-column × 6-row grid of upper-body talking poses.
+		var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
+		var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
+		var source_rect := Rect2(
+			float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
+			float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
+			frame_width,
+			frame_height
+		)
+		# Keep the source frame square, but enlarge it slightly for the dialogue-character layout.
+		var draw_size := minf(portrait_size.y, portrait_size.x * 1.22)
+		var destination_rect := Rect2(
+			(portrait_size.x - draw_size) * 0.5,
+			(portrait_size.y - draw_size) * 0.5,
+			draw_size,
+			draw_size
+		)
+		ai_portrait.draw_texture_rect_region(_tex_mai_talk_sheet, destination_rect, source_rect)
+	elif _tex_fallback:
+		ai_portrait.draw_texture_rect(_tex_fallback, Rect2(Vector2.ZERO, portrait_size), false)
+
+
 func _on_audio_amplitude_updated(amplitude: float) -> void:
-	if amplitude > 0.05:
-		if ai_portrait.texture != _tex_mai_talking:
-			ai_portrait.texture = _tex_mai_talking
-	else:
-		_update_portrait_by_emotion()
+	_portrait_is_talking = amplitude > 0.05
+	if not _portrait_is_talking:
+		_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 
 func _update_portrait_by_emotion() -> void:
-	if ai_manager.parsed_emotion == "joy" or ai_manager.parsed_emotion == "happy":
-		ai_portrait.texture = _tex_mai_happy
-	else:
-		ai_portrait.texture = _tex_mai_idle
+	_portrait_is_talking = false
+	_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 
 func _on_ai_mic_pressed() -> void:
 	if current_voice_state == VoiceState.LISTENING:
@@ -629,10 +714,18 @@ func _on_ai_request_failed(reason: String) -> void:
 	_start_waking_loop()
 
 func _on_tts_started() -> void:
+	_portrait_is_talking = true
+	_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 	if current_voice_state == VoiceState.THINKING:
 		_transition_to_state(VoiceState.SPEAKING)
 
 func _on_tts_finished() -> void:
+	_portrait_is_talking = false
+	_portrait_frame_elapsed = 0.0
+	if is_instance_valid(ai_portrait):
+		ai_portrait.queue_redraw()
 	_update_status("Sẵn sàng")
 	_update_portrait_by_emotion()
 	

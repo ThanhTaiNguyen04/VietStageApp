@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://main_menu_001"]
+[gd_scene load_steps=5 format=3 uid="uid://main_menu_001"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/textures/default_avatar.png" id="3_avatar"]
+[ext_resource type="Shader" path="res://assets/shaders/circular_avatar.gdshader" id="4_avatar_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_avatar_mask"]
+shader = ExtResource("4_avatar_shader")
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -84,6 +88,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="BtnAccount" type="Button" parent="Root/Sidebar/SideM/SideV"]
+visible = false
 custom_minimum_size = Vector2(220, 130)
 layout_mode = 2
 flat = true
@@ -114,6 +119,7 @@ size_flags_vertical = 4
 clip_contents = true
 
 [node name="AvatarThumb" type="TextureRect" parent="Root/RightContent/TopBar/TopRow/AvatarCircle"]
+material = SubResource("ShaderMaterial_avatar_mask")
 layout_mode = 2
 texture = ExtResource("3_avatar")
 expand_mode = 1
@@ -122,6 +128,71 @@ stretch_mode = 6
 [node name="Spacer" type="Control" parent="Root/RightContent/TopBar/TopRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="ProfileMenu" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow"]
+custom_minimum_size = Vector2(70, 70)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="TriggerM" type="MarginContainer" parent="Root/RightContent/TopBar/TopRow/ProfileMenu"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="TriggerH" type="HBoxContainer" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="MiniAvatarFrame" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH"]
+custom_minimum_size = Vector2(70, 70)
+layout_mode = 2
+mouse_filter = 2
+clip_contents = true
+
+[node name="MiniAvatar" type="TextureRect" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/MiniAvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("3_avatar")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TriggerCopy" type="VBoxContainer" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="TriggerName" type="Label" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/TriggerCopy"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 15
+text = "Học viên"
+text_overrun_behavior = 3
+
+[node name="TriggerLevel" type="Label" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH/TriggerCopy"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 11
+text = "Cấp độ 1"
+
+[node name="Chevron" type="Label" parent="Root/RightContent/TopBar/TopRow/ProfileMenu/TriggerM/TriggerH"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_font_sizes/font_size = 18
+text = "⌄"
+
+[node name="TriggerButton" type="Button" parent="Root/RightContent/TopBar/TopRow/ProfileMenu"]
+layout_mode = 2
+flat = true
+focus_mode = 1
+tooltip_text = "Mở hồ sơ và thành tựu"
 
 [node name="StatsRow" type="HBoxContainer" parent="Root/RightContent/TopBar/TopRow"]
 layout_mode = 2
@@ -161,6 +232,7 @@ text = "1.240 XP"
 [node name="RoadmapScroll" type="ScrollContainer" parent="Root/RightContent"]
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 3
 vertical_scroll_mode = 0
 
 [node name="RoadmapContent" type="Control" parent="Root/RightContent/RoadmapScroll"]
@@ -593,7 +665,127 @@ flat = true
 text = "Bài hát"
 
 [node name="BtnAccountMobile" type="Button" parent="Root/RightContent/BottomBar/BottomM/BottomH"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 flat = true
 text = "Hồ sơ"
+
+[node name="AccountMenuLayer" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 100
+
+[node name="DismissButton" type="Button" parent="AccountMenuLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+flat = true
+focus_mode = 0
+
+[node name="AccountPanel" type="PanelContainer" parent="AccountMenuLayer"]
+custom_minimum_size = Vector2(370, 0)
+layout_mode = 0
+offset_left = 1522.0
+offset_top = 92.0
+offset_right = 1892.0
+offset_bottom = 422.0
+
+[node name="MenuM" type="MarginContainer" parent="AccountMenuLayer/AccountPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="MenuV" type="VBoxContainer" parent="AccountMenuLayer/AccountPanel/MenuM"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MenuHeader" type="HBoxContainer" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="LargeAvatarFrame" type="PanelContainer" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader"]
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+clip_contents = true
+
+[node name="LargeAvatar" type="TextureRect" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/LargeAvatarFrame"]
+material = SubResource("ShaderMaterial_avatar_mask")
+layout_mode = 2
+texture = ExtResource("3_avatar")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="HeaderCopy" type="VBoxContainer" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 3
+
+[node name="HeaderName" type="Label" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Học viên VietStage"
+text_overrun_behavior = 3
+
+[node name="HeaderMeta" type="Label" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Cấp độ 1 · Đang học Đàn Tranh"
+autowrap_mode = 2
+
+[node name="OnlineRow" type="HBoxContainer" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="OnlineDot" type="PanelContainer" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy/OnlineRow"]
+custom_minimum_size = Vector2(8, 8)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="OnlineLabel" type="Label" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV/MenuHeader/HeaderCopy/OnlineRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Đang hoạt động"
+
+[node name="Separator" type="HSeparator" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+layout_mode = 2
+
+[node name="ProfileAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Xem chi tiết hồ sơ"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+
+[node name="AchievementAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Bộ sưu tập thành tựu"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+
+[node name="SettingsAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Cài đặt tài khoản"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+
+[node name="LogoutAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Đăng xuất"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+

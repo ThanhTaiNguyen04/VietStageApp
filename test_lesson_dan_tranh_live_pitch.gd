@@ -36,6 +36,15 @@ func _run() -> void:
 	if lesson._check_mic_pitch(1567.98, 0.20, "Sol4"):
 		failures.append("Sol1 bị nhận nhầm thành Sol4")
 
+	# Every high string must reject the real string one octave below it.
+	var high_start := 10
+	for index in range(high_start, FREQUENCIES.size()):
+		analyzer.current_amplitude_db = -40.0
+		analyzer.current_pitch = FREQUENCIES[index] / 2.0
+		analyzer.current_pitch_is_reliable = true
+		lesson.time_correct = 0.0
+		if lesson._check_mic_pitch(FREQUENCIES[index], 0.20, NOTES[index]):
+			failures.append("Nốt quãng tám thấp bị nhận nhầm thành %s" % NOTES[index])
 	# A weak but usable high-string signal must pass the configured gate.
 	analyzer.current_amplitude_db = -52.0
 	analyzer.current_pitch = 1760.0

@@ -39,7 +39,7 @@ const C_GREEN_JADE := Color("#2e8b57") # Jade green
 
 
 # ─── State ────────────────────────────────────────────────────────────────────
-var _recording   := false
+var _recording   := true
 var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
@@ -71,6 +71,7 @@ var _detected_onsets : PackedFloat32Array = PackedFloat32Array()
 var _reference_onsets : PackedFloat32Array = PackedFloat32Array()
 var _pitch_scores : Array[float] = []
 var _tone_scores : Array[float] = []
+var _last_rhythm_score := 80.0
 
 # Notation Track Variables
 var _current_time_beats := 0.0
@@ -78,7 +79,7 @@ var _target_time_beats := 0.0
 var _current_note_elapsed := 0.0
 var note_visuals : Dictionary = {}
 var note_statuses : Array[String] = []
-var _track_panel : Panel = null
+var _track_panel : PanelContainer = null
 var _note_container : Control = null
 var _staff_display: Control = null
 var _intro_overlay: ColorRect = null
@@ -160,29 +161,7 @@ func _ready() -> void:
 	var settings_panel_node := get_node_or_null("SettingsPanel")
 	if settings_panel_node: settings_panel_node.visible = false
 	
-	# Add a custom floating Back button
-	var custom_back = Button.new()
-	custom_back.text = "← Quay Lại"
-	custom_back.name = "CustomBackBtn"
-	var bs = StyleBoxFlat.new()
-	bs.bg_color = Color("#2e1c12")
-	bs.corner_radius_top_left = 12
-	bs.corner_radius_top_right = 12
-	bs.corner_radius_bottom_left = 12
-	bs.corner_radius_bottom_right = 12
-	bs.content_margin_left = 16
-	bs.content_margin_right = 16
-	bs.content_margin_top = 8
-	bs.content_margin_bottom = 8
-	custom_back.add_theme_stylebox_override("normal", bs)
-	custom_back.add_theme_stylebox_override("hover", bs)
-	custom_back.add_theme_stylebox_override("pressed", bs)
-	custom_back.add_theme_color_override("font_color", Color.WHITE)
-	custom_back.add_theme_font_size_override("font_size", 16)
-	custom_back.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	custom_back.position = Vector2(24, 24)
-	custom_back.pressed.connect(_go_back)
-	$Root.add_child(custom_back)
+	_setup_premium_practice_ui()
 	
 	_build_theme()
 	_build_board()
@@ -220,6 +199,34 @@ func _ready() -> void:
 		visualizer.custom_minimum_size = Vector2(320, 62)
 		visualizer.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		visualizer.set_script(analyzer_script)
+		var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
+		var profile = profile_script.new()
+		var file = FileAccess.open("res://data/dan_bau_notes.json", FileAccess.READ)
+		if file:
+			var json_str = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(json_str) == OK:
+				var table = json.get_data()
+				var p_notes: Array[String] = []
+				var p_freqs: Array[float] = []
+				var p_mappings: Array[int] = []
+				for entry in table:
+					p_notes.append(entry["note"])
+					p_freqs.append(entry["hz"])
+					p_mappings.append(entry["midi"])
+				profile.notes = p_notes
+				profile.frequencies = PackedFloat32Array(p_freqs)
+				profile.physical_mappings = p_mappings
+		
+		profile.min_frequency = 85.0
+		profile.max_frequency = 1100.0
+		profile.volume_threshold_db = -45.0
+		profile.cents_tolerance = 25.0
+		profile.hold_time_sec = 0.20
+		profile.is_plucked_instrument = true
+		
+		visualizer.pitch_profile = profile
 		visualizer.min_frequency = 85.0
 		visualizer.max_frequency = 1100.0
 		visualizer.volume_threshold_db = -45.0
@@ -331,18 +338,17 @@ func _process(delta: float) -> void:
 			var note_x = hit_x + (note_time - _current_time_beats) * pixels_per_beat
 			var tail_w = min(120.0, duration * 120.0) # Discrete tail per beat instead of long connecting bar
 			
-			var col = Color("#d6a033") # Golden note color
-			if i == _note_idx:
-				col = Color("#e53935") # Highlight active note
-			elif i < _note_idx:
-				col = Color("#388e3c") # Played note
+			var col = Color(0.6, 0.6, 0.6, 0.9) # Gray by default for unplayed notes
+			if i < _note_idx:
+				col = Color(0.2, 0.8, 0.3, 1.0) # Played/correct note
 				
 			if note_x < _staff_display.size.x + 400 and note_x > -300:
 				notes_for_staff.append({
 					"note": n_name,
 					"x": note_x,
 					"color": col,
-					"tail": tail_w
+					"tail": tail_w,
+					"duration": duration
 				})
 				
 		_staff_display.set_notes(notes_for_staff)
@@ -574,8 +580,8 @@ func _build_theme() -> void:
 		hw_panel.add_theme_stylebox_override("panel", _flat(Color("#0e0603"), Color("#c99a3c", 0.22), 0))
 
 	# TopBar pitch/score chips color
-	pitch_note.add_theme_color_override("font_color",   C_GOLD)
-	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+	# pitch_note.add_theme_color_override("font_color",   C_GOLD)
+	# pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
 	score_num.add_theme_color_override("font_color",    C_GOLD)
 
 
@@ -639,26 +645,39 @@ func _build_dots() -> void:
 			d.color = C_GOLD if i < done else Color(0.85, 0.82, 0.75, 1.0)
 
 func _build_notation_track() -> void:
-	# Create track panel dynamically if not exists
 	var main_content = $Root/MiddleRow/MainContent
 	if not _track_panel:
-		_track_panel = Panel.new()
-		_track_panel.name = "NoteTrackPanel"
+		var top_spacer = Control.new()
+		top_spacer.custom_minimum_size = Vector2(0, 195)
+		main_content.add_child(top_spacer)
+		
+		_track_panel = PanelContainer.new()
+		_track_panel.name = "StaffCard"
 		_track_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		_track_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var card_sb = StyleBoxFlat.new()
+		card_sb.bg_color = Color(0.995, 0.98, 0.93, 0.96)
+		card_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
+		card_sb.border_width_left = 3; card_sb.border_width_right = 3; card_sb.border_width_top = 3; card_sb.border_width_bottom = 3
+		card_sb.corner_radius_top_left = 18; card_sb.corner_radius_top_right = 18; card_sb.corner_radius_bottom_left = 18; card_sb.corner_radius_bottom_right = 18
+		card_sb.shadow_color = Color(0.45, 0.30, 0.12, 0.25); card_sb.shadow_size = 14; card_sb.shadow_offset = Vector2(0, 6)
+		_track_panel.add_theme_stylebox_override("panel", card_sb)
 		
-		main_content.add_child(_track_panel)
-		main_content.move_child(_track_panel, 0)
-		
-		var tp_style = StyleBoxFlat.new()
-		tp_style.bg_color = Color(0, 0, 0, 0) # Transparent to show cream background
-		_track_panel.add_theme_stylebox_override("panel", tp_style)
+		var margin_container = MarginContainer.new()
+		margin_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		margin_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		margin_container.add_theme_constant_override("margin_left", 55)
+		margin_container.add_theme_constant_override("margin_right", 55)
+		margin_container.add_child(_track_panel)
+		main_content.add_child(margin_container)
 		
 		_staff_display = load("res://scripts/StaffDisplay.gd").new()
 		_staff_display.name = "StaffDisplay"
-		_staff_display.line_spacing = 85.0 # Large 85px line spacing for giant notes & staff
+		_staff_display.line_spacing = 85.0
 		_staff_display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_track_panel.add_child(_staff_display)
+		
+		# Removed SubInstrRow to prevent overwriting top-left labels
 
 func _set_block_color(block: Panel, color: Color) -> void:
 	if not is_instance_valid(block): return
@@ -830,8 +849,8 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		return
 	pitch_note.text   = note_name
 	pitch_status.text = "Nốt %s  —  Vừa gảy" % note_name
-	pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
-	pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
+	# pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+	# pitch_note.add_theme_color_override("font_color",   C_GOLD_LIGHT)
 
 	# Reset bend when a new note is plucked — old bend must NOT carry over
 	_current_bend_cents = 0.0
@@ -872,7 +891,7 @@ func _on_pitch_bent(cents_offset: float) -> void:
 	if abs(_current_bend_cents) > 5.0:
 		var sign_char := "+" if _current_bend_cents > 0 else ""
 		pitch_status.text = "Uốn cần: %s%d¢" % [sign_char, int(_current_bend_cents)]
-		pitch_status.add_theme_color_override("font_color", C_GOLD)
+		# pitch_status.add_theme_color_override("font_color", C_GOLD)
 		
 		# Check if the bent pitch matches target note during pitch bending practice
 		var target_note := sheet_notes[_note_idx]
@@ -887,7 +906,7 @@ func _on_pitch_bent(cents_offset: float) -> void:
 	else:
 		if not _recording:
 			pitch_status.text = "Chuẩn âm"
-			pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+			# pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
 
 func _play_audio(idx: int) -> void:
 	if idx >= _string_streams.size() or _string_streams[idx] == null:
@@ -1194,16 +1213,16 @@ func _simulate_tick() -> void:
 	var ac    := absf(cents)
 	if ac < 8.0:
 		pitch_status.text = "Đúng cao độ"
-		pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
-		pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
+		# pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+		# pitch_note.add_theme_color_override("font_color",   C_GREEN_OK)
 	elif ac < 18.0:
 		pitch_status.text = ("Hơi thấp" if cents < 0 else "Hơi cao")
-		pitch_status.add_theme_color_override("font_color", C_WARN)
-		pitch_note.add_theme_color_override("font_color",   C_WARN)
+		# pitch_status.add_theme_color_override("font_color", C_WARN)
+		# pitch_note.add_theme_color_override("font_color",   C_WARN)
 	else:
 		pitch_status.text = "Lệch cao độ"
-		pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-		pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
+		# pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+		# pitch_note.add_theme_color_override("font_color",   C_RED_ERR)
 
 	if NOTES_VN[ni] == sheet_notes[_note_idx] and randf() > 0.5:
 		_note_idx = (_note_idx + 1) % sheet_notes.size()
@@ -1226,21 +1245,23 @@ func _process_real_audio(delta: float) -> void:
 	var pitch: float = visualizer.current_pitch
 	
 	var tone: float = visualizer.current_tone_quality
-	if db > -45.0 and pitch > 50.0 and tone >= 75.0:
+	if db > -45.0 and pitch > 50.0:
 		var target_note = sheet_notes[_note_idx]
-		
-		# Find the target frequency based on target note name
 		var target_idx = NOTES_VN.find(target_note)
-		var target_freq = _get_node_frequency(target_idx)
+		var expected_freq = _get_node_frequency(target_idx) if target_idx != -1 else 0.0
 		
+		# Use the robust JSON-backed pitch evaluator by expected frequency
+		var eval_res = DanBauPitchDetector.evaluate_pitch_by_freq(pitch, expected_freq)
+		var target_freq = 0.0
+		if eval_res.has("target_freq"):
+			target_freq = eval_res["target_freq"]
+			
 		if target_freq > 0.0:
-			var cents = 1200.0 * log(pitch / target_freq) / log(2.0)
-			var cents_mod = fmod(abs(cents), 1200.0)
-			if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
+			var cents = eval_res["cents_error"]
 			
 			# Estimate current bend visually on the board
+			var closest_base_idx := 0
 			if _board:
-				var closest_base_idx := 0
 				var min_diff := 99999.0
 				for i in range(NOTES_VN.size()):
 					var f := _get_node_frequency(i)
@@ -1261,14 +1282,18 @@ func _process_real_audio(delta: float) -> void:
 				_board._is_bending = true
 				_board.queue_redraw()
 				
-			# Pitch tolerance evaluation: ±20 cents or ±15 Hz as per specs
-			var tolerance_cents : float = 20.0 * visualizer.difficulty_tolerance_scale
-			var is_match = DanBauPitchDetector.is_pitch_accurate(pitch, target_freq, tolerance_cents, 15.0)
-			
-			if is_match:
+			if eval_res["is_match"]:
 				pitch_note.text = target_note
-				pitch_status.text = "Chuẩn âm"
-				pitch_status.add_theme_color_override("font_color", C_GREEN_OK)
+				
+				if eval_res["rank"] == "PERFECT":
+					pitch_status.text = "Hoàn hảo"
+					# pitch_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+				elif eval_res["rank"] == "GOOD":
+					pitch_status.text = "Rất tốt"
+					# pitch_status.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
+				else:
+					pitch_status.text = "Đạt"
+					# pitch_status.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
 				
 				_correct_pitch_hold_time += delta
 				if _correct_pitch_hold_time > 0.05:
@@ -1282,8 +1307,9 @@ func _process_real_audio(delta: float) -> void:
 					_pitch_scores.append(pitch_err)
 					_tone_scores.append(visualizer.current_tone_quality)
 					
-					# Dynamic AI scoring
+# Dynamic AI scoring
 					var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
+					_last_rhythm_score = rhythm_score
 					var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
 					var avg_tone_score = _get_average_score(_tone_scores, 80.0)
 					
@@ -1291,44 +1317,25 @@ func _process_real_audio(delta: float) -> void:
 					_refresh_score()
 					
 					if _board:
-						_board.pluck(target_idx)
+						_board.pluck(closest_base_idx)
 						
 					_va_say("Tuyệt vời! Âm sắc chuẩn.")
 					_eval_cooldown = 1.0
 					_teacher_tip_timer = 0.0
 					return
 			else:
-				pitch_status.text = "Hơi cao" if cents > 0 else "Hơi thấp"
-				pitch_status.add_theme_color_override("font_color", C_WARN)
-				pitch_note.add_theme_color_override("font_color", C_WARN)
+				var status_text = "Cần luyện thêm (Cao)" if cents > 0 else "Cần luyện thêm (Thấp)"
+				pitch_status.text = status_text
+				# pitch_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+				# pitch_note.add_theme_color_override("font_color", C_WARN)
 				
+				_correct_pitch_hold_time = 0.0
 				_teacher_tip_timer += delta
 				if _teacher_tip_timer > 3.0:
+					var cents_mod = fmod(abs(cents), 1200.0)
+					if cents_mod > 600.0: cents_mod = 1200.0 - cents_mod
 					_check_teacher_advice(target_note, cents_mod)
 					_teacher_tip_timer = 0.0
-				_tone_scores.append(visualizer.current_tone_quality)
-				
-				# Advance note
-				_note_idx = (_note_idx + 1) % sheet_notes.size()
-				_update_target_indicator()
-				
-				# Dynamic AI scoring
-				var rhythm_score = visualizer.evaluate_rhythm(_detected_onsets, _reference_onsets, 0.3 * visualizer.difficulty_tolerance_scale)
-				var avg_pitch_score = _get_average_score(_pitch_scores, 80.0)
-				var avg_tone_score = _get_average_score(_tone_scores, 80.0)
-				
-				_score = visualizer.calculate_composite_score(avg_pitch_score, rhythm_score, avg_tone_score, 100.0)
-				_refresh_score()
-			
-
-				
-				# Board interaction effect
-				if _board:
-					_board.pluck(target_idx)
-					
-				_va_say("Tuyệt vời! Âm sắc chuẩn.")
-				_eval_cooldown = 1.0
-				return
 				
 		# Check if it matches another note in the pentatonic scale
 		var detected_note := ""
@@ -1345,8 +1352,8 @@ func _process_real_audio(delta: float) -> void:
 			detected_note = NOTES_VN[closest_idx]
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
-			pitch_status.add_theme_color_override("font_color", C_RED_ERR)
-			pitch_note.add_theme_color_override("font_color", C_RED_ERR)
+			# pitch_status.add_theme_color_override("font_color", C_RED_ERR)
+			# pitch_note.add_theme_color_override("font_color", C_RED_ERR)
 			_score = clamp(_score - 0.5 * delta, 0, 100)
 			_refresh_score()
 	else:
@@ -1354,8 +1361,8 @@ func _process_real_audio(delta: float) -> void:
 			_board._is_bending = false
 		pitch_note.text = "—"
 		pitch_status.text = "Đang nghe..."
-		pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
-		pitch_note.add_theme_color_override("font_color", C_RED_SON)
+		# pitch_status.add_theme_color_override("font_color", C_CREAM_DIM)
+		# pitch_note.add_theme_color_override("font_color", C_RED_SON)
 
 func _hop_linh() -> void:
 	pass
@@ -1446,8 +1453,8 @@ func _reset() -> void:
 	if visualizer: visualizer.visible = false
 	pitch_note.text   = "—"
 	pitch_status.text = "Đang nghe..."
-	pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
-	pitch_note.add_theme_color_override("font_color", C_RED_SON)
+	# pitch_status.add_theme_color_override("font_color", C_TEXT_MUTED)
+	# pitch_note.add_theme_color_override("font_color", C_RED_SON)
 
 	_refresh_score()
 	_va_say("Cố gắng lên!\nChăm chỉ tập luyện để làm chủ tiếng đàn.")
@@ -1474,6 +1481,7 @@ func _show_custom_result() -> void:
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
+		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
 	if popup_scene:
@@ -1497,6 +1505,19 @@ func _show_custom_result() -> void:
 		popup.closed.connect(func() -> void:
 			_go_back()
 		)
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+		"pitch": _get_average_score(_pitch_scores, 80.0),
+		"rhythm": _last_rhythm_score,
+		"dynamics": 0.0,
+		"tonal_quality": _get_average_score(_tone_scores, 80.0),
+		"breath": 0.0,
+	})
+	if not result.get("submitted", false):
+		push_warning("[PracticeDanBau] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _go_back() -> void:
 	var t := create_tween()
@@ -1707,7 +1728,7 @@ func _on_resized() -> void:
 		record_btn.size_flags_horizontal = SIZE_EXPAND_FILL
 		record_btn.add_theme_font_size_override("font_size", 16)
 		
-		var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+		var reset_btn := record_h.get_node_or_null("ResetBtn") as Button
 		if reset_btn:
 			reset_btn.custom_minimum_size = Vector2(90, 48)
 			reset_btn.add_theme_font_size_override("font_size", 15)
@@ -1729,7 +1750,7 @@ func _on_resized() -> void:
 		record_btn.size_flags_horizontal = SIZE_SHRINK_CENTER
 		record_btn.add_theme_font_size_override("font_size", 22)
 		
-		var reset_btn := $Root/RecordBar/RecordM/RecordH/ResetBtn as Button
+		var reset_btn := record_h.get_node_or_null("ResetBtn") as Button
 		if reset_btn:
 			reset_btn.custom_minimum_size = Vector2(150, 52)
 			reset_btn.add_theme_font_size_override("font_size", 18)
@@ -1938,3 +1959,186 @@ func _setup_cinematic_intro() -> void:
 		tw.tween_callback(func(): _intro_overlay.queue_free())
 	)
 	btn_hbox.add_child(start_btn)
+
+func _setup_premium_practice_ui():
+	var bg_ov = get_node_or_null("BGOverlay")
+	if bg_ov and bg_ov is ColorRect:
+		bg_ov.color = Color(0.965, 0.935, 0.875, 0.96)
+		
+	var screen_frame = Panel.new()
+	screen_frame.name = "ScreenGoldFrame"
+	screen_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen_frame.offset_left = 16; screen_frame.offset_top = 16; screen_frame.offset_right = -16; screen_frame.offset_bottom = -16
+	screen_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sf_sb = StyleBoxFlat.new()
+	sf_sb.draw_center = false
+	sf_sb.border_color = Color(0.85, 0.68, 0.35, 0.6)
+	sf_sb.border_width_left = 2; sf_sb.border_width_right = 2; sf_sb.border_width_top = 2; sf_sb.border_width_bottom = 2
+	sf_sb.corner_radius_top_left = 16; sf_sb.corner_radius_top_right = 16; sf_sb.corner_radius_bottom_left = 16; sf_sb.corner_radius_bottom_right = 16
+	screen_frame.add_theme_stylebox_override("panel", sf_sb)
+	add_child(screen_frame)
+	
+	# Add frame early in tree to be behind UI
+	var root_node = get_node_or_null("Root")
+	if root_node:
+		move_child(screen_frame, root_node.get_index())
+	
+	var custom_back = Button.new()
+	custom_back.text = "← Quay Lại"
+	custom_back.name = "CustomBackBtn"
+	custom_back.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	custom_back.offset_left = 32
+	custom_back.offset_top = 26
+	custom_back.custom_minimum_size = Vector2(155, 48)
+	var btn_sb = StyleBoxFlat.new()
+	btn_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
+	btn_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+	btn_sb.border_width_left = 2; btn_sb.border_width_right = 2; btn_sb.border_width_top = 2; btn_sb.border_width_bottom = 2
+	btn_sb.corner_radius_top_left = 24; btn_sb.corner_radius_top_right = 24; btn_sb.corner_radius_bottom_left = 24; btn_sb.corner_radius_bottom_right = 24
+	btn_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.35); btn_sb.shadow_size = 5; btn_sb.shadow_offset = Vector2(0, 3)
+	custom_back.add_theme_stylebox_override("normal", btn_sb)
+	custom_back.add_theme_stylebox_override("hover", btn_sb)
+	custom_back.add_theme_stylebox_override("pressed", btn_sb)
+	custom_back.add_theme_color_override("font_color", Color(0.98, 0.92, 0.82, 1.0))
+	custom_back.add_theme_font_size_override("font_size", 22)
+	custom_back.pressed.connect(_go_back)
+	add_child(custom_back)
+	
+	var top_right_box = HBoxContainer.new()
+	top_right_box.name = "TopRightIcons"
+	top_right_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	top_right_box.offset_left = -160; top_right_box.offset_top = 26; top_right_box.offset_right = -32; top_right_box.offset_bottom = 74
+	top_right_box.add_theme_constant_override("separation", 16)
+	top_right_box.alignment = BoxContainer.ALIGNMENT_END
+	add_child(top_right_box)
+	for icon_txt in ["⚙", "♫"]:
+		var med_btn = Button.new()
+		med_btn.text = icon_txt
+		med_btn.custom_minimum_size = Vector2(48, 48)
+		var med_sb = StyleBoxFlat.new()
+		med_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
+		med_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+		med_sb.border_width_left = 2; med_sb.border_width_right = 2; med_sb.border_width_top = 2; med_sb.border_width_bottom = 2
+		med_sb.corner_radius_top_left = 24; med_sb.corner_radius_top_right = 24; med_sb.corner_radius_bottom_left = 24; med_sb.corner_radius_bottom_right = 24
+		med_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.3); med_sb.shadow_size = 4; med_sb.shadow_offset = Vector2(0, 2)
+		med_btn.add_theme_stylebox_override("normal", med_sb)
+		med_btn.add_theme_stylebox_override("hover", med_sb)
+		med_btn.add_theme_stylebox_override("pressed", med_sb)
+		med_btn.add_theme_color_override("font_color", Color(0.96, 0.82, 0.45, 1.0))
+		med_btn.add_theme_font_size_override("font_size", 24)
+		top_right_box.add_child(med_btn)
+		
+	var l_title = "LUYỆN ĐÀN BẦU"
+	var active_id = SecureDataManager.active_lesson_id
+	if "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
+	elif "bai2" in active_id: l_title = "BÀI 2: ĐIỀU KHIỂN CẦN"
+	elif "bai3" in active_id: l_title = "BÀI 3: BỒI ÂM"
+	elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
+	elif "bai5" in active_id: l_title = "BÀI 5: NÂNG CAO"
+		
+	var title_plaque = PanelContainer.new()
+	title_plaque.name = "TitlePlaque"
+	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
+	title_plaque.offset_left = -265; title_plaque.offset_right = 265
+	title_plaque.offset_top = 24; title_plaque.offset_bottom = 132
+	var pl_sb = StyleBoxFlat.new()
+	pl_sb.bg_color = Color(0.22, 0.14, 0.08, 0.96)
+	pl_sb.border_color = Color(0.88, 0.72, 0.35, 1.0)
+	pl_sb.border_width_left = 3; pl_sb.border_width_right = 3; pl_sb.border_width_top = 3; pl_sb.border_width_bottom = 3
+	pl_sb.corner_radius_top_left = 24; pl_sb.corner_radius_top_right = 24; pl_sb.corner_radius_bottom_left = 24; pl_sb.corner_radius_bottom_right = 24
+	pl_sb.shadow_color = Color(0.2, 0.12, 0.05, 0.35); pl_sb.shadow_size = 12; pl_sb.shadow_offset = Vector2(0, 5)
+	title_plaque.add_theme_stylebox_override("panel", pl_sb)
+	var pl_vbox = VBoxContainer.new()
+	pl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	pl_vbox.add_theme_constant_override("separation", 2)
+	title_plaque.add_child(pl_vbox)
+	var lbl_num = Label.new()
+	lbl_num.text = "BÀI LUYỆN"
+	lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
+	lbl_num.add_theme_font_size_override("font_size", 20)
+	pl_vbox.add_child(lbl_num)
+	var lbl_main = Label.new()
+	lbl_main.text = "🌿   " + l_title + "   🌿"
+	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
+	lbl_main.add_theme_font_size_override("font_size", 34)
+	pl_vbox.add_child(lbl_main)
+	add_child(title_plaque)
+
+	var pill_badge = PanelContainer.new()
+	pill_badge.name = "NotePillBadge"
+	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
+	pill_badge.offset_left = -125; pill_badge.offset_right = 125
+	pill_badge.offset_top = 172; pill_badge.offset_bottom = 220
+	var pill_sb = StyleBoxFlat.new()
+	pill_sb.bg_color = Color(1.0, 0.99, 0.95, 1.0)
+	pill_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
+	pill_sb.border_width_left = 2; pill_sb.border_width_right = 2; pill_sb.border_width_top = 2; pill_sb.border_width_bottom = 2
+	pill_sb.corner_radius_top_left = 24; pill_sb.corner_radius_top_right = 24; pill_sb.corner_radius_bottom_left = 24; pill_sb.corner_radius_bottom_right = 24
+	pill_sb.shadow_color = Color(0.3, 0.2, 0.08, 0.2); pill_sb.shadow_size = 6; pill_sb.shadow_offset = Vector2(0, 3)
+	pill_badge.add_theme_stylebox_override("panel", pill_sb)
+	var pill_lbl = Label.new()
+	pill_lbl.text = "🌿  ĐÀN BẦU  🌿"
+	pill_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pill_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pill_lbl.add_theme_color_override("font_color", Color(0.78, 0.55, 0.18, 1.0))
+	pill_lbl.add_theme_font_size_override("font_size", 26)
+	pill_badge.add_child(pill_lbl)
+	add_child(pill_badge)
+
+	# ─── TOP-LEFT REALTIME PITCH FEEDBACK (BLACK TEXT) ───
+	var feedback_box = HBoxContainer.new()
+	feedback_box.name = "TopLeftFeedback"
+	feedback_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	feedback_box.offset_left = 32
+	feedback_box.offset_top = 100
+	feedback_box.add_theme_constant_override("separation", 8)
+	
+	var p_note = Label.new()
+	p_note.text = "Lắng nghe..."
+	p_note.add_theme_color_override("font_color", Color(0, 0, 0, 1)) # Black text
+	p_note.add_theme_font_size_override("font_size", 24)
+	feedback_box.add_child(p_note)
+	
+	var p_status = Label.new()
+	p_status.text = " Hãy gảy đàn"
+	p_status.add_theme_color_override("font_color", Color(0, 0, 0, 1)) # Black text
+	p_status.add_theme_font_size_override("font_size", 24)
+	feedback_box.add_child(p_status)
+	
+	add_child(feedback_box)
+	
+	self.pitch_note = p_note
+	self.pitch_status = p_status
+
+	var sub_instr_row = HBoxContainer.new()
+	sub_instr_row.name = "SubInstrRow"
+	sub_instr_row.anchor_left = 0.0; sub_instr_row.anchor_right = 1.0
+	sub_instr_row.offset_left = 90; sub_instr_row.offset_right = -90
+	sub_instr_row.offset_top = 698; sub_instr_row.offset_bottom = 738
+	sub_instr_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	
+	var line_left_cont = CenterContainer.new()
+	line_left_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_l = ColorRect.new()
+	line_l.custom_minimum_size = Vector2(240, 2)
+	line_l.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_left_cont.add_child(line_l)
+	sub_instr_row.add_child(line_left_cont)
+	
+	var sub_lbl = Label.new()
+	sub_lbl.text = "   🌿   Gảy dây, uốn cần và lắng nghe bồi âm   🌿   "
+	sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
+	sub_lbl.add_theme_font_size_override("font_size", 26)
+	sub_instr_row.add_child(sub_lbl)
+	
+	var line_right_cont = CenterContainer.new()
+	line_right_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var line_r = ColorRect.new()
+	line_r.custom_minimum_size = Vector2(240, 2)
+	line_r.color = Color(0.85, 0.68, 0.35, 0.75)
+	line_right_cont.add_child(line_r)
+	sub_instr_row.add_child(line_right_cont)
+	
+	add_child(sub_instr_row)

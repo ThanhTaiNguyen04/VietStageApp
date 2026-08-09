@@ -73,7 +73,7 @@ func _ready() -> void:
 	
 	var title_label = Label.new()
 	title_label.text = SecureDataManager.active_course_title
-	if title_label.text == "": title_label.text = "Bấm Ngón & Lấy Hơi"
+	if title_label.text == "": title_label.text = "Khẩu Hình Môi & Tạo Âm"
 	title_label.add_theme_font_size_override("font_size", 48)
 	title_label.add_theme_color_override("font_color", C_GOLD)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

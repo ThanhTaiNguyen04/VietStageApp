@@ -212,8 +212,79 @@ const SONGS_DATA := [
 		"genre_label": "Dân ca",
 		"xp": 180,
 		"sheet": ["Rê", "Rê", "Fa", "Sol", "Mi", "Sol", "Đô", "Đô", "Rê", "Mi", "Rê", "Đô", "Đô", "Rê", "Mi", "Rê", "Rê", "Đô", "La", "Sol", "La", "Đô", "Rê", "Đô", "La", "Sol", "Mi", "Sol", "La", "Sol", "Mi", "Mi", "Mi", "Sol", "La", "Đô", "Rê", "Mi", "Rê", "Đô", "Rê", "Mi", "Rê", "Đô", "La", "Đô", "Rê", "Đô"]
+	}	,
+	{
+		"id": "song_sao_002",
+		"title": "Cò Lả",
+		"desc": "Dân ca đồng bằng Bắc Bộ.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Dễ",
+		"difficulty_color": Color(0.12, 0.37, 0.23, 1.0),
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 120,
+		"bpm": 100.0,
+		"sheet": ["Đô2", "La", "Sol", "Fa", "Sol", "La", "Đô2", "Rê2", "Đô2"]
+	},
+	{
+		"id": "song_sao_003",
+		"title": "Vào Rừng Hoa",
+		"desc": "Ca khúc thiếu nhi vui tươi.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Dễ",
+		"difficulty_color": Color(0.12, 0.37, 0.23, 1.0),
+		"genre": "thieu_nhi",
+		"genre_label": "Thiếu nhi",
+		"xp": 110,
+		"bpm": 110.0,
+		"sheet": ["Đô", "Rê", "Mi", "Sol", "Mi", "Rê", "Đô"]
+	},
+	{
+		"id": "song_sao_004",
+		"title": "Rồng Rắn Lên Mây",
+		"desc": "Đồng dao Việt Nam.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0),
+		"genre": "thieu_nhi",
+		"genre_label": "Thiếu nhi",
+		"xp": 150,
+		"bpm": 120.0,
+		"sheet": ["Đô", "Đô", "Fa", "Sol", "La", "Sol", "Fa", "Sol"]
+	},
+	{
+		"id": "song_sao_005",
+		"title": "Lý Cây Đa",
+		"desc": "Dân ca quan họ Bắc Ninh.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Trung bình",
+		"difficulty_color": Color(0.77, 0.58, 0.15, 1.0),
+		"genre": "dan_ca",
+		"genre_label": "Dân ca",
+		"xp": 180,
+		"bpm": 90.0,
+		"sheet": ["Fa", "Sol", "La", "Đô2", "La", "Sol", "Fa", "Rê"]
+	},
+	{
+		"id": "song_sao_006",
+		"title": "Sứ Thanh Hoa",
+		"desc": "Nhạc trẻ mang âm hưởng cổ phong.",
+		"instrument": "sao_truc",
+		"instrument_label": "Sáo Trúc",
+		"difficulty": "Khó",
+		"difficulty_color": Color(0.09, 0.27, 0.18, 1.0),
+		"genre": "hien_dai",
+		"genre_label": "Hiện đại",
+		"xp": 250,
+		"bpm": 80.0,
+		"sheet": ["La", "Sol", "Mi", "Sol", "La", "Đô2", "La", "Sol", "Mi"]
 	}
 ]
+
 
 # ─── @onready references ─────────────────────────────────────────────────────
 @onready var bg_overlay      : ColorRect      = $BGOverlay

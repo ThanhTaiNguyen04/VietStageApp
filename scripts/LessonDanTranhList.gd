@@ -11,6 +11,8 @@ const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
 
+const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
@@ -18,32 +20,32 @@ var _sidebar_icon_cache: Dictionary = {}
 const LEVELS := [
 	{
 		"level": 1,
-		"title": "NHẬP MÔN & LÀM QUEN GIAO DIỆN",
-		"sessions": "Session 1–3",
-		"objective": "Hiểu về nhạc cụ, biết đọc giao diện nốt rơi và gảy những nốt cơ bản.",
+		"title": "NHẬP MÔN ĐÀN TRANH & CÁCH ĐỌC NỐT",
+		"sessions": "Bài 1–3",
+		"objective": "Làm quen tư thế ngồi, đặt đàn, giới thiệu nhạc cụ 17 dây và làm quen giao diện ứng dụng.",
 		"lessons": [
 			{
 				"number": 1,
-				"title": "Giới thiệu Đàn Tranh & App",
-				"video": "Lịch sử đàn tranh, 17 dây đàn và thang ngũ cung Sol – La – Đô – Rê – Mi.",
-				"practice": "Nghe mẫu và gảy lại lần lượt 5 nốt Sol – La – Đô – Rê – Mi trên đàn thật; hệ thống nhận diện cao độ, báo đúng/sai và tô xanh nốt đúng.",
-				"practice_title": "Làm quen 5 nốt cơ bản",
+				"title": "Tư thế ngồi & Đặt đàn tay trên Tranh",
+				"video": "Hướng dẫn tư thế ngồi thẳng lưng, cách đặt đàn lên giá đỡ, giới thiệu các bộ phận của Đàn Tranh 17 dây.",
+				"practice": "Nhận biết âm sắc dây đàn: thực hành gảy các nốt cơ bản Sol1 – La1 – Đô2 – Rê2 – Mi2 lần lượt từ dây trầm.",
+				"practice_title": "Tư thế & Làm quen 5 nốt cơ bản",
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]
 			},
 			{
 				"number": 2,
-				"title": "Gảy ngón cơ bản (Ngón 1 & 2)",
-				"video": "Kỹ thuật gảy ngón cái, ngón trỏ, ngón giữa và góc tiếp xúc của móng gảy.",
-				"practice": "Ba lượt Hứng nốt với Đô2 – Rê2 – Mi2, ký hiệu Ngón 1/Ngón 2 và tốc độ tăng dần; đạt 80% để qua bài.",
-				"practice_title": "Gảy ngón cơ bản",
+				"title": "Học tiếp các nốt còn lại trên đàn tranh",
+				"video": "Kỹ thuật gảy ngón cái, ngón trỏ và cách nhận diện hướng rơi của các nốt nhạc trên khuông nhạc ứng dụng.",
+				"practice": "Luyện tập đọc nốt rơi trên màn hình: gảy các nốt nhạc tương ứng khi chạm vạch phách.",
+				"practice_title": "Luyện đọc nốt rơi",
 				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "Mi2"]
 			},
 			{
 				"number": 3,
-				"title": "Đệm theo câu – Sứ Thanh Hoa",
-				"video": "Nghe từng câu nhạc, quan sát nốt kết câu và phối hợp ba ngón gảy.",
-				"practice": "Cô đàn sáu câu của Sứ Thanh Hoa ở BPM 80; học viên gảy nốt cuối mỗi câu bằng ngón 1, 2, 3 luân phiên.",
-				"practice_title": "Đệm Sứ Thanh Hoa",
+				"title": "Nhận diện cao độ 17 dây đàn",
+				"video": "Giới thiệu cao độ của 17 dây đàn Tranh từ trầm đến cao và mối liên hệ giữa nốt nhạc trên giấy với phím đàn thật.",
+				"practice": "Thực hành đệm theo câu bài Sứ Thanh Hoa: gảy các nốt khuyết tương ứng cao độ dây để học thuộc vị trí.",
+				"practice_title": "Học cao độ qua đệm Sứ Thanh Hoa",
 				"sheet": [
 					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
 					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
@@ -65,85 +67,88 @@ const LEVELS := [
 	},
 	{
 		"level": 2,
-		"title": "KHÚC DẠO ĐẦU – BÀI HỌC VỠ LÒNG",
-		"sessions": "Session 4–9",
-		"objective": "Chơi hoàn chỉnh bài nhạc đầu tiên với nhịp độ chậm.",
+		"title": "NHẠC LÝ CƠ BẢN & PHÁCH NHỊP ĐÀN TRANH",
+		"sessions": "Bài 4–6",
+		"objective": "Làm quen với trường độ các nốt đen, nốt trắng, nốt móc đơn, nốt móc kép và nhịp phách 4/4.",
 		"lessons": [
 			{
 				"number": 4,
-				"title": "Tập đoạn 1 – Vào rừng hoa",
-				"video": "Chia đoạn, nhịp điệu và độ ngân của bài Vào rừng hoa.",
-				"practice": "Luyện đúng đoạn đầu Mi – Sol – Sol | Mi – Sol – Sol | La – Đố – La – Đố | La – Sol – Sol theo nhịp 2/4; đúng hoặc sai đều chuyển tiếp, sai lần thứ sáu sẽ làm lại.",
-				"practice_title": "Vào rừng hoa – Đoạn 1",
-				"sheet": [
-					"Mi2", "Sol2", "Sol2", "Mi2", "Sol2", "Sol2",
-					"La2", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2"
-				]
+				"title": "Làm quen nốt Đen và nốt Trắng",
+				"video": "Nhạc lý về trường độ: Nốt Đen (1 phách) và Nốt Trắng (2 phách). Cách giữ âm vang cho nốt trắng trên Đàn Tranh.",
+				"practice": "Thực hành gảy nốt Đen và nốt Trắng trên thang âm cơ bản với nhịp độ chậm đều.",
+				"practice_title": "Luyện tập nốt Đen & Trắng",
+				"sheet": ["Mi2", "Sol2", "Sol2", "Mi2", "Sol2", "Sol2", "La2", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2"],
+				"durations": [1.0, 1.0, 2.0, 1.0, 1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 			},
 			{
 				"number": 5,
-				"title": "Ghép hoàn chỉnh Vào rừng hoa",
-				"video": "Điều tiết lực tay để giai điệu tự nhiên và giàu cảm xúc.",
-				"practice": "Chơi ở BPM 70 và nhận đánh giá Perfect, Great hoặc Miss.",
-				"practice_title": "Vào rừng hoa",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"]
+				"title": "Làm quen nốt Móc Đơn và Móc Kép",
+				"video": "Nhạc lý về nốt Móc Đơn (nửa phách) và nốt Móc Kép / Móc Đôi (một phần tư phách). Kỹ thuật gảy ngón tay linh hoạt tốc độ nhanh.",
+				"practice": "Chơi các mẫu chạy nốt nhanh dần đều sử dụng kết hợp nốt móc đơn và móc kép.",
+				"practice_title": "Luyện tập móc đơn & móc kép",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"],
+				"durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 1.0]
 			},
 			{
 				"number": 6,
-				"title": "Khám phá Xàng Xê",
-				"video": "Âm sắc Nam Bộ và cách gảy các nốt luyến đặc trưng của điệu Xàng Xê.",
-				"practice": "Tập Xàng Xê với tên nốt hiển thị trực tiếp trên dây đàn.",
-				"practice_title": "Xàng Xê",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2"]
+				"title": "Nhịp 4/4 và Khóa Sol",
+				"video": "Giới thiệu về Khóa Sol trên khuông nhạc và cách đếm nhịp phách trong nhịp 4/4 tiêu chuẩn.",
+				"practice": "Thực hành gảy bài nhạc điệu Nam Bộ Xàng Xê trên khuông nhạc nhịp 4/4 khóa Sol.",
+				"practice_title": "Luyện tập nhịp 4/4 khóa Sol",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 			}
 		]
 	},
 	{
 		"level": 3,
-		"title": "THỬ THÁCH NHỊP ĐIỆU & TỐC ĐỘ",
-		"sessions": "Session 10–17",
-		"objective": "Chơi các bài có BPM cao hơn và mật độ nốt dày hơn.",
+		"title": "LUYỆN NGÓN VÀ DÂN CA CỔ TRUYỀN",
+		"sessions": "Bài 7–8",
+		"objective": "Luyện ngón tay linh hoạt qua các bài tập dân ca cổ truyền có tốc độ cao.",
 		"lessons": [
 			{
 				"number": 7,
 				"title": "Luyện ngón tốc độ cao – Mã Vũ",
-				"video": "Luyện scale, giữ khung tay và di chuyển ổn định giữa các quãng xa.",
-				"practice": "Tập Mã Vũ đoạn 1 với tốc độ luyện tập phù hợp.",
-				"practice_title": "Mã Vũ – Đoạn 1",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol3", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
+				"video": "Kỹ thuật giữ khung bàn tay vững chãi và di chuyển ngón nhanh trên các phím đàn khi chơi điệu hành khúc Mã Vũ.",
+				"practice": "Thực hành gảy bài nhạc Mã Vũ đoạn 1 đúng trường độ và nhịp độ nhanh.",
+				"practice_title": "Luyện ngón: Mã Vũ",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
 				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0]
 			},
 			{
 				"number": 8,
 				"title": "Dân ca Quan họ – Lý Cây Đa",
-				"video": "Nhấn nhá và luyến láy đặc trưng của Quan họ Bắc Ninh.",
-				"practice": "Luyện sheet Lý Cây Đa và hướng tới độ chính xác cao.",
+				"video": "Kỹ thuật luyến láy và giữ nhịp lả lướt đặc trưng của dân ca Quan họ Bắc Ninh.",
+				"practice": "Thực hành chơi bài dân ca Lý Cây Đa đạt độ chính xác cao.",
 				"practice_title": "Lý Cây Đa",
-				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"]
+				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"],
+				"durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0]
 			}
 		]
 	},
 	{
 		"level": 4,
-		"title": "KỸ THUẬT NÂNG CAO & ĐÁNH THEO BEAT",
-		"sessions": "Session 18–27",
-		"objective": "Đánh đàn kết hợp với nhạc nền và làm chủ kỹ thuật tay trái.",
+		"title": "KỸ THUẬT TAY TRÁI & HỢP ÂM",
+		"sessions": "Bài 9–10",
+		"objective": "Làm chủ kỹ thuật nhấn rung tay trái và gảy song âm, hợp âm trên Đàn Tranh.",
 		"lessons": [
 			{
 				"number": 9,
-				"title": "Mô phỏng kỹ thuật Rung",
-				"video": "Cách nhấn dây, kiểm soát độ sâu và tạo độ rung bằng tay trái.",
-				"practice": "Giữ các nốt dài để luyện cảm giác rung và độ ngân.",
-				"practice_title": "Kỹ thuật Rung tay trái",
-				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"]
+				"title": "Kỹ thuật nhấn Rung tay trái",
+				"video": "Cách nhấn rung tay trái bên trái nhạn đàn để tạo âm ngân luyến truyền cảm, linh hồn Đàn Tranh.",
+				"practice": "Thực hành gảy các nốt ngân dài kết hợp nhấn rung đều tay trái.",
+				"practice_title": "Rung dây Đàn Tranh",
+				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"],
+				"durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
 			},
 			{
 				"number": 10,
-				"title": "Hòa tấu nhạc cụ",
-				"video": "Nghe nhạc nền, giữ nhịp và làm nổi bật giai điệu chính khi hòa tấu.",
-				"practice": "Đóng vai trò đàn tranh lead trong một bài dân ca có sẵn.",
-				"practice_title": "Lý Cây Bông",
-				"sheet": ["Mi2", "Sol2", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Sol2"]
+				"title": "Học Song âm & Hợp âm Đô Trưởng",
+				"video": "Kỹ thuật gảy đồng thời hai hoặc ba dây đàn cùng lúc để tạo thành hợp âm Đô trưởng (C) vang rền.",
+				"practice": "Thực hành gảy song âm và hợp âm Đô trưởng đúng kỹ thuật tay phải.",
+				"practice_title": "Hợp âm Đô trưởng",
+				"sheet": ["Đô2+Mi2", "Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"],
+				"durations": [2.0, 2.0, 4.0, 4.0]
 			}
 		]
 	},
@@ -157,7 +162,7 @@ const LEVELS := [
 				"number": 11,
 				"title": "Nhạc hiện đại – Sứ Thanh Hoa",
 				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
-				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 với các quãng rộng.",
+				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 with các quãng rộng.",
 				"practice_title": "Sứ Thanh Hoa",
 				"sheet": [
 					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
@@ -264,7 +269,7 @@ const LEVELS := [
 @onready var btn_courses   : Button         = $Root/Sidebar/SideM/SideV/BtnCourses
 @onready var btn_room      : Button         = $Root/Sidebar/SideM/SideV/BtnRoom
 @onready var btn_songs     : Button         = $Root/Sidebar/SideM/SideV/BtnSongs
-@onready var btn_account   : Button         = $Root/Sidebar/SideM/SideV/BtnAccount
+var btn_account   : Button
 var btn_minigame : Button
 var btn_leaderboard : Button
 
@@ -272,11 +277,13 @@ var btn_leaderboard : Button
 @onready var back_btn: Button = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title: Label = $Root/RightContent/TopBar/TopM/TopH/TitleVBox/PageTitle
 @onready var objective_label: Label = $Root/RightContent/TopBar/TopM/TopH/TitleVBox/Objective
-@onready var change_course_btn: Button = $Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
+var change_course_btn: Button
 @onready var scroll_container: ScrollContainer = $Root/RightContent/ScrollContainer
 @onready var lessons_hbox: HBoxContainer = $Root/RightContent/ScrollContainer/ContentMargin/LessonsHBox
 
 func _ready() -> void:
+	btn_account = get_node_or_null("Root/Sidebar/SideM/SideV/BtnAccount")
+	change_course_btn = get_node_or_null("Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn")
 	selected_level = clampi(selected_level, 1, LEVELS.size())
 	InstrumentSelect.selected_instrument = "dan_tranh"
 	SecureDataManager.data["selected_instrument"] = "dan_tranh"
@@ -301,6 +308,7 @@ func _ready() -> void:
 	_build_theme()
 	_build_sidebar()
 	_build_lessons()
+	_build_quiz_btn()
 	lessons_hbox.draw.connect(_draw_lesson_path)
 	lessons_hbox.sort_children.connect(func() -> void: lessons_hbox.queue_redraw())
 	_connect_navigation()
@@ -357,7 +365,8 @@ func _build_theme() -> void:
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_bouncy(back_btn)
 	
-	_style_outline_button(change_course_btn)
+	if change_course_btn:
+		_style_outline_button(change_course_btn)
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
@@ -388,24 +397,25 @@ func _build_sidebar() -> void:
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
 
-	_style_side_icon_btn(btn_menu,     false)
-	_style_side_icon_btn(btn_courses,  true)
-	_style_side_icon_btn(btn_room,     false)
-	_style_side_icon_btn(btn_songs,    false)
-	_style_side_icon_btn(btn_minigame, false)
-	_style_side_icon_btn(btn_leaderboard, false)
-	_style_side_icon_btn(btn_account,  false)
+	if btn_menu: _style_side_icon_btn(btn_menu,     false)
+	if btn_courses: _style_side_icon_btn(btn_courses,  true)
+	if btn_room: _style_side_icon_btn(btn_room,     false)
+	if btn_songs: _style_side_icon_btn(btn_songs,    false)
+	if btn_minigame: _style_side_icon_btn(btn_minigame, false)
+	if btn_leaderboard: _style_side_icon_btn(btn_leaderboard, false)
+	if btn_account: _style_side_icon_btn(btn_account,  false)
 
-	_attach_icon_draw(btn_menu,     0)
-	_attach_icon_draw(btn_courses,  1)
-	_attach_icon_draw(btn_room,     6)
-	_attach_icon_draw(btn_songs,    2)
-	_attach_icon_draw(btn_minigame, 3)
-	_attach_icon_draw(btn_leaderboard, 4)
-	_attach_icon_draw(btn_account,  5)
+	if btn_menu: _attach_icon_draw(btn_menu,     0)
+	if btn_courses: _attach_icon_draw(btn_courses,  1)
+	if btn_room: _attach_icon_draw(btn_room,     6)
+	if btn_songs: _attach_icon_draw(btn_songs,    2)
+	if btn_minigame: _attach_icon_draw(btn_minigame, 3)
+	if btn_leaderboard: _attach_icon_draw(btn_leaderboard, 4)
+	if btn_account: _attach_icon_draw(btn_account,  5)
 
 	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
-		_make_bouncy(b)
+		if b:
+			_make_bouncy(b)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
 	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.12), Color(0, 0, 0, 0), 18, 0)
@@ -722,14 +732,16 @@ func _create_action_button(text_value: String, primary: bool) -> Button:
 
 func _connect_navigation() -> void:
 	back_btn.pressed.connect(_go_to_levels)
-	change_course_btn.pressed.connect(_go_to_levels)
+	if change_course_btn:
+		change_course_btn.pressed.connect(_go_to_levels)
 	btn_menu.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
 	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
-	btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
+	if btn_account:
+		btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
 
 func _go_to_levels() -> void:
 	_fade_to("res://scenes/MainMenu.tscn")
@@ -764,6 +776,38 @@ func _open_lesson(lesson: Dictionary) -> void:
 func _lesson_id(lesson_number: int, activity: String) -> String:
 	return "dan_tranh_level_%d_bai_%d_%s" % [selected_level, lesson_number, activity]
 
+func _build_quiz_btn() -> void:
+	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
+	if toph == null or change_course_btn == null:
+		return
+	var quiz_btn := Button.new()
+	quiz_btn.name = "QuizBtn"
+	quiz_btn.text = "📝 Quiz"
+	quiz_btn.custom_minimum_size = Vector2(148, 48)
+	quiz_btn.add_theme_font_size_override("font_size", 17)
+	quiz_btn.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, C_JADE, 18, 2))
+	quiz_btn.add_theme_stylebox_override("hover", _flat(Color(C_GOLD, 0.12), C_GOLD, 18, 2))
+	quiz_btn.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD, 0.15), C_GOLD, 18, 2))
+	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	quiz_btn.add_theme_color_override("font_color", C_JADE)
+	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
+	quiz_btn.pressed.connect(_open_quiz)
+	_make_bouncy(quiz_btn)
+	toph.add_child(quiz_btn)
+	toph.move_child(quiz_btn, change_course_btn.get_index())
+
+func _open_quiz() -> void:
+	var ids: Array[String] = []
+	var level_data := get_level_data(selected_level)
+	for lesson: Dictionary in level_data.get("lessons", []):
+		var number := int(lesson.get("number", 0))
+		if number > 0:
+			ids.append(_lesson_id(number, "practice"))
+	QuizScreenScript.quiz_instrument = "dan_tranh"
+	QuizScreenScript.quiz_local_ids = ids
+	QuizScreenScript.quiz_return_scene = "res://scenes/LessonDanTranhList.tscn"
+	_fade_to("res://scenes/QuizScreen.tscn")
+
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var mobile: bool = viewport_size.x < 850.0 or viewport_size.x < viewport_size.y
@@ -775,8 +819,9 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 19 if mobile else 25)
 	objective_label.visible = not mobile
-	change_course_btn.custom_minimum_size.x = 108 if mobile else 164
-	change_course_btn.text = "Levels" if mobile else "Đổi khóa học"
+	if change_course_btn:
+		change_course_btn.custom_minimum_size.x = 108 if mobile else 164
+		change_course_btn.text = "Levels" if mobile else "Đổi khóa học"
 	var content_margin := $Root/RightContent/ScrollContainer/ContentMargin as MarginContainer
 	content_margin.add_theme_constant_override("margin_left", 18 if mobile else 48)
 	var sep := 32 if mobile else 64

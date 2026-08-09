@@ -1527,8 +1527,8 @@ func _find_files_by_extension(path: String, extension: String) -> Array:
 			var full_path = path.path_join(file_name)
 
 			if dir.current_is_dir():
-				# Skip hidden directories and common build/cache directories
-				if not file_name.begins_with(".") and file_name != "build" and file_name != ".godot":
+				# Skip hidden directories and common build/cache/submodule directories
+				if not file_name.begins_with(".") and file_name != "build" and file_name != ".godot" and file_name != "godot-cpp" and file_name != "scratch" and file_name != "scratchpad":
 					files.append_array(_find_files_by_extension(full_path, extension))
 			else:
 				if file_name.ends_with(extension):
@@ -1553,8 +1553,8 @@ func _find_directories_by_name(path: String, pattern: String) -> Array:
 			var full_path = path.path_join(file_name)
 
 			if dir.current_is_dir():
-				# Skip hidden directories and common build/cache directories
-				if not file_name.begins_with(".") and file_name != "build" and file_name != ".godot":
+				# Skip hidden directories and common build/cache/submodule directories
+				if not file_name.begins_with(".") and file_name != "build" and file_name != ".godot" and file_name != "godot-cpp" and file_name != "scratch" and file_name != "scratchpad":
 					if file_name.ends_with(pattern):
 						directories.append(full_path)
 					else:
