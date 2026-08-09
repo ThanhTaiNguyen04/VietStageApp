@@ -53,11 +53,11 @@ const LEVELS := [
 			{
 				"number": 4,
 				"title": "Nhạc lý: Trường độ nốt nhạc",
-				"video": "Tìm hiểu về trường độ nốt nhạc: nốt đen, nốt móc đơn, nốt trắng, nốt móc kép.",
-				"practice": "Luyện tập gảy phân biệt các nốt có độ dài (trường độ) khác nhau.",
+				"video": "Tìm hiểu về trường độ nốt nhạc: nốt trắng (2 phách), nốt đen (1 phách), nốt móc đơn (nửa phách), nốt móc kép (1/4 phách).",
+				"practice": "Luyện tập nhận diện và gảy phân biệt các nốt có trường độ khác nhau trên khuông nhạc.",
 				"practice_title": "Trường độ nốt nhạc",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2"],
-				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
+				"sheet": ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"],
+				"durations": [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]
 			},
 			{
 				"number": 5,
@@ -531,7 +531,7 @@ func _build_lessons() -> void:
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 	var level_data := get_level_data(selected_level)
-	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % selected_level
+	page_title.text = "ĐÀN TRANH · LEVEL %d" % selected_level
 	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
@@ -806,7 +806,7 @@ func _open_lesson(lesson: Dictionary) -> void:
 	
 	var is_video := false
 	if selected_level == 1:
-		is_video = lesson_number in [1, 4, 5, 6, 7, 8]
+		is_video = lesson_number in [1, 5, 6, 7, 8]
 	elif selected_level == 2:
 		is_video = lesson_number == 5
 		
