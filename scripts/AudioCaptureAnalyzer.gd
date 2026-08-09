@@ -745,13 +745,3 @@ func _has_pluck_attack(samples: PackedFloat32Array) -> bool:
 	if e_second <= 0.000001:
 		return e_first > 0.000001
 	return e_first / e_second > 1.8
-
-
-func _update_hp_cutoff() -> void:
-	if _bus_index == -1:
-		return
-	for i in range(AudioServer.get_bus_effect_count(_bus_index)):
-		var effect = AudioServer.get_bus_effect(_bus_index, i)
-		if effect is AudioEffectHighPassFilter:
-			effect.cutoff_hz = clampf(min_frequency * 0.8, 20.0, 300.0)
-			break

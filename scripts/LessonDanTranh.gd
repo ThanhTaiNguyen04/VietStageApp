@@ -831,6 +831,7 @@ func _start_intro():
 	if title_plaque: title_plaque.visible = false
 	if pill_badge: pill_badge.visible = false
 	if sub_instr_row: sub_instr_row.visible = false
+	if is_instance_valid(zither_board): zither_board.visible = true
 	if speed_bar_container:
 		speed_bar_container.visible = false
 	if skip_intro_btn:
@@ -897,6 +898,7 @@ func _start_practice_single():
 	if title_plaque: title_plaque.visible = true
 	if pill_badge: pill_badge.visible = true
 	if sub_instr_row: sub_instr_row.visible = true
+	if is_instance_valid(zither_board): zither_board.visible = true
 	_update_staff_layout()
 	if skip_intro_btn:
 		skip_intro_btn.visible = false
@@ -1171,6 +1173,7 @@ func _start_practice():
 	if title_plaque: title_plaque.visible = true
 	if pill_badge: pill_badge.visible = true
 	if sub_instr_row: sub_instr_row.visible = true
+	if is_instance_valid(zither_board): zither_board.visible = true
 	_update_staff_layout()
 	if pitch_box:
 		pitch_box.visible = true
