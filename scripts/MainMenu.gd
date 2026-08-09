@@ -22,6 +22,9 @@ const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
 
 const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
+const SidebarDrawerScript := preload("res://scripts/ui/SidebarDrawer.gd")
+
+var _drawer
 
 var _active_side_btn : Button = null
 var _time : float = 0.0
@@ -123,7 +126,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Minigame"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -132,7 +135,7 @@ func _ready() -> void:
 	var bottom_h := $Root/RightContent/BottomBar/BottomM/BottomH as HBoxContainer
 	btn_minigame_mob = Button.new()
 	btn_minigame_mob.name = "BtnMiniGameMobile"
-	btn_minigame_mob.text = "Mini-game"
+	btn_minigame_mob.text = "Minigame"
 	btn_minigame_mob.flat = true
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)
@@ -140,7 +143,7 @@ func _ready() -> void:
 	
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.text = "Bảng xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
@@ -148,7 +151,7 @@ func _ready() -> void:
 
 	btn_leaderboard_mob = Button.new()
 	btn_leaderboard_mob.name = "BtnLeaderboardMobile"
-	btn_leaderboard_mob.text = "Xếp hạng"
+	btn_leaderboard_mob.text = "Bảng xếp hạng"
 	btn_leaderboard_mob.flat = true
 	btn_leaderboard_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_leaderboard_mob)
@@ -162,6 +165,11 @@ func _ready() -> void:
 	_connect_buttons()
 	_setup_drawing_callbacks()
 	_animate_in()
+	
+	_drawer = SidebarDrawerScript.new()
+	add_child(_drawer)
+	_drawer.setup(sidebar, self, $Root, $Root/RightContent/TopBar/TopRow)
+	_drawer.desktop_width = 220.0
 	
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.38)
@@ -1985,9 +1993,11 @@ func _on_viewport_size_changed() -> void:
 
 	# Landscape navigation remains on the left; safe padding keeps controls clear
 	# of Dynamic Island and rounded display corners.
-	sidebar.visible = true
+	if _drawer:
+		_drawer.desktop_width = rail_width + safe_left
+	else:
+		sidebar.visible = true
 	bottom_bar.visible = false
-	sidebar.custom_minimum_size.x = rail_width + safe_left
 	side_margin.add_theme_constant_override("margin_left", int(safe_left))
 	side_margin.add_theme_constant_override("margin_right", 0)
 	side_margin.add_theme_constant_override("margin_top", int(safe.y + 20.0) if is_mobile else 32)
@@ -2141,6 +2151,8 @@ func _on_viewport_size_changed() -> void:
 	roadmap_content.queue_redraw()
 	if _account_menu_open:
 		call_deferred("_relayout_open_account_menu")
+	if _drawer:
+		_drawer.set_viewport_mode(not is_mobile)
 
 func _relayout_open_account_menu() -> void:
 	if _account_menu_open:

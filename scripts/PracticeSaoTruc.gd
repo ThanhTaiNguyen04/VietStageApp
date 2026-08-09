@@ -3202,7 +3202,7 @@ func _update_cinematic_step(step_idx: int) -> void:
 				if hs:
 					hs.border_color = Color.INDIAN_RED
 					if i == active_hole:
-						hs.bg_color = Color.RED_LIGHT
+						hs.bg_color = Color(0.95, 0.45, 0.45, 1.0)
 				
 				var ht := create_tween()
 				ht.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.15)

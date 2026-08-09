@@ -12,9 +12,12 @@ const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
 const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+const SidebarDrawerScript := preload("res://scripts/ui/SidebarDrawer.gd")
 
 var selected_level: int = 1
 var is_unlocked: bool = true
+
+var _drawer
 
 # ─── @onready Refs
 @onready var bg_rect           : ColorRect      = $BG
@@ -83,7 +86,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Minigame"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -91,7 +94,7 @@ func _ready() -> void:
 	
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.text = "Bảng xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
@@ -102,6 +105,11 @@ func _ready() -> void:
 	_build_quiz_btn()
 	_build_lesson_list()
 	_build_sidebar()
+	
+	_drawer = SidebarDrawerScript.new()
+	add_child(_drawer)
+	_drawer.setup(sidebar, self, $Root, $Root/RightContent/TopBar/TopM/TopH)
+	_drawer.desktop_width = 220.0
 	
 	lessons_hbox.draw.connect(_draw_connecting_lines)
 	lessons_hbox.sort_children.connect(func():
@@ -629,7 +637,10 @@ func _draw_connecting_lines() -> void:
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var mobile: bool = viewport_size.x < 850.0 or viewport_size.x < viewport_size.y
-	sidebar.visible = not mobile
+	if _drawer:
+		_drawer.set_viewport_mode(not mobile)
+	else:
+		sidebar.visible = not mobile
 	var top_margin := $Root/RightContent/TopBar/TopM as MarginContainer
 	top_margin.add_theme_constant_override("margin_left", 16 if mobile else 36)
 	top_margin.add_theme_constant_override("margin_right", 16 if mobile else 36)

@@ -46,6 +46,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="BtnMenu" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=67984057]
+visible = false
 custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 size_flags_horizontal = 8
@@ -64,7 +65,7 @@ flat = true
 [node name="BtnRoom" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=1741912450]
 custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
-text = "Phòng nhạc"
+text = "Phòng học"
 flat = true
 
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=1473946370]

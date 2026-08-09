@@ -57,6 +57,7 @@ theme_override_constants/separation = 8
 alignment = 0
 
 [node name="BtnMenu" type="Button" parent="Root/Sidebar/SideM/SideV"]
+visible = false
 custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 flat = true
@@ -75,7 +76,7 @@ text = "Khóa học"
 custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 flat = true
-text = "Phòng nhạc"
+text = "Phòng học"
 
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV"]
 custom_minimum_size = Vector2(220, 100)
