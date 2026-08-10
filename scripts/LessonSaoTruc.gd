@@ -65,6 +65,7 @@ var REQUIRED_HOLD_TIME := 0.4 # Quicker recognition (0.4s) to feel instant
 var rhythm_time := 0.0
 var spawned_notes := 0
 var active_falling_notes := []
+var bar_times: Array[float] = []
 var _practice_note_node
 var _practice_sequence = []
 var _current_practice_idx = 0
@@ -911,7 +912,15 @@ func _process_rhythm(delta, rect):
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
 			
-	if staff_display: staff_display.set_notes(notes_for_staff)
+	if staff_display: 
+		staff_display.set_notes(notes_for_staff)
+		var b_lines = []
+		for bt in bar_times:
+			var b_diff = bt - rhythm_time
+			var bx = hit_x + (b_diff * 300.0)
+			if bx < get_viewport_rect().size.x + 200 and bx > -200:
+				b_lines.append(bx)
+		staff_display.bar_lines = b_lines
 			
 	for r in to_remove:
 		active_falling_notes.erase(r)
@@ -1538,6 +1547,16 @@ func _start_rhythm_game():
 			"hit": false,
 			"failed": false
 		})
+		
+	bar_times.clear()
+	if active_node_id == "sao_truc_level5_7":
+		var max_t = 0.0
+		for note in melody_sequence:
+			if note["time"] > max_t: max_t = note["time"]
+		var b_time = 2.0
+		while b_time <= max_t + 4.0:
+			bar_times.append(b_time)
+			b_time += 4.0
 		
 	total_rhythm_duration = 0.0
 	wrong_rhythm_duration = 0.0

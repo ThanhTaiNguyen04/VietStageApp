@@ -60,6 +60,7 @@ var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
 var beats_per_measure: int = 4
 var show_metronome: bool = true
+var bar_lines: Array = []
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -117,6 +118,12 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		
+	# Draw measure bar lines
+	for bx in bar_lines:
+		var top_y = center_y - 2 * line_spacing
+		var bot_y = center_y + 2 * line_spacing
+		draw_line(Vector2(bx, top_y), Vector2(bx, bot_y), line_color, 2.0, true)
 		
 	# Draw 4-beat Metronome above the hit line
 	if show_metronome:
