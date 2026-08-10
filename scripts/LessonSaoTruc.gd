@@ -50,6 +50,13 @@ var bgm_controls: HBoxContainer
 var bgm_slider: HSlider
 var bgm_toggle_btn: Button
 
+# BPM controls
+const BASE_SCROLL_SPEED := 300.0  # pixels/sec at 100% (60 BPM)
+var bpm_multiplier: float = 1.0   # 1.0 = 60BPM = 100%
+var is_paused: bool = false
+var bpm_controls_row: HBoxContainer
+var pause_btn: Button
+
 var intro_overlay: ColorRect
 var complete_overlay: ColorRect
 var _holes : Array[Control] = []
@@ -322,7 +329,76 @@ func _ready():
 			bgm_player.volume_db = val
 	)
 
-	
+	# ── BPM / Pause controls (top-right, visible during rhythm & practice) ──
+	bpm_controls_row = HBoxContainer.new()
+	bpm_controls_row.name = "BpmControlsRow"
+	bpm_controls_row.add_theme_constant_override("separation", 6)
+	bpm_controls_row.anchor_left = 1.0
+	bpm_controls_row.anchor_right = 1.0
+	bpm_controls_row.anchor_top = 0.0
+	bpm_controls_row.anchor_bottom = 0.0
+	bpm_controls_row.offset_left = -420
+	bpm_controls_row.offset_right = -16
+	bpm_controls_row.offset_top = 16
+	bpm_controls_row.offset_bottom = 56
+	bpm_controls_row.visible = false
+	add_child(bpm_controls_row)
+
+	_build_bpm_btn("60%",  0.6)
+	_build_bpm_btn("80%",  0.8)
+	_build_bpm_btn("100%", 1.0)
+	_build_bpm_btn("120%", 1.2)
+
+	# Pause button
+	pause_btn = Button.new()
+	pause_btn.name = "PauseBtn"
+	pause_btn.text = "⏸"
+	pause_btn.custom_minimum_size = Vector2(44, 40)
+	pause_btn.add_theme_font_size_override("font_size", 20)
+	var sb_pause = StyleBoxFlat.new()
+	sb_pause.bg_color = Color(0.22, 0.18, 0.1, 0.92)
+	sb_pause.border_color = Color(0.75, 0.6, 0.3, 0.6)
+	sb_pause.border_width_left = 2; sb_pause.border_width_right = 2
+	sb_pause.border_width_top = 2; sb_pause.border_width_bottom = 2
+	sb_pause.corner_radius_top_left = 10; sb_pause.corner_radius_top_right = 10
+	sb_pause.corner_radius_bottom_left = 10; sb_pause.corner_radius_bottom_right = 10
+	pause_btn.add_theme_stylebox_override("normal", sb_pause)
+	pause_btn.add_theme_stylebox_override("hover", sb_pause)
+	pause_btn.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
+	bpm_controls_row.add_child(pause_btn)
+	pause_btn.pressed.connect(func():
+		is_paused = !is_paused
+		pause_btn.text = "▶" if is_paused else "⏸"
+	)
+
+	# Restart/replay button
+	var restart_btn = Button.new()
+	restart_btn.name = "RestartBtn"
+	restart_btn.text = "↺"
+	restart_btn.custom_minimum_size = Vector2(44, 40)
+	restart_btn.add_theme_font_size_override("font_size", 22)
+	var sb_restart = StyleBoxFlat.new()
+	sb_restart.bg_color = Color(0.22, 0.18, 0.1, 0.92)
+	sb_restart.border_color = Color(0.75, 0.6, 0.3, 0.6)
+	sb_restart.border_width_left = 2; sb_restart.border_width_right = 2
+	sb_restart.border_width_top = 2; sb_restart.border_width_bottom = 2
+	sb_restart.corner_radius_top_left = 10; sb_restart.corner_radius_top_right = 10
+	sb_restart.corner_radius_bottom_left = 10; sb_restart.corner_radius_bottom_right = 10
+	restart_btn.add_theme_stylebox_override("normal", sb_restart)
+	restart_btn.add_theme_stylebox_override("hover", sb_restart)
+	restart_btn.add_theme_color_override("font_color", C_GOLD)
+	bpm_controls_row.add_child(restart_btn)
+	restart_btn.pressed.connect(func():
+		is_paused = false
+		pause_btn.text = "⏸"
+		if current_state == State.PRACTICE:
+			_practice_time = 0.0
+			_current_practice_idx = 0
+		elif current_state == State.RHYTHM_GAME:
+			_start_rhythm_game()
+	)
+
+
 	back_btn.pressed.connect(_on_back)
 	complete_btn.pressed.connect(_on_complete)
 	real_mode_btn.pressed.connect(_start_real)
@@ -458,30 +534,8 @@ func _setup_premium_practice_ui():
 		back_btn.add_theme_color_override("font_color", Color(0.98, 0.92, 0.82, 1.0))
 		back_btn.add_theme_font_size_override("font_size", 22)
 		
-	var top_right_box = HBoxContainer.new()
-	top_right_box.name = "TopRightIcons"
-	top_right_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	top_right_box.offset_left = -160; top_right_box.offset_top = 26; top_right_box.offset_right = -32; top_right_box.offset_bottom = 74
-	top_right_box.add_theme_constant_override("separation", 16)
-	top_right_box.alignment = BoxContainer.ALIGNMENT_END
-	add_child(top_right_box)
-	for icon_txt in ["⚙", "♫"]:
-		var med_btn = Button.new()
-		med_btn.text = icon_txt
-		med_btn.custom_minimum_size = Vector2(48, 48)
-		var med_sb = StyleBoxFlat.new()
-		med_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
-		med_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
-		med_sb.border_width_left = 2; med_sb.border_width_right = 2; med_sb.border_width_top = 2; med_sb.border_width_bottom = 2
-		med_sb.corner_radius_top_left = 24; med_sb.corner_radius_top_right = 24; med_sb.corner_radius_bottom_left = 24; med_sb.corner_radius_bottom_right = 24
-		med_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.3); med_sb.shadow_size = 4; med_sb.shadow_offset = Vector2(0, 2)
-		med_btn.add_theme_stylebox_override("normal", med_sb)
-		med_btn.add_theme_stylebox_override("hover", med_sb)
-		med_btn.add_theme_stylebox_override("pressed", med_sb)
-		med_btn.add_theme_color_override("font_color", Color(0.96, 0.82, 0.45, 1.0))
-		med_btn.add_theme_font_size_override("font_size", 24)
-		top_right_box.add_child(med_btn)
-		
+
+
 	var lesson_map = {
 		"Node1": {"num": "BÀI 1", "title": "KHẨU HÌNH MÔI"},
 		"Node2": {"num": "BÀI 2", "title": "LUYỆN NỐT SI"},
@@ -787,6 +841,56 @@ func _process_sample(delta):
 				_start_practice()
 			return
 
+func _build_bpm_btn(lbl: String, mul: float) -> void:
+	var btn = Button.new()
+	btn.text = lbl
+	btn.name = "BpmBtn_" + lbl.replace("%", "pct")
+	btn.custom_minimum_size = Vector2(72, 40)
+	btn.add_theme_font_size_override("font_size", 18)
+	var sb_norm = StyleBoxFlat.new()
+	sb_norm.bg_color = Color(0.22, 0.18, 0.1, 0.92)
+	sb_norm.border_color = Color(0.75, 0.6, 0.3, 0.6)
+	sb_norm.border_width_left = 2; sb_norm.border_width_right = 2
+	sb_norm.border_width_top = 2; sb_norm.border_width_bottom = 2
+	sb_norm.corner_radius_top_left = 10; sb_norm.corner_radius_top_right = 10
+	sb_norm.corner_radius_bottom_left = 10; sb_norm.corner_radius_bottom_right = 10
+	var sb_act = StyleBoxFlat.new()
+	sb_act.bg_color = C_GOLD
+	sb_act.corner_radius_top_left = 10; sb_act.corner_radius_top_right = 10
+	sb_act.corner_radius_bottom_left = 10; sb_act.corner_radius_bottom_right = 10
+	if mul == 1.0:
+		btn.add_theme_stylebox_override("normal", sb_act)
+		btn.add_theme_color_override("font_color", Color(0.12, 0.08, 0.02, 1.0))
+	else:
+		btn.add_theme_stylebox_override("normal", sb_norm)
+		btn.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
+	btn.add_theme_stylebox_override("hover", sb_norm)
+	bpm_controls_row.add_child(btn)
+	btn.pressed.connect(_on_bpm_btn_pressed.bind(mul, lbl))
+
+func _on_bpm_btn_pressed(mul: float, lbl: String) -> void:
+	bpm_multiplier = mul
+	for child in bpm_controls_row.get_children():
+		if not (child is Button): continue
+		var is_sel = child.text == lbl
+		var s_act = StyleBoxFlat.new()
+		s_act.bg_color = C_GOLD
+		s_act.corner_radius_top_left = 10; s_act.corner_radius_top_right = 10
+		s_act.corner_radius_bottom_left = 10; s_act.corner_radius_bottom_right = 10
+		var s_norm = StyleBoxFlat.new()
+		s_norm.bg_color = Color(0.22, 0.18, 0.1, 0.92)
+		s_norm.border_color = Color(0.75, 0.6, 0.3, 0.6)
+		s_norm.border_width_left = 2; s_norm.border_width_right = 2
+		s_norm.border_width_top = 2; s_norm.border_width_bottom = 2
+		s_norm.corner_radius_top_left = 10; s_norm.corner_radius_top_right = 10
+		s_norm.corner_radius_bottom_left = 10; s_norm.corner_radius_bottom_right = 10
+		if is_sel:
+			child.add_theme_stylebox_override("normal", s_act)
+			child.add_theme_color_override("font_color", Color(0.12, 0.08, 0.02, 1.0))
+		else:
+			child.add_theme_stylebox_override("normal", s_norm)
+			child.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
+
 func _process(delta):
 	_process_sample(delta)
 
@@ -803,16 +907,28 @@ func _process(delta):
 		var hx = rect.position.x + rect.size.x * HOLE_PROPS_X[i]
 		var hy = rect.position.y + rect.size.y * HOLE_PROP_Y
 		_holes[i].position = Vector2(hx - 50 + hole_offset_x, hy - 50 + hole_offset_y)
-		
+
+	# Show BPM controls during active practice/rhythm
+	if bpm_controls_row:
+		bpm_controls_row.visible = (current_state == State.PRACTICE or current_state == State.RHYTHM_GAME)
+
+	# Sync metronome speed with BPM multiplier
+	if staff_display:
+		staff_display.current_bpm = 60.0 * bpm_multiplier
+
+	# Skip game update if paused
+	if is_paused:
+		return
+	
 	if current_state == State.PRACTICE:
 		if staff_display:
 			var hit_x = staff_display.hit_line_x
 			var notes = []
 			for note_data in _practice_sequence:
 				var time_diff = note_data["time"] - _practice_time
-				var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
+				var note_x = hit_x + (time_diff * BASE_SCROLL_SPEED * bpm_multiplier)
 				var duration = note_data.get("duration", 1.0)
-				var tail_w = duration * 300.0
+				var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
 				var color = Color(0.96, 0.75, 0.25)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
@@ -903,8 +1019,8 @@ func _process_rhythm(delta, rect):
 		var time_diff = target_time - rhythm_time
 		var duration = note_data.get("duration", 1.0)
 		
-		var note_x = hit_x + (time_diff * 300.0) # SCROLL_SPEED
-		var tail_w = duration * 300.0
+		var note_x = hit_x + (time_diff * BASE_SCROLL_SPEED * bpm_multiplier)
+		var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
 			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter")})
@@ -917,7 +1033,7 @@ func _process_rhythm(delta, rect):
 		var b_lines = []
 		for bt in bar_times:
 			var b_diff = bt - rhythm_time
-			var bx = hit_x + (b_diff * 300.0)
+			var bx = hit_x + (b_diff * BASE_SCROLL_SPEED * bpm_multiplier)
 			if bx < get_viewport_rect().size.x + 200 and bx > -200:
 				b_lines.append(bx)
 		staff_display.bar_lines = b_lines

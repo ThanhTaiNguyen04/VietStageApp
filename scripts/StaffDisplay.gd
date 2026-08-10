@@ -60,6 +60,7 @@ var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
 var beats_per_measure: int = 4
 var show_metronome: bool = true
+var current_bpm: float = 60.0  # Updated by LessonSaoTruc to match bpm_multiplier
 var bar_lines: Array = []
 
 func set_note(note_name: String):
@@ -127,8 +128,7 @@ func _draw():
 		
 	# Draw 4-beat Metronome above the hit line
 	if show_metronome:
-		var bpm = 60.0
-		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
+		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (current_bpm / 60.0)
 		var current_beat = int(floor(beat_time_total)) % beats_per_measure
 		var beat_fraction = fmod(beat_time_total, 1.0)
 		
