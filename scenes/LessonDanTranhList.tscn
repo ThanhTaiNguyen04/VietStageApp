@@ -103,9 +103,9 @@ theme_override_constants/separation = 20
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 4
-flat = true
 
 [node name="TitleVBox" type="VBoxContainer" parent="Root/RightContent/TopBar/TopM/TopH" unique_id=2146231557]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -126,7 +126,7 @@ autowrap_mode = 2
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 2
-vertical_scroll_mode = 2
+vertical_scroll_mode = 0
 
 [node name="ContentMargin" type="MarginContainer" parent="Root/RightContent/ScrollContainer" unique_id=943455737]
 layout_mode = 2

@@ -2,12 +2,12 @@ extends Control
 
 const ApiClientScript = preload("res://scripts/ApiClient.gd")
 
-# Minimalist UI colors
-const C_BG_WARM := Color("#F7F6F3")       # Bone background
-const C_CARD_BG := Color("#FFFFFF")       # Pure White background
-const C_BORDER := Color("#EAEAEA")        # Crisp light border
-const C_TEXT_MAIN := Color("#111111")     # Charcoal main text
-const C_TEXT_MUTED := Color("#787774")    # Gray muted text
+# Warm Cream + Jade + Gold (synced with DS.gd)
+const C_BG_WARM := Color("#FAF8F5")       # cream page background
+const C_CARD_BG := Color("#FFFDF8")       # elevated cream card
+const C_BORDER := Color("#E5DFD3")        # warm hairline border
+const C_TEXT_MAIN := Color("#21140D")     # warm charcoal text
+const C_TEXT_MUTED := Color("#6F6257")    # muted warm text
 
 const C_GOLD := Color("#C59626")
 const C_JADE := Color("#173F2D")
@@ -443,24 +443,24 @@ func _font_regular() -> Font:
 
 
 func _profile_style() -> StyleBoxFlat:
-	var style := _flat(Color(0.99, 0.99, 0.98, 0.85), Color(0, 0, 0, 0.08), 20, 1)
-	style.shadow_color = Color(0, 0, 0, 0.02)
-	style.shadow_size = 12
+	var style := _flat(Color(1.0, 0.99, 0.97, 0.92), Color(0, 0, 0, 0.06), 20, 1)
+	style.shadow_color = Color(0.09, 0.27, 0.18, 0.06)
+	style.shadow_size = 14
 	style.shadow_offset = Vector2(0, 4)
 	return style
 
 
 func _avatar_style(size: float = 104.0) -> StyleBoxFlat:
 	var radius := int(size / 2.0)
-	var style := _flat(Color.WHITE, C_BORDER, radius, 2)
-	style.shadow_color = Color(0, 0, 0, 0.04)
-	style.shadow_size = 6
+	var style := _flat(Color(1.0, 0.99, 0.97, 1.0), C_BORDER, radius, 2)
+	style.shadow_color = Color(0.09, 0.27, 0.18, 0.05)
+	style.shadow_size = 8
 	return style
 
 
 func _data_card_style(accent: Color) -> StyleBoxFlat:
 	var style := _flat(C_CARD_BG, C_BORDER, 12, 1)
-	style.shadow_color = Color(0, 0, 0, 0.03)
+	style.shadow_color = Color(0.09, 0.27, 0.18, 0.04)
 	style.shadow_size = 4
 	style.shadow_offset = Vector2(0, 2)
 	return style

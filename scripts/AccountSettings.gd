@@ -4,12 +4,12 @@ const ApiClientScript = preload("res://scripts/ApiClient.gd")
 
 const MAX_AVATAR_BYTES := 5 * 1024 * 1024
 
-# Minimalist UI colors
-const C_BG_WARM := Color("#F7F6F3")       # Bone background
-const C_CARD_BG := Color("#FFFFFF")       # Pure White background
-const C_BORDER := Color("#EAEAEA")        # Crisp light border
-const C_TEXT_MAIN := Color("#111111")     # Charcoal main text
-const C_TEXT_MUTED := Color("#787774")    # Gray muted text
+# Warm Cream + Jade + Gold (synced with DS.gd)
+const C_BG_WARM := Color("#FAF8F5")       # cream page background
+const C_CARD_BG := Color("#FFFDF8")       # elevated cream card
+const C_BORDER := Color("#E5DFD3")        # warm hairline border
+const C_TEXT_MAIN := Color("#21140D")     # warm charcoal text
+const C_TEXT_MUTED := Color("#6F6257")    # muted warm text
 
 const C_GOLD := Color("#C59626")
 const C_JADE := Color("#173F2D")
@@ -472,8 +472,8 @@ func _style_field(field: LineEdit) -> void:
 	field.add_theme_font_override("font", _font_regular())
 	field.add_theme_color_override("font_color", C_TEXT_MAIN)
 	field.add_theme_color_override("font_placeholder_color", Color(C_TEXT_MUTED.r, C_TEXT_MUTED.g, C_TEXT_MUTED.b, 0.72))
-	field.add_theme_stylebox_override("normal", _flat(Color.WHITE, C_BORDER, 12, 1))
-	field.add_theme_stylebox_override("focus", _flat(Color.WHITE, C_GOLD, 12, 2))
+	field.add_theme_stylebox_override("normal", _flat(C_CARD_BG, C_BORDER, 12, 1))
+	field.add_theme_stylebox_override("focus", _flat(C_CARD_BG, C_GOLD, 12, 2))
 	field.add_theme_stylebox_override("read_only", _flat(C_BG_WARM, C_BORDER, 12, 1))
 
 
@@ -565,9 +565,9 @@ func _section_style(accent: Color) -> StyleBoxFlat:
 
 
 func _avatar_style() -> StyleBoxFlat:
-	var style := _flat(Color.WHITE, C_BORDER, 38, 2)
-	style.shadow_color = Color(0, 0, 0, 0.04)
-	style.shadow_size = 6
+	var style := _flat(C_CARD_BG, C_BORDER, 38, 2)
+	style.shadow_color = Color(0.09, 0.27, 0.18, 0.05)
+	style.shadow_size = 8
 	return style
 
 

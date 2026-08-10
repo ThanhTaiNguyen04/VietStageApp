@@ -106,9 +106,9 @@ theme_override_constants/separation = 20
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 4
-flat = true
 
 [node name="PageTitle" type="Label" parent="Root/RightContent/TopBar/TopM/TopH"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4

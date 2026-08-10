@@ -4,9 +4,6 @@ const DEFAULT_W      : float = 220.0
 const ANIM_TIME      : float = 0.30
 const BACKDROP_ALPHA : float = 0.38
 
-const C_JADE := Color(0.09, 0.27, 0.18, 1.0)
-const C_GOLD := Color(0.77, 0.58, 0.15, 1.0)
-
 var desktop_width : float = DEFAULT_W
 
 var sidebar : PanelContainer
@@ -55,8 +52,9 @@ func set_viewport_mode(is_desktop: bool) -> void:
 func _force_top_corner() -> void:
 	if top_h and top_h.get_parent() is MarginContainer:
 		var m := top_h.get_parent() as MarginContainer
-		var margin := int(_overlay_w / 2.0 - 24.0)
-		m.add_theme_constant_override("margin_left", maxi(12, margin))
+		var vp := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
+		var margin := DS.nav_margin(vp.x, desktop_width)
+		m.add_theme_constant_override("margin_left", margin)
 
 func is_drawer_open() -> bool:
 	return _overlay_open
@@ -68,19 +66,9 @@ func _build_toggle() -> void:
 	_x_tex = load("res://assets/textures/lucide/x.svg") as Texture2D
 	_toggle = Button.new()
 	_toggle.name = "SidebarToggle"
-	_toggle.flat = true
 	_toggle.icon = _menu_tex
-	_toggle.expand_icon = true
-	_toggle.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toggle.custom_minimum_size = Vector2(48, 48)
-	_toggle.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_toggle.add_theme_stylebox_override("normal",  _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18))
-	_toggle.add_theme_stylebox_override("hover",   _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color(0, 0, 0, 0), 18))
-	_toggle.add_theme_stylebox_override("pressed", _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20), Color(0, 0, 0, 0), 18))
-	_toggle.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	_toggle.add_theme_color_override("icon_normal_color", Color(1, 1, 1, 1))
-	_toggle.add_theme_color_override("icon_hover_color", Color(1, 1, 1, 0.85))
-	_toggle.add_theme_color_override("icon_pressed_color", Color(1, 1, 1, 0.7))
+	_toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	DS.apply_round_icon_btn(_toggle)
 	_toggle.pressed.connect(_on_toggle_pressed)
 	_make_bouncy(_toggle)
 	if top_h:

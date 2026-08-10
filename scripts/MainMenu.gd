@@ -479,30 +479,24 @@ func _draw_traditional_cloud(c: Control, pos: Vector2, size: float) -> void:
 # ─── Sidebar ───────────────────────────────────────────────────────────────────
 func _build_sidebar() -> void:
 	var side_s := StyleBoxFlat.new()
-	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
-	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
+	side_s.bg_color = Color.TRANSPARENT
+	side_s.border_color = C_GOLD
 	side_s.border_width_right = 2
 	side_s.content_margin_right = 0
+	side_s.shadow_size = 32
+	side_s.shadow_color = Color(0, 0, 0, 0.12)
+	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
 	
-	var blur_mat = ShaderMaterial.new()
-	var blur_shader = Shader.new()
-	blur_shader.code = """
-	shader_type canvas_item;
-	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-	uniform float lod: hint_range(0.0, 5.0) = 2.0;
-	void fragment() {
-		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
-	}
-	"""
-	blur_mat.shader = blur_shader
-	var blur_rect = ColorRect.new()
-	blur_rect.material = blur_mat
-	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	blur_rect.show_behind_parent = true
-	sidebar.add_child(blur_rect)
-	sidebar.move_child(blur_rect, 0)
+	# Remove any existing GlassBlur child
+	var old_blur = sidebar.get_node_or_null("GlassBlur")
+	if old_blur:
+		old_blur.queue_free()
+
+	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]:
+		if b:
+			b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			b.custom_minimum_size = Vector2(70, 70)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -510,7 +504,9 @@ func _build_sidebar() -> void:
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
 	_style_side_icon_btn(btn_leaderboard, false)
-	_style_side_icon_btn(btn_account,  false)
+	if btn_account:
+		btn_account.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		DS.apply_round_icon_btn(btn_account)
 
 	_attach_icon_draw(btn_menu,     0)
 	_attach_icon_draw(btn_courses,  1)
@@ -585,41 +581,61 @@ func _attach_bottom_icon_draw(btn: Button, icon_type: int, is_locked: bool = fal
 	btn.add_child(ic)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.12), Color(0, 0, 0, 0), 18)
-	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
-	var bg_p := _flat(Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18)
-
-	bg_n.content_margin_top = 64
-	bg_n.content_margin_bottom = 8
-	bg_h.content_margin_top = 64
-	bg_h.content_margin_bottom = 8
-	bg_p.content_margin_top = 64
-	bg_p.content_margin_bottom = 8
-
+	var bg_n := StyleBoxFlat.new()
+	bg_n.set_corner_radius_all(35)
+	bg_n.draw_center = true
 	if is_active:
-		bg_n.border_width_left = 6
-		bg_n.border_width_right = 0; bg_n.border_width_top = 0; bg_n.border_width_bottom = 0
-		bg_n.border_color = C_GOLD
+		bg_n.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
+		bg_n.border_width_left = 2; bg_n.border_width_right = 2
+		bg_n.border_width_top = 2; bg_n.border_width_bottom = 2
+		bg_n.border_color = C_GOLD_LIGHT # Bright border!
+	else:
+		bg_n.bg_color = Color(1.0, 1.0, 1.0, 0.03)
+		bg_n.border_width_left = 1; bg_n.border_width_right = 1
+		bg_n.border_width_top = 1; bg_n.border_width_bottom = 1
+		bg_n.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25) # Muted bright border
+		
+	var bg_h := StyleBoxFlat.new()
+	bg_h.set_corner_radius_all(35)
+	bg_h.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08)
+	bg_h.border_width_left = 2; bg_h.border_width_right = 2
+	bg_h.border_width_top = 2; bg_h.border_width_bottom = 2
+	bg_h.border_color = C_GOLD_LIGHT
+	
+	var bg_p := StyleBoxFlat.new()
+	bg_p.set_corner_radius_all(35)
+	bg_p.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
+	bg_p.border_width_left = 2; bg_p.border_width_right = 2
+	bg_p.border_width_top = 2; bg_p.border_width_bottom = 2
+	bg_p.border_color = C_GOLD_LIGHT
 
 	btn.add_theme_stylebox_override("normal",  bg_n)
 	btn.add_theme_stylebox_override("hover",   bg_h)
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0))
-	btn.add_theme_color_override("font_color",         C_RED_SON if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
-	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_RED_SON if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
+	btn.add_theme_color_override("font_color",         C_GOLD_LIGHT if is_active else (Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_locked else C_GOLD))
+	btn.add_theme_color_override("font_hover_color",   Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50) if is_locked else C_GOLD_LIGHT)
+	btn.add_theme_color_override("font_pressed_color", C_GOLD_LIGHT if not is_locked else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35))
 	btn.add_theme_font_size_override("font_size", 22)
 
 func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
+	btn.text = ""
+	var old_ic := btn.get_node_or_null("IconDraw")
+	if old_ic:
+		old_ic.queue_free()
 	var ic := Control.new()
 	ic.name = "IconDraw"
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ic.layout_mode = 1
-	ic.anchors_preset = Control.PRESET_CENTER_TOP
+	ic.anchors_preset = Control.PRESET_CENTER
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
-	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
-	ic.offset_left = -40; ic.offset_right = 40
-	ic.offset_top = 8;   ic.offset_bottom = 64
+	ic.anchor_top = 0.5;  ic.anchor_bottom = 0.5
+	
+	var ic_offset := 20
+	if icon_type == 5:
+		ic_offset = 32
+	ic.offset_left = -ic_offset; ic.offset_right = ic_offset
+	ic.offset_top = -ic_offset;  ic.offset_bottom = ic_offset
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -627,6 +643,27 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var sz := c.size
 	var cx := sz.x * 0.5
 	var cy := sz.y * 0.5
+
+	if t == 5:
+		var shader = load("res://assets/shaders/circular_avatar.gdshader") as Shader
+		if shader:
+			var mat = ShaderMaterial.new()
+			mat.shader = shader
+			c.material = mat
+			
+		var avatar_source := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
+		if avatar_source.is_empty():
+			avatar_source = str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+		var avatar_tex : Texture2D = null
+		if avatar_source.begins_with("res://"):
+			avatar_tex = load(avatar_source) as Texture2D
+		if avatar_tex == null:
+			avatar_tex = load("res://assets/textures/default_avatar.png") as Texture2D
+			
+		if avatar_tex:
+			c.draw_texture_rect(avatar_tex, Rect2(0, 0, sz.x, sz.y), false)
+		return
+
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
 
 	var tex_name := ""
@@ -1276,7 +1313,7 @@ func _build_roadmap_cards() -> void:
 	var is_tranh := (instrument == "dan_tranh")
 	
 	# Main labels styling
-	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf")
+	var font_title := load("res://assets/fonts/Lora-Bold.ttf")
 	if font_title:
 		roadmap_guide.add_theme_font_override("font", font_title)
 		path_soloist_title.add_theme_font_override("font", font_title)
