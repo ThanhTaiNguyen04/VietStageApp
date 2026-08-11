@@ -1,23 +1,23 @@
 extends Control
 class_name PracticeSaoTruc
 
-# ─── Color Palette — VietStage Skill §4: Warm Vietnamese Dark Premium
-const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0) # #F5C842 Golden Amber
-const C_GOLD_LIGHT := Color(1.00, 0.87, 0.45, 1.0)    # #FFDF73 Bright Gold
-const C_GOLD_TEXT  := Color(0.961, 0.784, 0.259, 1.0) # Golden Amber
-const C_JADE       := Color(0.059, 0.180, 0.118, 1.0) # #0F2E1E Deep Jade
-const C_RED_SON    := Color(0.753, 0.329, 0.102, 1.0) # #C0541A Terracotta (Primary)
-const C_CREAM      := Color(0.941, 0.871, 0.706, 1.0) # #F0DEB4 Warm Ivory
-const C_CREAM_DIM  := Color(0.659, 0.565, 0.439, 1.0) # #A89070 Muted Sand
-const C_GREEN_OK   := Color(0.298, 0.686, 0.490, 1.0) # #4CAF7D Jade Green (correct)
-const C_WARN       := Color(0.961, 0.651, 0.137, 1.0) # #F5A623 Orange Warning
-const C_RED_ERR    := Color(0.910, 0.271, 0.271, 1.0) # #E84545 Error Red
+# ─── Color Palette — Warm Cream + Jade + Gold (synced with DS.gd)
+const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)   # #C59626 lacquer gold
+const C_GOLD_LIGHT := Color(0.94, 0.80, 0.38, 1.0)   # #F0CB62 bright gold
+const C_GOLD_TEXT  := Color(0.77, 0.58, 0.15, 1.0)
+const C_JADE       := Color(0.09, 0.27, 0.18, 1.0)   # #173F2D deep jade
+const C_RED_SON    := Color(0.72, 0.12, 0.08, 1.0)   # #B81F14 error red
+const C_CREAM      := Color(1.00, 0.97, 0.88, 1.0)   # light text on dark
+const C_CREAM_DIM  := Color(0.80, 0.76, 0.66, 1.0)
+const C_GREEN_OK   := Color(0.18, 0.62, 0.42, 1.0)   # success green
+const C_WARN       := Color(0.72, 0.42, 0.10, 1.0)   # amber warning
+const C_RED_ERR    := Color(0.72, 0.12, 0.08, 1.0)   # error red
 
-const C_BG         := Color(0.102, 0.071, 0.031, 1.0) # #1A1208 Deep Mahogany
-const C_BG_BAR     := Color(0.071, 0.047, 0.020, 1.0) # #120C05 Darker Mahogany
-const C_CARD       := Color(0.059, 0.180, 0.118, 1.0) # #0F2E1E Deep Jade (notation bg)
-const C_TEXT       := Color(0.941, 0.871, 0.706, 1.0) # #F0DEB4 Warm Ivory
-const C_TEXT_MUTED := Color(0.659, 0.565, 0.439, 1.0) # #A89070 Muted Sand
+const C_BG         := Color(0.98, 0.97, 0.94, 1.0)   # #FAF8F5 cream page
+const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)   # #F3EFE3 cream bar
+const C_CARD       := Color(1.00, 0.99, 0.97, 1.0)   # #FFFDF8 elevated card
+const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)   # #21140D warm charcoal
+const C_TEXT_MUTED := Color(0.44, 0.38, 0.34, 1.0)   # #6F6257 muted
 @onready var linh_panel   : PanelContainer = $Root/MiddleRow/LinhPanel
 @onready var char_linh    : TextureRect   = $Root/MiddleRow/LinhPanel/LinhVBox/CharLinhWrapper/CharLinh
 @onready var speech_label : Label         = $Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble/SpeechM/SpeechLabel
@@ -61,6 +61,7 @@ var _count_in_step := 3
 var _is_wait_mode := false
 var _is_demo_mode := false
 var _speed_scale := 1.0
+var _user_override_speed := false
 var _total_mistakes := 0
 var _song_bpm := 100.0
 var _current_note_elapsed := 0.0
@@ -519,6 +520,7 @@ func _ready() -> void:
 		settings_vbox.move_child(speed_sel, 3)
 		
 		speed_sel.item_selected.connect(func(index: int) -> void:
+			_user_override_speed = true
 			match index:
 				0: _speed_scale = 1.0
 				1: _speed_scale = 0.8
@@ -992,58 +994,58 @@ func _set_labels() -> void:
 	hint_dialog.dialog_text = "Khi thổi sáo trúc:\n\n• Môi khép nhẹ, không cắn lưỡi gà\n• Thổi đều hơi, không gấp\n• Che kín lỗ bằng thịt đầu ngón\n• Giữ cổ tay thư giãn\n• Lắng nghe cao độ rõ ràng"
 
 func _build_theme() -> void:
-	# ── Background overlay: warm dark mahogany ────────────────────────────────────
+	# ── Background overlay: warm cream ────────────────────────────────────────
 	var bg_over := get_node_or_null("BGOverlay") as ColorRect
 	if bg_over:
-		bg_over.color = Color(0.059, 0.035, 0.012, 0.88) # dark mahogany warm overlay
+		bg_over.color = Color(0.98, 0.97, 0.94, 0.92) # cream warm overlay
 
 	# Load premium fonts
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
 	var f_body := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	var f_body_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 
-	# ── TOP BAR: dark mahogany glass with gold bottom border ─────────────────────
+	# ── TOP BAR: cream glass with gold bottom border ──────────────────────────
 	var top_s := StyleBoxFlat.new()
-	top_s.bg_color = Color(0.071, 0.047, 0.020, 0.97) # dark mahogany
+	top_s.bg_color = Color(0.95, 0.93, 0.89, 0.92) # cream glass
 	top_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
 	top_s.border_width_bottom = 2
 	top_s.border_width_top = 0; top_s.border_width_left = 0; top_s.border_width_right = 0
-	top_s.shadow_size = 12; top_s.shadow_color = Color(0, 0, 0, 0.40)
+	top_s.shadow_size = 12; top_s.shadow_color = Color(0.13, 0.08, 0.05, 0.18)
 	top_s.shadow_offset = Vector2(0, 4)
 	($Root/TopBar as PanelContainer).add_theme_stylebox_override("panel", top_s)
 
 	var lesson_title = $Root/TopBar/TopM/TopH/LessonTitle as Label
-	lesson_title.add_theme_color_override("font_color", C_GOLD)
+	lesson_title.add_theme_color_override("font_color", C_JADE)
 	if f_title: lesson_title.add_theme_font_override("font", f_title)
 	lesson_title.add_theme_font_size_override("font_size", 30)
 
 	var back := $Root/TopBar/TopM/TopH/BackBtn as Button
-	_style_text_btn(back, C_CREAM_DIM, C_CREAM)
+	_style_text_btn(back, C_TEXT_MUTED, C_JADE)
 	
 	var menu_btn := $Root/TopBar/TopM/TopH/MenuBtn as Button
-	if menu_btn: _style_text_btn(menu_btn, C_GOLD, C_GOLD_LIGHT)
+	if menu_btn: _style_text_btn(menu_btn, C_JADE, C_GOLD)
 
-	# ── SETTINGS PANEL: dark jade card ────────────────────────────────────────
+	# ── SETTINGS PANEL: cream card ────────────────────────────────────────────
 	var pct_label = $SettingsPanel/SettingsM/SettingsVBox/ProgressVBox/PctLabel as Label
 	pct_label.add_theme_color_override("font_color", C_TEXT_MUTED)
 	if f_body: pct_label.add_theme_font_override("font", f_body)
 	pct_label.add_theme_font_size_override("font_size", 18)
-	_style_progress_bar(lesson_bar, C_GREEN_OK, Color(1.0, 1.0, 1.0, 0.06))
+	_style_progress_bar(lesson_bar, C_GREEN_OK, Color(0.13, 0.08, 0.05, 0.08))
 
 	var settings_panel := $SettingsPanel as PanelContainer
 	if settings_panel:
 		var sp_style := StyleBoxFlat.new()
-		sp_style.bg_color = Color(0.071, 0.047, 0.020, 0.97)
-		sp_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50)
+		sp_style.bg_color = Color(1.0, 0.99, 0.97, 0.96)
+		sp_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40)
 		sp_style.border_width_left = 1; sp_style.border_width_right = 1
 		sp_style.border_width_top = 1; sp_style.border_width_bottom = 1
 		sp_style.corner_radius_top_left = 21; sp_style.corner_radius_top_right = 21
 		sp_style.corner_radius_bottom_left = 21; sp_style.corner_radius_bottom_right = 21
-		sp_style.shadow_size = 22; sp_style.shadow_color = Color(0, 0, 0, 0.55)
+		sp_style.shadow_size = 22; sp_style.shadow_color = Color(0.09, 0.27, 0.18, 0.20)
 		settings_panel.add_theme_stylebox_override("panel", sp_style)
 		var menu_title := $SettingsPanel/SettingsM/SettingsVBox/MenuTitle as Label
 		if menu_title:
-			menu_title.add_theme_color_override("font_color", C_GOLD)
+			menu_title.add_theme_color_override("font_color", C_JADE)
 			if f_title: menu_title.add_theme_font_override("font", f_title)
 
 	for bn in ["HintBtn","DemoBtn","SlowBtn"]:
@@ -1053,21 +1055,21 @@ func _build_theme() -> void:
 	# ── LINH PANEL: transparent + warm speech bubble ───────────────────────────
 	($Root/MiddleRow/LinhPanel as PanelContainer).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var bubble_s := StyleBoxFlat.new()
-	bubble_s.bg_color = Color(0.071, 0.047, 0.020, 0.90)
-	bubble_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55)
+	bubble_s.bg_color = Color(0.95, 0.93, 0.89, 0.94)
+	bubble_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40)
 	bubble_s.border_width_left = 1; bubble_s.border_width_right = 1
 	bubble_s.border_width_top = 1; bubble_s.border_width_bottom = 1
 	bubble_s.corner_radius_top_left = 24; bubble_s.corner_radius_top_right = 24
 	bubble_s.corner_radius_bottom_left = 24; bubble_s.corner_radius_bottom_right = 24
 	($Root/MiddleRow/LinhPanel/LinhVBox/SpeechBubble as PanelContainer).add_theme_stylebox_override("panel", bubble_s)
-	speech_label.add_theme_color_override("font_color", C_CREAM)
+	speech_label.add_theme_color_override("font_color", C_TEXT)
 	if f_body: speech_label.add_theme_font_override("font", f_body)
 	speech_label.add_theme_font_size_override("font_size", 20)
 
-	# ── NOTATION AREA: deep jade card with gold border ───────────────────────────
+	# ── NOTATION AREA: cream card with gold border ─────────────────────────────
 	var na_s := StyleBoxFlat.new()
-	na_s.bg_color = Color(0.039, 0.110, 0.071, 0.97) # deep jade dark
-	na_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	na_s.bg_color = Color(1.0, 0.99, 0.97, 0.96) # cream card
+	na_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
 	na_s.border_width_left = 1; na_s.border_width_right = 1
 	na_s.border_width_top = 1; na_s.border_width_bottom = 1
 	($Root/MiddleRow/MainContent/NotationArea as PanelContainer).add_theme_stylebox_override("panel", na_s)
@@ -1078,19 +1080,19 @@ func _build_theme() -> void:
 	notation_label.add_theme_font_size_override("font_size", 18)
 
 	var target_note_lbl = $Root/MiddleRow/MainContent/NotationArea/NotationM/NotationVBox/TopInfoHBox/NotationVBoxLeft/TargetNoteLabel as Label
-	target_note_lbl.add_theme_color_override("font_color", C_GOLD)
+	target_note_lbl.add_theme_color_override("font_color", C_JADE)
 	if f_body_bold: target_note_lbl.add_theme_font_override("font", f_body_bold)
 	target_note_lbl.add_theme_font_size_override("font_size", 27)
 
 	# Stats panels
 	var stat_bg := StyleBoxFlat.new()
-	stat_bg.bg_color = Color(0.071, 0.047, 0.020, 0.95)
+	stat_bg.bg_color = Color(0.95, 0.93, 0.89, 0.92)
 	stat_bg.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30)
 	stat_bg.border_width_left = 1; stat_bg.border_width_right = 1
 	stat_bg.border_width_top = 1; stat_bg.border_width_bottom = 1
 	stat_bg.corner_radius_top_left = 21; stat_bg.corner_radius_top_right = 21
 	stat_bg.corner_radius_bottom_left = 21; stat_bg.corner_radius_bottom_right = 21
-	stat_bg.shadow_size = 8; stat_bg.shadow_color = Color(0, 0, 0, 0.35)
+	stat_bg.shadow_size = 8; stat_bg.shadow_color = Color(0.09, 0.27, 0.18, 0.10)
 	($Root/MiddleRow/MainContent/StatsRow as PanelContainer).add_theme_stylebox_override("panel", stat_bg)
 
 	for lbl_path in ["PitchV/PitchTitle", "RhythmV/RhythmTitle", "ScoreV/ScoreTitle"]:
@@ -1100,7 +1102,7 @@ func _build_theme() -> void:
 			if f_body_bold: lbl.add_theme_font_override("font", f_body_bold)
 			lbl.add_theme_font_size_override("font_size", 17)
 
-	pitch_note.add_theme_color_override("font_color", C_GOLD)
+	pitch_note.add_theme_color_override("font_color", C_JADE)
 	if f_title: pitch_note.add_theme_font_override("font", f_title)
 	pitch_note.add_theme_font_size_override("font_size", 45)
 
@@ -1112,7 +1114,7 @@ func _build_theme() -> void:
 	if f_body: rhythm_acc.add_theme_font_override("font", f_body)
 	rhythm_acc.add_theme_font_size_override("font_size", 17)
 
-	score_num.add_theme_color_override("font_color", C_GREEN_OK)
+	score_num.add_theme_color_override("font_color", C_JADE)
 	if f_title: score_num.add_theme_font_override("font", f_title)
 	score_num.add_theme_font_size_override("font_size", 45)
 
@@ -1121,10 +1123,10 @@ func _build_theme() -> void:
 	if f_body: score_sub.add_theme_font_override("font", f_body)
 	score_sub.add_theme_font_size_override("font_size", 17)
 
-	# ── FLUTE BOARD: dark warm mahogany strip ───────────────────────────────────
+	# ── FLUTE BOARD: warm cream strip ──────────────────────────────────────────
 	var sb_s := StyleBoxFlat.new()
-	sb_s.bg_color = Color(0.059, 0.039, 0.016, 0.97)
-	sb_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	sb_s.bg_color = Color(0.95, 0.93, 0.89, 0.94)
+	sb_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30)
 	sb_s.border_width_top = 2; sb_s.border_width_bottom = 0
 	sb_s.border_width_left = 0; sb_s.border_width_right = 0
 	($Root/FluteBoard as PanelContainer).add_theme_stylebox_override("panel", sb_s)
@@ -1134,7 +1136,7 @@ func _build_theme() -> void:
 	if f_body_bold: board_lbl.add_theme_font_override("font", f_body_bold)
 	board_lbl.add_theme_font_size_override("font_size", 18)
 
-	target_label.add_theme_color_override("font_color", C_GOLD)
+	target_label.add_theme_color_override("font_color", C_JADE)
 	if f_body_bold: target_label.add_theme_font_override("font", f_body_bold)
 	target_label.add_theme_font_size_override("font_size", 20)
 
@@ -1143,10 +1145,10 @@ func _build_theme() -> void:
 	if f_body: guidance_lbl.add_theme_font_override("font", f_body)
 	guidance_lbl.add_theme_font_size_override("font_size", 17)
 
-	# Flute frame: warm dark wood
+	# Flute frame: warm wood
 	var frame := $Root/FluteBoard/BoardM/BoardVBox/FluteFrame as PanelContainer
 	var frame_s := StyleBoxFlat.new()
-	frame_s.bg_color = Color(0.06, 0.035, 0.010, 1.0) # very dark warm mahogany
+	frame_s.bg_color = Color(0.13, 0.08, 0.05, 1.0) # warm charcoal wood
 	frame_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40)
 	frame_s.border_width_left = 1; frame_s.border_width_right = 1
 	frame_s.border_width_top = 1; frame_s.border_width_bottom = 1
@@ -1161,7 +1163,7 @@ func _build_theme() -> void:
 	bf.corner_radius_bottom_left = 9; bf.corner_radius_bottom_right = 9
 	bf.shadow_size = 6; bf.shadow_color = Color(C_GREEN_OK.r, C_GREEN_OK.g, C_GREEN_OK.b, 0.40)
 	var bb := StyleBoxFlat.new()
-	bb.bg_color = Color(1.0, 1.0, 1.0, 0.06)
+	bb.bg_color = Color(0.13, 0.08, 0.05, 0.08)
 	bb.corner_radius_top_left = 9; bb.corner_radius_top_right = 9
 	bb.corner_radius_bottom_left = 9; bb.corner_radius_bottom_right = 9
 	breath_progress.add_theme_stylebox_override("fill", bf)
@@ -1172,35 +1174,35 @@ func _build_theme() -> void:
 	if f_body_bold: breath_lbl.add_theme_font_override("font", f_body_bold)
 	breath_lbl.add_theme_font_size_override("font_size", 17)
 	if breath_status:
-		breath_status.add_theme_color_override("font_color", C_CREAM)
+		breath_status.add_theme_color_override("font_color", C_JADE)
 		if f_body: breath_status.add_theme_font_override("font", f_body)
 		breath_status.add_theme_font_size_override("font_size", 17)
 
-	# ── RECORD BAR: dark mahogany bottom strip ─────────────────────────────────
+	# ── RECORD BAR: warm cream bottom strip ────────────────────────────────────
 	var rec_bar_s := StyleBoxFlat.new()
-	rec_bar_s.bg_color = Color(0.059, 0.039, 0.016, 0.97)
-	rec_bar_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	rec_bar_s.bg_color = Color(0.95, 0.93, 0.89, 0.94)
+	rec_bar_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30)
 	rec_bar_s.border_width_top = 2; rec_bar_s.border_width_bottom = 0
 	rec_bar_s.border_width_left = 0; rec_bar_s.border_width_right = 0
 	($Root/RecordBar as PanelContainer).add_theme_stylebox_override("panel", rec_bar_s)
 
-	# ── RECORD BUTTON (Bắt đầu luyện tập): Terracotta gradient + gold glow ───────
+	# ── RECORD BUTTON (Bắt đầu luyện tập): jade + gold glow ───────────────────
 	var rn := StyleBoxFlat.new()
-	rn.bg_color = Color(0.753, 0.329, 0.102, 1.0)  # Terracotta #C0541A
+	rn.bg_color = C_JADE
 	rn.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55)
 	rn.border_width_left = 2; rn.border_width_right = 2; rn.border_width_top = 2; rn.border_width_bottom = 2
 	rn.corner_radius_top_left = 39; rn.corner_radius_top_right = 39
 	rn.corner_radius_bottom_left = 39; rn.corner_radius_bottom_right = 39
-	rn.shadow_size = 16; rn.shadow_color = Color(0.753, 0.329, 0.102, 0.50)
+	rn.shadow_size = 16; rn.shadow_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.40)
 	var rh := StyleBoxFlat.new()
-	rh.bg_color = Color(0.831, 0.388, 0.122, 1.0)  # Lighter terracotta #D4631F
+	rh.bg_color = C_JADE.lightened(0.15)
 	rh.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.85)
 	rh.border_width_left = 2; rh.border_width_right = 2; rh.border_width_top = 2; rh.border_width_bottom = 2
 	rh.corner_radius_top_left = 39; rh.corner_radius_top_right = 39
 	rh.corner_radius_bottom_left = 39; rh.corner_radius_bottom_right = 39
-	rh.shadow_size = 22; rh.shadow_color = Color(0.831, 0.388, 0.122, 0.65)
+	rh.shadow_size = 22; rh.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50)
 	var rp := StyleBoxFlat.new()
-	rp.bg_color = Color(0.620, 0.247, 0.063, 1.0)  # Dark terracotta #9E3F10
+	rp.bg_color = C_JADE.darkened(0.15)
 	rp.corner_radius_top_left = 39; rp.corner_radius_top_right = 39
 	rp.corner_radius_bottom_left = 39; rp.corner_radius_bottom_right = 39
 	record_btn.add_theme_stylebox_override("normal",  rn)
@@ -1211,7 +1213,7 @@ func _build_theme() -> void:
 	if f_body_bold: record_btn.add_theme_font_override("font", f_body_bold)
 	record_btn.add_theme_font_size_override("font_size", 26)
 
-	# ── RESET BUTTON (Làm lại): dark outline with warm ivory text ──────────────
+	# ── RESET BUTTON (Làm lại): jade outline with warm text ────────────────────
 	_style_outlined_btn($Root/RecordBar/RecordM/RecordH/ResetBtn as Button)
 
 func _build_flute() -> void:
@@ -1495,12 +1497,27 @@ func _connect_buttons() -> void:
 				t.tween_property(flute_body, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_QUAD)
 		)
 
+func _apply_adaptive_speed_scale() -> void:
+	if _user_override_speed:
+		return
+	# Adaptive difficulty: gợi ý tempo từ 10 lượt gần nhất, map vào 100/80/60/50%.
+	var adaptive := SecureDataManager.get_adaptive_tempo_multiplier(SecureDataManager.active_lesson_id)
+	if adaptive >= 1.1:
+		_speed_scale = 1.0
+	elif adaptive >= 0.9:
+		_speed_scale = 0.8
+	elif adaptive >= 0.7:
+		_speed_scale = 0.6
+	else:
+		_speed_scale = 0.5
+
 func _toggle_record() -> void:
 	_recording = not _recording
 	var visualizer = _waveform_visualizer
 	_update_rec_pulse(_recording)
 	if _recording:
 		record_btn.text = "Dừng luyện tập"
+		_apply_adaptive_speed_scale()
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
 		if visualizer and _mic_mode: visualizer.visible = true
@@ -2112,6 +2129,8 @@ func _show_custom_result() -> void:
 	var stars := 1
 	if _score >= 85.0: stars = 3
 	elif _score >= 75.0: stars = 2
+	
+	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
@@ -3202,7 +3221,7 @@ func _update_cinematic_step(step_idx: int) -> void:
 				if hs:
 					hs.border_color = Color.INDIAN_RED
 					if i == active_hole:
-						hs.bg_color = Color.RED_LIGHT
+						hs.bg_color = Color(0.95, 0.45, 0.45, 1.0)
 				
 				var ht := create_tween()
 				ht.tween_property(hole, "scale", Vector2(1.15, 1.15), 0.15)

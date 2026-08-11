@@ -90,8 +90,12 @@ var active_subtitles := []
 func _ready() -> void:
 	var inst := InstrumentSelect.selected_instrument
 	
-	custom_video_sequence = SecureDataManager.data.get("custom_video_sequence", [])
-	current_sequence_index = SecureDataManager.data.get("current_sequence_index", 0)
+	if inst == "sao_truc":
+		custom_video_sequence = SecureDataManager.data.get("custom_video_sequence", [])
+		current_sequence_index = SecureDataManager.data.get("current_sequence_index", 0)
+	else:
+		custom_video_sequence = []
+		current_sequence_index = 0
 	
 	if custom_video_sequence.size() > 0:
 		var path: String = custom_video_sequence[current_sequence_index]

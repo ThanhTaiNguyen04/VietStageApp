@@ -9,6 +9,11 @@ godot_temp.log
 .sconsign.dblite
 /src/*.os
 
+# GDExtension build temp files (Visual Studio temp/backup)
+bin/~*
+bin/*.bak
+bin/*.TMP
+
 # Local environment overrides
 .env
 .env.*

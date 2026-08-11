@@ -33,13 +33,17 @@ const NOTE_POSITIONS = {
 	"Đô_2": -1.0,    # C4: dòng phụ 1 dưới (Middle C), cần 1 dòng phụ
 	"Rê_2": -0.5,    # D4: khe dưới dòng 1, không cần dòng phụ
 	"Mi_2": 0.0,     # E4: Dòng 1
+	"Fa_2": 0.5,     # F4: Khe 1
 	"Sol_2": 1.0,    # G4: Dòng 2
 	"La_2": 1.5,     # A4: Khe 2
+	"Si_2": 2.0,     # B4: Dòng 3
 	"Đô_3": 2.5,     # C5: Khe 3
 	"Rê_3": 3.0,     # D5: Dòng 4
 	"Mi_3": 3.5,     # E5: Khe 4
+	"Fa_3": 4.0,     # F5: Dòng 5
 	"Sol_3": 4.5,    # G5: trên dòng 5 (khe trên)
 	"La_3": 5.0,     # A5: dòng phụ 1 trên
+	"Si_3": 5.5,     # B5: Khe trên dòng phụ 1
 	"Đô_4": 6.0,     # C6: dòng phụ 2 trên
 	"Rê_4": 6.5,     # D6: khe trên dòng phụ 2
 	"Mi_4": 7.0,     # E6: dòng phụ 3 trên
@@ -60,6 +64,11 @@ var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
 var beats_per_measure: int = 4
 var show_metronome: bool = true
+var show_clef: bool = true          # set false to hide the treble clef
+var show_time_sig: bool = true      # set false to hide the time signature
+var clef_highlight: bool = false    # draw clef in gold when teaching it
+var time_sig_highlight: bool = false # draw time signature in gold when teaching it
+var time_sig_denominator: int = 4   # bottom number of the time signature
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -96,13 +105,22 @@ func _draw():
 	# Draw Clef and Time signature on the left
 	var font = ThemeDB.fallback_font
 	if font:
-		# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom)
-		draw_string(font, Vector2(10, center_y + line_spacing * 2.35), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 6.5), Color.BLACK)
+		if show_clef:
+			var clef_col := Color(0.9, 0.55, 0.1, 1.0) if clef_highlight else Color.BLACK
+			# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom)
+			draw_string(font, Vector2(10, center_y + line_spacing * 2.35), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 6.5), clef_col)
 		
-		# Time signature dynamic
-		var ts = str(beats_per_measure)
-		draw_string(font, Vector2(120, center_y - line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
-		draw_string(font, Vector2(120, center_y + line_spacing * 1.95), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 1.6), Color.BLACK)
+		if show_time_sig:
+			# Time signature dynamic
+			var ts = str(beats_per_measure)
+			var ts_size = int(line_spacing * 2.3)
+			var ts_color := Color(0.9, 0.55, 0.1, 0.95) if time_sig_highlight else Color(0.15, 0.15, 0.15, 0.95)
+			var ts_x = 220.0
+			# The standard time signature uses numbers that fill exactly two staff spaces each.
+			# Top digit: occupies top two spaces (between line 3 and line 5). Baseline sits near the middle line.
+			draw_string(font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
+			# Bottom digit: occupies bottom two spaces (between line 1 and line 3). Baseline sits near the bottom line.
+			draw_string(font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
 	# Draw hit line with modern glowing effect (kept as it is for timing)
 	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
@@ -199,13 +217,13 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 
 	# Draw ledger lines for notes outside the 5-line staff
 	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)
-		var num_ledgers = int(abs(ceil(pos_idx)))
+		var num_ledgers = int(ceil(abs(pos_idx)))
 		for i in range(1, num_ledgers + 1):
 			var ld = -i
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 	elif pos_idx > 4.9: # above first ledger line threshold (pos_idx >= 5.0)
-		var num_ledgers = int(floor(pos_idx)) - 4
+		var num_ledgers = int(ceil(pos_idx)) - 4
 		for i in range(1, num_ledgers + 1):
 			var ld = 4 + i
 			var ly = center_y + (2 - ld) * line_spacing
@@ -246,19 +264,17 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		# Draw flags (móc)
 		if note_type == "eighth" or note_type == "sixteenth":
 			var flag_w = note_width * 0.8
-			var flag_h = stem_len * 0.4
+			var flag_h = stem_len * 0.42
 			var hook_dir = 1.0 if is_stem_up else -1.0
 			
 			# Flag 1
 			var f1_start = Vector2(stem_x, stem_end_y)
-			var f1_end = Vector2(stem_x + flag_w, stem_end_y + flag_h * hook_dir)
-			draw_line(f1_start, f1_end, note_color, stem_w, true)
+			_draw_flag(f1_start, hook_dir, flag_w, flag_h, note_color, stem_w)
 			
 			# Flag 2
 			if note_type == "sixteenth":
-				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.2 * hook_dir)
-				var f2_end = Vector2(stem_x + flag_w, f2_start.y + flag_h * hook_dir)
-				draw_line(f2_start, f2_end, note_color, stem_w, true)
+				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.22 * hook_dir)
+				_draw_flag(f2_start, hook_dir, flag_w, flag_h, note_color, stem_w)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()
@@ -278,3 +294,19 @@ func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 		points.append(center + Vector2(rx_rot, ry_rot))
 		
 	draw_colored_polygon(points, color)
+
+func _draw_flag(start_pos: Vector2, hook_dir: float, flag_w: float, flag_h: float, color: Color, width: float) -> void:
+	var p0 := start_pos
+	var p1 := start_pos + Vector2(flag_w * 0.45, flag_h * 0.05 * hook_dir)
+	var p2 := start_pos + Vector2(flag_w * 1.05, flag_h * 0.45 * hook_dir)
+	var p3 := start_pos + Vector2(flag_w * 0.65, flag_h * 1.0 * hook_dir)
+	
+	var points := PackedVector2Array()
+	var steps := 16
+	for i in range(steps + 1):
+		var t := i / float(steps)
+		var t_inv := 1.0 - t
+		var pt := t_inv * t_inv * t_inv * p0 + 3.0 * t_inv * t_inv * t * p1 + 3.0 * t_inv * t * t * p2 + t * t * t * p3
+		points.append(pt)
+	draw_polyline(points, color, width * 1.35, true)
+>>>>>>> origin/datFix

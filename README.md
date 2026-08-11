@@ -1,24 +1,9 @@
-Ứng dụng cho người học (Godot Desktop/Mobile):
-Đăng ký/đăng nhập, chọn nhạc cụ và trình độ.
-Khám phá phòng nhạc ảo 2.5D với các trạm nhạc cụ tương tác.
-Xem nghệ sĩ ảo trình diễn với hoạt ảnh và âm thanh đồng bộ.
-Chế độ luyện tập: Thu âm qua micro và nhận phản hồi thời gian thực (cao độ, nhịp điệu, độ chính xác).
-Hoàn thành bài học theo lộ trình: Nhạc cụ → Kỹ thuật → Độ khó (Cơ bản/Trung bình/Nâng cao).
-Trò chơi nhỏ (Mini-games): Thử thách nhịp điệu, nhận diện nốt nhạc, hoàn thiện giai điệu.
-Hệ thống khen thưởng: Tặng sao, mở khóa bài học và vật phẩm trang trí phòng ảo.
-Bảng theo dõi tiến độ: Xu hướng chính xác, thời gian luyện tập, huy hiệu đạt được.
-Thư viện âm thanh tham khảo với tính năng phát chậm và trực quan hóa dạng sóng.
-Thử thách hàng ngày và bảng xếp hạng.
-Tính năng Phân tích Âm thanh AI (GDExtension C++):
-Phát hiện cao độ thời gian thực (thuật toán YIN) với độ trễ thấp (<100ms).
-Đánh giá độ chính xác nhịp điệu dựa trên bản đồ nhịp tham chiếu.
-Đánh giá chất lượng âm sắc cho nhạc cụ dây.
-Phân tích kiểu thở cho sáo trúc.
-Công cụ chấm điểm tổng hợp dựa trên nhiều chỉ số kỹ thuật.
-Tự động điều chỉnh độ khó dựa trên kết quả 10 lần tập gần nhất.
-Lọc nhiễu âm thanh nền để tách biệt tín hiệu nhạc cụ.
-Giải pháp: Xây dựng lớp học ảo 2.5D trong Godot; triển khai nhận dạng âm thanh thời gian thực qua C++; thiết kế bài học dạng trò chơi cho các nhạc cụ dân tộc (đàn tranh, đàn bầu, sáo trúc, trống).
-Công nghệ cốt lõi:
-Game Engine: Godot 4.x.
-Xử lý âm thanh: GDExtension với C++, thư viện FFTW3, Aubio, PortAudio.
-Sản phẩm bàn giao: Ứng dụng game (Desktop/Mobile), Trang web quản lý, Hệ thống API, Mô-đun xử lý âm thanh C++, Tài liệu kỹ thuật đầy đủ.
+Ứng dụng dành cho Người học (Godot - Di động)   
+Đăng ký và đăng nhập với hồ sơ người học; chọn nhạc cụ quan tâm và trình độ kỹ năng hiện tại.  
+Khám phá phòng âm nhạc ảo 2.5D (góc nhìn isometric) với các trạm nhạc cụ có thể tương tác.  
+Xem nghệ sĩ ảo trình diễn các kỹ thuật kết hợp với hoạt ảnh và âm thanh được đồng bộ hóa.  
+Tham gia chế độ luyện tập: hệ thống thu tín hiệu đầu vào từ micrô và cung cấp các phản hồi trực quan theo thời gian thực (chỉ báo cao độ, thanh nhịp điệu, thước đo độ chính xác).  Hoàn thành các bài học được cấu trúc theo dạng: nhạc cụ → kỹ thuật → cấp độ khó (Sơ cấp / Trung cấp / Cao cấp). 
+Tham gia các trò chơi nhỏ (mini-game): các thử thách khớp nhịp điệu, câu đố nhận biết nốt nhạc, và các bài tập hoàn thiện giai điệu.  
+Nhận sao đánh giá (từ 1 đến 3 sao) cho mỗi bài học dựa trên độ chính xác; mở khóa các bài học mới và vật phẩm trang trí cho phòng học ảo.  
+Xem bảng điều khiển tiến độ cá nhân bao gồm: xu hướng độ chính xác, thời gian luyện tập, số bài học đã hoàn thành và huy hiệu thành tích.  Truy cập thư viện âm thanh tham khảo hỗ trợ tính năng phát lại với tốc độ chậm và hiển thị trực quan dưới dạng sóng âm (waveform).  
+Hoàn thành các thử thách luyện tập hàng ngày với phần thưởng khi duy trì chuỗi (streak) và hệ thống bảng xếp hạng.  Tính năng Phân tích Âm thanh bằng AI (GDExtension C++)   Phát hiện cao độ theo thời gian thực sử dụng phương pháp tự tương quan (autocorrelation) và thuật toán YIN, được tối ưu hóa bằng C++ để đảm bảo tốc độ phản hồi với độ trễ thấp (<100ms).  Đánh giá độ chính xác của nhịp điệu thông qua việc so sánh thời điểm bắt đầu nốt nhạc (onset timing) với bản đồ nhịp tham chiếu.  Đánh giá chất lượng âm sắc đối với các nhạc cụ dây bằng cách phân tích trọng tâm phổ (spectral centroid) và tỷ lệ hài âm (harmonic ratio).  Phân tích kiểu hơi thở đối với các nhạc cụ hơi (sáo trúc), đo lường sự ổn định của độ ngân (sustain) và lực bắt đầu âm (attack).  Tích hợp bộ công cụ chấm điểm hiệu suất, tổng hợp các chỉ số về cao độ, nhịp điệu, cường độ (dynamics) và kỹ thuật để đưa ra điểm số tổng quát.  Tự động điều chỉnh độ khó linh hoạt dựa trên độ chính xác trung bình trượt (rolling accuracy) của 10 lần luyện tập gần nhất.  Sử dụng bộ lọc nhiễu (noise gate) và bộ lọc âm thanh để cô lập tín hiệu nhạc cụ khỏi các tạp âm nền.  
