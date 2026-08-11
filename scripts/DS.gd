@@ -202,37 +202,6 @@ static func apply_body(lbl: Label) -> void:
 	if f:
 		lbl.add_theme_font_override("font", f)
 
-# ── Floating round icon buttons (menu / back) ─────────────────────────────────
-# Single source of truth so the hamburger and back button always match.
-
-static func nav_margin(view_width: float, desktop_width: float = 220.0) -> int:
-	# Horizontal X for the menu hamburger / floating back button so they always
-	# sit on the same vertical line, centered under the sidebar drawer.
-	var w := minf(desktop_width, view_width * 0.85)
-	# Button size is 70x70 now, so we subtract 35 (half of 70) to center them vertically.
-	return maxi(12, int(w / 2.0 - 35.0))
-
-static func apply_round_icon_btn(btn: Button, icon_size: Vector2 = Vector2(70, 70)) -> void:
-	btn.custom_minimum_size = icon_size
-	btn.expand_icon = true
-	btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-
-	# Remove any existing GlassBlur child to avoid duplicate nodes
-	var old_blur = btn.get_node_or_null("GlassBlur")
-	if old_blur:
-		old_blur.queue_free()
-
-	# Transparent button — icon only, no background/border (menu & back match)
-	var s := StyleBoxEmpty.new()
-	btn.add_theme_stylebox_override("normal",  s)
-	btn.add_theme_stylebox_override("hover",   s)
-	btn.add_theme_stylebox_override("pressed", s)
-	btn.add_theme_stylebox_override("focus",   no_style())
-	btn.add_theme_color_override("icon_normal_color", C_GOLD)
-	btn.add_theme_color_override("icon_hover_color", C_GOLD_LIGHT)
-	btn.add_theme_color_override("icon_pressed_color", C_GOLD.darkened(0.15))
-
 # ── Profile pill (matches MainMenu profile trigger) ───────────────────────────
 # Returns a PanelContainer styled like the khóa-học profile trigger:
 # frosted white panel + gold border, round avatar, name, "Xem hồ sơ", chevron.

@@ -13,12 +13,9 @@ const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
 const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
-const SidebarDrawerScript := preload("res://scripts/ui/SidebarDrawer.gd")
 
 var selected_level: int = 1
 var is_unlocked: bool = true
-
-var _drawer
 
 # ─── @onready Refs
 @onready var bg_rect           : ColorRect      = $BG
@@ -108,11 +105,6 @@ func _ready() -> void:
 	_build_lesson_list()
 	_build_sidebar()
 	
-	_drawer = SidebarDrawerScript.new()
-	add_child(_drawer)
-	_drawer.setup(sidebar, self, $Root, $Root/RightContent/TopBar/TopM/TopH)
-	_drawer.desktop_width = 220.0
-	
 	lessons_hbox.draw.connect(_draw_connecting_lines)
 	lessons_hbox.sort_children.connect(func():
 		lessons_hbox.queue_redraw()
@@ -139,10 +131,29 @@ func _build_theme() -> void:
 		bg_rect.add_child(bg_tex)
 	
 	var top_s := StyleBoxFlat.new()
-	top_s.bg_color = Color(0.96, 0.95, 0.92, 1.0)
+	top_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
 	top_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	top_s.border_width_bottom = 2
 	top_bar.add_theme_stylebox_override("panel", top_s)
+	
+	var top_blur_mat = ShaderMaterial.new()
+	var top_blur_shader = Shader.new()
+	top_blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	top_blur_mat.shader = top_blur_shader
+	var top_blur_rect = ColorRect.new()
+	top_blur_rect.material = top_blur_mat
+	top_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur_rect.show_behind_parent = true
+	top_bar.add_child(top_blur_rect)
+	top_bar.move_child(top_blur_rect, 0)
 	
 	page_title.text = "GIÁO TRÌNH TRỐNG CHẦU CƠ BẢN"
 	page_title.add_theme_color_override("font_color", C_JADE)
@@ -161,7 +172,6 @@ func _build_theme() -> void:
 	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_btn_bouncy(back_btn)
-	_float_back_btn()
 	
 	# Outlined style for ChangeCourseBtn
 	var s_outline := StyleBoxFlat.new()
@@ -249,31 +259,6 @@ func _build_profile_btn() -> void:
 		trigger.pressed.connect(func() -> void: _fade_to_scene("res://scenes/AccountScreen.tscn"))
 	toph.add_child(pill)
 
-func _float_back_btn() -> void:
-	var top_h_back := back_btn.get_parent()
-	if top_h_back:
-		top_h_back.remove_child(back_btn)
-	add_child(back_btn)
-	back_btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	back_btn.anchor_left = 0.0; back_btn.anchor_right = 0.0
-	back_btn.anchor_top = 1.0; back_btn.anchor_bottom = 1.0
-	DS.apply_round_icon_btn(back_btn)
-	var sz := back_btn.custom_minimum_size.y
-	back_btn.offset_top = -sz - 20.0
-	back_btn.offset_bottom = -20.0
-	back_btn.size_flags_horizontal = 0
-	back_btn.size_flags_vertical = 0
-	back_btn.move_to_front()
-	_sync_back_pos()
-
-func _sync_back_pos() -> void:
-	if not is_inside_tree():
-		return
-	var margin := DS.nav_margin(get_viewport_rect().size.x)
-	var sz := back_btn.custom_minimum_size.x
-	back_btn.offset_left = float(margin)
-	back_btn.offset_right = float(margin) + sz
-
 func _open_quiz() -> void:
 	var ids: Array[String] = []
 	for lesson: Dictionary in LESSONS:
@@ -286,24 +271,30 @@ func _open_quiz() -> void:
 	_fade_to_scene("res://scenes/QuizScreen.tscn")
 
 func _build_sidebar() -> void:
-	var side_s := _flat(Color.TRANSPARENT, C_GOLD, 0, 0)
-	side_s.border_width_left = 0; side_s.border_width_top = 0; side_s.border_width_bottom = 0
+	var side_s := StyleBoxFlat.new()
+	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
+	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
 	side_s.border_width_right = 2
-	side_s.content_margin_right = 0
-	side_s.shadow_size = 32
-	side_s.shadow_color = Color(0, 0, 0, 0.12)
-	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
-
-	# Remove any existing GlassBlur child
-	var old_blur = sidebar.get_node_or_null("GlassBlur")
-	if old_blur:
-		old_blur.queue_free()
-
-	for b in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]:
-		if b:
-			b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			b.custom_minimum_size = Vector2(70, 70)
+	
+	var blur_mat = ShaderMaterial.new()
+	var blur_shader = Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	blur_mat.shader = blur_shader
+	var blur_rect = ColorRect.new()
+	blur_rect.material = blur_mat
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	sidebar.add_child(blur_rect)
+	sidebar.move_child(blur_rect, 0)
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -311,9 +302,7 @@ func _build_sidebar() -> void:
 	_style_side_icon_btn(btn_songs,    false)
 	_style_side_icon_btn(btn_minigame, false)
 	_style_side_icon_btn(btn_leaderboard, false)
-	if btn_account:
-		btn_account.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		DS.apply_round_icon_btn(btn_account)
+	_style_side_icon_btn(btn_account,  false)
 
 	_attach_icon_draw(btn_menu,     0)
 	_attach_icon_draw(btn_courses,  1)
@@ -347,61 +336,41 @@ func _build_sidebar() -> void:
 	)
 
 func _style_side_icon_btn(btn: Button, is_active: bool, is_locked: bool = false) -> void:
-	var bg_n := StyleBoxFlat.new()
-	bg_n.set_corner_radius_all(35)
-	bg_n.draw_center = true
+	var bg_n := _flat(Color(0, 0, 0, 0) if not is_active else Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.12), Color(0, 0, 0, 0), 18, 0)
+	var bg_h := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
+	var bg_p := _flat(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.20) if not is_locked else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 18, 0)
+
+	bg_n.content_margin_top = 64
+	bg_n.content_margin_bottom = 8
+	bg_h.content_margin_top = 64
+	bg_h.content_margin_bottom = 8
+	bg_p.content_margin_top = 64
+	bg_p.content_margin_bottom = 8
+
 	if is_active:
-		bg_n.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
-		bg_n.border_width_left = 2; bg_n.border_width_right = 2
-		bg_n.border_width_top = 2; bg_n.border_width_bottom = 2
-		bg_n.border_color = C_GOLD_LIGHT # Bright border!
-	else:
-		bg_n.bg_color = Color(1.0, 1.0, 1.0, 0.03)
-		bg_n.border_width_left = 1; bg_n.border_width_right = 1
-		bg_n.border_width_top = 1; bg_n.border_width_bottom = 1
-		bg_n.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25) # Muted bright border
-		
-	var bg_h := StyleBoxFlat.new()
-	bg_h.set_corner_radius_all(35)
-	bg_h.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08)
-	bg_h.border_width_left = 2; bg_h.border_width_right = 2
-	bg_h.border_width_top = 2; bg_h.border_width_bottom = 2
-	bg_h.border_color = C_GOLD_LIGHT
-	
-	var bg_p := StyleBoxFlat.new()
-	bg_p.set_corner_radius_all(35)
-	bg_p.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25)
-	bg_p.border_width_left = 2; bg_p.border_width_right = 2
-	bg_p.border_width_top = 2; bg_p.border_width_bottom = 2
-	bg_p.border_color = C_GOLD_LIGHT
+		bg_n.border_width_left = 6
+		bg_n.border_width_right = 0; bg_n.border_width_top = 0; bg_n.border_width_bottom = 0
+		bg_n.border_color = C_GOLD
 
 	btn.add_theme_stylebox_override("normal",  bg_n)
 	btn.add_theme_stylebox_override("hover",   bg_h)
 	btn.add_theme_stylebox_override("pressed", bg_p)
 	btn.add_theme_stylebox_override("focus",   _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 0))
-	btn.add_theme_color_override("font_color",         C_GOLD_LIGHT if is_active else (Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_locked else C_GOLD))
-	btn.add_theme_color_override("font_hover_color",   Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.50) if is_locked else C_GOLD_LIGHT)
-	btn.add_theme_color_override("font_pressed_color", C_GOLD_LIGHT if not is_locked else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35))
+	btn.add_theme_color_override("font_color",         C_JADE if is_active else (Color(0.43, 0.38, 0.33, 0.40) if is_locked else Color(0.43, 0.38, 0.33, 1.0)))
+	btn.add_theme_color_override("font_hover_color",   Color(0.43, 0.38, 0.33, 0.8) if is_locked else Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_pressed_color", C_JADE if not is_locked else Color(0.43, 0.38, 0.33, 0.40))
 	btn.add_theme_font_size_override("font_size", 22)
 
 func _attach_icon_draw(btn: Button, icon_type: int, is_locked: bool = false) -> void:
-	btn.text = ""
-	var old_ic := btn.get_node_or_null("IconDraw")
-	if old_ic:
-		old_ic.queue_free()
 	var ic := Control.new()
 	ic.name = "IconDraw"
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ic.layout_mode = 1
-	ic.anchors_preset = Control.PRESET_CENTER
+	ic.anchors_preset = Control.PRESET_CENTER_TOP
 	ic.anchor_left = 0.5; ic.anchor_right = 0.5
-	ic.anchor_top = 0.5;  ic.anchor_bottom = 0.5
-	
-	var ic_offset := 20
-	if icon_type == 5:
-		ic_offset = 32
-	ic.offset_left = -ic_offset; ic.offset_right = ic_offset
-	ic.offset_top = -ic_offset;  ic.offset_bottom = ic_offset
+	ic.anchor_top = 0.0;  ic.anchor_bottom = 0.0
+	ic.offset_left = -40; ic.offset_right = 40
+	ic.offset_top = 8;   ic.offset_bottom = 64
 	ic.draw.connect(func() -> void: _draw_sidebar_icon(ic, icon_type, is_locked))
 	btn.add_child(ic)
 
@@ -409,27 +378,6 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 	var sz := c.size
 	var cx := sz.x * 0.5
 	var cy := sz.y * 0.5
-
-	if t == 5:
-		var shader = load("res://assets/shaders/circular_avatar.gdshader") as Shader
-		if shader:
-			var mat = ShaderMaterial.new()
-			mat.shader = shader
-			c.material = mat
-			
-		var avatar_source := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
-		if avatar_source.is_empty():
-			avatar_source = str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
-		var avatar_tex : Texture2D = null
-		if avatar_source.begins_with("res://"):
-			avatar_tex = load(avatar_source) as Texture2D
-		if avatar_tex == null:
-			avatar_tex = load("res://assets/textures/default_avatar.png") as Texture2D
-			
-		if avatar_tex:
-			c.draw_texture_rect(avatar_tex, Rect2(0, 0, sz.x, sz.y), false)
-		return
-
 	var col : Color = c.get_parent().get_theme_color("font_color", "Button")
 
 	var tex_name := ""
@@ -697,10 +645,7 @@ func _draw_connecting_lines() -> void:
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var mobile: bool = viewport_size.x < 850.0 or viewport_size.x < viewport_size.y
-	if _drawer:
-		_drawer.set_viewport_mode(not mobile)
-	else:
-		sidebar.visible = not mobile
+	sidebar.visible = not mobile
 	var top_margin := $Root/RightContent/TopBar/TopM as MarginContainer
 	top_margin.add_theme_constant_override("margin_left", 16 if mobile else 36)
 	top_margin.add_theme_constant_override("margin_right", 16 if mobile else 36)
@@ -721,8 +666,6 @@ func _apply_responsive_layout() -> void:
 					if btn is Button:
 						var sz := Vector2(145, 145) if mobile else Vector2(180, 180)
 						btn.custom_minimum_size = sz
-
-	_sync_back_pos()
 
 # ─── Helper Functions ─────────────────────────────────────────────────────────
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
