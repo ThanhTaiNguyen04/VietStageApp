@@ -1,5 +1,5 @@
 -Level 1. Lý thuyết, nhạc lý cơ bản
-Bài 1: Xem vd hướng dẫn lý thuyết, nhạc lý và Tư thế tay & tư thế đàn (Video). Bài luyện tập sẽ giới thiệu các tính năng của ứng dụng (thanh điều chỉnh tốc độ, nút pause/resume/reset).
+Bài 1: Xem vd hướng dẫn lý thuyết, nhạc lý và Tư thế tay & tư thế đàn (Video). Bài luyện tập sẽ giới thiệu các tính năng của ứng dụng (thanh điều chỉnh tốc độ, nút pause/reset).
 Bài 2: Luyện tập lần lượt từng nốt Sol1, La1, Đô2, Rê2, Mi2, Sol2, La2, Đô3, Rê3, Mi3.
 Bài 3: Luyện tập lần lượt từng nốt Sol3, La3, Đô4, Rê4, Mi4, Sol4, La4.
 Bài 4: Tempo là gì, khóa sol là gì, nhịp 44 là gì, nhịp 24 là gì
