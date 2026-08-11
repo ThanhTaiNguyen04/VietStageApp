@@ -1615,7 +1615,7 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -1666,7 +1666,7 @@ func _style_circular_play_btn(btn: Button) -> void:
 # ─── Animate In ────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
 	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
-	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]
+	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]
 	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
