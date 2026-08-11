@@ -44,8 +44,12 @@ var _daily_pill_label: Button = null
 var _daily_overlay: ColorRect = null
 var _sidebar_expanded := true
 var _sidebar_tween: Tween = null
+var _sidebar_reveal_tween: Tween = null
 var _sidebar_rail_width := 220.0
 var _sidebar_safe_left := 0.0
+var _sidebar_dropdown: PanelContainer = null
+var _sidebar_blur: ColorRect = null
+var _menu_glass: ColorRect = null
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -160,6 +164,8 @@ func _ready() -> void:
 	bottom_h.move_child(btn_leaderboard_mob, 4)
 	
 	_build_sidebar()
+	_build_sidebar_dropdown()
+	_build_menu_glass()
 	_build_bottom_bar()
 	_build_top_bar()
 	_build_profile_menu()
@@ -500,6 +506,7 @@ func _build_sidebar() -> void:
 	blur_rect.show_behind_parent = true
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
+	_sidebar_blur = blur_rect
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -518,6 +525,51 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_account,  5)
 
 	_active_side_btn = btn_courses
+
+func _build_sidebar_dropdown() -> void:
+	_sidebar_dropdown = PanelContainer.new()
+	_sidebar_dropdown.name = "SidebarDropdown"
+	_sidebar_dropdown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sidebar_dropdown.z_index = 20
+	_sidebar_dropdown.hide()
+
+	var dropdown_style := _flat(Color(0.98, 0.97, 0.94, 0.96), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.9), 16)
+	dropdown_style.shadow_color = Color(0.04, 0.10, 0.06, 0.24)
+	dropdown_style.shadow_size = 10
+	dropdown_style.shadow_offset = Vector2(0, 4)
+	_sidebar_dropdown.add_theme_stylebox_override("panel", dropdown_style)
+
+	var label := Label.new()
+	label.text = "Điều hướng"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", C_RED_SON)
+	label.add_theme_font_size_override("font_size", 14)
+	_sidebar_dropdown.add_child(label)
+	add_child(_sidebar_dropdown)
+
+func _build_menu_glass() -> void:
+	_menu_glass = ColorRect.new()
+	_menu_glass.name = "MenuGlass"
+	_menu_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_menu_glass.z_index = 1
+	_menu_glass.hide()
+
+	var glass_shader := Shader.new()
+	glass_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	void fragment() {
+		float edge = smoothstep(0.50, 0.46, length(UV - vec2(0.5)));
+		vec3 blurred_scene = textureLod(screen_texture, SCREEN_UV, 2.6).rgb;
+		vec3 glass_tint = mix(blurred_scene, vec3(0.95, 0.97, 0.91), 0.28);
+		COLOR = vec4(glass_tint, edge * 0.94);
+	}
+	"""
+	var glass_material := ShaderMaterial.new()
+	glass_material.shader = glass_shader
+	_menu_glass.material = glass_material
+	add_child(_menu_glass)
 
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
@@ -1612,7 +1664,36 @@ func _animate_in() -> void:
 
 # ─── Sidebar drawer ───────────────────────────────────────────────────────────
 func _toggle_sidebar() -> void:
-	_set_sidebar_expanded(not _sidebar_expanded, true)
+	if _sidebar_expanded:
+		_set_sidebar_expanded(false, true)
+	else:
+		_reveal_sidebar_from_menu()
+
+func _reveal_sidebar_from_menu() -> void:
+	if _sidebar_reveal_tween:
+		_sidebar_reveal_tween.kill()
+	if not _sidebar_dropdown:
+		_set_sidebar_expanded(true, true)
+		return
+
+	var dropdown_width := minf(190.0, _sidebar_rail_width)
+	_sidebar_dropdown.position = Vector2(_sidebar_safe_left + 8.0, btn_menu.global_position.y + btn_menu.size.y + 8.0)
+	_sidebar_dropdown.size = Vector2(SIDEBAR_COLLAPSED_WIDTH, 0.0)
+	_sidebar_dropdown.modulate.a = 0.0
+	_sidebar_dropdown.show()
+
+	_sidebar_reveal_tween = create_tween()
+	_sidebar_reveal_tween.set_parallel(true)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "size", Vector2(dropdown_width, 42.0), 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "modulate:a", 1.0, 0.12)
+	_sidebar_reveal_tween.set_parallel(false)
+	_sidebar_reveal_tween.tween_interval(0.16)
+	_sidebar_reveal_tween.tween_callback(func() -> void: _set_sidebar_expanded(true, true))
+	_sidebar_reveal_tween.set_parallel(true)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "size:y", 0.0, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "modulate:a", 0.0, 0.12)
+	_sidebar_reveal_tween.set_parallel(false)
+	_sidebar_reveal_tween.tween_callback(func() -> void: _sidebar_dropdown.hide())
 
 func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
 	if _sidebar_tween:
@@ -1634,8 +1715,11 @@ func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
 	if not animate:
 		sidebar.custom_minimum_size.x = sidebar_width
 		btn_menu.custom_minimum_size.x = rail_width
+		btn_menu.custom_minimum_size.y = SIDEBAR_COLLAPSED_WIDTH if not expanded else (92.0 if _sidebar_rail_width <= 168.0 else 100.0)
 		for button: Button in navigation:
 			button.custom_minimum_size.x = rail_width
+		_apply_menu_button_presentation(expanded)
+		_apply_sidebar_panel_presentation(expanded)
 		if not expanded:
 			if top_spacer: top_spacer.hide()
 			if bottom_spacer: bottom_spacer.hide()
@@ -1648,6 +1732,10 @@ func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
 	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	for button: Button in navigation:
 		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:y", SIDEBAR_COLLAPSED_WIDTH if not expanded else (92.0 if _sidebar_rail_width <= 168.0 else 100.0), 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	if expanded:
+		_apply_menu_button_presentation(true)
+		_apply_sidebar_panel_presentation(true)
 
 	if not expanded:
 		_sidebar_tween.set_parallel(false)
@@ -1656,7 +1744,61 @@ func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
 			if bottom_spacer: bottom_spacer.hide()
 			for button: Button in navigation:
 				button.hide()
+			_apply_menu_button_presentation(false)
+			_apply_sidebar_panel_presentation(false)
 		)
+
+func _apply_menu_button_presentation(expanded: bool) -> void:
+	var icon := btn_menu.get_node_or_null("IconDraw") as Control
+	if expanded:
+		if _menu_glass:
+			_menu_glass.hide()
+		_style_side_icon_btn(btn_menu, false)
+		if icon:
+			icon.anchors_preset = Control.PRESET_CENTER_TOP
+			icon.anchor_left = 0.5; icon.anchor_right = 0.5
+			icon.anchor_top = 0.0; icon.anchor_bottom = 0.0
+			icon.offset_left = -40; icon.offset_right = 40
+			icon.offset_top = 8; icon.offset_bottom = 64
+		return
+
+	var circle := _flat(Color(0, 0, 0, 0), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.9), 32)
+	circle.shadow_color = Color(0.04, 0.10, 0.06, 0.22)
+	circle.shadow_size = 8
+	circle.shadow_offset = Vector2(0, 3)
+	btn_menu.add_theme_stylebox_override("normal", circle)
+	btn_menu.add_theme_stylebox_override("hover", _flat(Color(1.0, 1.0, 1.0, 0.18), C_GOLD, 32))
+	btn_menu.add_theme_stylebox_override("pressed", _flat(Color(0.91, 0.95, 0.91, 0.28), C_GOLD_DARK, 32))
+	btn_menu.add_theme_stylebox_override("focus", _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 32))
+	btn_menu.add_theme_color_override("font_color", C_RED_SON)
+	if icon:
+		icon.anchors_preset = Control.PRESET_CENTER
+		icon.anchor_left = 0.5; icon.anchor_right = 0.5
+		icon.anchor_top = 0.5; icon.anchor_bottom = 0.5
+		icon.offset_left = -14; icon.offset_right = 14
+		icon.offset_top = -14; icon.offset_bottom = 14
+	if _menu_glass:
+		_menu_glass.show()
+		call_deferred("_position_menu_glass")
+
+func _position_menu_glass() -> void:
+	if not _menu_glass or not _menu_glass.visible:
+		return
+	var center := btn_menu.get_global_transform_with_canvas().origin + btn_menu.size * 0.5
+	var local_center := center - get_global_transform_with_canvas().origin
+	_menu_glass.size = Vector2(SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_COLLAPSED_WIDTH)
+	_menu_glass.position = local_center - _menu_glass.size * 0.5
+	btn_menu.z_index = 2
+
+func _apply_sidebar_panel_presentation(expanded: bool) -> void:
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.93, 0.91, 0.87, 0.6) if expanded else Color(0, 0, 0, 0)
+	panel_style.border_color = Color(0.8, 0.78, 0.73, 0.8) if expanded else Color(0, 0, 0, 0)
+	panel_style.border_width_right = 2 if expanded else 0
+	panel_style.content_margin_right = 0
+	sidebar.add_theme_stylebox_override("panel", panel_style)
+	if _sidebar_blur:
+		_sidebar_blur.visible = expanded
 
 # ─── Connect Buttons ───────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
