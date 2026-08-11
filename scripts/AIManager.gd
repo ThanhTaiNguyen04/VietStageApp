@@ -6,7 +6,7 @@ signal response_chunk_received(text: String, emotion: String)
 signal response_finished()
 signal request_failed(reason: String)
 
-@export var api_url: String = "http://127.0.0.1:3000/api/chat"
+@export var api_url: String = "https://anew-handgrip-elope.ngrok-free.dev/api/chat"
 @export var model_name: String = "mai-musician-fast"
 
 var client: HTTPClient = null
@@ -43,6 +43,7 @@ func send_prompt(user_prompt: String) -> void:
 	emotion_checked = false
 	full_response_accumulated = ""
 	
+	var use_tls = api_url.begins_with("https://")
 	var host = "127.0.0.1"
 	var port = 11434
 	
@@ -62,10 +63,14 @@ func send_prompt(user_prompt: String) -> void:
 		port = int(url_temp.substr(colon_idx + 1))
 	else:
 		host = url_temp
-		port = 80
+		port = 443 if use_tls else 80
 	
 	client = HTTPClient.new()
-	var err = client.connect_to_host(host, port)
+	var err = OK
+	if use_tls:
+		err = client.connect_to_host(host, port, TLSOptions.client())
+	else:
+		err = client.connect_to_host(host, port)
 	if err != OK:
 		request_failed.emit("Failed to initiate connection to " + host + ":" + str(port))
 		client = null
@@ -108,7 +113,7 @@ func _process(_delta: float) -> void:
 			_close_client()
 
 func _send_http_request() -> void:
-	var headers = ["Content-Type: application/json"]
+	var headers = ["Content-Type: application/json", "ngrok-skip-browser-warning: 1"]
 	
 	var payload: Dictionary = {
 		"model": model_name,
