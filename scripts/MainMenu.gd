@@ -552,7 +552,6 @@ func _build_menu_glass() -> void:
 	_menu_glass = ColorRect.new()
 	_menu_glass.name = "MenuGlass"
 	_menu_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_menu_glass.z_index = 1
 	_menu_glass.hide()
 
 	var glass_shader := Shader.new()
@@ -569,7 +568,9 @@ func _build_menu_glass() -> void:
 	var glass_material := ShaderMaterial.new()
 	glass_material.shader = glass_shader
 	_menu_glass.material = glass_material
-	add_child(_menu_glass)
+	btn_menu.add_child(_menu_glass)
+	btn_menu.move_child(_menu_glass, 0)
+	_position_menu_glass()
 
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
@@ -1784,11 +1785,13 @@ func _apply_menu_button_presentation(expanded: bool) -> void:
 func _position_menu_glass() -> void:
 	if not _menu_glass or not _menu_glass.visible:
 		return
-	var center := btn_menu.get_global_transform_with_canvas().origin + btn_menu.size * 0.5
-	var local_center := center - get_global_transform_with_canvas().origin
-	_menu_glass.size = Vector2(SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_COLLAPSED_WIDTH)
-	_menu_glass.position = local_center - _menu_glass.size * 0.5
-	btn_menu.z_index = 2
+	_menu_glass.anchors_preset = Control.PRESET_CENTER
+	_menu_glass.anchor_left = 0.5; _menu_glass.anchor_right = 0.5
+	_menu_glass.anchor_top = 0.5; _menu_glass.anchor_bottom = 0.5
+	_menu_glass.offset_left = -SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_right = SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_top = -SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_bottom = SIDEBAR_COLLAPSED_WIDTH * 0.5
 
 func _apply_sidebar_panel_presentation(expanded: bool) -> void:
 	var panel_style := StyleBoxFlat.new()
