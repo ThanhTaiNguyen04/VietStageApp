@@ -10,12 +10,16 @@ const C_GOLD_LIGHT := Color("#f0cb62")
 const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
+const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
 
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
+var _sidebar_expanded := true
+var _sidebar_tween: Tween = null
+var _sidebar_blur: ColorRect = null
 
 const LEVELS := [
 	{
@@ -396,6 +400,7 @@ func _build_sidebar() -> void:
 	blur_rect.show_behind_parent = true
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
+	_sidebar_blur = blur_rect
 
 	if btn_menu: _style_side_icon_btn(btn_menu,     false)
 	if btn_courses: _style_side_icon_btn(btn_courses,  true)
@@ -730,11 +735,70 @@ func _create_action_button(text_value: String, primary: bool) -> Button:
 	_make_bouncy(button)
 	return button
 
+func _toggle_sidebar() -> void:
+	_set_sidebar_expanded(not _sidebar_expanded, true)
+
+func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
+	if _sidebar_tween:
+		_sidebar_tween.kill()
+	_sidebar_expanded = expanded
+
+	var rail_width := 220.0 if expanded else SIDEBAR_COLLAPSED_WIDTH
+	var navigation := [btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]
+	var top_spacer := $Root/Sidebar/SideM/SideV/TopSpacer as Control
+	var bottom_spacer := $Root/Sidebar/SideM/SideV/BotSpacer as Control
+
+	if expanded:
+		if top_spacer: top_spacer.show()
+		if bottom_spacer: bottom_spacer.show()
+		for button: Button in navigation:
+			button.show()
+
+	if not animate:
+		sidebar.custom_minimum_size.x = rail_width
+		btn_menu.custom_minimum_size.x = rail_width
+		for button: Button in navigation:
+			button.custom_minimum_size.x = rail_width
+		_apply_sidebar_presentation(expanded)
+		if not expanded:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		return
+
+	_sidebar_tween = create_tween().set_parallel(true)
+	_sidebar_tween.tween_property(sidebar, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	for button: Button in navigation:
+		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+
+	if expanded:
+		_apply_sidebar_presentation(true)
+	else:
+		_sidebar_tween.set_parallel(false)
+		_sidebar_tween.tween_callback(func() -> void:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+			_apply_sidebar_presentation(false)
+		)
+
+func _apply_sidebar_presentation(expanded: bool) -> void:
+	var side_style := _flat(Color(0.95, 0.93, 0.89, 0.6) if expanded else Color(0, 0, 0, 0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15) if expanded else Color(0, 0, 0, 0), 0, 0)
+	side_style.border_width_left = 0; side_style.border_width_top = 0; side_style.border_width_bottom = 0
+	side_style.border_width_right = 2 if expanded else 0
+	side_style.content_margin_right = 0
+	sidebar.add_theme_stylebox_override("panel", side_style)
+	if _sidebar_blur:
+		_sidebar_blur.visible = expanded
+
 func _connect_navigation() -> void:
 	back_btn.pressed.connect(_go_to_levels)
 	if change_course_btn:
 		change_course_btn.pressed.connect(_go_to_levels)
-	btn_menu.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
+	btn_menu.pressed.connect(_toggle_sidebar)
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
@@ -812,6 +876,8 @@ func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var mobile: bool = viewport_size.x < 850.0 or viewport_size.x < viewport_size.y
 	sidebar.visible = not mobile
+	if not mobile:
+		_set_sidebar_expanded(_sidebar_expanded, false)
 	var top_margin := $Root/RightContent/TopBar/TopM as MarginContainer
 	top_margin.add_theme_constant_override("margin_left", 16 if mobile else 36)
 	top_margin.add_theme_constant_override("margin_right", 16 if mobile else 36)
