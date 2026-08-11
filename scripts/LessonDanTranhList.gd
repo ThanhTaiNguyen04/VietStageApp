@@ -268,13 +268,13 @@ const LEVELS := [
 	{
 		"level": 7,
 		"title": "KỸ THUẬT NÂNG CAO ĐÀN TRANH",
-		"sessions": "Bài 14–17",
+		"sessions": "Bài 18–21",
 		"objective": "Luyện các kỹ năng tay trái và kỹ thuật biểu diễn nâng cao trên đàn tranh.",
 		"lessons": [
-			{"number": 14, "title": "Kỹ năng á (vuốt 17 dây)", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ năng á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
-			{"number": 15, "title": "Kỹ năng nhấn ra nốt Si và nốt Fa", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Nhấn ra nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
-			{"number": 16, "title": "Kỹ năng rung dây bằng tay trái", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Rung dây tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
-			{"number": 17, "title": "Kỹ năng song thanh (rung cùng 1 nốt trên 2 quãng)", "video": "", "practice": "Thực hành rung đồng thời cùng một nốt ở hai quãng.", "practice_title": "Song thanh hai quãng", "sheet": ["Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3"]}
+			{"number": 18, "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ năng á (vuốt 17 dây)", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ năng á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
+			{"number": 19, "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ năng nhấn ra nốt Si và nốt Fa", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Nhấn ra nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
+			{"number": 20, "practice_id": "dan_tranh_level_7_bai_20_practice", "title": "Kỹ năng rung dây bằng tay trái", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Rung dây tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
+			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ năng song thanh (rung cùng 1 nốt trên 2 quãng)", "video": "", "practice": "Thực hành rung đồng thời cùng một nốt ở hai quãng.", "practice_title": "Song thanh hai quãng", "sheet": ["Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3"]}
 		]
 	}
 ]
@@ -518,11 +518,13 @@ func _build_lessons() -> void:
 
 func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, completed: Array) -> VBoxContainer:
 	var lesson_number := int(lesson["number"])
-	var practice_id := _lesson_id(lesson_number, "practice")
+	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
 	var lesson_ready: bool = not REQUIRE_SEQUENTIAL_UNLOCK or index == 0
 	if REQUIRE_SEQUENTIAL_UNLOCK and index > 0:
 		var previous: Dictionary = lessons[index - 1]
-		lesson_ready = completed.has(_lesson_id(int(previous["number"]), "practice"))
+		var previous_number := int(previous["number"])
+		var previous_id := str(previous.get("practice_id", _lesson_id(previous_number, "practice")))
+		lesson_ready = completed.has(previous_id)
 	var practice_completed := completed.has(practice_id)
 	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
 
@@ -838,6 +840,15 @@ func _open_lesson(lesson: Dictionary) -> void:
 	var typed_cues: Array[String] = []
 	typed_cues.assign(lesson.get("cues", []))
 	LessonDanTranh.current_song_cues = typed_cues
+
+	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
+	# The mode is stored on Level 7 / Bài 18 itself, so this route cannot collide
+	# with Level 6 / Bài 14 song âm even if selected_level ever becomes stale.
+	if str(lesson.get("practice_mode", "")) == "glissando_17":
+		SecureDataManager.active_lesson_id = practice_id
+		LessonDanTranh.force_glissando_start = true
+		_fade_to("res://scenes/LessonDanTranh.tscn")
+		return
 	
 	if selected_level == 1 and lesson_number in [1, 2, 3]:
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
@@ -846,7 +857,7 @@ func _open_lesson(lesson: Dictionary) -> void:
 		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
 		_fade_to("res://scenes/VideoPlayer.tscn")
 	else:
-		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
+		SecureDataManager.active_lesson_id = practice_id
 		_fade_to("res://scenes/LessonDanTranh.tscn")
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
@@ -878,7 +889,7 @@ func _open_quiz() -> void:
 	for lesson: Dictionary in level_data.get("lessons", []):
 		var number := int(lesson.get("number", 0))
 		if number > 0:
-			ids.append(_lesson_id(number, "practice"))
+			ids.append(str(lesson.get("practice_id", _lesson_id(number, "practice"))))
 	QuizScreenScript.quiz_instrument = "dan_tranh"
 	QuizScreenScript.quiz_local_ids = ids
 	QuizScreenScript.quiz_return_scene = "res://scenes/LessonDanTranhList.tscn"

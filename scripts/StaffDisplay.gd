@@ -309,4 +309,3 @@ func _draw_flag(start_pos: Vector2, hook_dir: float, flag_w: float, flag_h: floa
 		var pt := t_inv * t_inv * t_inv * p0 + 3.0 * t_inv * t_inv * t * p1 + 3.0 * t_inv * t * t * p2 + t * t * t * p3
 		points.append(pt)
 	draw_polyline(points, color, width * 1.35, true)
->>>>>>> origin/datFix

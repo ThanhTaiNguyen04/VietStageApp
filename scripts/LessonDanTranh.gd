@@ -4,6 +4,8 @@ class_name LessonDanTranh
 const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
+const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
+const LEVEL_7_GLISSANDO_TITLE := "Kỹ năng á (vuốt 17 dây)"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
 var current_state = State.INTRO
@@ -81,64 +83,16 @@ class PitchMeterDraw extends Control:
 			draw_circle(Vector2(ptr_x, cy), 5.0, ptr_color)
 
 
-# Visual notation used only for Bài 14.  A kỹ năng á is one continuous
-# glissando, so a diagonal path across all 17 strings communicates it more
-# clearly than seventeen detached note heads on a conventional staff.
-class GlissandoSheetDraw extends Control:
-	var completed_count := 0
-	const TOTAL_STRINGS := 17
-
-	func _draw() -> void:
-		var w := size.x
-		var h := size.y
-		if w < 200.0 or h < 160.0:
-			return
-
-		var font := ThemeDB.fallback_font
-		var left := clampf(w * 0.12, 66.0, 130.0)
-		var right := w - clampf(w * 0.11, 58.0, 120.0)
-		var top := 106.0
-		var bottom := h - 58.0
-		var line_gap := (bottom - top) / float(TOTAL_STRINGS - 1)
-		var title_color := Color("#173f2d")
-		var string_color := Color(0.45, 0.30, 0.16, 0.50)
-
-		draw_string(font, Vector2(left, 38.0), "KỸ NĂNG Á · VUỐT 17 DÂY", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 24, title_color)
-		draw_string(font, Vector2(left, 69.0), "Ngón trỏ · vuốt liên tục từ dây 1 đến dây 17", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17, Color(0.25, 0.28, 0.25, 0.86))
-
-		for i in range(TOTAL_STRINGS):
-			var y := top + line_gap * i
-			var is_reached := i < completed_count
-			var color := Color("#2e8860") if is_reached else string_color
-			draw_line(Vector2(left, y), Vector2(right, y), color, 2.6 if is_reached else 1.3)
-			draw_string(font, Vector2(16.0, y + 6.0), "Dây " + str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color(0.20, 0.24, 0.21, 0.82))
-
-		var start := Vector2(left + 34.0, top)
-		var finish := Vector2(right - 38.0, bottom)
-		# Soft glow then the gold route, making the continuous swipe easy to follow.
-		draw_line(start, finish, Color(0.96, 0.78, 0.26, 0.22), 17.0, true)
-		draw_line(start, finish, Color("#d89d20"), 8.0, true)
-		var reached := start.lerp(finish, clampf(float(completed_count) / float(TOTAL_STRINGS), 0.0, 1.0))
-		if completed_count > 0:
-			draw_line(start, reached, Color("#2e8860"), 8.0, true)
-
-		draw_circle(start, 14.0, Color("#f1c649"))
-		draw_circle(start, 8.0, Color("#173f2d"))
-		draw_string(font, start + Vector2(22.0, -9.0), "Bắt đầu", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, title_color)
-		draw_circle(finish, 14.0, Color("#2e8860"))
-		draw_string(font, finish + Vector2(-102.0, 30.0), "Dây 17", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, title_color)
-
-		var direction := (finish - start).normalized()
-		var arrow_base := finish - direction * 34.0
-		var arrow_side := Vector2(-direction.y, direction.x) * 11.0
-		draw_colored_polygon(PackedVector2Array([finish, arrow_base + arrow_side, arrow_base - arrow_side]), Color("#2e8860"))
-		draw_string(font, Vector2(w - 180.0, 44.0), "Tiến độ: %d/17" % completed_count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17, title_color)
-
-var glissando_sheet: GlissandoSheetDraw
+var glissando_sheet: Control
+var glissando_progress_label: Label
+var glissando_progress_bar: ProgressBar
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
 static var current_song_cues: Array[String] = []
+# Set by the Level 7 lesson selector immediately before the scene is opened.
+# This does not rely on any persisted lesson/session value.
+static var force_glissando_start := false
 
 var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
@@ -385,6 +339,11 @@ func _ready():
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
+	# Only Level 7 / Bài 18 is the direct glissando practice. Its unique title
+	# lets us recover the correct id without affecting Level 6 / Bài 14 song âm.
+	if force_glissando_start or PracticeRoom.current_song_title == LEVEL_7_GLISSANDO_TITLE:
+		current_lesson_id = LEVEL_7_GLISSANDO_ID
+		force_glissando_start = false
 		
 	if not PracticeRoom.current_song_sheet.is_empty():
 		lesson_sheet.assign(PracticeRoom.current_song_sheet)
@@ -484,7 +443,7 @@ func _ready():
 	staff_card.add_child(staff_display)
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	if current_lesson_id == "dan_tranh_level_7_bai_14_practice":
+	if _is_glissando_practice():
 		_build_glissando_sheet()
 	
 	_update_staff_layout()
@@ -617,14 +576,115 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	_start_intro()
+	if _is_glissando_practice():
+		# Do not show the shared welcome / audio-calibration lesson screen.
+		# Bài 18 must open straight into its practical glissando exercise.
+		call_deferred("_start_practice")
+	else:
+		_start_intro()
 
 func _build_glissando_sheet() -> void:
-	glissando_sheet = GlissandoSheetDraw.new()
+	var sheet_panel := PanelContainer.new()
+	glissando_sheet = sheet_panel
 	glissando_sheet.name = "GlissandoSheet"
 	glissando_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glissando_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	staff_card.add_child(glissando_sheet)
+	glissando_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var sheet_style := StyleBoxFlat.new()
+	sheet_style.bg_color = Color(0.995, 0.98, 0.93, 0.985)
+	sheet_style.corner_radius_top_left = 15
+	sheet_style.corner_radius_top_right = 15
+	sheet_style.corner_radius_bottom_left = 15
+	sheet_style.corner_radius_bottom_right = 15
+	sheet_panel.add_theme_stylebox_override("panel", sheet_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 30)
+	margin.add_theme_constant_override("margin_right", 30)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	sheet_panel.add_child(margin)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 3)
+	margin.add_child(content)
+
+	var header := HBoxContainer.new()
+	content.add_child(header)
+	var title := Label.new()
+	title.text = "KỸ NĂNG Á · VUỐT 17 DÂY"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_color_override("font_color", C_JADE)
+	title.add_theme_font_size_override("font_size", 24)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		title.add_theme_font_override("font", bold_font)
+	header.add_child(title)
+	glissando_progress_label = Label.new()
+	glissando_progress_label.text = "Tiến độ: 0/17"
+	glissando_progress_label.add_theme_color_override("font_color", C_JADE)
+	glissando_progress_label.add_theme_font_size_override("font_size", 16)
+	header.add_child(glissando_progress_label)
+
+	var instruction := Label.new()
+	instruction.text = "Ngón trỏ · vuốt liền mạch từ dây 1 đến dây 17 theo đường chéo"
+	instruction.add_theme_color_override("font_color", Color(0.25, 0.28, 0.25, 0.86))
+	instruction.add_theme_font_size_override("font_size", 16)
+	content.add_child(instruction)
+
+	glissando_progress_bar = ProgressBar.new()
+	glissando_progress_bar.max_value = 17.0
+	glissando_progress_bar.value = 0.0
+	glissando_progress_bar.show_percentage = false
+	glissando_progress_bar.custom_minimum_size = Vector2(0, 8)
+	content.add_child(glissando_progress_bar)
+
+	for i in range(17):
+		var row := HBoxContainer.new()
+		row.custom_minimum_size = Vector2(0, 22)
+		content.add_child(row)
+		var string_label := Label.new()
+		string_label.text = "Dây %d" % (i + 1)
+		string_label.custom_minimum_size = Vector2(62, 0)
+		string_label.add_theme_color_override("font_color", Color(0.20, 0.24, 0.21, 0.82))
+		string_label.add_theme_font_size_override("font_size", 13)
+		row.add_child(string_label)
+
+		var track := Control.new()
+		track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		track.custom_minimum_size = Vector2(0, 18)
+		row.add_child(track)
+		var string_line := ColorRect.new()
+		string_line.color = Color(0.45, 0.30, 0.16, 0.46)
+		string_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		string_line.anchor_right = 1.0
+		string_line.anchor_top = 0.5
+		string_line.anchor_bottom = 0.5
+		string_line.offset_top = -1.0
+		string_line.offset_bottom = 1.0
+		track.add_child(string_line)
+
+		var marker := Label.new()
+		marker.text = "▶" if i == 16 else "●"
+		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		marker.add_theme_color_override("font_color", C_GOLD)
+		marker.add_theme_font_size_override("font_size", 17)
+		var ratio := 0.04 + (0.92 * float(i) / 16.0)
+		marker.anchor_left = ratio
+		marker.anchor_right = ratio
+		marker.anchor_top = 0.5
+		marker.anchor_bottom = 0.5
+		marker.offset_left = -12.0
+		marker.offset_right = 12.0
+		marker.offset_top = -12.0
+		marker.offset_bottom = 12.0
+		track.add_child(marker)
+
+
+func _is_glissando_practice() -> bool:
+	return current_lesson_id == LEVEL_7_GLISSANDO_ID
 
 
 func _setup_top_pitch_box():
@@ -1681,8 +1741,10 @@ func _process_practice(delta):
 		for note in active_falling_notes:
 			if note.get("hit", false):
 				completed += 1
-		glissando_sheet.completed_count = completed
-		glissando_sheet.queue_redraw()
+		if glissando_progress_label:
+			glissando_progress_label.text = "Tiến độ: %d/17" % completed
+		if glissando_progress_bar:
+			glissando_progress_bar.value = completed
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
 	if not analyzer:
