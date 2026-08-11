@@ -22,6 +22,7 @@ const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
 
 const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 var _active_side_btn : Button = null
 var _time : float = 0.0
@@ -1612,7 +1613,7 @@ func _connect_buttons() -> void:
 		_fade_to("res://scenes/SongScreen.tscn")
 	)
 	btn_account.pressed.connect(_go_account)
-	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_minigame.pressed.connect(_open_learning_activities)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
  
 	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
@@ -1821,12 +1822,17 @@ func _connect_buttons() -> void:
 		_fade_to("res://scenes/SongScreen.tscn")
 	)
 	btn_account_mob.pressed.connect(_go_account)
-	btn_minigame_mob.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_minigame_mob.pressed.connect(_open_learning_activities)
 	btn_leaderboard_mob.pressed.connect(_on_btn_leaderboard_pressed)
  
 	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob, btn_leaderboard_mob]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
+
+func _open_learning_activities() -> void:
+	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	LearningActivityContextScript.configure(instrument, [SecureDataManager.active_lesson_id], "res://scenes/MainMenu.tscn")
+	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _set_active_tab(active: Button) -> void:
 	var all : Array[Button] = [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]

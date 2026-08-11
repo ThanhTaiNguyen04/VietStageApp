@@ -78,17 +78,34 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Arr
 	return result
 
 
-## Đảm bảo minigames của một lesson được cache vào SecureDataManager.
-func ensure_minigames(lesson_id: int) -> Dictionary:
+func ensure_minigame_list(lesson_id: int) -> Array:
 	if SecureDataManager.be_minigames.has(lesson_id):
-		var cached: Array = SecureDataManager.be_minigames[lesson_id]
-		return cached[0] if not cached.is_empty() else {}
+		return SecureDataManager.be_minigames[lesson_id]
 	var response: Dictionary = await _api.get_lesson_minigames(lesson_id)
 	if not _is_success(response):
-		return {}
+		return []
 	var minigames: Array = _extract_array(response)
 	SecureDataManager.cache_be_minigames(lesson_id, minigames)
-	return minigames[0] if not minigames.is_empty() else {}
+	return minigames
+
+
+func ensure_minigame_by_type(lesson_id: int, challenge_type: String) -> Dictionary:
+	var minigames := await ensure_minigame_list(lesson_id)
+	var expected := challenge_type.to_upper().replace("-", "_").replace(" ", "_")
+	for item: Variant in minigames:
+		if item is Dictionary:
+			var actual := str(item.get("challengeType", "")).to_upper().replace("-", "_").replace(" ", "_")
+			var is_note_alias := expected == "NOTE_RECOGNITION" and actual in ["NOTE_IDENTIFICATION", "NOTE_RECOGNITION_QUIZ"]
+			if actual == expected or is_note_alias:
+				return item
+	return {}
+
+
+func fetch_lesson_assets(lesson_id: int) -> Array:
+	var response: Dictionary = await _api.get_lesson_assets(lesson_id)
+	if not _is_success(response):
+		return []
+	return _extract_array(response)
 
 
 # ── Practice attempts ──────────────────────────────────────────────────
@@ -154,27 +171,22 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 
 # ── Minigame attempts ──────────────────────────────────────────────────
 
-## Nộp kết quả minigame của một lesson. Returns Dictionary { submitted, ... }.
-func report_minigame(instrument: String, local_lesson_id: String, score: int, stars: int) -> Dictionary:
+## Nộp kết quả khi client đã chọn chính xác challenge từ BE.
+## Dùng cho các màn chơi có nhiều challenge trong cùng một lesson.
+func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at: String = "", completed_at: String = "") -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
+	if minigame_id <= 0:
+		return {"submitted": false, "reason": "invalid_minigame_id"}
 
-	var lesson: Dictionary = SecureDataManager.resolve_be_lesson(instrument, local_lesson_id)
-	if lesson.is_empty():
-		return {"submitted": false, "reason": "no_lesson_binding"}
-	var lesson_id := int(lesson.get("id", 0))
-
-	var minigame: Dictionary = await ensure_minigames(lesson_id)
-	if minigame.is_empty():
-		return {"submitted": false, "reason": "no_minigame_binding"}
-	var minigame_id := int(minigame.get("id", 0))
-
+	var start_value := started_at if not started_at.is_empty() else _iso_now()
+	var complete_value := completed_at if not completed_at.is_empty() else _iso_now()
 	var response: Dictionary = await _api.submit_minigame_attempt(
 		minigame_id,
 		score,
 		stars,
-		_iso_now(),
-		_iso_now()
+		start_value,
+		complete_value
 	)
 	if not _is_success(response):
 		return {
@@ -183,7 +195,16 @@ func report_minigame(instrument: String, local_lesson_id: String, score: int, st
 			"status": int(response.get("status", 0)),
 			"message": _api.error_message(response, "Không thể đồng bộ điểm minigame."),
 		}
-	return {"submitted": true, "minigame_id": minigame_id}
+
+	var attempt_data: Dictionary = response.get("body", {}).get("data", {})
+	if not attempt_data is Dictionary:
+		attempt_data = {}
+	return {
+		"submitted": true,
+		"minigame_id": minigame_id,
+		"attempt_id": int(attempt_data.get("id", 0)),
+		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
+	}
 
 
 # ── Quiz attempts ──────────────────────────────────────────────────────

@@ -7,7 +7,7 @@ class_name LessonSaoTruc
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)
 
-const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 enum State { INTRO, PRACTICE, MID_INTRO, RHYTHM_GAME, COMPLETED }
 var current_state = State.INTRO
@@ -1894,12 +1894,10 @@ func _on_back():
 
 func _open_quiz() -> void:
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
-	QuizScreenScript.quiz_instrument = inst
-	QuizScreenScript.quiz_local_ids = [active_node_id]
-	QuizScreenScript.quiz_return_scene = "res://scenes/LessonSaoTruc.tscn"
+	LearningActivityContextScript.configure(inst, [active_node_id], "res://scenes/LessonSaoTruc.tscn")
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.25)
-	tw.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/QuizScreen.tscn"))
+	tw.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/LearningActivitiesScreen.tscn"))
 
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))

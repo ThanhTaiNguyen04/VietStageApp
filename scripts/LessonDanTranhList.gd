@@ -12,7 +12,7 @@ const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
 
-const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tìm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
@@ -848,7 +848,10 @@ func _connect_navigation() -> void:
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
-	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_minigame.pressed.connect(func() -> void:
+		LearningActivityContextScript.configure("dan_tranh", [SecureDataManager.active_lesson_id], "res://scenes/LessonDanTranhList.tscn")
+		_fade_to("res://scenes/LearningActivitiesScreen.tscn")
+	)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	if btn_account:
 		btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
@@ -933,10 +936,8 @@ func _open_quiz() -> void:
 		var number := int(lesson.get("number", 0))
 		if number > 0:
 			ids.append(_lesson_id(number, "practice"))
-	QuizScreenScript.quiz_instrument = "dan_tranh"
-	QuizScreenScript.quiz_local_ids = ids
-	QuizScreenScript.quiz_return_scene = "res://scenes/LessonDanTranhList.tscn"
-	_fade_to("res://scenes/QuizScreen.tscn")
+	LearningActivityContextScript.configure("dan_tranh", ids, "res://scenes/LessonDanTranhList.tscn")
+	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size

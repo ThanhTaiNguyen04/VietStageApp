@@ -10,7 +10,7 @@ const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for activ
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
 const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 
-const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 # ─── @onready Refs
 @onready var bg_rect           : TextureRect      = $BG
@@ -320,10 +320,8 @@ func _open_quiz() -> void:
 	var ids: Array[String] = []
 	for l in LESSONS:
 		ids.append(str(l.get("id", "")))
-	QuizScreenScript.quiz_instrument = "sao_truc"
-	QuizScreenScript.quiz_local_ids = ids
-	QuizScreenScript.quiz_return_scene = "res://scenes/LessonSaoTrucList.tscn"
-	_fade_to("res://scenes/QuizScreen.tscn")
+	LearningActivityContextScript.configure("sao_truc", ids, "res://scenes/LessonSaoTrucList.tscn")
+	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
@@ -386,7 +384,8 @@ func _build_sidebar() -> void:
 		_fade_to_scene("res://scenes/SongScreen.tscn")
 	)
 	btn_minigame.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/MiniGame.tscn")
+		LearningActivityContextScript.configure("sao_truc", [SecureDataManager.active_lesson_id], "res://scenes/LessonSaoTrucList.tscn")
+		_fade_to_scene("res://scenes/LearningActivitiesScreen.tscn")
 	)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void:

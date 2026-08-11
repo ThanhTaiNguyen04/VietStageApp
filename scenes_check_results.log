@@ -13,6 +13,10 @@
   [OK] Instantiated: res://scenes/InstrumentSelect.tscn
   [OK] Loaded: res://scenes/LeaderboardScreen.tscn
   [OK] Instantiated: res://scenes/LeaderboardScreen.tscn
+  [OK] Loaded: res://scenes/LearningActivitiesScreen.tscn
+  [OK] Instantiated: res://scenes/LearningActivitiesScreen.tscn
+  [OK] Loaded: res://scenes/LearningQuizScreen.tscn
+  [OK] Instantiated: res://scenes/LearningQuizScreen.tscn
   [OK] Loaded: res://scenes/LessonDanBau.tscn
   [OK] Instantiated: res://scenes/LessonDanBau.tscn
   [OK] Loaded: res://scenes/LessonDanTranh.tscn
@@ -31,16 +35,8 @@
   [OK] Instantiated: res://scenes/LoginScreen.tscn
   [OK] Loaded: res://scenes/MainMenu.tscn
   [OK] Instantiated: res://scenes/MainMenu.tscn
-  [OK] Loaded: res://scenes/MiniGame.tscn
-  [OK] Instantiated: res://scenes/MiniGame.tscn
-  [OK] Loaded: res://scenes/MiniGameDanBau.tscn
-  [OK] Instantiated: res://scenes/MiniGameDanBau.tscn
-  [OK] Loaded: res://scenes/MiniGameDanTranh.tscn
-  [OK] Instantiated: res://scenes/MiniGameDanTranh.tscn
-  [OK] Loaded: res://scenes/MiniGameSaoTruc.tscn
-  [OK] Instantiated: res://scenes/MiniGameSaoTruc.tscn
-  [OK] Loaded: res://scenes/MiniGameTrongChau.tscn
-  [OK] Instantiated: res://scenes/MiniGameTrongChau.tscn
+  [OK] Loaded: res://scenes/MelodyCompletionScreen.tscn
+  [OK] Instantiated: res://scenes/MelodyCompletionScreen.tscn
   [OK] Loaded: res://scenes/PracticeDanBau.tscn
   [OK] Instantiated: res://scenes/PracticeDanBau.tscn
   [OK] Loaded: res://scenes/PracticeRoom.tscn
@@ -51,8 +47,8 @@
   [OK] Instantiated: res://scenes/PracticeTrongChau.tscn
   [OK] Loaded: res://scenes/ProgressScreen.tscn
   [OK] Instantiated: res://scenes/ProgressScreen.tscn
-  [OK] Loaded: res://scenes/QuizScreen.tscn
-  [OK] Instantiated: res://scenes/QuizScreen.tscn
+  [OK] Loaded: res://scenes/RhythmChallengeScreen.tscn
+  [OK] Instantiated: res://scenes/RhythmChallengeScreen.tscn
   [OK] Loaded: res://scenes/SongScreen.tscn
   [OK] Instantiated: res://scenes/SongScreen.tscn
   [OK] Loaded: res://scenes/SplashScreen.tscn
