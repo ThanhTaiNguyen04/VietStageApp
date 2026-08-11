@@ -61,6 +61,7 @@ var _count_in_step := 3
 var _is_wait_mode := false
 var _is_demo_mode := false
 var _speed_scale := 1.0
+var _user_override_speed := false
 var _total_mistakes := 0
 var _song_bpm := 100.0
 var _current_note_elapsed := 0.0
@@ -519,6 +520,7 @@ func _ready() -> void:
 		settings_vbox.move_child(speed_sel, 3)
 		
 		speed_sel.item_selected.connect(func(index: int) -> void:
+			_user_override_speed = true
 			match index:
 				0: _speed_scale = 1.0
 				1: _speed_scale = 0.8
@@ -1495,12 +1497,27 @@ func _connect_buttons() -> void:
 				t.tween_property(flute_body, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_QUAD)
 		)
 
+func _apply_adaptive_speed_scale() -> void:
+	if _user_override_speed:
+		return
+	# Adaptive difficulty: gợi ý tempo từ 10 lượt gần nhất, map vào 100/80/60/50%.
+	var adaptive := SecureDataManager.get_adaptive_tempo_multiplier(SecureDataManager.active_lesson_id)
+	if adaptive >= 1.1:
+		_speed_scale = 1.0
+	elif adaptive >= 0.9:
+		_speed_scale = 0.8
+	elif adaptive >= 0.7:
+		_speed_scale = 0.6
+	else:
+		_speed_scale = 0.5
+
 func _toggle_record() -> void:
 	_recording = not _recording
 	var visualizer = _waveform_visualizer
 	_update_rec_pulse(_recording)
 	if _recording:
 		record_btn.text = "Dừng luyện tập"
+		_apply_adaptive_speed_scale()
 		_va_say(SPEECHES[0])
 		_start_pitch_detection()
 		if visualizer and _mic_mode: visualizer.visible = true
@@ -2112,6 +2129,8 @@ func _show_custom_result() -> void:
 	var stars := 1
 	if _score >= 85.0: stars = 3
 	elif _score >= 75.0: stars = 2
+	
+	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)

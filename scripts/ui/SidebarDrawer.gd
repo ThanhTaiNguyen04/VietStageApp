@@ -173,7 +173,8 @@ func _close_drawer() -> void:
 
 func _set_children_min_x(v: float) -> void:
 	for c in _flow_children:
-		c.custom_minimum_size.x = v
+		if not c is Button:
+			c.custom_minimum_size.x = v
 
 func _refresh_toggle_icon() -> void:
 	if _toggle == null:

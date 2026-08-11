@@ -1479,6 +1479,8 @@ func _show_custom_result() -> void:
 	if _score >= 85.0: stars = 3
 	elif _score >= 75.0: stars = 2
 	
+	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
+	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id)

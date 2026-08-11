@@ -1075,6 +1075,7 @@ func _play_next_intro_step():
 
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
+	_apply_adaptive_speed()
 	teacher_area.visible = true
 	feedback_area.visible = true
 	staff_display.visible = true
@@ -1355,7 +1356,7 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	current_speed_multiplier = user_speed_multiplier
+	_apply_adaptive_speed()
 	if speed_bar_container:
 		speed_bar_container.visible = true
 	if skip_intro_btn:
@@ -1744,6 +1745,7 @@ func _finish_practice():
 		tech_score = 80.0
 		
 	var composite_score = clamp(pitch_score * 0.5 + rhythm_score * 0.3 + tech_score * 0.2, 0.0, 100.0)
+	SecureDataManager.record_practice_result(current_lesson_id, composite_score)
 	
 	var popup_scene = load("res://scenes/CustomPopup.tscn")
 	if popup_scene:
@@ -1873,7 +1875,21 @@ func _create_speed_control_bar():
 func _select_speed(speed_val: float):
 	user_speed_multiplier = speed_val
 	current_speed_multiplier = user_speed_multiplier
-	
+	_highlight_speed_btn(speed_val)
+
+## Adaptive difficulty FE: nếu người dùng chưa tự chọn tốc độ (vẫn 1.0 mặc định),
+## dùng tempo gợi ý từ 10 lượt gần nhất của bài này.
+func _apply_adaptive_speed():
+	if user_speed_multiplier != 1.0:
+		current_speed_multiplier = user_speed_multiplier
+		return
+	var adaptive := SecureDataManager.get_adaptive_tempo_multiplier(current_lesson_id)
+	current_speed_multiplier = adaptive
+	_highlight_speed_btn(adaptive)
+
+func _highlight_speed_btn(speed_val: float):
+	if speed_buttons.is_empty():
+		return
 	var speeds = [0.6, 0.8, 1.0, 1.2]
 	for i in range(speeds.size()):
 		var btn = speed_buttons[i]

@@ -487,3 +487,87 @@ static func _lesson_matches_instrument(lesson: Dictionary, inst: String) -> bool
 	if code.is_empty():
 		code = _normalize_instrument_key(str(lesson.get("instrumentKey", "")))
 	return not code.is_empty() and code == inst
+
+# ── Adaptive Difficulty (FE) ──────────────────────────────────────────────────
+# Keeps a rolling history of the last 10 practice scores per lesson and suggests
+# a tempo multiplier (0.6x–1.2x) so learners slow down when struggling and speed
+# up when consistently accurate.
+
+const ADAPTIVE_HISTORY_MAX := 10
+
+static func record_practice_result(lesson_id: String, composite_score: float) -> void:
+	if lesson_id.is_empty():
+		return
+	_ensure_adaptive_history()
+	var inst := _adaptive_instrument_key(lesson_id)
+	var history: Array = data["adaptive_history"].get(inst, [])
+	var entry := {
+		"lesson_id": lesson_id,
+		"score": clampf(composite_score, 0.0, 100.0),
+		"at": Time.get_unix_time_from_system(),
+	}
+	history.append(entry)
+	if history.size() > ADAPTIVE_HISTORY_MAX:
+		history = history.slice(history.size() - ADAPTIVE_HISTORY_MAX)
+	data["adaptive_history"][inst] = history
+	save_data()
+
+static func get_rolling_accuracy(lesson_id: String) -> float:
+	_ensure_adaptive_history()
+	var inst := _adaptive_instrument_key(lesson_id)
+	var history: Array = data["adaptive_history"].get(inst, [])
+	if history.is_empty():
+		return -1.0
+	var total := 0.0
+	var count := 0
+	for entry: Variant in history:
+		if entry is Dictionary:
+			total += float(entry.get("score", 0.0))
+			count += 1
+	if count == 0:
+		return -1.0
+	return total / float(count)
+
+static func get_recent_attempt_count(lesson_id: String) -> int:
+	_ensure_adaptive_history()
+	var inst := _adaptive_instrument_key(lesson_id)
+	return int(data["adaptive_history"].get(inst, []).size())
+
+## Tempo multiplier suggested by the last 10 attempts:
+## >=90% -> 1.2x (mastered), 75–89 -> 1.0x, 60–74 -> 0.8x, <60 -> 0.6x.
+static func get_adaptive_tempo_multiplier(lesson_id: String) -> float:
+	var acc := get_rolling_accuracy(lesson_id)
+	if acc < 0.0:
+		return 1.0
+	if acc >= 90.0:
+		return 1.2
+	if acc >= 75.0:
+		return 1.0
+	if acc >= 60.0:
+		return 0.8
+	return 0.6
+
+## Persisted adaptive difficulty label for the profile screen (0 = Chưa đủ dữ liệu).
+static func get_adaptive_difficulty(lesson_id: String = "") -> int:
+	if lesson_id.is_empty():
+		return int(data.get("adaptive_difficulty", 0))
+	var acc := get_rolling_accuracy(lesson_id)
+	if acc < 0.0:
+		return int(data.get("adaptive_difficulty", 0))
+	if acc >= 90.0:
+		return 3
+	if acc >= 75.0:
+		return 2
+	return 1
+
+static func _ensure_adaptive_history() -> void:
+	if not data.has("adaptive_history"):
+		data["adaptive_history"] = {}
+
+static func _adaptive_instrument_key(lesson_id: String) -> String:
+	var parts := lesson_id.split("_")
+	if parts.size() >= 2 and parts[0] == "dan" and parts[1] in ["tranh", "bau"]:
+		return parts[0] + "_" + parts[1]
+	if parts.size() >= 2 and parts[0] in ["sao", "trong"]:
+		return parts[0] + "_" + parts[1]
+	return "dan_tranh"

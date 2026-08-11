@@ -264,19 +264,17 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		# Draw flags (móc)
 		if note_type == "eighth" or note_type == "sixteenth":
 			var flag_w = note_width * 0.8
-			var flag_h = stem_len * 0.4
+			var flag_h = stem_len * 0.42
 			var hook_dir = 1.0 if is_stem_up else -1.0
 			
 			# Flag 1
 			var f1_start = Vector2(stem_x, stem_end_y)
-			var f1_end = Vector2(stem_x + flag_w, stem_end_y + flag_h * hook_dir)
-			draw_line(f1_start, f1_end, note_color, stem_w, true)
+			_draw_flag(f1_start, hook_dir, flag_w, flag_h, note_color, stem_w)
 			
 			# Flag 2
 			if note_type == "sixteenth":
-				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.2 * hook_dir)
-				var f2_end = Vector2(stem_x + flag_w, f2_start.y + flag_h * hook_dir)
-				draw_line(f2_start, f2_end, note_color, stem_w, true)
+				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.22 * hook_dir)
+				_draw_flag(f2_start, hook_dir, flag_w, flag_h, note_color, stem_w)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()
@@ -296,3 +294,18 @@ func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 		points.append(center + Vector2(rx_rot, ry_rot))
 		
 	draw_colored_polygon(points, color)
+
+func _draw_flag(start_pos: Vector2, hook_dir: float, flag_w: float, flag_h: float, color: Color, width: float) -> void:
+	var p0 := start_pos
+	var p1 := start_pos + Vector2(flag_w * 0.45, flag_h * 0.05 * hook_dir)
+	var p2 := start_pos + Vector2(flag_w * 1.05, flag_h * 0.45 * hook_dir)
+	var p3 := start_pos + Vector2(flag_w * 0.65, flag_h * 1.0 * hook_dir)
+	
+	var points := PackedVector2Array()
+	var steps := 16
+	for i in range(steps + 1):
+		var t := i / float(steps)
+		var t_inv := 1.0 - t
+		var pt := t_inv * t_inv * t_inv * p0 + 3.0 * t_inv * t_inv * t * p1 + 3.0 * t_inv * t * t * p2 + t * t * t * p3
+		points.append(pt)
+	draw_polyline(points, color, width * 1.35, true)

@@ -209,7 +209,8 @@ static func nav_margin(view_width: float, desktop_width: float = 220.0) -> int:
 	# Horizontal X for the menu hamburger / floating back button so they always
 	# sit on the same vertical line, centered under the sidebar drawer.
 	var w := minf(desktop_width, view_width * 0.85)
-	return maxi(12, int(w / 2.0 - 24.0))
+	# Button size is 70x70 now, so we subtract 35 (half of 70) to center them vertically.
+	return maxi(12, int(w / 2.0 - 35.0))
 
 static func apply_round_icon_btn(btn: Button, icon_size: Vector2 = Vector2(70, 70)) -> void:
 	btn.custom_minimum_size = icon_size

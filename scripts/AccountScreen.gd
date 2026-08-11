@@ -165,6 +165,10 @@ func _render_summary(summary: Dictionary) -> void:
 	for field: Array in STAT_FIELDS:
 		var raw_value: Variant = summary.get(field[0], null)
 		var value := "—" if raw_value == null else _format_number(int(raw_value))
+		if field[0] == "adaptive_difficulty" and raw_value == null:
+			# FE adaptive difficulty from the last 10 local attempts (0 = chưa đủ dữ liệu)
+			var local_diff := SecureDataManager.get_adaptive_difficulty()
+			value = "Chưa có" if local_diff == 0 else ("Cao" if local_diff >= 3 else ("Trung bình" if local_diff == 2 else "Thấp"))
 		stats_grid.add_child(_make_data_card(value, str(field[1]), str(field[2]), field[3], field[4], true))
 	progress_state.visible = false
 	stats_grid.visible = true
