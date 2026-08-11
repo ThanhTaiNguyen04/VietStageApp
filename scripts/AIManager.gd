@@ -6,13 +6,14 @@ signal response_chunk_received(text: String, emotion: String)
 signal response_finished()
 signal request_failed(reason: String)
 
-@export var api_url: String = "http://127.0.0.1:11434/api/generate"
+@export var api_url: String = "http://127.0.0.1:3000/api/chat"
 @export var model_name: String = "mai-musician-fast"
 
 var client: HTTPClient = null
 var is_connecting: bool = false
 var is_requesting: bool = false
 var pending_prompt: String = ""
+var instrument_context: String = "general"
 
 var chunk_buffer: String = ""
 var current_sentence: String = ""
@@ -108,24 +109,14 @@ func _process(_delta: float) -> void:
 
 func _send_http_request() -> void:
 	var headers = ["Content-Type: application/json"]
-	var system_instruction = (
-		"Bạn là Mai - nghệ sĩ ảo dịu dàng, giao tiếp tự nhiên và ấm áp như con người thật. Bạn chuyên dạy Đàn Tranh và Sáo Trúc Việt Nam. " +
-		"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
-		"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
-		"Ví dụ: '[joy] Chào bạn! Mai khỏe, cảm ơn bạn đã hỏi thăm.' " +
-		"PHẠM VI TRẢ LỜI: " +
-		"1. Chấp nhận và trả lời thân thiện các câu giao tiếp xã giao, hỏi thăm sức khỏe, cảm xúc, chào hỏi thông thường như người thật. " +
-		"2. Chấp nhận trả lời các câu hỏi về Đàn Tranh, Sáo Trúc, nhạc cụ truyền thống Việt Nam và bài hát dân ca truyền thống. " +
-		"3. Nghiêm cấm trả lời mọi chủ đề ngoài lề không liên quan (toán học, lập trình máy tính, khoa học vũ trụ, tin tức thế giới, chính trị...). Khi gặp các câu hỏi này, hãy từ chối lịch sự và khéo léo định hướng người dùng quay lại chủ đề nhạc cụ truyền thống. " +
-		"KIẾN THỨC CHUYÊN MÔN: " +
-		"- Đàn Tranh: Thang ngũ âm Hò, Xự, Xang, Xê, Cống. Tay phải gảy móng đồi mồi, lướt ngón á. Tay trái rung nhấp nhô nhẹ, nhấn căng dây đổi cao độ tạo điệu oán Nam Bộ. " +
-		"- Sáo Trúc: Tone Đô (C5) chuẩn. Đặt sát môi dưới, thổi góc 45 độ, lấy hơi bụng. Đánh lưỡi đơn (Tờ) ngắt nốt rời, đánh lưỡi kép (Tờ-Cờ) nốt nhanh, rung hơi bụng, vuốt ngón, gõ ngón láy nhanh. " +
-		"- Bài hát: 'Bèo Dạt Mây Trôi' (Tone C5, bắt đầu nốt Sol vuốt lên Do2, rung hơi Do2 ngân dài), 'Trống Cơm' (đánh lưỡi nẩy trống), 'Lý Ngựa Ô' (nhấn Xự già nốt oán Nam Bộ, lướt á lộc cộc)."
-	)
 	
-	var payload: Dictionary = {}
-	var path = "/api/generate"
+	var payload: Dictionary = {
+		"model": model_name,
+		"prompt": pending_prompt,
+		"instrument_context": instrument_context
+	}
 	
+	var path = "/api/chat"
 	var url_temp = api_url
 	if url_temp.begins_with("http://"):
 		url_temp = url_temp.substr(7)
@@ -134,28 +125,6 @@ func _send_http_request() -> void:
 	var slash_idx = url_temp.find("/")
 	if slash_idx != -1:
 		path = url_temp.substr(slash_idx)
-		
-	if "/v1/chat/completions" in api_url or "/v1" in api_url:
-		var messages = []
-		messages.append({"role": "system", "content": system_instruction})
-		messages.append({"role": "user", "content": pending_prompt})
-		
-		payload = {
-			"model": model_name,
-			"messages": messages,
-			"stream": true,
-			"temperature": 0.7
-		}
-	else:
-		payload = {
-			"model": model_name,
-			"prompt": pending_prompt,
-			"stream": true,
-			"system": system_instruction,
-			"options": {
-				"temperature": 0.7
-			}
-		}
 		
 	var body = JSON.stringify(payload)
 	var err = client.request(HTTPClient.METHOD_POST, path, headers, body)
