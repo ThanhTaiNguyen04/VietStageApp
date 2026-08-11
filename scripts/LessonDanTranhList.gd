@@ -271,7 +271,7 @@ const LEVELS := [
 		"sessions": "Bài 14–17",
 		"objective": "Luyện các kỹ năng tay trái và kỹ thuật biểu diễn nâng cao trên đàn tranh.",
 		"lessons": [
-			{"number": 14, "title": "Kỹ năng á (vuốt 17 dây)", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ năng á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"]},
+			{"number": 14, "title": "Kỹ năng á (vuốt 17 dây)", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ năng á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
 			{"number": 15, "title": "Kỹ năng nhấn ra nốt Si và nốt Fa", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Nhấn ra nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
 			{"number": 16, "title": "Kỹ năng rung dây bằng tay trái", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Rung dây tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
 			{"number": 17, "title": "Kỹ năng song thanh (rung cùng 1 nốt trên 2 quãng)", "video": "", "practice": "Thực hành rung đồng thời cùng một nốt ở hai quãng.", "practice_title": "Song thanh hai quãng", "sheet": ["Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3"]}

@@ -79,6 +79,62 @@ class PitchMeterDraw extends Control:
 			# Needle pointer (bright glowing vertical bar + circle cap)
 			draw_line(Vector2(ptr_x, cy - 10), Vector2(ptr_x, cy + 10), ptr_color, 3.5)
 			draw_circle(Vector2(ptr_x, cy), 5.0, ptr_color)
+
+
+# Visual notation used only for Bài 14.  A kỹ năng á is one continuous
+# glissando, so a diagonal path across all 17 strings communicates it more
+# clearly than seventeen detached note heads on a conventional staff.
+class GlissandoSheetDraw extends Control:
+	var completed_count := 0
+	const TOTAL_STRINGS := 17
+
+	func _draw() -> void:
+		var w := size.x
+		var h := size.y
+		if w < 200.0 or h < 160.0:
+			return
+
+		var font := ThemeDB.fallback_font
+		var left := clampf(w * 0.12, 66.0, 130.0)
+		var right := w - clampf(w * 0.11, 58.0, 120.0)
+		var top := 106.0
+		var bottom := h - 58.0
+		var line_gap := (bottom - top) / float(TOTAL_STRINGS - 1)
+		var title_color := Color("#173f2d")
+		var string_color := Color(0.45, 0.30, 0.16, 0.50)
+
+		draw_string(font, Vector2(left, 38.0), "KỸ NĂNG Á · VUỐT 17 DÂY", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 24, title_color)
+		draw_string(font, Vector2(left, 69.0), "Ngón trỏ · vuốt liên tục từ dây 1 đến dây 17", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17, Color(0.25, 0.28, 0.25, 0.86))
+
+		for i in range(TOTAL_STRINGS):
+			var y := top + line_gap * i
+			var is_reached := i < completed_count
+			var color := Color("#2e8860") if is_reached else string_color
+			draw_line(Vector2(left, y), Vector2(right, y), color, 2.6 if is_reached else 1.3)
+			draw_string(font, Vector2(16.0, y + 6.0), "Dây " + str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color(0.20, 0.24, 0.21, 0.82))
+
+		var start := Vector2(left + 34.0, top)
+		var finish := Vector2(right - 38.0, bottom)
+		# Soft glow then the gold route, making the continuous swipe easy to follow.
+		draw_line(start, finish, Color(0.96, 0.78, 0.26, 0.22), 17.0, true)
+		draw_line(start, finish, Color("#d89d20"), 8.0, true)
+		var reached := start.lerp(finish, clampf(float(completed_count) / float(TOTAL_STRINGS), 0.0, 1.0))
+		if completed_count > 0:
+			draw_line(start, reached, Color("#2e8860"), 8.0, true)
+
+		draw_circle(start, 14.0, Color("#f1c649"))
+		draw_circle(start, 8.0, Color("#173f2d"))
+		draw_string(font, start + Vector2(22.0, -9.0), "Bắt đầu", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, title_color)
+		draw_circle(finish, 14.0, Color("#2e8860"))
+		draw_string(font, finish + Vector2(-102.0, 30.0), "Dây 17", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, title_color)
+
+		var direction := (finish - start).normalized()
+		var arrow_base := finish - direction * 34.0
+		var arrow_side := Vector2(-direction.y, direction.x) * 11.0
+		draw_colored_polygon(PackedVector2Array([finish, arrow_base + arrow_side, arrow_base - arrow_side]), Color("#2e8860"))
+		draw_string(font, Vector2(w - 180.0, 44.0), "Tiến độ: %d/17" % completed_count, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17, title_color)
+
+var glissando_sheet: GlissandoSheetDraw
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -428,6 +484,8 @@ func _ready():
 	staff_card.add_child(staff_display)
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if current_lesson_id == "dan_tranh_level_7_bai_14_practice":
+		_build_glissando_sheet()
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -560,6 +618,14 @@ func _ready():
 		_create_speed_control_bar()
 		
 	_start_intro()
+
+func _build_glissando_sheet() -> void:
+	glissando_sheet = GlissandoSheetDraw.new()
+	glissando_sheet.name = "GlissandoSheet"
+	glissando_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glissando_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	staff_card.add_child(glissando_sheet)
+
 
 func _setup_top_pitch_box():
 	var l_title = "LUYỆN ĐÀN TRANH"
@@ -1610,6 +1676,13 @@ func _process_practice(delta):
 		_finish_practice()
 		
 	staff_display.set_notes(active_falling_notes)
+	if glissando_sheet:
+		var completed := 0
+		for note in active_falling_notes:
+			if note.get("hit", false):
+				completed += 1
+		glissando_sheet.completed_count = completed
+		glissando_sheet.queue_redraw()
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
 	if not analyzer:
