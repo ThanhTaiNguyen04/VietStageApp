@@ -20,6 +20,7 @@ const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
+const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
 
@@ -41,6 +42,10 @@ var _daily_challenges: Array = []
 var _daily_pill: PanelContainer = null
 var _daily_pill_label: Button = null
 var _daily_overlay: ColorRect = null
+var _sidebar_expanded := true
+var _sidebar_tween: Tween = null
+var _sidebar_rail_width := 220.0
+var _sidebar_safe_left := 0.0
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -1605,8 +1610,58 @@ func _animate_in() -> void:
 		t.tween_property(item, "position:x", item.position.x - 40.0, 0.45).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		delay += 0.08
 
+# ─── Sidebar drawer ───────────────────────────────────────────────────────────
+func _toggle_sidebar() -> void:
+	_set_sidebar_expanded(not _sidebar_expanded, true)
+
+func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
+	if _sidebar_tween:
+		_sidebar_tween.kill()
+	_sidebar_expanded = expanded
+
+	var rail_width := _sidebar_rail_width if expanded else SIDEBAR_COLLAPSED_WIDTH
+	var sidebar_width := rail_width + _sidebar_safe_left
+	var navigation := [btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]
+	var top_spacer := $Root/Sidebar/SideM/SideV/TopSpacer as Control
+	var bottom_spacer := $Root/Sidebar/SideM/SideV/BotSpacer as Control
+
+	if expanded:
+		if top_spacer: top_spacer.show()
+		if bottom_spacer: bottom_spacer.show()
+		for button: Button in navigation:
+			button.show()
+
+	if not animate:
+		sidebar.custom_minimum_size.x = sidebar_width
+		btn_menu.custom_minimum_size.x = rail_width
+		for button: Button in navigation:
+			button.custom_minimum_size.x = rail_width
+		if not expanded:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		return
+
+	_sidebar_tween = create_tween().set_parallel(true)
+	_sidebar_tween.tween_property(sidebar, "custom_minimum_size:x", sidebar_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	for button: Button in navigation:
+		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+
+	if not expanded:
+		_sidebar_tween.set_parallel(false)
+		_sidebar_tween.tween_callback(func() -> void:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		)
+
 # ─── Connect Buttons ───────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
+	btn_menu.pressed.connect(_toggle_sidebar)
+	_make_btn_bouncy(btn_menu)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void:
 		_fade_to("res://scenes/SongScreen.tscn")
@@ -1982,21 +2037,23 @@ func _on_viewport_size_changed() -> void:
 	var compact_profile := false
 	var safe_left := minf(safe.x, 104.0) if is_mobile else 0.0
 	var rail_width := 168.0 if is_mobile else 220.0
+	_sidebar_rail_width = rail_width
+	_sidebar_safe_left = safe_left
 
 	# Landscape navigation remains on the left; safe padding keeps controls clear
 	# of Dynamic Island and rounded display corners.
 	sidebar.visible = true
 	bottom_bar.visible = false
-	sidebar.custom_minimum_size.x = rail_width + safe_left
 	side_margin.add_theme_constant_override("margin_left", int(safe_left))
 	side_margin.add_theme_constant_override("margin_right", 0)
 	side_margin.add_theme_constant_override("margin_top", int(safe.y + 20.0) if is_mobile else 32)
 	side_margin.add_theme_constant_override("margin_bottom", int(safe.w + 20.0) if is_mobile else 32)
 	var side_button_height := 92.0 if is_mobile else 100.0
 	for button: Button in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard, btn_account]:
-		button.custom_minimum_size = Vector2(rail_width, side_button_height)
+		button.custom_minimum_size.y = side_button_height
 		button.add_theme_font_size_override("font_size", 18 if is_mobile else 22)
 	$Root/Sidebar/SideM/SideV/TopSpacer.custom_minimum_size.y = 14.0 if is_mobile else 32.0
+	_set_sidebar_expanded(_sidebar_expanded, false)
 	
 	# Responsive profile button styling
 	var radius := 35
