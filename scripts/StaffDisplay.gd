@@ -217,13 +217,13 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 
 	# Draw ledger lines for notes outside the 5-line staff
 	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)
-		var num_ledgers = int(abs(ceil(pos_idx)))
+		var num_ledgers = int(ceil(abs(pos_idx)))
 		for i in range(1, num_ledgers + 1):
 			var ld = -i
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 	elif pos_idx > 4.9: # above first ledger line threshold (pos_idx >= 5.0)
-		var num_ledgers = int(floor(pos_idx)) - 4
+		var num_ledgers = int(ceil(pos_idx)) - 4
 		for i in range(1, num_ledgers + 1):
 			var ld = 4 + i
 			var ly = center_y + (2 - ld) * line_spacing
