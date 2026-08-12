@@ -1429,7 +1429,7 @@ func _build_roadmap_cards() -> void:
 		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
 		level_7_title.text = "LEVEL 7: KỸ THUẬT NÂNG CAO"
-		level_7_desc.text = "✓ Kỹ năng á – vuốt 17 dây\n✓ Nhấn nốt Si và Fa\n✓ Rung dây tay trái & song thanh"
+		level_7_desc.text = "✓ Kỹ năng á – vuốt 17 dây\n✓ Nhấn, rung dây & song thanh\n✓ Demo hiệu ứng phản hồi sai"
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()

@@ -6,6 +6,7 @@ const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
 const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
 const LEVEL_7_GLISSANDO_TITLE := "Kỹ năng á (vuốt 17 dây)"
+const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
 var current_state = State.INTRO
@@ -86,6 +87,13 @@ class PitchMeterDraw extends Control:
 var glissando_sheet: Control
 var glissando_progress_label: Label
 var glissando_progress_bar: ProgressBar
+var error_flash_overlay: Control
+var error_flash_badge: Control
+var error_flash_halo: Control
+var error_flash_timer := 0.75
+var error_flash_tween: Tween
+var error_flash_note: Dictionary = {}
+var error_feedback_player: AudioStreamPlayer
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -445,6 +453,8 @@ func _ready():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _is_glissando_practice():
 		_build_glissando_sheet()
+	if _is_error_flash_demo():
+		_build_error_flash_overlay()
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -576,9 +586,9 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	if _is_glissando_practice():
+	if _is_glissando_practice() or _is_error_flash_demo():
 		# Do not show the shared welcome / audio-calibration lesson screen.
-		# Bài 18 must open straight into its practical glissando exercise.
+		# Level 7 practical demos open directly into the staff exercise.
 		call_deferred("_start_practice")
 	else:
 		_start_intro()
@@ -683,15 +693,75 @@ func _build_glissando_sheet() -> void:
 		track.add_child(marker)
 
 
+func _build_error_flash_overlay() -> void:
+	error_flash_overlay = Control.new()
+	error_flash_overlay.name = "ErrorFlashOverlay"
+	error_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(error_flash_overlay)
+	error_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_flash_overlay.modulate.a = 0.0
+
+	error_flash_halo = PanelContainer.new()
+	error_flash_halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	error_flash_halo.custom_minimum_size = Vector2(86, 68)
+	var halo_style := StyleBoxFlat.new()
+	halo_style.bg_color = Color(0.95, 0.08, 0.10, 0.09)
+	halo_style.border_color = Color(0.96, 0.12, 0.14, 0.92)
+	halo_style.border_width_left = 4
+	halo_style.border_width_right = 4
+	halo_style.border_width_top = 4
+	halo_style.border_width_bottom = 4
+	halo_style.corner_radius_top_left = 34
+	halo_style.corner_radius_top_right = 34
+	halo_style.corner_radius_bottom_left = 34
+	halo_style.corner_radius_bottom_right = 34
+	halo_style.shadow_color = Color(0.95, 0.08, 0.10, 0.32)
+	halo_style.shadow_size = 10
+	(error_flash_halo as PanelContainer).add_theme_stylebox_override("panel", halo_style)
+	error_flash_overlay.add_child(error_flash_halo)
+
+	var error_badge := Label.new()
+	error_flash_badge = error_badge
+	error_badge.text = "CHƯA ĐÚNG  ·  THỬ LẠI"
+	error_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	error_badge.add_theme_color_override("font_color", Color.WHITE)
+	error_badge.add_theme_font_size_override("font_size", 19)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		error_badge.add_theme_font_override("font", bold_font)
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = Color(0.88, 0.08, 0.10, 0.96)
+	badge_style.corner_radius_top_left = 18
+	badge_style.corner_radius_top_right = 18
+	badge_style.corner_radius_bottom_left = 18
+	badge_style.corner_radius_bottom_right = 18
+	error_badge.add_theme_stylebox_override("normal", badge_style)
+	error_flash_overlay.add_child(error_badge)
+	error_badge.size = Vector2(260.0, 40.0)
+
+	error_feedback_player = AudioStreamPlayer.new()
+	error_feedback_player.name = "ErrorFeedbackPlayer"
+	error_feedback_player.volume_db = -20.0
+	error_feedback_player.stream = _generate_error_feedback_stream()
+	add_child(error_feedback_player)
+
+
 func _is_glissando_practice() -> bool:
 	return current_lesson_id == LEVEL_7_GLISSANDO_ID
+
+
+func _is_error_flash_demo() -> bool:
+	return current_lesson_id == ERROR_FLASH_DEMO_ID
 
 
 func _setup_top_pitch_box():
 	var l_title = "LUYỆN ĐÀN TRANH"
 	var active_id = SecureDataManager.active_lesson_id
 	if active_id:
-		if "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
+		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
+		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 18: KỸ NĂNG Á"
+		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
 		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
 		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
 		elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
@@ -898,9 +968,125 @@ func _process(delta):
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		_process_practice(delta)
+		if _is_error_flash_demo():
+			_process_error_demo_sheet(delta)
+			_process_error_flash_demo(delta)
+		else:
+			_process_practice(delta)
 	
 	_update_continuous_pitch_hud()
+
+
+func _process_error_flash_demo(delta: float) -> void:
+	error_flash_timer -= delta
+	if error_flash_timer <= 0.0:
+		error_flash_timer = 2.8
+		_play_error_flash_demo()
+
+
+func _process_error_demo_sheet(delta: float) -> void:
+	if active_falling_notes.is_empty():
+		return
+	var all_offscreen := true
+	for note in active_falling_notes:
+		note["x"] = float(note.get("x", 0.0)) - 180.0 * delta
+		if float(note["x"]) > -100.0:
+			all_offscreen = false
+	if all_offscreen:
+		_start_practice()
+		return
+	staff_display.set_notes(active_falling_notes)
+
+
+func _play_error_flash_demo() -> void:
+	if not error_flash_overlay or not staff_display:
+		return
+	if error_flash_tween and error_flash_tween.is_running():
+		error_flash_tween.kill()
+		_set_error_demo_note_color(false)
+
+	error_flash_overlay.modulate.a = 0.0
+	_set_error_demo_note_color(true)
+	if error_flash_note.is_empty():
+		return
+	_position_error_flash_feedback()
+	if error_feedback_player:
+		error_feedback_player.play()
+
+	error_flash_tween = create_tween()
+	error_flash_tween.tween_property(error_flash_overlay, "modulate:a", 1.0, 0.04)
+	error_flash_tween.tween_callback(_offset_error_demo_note.bind(-5.0))
+	error_flash_tween.tween_interval(0.045)
+	error_flash_tween.tween_callback(_offset_error_demo_note.bind(5.0))
+	error_flash_tween.tween_interval(0.045)
+	error_flash_tween.tween_callback(_offset_error_demo_note.bind(-3.0))
+	error_flash_tween.tween_interval(0.045)
+	error_flash_tween.tween_callback(_offset_error_demo_note.bind(0.0))
+	error_flash_tween.tween_property(error_flash_overlay, "modulate:a", 0.0, 0.12)
+	error_flash_tween.tween_callback(func() -> void:
+		_set_error_demo_note_color(false)
+	)
+
+
+func _offset_error_demo_note(offset_x: float) -> void:
+	if error_flash_note.is_empty():
+		return
+	error_flash_note["x"] = float(error_flash_note.get("demo_base_x", error_flash_note.get("x", 0.0))) + offset_x
+	_position_error_flash_feedback()
+	staff_display.queue_redraw()
+
+
+func _position_error_flash_feedback() -> void:
+	if error_flash_note.is_empty() or not error_flash_badge or not error_flash_halo:
+		return
+	var note_x := float(error_flash_note.get("x", staff_display.hit_line_x))
+	var raw_note := str(error_flash_note.get("note", "ZT_Sol2")).replace("ZT_", "")
+	var mapped_note := raw_note
+	if raw_note.length() > 1 and raw_note.right(1).is_valid_int():
+		mapped_note = raw_note.left(-1) + "_" + raw_note.right(1)
+	var note_position := float(staff_display.NOTE_POSITIONS.get(mapped_note, 1.0))
+	var note_y: float = float(staff_display.size.y) * 0.5 + float(staff_display.line_spacing) * 0.45
+	note_y += (2.0 - note_position) * staff_display.line_spacing
+
+	error_flash_halo.position = Vector2(note_x - 43.0, note_y - 34.0)
+	error_flash_halo.size = Vector2(86.0, 68.0)
+	var badge_x := clampf(note_x - 130.0, 12.0, maxf(12.0, staff_display.size.x - 272.0))
+	var badge_y := clampf(note_y - 94.0, 12.0, maxf(12.0, staff_display.size.y - 52.0))
+	error_flash_badge.position = Vector2(badge_x, badge_y)
+	error_flash_badge.size = Vector2(260.0, 40.0)
+
+
+func _set_error_demo_note_color(show_error: bool) -> void:
+	if not show_error:
+		if not error_flash_note.is_empty():
+			error_flash_note["color"] = error_flash_note.get("demo_base_color", Color(0.6, 0.6, 0.6, 0.9))
+			error_flash_note["x"] = error_flash_note.get("demo_base_x", error_flash_note.get("x", 0.0))
+			error_flash_note.erase("demo_base_color")
+			error_flash_note.erase("demo_base_x")
+			error_flash_note = {}
+		staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
+		staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+		staff_display.queue_redraw()
+		return
+
+	var closest_note: Dictionary = {}
+	var closest_distance := INF
+	for note in active_falling_notes:
+		if note.get("hit", false) or note.get("missed", false):
+			continue
+		var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
+		if distance < closest_distance:
+			closest_distance = distance
+			closest_note = note
+	if closest_note.is_empty():
+		return
+	error_flash_note = closest_note
+	error_flash_note["demo_base_color"] = error_flash_note.get("color", Color(0.6, 0.6, 0.6, 0.9))
+	error_flash_note["demo_base_x"] = error_flash_note.get("x", 0.0)
+	error_flash_note["color"] = Color(0.96, 0.10, 0.13, 1.0)
+	staff_display.hit_line_color = Color(0.96, 0.10, 0.13, 1.0)
+	staff_display.hit_line_glow_color = Color(1.0, 0.16, 0.18, 0.34)
+	staff_display.queue_redraw()
 
 func _update_teacher_frame() -> void:
 	if not _teacher_atlas or not _tex_mai_talk_sheet:
@@ -1482,6 +1668,12 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
+	staff_display.use_note_colors = _is_error_flash_demo()
+	if _is_error_flash_demo():
+		error_flash_timer = 0.75
+		error_flash_note = {}
+		if error_flash_overlay:
+			error_flash_overlay.modulate.a = 0.0
 	_apply_adaptive_speed()
 	if speed_bar_container:
 		speed_bar_container.visible = true
@@ -1499,6 +1691,9 @@ func _start_practice():
 	_update_staff_layout()
 	if pitch_box:
 		pitch_box.visible = true
+	if _is_error_flash_demo() and mic_status_lbl:
+		mic_status_lbl.text = "Demo tự động: hiệu ứng báo sai lặp lại mỗi 2,8 giây"
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.74, 0.18, 0.16, 1.0))
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
@@ -2049,6 +2244,30 @@ func _highlight_speed_btn(speed_val: float):
 			btn.add_theme_stylebox_override("pressed", sb_empty)
 			btn.add_theme_color_override("font_color", Color.WHITE)
 			btn.add_theme_color_override("font_hover_color", C_GOLD)
+
+func _generate_error_feedback_stream() -> AudioStreamWAV:
+	const SAMPLE_RATE := 22050
+	const DURATION := 0.12
+	var sample_count := int(SAMPLE_RATE * DURATION)
+	var data := PackedByteArray()
+	data.resize(sample_count * 2)
+	for i in sample_count:
+		var time := float(i) / float(SAMPLE_RATE)
+		var progress := float(i) / float(sample_count)
+		var frequency := 190.0 if progress < 0.48 else 145.0
+		var envelope := pow(1.0 - progress, 2.2)
+		var sample := sin(TAU * frequency * time) * envelope * 0.20
+		var value_i16 := int(clampf(sample, -1.0, 1.0) * 32767.0)
+		var value_u16 := value_i16 & 0xFFFF
+		data[i * 2] = value_u16 & 0xFF
+		data[i * 2 + 1] = (value_u16 >> 8) & 0xFF
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = SAMPLE_RATE
+	stream.stereo = false
+	stream.data = data
+	return stream
+
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 	# Karplus-Strong synthesizer to generate traditional Zither tones procedurally

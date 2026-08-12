@@ -268,13 +268,14 @@ const LEVELS := [
 	{
 		"level": 7,
 		"title": "KỸ THUẬT NÂNG CAO ĐÀN TRANH",
-		"sessions": "Bài 18–21",
+		"sessions": "Bài 18–22",
 		"objective": "Luyện các kỹ năng tay trái và kỹ thuật biểu diễn nâng cao trên đàn tranh.",
 		"lessons": [
 			{"number": 18, "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ năng á (vuốt 17 dây)", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ năng á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
 			{"number": 19, "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ năng nhấn ra nốt Si và nốt Fa", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Nhấn ra nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
 			{"number": 20, "practice_id": "dan_tranh_level_7_bai_20_practice", "title": "Kỹ năng rung dây bằng tay trái", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Rung dây tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
-			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ năng song thanh (rung cùng 1 nốt trên 2 quãng)", "video": "", "practice": "Thực hành rung đồng thời cùng một nốt ở hai quãng.", "practice_title": "Song thanh hai quãng", "sheet": ["Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3"]}
+			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ năng song thanh (rung cùng 1 nốt trên 2 quãng)", "video": "", "practice": "Thực hành rung đồng thời cùng một nốt ở hai quãng.", "practice_title": "Song thanh hai quãng", "sheet": ["Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3"]},
+			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
 		]
 	}
 ]
