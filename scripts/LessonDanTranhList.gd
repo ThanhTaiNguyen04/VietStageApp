@@ -311,12 +311,12 @@ const LEVELS := [
 			{
 				"number": 31,
 				"practice_id": "dan_tranh_level_8_bai_31_practice",
-				"title": "Kỹ thuật đánh hợp âm ba ngón",
-				"video": "",
-				"practice": "Thực hành gảy đồng thời ba dây để tạo hợp âm rõ, đều và cân bằng.",
-				"practice_title": "Kỹ thuật đánh hợp âm ba ngón",
-				"sheet": ["Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"],
-				"durations": [2.0, 2.0, 2.0, 2.0]
+				"title": "Kỹ thuật hợp âm",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
+				"practice_title": "Kỹ thuật hợp âm",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
 			},
 			{
 				"number": 32,

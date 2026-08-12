@@ -816,9 +816,15 @@ func _uses_chord_lesson_flow() -> bool:
 	return current_lesson_id in [
 		"dan_tranh_level_6_bai_14_practice",
 		"dan_tranh_level_7_bai_20_practice",
+		"dan_tranh_level_8_bai_31_practice",
 		"dan_tranh_level_8_bai_32_practice",
 		"dan_tranh_level_8_bai_33_practice"
 	]
+
+
+func _uses_chord_basics_lesson_flow() -> bool:
+	# Bài 31 Level 8 kế thừa cả nhịp luyện nốt đơn của Bài 13 Level 6.
+	return current_lesson_id in ["dan_tranh_level_6_bai_13_practice", "dan_tranh_level_8_bai_31_practice"]
 
 
 func _setup_top_pitch_box():
@@ -1543,7 +1549,7 @@ func _start_practice_single():
 	
 
 	unique_practice_notes.clear()
-	if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+	if _uses_chord_basics_lesson_flow():
 		unique_practice_notes = lesson_sheet.duplicate()
 	else:
 		for note in lesson_sheet:
@@ -1555,7 +1561,7 @@ func _start_practice_single():
 
 func _schedule_next_single_note():
 	if single_practice_idx >= unique_practice_notes.size():
-		if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+		if _uses_chord_basics_lesson_flow():
 			if ai_audio: ai_audio.speak_vietnamese("Chúc mừng em đã hoàn thành bài học mở đầu về hợp âm!")
 			_finish_practice()
 			return
@@ -1569,7 +1575,7 @@ func _schedule_next_single_note():
 	var notes = raw_note_name.split("+")
 	var text = ""
 	
-	if current_lesson_id == "dan_tranh_level_6_bai_13_practice" and notes.size() > 1:
+	if _uses_chord_basics_lesson_flow() and notes.size() > 1:
 		text = "Đây là một hợp âm. Em hãy thử gảy ba dây cùng lúc để cảm nhận sự khác biệt."
 	elif notes.size() > 1:
 		text = "Hãy gảy hợp âm: " + raw_note_name.replace("+", " và ")
