@@ -116,6 +116,18 @@ static func sync_backend_progress(progress_list: Array) -> void:
 	save_data()
 
 
+static func sync_backend_summary(summary_data: Dictionary) -> void:
+	if not data.has("xp"):
+		data["xp"] = 0
+	if not data.has("stars_total"):
+		data["stars_total"] = 0
+	
+	data["daily_streak"] = int(summary_data.get("current_streak", summary_data.get("currentStreak", data.get("daily_streak", 1))))
+	data["xp"] = int(summary_data.get("total_points", summary_data.get("totalPoints", data.get("xp", 0))))
+	data["stars_total"] = int(summary_data.get("total_stars", summary_data.get("totalStars", data.get("stars_total", 0))))
+	save_data()
+
+
 # Resolves the BE contract without mutating local progress. Canonical fields are
 # preferred; numeric IDs only bridge the current inconsistent production data.
 static func resolve_backend_progress_item(item: Dictionary) -> Dictionary:

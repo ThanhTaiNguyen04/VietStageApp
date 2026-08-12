@@ -187,13 +187,14 @@ func _fetch_and_sync_progress() -> void:
 		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
 		if summary_data is Dictionary:
 			_summary_data = summary_data
+			SecureDataManager.sync_backend_summary(summary_data)
 			var total_points := int(summary_data.get("total_points", summary_data.get("totalPoints", 0)))
 			_profile_level = int(total_points / 1000) + 1
 			_update_profile_menu_data()
 			_apply_stat_pills(summary_data)
 			if streak_pill and xp_pill:
-				streak_pill.visible = false
-				xp_pill.visible = false
+				streak_pill.visible = true
+				xp_pill.visible = true
 	_fetch_daily_challenges()
 	BackendReport.fetch_and_install_catalog()
 
@@ -716,6 +717,10 @@ func _apply_stat_pills(summary: Dictionary) -> void:
 		sp_label.text = "%d ngày" % streak
 	if xp_label:
 		xp_label.text = "%d XP" % points
+	if streak_pill:
+		streak_pill.visible = true
+	if xp_pill:
+		xp_pill.visible = true
 
 # ── Daily challenges ──────────────────────────────────────────────────────────
 
@@ -853,7 +858,7 @@ func _build_daily_challenge_row(vbox: VBoxContainer, challenge: Dictionary) -> v
 	row_title.add_theme_color_override("font_color", C_CREAM)
 	copy.add_child(row_title)
 	var row_desc := Label.new()
-	row_desc.text = "%s · Thưởng +%d điểm" % [str(challenge.get("description", "")), int(challenge.get("reward_points", 0))]
+	row_desc.text = "%s · Thưởng +%d điểm" % [str(challenge.get("description", "")), int(challenge.get("reward_points", challenge.get("rewardPoints", 0)))]
 	row_desc.add_theme_font_size_override("font_size", 14)
 	row_desc.add_theme_color_override("font_color", Color(1, 1, 1, 0.62))
 	copy.add_child(row_desc)
@@ -1608,6 +1613,9 @@ func _animate_in() -> void:
 
 # ─── Connect Buttons ───────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
+	btn_menu.pressed.connect(_go_instruments)
+	_make_btn_bouncy(btn_menu)
+	
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void:
 		_fade_to("res://scenes/SongScreen.tscn")
