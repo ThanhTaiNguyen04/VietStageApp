@@ -61,16 +61,30 @@ func _build_shell() -> void:
 	back.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back.expand_icon = true
 	back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	back.add_theme_color_override("icon_normal_color", Color.WHITE)
-	back.add_theme_color_override("icon_hover_color", Color.WHITE)
-	back.add_theme_color_override("icon_pressed_color", Color.WHITE)
-	back.add_theme_color_override("icon_focus_color", Color.WHITE)
+	back.add_theme_color_override("icon_normal_color", C_NAVY)
+	back.add_theme_color_override("icon_hover_color", C_NAVY.darkened(0.15))
+	back.add_theme_color_override("icon_pressed_color", C_NAVY.darkened(0.3))
+	back.add_theme_color_override("icon_focus_color", C_NAVY)
 	back.add_theme_constant_override("icon_max_width", 28 if mobile else 32)
 
-	back.add_theme_stylebox_override("normal", _panel(C_GREEN, C_GREEN, 16, 1))
-	back.add_theme_stylebox_override("hover", _panel(C_GREEN.lightened(0.10), C_GOLD, 16, 1))
-	back.add_theme_stylebox_override("pressed", _panel(C_GREEN.darkened(0.12), C_GOLD, 16, 1))
-	back.add_theme_stylebox_override("focus", _panel(C_GREEN, C_GOLD, 16, 2))
+	var sb_n := StyleBoxFlat.new()
+	sb_n.bg_color = Color.WHITE
+	sb_n.set_corner_radius_all(32)
+	sb_n.border_width_bottom = 4
+	sb_n.border_color = Color("#EBE5D8")
+	
+	var sb_h := sb_n.duplicate()
+	sb_h.bg_color = Color("#FDFCF9")
+	
+	var sb_p := sb_n.duplicate()
+	sb_p.bg_color = Color("#F5F0E5")
+	sb_p.border_width_bottom = 0
+	sb_p.content_margin_top = 4
+	
+	back.add_theme_stylebox_override("normal", sb_n)
+	back.add_theme_stylebox_override("hover", sb_h)
+	back.add_theme_stylebox_override("pressed", sb_p)
+	back.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 	# Bouncy hover/press micro-interactions
 	back.pivot_offset = Vector2(28 if mobile else 32, 28 if mobile else 32)

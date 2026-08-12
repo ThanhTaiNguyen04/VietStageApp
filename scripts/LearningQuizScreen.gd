@@ -113,14 +113,13 @@ func _show_question() -> void:
 		var staff: Control = load("res://scripts/StaffDisplay.gd").new()
 		var mobile := get_viewport_rect().size.x < 600.0
 		staff.line_spacing = 34.0 if mobile else 48.0
-		staff.clef_scale = 3.0
 		staff.show_time_sig = true
 		staff.beats_per_measure = 4
 		staff.time_sig_denominator = 4
 		staff.show_metronome = false
 		staff.show_hit_line = false
 		staff.show_clef = true
-		staff.custom_minimum_size = Vector2(0, 200 if mobile else 260)
+		staff.custom_minimum_size = Vector2(0, 240 if mobile else 320)
 		staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		staff.set_notes([{"note": _quiz_note(quiz), "color": Color.BLACK, "type": "quarter"}])
 		staff_card.add_child(staff)

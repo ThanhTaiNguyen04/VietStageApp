@@ -109,9 +109,9 @@ func _draw():
 	if font:
 		if show_clef:
 			var clef_col := Color(0.9, 0.55, 0.1, 1.0) if clef_highlight else Color.BLACK
-			# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom = pos_idx 1)
-			# Baseline of 𝄞 glyph sits at its bottom curl; offset upward so the small loop lands on line 2
-			draw_string(font, Vector2(8, center_y + line_spacing * 1.30), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * clef_scale), clef_col)
+			var font_size := int(line_spacing * clef_scale)
+			var y_offset := font_size * 0.20
+			draw_string(font, Vector2(8, center_y + y_offset), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, clef_col)
 		
 		if show_time_sig:
 			# Time signature dynamic
