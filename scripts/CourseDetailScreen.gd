@@ -127,6 +127,7 @@ func _ready() -> void:
 
 func _build_lessons() -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	var mobile := get_viewport_rect().size.x < 700.0 or get_viewport_rect().size.x < get_viewport_rect().size.y
 	var unlocked_up_to = _get_max_unlocked_node(inst)
 	var start_node = SecureDataManager.active_course_start_node
 	var lesson_count = SecureDataManager.active_course_node_count
@@ -148,7 +149,7 @@ func _build_lessons() -> void:
 		# Wrapper (to align vertically begin/top to shift up)
 		var card_wrapper = Control.new()
 		card_wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
-		card_wrapper.custom_minimum_size = Vector2(530, 700)
+		card_wrapper.custom_minimum_size = Vector2(340 if mobile else 530, 560 if mobile else 700)
 		card_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		
 		# Build Ornate Card using card.png
@@ -156,20 +157,12 @@ func _build_lessons() -> void:
 		card.mouse_filter = Control.MOUSE_FILTER_PASS
 		card.set_anchors_preset(Control.PRESET_FULL_RECT)
 		
-		var sb_card = StyleBoxTexture.new()
-		if ResourceLoader.exists("res://image/card.png"):
-			sb_card.texture = load("res://image/card.png")
-			sb_card.texture_margin_left = 90
-			sb_card.texture_margin_right = 90
-			sb_card.texture_margin_top = 100
-			sb_card.texture_margin_bottom = 85
-		
-		card.add_theme_stylebox_override("panel", sb_card)
+		_apply_course_glass(card, mobile)
 		card_wrapper.add_child(card)
 		
 		var card_vbox = VBoxContainer.new()
 		card_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
-		card_vbox.add_theme_constant_override("separation", 15)
+		card_vbox.add_theme_constant_override("separation", 10 if mobile else 15)
 		card.add_child(card_vbox)
 		
 		# Badge Top (Now placed INSIDE the card at the top of the VBox)
@@ -182,12 +175,12 @@ func _build_lessons() -> void:
 		badge_sb.corner_radius_top_left = 32; badge_sb.corner_radius_top_right = 32
 		badge_sb.corner_radius_bottom_left = 32; badge_sb.corner_radius_bottom_right = 32
 		badge_panel.add_theme_stylebox_override("panel", badge_sb)
-		badge_panel.custom_minimum_size = Vector2(64, 64)
+		badge_panel.custom_minimum_size = Vector2(54, 54) if mobile else Vector2(64, 64)
 		badge_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		var badge = Label.new()
 		badge.text = "%02d" % (i + 1)
-		badge.add_theme_font_size_override("font_size", 24)
+		badge.add_theme_font_size_override("font_size", 20 if mobile else 24)
 		badge.add_theme_color_override("font_color", C_DARK_BROWN)
 		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -204,7 +197,7 @@ func _build_lessons() -> void:
 		thumb_sb.corner_radius_bottom_left = 120; thumb_sb.corner_radius_bottom_right = 120
 		thumb_panel.add_theme_stylebox_override("panel", thumb_sb)
 		thumb_panel.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
-		thumb_panel.custom_minimum_size = Vector2(230, 230)
+		thumb_panel.custom_minimum_size = Vector2(158, 158) if mobile else Vector2(230, 230)
 		thumb_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		var thumb_tex = TextureRect.new()
@@ -288,7 +281,7 @@ func _build_lessons() -> void:
 		lbl_title.mouse_filter = Control.MOUSE_FILTER_PASS
 		lbl_title.text = title_text
 		lbl_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_title.add_theme_font_size_override("font_size", 28)
+		lbl_title.add_theme_font_size_override("font_size", 20 if mobile else 28)
 		lbl_title.add_theme_color_override("font_color", C_DARK_BROWN if not is_locked else C_LOCKED_TXT)
 		lbl_title.autowrap_mode = TextServer.AUTOWRAP_WORD
 		var title_sb = StyleBoxEmpty.new()
@@ -299,7 +292,7 @@ func _build_lessons() -> void:
 		lbl_desc.mouse_filter = Control.MOUSE_FILTER_PASS
 		lbl_desc.text = desc_text
 		lbl_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl_desc.add_theme_font_size_override("font_size", 18)
+		lbl_desc.add_theme_font_size_override("font_size", 15 if mobile else 18)
 		lbl_desc.add_theme_color_override("font_color", C_LIGHT_GREY if not is_locked else C_LOCKED_TXT)
 		lbl_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 		texts_vbox.add_child(lbl_desc)
@@ -308,9 +301,9 @@ func _build_lessons() -> void:
 		
 		# Bottom Action
 		var bottom_margin = MarginContainer.new()
-		bottom_margin.add_theme_constant_override("margin_left", 70)
-		bottom_margin.add_theme_constant_override("margin_right", 70)
-		bottom_margin.add_theme_constant_override("margin_bottom", 15)
+		bottom_margin.add_theme_constant_override("margin_left", 28 if mobile else 70)
+		bottom_margin.add_theme_constant_override("margin_right", 28 if mobile else 70)
+		bottom_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 15)
 		
 		if is_locked:
 			var lock_hb = HBoxContainer.new()
@@ -324,7 +317,7 @@ func _build_lessons() -> void:
 		else:
 			var btn_start = Button.new()
 			btn_start.text = "Bắt đầu ►" if not is_completed else "Ôn lại ►"
-			btn_start.custom_minimum_size = Vector2(0, 56)
+			btn_start.custom_minimum_size = Vector2(0, 48 if mobile else 56)
 			btn_start.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			
 			var sb_btn = StyleBoxFlat.new()
@@ -339,7 +332,7 @@ func _build_lessons() -> void:
 			btn_start.add_theme_stylebox_override("hover", sb_btn_hover)
 			btn_start.add_theme_stylebox_override("pressed", sb_btn)
 			btn_start.add_theme_stylebox_override("focus", sb_btn)
-			btn_start.add_theme_font_size_override("font_size", 20)
+			btn_start.add_theme_font_size_override("font_size", 16 if mobile else 20)
 			
 			btn_start.pressed.connect(func():
 				_on_lesson_selected(node_id)
@@ -348,6 +341,38 @@ func _build_lessons() -> void:
 			
 		card_vbox.add_child(bottom_margin)
 		_lessons_box.add_child(card_wrapper)
+
+func _apply_course_glass(panel: PanelContainer, mobile: bool) -> void:
+	var blur_material := ShaderMaterial.new()
+	var blur_shader := Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() { COLOR = textureLod(screen_texture, SCREEN_UV, lod); }
+	"""
+	blur_material.shader = blur_shader
+	var blur := ColorRect.new()
+	blur.name = "CourseCardBlur"
+	blur.material = blur_material
+	blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur.show_behind_parent = true
+	blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.add_child(blur)
+	panel.move_child(blur, 0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.96, 0.94, 0.88, 0.74)
+	style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.48)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(20 if mobile else 26)
+	style.shadow_color = Color(0.10, 0.07, 0.04, 0.14)
+	style.shadow_size = 8 if mobile else 12
+	style.shadow_offset = Vector2(0, 5)
+	style.content_margin_left = 18 if mobile else 28
+	style.content_margin_right = 18 if mobile else 28
+	style.content_margin_top = 16 if mobile else 24
+	style.content_margin_bottom = 16 if mobile else 24
+	panel.add_theme_stylebox_override("panel", style)
 
 func _get_max_unlocked_node(inst: String) -> int:
 	return 99 # Temporarily unlocked all

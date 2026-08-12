@@ -635,7 +635,11 @@ func _request_raw(
 	var response_bytes: PackedByteArray = completed[3]
 	var response_text := response_bytes.get_string_from_utf8()
 	var parsed = JSON.parse_string(response_text) if not response_text.is_empty() else {}
-	var response_body: Dictionary = parsed if parsed is Dictionary else {}
+	var response_body: Dictionary = {}
+	if parsed is Dictionary:
+		response_body = parsed
+	elif parsed is Array:
+		response_body = {"data": parsed}
 
 	if transport_result != HTTPRequest.RESULT_SUCCESS:
 		return {

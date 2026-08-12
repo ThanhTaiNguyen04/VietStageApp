@@ -64,16 +64,45 @@ func ensure_quizzes(lesson_id: int) -> Array:
 
 
 ## Gom toàn bộ câu hỏi trắc nghiệm của các bài nội bộ (cùng level) để ôn tập.
+## Nếu không binding được lesson nào theo local id, tự quét toàn bộ lesson cùng nhạc cụ
+## để FE vẫn lấy được quiz thật của BE (bỏ ràng buộc với bài học khi test giao diện).
 func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Array:
+	if SecureDataManager.be_catalog.is_empty():
+		await fetch_and_install_catalog()
 	var result: Array = []
+	var bound_ids: Array[int] = []
+	print("[QuizDebug] fetching for local_ids: ", local_lesson_ids, " instrument: ", instrument)
 	for local_id: Variant in local_lesson_ids:
 		var lesson: Dictionary = SecureDataManager.resolve_be_lesson(instrument, str(local_id))
+		print("[QuizDebug] resolve_be_lesson for ", local_id, " returned id: ", lesson.get("id", "EMPTY"))
 		if lesson.is_empty():
 			continue
 		var lesson_id := int(lesson.get("id", 0))
+		bound_ids.append(lesson_id)
 		var quizzes: Array = await ensure_quizzes(lesson_id)
+		print("[QuizDebug] ensure_quizzes returned size: ", quizzes.size())
 		for quiz: Variant in quizzes:
 			if quiz is Dictionary:
+				result.append(quiz)
+	if result.is_empty():
+		var instrument_lesson_ids := SecureDataManager.be_lesson_ids_for_instrument(instrument)
+		if not instrument_lesson_ids.is_empty():
+			push_warning("[Quiz] Không lấy được quiz theo lesson local, quét toàn bộ %d lesson của %s để lấy quiz." % [instrument_lesson_ids.size(), instrument])
+		var seen_quiz_ids: Dictionary = {}
+		for quiz: Variant in result:
+			if quiz is Dictionary:
+				seen_quiz_ids[int(quiz.get("id", 0))] = true
+		for lesson_id: int in instrument_lesson_ids:
+			if bound_ids.has(lesson_id):
+				continue
+			var quizzes: Array = await ensure_quizzes(lesson_id)
+			for quiz: Variant in quizzes:
+				if not quiz is Dictionary:
+					continue
+				var quiz_id := int(quiz.get("id", 0))
+				if seen_quiz_ids.has(quiz_id):
+					continue
+				seen_quiz_ids[quiz_id] = true
 				result.append(quiz)
 	return result
 

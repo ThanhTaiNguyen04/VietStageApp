@@ -64,11 +64,13 @@ var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
 var beats_per_measure: int = 4
 var show_metronome: bool = true
+var show_hit_line: bool = true
 var show_clef: bool = true          # set false to hide the treble clef
 var show_time_sig: bool = true      # set false to hide the time signature
 var clef_highlight: bool = false    # draw clef in gold when teaching it
 var time_sig_highlight: bool = false # draw time signature in gold when teaching it
 var time_sig_denominator: int = 4   # bottom number of the time signature
+var clef_scale: float = 6.5         # clef glyph size relative to line_spacing
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -107,30 +109,31 @@ func _draw():
 	if font:
 		if show_clef:
 			var clef_col := Color(0.9, 0.55, 0.1, 1.0) if clef_highlight else Color.BLACK
-			# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom)
-			draw_string(font, Vector2(10, center_y + line_spacing * 2.35), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * 6.5), clef_col)
+			# Adjust 𝄞 position so the swirl circles the G line (2nd line from bottom = pos_idx 1)
+			# Baseline of 𝄞 glyph sits at its bottom curl; offset upward so the small loop lands on line 2
+			draw_string(font, Vector2(8, center_y + line_spacing * 1.30), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, int(line_spacing * clef_scale), clef_col)
 		
 		if show_time_sig:
 			# Time signature dynamic
 			var ts = str(beats_per_measure)
 			var ts_size = int(line_spacing * 2.3)
 			var ts_color := Color(0.9, 0.55, 0.1, 0.95) if time_sig_highlight else Color(0.15, 0.15, 0.15, 0.95)
-			var ts_x = 220.0
+			var ts_x = 16.0 + line_spacing * clef_scale * 0.55
 			# The standard time signature uses numbers that fill exactly two staff spaces each.
 			# Top digit: occupies top two spaces (between line 3 and line 5). Baseline sits near the middle line.
 			draw_string(font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			# Bottom digit: occupies bottom two spaces (between line 1 and line 3). Baseline sits near the bottom line.
 			draw_string(font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
-	# Draw hit line with modern glowing effect (kept as it is for timing)
-	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
-	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.2, 0.85, 0.3, 0.95), 3.5, true)
+	if show_hit_line:
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.2, 0.85, 0.3, 0.95), 3.5, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
-		var n_x = note_data.get("x", size.x / 2.0)
-		var n_color = Color.BLACK # Force note color to black for all level 2 lessons
+		var n_x = note_data.get("x", size.x * 0.5)
+		var n_color = note_data.get("color", Color.BLACK)
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
