@@ -291,6 +291,34 @@ const LEVELS := [
 			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
 			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
 		]
+	},
+	{
+		"level": 8,
+		"title": "KỸ THUẬT NÂNG CAO MỞ RỘNG",
+		"sessions": "Bài 30–31",
+		"objective": "Phát triển kỹ thuật vê và đánh hợp âm ba ngón trên đàn tranh.",
+		"lessons": [
+			{
+				"number": 30,
+				"practice_id": "dan_tranh_level_8_bai_30_practice",
+				"title": "Kỹ thuật Vê",
+				"video": "",
+				"practice": "Thực hành kỹ thuật vê đều tay để tạo âm thanh liên tục và tròn tiếng.",
+				"practice_title": "Kỹ thuật Vê",
+				"sheet": ["Đô2", "Mi2", "Sol2", "Mi2", "Đô2", "Mi2", "Sol2", "Mi2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+			},
+			{
+				"number": 31,
+				"practice_id": "dan_tranh_level_8_bai_31_practice",
+				"title": "Kỹ thuật đánh hợp âm ba ngón",
+				"video": "",
+				"practice": "Thực hành gảy đồng thời ba dây để tạo hợp âm rõ, đều và cân bằng.",
+				"practice_title": "Kỹ thuật đánh hợp âm ba ngón",
+				"sheet": ["Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"],
+				"durations": [2.0, 2.0, 2.0, 2.0]
+			}
+		]
 	}
 ]
 
@@ -560,8 +588,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		title.add_theme_font_override("font", bold_font)
 	column.add_child(title)
 
-	# Level 7 hiển thị trực tiếp tên kỹ thuật, không lặp thêm dòng “Vào bài”.
-	var lesson_action := "" if selected_level == 7 else "Vào bài"
+	# Các level kỹ thuật hiển thị trực tiếp tên bài, không lặp thêm dòng “Vào bài”.
+	var lesson_action := "" if selected_level in [7, 8] else "Vào bài"
 	var lesson_button := _create_circle_button(lesson_action, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
 	lesson_button.pressed.connect(_open_lesson.bind(lesson))

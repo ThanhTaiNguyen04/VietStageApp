@@ -114,6 +114,7 @@ var _menu_glass: ColorRect = null
 @onready var card_classical : PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical
 @onready var card_pop_chords: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords
 var card_level_7: PanelContainer
+var card_level_8: PanelContainer
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ func _ready() -> void:
 	_build_top_bar()
 	_build_profile_menu()
 	_create_level_7_card()
+	_create_level_8_card()
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
@@ -1328,6 +1330,12 @@ func _create_level_7_card() -> void:
 	card_level_7.name = "CardLevel7"
 	roadmap_content.add_child(card_level_7)
 
+
+func _create_level_8_card() -> void:
+	card_level_8 = card_classical.duplicate() as PanelContainer
+	card_level_8.name = "CardLevel8"
+	roadmap_content.add_child(card_level_8)
+
 func _build_roadmap_cards() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
@@ -1365,6 +1373,8 @@ func _build_roadmap_cards() -> void:
 	var classical_desc := card_classical.get_node("Margin/HBox/TextV/BulletList") as Label
 	var level_7_title := card_level_7.get_node("Margin/HBox/TextV/Title") as Label
 	var level_7_desc := card_level_7.get_node("Margin/HBox/TextV/BulletList") as Label
+	var level_8_title := card_level_8.get_node("Margin/HBox/TextV/Title") as Label
+	var level_8_desc := card_level_8.get_node("Margin/HBox/TextV/BulletList") as Label
 	
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -1378,6 +1388,7 @@ func _build_roadmap_cards() -> void:
 		chords_skills_title.add_theme_font_override("font", font_title)
 		classical_title.add_theme_font_override("font", font_title)
 		level_7_title.add_theme_font_override("font", font_title)
+		level_8_title.add_theme_font_override("font", font_title)
 		pop_chords_title.add_theme_font_override("font", font_title)
 
 	# Hiển thị lại các thẻ bị ẩn nếu chuyển về đàn tranh / sáo trúc
@@ -1385,6 +1396,7 @@ func _build_roadmap_cards() -> void:
 	card_chords_unlock.show()
 	card_classical.show()
 	card_level_7.hide()
+	card_level_8.hide()
 	path_soloist_title.show()
 	path_chords_title.show()
 	
@@ -1399,6 +1411,7 @@ func _build_roadmap_cards() -> void:
 		card_chords_unlock.hide()
 		card_classical.show()
 		card_level_7.show()
+		card_level_8.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 		
@@ -1407,6 +1420,7 @@ func _build_roadmap_cards() -> void:
 		card_pop_chords.position = Vector2(2080, 275)
 		card_classical.position = Vector2(2590, 275)
 		card_level_7.position = Vector2(3100, 275)
+		card_level_8.position = Vector2(3610, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
@@ -1430,6 +1444,8 @@ func _build_roadmap_cards() -> void:
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
 		level_7_title.text = "LEVEL 7: KỸ THUẬT NÂNG CAO"
 		level_7_desc.text = "✓ Kỹ năng á – vuốt 17 dây\n✓ Nhấn, rung dây & song thanh\n✓ Demo hiệu ứng phản hồi sai"
+		level_8_title.text = "LEVEL 8: KỸ THUẬT NÂNG CAO MỞ RỘNG"
+		level_8_desc.text = "✓ Kỹ thuật Vê\n✓ Kỹ thuật đánh hợp âm ba ngón"
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
@@ -1615,7 +1631,7 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]:
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_level_8, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -1666,7 +1682,7 @@ func _style_circular_play_btn(btn: Button) -> void:
 # ─── Animate In ────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
 	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
-	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]
+	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_level_8, card_pop_chords]
 	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
@@ -1924,6 +1940,12 @@ func _connect_buttons() -> void:
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
 				_fade_to("res://scenes/LessonDanTranhList.tscn")
 	)
+	card_level_8.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 8
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+	)
 
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
@@ -2006,6 +2028,14 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonDanTranhList.tscn")
 	)
 	_make_btn_bouncy(play_level_7)
+
+	var play_level_8 := card_level_8.get_node("Margin/HBox/BtnPlay") as Button
+	play_level_8.pressed.connect(func() -> void:
+		if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+			DAN_TRANH_LESSON_SCRIPT.selected_level = 8
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
+	)
+	_make_btn_bouncy(play_level_8)
 	
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
 	play_pop.pressed.connect(func() -> void:
@@ -2309,9 +2339,10 @@ func _on_viewport_size_changed() -> void:
 		var x_pop: float = x_ch + card_w + gap
 		var x_class: float = x_pop + card_w + gap
 		var x_level_7: float = x_class + card_w + gap
+		var x_level_8: float = x_level_7 + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var total_w: float = x_level_7 + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		var total_w: float = x_level_8 + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 		
 		card_basic.position = Vector2(x_basic, y_mid)
@@ -2333,6 +2364,8 @@ func _on_viewport_size_changed() -> void:
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
 		card_level_7.position = Vector2(x_level_7, y_mid)
 		card_level_7.custom_minimum_size = Vector2(card_w, card_level_7.custom_minimum_size.y)
+		card_level_8.position = Vector2(x_level_8, y_mid)
+		card_level_8.custom_minimum_size = Vector2(card_w, card_level_8.custom_minimum_size.y)
 	else:
 		var x_ess: float = x_basic + card_w + gap
 		x_un = x_ess + card_w + gap
