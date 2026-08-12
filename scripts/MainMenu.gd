@@ -1554,7 +1554,7 @@ func _build_roadmap_cards() -> void:
 	basic_desc.add_theme_color_override("font_color", C_CREAM_DIM)
 	basic_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 	if instrument == "dan_tranh":
-		_set_details_text(basic_details, 3, basic_stars, basic_pct, false)
+		_set_details_text(basic_details, 9, basic_stars, basic_pct, false)
 	elif instrument == "sao_truc":
 		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
 	elif instrument == "dan_bau":
@@ -1580,7 +1580,7 @@ func _build_roadmap_cards() -> void:
 		elif instrument == "sao_truc":
 			_set_details_text(ess_details, 7, 0, 0, false)
 		else:
-			_set_details_text(ess_details, 3, 0, 0, false)
+			_set_details_text(ess_details, 6 if instrument == "dan_tranh" else 3, 0, 0, false)
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
@@ -1591,7 +1591,7 @@ func _build_roadmap_cards() -> void:
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 		if instrument == "dan_tranh":
 			var stats := _get_dan_tranh_level_status(2)
-			_set_details_text(ess_details, 3, stats["stars"], stats["pct"], false)
+			_set_details_text(ess_details, 6, stats["stars"], stats["pct"], false)
 		elif instrument == "sao_truc":
 			var stats := _get_sao_truc_card_status("essentials")
 			_set_details_text(ess_details, 7, stats["stars"], stats["pct"], false)
