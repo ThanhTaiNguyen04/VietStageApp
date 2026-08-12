@@ -289,6 +289,7 @@ func _on_drum_hit(hit_type: String) -> void:
 			_recording = false
 			record_btn.text = "Hoàn Thành!"
 			_va_say("Chúc mừng bạn đã đánh chính xác toàn bộ bản nhạc Trống Chầu!")
+			SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 			SecureDataManager.complete_lesson("trong_chau", SecureDataManager.active_lesson_id, 3)
 			_sync_practice_to_backend()
 			

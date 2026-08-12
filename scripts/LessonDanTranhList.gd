@@ -10,12 +10,16 @@ const C_GOLD_LIGHT := Color("#f0cb62")
 const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
+const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
 
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
+var _sidebar_expanded := true
+var _sidebar_tween: Tween = null
+var _sidebar_blur: ColorRect = null
 
 const LEVELS := [
 	{
@@ -260,6 +264,89 @@ const LEVELS := [
 				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
 			}
 		]
+	},
+	{
+		"level": 7,
+		"title": "KỸ THUẬT NÂNG CAO ĐÀN TRANH",
+		"sessions": "Bài 18–22",
+		"objective": "Luyện các kỹ năng tay trái và kỹ thuật biểu diễn nâng cao trên đàn tranh.",
+		"lessons": [
+			{"number": 18, "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
+			{"number": 19, "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ thuật nhấn", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Kỹ thuật nhấn – Nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
+			{
+				"number": 20,
+				"practice_id": "dan_tranh_level_7_bai_20_practice",
+				"title": "Kỹ thuật song thanh",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice_title": "Luyện tập: Kỹ thuật song thanh",
+				"sheet": [
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
+			},
+			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
+			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
+		]
+	},
+	{
+		"level": 8,
+		"title": "KỸ THUẬT NÂNG CAO MỞ RỘNG",
+		"sessions": "Bài 30–33",
+		"objective": "Phát triển kỹ thuật vê và đánh hợp âm ba ngón trên đàn tranh.",
+		"lessons": [
+			{
+				"number": 30,
+				"practice_id": "dan_tranh_level_8_bai_30_practice",
+				"title": "Kỹ thuật Vê",
+				"video": "",
+				"practice": "Thực hành kỹ thuật vê đều tay để tạo âm thanh liên tục và tròn tiếng.",
+				"practice_title": "Kỹ thuật Vê",
+				"sheet": ["Đô2", "Mi2", "Sol2", "Mi2", "Đô2", "Mi2", "Sol2", "Mi2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+			},
+			{
+				"number": 31,
+				"practice_id": "dan_tranh_level_8_bai_31_practice",
+				"title": "Kỹ thuật hợp âm",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
+				"practice_title": "Kỹ thuật hợp âm",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
+			},
+			{
+				"number": 32,
+				"practice_id": "dan_tranh_level_8_bai_32_practice",
+				"title": "Kỹ thuật đánh hợp âm Đô trưởng",
+				"video": "",
+				"practice": "Thực hành đánh hợp âm Đô trưởng bằng ba ngón, giữ tiếng đàn rõ và đồng đều.",
+				"practice_title": "Hợp âm Đô trưởng – Ba ngón",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+			},
+			{
+				"number": 33,
+				"practice_id": "dan_tranh_level_8_bai_33_practice",
+				"title": "Kỹ thuật đánh hợp âm La thứ",
+				"video": "",
+				"practice": "Thực hành đánh hợp âm La thứ bằng ba ngón, giữ nhịp chắc và cân bằng các dây.",
+				"practice_title": "Hợp âm La thứ – Ba ngón",
+				"sheet": [
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
+			}
+		]
 	}
 ]
 
@@ -396,6 +483,7 @@ func _build_sidebar() -> void:
 	blur_rect.show_behind_parent = true
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
+	_sidebar_blur = blur_rect
 
 	if btn_menu: _style_side_icon_btn(btn_menu,     false)
 	if btn_courses: _style_side_icon_btn(btn_courses,  true)
@@ -501,11 +589,13 @@ func _build_lessons() -> void:
 
 func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, completed: Array) -> VBoxContainer:
 	var lesson_number := int(lesson["number"])
-	var practice_id := _lesson_id(lesson_number, "practice")
+	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
 	var lesson_ready: bool = not REQUIRE_SEQUENTIAL_UNLOCK or index == 0
 	if REQUIRE_SEQUENTIAL_UNLOCK and index > 0:
 		var previous: Dictionary = lessons[index - 1]
-		lesson_ready = completed.has(_lesson_id(int(previous["number"]), "practice"))
+		var previous_number := int(previous["number"])
+		var previous_id := str(previous.get("practice_id", _lesson_id(previous_number, "practice")))
+		lesson_ready = completed.has(previous_id)
 	var practice_completed := completed.has(practice_id)
 	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
 
@@ -526,7 +616,9 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		title.add_theme_font_override("font", bold_font)
 	column.add_child(title)
 
-	var lesson_button := _create_circle_button("Vào bài", str(lesson["title"]), practice_unlocked, practice_completed)
+	# Các level kỹ thuật hiển thị trực tiếp tên bài, không lặp thêm dòng “Vào bài”.
+	var lesson_action := "" if selected_level in [7, 8] else "Vào bài"
+	var lesson_button := _create_circle_button(lesson_action, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
 	lesson_button.pressed.connect(_open_lesson.bind(lesson))
 	column.add_child(lesson_button)
@@ -543,10 +635,13 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	button.disabled = not unlocked
 
 	if completed:
-		button.text = "✓\n%s\nHoàn thành" % action
+		button.text = "✓\n%s\nHoàn thành" % (lesson_title if action.is_empty() else action)
 	elif unlocked:
-		var icon := "🎬" if action == "Hướng dẫn" else "🎵"
-		button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
+		if action.is_empty():
+			button.text = lesson_title
+		else:
+			var icon := "🎬" if action == "Hướng dẫn" else "🎵"
+			button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
 	else:
 		button.text = "🔒"
 
@@ -730,11 +825,70 @@ func _create_action_button(text_value: String, primary: bool) -> Button:
 	_make_bouncy(button)
 	return button
 
+func _toggle_sidebar() -> void:
+	_set_sidebar_expanded(not _sidebar_expanded, true)
+
+func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
+	if _sidebar_tween:
+		_sidebar_tween.kill()
+	_sidebar_expanded = expanded
+
+	var rail_width := 220.0 if expanded else SIDEBAR_COLLAPSED_WIDTH
+	var navigation := [btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]
+	var top_spacer := $Root/Sidebar/SideM/SideV/TopSpacer as Control
+	var bottom_spacer := $Root/Sidebar/SideM/SideV/BotSpacer as Control
+
+	if expanded:
+		if top_spacer: top_spacer.show()
+		if bottom_spacer: bottom_spacer.show()
+		for button: Button in navigation:
+			button.show()
+
+	if not animate:
+		sidebar.custom_minimum_size.x = rail_width
+		btn_menu.custom_minimum_size.x = rail_width
+		for button: Button in navigation:
+			button.custom_minimum_size.x = rail_width
+		_apply_sidebar_presentation(expanded)
+		if not expanded:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		return
+
+	_sidebar_tween = create_tween().set_parallel(true)
+	_sidebar_tween.tween_property(sidebar, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	for button: Button in navigation:
+		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+
+	if expanded:
+		_apply_sidebar_presentation(true)
+	else:
+		_sidebar_tween.set_parallel(false)
+		_sidebar_tween.tween_callback(func() -> void:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+			_apply_sidebar_presentation(false)
+		)
+
+func _apply_sidebar_presentation(expanded: bool) -> void:
+	var side_style := _flat(Color(0.95, 0.93, 0.89, 0.6) if expanded else Color(0, 0, 0, 0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15) if expanded else Color(0, 0, 0, 0), 0, 0)
+	side_style.border_width_left = 0; side_style.border_width_top = 0; side_style.border_width_bottom = 0
+	side_style.border_width_right = 2 if expanded else 0
+	side_style.content_margin_right = 0
+	sidebar.add_theme_stylebox_override("panel", side_style)
+	if _sidebar_blur:
+		_sidebar_blur.visible = expanded
+
 func _connect_navigation() -> void:
 	back_btn.pressed.connect(_go_to_levels)
 	if change_course_btn:
 		change_course_btn.pressed.connect(_go_to_levels)
-	btn_menu.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
+	btn_menu.pressed.connect(_toggle_sidebar)
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
@@ -762,6 +916,15 @@ func _open_lesson(lesson: Dictionary) -> void:
 	var typed_cues: Array[String] = []
 	typed_cues.assign(lesson.get("cues", []))
 	LessonDanTranh.current_song_cues = typed_cues
+
+	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
+	# The mode is stored on Level 7 / Bài 18 itself, so this route cannot collide
+	# with Level 6 / Bài 14 song âm even if selected_level ever becomes stale.
+	if str(lesson.get("practice_mode", "")) == "glissando_17":
+		SecureDataManager.active_lesson_id = practice_id
+		LessonDanTranh.force_glissando_start = true
+		_fade_to("res://scenes/LessonDanTranh.tscn")
+		return
 	
 	if selected_level == 1 and lesson_number in [1, 2, 3]:
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
@@ -770,7 +933,7 @@ func _open_lesson(lesson: Dictionary) -> void:
 		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
 		_fade_to("res://scenes/VideoPlayer.tscn")
 	else:
-		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
+		SecureDataManager.active_lesson_id = practice_id
 		_fade_to("res://scenes/LessonDanTranh.tscn")
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
@@ -802,7 +965,7 @@ func _open_quiz() -> void:
 	for lesson: Dictionary in level_data.get("lessons", []):
 		var number := int(lesson.get("number", 0))
 		if number > 0:
-			ids.append(_lesson_id(number, "practice"))
+			ids.append(str(lesson.get("practice_id", _lesson_id(number, "practice"))))
 	QuizScreenScript.quiz_instrument = "dan_tranh"
 	QuizScreenScript.quiz_local_ids = ids
 	QuizScreenScript.quiz_return_scene = "res://scenes/LessonDanTranhList.tscn"
@@ -812,6 +975,8 @@ func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var mobile: bool = viewport_size.x < 850.0 or viewport_size.x < viewport_size.y
 	sidebar.visible = not mobile
+	if not mobile:
+		_set_sidebar_expanded(_sidebar_expanded, false)
 	var top_margin := $Root/RightContent/TopBar/TopM as MarginContainer
 	top_margin.add_theme_constant_override("margin_left", 16 if mobile else 36)
 	top_margin.add_theme_constant_override("margin_right", 16 if mobile else 36)

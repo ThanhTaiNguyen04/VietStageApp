@@ -4,9 +4,12 @@ class_name LessonDanTranh
 const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
+const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
+const LEVEL_7_GLISSANDO_TITLE := "Kỹ năng á (vuốt 17 dây)"
+const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
-var current_state = State.CALIBRATION
+var current_state = State.INTRO
 
 @onready var root = $Root
 @onready var zither_board = $Root/CenterContainer/ZitherBoard/BoardM/ZitherFrame/ZitherM/ZitherStack/DanTranhBoard
@@ -15,6 +18,7 @@ var current_state = State.CALIBRATION
 @onready var back_btn = $BackBtn
 @onready var complete_btn = $CompleteBtn
 @onready var teacher_area = $TeacherArea
+@onready var teacher_char = $TeacherArea/TeacherChar
 @onready var speech_text = $TeacherArea/DialogBox/M/V/SpeechText
 @onready var real_mode_btn = $TeacherArea/DialogBox/M/V/ModeButtons/RealModeBtn
 @onready var analyzer = $Analyzer
@@ -22,6 +26,17 @@ var current_state = State.CALIBRATION
 @onready var volume_bar = $FeedbackArea/VolumeBar
 var ai_audio = null
 var _dan_tranh_attempts: Array[Dictionary] = []
+
+# Virtual Teacher Portrait Animation States
+var _tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
+var _teacher_atlas : AtlasTexture
+var _portrait_is_talking := false
+var _portrait_frame := 0
+var _portrait_frame_elapsed := 0.0
+const PORTRAIT_FRAME_DURATION := 0.08
+const PORTRAIT_FRAME_COUNT := 16
+const PORTRAIT_SHEET_COLUMNS := 4
+const PORTRAIT_SHEET_ROWS := 4
 
 var staff_display: Control
 var pitch_box: PanelContainer
@@ -67,10 +82,30 @@ class PitchMeterDraw extends Control:
 			# Needle pointer (bright glowing vertical bar + circle cap)
 			draw_line(Vector2(ptr_x, cy - 10), Vector2(ptr_x, cy + 10), ptr_color, 3.5)
 			draw_circle(Vector2(ptr_x, cy), 5.0, ptr_color)
+
+
+var glissando_sheet: Control
+var glissando_progress_label: Label
+var glissando_progress_bar: ProgressBar
+var error_flash_overlay: Control
+var error_flash_badge: Control
+var error_flash_halo: Control
+var error_flash_detail_label: Label
+var error_flash_timer := 0.75
+var error_flash_tween: Tween
+var error_pulse_tween: Tween
+var error_shake_tween: Tween
+var error_flash_note: Dictionary = {}
+var error_feedback_player: AudioStreamPlayer
+var error_tooltip_final_position := Vector2.ZERO
+var error_feedback_showing := false
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
 static var current_song_cues: Array[String] = []
+# Set by the Level 7 lesson selector immediately before the scene is opened.
+# This does not rely on any persisted lesson/session value.
+static var force_glissando_start := false
 
 var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
@@ -121,13 +156,71 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ làm quen với cách đọc các nốt rơi trên khuông nhạc.", "highlight": -1},
-		{"action": "speak", "text": "Hãy tập trung gảy đúng nốt Đô2, Rê2, Mi2 tương ứng khi chúng trôi chạm vạch phách nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 10 nốt cơ bản quãng thấp và trung. Chúng ta sẽ làm quen và gảy từng nốt tương ứng với từng dây nhé.", "highlight": -1},
+		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
+		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
+		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
+		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy dây 4.", "highlight": 3, "note": "Rê2"},
+		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy dây 5.", "highlight": 4, "note": "Mi2"},
+		{"action": "speak", "text": "Dây 6: Nốt Sol2. Hãy gảy dây 6.", "highlight": 5, "note": "Sol2"},
+		{"action": "speak", "text": "Dây 7: Nốt La2. Hãy gảy dây 7.", "highlight": 6, "note": "La2"},
+		{"action": "speak", "text": "Dây 8: Nốt Đô3. Hãy gảy dây 8.", "highlight": 7, "note": "Đô3"},
+		{"action": "speak", "text": "Dây 9: Nốt Rê3. Hãy gảy dây 9.", "highlight": 8, "note": "Rê3"},
+		{"action": "speak", "text": "Dây 10: Nốt Mi3. Hãy gảy dây 10.", "highlight": 9, "note": "Mi3"},
+		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 10 nốt cơ bản quãng thấp và trung!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Đàn Tranh 17 dây có cao độ trải rộng từ trầm đến cao.", "highlight": -1},
-		{"action": "speak", "text": "Tôi sẽ gảy giai điệu chính, bạn hãy gảy đệm nốt cuối mỗi câu nhạc khi nốt màu bạc chạm vạch nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 7 nốt quãng cao trên Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Hãy gảy lần lượt từng nốt từ Sol3 đến La4 khi chúng chạm vạch phách nhé.", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_9_practice": [
+		{"action": "speak", "text": "Chào mừng bạn đến với bài Luyện ngón cơ bản.", "highlight": -1},
+		{"action": "speak", "text": "Chúng ta sẽ sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải để gảy chuỗi nốt chạy đều đặn nhé.", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_4_practice": [
+		{"action": "speak", "text": "Chào mừng bạn đến với bài học: Tempo, Khóa Sol và Số chỉ nhịp. Đây là những kiến thức nền giúp bạn đọc và chơi bài nhạc đúng nhịp độ.", "highlight": -1},
+		{"action": "speak", "text": "Đầu tiên là Tempo. Tempo có nghĩa là tốc độ của bài nhạc, tức là bài đó nhanh hay chậm, được đo bằng số phách trong một phút (BPM). Tempo càng lớn thì bài càng nhanh.", "highlight": -1, "show_speed": true},
+		{"action": "speak", "text": "Bạn thấy thanh điều chỉnh tốc độ ở góc trên bên phải không? Bạn có thể chọn 60%, 80%, 100% hay 120% để luyện tập chậm hoặc nhanh hơn tùy ý. Khi mới học, hãy chọn tốc độ chậm nhé.", "highlight": -1, "show_speed": true},
+		{"action": "speak", "text": "Tiếp theo là Khóa Sol. Khóa Sol nằm ở đầu khuông nhạc, xác định vị trí nốt Sol trên khuông. Nhờ khóa Sol ta biết được các nốt nhạc được đặt trên dòng và khe nào. Bạn thấy ký hiệu Khóa Sol ở đầu khuông nhạc không?", "highlight": -1, "show_staff": true, "clef": true},
+		{"action": "speak", "text": "Bây giờ là Số chỉ nhịp. Số chỉ nhịp gồm hai số xếp dọc nhau ở đầu bài, ngay sau Khóa Sol. Số trên cho biết mỗi ô nhịp có bao nhiêu phách, số dưới cho biết nốt nào được tính là một phách.", "highlight": -1, "show_staff": true, "time_sig": 4},
+		{"action": "speak", "text": "Nhịp 4/4 nghĩa là mỗi ô nhịp có 4 phách, mỗi phách là một nốt đen. Bạn thấy hai số 4 chồng lên nhau ở đầu khuông nhạc không? Cách đếm nhịp 4/4 là: 1-2-3-4, 1-2-3-4... Hãy chú ý nhấn mạnh phách 1.", "highlight": -1, "show_staff": true, "time_sig": 4},
+		{"action": "speak", "text": "Nhịp 2/4 nghĩa là mỗi ô nhịp chỉ có 2 phách, mỗi phách là một nốt đen. Số chỉ nhịp lúc này là số 2 ở trên, số 4 ở dưới. Cách đếm nhịp 2/4 là: 1-2, 1-2... nhanh gọn và đều đặn hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
+		{"action": "speak", "text": "Bây giờ chúng ta cùng luyện tập theo nhịp 4/4. Ta sẽ gảy nốt Sol2, đếm 1-2-3-4 cho mỗi ô nhịp. Hãy gảy nốt Sol2.", "highlight": 0, "note": "Sol2", "time_sig": 4},
+		{"action": "speak", "text": "Gảy nốt La2 giữ đều nhịp 4/4.", "highlight": 1, "note": "La2", "time_sig": 4},
+		{"action": "speak", "text": "Gảy nốt Đô3 giữ đều nhịp 4/4.", "highlight": 2, "note": "Đô3", "time_sig": 4},
+		{"action": "speak", "text": "Gảy nốt Rê3 giữ đều nhịp 4/4.", "highlight": 3, "note": "Rê3", "time_sig": 4},
+		{"action": "speak", "text": "Tiếp tục với nhịp 4/4: nốt Mi3.", "highlight": 4, "note": "Mi3", "time_sig": 4},
+		{"action": "speak", "text": "Rồi nốt Rê3, giữ nhịp đều.", "highlight": 5, "note": "Rê3", "time_sig": 4},
+		{"action": "speak", "text": "Nốt Đô3, giữ nhịp đều.", "highlight": 6, "note": "Đô3", "time_sig": 4},
+		{"action": "speak", "text": "Nốt La2, giữ nhịp đều.", "highlight": 7, "note": "La2", "time_sig": 4},
+		{"action": "speak", "text": "Giờ chuyển sang nhịp 2/4, nhanh gọn hơn: gảy nốt Sol2.", "highlight": 8, "note": "Sol2", "time_sig": 2},
+		{"action": "speak", "text": "Nốt La2 theo nhịp 2/4.", "highlight": 9, "note": "La2", "time_sig": 2},
+		{"action": "speak", "text": "Nốt Đô3 theo nhịp 2/4.", "highlight": 10, "note": "Đô3", "time_sig": 2},
+		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 11, "note": "Rê3", "time_sig": 2},
+		{"action": "speak", "text": "Nốt Mi3 theo nhịp 2/4.", "highlight": 12, "note": "Mi3", "time_sig": 2},
+		{"action": "speak", "text": "Nốt Sol3 theo nhịp 2/4.", "highlight": 13, "note": "Sol3", "time_sig": 2},
+		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 14, "note": "Rê3", "time_sig": 2},
+		{"action": "speak", "text": "Và cuối cùng nốt Đô3, giữ nhịp 2/4 thật đều.", "highlight": 15, "note": "Đô3", "time_sig": 2},
+		{"action": "speak", "text": "Tuyệt vời! Tóm lại: Tempo là tốc độ bài nhạc, khóa Sol xác định vị trí nốt trên khuông, nhịp 4/4 có 4 phách mỗi ô, nhịp 2/4 có 2 phách mỗi ô. Bạn đã hoàn thành bài học!", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_5_practice": [
+		{"action": "speak", "text": "Chào mừng bạn đến với bài học nhạc lý: Trường độ nốt nhạc. Trường độ là thời gian mỗi nốt nhạc vang lên, được đo bằng phách.", "highlight": -1},
+		{"action": "speak", "text": "Đầu tiên là Nốt Trắng. Nốt trắng có đầu hình bầu dục rỗng, có thân nốt, kéo dài 2 phách. Hãy gảy nốt Đô2 và giữ âm vang 2 phách.", "highlight": 0, "note": "Đô2", "type": "half"},
+		{"action": "speak", "text": "Thêm một nốt trắng nữa. Hãy gảy nốt Đô2 và giữ 2 phách nhé.", "highlight": 1, "note": "Đô2", "type": "half"},
+		{"action": "speak", "text": "Tiếp theo là Nốt Đen. Nốt đen có đầu hình bầu dục đặc, có thân nốt, kéo dài 1 phách. Hãy gảy nốt Rê2.", "highlight": 2, "note": "Rê2", "type": "quarter"},
+		{"action": "speak", "text": "Gảy thêm nốt đen Mi2 – 1 phách.", "highlight": 3, "note": "Mi2", "type": "quarter"},
+		{"action": "speak", "text": "Và thêm nốt đen Mi2 – 1 phách.", "highlight": 4, "note": "Mi2", "type": "quarter"},
+		{"action": "speak", "text": "Gảy nốt đen Sol2 – 1 phách.", "highlight": 5, "note": "Sol2", "type": "quarter"},
+		{"action": "speak", "text": "Bây giờ là Nốt Móc Đơn. Nốt móc đơn có đầu đặc, thân nốt và 1 móc, kéo dài nửa phách. Hãy gảy nhanh nốt Sol2.", "highlight": 6, "note": "Sol2", "type": "eighth"},
+		{"action": "speak", "text": "Thêm nốt móc đơn Sol2 – nửa phách.", "highlight": 7, "note": "Sol2", "type": "eighth"},
+		{"action": "speak", "text": "Và nốt móc đơn Sol2 – nửa phách.", "highlight": 8, "note": "Sol2", "type": "eighth"},
+		{"action": "speak", "text": "Cuối cùng là Nốt Móc Kép. Nốt móc kép có đầu đặc, thân nốt và 2 móc, kéo dài một phần tư phách. Rất nhanh! Hãy gảy nốt La2.", "highlight": 9, "note": "La2", "type": "sixteenth"},
+		{"action": "speak", "text": "Gảy thêm nốt móc kép La2.", "highlight": 10, "note": "La2", "type": "sixteenth"},
+		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành bài học nhận diện trường độ. Tóm lại: Nốt trắng bằng 2 phách, nốt đen bằng 1 phách, nốt móc đơn bằng nửa phách, nốt móc kép bằng một phần tư phách.", "highlight": -1}
 	],
 
 	"dan_tranh_level_2_bai_4_practice": [
@@ -136,8 +229,24 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_2_bai_5_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta học về nốt Móc Đơn và nốt Móc Kép (Móc Đôi) có tốc độ nhanh hơn.", "highlight": -1},
-		{"action": "speak", "text": "Hãy gảy dứt khoát và đều tay để theo kịp tốc độ của nốt rơi trên khuông nhạc.", "highlight": -1}
+		{"action": "speak", "text": "Chào mừng bạn đến với Bài 5: Hệ thống nốt cơ bản và xác định vị trí nốt trên Đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Đàn Tranh của chúng ta có 17 dây, được lên theo thang ngũ cung: Sol - La - Đô - Rê - Mi ở các quãng khác nhau.", "highlight": -1},
+		{"action": "speak", "text": "Trong âm nhạc chuẩn quốc tế có 7 nốt cơ bản: Đô, Rê, Mi, Fa, Sol, La, Si ký hiệu lần lượt là C, D, E, F, G, A, B.", "highlight": -1},
+		{"action": "speak", "text": "Để chơi các nốt Fa và Si trên đàn Tranh, ta sẽ gảy các dây Mi và La tương ứng rồi dùng tay trái nhấn nhẹ dây bên trái nhạn đàn để nâng cao độ.", "highlight": -1},
+		{"action": "speak", "text": "Bây giờ, chúng ta sẽ tập luyện xác định vị trí nốt. Tôi sẽ gảy trước một nốt, sau đó bạn hãy gảy lặp lại nốt đó nhé. Đầu tiên là nốt Đô 2 ở dây số 3.", "highlight": 2, "note": "Đô2"},
+		{"action": "speak", "text": "Tiếp theo là nốt Rê 2 ở dây số 4.", "highlight": 3, "note": "Rê2"},
+		{"action": "speak", "text": "Nốt Mi 2 ở dây số 5.", "highlight": 4, "note": "Mi2"},
+		{"action": "speak", "text": "Nốt Fa 2. Hãy gảy dây Mi 2 (dây 5) và nhấn nhẹ tay trái để tạo ra cao độ nốt Fa 2 nhé.", "highlight": 4, "note": "Fa2"},
+		{"action": "speak", "text": "Nốt Sol 2 ở dây số 6.", "highlight": 5, "note": "Sol2"},
+		{"action": "speak", "text": "Nốt La 2 ở dây số 7.", "highlight": 6, "note": "La2"},
+		{"action": "speak", "text": "Nốt Si 2. Hãy gảy dây La 2 (dây 7) và dùng tay trái nhấn để tạo ra cao độ nốt Si 2.", "highlight": 6, "note": "Si2"},
+		{"action": "speak", "text": "Và nốt Đô 3 ở dây số 8.", "highlight": 7, "note": "Đô3"},
+		{"action": "speak", "text": "Sau đây là thử thách Mini Game: Hãy tìm nốt Sol 2 trên đàn và chọn gảy dây tương ứng nhé!", "highlight": 5, "note": "Sol2"},
+		{"action": "speak", "text": "Rất tốt! Tiếp theo là Bài 2.3: Học viên nhận biết các nốt cùng tên ở các quãng khác nhau (khác cao độ).", "highlight": -1},
+		{"action": "speak", "text": "Ví dụ: Đô thấp ở dây số 3. Hãy gảy nốt Đô 2.", "highlight": 2, "note": "Đô2"},
+		{"action": "speak", "text": "Đô trung ở dây số 8. Hãy gảy nốt Đô 3.", "highlight": 7, "note": "Đô3"},
+		{"action": "speak", "text": "Và Đô cao ở dây số 13. Hãy gảy nốt Đô 4.", "highlight": 12, "note": "Đô4"},
+		{"action": "speak", "text": "Tuyệt vời! Nhận biết nốt cùng tên ở các quãng khác nhau là kiến thức nền để học các kỹ thuật: Song thanh, Vê, Quãng, Chuyển âm vực sau này. Bây giờ hãy luyện tập chơi chuỗi nốt nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_2_bai_6_practice": [
@@ -195,28 +304,35 @@ const SU_THANH_HOA_DURATIONS: Array[float] = [
 ]
 
 const NOTE_TO_STRING = {
-	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4,
-	"Sol2": 5, "La2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9,
-	"Sol3": 10, "La3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
+	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4, "Fa2": 4,
+	"Sol2": 5, "La2": 6, "Si2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9, "Fa3": 9,
+	"Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
 	"Sol4": 15, "La4": 16
 }
 
 const NOTE_FREQS = {
 	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Sol2": 392.00, "La2": 440.00, "Đô3": 523.25, "Rê3": 587.33, "Mi3": 659.25,
-	"Sol3": 783.99, "La3": 880.00, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51,
-	"Sol4": 1567.98, "La4": 1760.00
+	"Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88, "Đô3": 523.25,
+	"Rê3": 587.33, "Mi3": 659.25, "Fa3": 698.46, "Sol3": 783.99, "La3": 880.00,
+	"Si3": 987.77, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51, "Sol4": 1567.98,
+	"La4": 1760.00
 }
 
 func _ready():
 	# The lesson covers every real string from Sol1 (196 Hz) to La4 (1760 Hz).
-	# Keep this explicit so scene/default changes cannot cut off the high strings.
+	# Fa/Si are produced by pressing Mi/La (same string, raised pitch) — keep them
+	# in the profile so nhấn (press) exercises can be scored by pitch.
 	var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
 	var profile = profile_script.new()
-	profile.notes.assign(ALL_17_NOTES)
+	var profile_notes: Array[String] = [
+		"Sol1", "La1", "Đô2", "Rê2", "Mi2", "Fa2",
+		"Sol2", "La2", "Si2", "Đô3", "Rê3", "Mi3", "Fa3",
+		"Sol3", "La3", "Si3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"
+	]
+	profile.notes.assign(profile_notes)
 	var freqs: Array[float] = []
 	var mappings: Array[int] = []
-	for n in ALL_17_NOTES:
+	for n in profile_notes:
 		freqs.append(NOTE_FREQS[n])
 		mappings.append(NOTE_TO_STRING[n])
 	profile.frequencies = PackedFloat32Array(freqs)
@@ -224,7 +340,7 @@ func _ready():
 	profile.min_frequency = 180.0
 	profile.max_frequency = 4200.0
 	profile.volume_threshold_db = -58.0
-	profile.cents_tolerance = 35.0 # strict pitch tolerance
+	profile.cents_tolerance = 45.0 # robust pitch tolerance
 	profile.hold_time_sec = 0.20
 	profile.is_plucked_instrument = true
 	
@@ -236,6 +352,11 @@ func _ready():
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
+	# Only Level 7 / Bài 18 is the direct glissando practice. Its unique title
+	# lets us recover the correct id without affecting Level 6 / Bài 14 song âm.
+	if force_glissando_start or PracticeRoom.current_song_title == LEVEL_7_GLISSANDO_TITLE:
+		current_lesson_id = LEVEL_7_GLISSANDO_ID
+		force_glissando_start = false
 		
 	if not PracticeRoom.current_song_sheet.is_empty():
 		lesson_sheet.assign(PracticeRoom.current_song_sheet)
@@ -249,7 +370,36 @@ func _ready():
 			for i in range(intro_5.size()):
 				d_arr.append(1.5)
 			lesson_durations.assign(d_arr)
-		elif current_lesson_id == "dan_tranh_level_5_bai_12_practice" or current_lesson_id == "dan_tranh_level_1_bai_3_practice":
+		elif current_lesson_id == "dan_tranh_level_1_bai_2_practice":
+			var intro_10 = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"]
+			lesson_sheet.assign(intro_10)
+			var d_arr: Array[float] = []
+			for i in range(intro_10.size()):
+				d_arr.append(1.5)
+			lesson_durations.assign(d_arr)
+		elif current_lesson_id == "dan_tranh_level_1_bai_4_practice":
+			var tempo_sheet: Array[String] = [
+				"Sol2", "La2", "Đô3", "Rê3",
+				"Mi3", "Rê3", "Đô3", "La2",
+				"Sol2", "La2", "Đô3", "Rê3",
+				"Mi3", "Sol3", "Rê3", "Đô3"
+			]
+			lesson_sheet.assign(tempo_sheet)
+			lesson_durations.assign([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0])
+		elif current_lesson_id == "dan_tranh_level_1_bai_5_practice":
+			var dur_sheet: Array[String] = ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"]
+			lesson_sheet.assign(dur_sheet)
+			var dur_arr: Array[float] = [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]
+			lesson_durations.assign(dur_arr)
+		elif current_lesson_id == "dan_tranh_level_3_bai_17_practice":
+			var press_sheet: Array[String] = ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"]
+			lesson_sheet.assign(press_sheet)
+			lesson_durations.assign([1.0, 1.5, 1.0, 1.5, 1.0, 1.5, 1.0, 2.0])
+		elif current_lesson_id == "dan_tranh_level_3_bai_19_practice":
+			var oct_sheet: Array[String] = ["Sol1+Sol2", "La1+La2", "Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3", "Sol2+Sol3", "La2+La3", "Đô3+Đô4"]
+			lesson_sheet.assign(oct_sheet)
+			lesson_durations.assign([1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0])
+		elif current_lesson_id == "dan_tranh_level_2_bai_15_practice":
 			lesson_sheet.assign(SU_THANH_HOA_SHEET)
 			lesson_durations.assign(SU_THANH_HOA_DURATIONS)
 		else:
@@ -281,6 +431,12 @@ func _ready():
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
+	
+	if teacher_char and _tex_mai_talk_sheet:
+		_teacher_atlas = AtlasTexture.new()
+		_teacher_atlas.atlas = _tex_mai_talk_sheet
+		teacher_char.texture = _teacher_atlas
+		_update_teacher_frame()
 	staff_card = PanelContainer.new()
 	staff_card.name = "StaffCard"
 	staff_card.anchor_left = 0.0; staff_card.anchor_right = 1.0
@@ -300,6 +456,10 @@ func _ready():
 	staff_card.add_child(staff_display)
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if _is_glissando_practice():
+		_build_glissando_sheet()
+	if _is_error_flash_demo():
+		_build_error_flash_overlay()
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -431,13 +591,249 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	_start_calibration_state()
+	if _is_glissando_practice() or _is_error_flash_demo():
+		# Do not show the shared welcome / audio-calibration lesson screen.
+		# Level 7 practical demos open directly into the staff exercise.
+		call_deferred("_start_practice")
+	else:
+		_start_intro()
+
+func _build_glissando_sheet() -> void:
+	var sheet_panel := PanelContainer.new()
+	glissando_sheet = sheet_panel
+	glissando_sheet.name = "GlissandoSheet"
+	glissando_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(glissando_sheet)
+	glissando_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var sheet_style := StyleBoxFlat.new()
+	sheet_style.bg_color = Color(0.995, 0.98, 0.93, 0.985)
+	sheet_style.corner_radius_top_left = 15
+	sheet_style.corner_radius_top_right = 15
+	sheet_style.corner_radius_bottom_left = 15
+	sheet_style.corner_radius_bottom_right = 15
+	sheet_panel.add_theme_stylebox_override("panel", sheet_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 30)
+	margin.add_theme_constant_override("margin_right", 30)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	sheet_panel.add_child(margin)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 3)
+	margin.add_child(content)
+
+	var header := HBoxContainer.new()
+	content.add_child(header)
+	var title := Label.new()
+	title.text = "KỸ NĂNG Á · VUỐT 17 DÂY"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_color_override("font_color", C_JADE)
+	title.add_theme_font_size_override("font_size", 24)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		title.add_theme_font_override("font", bold_font)
+	header.add_child(title)
+	glissando_progress_label = Label.new()
+	glissando_progress_label.text = "Tiến độ: 0/17"
+	glissando_progress_label.add_theme_color_override("font_color", C_JADE)
+	glissando_progress_label.add_theme_font_size_override("font_size", 16)
+	header.add_child(glissando_progress_label)
+
+	var instruction := Label.new()
+	instruction.text = "Ngón trỏ · vuốt liền mạch từ dây 1 đến dây 17 theo đường chéo"
+	instruction.add_theme_color_override("font_color", Color(0.25, 0.28, 0.25, 0.86))
+	instruction.add_theme_font_size_override("font_size", 16)
+	content.add_child(instruction)
+
+	glissando_progress_bar = ProgressBar.new()
+	glissando_progress_bar.max_value = 17.0
+	glissando_progress_bar.value = 0.0
+	glissando_progress_bar.show_percentage = false
+	glissando_progress_bar.custom_minimum_size = Vector2(0, 8)
+	content.add_child(glissando_progress_bar)
+
+	for i in range(17):
+		var row := HBoxContainer.new()
+		row.custom_minimum_size = Vector2(0, 22)
+		content.add_child(row)
+		var string_label := Label.new()
+		string_label.text = "Dây %d" % (i + 1)
+		string_label.custom_minimum_size = Vector2(62, 0)
+		string_label.add_theme_color_override("font_color", Color(0.20, 0.24, 0.21, 0.82))
+		string_label.add_theme_font_size_override("font_size", 13)
+		row.add_child(string_label)
+
+		var track := Control.new()
+		track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		track.custom_minimum_size = Vector2(0, 18)
+		row.add_child(track)
+		var string_line := ColorRect.new()
+		string_line.color = Color(0.45, 0.30, 0.16, 0.46)
+		string_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		string_line.anchor_right = 1.0
+		string_line.anchor_top = 0.5
+		string_line.anchor_bottom = 0.5
+		string_line.offset_top = -1.0
+		string_line.offset_bottom = 1.0
+		track.add_child(string_line)
+
+		var marker := Label.new()
+		marker.text = "▶" if i == 16 else "●"
+		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		marker.add_theme_color_override("font_color", C_GOLD)
+		marker.add_theme_font_size_override("font_size", 17)
+		var ratio := 0.04 + (0.92 * float(i) / 16.0)
+		marker.anchor_left = ratio
+		marker.anchor_right = ratio
+		marker.anchor_top = 0.5
+		marker.anchor_bottom = 0.5
+		marker.offset_left = -12.0
+		marker.offset_right = 12.0
+		marker.offset_top = -12.0
+		marker.offset_bottom = 12.0
+		track.add_child(marker)
+
+
+func _build_error_flash_overlay() -> void:
+	error_flash_overlay = Control.new()
+	error_flash_overlay.name = "ErrorFlashOverlay"
+	error_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(error_flash_overlay)
+	error_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_flash_overlay.modulate.a = 1.0
+
+	error_flash_halo = PanelContainer.new()
+	error_flash_halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	error_flash_halo.custom_minimum_size = Vector2(86, 68)
+	var halo_style := StyleBoxFlat.new()
+	halo_style.bg_color = Color(0.96, 0.20, 0.20, 0.10)
+	halo_style.border_color = Color(1.0, 0.30, 0.28, 0.86)
+	halo_style.border_width_left = 3
+	halo_style.border_width_right = 3
+	halo_style.border_width_top = 3
+	halo_style.border_width_bottom = 3
+	halo_style.corner_radius_top_left = 34
+	halo_style.corner_radius_top_right = 34
+	halo_style.corner_radius_bottom_left = 34
+	halo_style.corner_radius_bottom_right = 34
+	halo_style.shadow_color = Color(0.96, 0.12, 0.12, 0.26)
+	halo_style.shadow_size = 12
+	(error_flash_halo as PanelContainer).add_theme_stylebox_override("panel", halo_style)
+	error_flash_overlay.add_child(error_flash_halo)
+	error_flash_halo.pivot_offset = Vector2(43.0, 34.0)
+	error_flash_halo.modulate.a = 0.0
+
+	var error_tooltip := PanelContainer.new()
+	error_flash_badge = error_tooltip
+	error_tooltip.name = "ErrorNoteTooltip"
+	error_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	error_tooltip.custom_minimum_size = Vector2(300.0, 92.0)
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = Color(0.39, 0.075, 0.085, 0.98)
+	badge_style.border_color = Color(0.93, 0.73, 0.28, 0.98)
+	badge_style.set_border_width_all(2)
+	badge_style.corner_radius_top_left = 16
+	badge_style.corner_radius_top_right = 16
+	badge_style.corner_radius_bottom_left = 16
+	badge_style.corner_radius_bottom_right = 16
+	badge_style.shadow_color = Color(0.10, 0.02, 0.02, 0.32)
+	badge_style.shadow_size = 12
+	badge_style.shadow_offset = Vector2(0.0, 6.0)
+	error_tooltip.add_theme_stylebox_override("panel", badge_style)
+	error_flash_overlay.add_child(error_tooltip)
+	error_tooltip.size = Vector2(300.0, 92.0)
+	error_tooltip.pivot_offset = Vector2(150.0, 92.0)
+	error_tooltip.modulate.a = 0.0
+
+	var tooltip_margin := MarginContainer.new()
+	tooltip_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_margin.add_theme_constant_override("margin_left", 20)
+	tooltip_margin.add_theme_constant_override("margin_top", 12)
+	tooltip_margin.add_theme_constant_override("margin_right", 20)
+	tooltip_margin.add_theme_constant_override("margin_bottom", 12)
+	error_tooltip.add_child(tooltip_margin)
+	tooltip_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var text_box := VBoxContainer.new()
+	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_box.add_theme_constant_override("separation", 2)
+	tooltip_margin.add_child(text_box)
+
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var regular_font := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var title_label := Label.new()
+	title_label.text = "Chưa đúng"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
+	title_label.add_theme_font_size_override("font_size", 20)
+	if bold_font:
+		title_label.add_theme_font_override("font", bold_font)
+	text_box.add_child(title_label)
+
+	error_flash_detail_label = Label.new()
+	error_flash_detail_label.text = "Cần gảy: Sol₂"
+	error_flash_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_flash_detail_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.91, 1.0))
+	error_flash_detail_label.add_theme_font_size_override("font_size", 15)
+	if regular_font:
+		error_flash_detail_label.add_theme_font_override("font", regular_font)
+	text_box.add_child(error_flash_detail_label)
+
+	# Hai tam giác chồng nhau tạo mũi chỉ đỏ có viền vàng, nối tooltip với nốt sai.
+	var pointer_border := Polygon2D.new()
+	pointer_border.polygon = PackedVector2Array([Vector2(-12.0, -1.0), Vector2(12.0, -1.0), Vector2(0.0, 15.0)])
+	pointer_border.color = Color(0.93, 0.73, 0.28, 0.98)
+	pointer_border.position = Vector2(150.0, 92.0)
+	error_tooltip.add_child(pointer_border)
+	var pointer_fill := Polygon2D.new()
+	pointer_fill.polygon = PackedVector2Array([Vector2(-8.5, -2.0), Vector2(8.5, -2.0), Vector2(0.0, 10.5)])
+	pointer_fill.color = badge_style.bg_color
+	pointer_fill.position = Vector2(150.0, 92.0)
+	error_tooltip.add_child(pointer_fill)
+
+	error_feedback_player = AudioStreamPlayer.new()
+	error_feedback_player.name = "ErrorFeedbackPlayer"
+	error_feedback_player.volume_db = -20.0
+	error_feedback_player.stream = _generate_error_feedback_stream()
+	add_child(error_feedback_player)
+
+
+func _is_glissando_practice() -> bool:
+	return current_lesson_id == LEVEL_7_GLISSANDO_ID
+
+
+func _is_error_flash_demo() -> bool:
+	return current_lesson_id == ERROR_FLASH_DEMO_ID
+
+
+func _uses_chord_lesson_flow() -> bool:
+	# Các bài kỹ thuật kế thừa cùng luồng: tập từng hợp âm trước, rồi vào khuông nhạc.
+	return current_lesson_id in [
+		"dan_tranh_level_6_bai_14_practice",
+		"dan_tranh_level_7_bai_20_practice",
+		"dan_tranh_level_8_bai_31_practice",
+		"dan_tranh_level_8_bai_32_practice",
+		"dan_tranh_level_8_bai_33_practice"
+	]
+
+
+func _uses_chord_basics_lesson_flow() -> bool:
+	# Bài 31 Level 8 kế thừa cả nhịp luyện nốt đơn của Bài 13 Level 6.
+	return current_lesson_id in ["dan_tranh_level_6_bai_13_practice", "dan_tranh_level_8_bai_31_practice"]
+
 
 func _setup_top_pitch_box():
 	var l_title = "LUYỆN ĐÀN TRANH"
 	var active_id = SecureDataManager.active_lesson_id
 	if active_id:
-		if "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
+		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
+		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 18: KỸ NĂNG Á"
+		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
 		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
 		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
 		elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
@@ -623,14 +1019,231 @@ func _setup_pitch_hud_box():
 		feedback_area.add_child(pitch_box)
 
 func _process(delta):
+	# Update teacher talking animation
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		_portrait_is_talking = ai_audio.audio_player.is_playing()
+	else:
+		_portrait_is_talking = false
+		
+	if _portrait_is_talking:
+		_portrait_frame_elapsed += delta
+		if _portrait_frame_elapsed >= PORTRAIT_FRAME_DURATION:
+			_portrait_frame_elapsed = 0.0
+			_portrait_frame = (_portrait_frame + 1) % PORTRAIT_FRAME_COUNT
+			_update_teacher_frame()
+	elif _portrait_frame != 0:
+		_portrait_frame = 0
+		_update_teacher_frame()
+
 	if is_paused:
 		return
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		_process_practice(delta)
+		if _is_error_flash_demo():
+			_process_error_demo_sheet(delta)
+			_process_error_flash_demo(delta)
+		else:
+			_process_practice(delta)
 	
 	_update_continuous_pitch_hud()
+
+
+func _process_error_flash_demo(delta: float) -> void:
+	error_flash_timer -= delta
+	if error_flash_timer <= 0.0:
+		error_flash_timer = 3.6
+		_play_error_flash_demo()
+
+
+func _process_error_demo_sheet(delta: float) -> void:
+	if active_falling_notes.is_empty():
+		return
+	if error_feedback_showing:
+		staff_display.set_notes(active_falling_notes)
+		return
+	var all_offscreen := true
+	for note in active_falling_notes:
+		note["x"] = float(note.get("x", 0.0)) - 180.0 * delta
+		if float(note["x"]) > -100.0:
+			all_offscreen = false
+	if all_offscreen:
+		_start_practice()
+		return
+	staff_display.set_notes(active_falling_notes)
+
+
+func _play_error_flash_demo() -> void:
+	if not error_flash_overlay or not staff_display:
+		return
+	if error_flash_tween and error_flash_tween.is_running():
+		error_flash_tween.kill()
+	if error_pulse_tween and error_pulse_tween.is_running():
+		error_pulse_tween.kill()
+	if error_shake_tween and error_shake_tween.is_running():
+		error_shake_tween.kill()
+	_set_error_demo_note_color(false)
+
+	_set_error_demo_note_color(true)
+	if error_flash_note.is_empty():
+		error_feedback_showing = false
+		return
+	error_feedback_showing = true
+	_position_error_flash_feedback()
+	error_flash_overlay.modulate.a = 1.0
+	error_flash_badge.position = error_tooltip_final_position + Vector2(0.0, 38.0)
+	error_flash_badge.scale = Vector2(0.84, 0.84)
+	error_flash_badge.modulate.a = 0.0
+	error_flash_halo.scale = Vector2(0.78, 0.78)
+	error_flash_halo.modulate.a = 0.0
+	if error_feedback_player:
+		error_feedback_player.play()
+
+	# Tooltip bật lên từ nốt, nảy rất nhẹ rồi đứng yên đủ lâu để học viên đọc.
+	error_flash_tween = create_tween()
+	error_flash_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	error_flash_tween.tween_property(error_flash_badge, "position", error_tooltip_final_position, 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(1.04, 1.04), 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	error_flash_tween.tween_property(error_flash_badge, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	error_flash_tween.tween_interval(1.25)
+	error_flash_tween.tween_property(error_flash_badge, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "position", error_tooltip_final_position + Vector2(0.0, 12.0), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(0.94, 0.94), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_halo, "modulate:a", 0.0, 0.18)
+	error_flash_tween.tween_callback(_finish_error_flash_demo)
+
+	# Hai nhịp sáng mềm quanh đúng một nốt, không chớp đỏ cả màn hình.
+	error_pulse_tween = create_tween()
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.78, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.06, 1.06), 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(true))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.26, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(0.96, 0.96), 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(false))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.70, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.03, 1.03), 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(true))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.24, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(false))
+	error_pulse_tween.tween_callback(_restore_error_demo_hit_line)
+
+	# Rung ngang rất ngắn lúc lỗi vừa xuất hiện.
+	error_shake_tween = create_tween()
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(-3.5))
+	error_shake_tween.tween_interval(0.045)
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(3.5))
+	error_shake_tween.tween_interval(0.045)
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(-2.0))
+	error_shake_tween.tween_interval(0.045)
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(0.0))
+
+
+func _finish_error_flash_demo() -> void:
+	_set_error_demo_note_color(false)
+	error_feedback_showing = false
+	if error_flash_badge:
+		error_flash_badge.modulate.a = 0.0
+	if error_flash_halo:
+		error_flash_halo.modulate.a = 0.0
+
+
+func _offset_error_demo_note(offset_x: float) -> void:
+	if error_flash_note.is_empty():
+		return
+	error_flash_note["x"] = float(error_flash_note.get("demo_base_x", error_flash_note.get("x", 0.0))) + offset_x
+	staff_display.queue_redraw()
+
+
+func _position_error_flash_feedback() -> void:
+	if error_flash_note.is_empty() or not error_flash_badge or not error_flash_halo:
+		return
+	var note_x := float(error_flash_note.get("x", staff_display.hit_line_x))
+	var raw_note := str(error_flash_note.get("note", "ZT_Sol2")).replace("ZT_", "")
+	var mapped_note := raw_note
+	if raw_note.length() > 1 and raw_note.right(1).is_valid_int():
+		mapped_note = raw_note.left(-1) + "_" + raw_note.right(1)
+	var note_position := float(staff_display.NOTE_POSITIONS.get(mapped_note, 1.0))
+	var note_y: float = float(staff_display.size.y) * 0.5 + float(staff_display.line_spacing) * 0.45
+	note_y += (2.0 - note_position) * staff_display.line_spacing
+
+	error_flash_halo.position = Vector2(note_x - 43.0, note_y - 34.0)
+	error_flash_halo.size = Vector2(86.0, 68.0)
+	var badge_x := clampf(note_x - 150.0, 12.0, maxf(12.0, staff_display.size.x - 312.0))
+	var badge_y := clampf(note_y - 119.0, 12.0, maxf(12.0, staff_display.size.y - 112.0))
+	error_tooltip_final_position = Vector2(badge_x, badge_y)
+	error_flash_badge.position = error_tooltip_final_position
+	error_flash_badge.size = Vector2(300.0, 92.0)
+	if error_flash_detail_label:
+		error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
+
+
+func _format_note_for_feedback(raw_note: String) -> String:
+	if raw_note.length() <= 1 or not raw_note.right(1).is_valid_int():
+		return raw_note
+	var octave := raw_note.right(1)
+	var subscripts := {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉"}
+	return raw_note.left(-1) + str(subscripts.get(octave, octave))
+
+
+func _set_error_demo_note_pulse(bright: bool) -> void:
+	if error_flash_note.is_empty():
+		return
+	error_flash_note["color"] = Color(1.0, 0.31, 0.27, 1.0) if bright else Color(0.88, 0.12, 0.14, 1.0)
+	staff_display.queue_redraw()
+
+
+func _restore_error_demo_hit_line() -> void:
+	staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
+	staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+	staff_display.queue_redraw()
+
+
+func _set_error_demo_note_color(show_error: bool) -> void:
+	if not show_error:
+		if not error_flash_note.is_empty():
+			error_flash_note["color"] = error_flash_note.get("demo_base_color", Color(0.6, 0.6, 0.6, 0.9))
+			error_flash_note["x"] = error_flash_note.get("demo_base_x", error_flash_note.get("x", 0.0))
+			error_flash_note.erase("demo_base_color")
+			error_flash_note.erase("demo_base_x")
+			error_flash_note = {}
+		staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
+		staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+		staff_display.queue_redraw()
+		return
+
+	var closest_note: Dictionary = {}
+	var closest_distance := INF
+	for note in active_falling_notes:
+		if note.get("hit", false) or note.get("missed", false):
+			continue
+		var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
+		if distance < closest_distance:
+			closest_distance = distance
+			closest_note = note
+	if closest_note.is_empty():
+		return
+	error_flash_note = closest_note
+	error_flash_note["demo_base_color"] = error_flash_note.get("color", Color(0.6, 0.6, 0.6, 0.9))
+	error_flash_note["demo_base_x"] = error_flash_note.get("x", 0.0)
+	error_flash_note["color"] = Color(0.96, 0.10, 0.13, 1.0)
+	staff_display.hit_line_color = Color(0.96, 0.10, 0.13, 1.0)
+	staff_display.hit_line_glow_color = Color(1.0, 0.16, 0.18, 0.34)
+	staff_display.queue_redraw()
+
+func _update_teacher_frame() -> void:
+	if not _teacher_atlas or not _tex_mai_talk_sheet:
+		return
+	var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
+	var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
+	var source_rect := Rect2(
+		float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
+		float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
+		frame_width,
+		frame_height
+	)
+	_teacher_atlas.region = source_rect
 
 func _update_continuous_pitch_hud():
 	if not analyzer:
@@ -760,7 +1373,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		return false
 
 	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
-	if cents_error <= 35.0:
+	if cents_error <= 45.0:
 		return true
 
 	# Never accept an octave or harmonic as the requested string. Use the native
@@ -773,7 +1386,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		var detected_frequency: float = detected_note.get("frequency", 0.0)
 		if detected_note.get("note_name", "None") == target_note_name and detected_frequency > 0.0:
 			var detected_cents := absf(1200.0 * log(detected_frequency / target_hz) / log(2.0))
-			return detected_cents <= 35.0
+			return detected_cents <= 45.0
 
 	return false
 
@@ -846,7 +1459,7 @@ func _start_intro():
 func _play_next_intro_step():
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
-		if current_lesson_id.begins_with("dan_tranh_level_6"):
+		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 			_start_practice_single()
 		else:
 			_start_practice()
@@ -858,25 +1471,53 @@ func _play_next_intro_step():
 		if ai_audio:
 			ai_audio.speak_vietnamese(step_data["text"])
 			
+		# ── Theory shown live: speed bar / treble clef / time signature ──────
+		if step_data.get("show_speed", false):
+			if speed_bar_container:
+				speed_bar_container.visible = true
+		elif step_data.has("show_speed"):
+			if speed_bar_container:
+				speed_bar_container.visible = false
+		
+		if step_data.has("clef"):
+			staff_display.show_clef = step_data["clef"]
+			staff_display.clef_highlight = step_data["clef"]
+		
+		if step_data.has("time_sig"):
+			staff_display.show_time_sig = true
+			staff_display.time_sig_highlight = true
+			staff_display.beats_per_measure = int(step_data["time_sig"])
+			staff_display.time_sig_denominator = 4
+		else:
+			staff_display.time_sig_highlight = false
+		
+		var show_staff: bool = step_data.get("show_staff", false)
+			
 		# Highlight string
 		zither_board.call("clear_lesson_markers")
 		var highlight_idx = step_data.get("highlight", -1)
 		if highlight_idx >= 0:
 			zither_board.call("set_lesson_marker", highlight_idx, "Gảy", 1)
 			
-			# Redesign lesson 1 level 1 to wait for player input on note introduction steps!
-			if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+			# Redesign lesson 1 level 1, lesson 2 level 1 and lesson 5 level 2 to wait for player input on note introduction steps!
+			if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 				current_state = State.PRACTICE_SINGLE
-				var target_note = ALL_17_NOTES[highlight_idx]
+				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
 				staff_display.visible = true
 				if staff_card: staff_card.visible = true
 				_update_staff_layout()
-				staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": C_GOLD}])
+				var note_type = step_data.get("type", "quarter")
+				staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": C_GOLD, "type": note_type}])
+				staff_display.queue_redraw()
 				intro_step += 1
 				return
 
-
-
+		elif show_staff:
+			staff_display.visible = true
+			if staff_card: staff_card.visible = true
+			_update_staff_layout()
+			staff_display.set_notes([])
+			staff_display.queue_redraw()
 		else:
 			staff_display.visible = false
 			
@@ -890,6 +1531,7 @@ func _play_next_intro_step():
 
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
+	_apply_adaptive_speed()
 	teacher_area.visible = true
 	feedback_area.visible = true
 	staff_display.visible = true
@@ -907,7 +1549,7 @@ func _start_practice_single():
 	
 
 	unique_practice_notes.clear()
-	if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+	if _uses_chord_basics_lesson_flow():
 		unique_practice_notes = lesson_sheet.duplicate()
 	else:
 		for note in lesson_sheet:
@@ -919,7 +1561,7 @@ func _start_practice_single():
 
 func _schedule_next_single_note():
 	if single_practice_idx >= unique_practice_notes.size():
-		if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+		if _uses_chord_basics_lesson_flow():
 			if ai_audio: ai_audio.speak_vietnamese("Chúc mừng em đã hoàn thành bài học mở đầu về hợp âm!")
 			_finish_practice()
 			return
@@ -933,7 +1575,7 @@ func _schedule_next_single_note():
 	var notes = raw_note_name.split("+")
 	var text = ""
 	
-	if current_lesson_id == "dan_tranh_level_6_bai_13_practice" and notes.size() > 1:
+	if _uses_chord_basics_lesson_flow() and notes.size() > 1:
 		text = "Đây là một hợp âm. Em hãy thử gảy ba dây cùng lúc để cảm nhận sự khác biệt."
 	elif notes.size() > 1:
 		text = "Hãy gảy hợp âm: " + raw_note_name.replace("+", " và ")
@@ -956,7 +1598,7 @@ func _process_practice_single(delta: float) -> void:
 	var target_note := ""
 	var target_string_idx := 0
 	
-	if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx < 0 or prev_step_idx >= dialogues.size():
@@ -966,8 +1608,8 @@ func _process_practice_single(delta: float) -> void:
 		if highlight_idx < 0:
 			return
 			
-		target_note = ALL_17_NOTES[highlight_idx]
-		target_string_idx = highlight_idx
+		target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
+		target_string_idx = NOTE_TO_STRING.get(target_note, highlight_idx)
 
 	else:
 		if single_practice_idx >= unique_practice_notes.size(): return
@@ -979,7 +1621,7 @@ func _process_practice_single(delta: float) -> void:
 	# 1. Check if user played correct pitch
 	if _check_mic_pitch(target_hz, delta, target_note):
 
-		if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			_on_intro_note_correct(target_note)
 		else:
 			_on_single_note_correct(target_note)
@@ -1044,14 +1686,26 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 		
 	# Red staff highlight for wrong note attempt (only in intro/explore static mode)
 	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
-		staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.15, 0.15, 1.0)}])
+		var note_type = "quarter"
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+			var prev_step_idx = intro_step - 1
+			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
+				note_type = dialogues[prev_step_idx].get("type", "quarter")
+		staff_display.set_notes([{"note": "ZT_" + target_note, "x": staff_display.hit_line_x, "color": Color(0.9, 0.15, 0.15, 1.0), "type": note_type}])
 	
 	if ai_audio:
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
 
 func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
-	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.3, 1.0)}])
+	var note_type = "quarter"
+	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+		var prev_step_idx = intro_step - 1
+		if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
+			note_type = dialogues[prev_step_idx].get("type", "quarter")
+	staff_display.set_notes([{"note": "ZT_" + note_name, "x": staff_display.hit_line_x, "color": Color(0.2, 0.8, 0.3, 1.0), "type": note_type}])
 	var string_idx = NOTE_TO_STRING.get(note_name, 0)
 	zither_board.call("clear_lesson_markers")
 	zither_board.call("set_lesson_marker", string_idx, note_name, 2)
@@ -1099,17 +1753,18 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 
 func _on_string_plucked(idx: int, note_name: String) -> void:
 	if current_state == State.PRACTICE_SINGLE:
-		if current_lesson_id == "dan_tranh_level_1_bai_1_practice":
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 				var step_data = dialogues[prev_step_idx]
 				var highlight_idx = step_data.get("highlight", -1)
-				if highlight_idx == idx:
-					_on_intro_note_correct(note_name)
+				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
+				var target_string_idx = NOTE_TO_STRING.get(target_note, highlight_idx)
+				if target_string_idx == idx:
+					_on_intro_note_correct(target_note)
 				else:
-					var target_note = ALL_17_NOTES[highlight_idx]
-					_on_wrong_note_played(note_name, idx, target_note, highlight_idx)
+					_on_wrong_note_played(note_name, idx, target_note, target_string_idx)
 		else:
 			var target_note = unique_practice_notes[single_practice_idx]
 			var is_correct = false
@@ -1149,6 +1804,14 @@ func _is_note_missing(note_idx: int) -> bool:
 
 func _start_practice():
 	current_state = State.PRACTICE
+	if _is_error_flash_demo():
+		if error_flash_tween and error_flash_tween.is_running():
+			error_flash_tween.kill()
+		if error_pulse_tween and error_pulse_tween.is_running():
+			error_pulse_tween.kill()
+		if error_shake_tween and error_shake_tween.is_running():
+			error_shake_tween.kill()
+		_set_error_demo_note_color(false)
 	teacher_area.visible = false
 	feedback_area.visible = true
 	practice_idx = 0
@@ -1157,7 +1820,18 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	current_speed_multiplier = user_speed_multiplier
+	staff_display.use_note_colors = _is_error_flash_demo()
+	if _is_error_flash_demo():
+		error_flash_timer = 0.75
+		error_flash_note = {}
+		error_feedback_showing = false
+		if error_flash_overlay:
+			error_flash_overlay.modulate.a = 1.0
+		if error_flash_badge:
+			error_flash_badge.modulate.a = 0.0
+		if error_flash_halo:
+			error_flash_halo.modulate.a = 0.0
+	_apply_adaptive_speed()
 	if speed_bar_container:
 		speed_bar_container.visible = true
 	if skip_intro_btn:
@@ -1174,6 +1848,9 @@ func _start_practice():
 	_update_staff_layout()
 	if pitch_box:
 		pitch_box.visible = true
+	if _is_error_flash_demo() and mic_status_lbl:
+		mic_status_lbl.text = "Demo tự động: phản hồi sai bật lên từ nốt và lặp lại định kỳ"
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.74, 0.18, 0.16, 1.0))
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
@@ -1200,7 +1877,7 @@ func _start_practice():
 		if raw_note_name != "Rest" and raw_note_name != "-":
 			var notes_in_chord = raw_note_name.split("+")
 			var tail_len = 0.0 # Dan Tranh is a plucked zither instrument, so no extended hold tail!
-			var is_demo_lesson = (current_lesson_id == "dan_tranh_level_1_bai_3_practice")
+			var is_demo_lesson = false
 			var missing = true
 			var note_color = Color(0.6, 0.6, 0.6, 0.9) # Gray by default for fill-in notes
 			
@@ -1210,6 +1887,18 @@ func _start_practice():
 				
 			var cue_name = current_song_cues[i] if i < current_song_cues.size() else ""
 			
+			var n_type = "quarter"
+			if dur >= 3.5:
+				n_type = "whole"
+			elif dur >= 1.5:
+				n_type = "half"
+			elif dur >= 0.75:
+				n_type = "quarter"
+			elif dur >= 0.35:
+				n_type = "eighth"
+			else:
+				n_type = "sixteenth"
+				
 			for single_note in notes_in_chord:
 				var string_idx = NOTE_TO_STRING.get(single_note, 0)
 				var final_color = note_color
@@ -1225,7 +1914,8 @@ func _start_practice():
 					"is_missing": missing,
 					"cue": cue_name,
 					"chord_group_id": i,
-					"raw_chord_name": raw_note_name
+					"raw_chord_name": raw_note_name,
+					"type": n_type
 				})
 		cur_beat += dur
 
@@ -1398,6 +2088,15 @@ func _process_practice(delta):
 		_finish_practice()
 		
 	staff_display.set_notes(active_falling_notes)
+	if glissando_sheet:
+		var completed := 0
+		for note in active_falling_notes:
+			if note.get("hit", false):
+				completed += 1
+		if glissando_progress_label:
+			glissando_progress_label.text = "Tiến độ: %d/17" % completed
+		if glissando_progress_bar:
+			glissando_progress_bar.value = completed
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
 	if not analyzer:
@@ -1442,7 +2141,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				var freq = NOTE_FREQS.get(n, 0.0)
 				if freq > 0.0 and pitch > 0.0:
 					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-					if cents_error <= 35.0: # Match robust threshold
+					if cents_error <= 45.0: # Match robust threshold
 						is_match = true
 						break
 	else:
@@ -1533,6 +2232,7 @@ func _finish_practice():
 		tech_score = 80.0
 		
 	var composite_score = clamp(pitch_score * 0.5 + rhythm_score * 0.3 + tech_score * 0.2, 0.0, 100.0)
+	SecureDataManager.record_practice_result(current_lesson_id, composite_score)
 	
 	var popup_scene = load("res://scenes/CustomPopup.tscn")
 	if popup_scene:
@@ -1662,7 +2362,21 @@ func _create_speed_control_bar():
 func _select_speed(speed_val: float):
 	user_speed_multiplier = speed_val
 	current_speed_multiplier = user_speed_multiplier
-	
+	_highlight_speed_btn(speed_val)
+
+## Adaptive difficulty FE: nếu người dùng chưa tự chọn tốc độ (vẫn 1.0 mặc định),
+## dùng tempo gợi ý từ 10 lượt gần nhất của bài này.
+func _apply_adaptive_speed():
+	if user_speed_multiplier != 1.0:
+		current_speed_multiplier = user_speed_multiplier
+		return
+	var adaptive := SecureDataManager.get_adaptive_tempo_multiplier(current_lesson_id)
+	current_speed_multiplier = adaptive
+	_highlight_speed_btn(adaptive)
+
+func _highlight_speed_btn(speed_val: float):
+	if speed_buttons.is_empty():
+		return
 	var speeds = [0.6, 0.8, 1.0, 1.2]
 	for i in range(speeds.size()):
 		var btn = speed_buttons[i]
@@ -1687,6 +2401,30 @@ func _select_speed(speed_val: float):
 			btn.add_theme_stylebox_override("pressed", sb_empty)
 			btn.add_theme_color_override("font_color", Color.WHITE)
 			btn.add_theme_color_override("font_hover_color", C_GOLD)
+
+func _generate_error_feedback_stream() -> AudioStreamWAV:
+	const SAMPLE_RATE := 22050
+	const DURATION := 0.12
+	var sample_count := int(SAMPLE_RATE * DURATION)
+	var data := PackedByteArray()
+	data.resize(sample_count * 2)
+	for i in sample_count:
+		var time := float(i) / float(SAMPLE_RATE)
+		var progress := float(i) / float(sample_count)
+		var frequency := 190.0 if progress < 0.48 else 145.0
+		var envelope := pow(1.0 - progress, 2.2)
+		var sample := sin(TAU * frequency * time) * envelope * 0.20
+		var value_i16 := int(clampf(sample, -1.0, 1.0) * 32767.0)
+		var value_u16 := value_i16 & 0xFFFF
+		data[i * 2] = value_u16 & 0xFF
+		data[i * 2 + 1] = (value_u16 >> 8) & 0xFF
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = SAMPLE_RATE
+	stream.stereo = false
+	stream.data = data
+	return stream
+
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 	# Karplus-Strong synthesizer to generate traditional Zither tones procedurally

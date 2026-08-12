@@ -20,6 +20,7 @@ const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
+const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
 
@@ -41,6 +42,14 @@ var _daily_challenges: Array = []
 var _daily_pill: PanelContainer = null
 var _daily_pill_label: Button = null
 var _daily_overlay: ColorRect = null
+var _sidebar_expanded := true
+var _sidebar_tween: Tween = null
+var _sidebar_reveal_tween: Tween = null
+var _sidebar_rail_width := 220.0
+var _sidebar_safe_left := 0.0
+var _sidebar_dropdown: PanelContainer = null
+var _sidebar_blur: ColorRect = null
+var _menu_glass: ColorRect = null
 
 # ─── @onready refs ─────────────────────────────────────────────────────────────
 @onready var bg_canvas     : Control        = $BackgroundCanvas
@@ -104,6 +113,8 @@ var _daily_overlay: ColorRect = null
 @onready var card_chords_skills: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills
 @onready var card_classical : PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical
 @onready var card_pop_chords: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords
+var card_level_7: PanelContainer
+var card_level_8: PanelContainer
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 
@@ -155,9 +166,13 @@ func _ready() -> void:
 	bottom_h.move_child(btn_leaderboard_mob, 4)
 	
 	_build_sidebar()
+	_build_sidebar_dropdown()
+	_build_menu_glass()
 	_build_bottom_bar()
 	_build_top_bar()
 	_build_profile_menu()
+	_create_level_7_card()
+	_create_level_8_card()
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
@@ -495,6 +510,7 @@ func _build_sidebar() -> void:
 	blur_rect.show_behind_parent = true
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
+	_sidebar_blur = blur_rect
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -513,6 +529,52 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_account,  5)
 
 	_active_side_btn = btn_courses
+
+func _build_sidebar_dropdown() -> void:
+	_sidebar_dropdown = PanelContainer.new()
+	_sidebar_dropdown.name = "SidebarDropdown"
+	_sidebar_dropdown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sidebar_dropdown.z_index = 20
+	_sidebar_dropdown.hide()
+
+	var dropdown_style := _flat(Color(0.98, 0.97, 0.94, 0.96), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.9), 16)
+	dropdown_style.shadow_color = Color(0.04, 0.10, 0.06, 0.24)
+	dropdown_style.shadow_size = 10
+	dropdown_style.shadow_offset = Vector2(0, 4)
+	_sidebar_dropdown.add_theme_stylebox_override("panel", dropdown_style)
+
+	var label := Label.new()
+	label.text = "Điều hướng"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", C_RED_SON)
+	label.add_theme_font_size_override("font_size", 14)
+	_sidebar_dropdown.add_child(label)
+	add_child(_sidebar_dropdown)
+
+func _build_menu_glass() -> void:
+	_menu_glass = ColorRect.new()
+	_menu_glass.name = "MenuGlass"
+	_menu_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_menu_glass.hide()
+
+	var glass_shader := Shader.new()
+	glass_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	void fragment() {
+		float edge = smoothstep(0.50, 0.46, length(UV - vec2(0.5)));
+		vec3 blurred_scene = textureLod(screen_texture, SCREEN_UV, 2.6).rgb;
+		vec3 glass_tint = mix(blurred_scene, vec3(0.95, 0.97, 0.91), 0.28);
+		COLOR = vec4(glass_tint, edge * 0.94);
+	}
+	"""
+	var glass_material := ShaderMaterial.new()
+	glass_material.shader = glass_shader
+	_menu_glass.material = glass_material
+	btn_menu.add_child(_menu_glass)
+	btn_menu.move_child(_menu_glass, 0)
+	_position_menu_glass()
 
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
@@ -1263,6 +1325,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
+func _create_level_7_card() -> void:
+	card_level_7 = card_classical.duplicate() as PanelContainer
+	card_level_7.name = "CardLevel7"
+	roadmap_content.add_child(card_level_7)
+
+
+func _create_level_8_card() -> void:
+	card_level_8 = card_classical.duplicate() as PanelContainer
+	card_level_8.name = "CardLevel8"
+	roadmap_content.add_child(card_level_8)
+
 func _build_roadmap_cards() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
@@ -1298,6 +1371,10 @@ func _build_roadmap_cards() -> void:
 	
 	var classical_title := card_classical.get_node("Margin/HBox/TextV/Title") as Label
 	var classical_desc := card_classical.get_node("Margin/HBox/TextV/BulletList") as Label
+	var level_7_title := card_level_7.get_node("Margin/HBox/TextV/Title") as Label
+	var level_7_desc := card_level_7.get_node("Margin/HBox/TextV/BulletList") as Label
+	var level_8_title := card_level_8.get_node("Margin/HBox/TextV/Title") as Label
+	var level_8_desc := card_level_8.get_node("Margin/HBox/TextV/BulletList") as Label
 	
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -1310,12 +1387,16 @@ func _build_roadmap_cards() -> void:
 		soloist_skills_title.add_theme_font_override("font", font_title)
 		chords_skills_title.add_theme_font_override("font", font_title)
 		classical_title.add_theme_font_override("font", font_title)
+		level_7_title.add_theme_font_override("font", font_title)
+		level_8_title.add_theme_font_override("font", font_title)
 		pop_chords_title.add_theme_font_override("font", font_title)
 
 	# Hiển thị lại các thẻ bị ẩn nếu chuyển về đàn tranh / sáo trúc
 	card_soloist_unlock.show()
 	card_chords_unlock.show()
 	card_classical.show()
+	card_level_7.hide()
+	card_level_8.hide()
 	path_soloist_title.show()
 	path_chords_title.show()
 	
@@ -1325,17 +1406,20 @@ func _build_roadmap_cards() -> void:
 	card_pop_chords.position = Vector2(1930, 455)
 
 	if instrument == "dan_tranh":
-		# Dùng cùng bố cục roadmap thẳng cho 6 level Đàn Tranh.
+		# Ẩn card Level 6 cũ và dồn hai card kỹ thuật sang trái trên roadmap.
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
-		card_classical.show()
+		card_classical.hide()
+		card_level_7.show()
+		card_level_8.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 		
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
-		card_classical.position = Vector2(2590, 275)
+		card_level_7.position = Vector2(2590, 275)
+		card_level_8.position = Vector2(3100, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
@@ -1369,6 +1453,10 @@ func _build_roadmap_cards() -> void:
 		
 		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
+		level_7_title.text = "LEVEL 7: KỸ THUẬT NÂNG CAO"
+		level_7_desc.text = "✓ Kỹ năng á – vuốt 17 dây\n✓ Nhấn, rung dây & song thanh\n✓ Demo hiệu ứng phản hồi sai"
+		level_8_title.text = "LEVEL 8: KỸ THUẬT NÂNG CAO MỞ RỘNG"
+		level_8_desc.text = "✓ Kỹ thuật Vê\n✓ Kỹ thuật đánh hợp âm ba ngón"
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
@@ -1554,7 +1642,7 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_level_8, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -1605,7 +1693,7 @@ func _style_circular_play_btn(btn: Button) -> void:
 # ─── Animate In ────────────────────────────────────────────────────────────────
 func _animate_in() -> void:
 	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
-	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]
+	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_level_8, card_pop_chords]
 	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
@@ -1617,8 +1705,150 @@ func _animate_in() -> void:
 		t.tween_property(item, "position:x", item.position.x - 40.0, 0.45).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		delay += 0.08
 
+# ─── Sidebar drawer ───────────────────────────────────────────────────────────
+func _toggle_sidebar() -> void:
+	if _sidebar_expanded:
+		_set_sidebar_expanded(false, true)
+	else:
+		_reveal_sidebar_from_menu()
+
+func _reveal_sidebar_from_menu() -> void:
+	if _sidebar_reveal_tween:
+		_sidebar_reveal_tween.kill()
+	if not _sidebar_dropdown:
+		_set_sidebar_expanded(true, true)
+		return
+
+	var dropdown_width := minf(190.0, _sidebar_rail_width)
+	_sidebar_dropdown.position = Vector2(_sidebar_safe_left + 8.0, btn_menu.global_position.y + btn_menu.size.y + 8.0)
+	_sidebar_dropdown.size = Vector2(SIDEBAR_COLLAPSED_WIDTH, 0.0)
+	_sidebar_dropdown.modulate.a = 0.0
+	_sidebar_dropdown.show()
+
+	_sidebar_reveal_tween = create_tween()
+	_sidebar_reveal_tween.set_parallel(true)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "size", Vector2(dropdown_width, 42.0), 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "modulate:a", 1.0, 0.12)
+	_sidebar_reveal_tween.set_parallel(false)
+	_sidebar_reveal_tween.tween_interval(0.16)
+	_sidebar_reveal_tween.tween_callback(func() -> void: _set_sidebar_expanded(true, true))
+	_sidebar_reveal_tween.set_parallel(true)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "size:y", 0.0, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "modulate:a", 0.0, 0.12)
+	_sidebar_reveal_tween.set_parallel(false)
+	_sidebar_reveal_tween.tween_callback(func() -> void: _sidebar_dropdown.hide())
+
+func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
+	if _sidebar_tween:
+		_sidebar_tween.kill()
+	_sidebar_expanded = expanded
+
+	var rail_width := _sidebar_rail_width if expanded else SIDEBAR_COLLAPSED_WIDTH
+	var sidebar_width := rail_width + _sidebar_safe_left
+	var navigation := [btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]
+	var top_spacer := $Root/Sidebar/SideM/SideV/TopSpacer as Control
+	var bottom_spacer := $Root/Sidebar/SideM/SideV/BotSpacer as Control
+
+	if expanded:
+		if top_spacer: top_spacer.show()
+		if bottom_spacer: bottom_spacer.show()
+		for button: Button in navigation:
+			button.show()
+
+	if not animate:
+		sidebar.custom_minimum_size.x = sidebar_width
+		btn_menu.custom_minimum_size.x = rail_width
+		btn_menu.custom_minimum_size.y = SIDEBAR_COLLAPSED_WIDTH if not expanded else (92.0 if _sidebar_rail_width <= 168.0 else 100.0)
+		for button: Button in navigation:
+			button.custom_minimum_size.x = rail_width
+		_apply_menu_button_presentation(expanded)
+		_apply_sidebar_panel_presentation(expanded)
+		if not expanded:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		return
+
+	_sidebar_tween = create_tween().set_parallel(true)
+	_sidebar_tween.tween_property(sidebar, "custom_minimum_size:x", sidebar_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	for button: Button in navigation:
+		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:y", SIDEBAR_COLLAPSED_WIDTH if not expanded else (92.0 if _sidebar_rail_width <= 168.0 else 100.0), 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	if expanded:
+		_apply_menu_button_presentation(true)
+		_apply_sidebar_panel_presentation(true)
+
+	if not expanded:
+		_sidebar_tween.set_parallel(false)
+		_sidebar_tween.tween_callback(func() -> void:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+			_apply_menu_button_presentation(false)
+			_apply_sidebar_panel_presentation(false)
+		)
+
+func _apply_menu_button_presentation(expanded: bool) -> void:
+	var icon := btn_menu.get_node_or_null("IconDraw") as Control
+	if expanded:
+		if _menu_glass:
+			_menu_glass.hide()
+		_style_side_icon_btn(btn_menu, false)
+		if icon:
+			icon.anchors_preset = Control.PRESET_CENTER_TOP
+			icon.anchor_left = 0.5; icon.anchor_right = 0.5
+			icon.anchor_top = 0.0; icon.anchor_bottom = 0.0
+			icon.offset_left = -40; icon.offset_right = 40
+			icon.offset_top = 8; icon.offset_bottom = 64
+		return
+
+	var circle := _flat(Color(0, 0, 0, 0), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.9), 32)
+	circle.shadow_color = Color(0.04, 0.10, 0.06, 0.22)
+	circle.shadow_size = 8
+	circle.shadow_offset = Vector2(0, 3)
+	btn_menu.add_theme_stylebox_override("normal", circle)
+	btn_menu.add_theme_stylebox_override("hover", _flat(Color(1.0, 1.0, 1.0, 0.18), C_GOLD, 32))
+	btn_menu.add_theme_stylebox_override("pressed", _flat(Color(0.91, 0.95, 0.91, 0.28), C_GOLD_DARK, 32))
+	btn_menu.add_theme_stylebox_override("focus", _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 32))
+	btn_menu.add_theme_color_override("font_color", C_RED_SON)
+	if icon:
+		icon.anchors_preset = Control.PRESET_CENTER
+		icon.anchor_left = 0.5; icon.anchor_right = 0.5
+		icon.anchor_top = 0.5; icon.anchor_bottom = 0.5
+		icon.offset_left = -14; icon.offset_right = 14
+		icon.offset_top = -14; icon.offset_bottom = 14
+	if _menu_glass:
+		_menu_glass.show()
+		call_deferred("_position_menu_glass")
+
+func _position_menu_glass() -> void:
+	if not _menu_glass or not _menu_glass.visible:
+		return
+	_menu_glass.anchors_preset = Control.PRESET_CENTER
+	_menu_glass.anchor_left = 0.5; _menu_glass.anchor_right = 0.5
+	_menu_glass.anchor_top = 0.5; _menu_glass.anchor_bottom = 0.5
+	_menu_glass.offset_left = -SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_right = SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_top = -SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_bottom = SIDEBAR_COLLAPSED_WIDTH * 0.5
+
+func _apply_sidebar_panel_presentation(expanded: bool) -> void:
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.93, 0.91, 0.87, 0.6) if expanded else Color(0, 0, 0, 0)
+	panel_style.border_color = Color(0.8, 0.78, 0.73, 0.8) if expanded else Color(0, 0, 0, 0)
+	panel_style.border_width_right = 2 if expanded else 0
+	panel_style.content_margin_right = 0
+	sidebar.add_theme_stylebox_override("panel", panel_style)
+	if _sidebar_blur:
+		_sidebar_blur.visible = expanded
+
 # ─── Connect Buttons ───────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
+	btn_menu.pressed.connect(_toggle_sidebar)
+	_make_btn_bouncy(btn_menu)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void:
 		_fade_to("res://scenes/SongScreen.tscn")
@@ -1715,6 +1945,18 @@ func _connect_buttons() -> void:
 				if script: script.selected_level = 5
 				_fade_to("res://scenes/LessonSaoTrucList.tscn")
 	)
+	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+	)
+	card_level_8.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 8
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
+	)
 
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
@@ -1789,6 +2031,22 @@ func _connect_buttons() -> void:
 			_go_practice()
 	)
 	_make_btn_bouncy(play_classical)
+
+	var play_level_7 := card_level_7.get_node("Margin/HBox/BtnPlay") as Button
+	play_level_7.pressed.connect(func() -> void:
+		if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+			DAN_TRANH_LESSON_SCRIPT.selected_level = 7
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
+	)
+	_make_btn_bouncy(play_level_7)
+
+	var play_level_8 := card_level_8.get_node("Margin/HBox/BtnPlay") as Button
+	play_level_8.pressed.connect(func() -> void:
+		if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+			DAN_TRANH_LESSON_SCRIPT.selected_level = 8
+			_fade_to("res://scenes/LessonDanTranhList.tscn")
+	)
+	_make_btn_bouncy(play_level_8)
 	
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
 	play_pop.pressed.connect(func() -> void:
@@ -1994,21 +2252,23 @@ func _on_viewport_size_changed() -> void:
 	var compact_profile := false
 	var safe_left := minf(safe.x, 104.0) if is_mobile else 0.0
 	var rail_width := 168.0 if is_mobile else 220.0
+	_sidebar_rail_width = rail_width
+	_sidebar_safe_left = safe_left
 
 	# Landscape navigation remains on the left; safe padding keeps controls clear
 	# of Dynamic Island and rounded display corners.
 	sidebar.visible = true
 	bottom_bar.visible = false
-	sidebar.custom_minimum_size.x = rail_width + safe_left
 	side_margin.add_theme_constant_override("margin_left", int(safe_left))
 	side_margin.add_theme_constant_override("margin_right", 0)
 	side_margin.add_theme_constant_override("margin_top", int(safe.y + 20.0) if is_mobile else 32)
 	side_margin.add_theme_constant_override("margin_bottom", int(safe.w + 20.0) if is_mobile else 32)
 	var side_button_height := 92.0 if is_mobile else 100.0
 	for button: Button in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard, btn_account]:
-		button.custom_minimum_size = Vector2(rail_width, side_button_height)
+		button.custom_minimum_size.y = side_button_height
 		button.add_theme_font_size_override("font_size", 18 if is_mobile else 22)
 	$Root/Sidebar/SideM/SideV/TopSpacer.custom_minimum_size.y = 14.0 if is_mobile else 32.0
+	_set_sidebar_expanded(_sidebar_expanded, false)
 	
 	# Responsive profile button styling
 	var radius := 35
@@ -2089,9 +2349,10 @@ func _on_viewport_size_changed() -> void:
 		var x_ch: float = x_sk + card_w + gap
 		var x_pop: float = x_ch + card_w + gap
 		var x_class: float = x_pop + card_w + gap
+		var x_level_7: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var total_w: float = x_class + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		var total_w: float = x_level_7 + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 		
 		card_basic.position = Vector2(x_basic, y_mid)
@@ -2111,6 +2372,10 @@ func _on_viewport_size_changed() -> void:
 		
 		card_classical.position = Vector2(x_class, y_mid)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
+		card_level_7.position = Vector2(x_class, y_mid)
+		card_level_7.custom_minimum_size = Vector2(card_w, card_level_7.custom_minimum_size.y)
+		card_level_8.position = Vector2(x_level_7, y_mid)
+		card_level_8.custom_minimum_size = Vector2(card_w, card_level_8.custom_minimum_size.y)
 	else:
 		var x_ess: float = x_basic + card_w + gap
 		x_un = x_ess + card_w + gap

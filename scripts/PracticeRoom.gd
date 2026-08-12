@@ -1134,6 +1134,7 @@ func _finish_level1_lesson1_exercise() -> void:
 		record_btn.text = "\nĐã hoàn thành"
 		record_btn.disabled = true
 	_set_level1_status("Hoàn thành 15 lượt! Nút 1 ngón cái, nút 2 ngón trỏ và nút 3 ngón giữa đều chính xác.", C_BLUE_OK)
+	SecureDataManager.record_practice_result(LEVEL1_LESSON1_ID, _score)
 	SecureDataManager.complete_lesson("dan_tranh", LEVEL1_LESSON1_ID, 3)
 	_speak_level1_prompt("Xuất sắc! Các bạn đã hoàn thành năm nốt bằng ngón cái, ngón trỏ và ngón giữa.", false)
 	_lesson1_focus_state = Lesson1FocusState.COMPLETED
@@ -2742,6 +2743,7 @@ func _finish_level1_sequence() -> void:
 	_level1_state = "result"
 	_update_level1_score()
 	var passed := _score >= float(_level1_config["pass_score"])
+	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	if passed:
 		SecureDataManager.complete_lesson("dan_tranh", SecureDataManager.active_lesson_id, 3 if _score >= 90.0 else 2)
 		_sync_practice_to_backend("dan_tranh", SecureDataManager.active_lesson_id, _level1_config)
@@ -4018,6 +4020,8 @@ func _show_custom_result() -> void:
 	var stars := 1
 	if _score >= 85.0: stars = 3
 	elif _score >= 75.0: stars = 2
+	
+	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	
 	if _score >= 70.0:
 		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)

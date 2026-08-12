@@ -4,6 +4,7 @@ extends Control
 const C_BG           := Color(0.98, 0.97, 0.94, 1.0) # Warm cream background matching the project
 const C_GOLD         := Color(0.77, 0.58, 0.15, 1.0) # Lacquer gold
 const C_GOLD_LIGHT   := Color(0.92, 0.76, 0.30, 1.0) # Lighter gold
+const C_GOLD_DARK    := Color(0.478, 0.36, 0.07, 1.0)
 const C_JADE         := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green
 const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for active path borders
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
@@ -83,7 +84,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Minigame"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -91,7 +92,7 @@ func _ready() -> void:
 	
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.text = "Bảng xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
@@ -100,6 +101,7 @@ func _ready() -> void:
 	_build_theme()
 	_connect_buttons()
 	_build_quiz_btn()
+	_build_profile_btn()
 	_build_lesson_list()
 	_build_sidebar()
 	
@@ -242,6 +244,20 @@ func _build_quiz_btn() -> void:
 	_make_btn_bouncy(quiz_btn)
 	toph.add_child(quiz_btn)
 	toph.move_child(quiz_btn, change_course_btn.get_index())
+
+func _build_profile_btn() -> void:
+	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
+	if toph == null:
+		return
+	var spacer := Control.new()
+	spacer.name = "TopSpacerRight"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toph.add_child(spacer)
+	var pill := DS.build_profile_pill()
+	var trigger := pill.get_node_or_null("TriggerButton") as Button
+	if trigger:
+		trigger.pressed.connect(func() -> void: _fade_to_scene("res://scenes/AccountScreen.tscn"))
+	toph.add_child(pill)
 
 func _open_quiz() -> void:
 	var ids: Array[String] = []
