@@ -811,6 +811,11 @@ func _is_error_flash_demo() -> bool:
 	return current_lesson_id == ERROR_FLASH_DEMO_ID
 
 
+func _uses_song_am_lesson_flow() -> bool:
+	# Bài 20 Level 7 kế thừa đúng phần tập song âm của Bài 14 Level 6.
+	return current_lesson_id in ["dan_tranh_level_6_bai_14_practice", "dan_tranh_level_7_bai_20_practice"]
+
+
 func _setup_top_pitch_box():
 	var l_title = "LUYỆN ĐÀN TRANH"
 	var active_id = SecureDataManager.active_lesson_id
@@ -1443,7 +1448,7 @@ func _start_intro():
 func _play_next_intro_step():
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
-		if current_lesson_id.begins_with("dan_tranh_level_6"):
+		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_song_am_lesson_flow():
 			_start_practice_single()
 		else:
 			_start_practice()
