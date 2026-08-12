@@ -272,26 +272,47 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 		if child is Button:
 			(child as Button).disabled = true
 	var quiz: Dictionary = quizzes[question_index]
+	print("[QuizAnswerDebug] selected_index: ", selected_index, ", selected_text: ", selected_text)
+	print("[QuizAnswerDebug] quiz: ", quiz)
 	var fallback_correct := _is_correct(selected_index, selected_text, quiz)
+	print("[QuizAnswerDebug] fallback_correct: ", fallback_correct)
 	var report := _report()
 	var result: Dictionary = {}
 	if report != null and report.is_signed_in() and int(quiz.get("id", 0)) > 0:
 		result = await report.report_quiz(int(quiz.get("id", 0)), selected_text)
+		print("[QuizAnswerDebug] report_quiz result: ", result)
 	var is_correct := fallback_correct
 	var earned_points := 0
+	var be_correct_answer := ""
 	if bool(result.get("submitted", false)):
 		is_correct = bool(result.get("is_correct", fallback_correct))
 		earned_points = int(result.get("points_earned", 0))
+		be_correct_answer = str(result.get("correct_answer", ""))
+	print("[QuizAnswerDebug] final is_correct: ", is_correct)
 	if is_correct:
 		correct_count += 1
 		score += earned_points if earned_points > 0 else 10
 		button.add_theme_stylebox_override("normal", _panel(C_OK, C_OK, 14, 1))
+		button.add_theme_stylebox_override("disabled", _panel(C_OK, C_OK, 14, 1))
+		button.add_theme_color_override("font_disabled_color", Color.WHITE)
 	else:
 		button.add_theme_stylebox_override("normal", _panel(C_BAD, C_BAD, 14, 1))
+		button.add_theme_stylebox_override("disabled", _panel(C_BAD, C_BAD, 14, 1))
+		button.add_theme_color_override("font_disabled_color", Color.WHITE)
 	var quiz_options: Array = _parse_options(quiz.get("options", []))
 	var correct_index := _resolve_correct_index(quiz, quiz_options)
-	var correct_text := str(quiz_options[correct_index]) if correct_index >= 0 else str(quiz.get("correctAnswer", ""))
-	var feedback_text := "Chính xác! +%d điểm" % (earned_points if earned_points > 0 else 10) if is_correct else "Chưa đúng. Đáp án: %s" % correct_text
+	if not is_correct and correct_index >= 0 and correct_index < options_box.get_child_count():
+		var correct_btn = options_box.get_child(correct_index)
+		if correct_btn is Button:
+			correct_btn.add_theme_stylebox_override("disabled", _panel(C_OK, C_OK, 14, 1))
+			correct_btn.add_theme_color_override("font_disabled_color", Color.WHITE)
+	var correct_text := str(quiz_options[correct_index]) if correct_index >= 0 else str(quiz.get("correctAnswer", quiz.get("correct_answer", "")))
+	if correct_text.is_empty() and not be_correct_answer.is_empty():
+		correct_text = be_correct_answer
+		
+	var feedback_text := "Chính xác! +%d điểm" % (earned_points if earned_points > 0 else 10) if is_correct else "Chưa đúng."
+	if not is_correct and not correct_text.is_empty():
+		feedback_text += " Đáp án: %s" % correct_text
 	feedback_label = _label(feedback_text, 18, C_OK if is_correct else C_BAD)
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	question_card.get_child(0).add_child(feedback_label)
@@ -324,7 +345,7 @@ func _parse_options(raw: Variant) -> Array:
 
 func _is_correct(index: int, selected: String, quiz: Dictionary) -> bool:
 	var options: Array = _parse_options(quiz.get("options", []))
-	return _resolve_correct_index(quiz, options) == index or _normalize_answer(selected) == _normalize_answer(str(quiz.get("correctAnswer", "")))
+	return _resolve_correct_index(quiz, options) == index or _normalize_answer(selected) == _normalize_answer(str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))))
 
 func _filter_valid_quizzes(source: Array) -> Array:
 	var valid: Array = []

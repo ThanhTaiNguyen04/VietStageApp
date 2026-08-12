@@ -62,7 +62,11 @@ static func normalize_answer(value: String) -> String:
 static func resolve_correct_index(quiz: Dictionary, options: Array) -> int:
 	if options.is_empty():
 		return -1
-	var expected := normalize_answer(str(quiz.get("correctAnswer", "")))
+	var expected := normalize_answer(str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))))
+	if expected.is_empty():
+		var note_val := str(quiz.get("note", quiz.get("targetNote", ""))).strip_edges()
+		if not note_val.is_empty():
+			expected = normalize_answer(note_val)
 	if expected.is_empty():
 		return -1
 	if expected.length() == 1:

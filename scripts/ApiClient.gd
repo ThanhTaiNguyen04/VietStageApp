@@ -123,7 +123,9 @@ func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 ## Nộp đáp án câu hỏi trắc nghiệm
 func submit_quiz_attempt(quiz_id: int, selected_answer: String) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.QUIZ_ATTEMPTS % str(quiz_id))
-	return await request_json(path, HTTPClient.METHOD_POST, {"selectedAnswer": selected_answer})
+	return await request_json(path, HTTPClient.METHOD_POST, {
+		"selectedAnswer": selected_answer
+	})
 
 ## Lấy danh sách minigame của bài học
 func get_lesson_minigames(lesson_id: int) -> Dictionary:
@@ -564,9 +566,6 @@ static func _iso_now() -> String:
 
 func error_message(response: Dictionary, fallback: String) -> String:
 	var status = int(response.get("status", 0))
-	if status == 500:
-		return "Đã xảy ra lỗi kết nối hệ thống. Vui lòng thử lại sau."
-		
 	var body = response.get("body", {})
 	var message := ""
 	if body is Dictionary:
@@ -575,6 +574,8 @@ func error_message(response: Dictionary, fallback: String) -> String:
 		message = str(response.get("message", ""))
 		
 	if message.is_empty():
+		if status == 500:
+			return "Đã xảy ra lỗi kết nối hệ thống. Vui lòng thử lại sau."
 		return fallback
 
 	# Check for technical jargon or backend database errors

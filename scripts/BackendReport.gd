@@ -243,6 +243,7 @@ func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer)
+	print("[QuizSubmitRawDebug] raw response: ", response)
 	if not _is_success(response):
 		return {
 			"submitted": false,
@@ -256,8 +257,9 @@ func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	return {
 		"submitted": true,
 		"quiz_id": quiz_id,
-		"is_correct": bool(attempt_data.get("isCorrect", false)),
+		"is_correct": bool(attempt_data.get("isCorrect", attempt_data.get("is_correct", false))),
 		"points_earned": int(attempt_data.get("points_earned", 0)),
+		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", "")))
 	}
 
 
