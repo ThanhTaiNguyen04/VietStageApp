@@ -404,6 +404,8 @@ func _draw_roadmap_paths() -> void:
 	var p_cho_sk := card_chords_skills.position + card_chords_skills.size / 2.0
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
+	var p_level_7 := card_level_7.position + card_level_7.size / 2.0
+	var p_level_8 := card_level_8.position + card_level_8.size / 2.0
 		
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_bau" or inst == "dan_tranh" or inst == "sao_truc":
@@ -418,10 +420,13 @@ func _draw_roadmap_paths() -> void:
 		# Đường thẳng duy nhất nằm ngang
 		_draw_thick_path(p_basic, p_ess)
 		_draw_thick_path(p_ess, p_sol_sk)
-		_draw_thick_path(p_sol_sk, p_cho_sk)
-		_draw_thick_path(p_cho_sk, p_pop)
 		if inst == "dan_tranh":
-			_draw_thick_path(p_pop, p_class)
+			_draw_thick_path(p_sol_sk, p_pop)
+			_draw_thick_path(p_pop, p_level_7)
+			_draw_thick_path(p_level_7, p_level_8)
+		else:
+			_draw_thick_path(p_sol_sk, p_cho_sk)
+			_draw_thick_path(p_cho_sk, p_pop)
 	else:
 		# Draw roadmap line segments connecting cards
 		# Basic Card -> Essentials Card -> Split point
@@ -1409,6 +1414,7 @@ func _build_roadmap_cards() -> void:
 		# Ẩn card Level 6 cũ và dồn hai card kỹ thuật sang trái trên roadmap.
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
+		card_chords_skills.hide()
 		card_classical.hide()
 		card_level_7.show()
 		card_level_8.show()
@@ -1416,10 +1422,9 @@ func _build_roadmap_cards() -> void:
 		path_chords_title.hide()
 		
 		card_soloist_skills.position = Vector2(1060, 275)
-		card_chords_skills.position = Vector2(1570, 275)
-		card_pop_chords.position = Vector2(2080, 275)
-		card_level_7.position = Vector2(2590, 275)
-		card_level_8.position = Vector2(3100, 275)
+		card_pop_chords.position = Vector2(1570, 275)
+		card_level_7.position = Vector2(2080, 275)
+		card_level_8.position = Vector2(2590, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
@@ -2340,7 +2345,7 @@ func _on_viewport_size_changed() -> void:
 		var x_level_7: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var total_w: float = x_level_7 + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		var total_w: float = x_class + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 		
 		card_basic.position = Vector2(x_basic, y_mid)
@@ -2355,14 +2360,14 @@ func _on_viewport_size_changed() -> void:
 		card_chords_skills.position = Vector2(x_ch, y_mid)
 		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
 		
-		card_pop_chords.position = Vector2(x_pop, y_mid)
+		card_pop_chords.position = Vector2(x_ch, y_mid) if instrument == "dan_tranh" else Vector2(x_pop, y_mid)
 		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
 		
 		card_classical.position = Vector2(x_class, y_mid)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
-		card_level_7.position = Vector2(x_class, y_mid)
+		card_level_7.position = Vector2(x_pop, y_mid) if instrument == "dan_tranh" else Vector2(x_class, y_mid)
 		card_level_7.custom_minimum_size = Vector2(card_w, card_level_7.custom_minimum_size.y)
-		card_level_8.position = Vector2(x_level_7, y_mid)
+		card_level_8.position = Vector2(x_class, y_mid) if instrument == "dan_tranh" else Vector2(x_level_7, y_mid)
 		card_level_8.custom_minimum_size = Vector2(card_w, card_level_8.custom_minimum_size.y)
 	else:
 		var x_ess: float = x_basic + card_w + gap

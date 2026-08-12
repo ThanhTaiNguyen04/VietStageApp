@@ -288,7 +288,7 @@ const LEVELS := [
 				],
 				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
 			},
-			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Sol2", "Sol2", "La2", "La2"]},
+			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]},
 			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
 		]
 	},
