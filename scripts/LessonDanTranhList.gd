@@ -546,7 +546,9 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		title.add_theme_font_override("font", bold_font)
 	column.add_child(title)
 
-	var lesson_button := _create_circle_button("Vào bài", str(lesson["title"]), practice_unlocked, practice_completed)
+	# Level 7 hiển thị trực tiếp tên kỹ thuật, không lặp thêm dòng “Vào bài”.
+	var lesson_action := "" if selected_level == 7 else "Vào bài"
+	var lesson_button := _create_circle_button(lesson_action, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
 	lesson_button.pressed.connect(_open_lesson.bind(lesson))
 	column.add_child(lesson_button)
@@ -563,10 +565,13 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	button.disabled = not unlocked
 
 	if completed:
-		button.text = "✓\n%s\nHoàn thành" % action
+		button.text = "✓\n%s\nHoàn thành" % (lesson_title if action.is_empty() else action)
 	elif unlocked:
-		var icon := "🎬" if action == "Hướng dẫn" else "🎵"
-		button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
+		if action.is_empty():
+			button.text = lesson_title
+		else:
+			var icon := "🎬" if action == "Hướng dẫn" else "🎵"
+			button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
 	else:
 		button.text = "🔒"
 
