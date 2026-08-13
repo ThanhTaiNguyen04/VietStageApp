@@ -349,7 +349,19 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm ba âm cơ bản trên đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Hợp âm ba âm là ba nốt khác nhau được gảy cùng lúc, tạo âm thanh đầy đặn hơn một nốt đơn.", "highlight": -1},
 		{"action": "speak", "text": "Trong bài này, chúng ta làm quen với hai hợp âm cơ bản để hiểu thêm về cách hòa âm trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Phần hợp âm ba âm này giúp bạn biết thêm về khả năng tạo âm thanh hợp âm của đàn Tranh; nội dung này không áp dụng vào kiến thức cốt lõi của nhạc cụ dân tộc Việt Nam. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+		{"action": "speak", "text": "Phần hợp âm ba âm này được học để bạn biết thêm về khả năng tạo âm thanh hợp âm của đàn Tranh; nội dung này không áp dụng vào kiến thức nhạc cụ dân tộc Việt Nam. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_32_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm Đô trưởng.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm Đô trưởng gồm ba nốt: Đô, Mi và Sol.", "highlight": -1},
+		{"action": "speak", "text": "Khi gảy, hãy cố gắng để cả ba nốt vang lên cùng lúc và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_33_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm La thứ.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm La thứ gồm ba nốt: La, Đô và Mi.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm này có màu sắc nhẹ nhàng và trầm hơn hợp âm Đô trưởng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_5_bai_11_practice": [
