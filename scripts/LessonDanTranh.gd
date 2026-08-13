@@ -837,6 +837,15 @@ func _build_glissando_sheet() -> void:
 	content.add_child(glissando_progress_bar)
 
 func _build_vibrato_sheet_hud() -> void:
+	# PanelContainer stretches every direct Control child to its full content area.
+	# Keep the compact HUD inside a neutral full-size layer so its bottom anchors
+	# are respected instead of letting its cream panel cover the whole staff.
+	var hud_layer := Control.new()
+	hud_layer.name = "VibratoHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
 	vibrato_sheet_hud = PanelContainer.new()
 	vibrato_sheet_hud.name = "VibratoSheetHUD"
 	vibrato_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -860,7 +869,7 @@ func _build_vibrato_sheet_hud() -> void:
 	panel_style.corner_radius_bottom_left = 14
 	panel_style.corner_radius_bottom_right = 14
 	vibrato_sheet_hud.add_theme_stylebox_override("panel", panel_style)
-	staff_card.add_child(vibrato_sheet_hud)
+	hud_layer.add_child(vibrato_sheet_hud)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
@@ -891,6 +900,15 @@ func _build_vibrato_sheet_hud() -> void:
 	content.add_child(vibrato_progress_bar)
 
 func _build_press_sheet_hud() -> void:
+	# Use an intermediate layer for the same reason as the vibrato HUD: adding
+	# the compact panel directly to StaffCard makes PanelContainer expand it and
+	# its opaque background washes out the notes underneath.
+	var hud_layer := Control.new()
+	hud_layer.name = "PressHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
 	press_sheet_hud = PanelContainer.new()
 	press_sheet_hud.name = "PressSheetHUD"
 	press_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -914,7 +932,7 @@ func _build_press_sheet_hud() -> void:
 	panel_style.corner_radius_bottom_left = 14
 	panel_style.corner_radius_bottom_right = 14
 	press_sheet_hud.add_theme_stylebox_override("panel", panel_style)
-	staff_card.add_child(press_sheet_hud)
+	hud_layer.add_child(press_sheet_hud)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
