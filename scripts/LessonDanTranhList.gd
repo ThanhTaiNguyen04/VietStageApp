@@ -217,8 +217,8 @@ const LEVELS := [
 	{
 		"level": 7,
 		"title": "KỸ THUẬT NÂNG CAO ĐÀN TRANH",
-		"sessions": "Bài 18–22",
-		"objective": "Luyện các kỹ năng tay trái và kỹ thuật biểu diễn nâng cao trên đàn tranh.",
+		"sessions": "Bài 18–22, 30–33",
+		"objective": "Luyện các kỹ năng biểu diễn nâng cao, kỹ thuật vê và hợp âm ba ngón trên đàn tranh.",
 		"lessons": [
 			{"number": 18, "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
 			{"number": 19, "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ thuật nhấn", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Kỹ thuật nhấn – Nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
@@ -238,15 +238,7 @@ const LEVELS := [
 				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
 			},
 			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]},
-			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
-		]
-	},
-	{
-		"level": 8,
-		"title": "KỸ THUẬT NÂNG CAO MỞ RỘNG",
-		"sessions": "Bài 30–33",
-		"objective": "Phát triển kỹ thuật vê và đánh hợp âm ba ngón trên đàn tranh.",
-		"lessons": [
+			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]},
 			{
 				"number": 30,
 				"practice_id": "dan_tranh_level_8_bai_30_practice",
@@ -527,7 +519,8 @@ func _build_lessons() -> void:
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 	var level_data := get_level_data(selected_level)
-	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % selected_level
+	var display_level := 3 if selected_level == 7 else selected_level
+	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % display_level
 	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
@@ -566,8 +559,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		title.add_theme_font_override("font", bold_font)
 	column.add_child(title)
 
-	# Các level kỹ thuật hiển thị trực tiếp tên bài, không lặp thêm dòng “Vào bài”.
-	var lesson_action := "" if selected_level in [7, 8] else "Vào bài"
+	# Level 3 kỹ thuật hiển thị trực tiếp tên bài, không lặp thêm dòng “Vào bài”.
+	var lesson_action := "" if selected_level == 7 else "Vào bài"
 	var lesson_button := _create_circle_button(lesson_action, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "practice"))
