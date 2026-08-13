@@ -64,6 +64,7 @@ var notes_to_draw: Array = []
 var hit_line_x: float = 300.0 # Will be updated in _draw
 var beats_per_measure: int = 4
 var show_metronome: bool = true
+var show_hit_line: bool = true
 var show_clef: bool = true          # set false to hide the treble clef
 var show_time_sig: bool = true      # set false to hide the time signature
 var clef_highlight: bool = false    # draw clef in gold when teaching it
@@ -72,6 +73,7 @@ var time_sig_denominator: int = 4   # bottom number of the time signature
 var use_note_colors: bool = false
 var hit_line_color := Color(0.2, 0.85, 0.3, 0.95)
 var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
+var glissando_arrow_mode := ""
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -126,8 +128,9 @@ func _draw():
 			draw_string(font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
 	# Draw hit line with modern glowing effect (kept as it is for timing)
-	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_glow_color, 8.0, true)
-	draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_color, 3.5, true)
+	if show_hit_line:
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_glow_color, 8.0, true)
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_color, 3.5, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
@@ -138,6 +141,9 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+
+	if glissando_arrow_mode != "":
+		_draw_glissando_arrow(center_y)
 		
 	# Draw 4-beat Metronome above the hit line
 	if show_metronome:
@@ -160,6 +166,58 @@ func _draw():
 			draw_circle(Vector2(bx, metro_y), r, c)
 			if b == current_beat:
 				draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
+
+func _get_note_position_index(note_name: String) -> float:
+	var clean_name := note_name
+	var is_zither := clean_name.begins_with("ZT_")
+	if is_zither:
+		clean_name = clean_name.right(-3)
+	var mapped_name := clean_name
+	if is_zither or not NOTE_POSITIONS.has(mapped_name):
+		for i in range(clean_name.length() - 1, -1, -1):
+			if clean_name[i].is_valid_int():
+				var alternate := clean_name.left(i) + "_" + clean_name.right(-i)
+				if NOTE_POSITIONS.has(alternate):
+					mapped_name = alternate
+					break
+	return float(NOTE_POSITIONS.get(mapped_name, 0.0))
+
+func _draw_glissando_arrow(center_y: float) -> void:
+	if notes_to_draw.size() < 2:
+		return
+	var arrow_points := PackedVector2Array()
+	for note_data in notes_to_draw:
+		var note_x := float(note_data.get("x", size.x / 2.0))
+		var pos_idx := _get_note_position_index(str(note_data.get("note", "Mi2")))
+		var note_y: float = center_y + (2.0 - pos_idx) * line_spacing
+		# Keep the direction line below the note heads so its high-note arrowhead
+		# stays visible beneath the lesson HUD.
+		arrow_points.append(Vector2(note_x, note_y + line_spacing * 0.58))
+
+	var glow_color := Color(0.96, 0.72, 0.18, 0.20)
+	var arrow_color := Color(0.82, 0.46, 0.06, 0.98)
+	draw_polyline(arrow_points, glow_color, 11.0, true)
+	draw_polyline(arrow_points, arrow_color, 4.5, true)
+	_draw_glissando_arrow_head(
+		arrow_points[arrow_points.size() - 2],
+		arrow_points[arrow_points.size() - 1],
+		arrow_color
+	)
+
+func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color) -> void:
+	var direction := (tip - from_point).normalized()
+	if direction.length_squared() <= 0.001:
+		return
+	var perpendicular := Vector2(-direction.y, direction.x)
+	var head_length := 24.0
+	var head_width := 13.0
+	var base := tip - direction * head_length
+	var triangle := PackedVector2Array([
+		tip,
+		base + perpendicular * head_width,
+		base - perpendicular * head_width
+	])
+	draw_colored_polygon(triangle, color)
 
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
 	var clean_name = note_name

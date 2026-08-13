@@ -5,7 +5,7 @@ const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
 const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
-const LEVEL_7_GLISSANDO_TITLE := "Kỹ năng á (vuốt 17 dây)"
+const LEVEL_7_GLISSANDO_TITLE := "Kỹ thuật Á"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
@@ -87,6 +87,21 @@ class PitchMeterDraw extends Control:
 var glissando_sheet: Control
 var glissando_progress_label: Label
 var glissando_progress_bar: ProgressBar
+var glissando_instruction_label: Label
+var glissando_status_label: Label
+var glissando_round_idx := 0
+var glissando_detected_strings: Array[int] = []
+var glissando_detected_times: Array[float] = []
+var glissando_display_notes: Array = []
+var glissando_last_detection_time := 0.0
+var glissando_round_locked := false
+const GLISSANDO_GAP_TIMEOUT := 0.58
+const GLISSANDO_MAX_DURATION := 4.0
+const GLISSANDO_ROUNDS := [
+	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
+	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
+	{"mode": "round", "title": "Á vòng", "instruction": "Vuốt từ dây cao xuống dây thấp rồi trở lên dây cao"}
+]
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
@@ -144,6 +159,13 @@ const ALL_17_NOTES: Array[String] = [
 
 
 const LESSON_DIALOGUES = {
+	"dan_tranh_level_7_bai_18_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật Á trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật Á là dùng ngón tay phải vuốt nhanh và liên tục qua nhiều dây để tạo thành một chuỗi âm thanh liền mạch.", "highlight": -1},
+		{"action": "speak", "text": "Á xuống là vuốt từ vùng dây có âm cao xuống vùng dây có âm thấp. Á lên là vuốt theo chiều ngược lại, từ âm thấp lên âm cao.", "highlight": -1},
+		{"action": "speak", "text": "Á vòng là kết hợp hai chiều trong cùng một động tác: vuốt xuống rồi đổi hướng vuốt trở lên. Khi thực hiện, các tiếng cần nối đều, rõ và không bị ngắt quãng.", "highlight": -1},
+		{"action": "speak", "text": "Phần thực hành gồm ba lượt: Á xuống, Á lên và Á vòng. Ứng dụng sẽ nghe đàn thật, kiểm tra hướng vuốt, độ rộng và tính liên tục của chuỗi âm. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
+	],
 	"dan_tranh_level_1_bai_1_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học đầu tiên, chúng ta sẽ cùng tìm hiểu nhạc cụ đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Đàn Tranh là nhạc cụ dây truyền thống của Việt Nam. Đàn thường có mười sáu hoặc mười chín dây, thân đàn dạng hộp dài hình thang, dài khoảng một trăm mười đến một trăm hai mươi xen-ti-mét. Đầu lớn rộng hơn là nơi mắc dây và đặt cầu đàn; đầu nhỏ có các trục để lên dây.", "highlight": -1},
@@ -439,12 +461,14 @@ func _ready():
 	analyzer.min_frequency = 180.0
 	analyzer.max_frequency = 4200.0
 	analyzer.volume_threshold_db = -58.0
+	if not analyzer.dan_tranh_note_started.is_connected(_on_dan_tranh_note_started):
+		analyzer.dan_tranh_note_started.connect(_on_dan_tranh_note_started)
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
-	# Only Level 7 / Bài 18 is the direct glissando practice. Its unique title
-	# lets us recover the correct id without affecting Level 6 / Bài 14 song âm.
-	if force_glissando_start or PracticeRoom.current_song_title == LEVEL_7_GLISSANDO_TITLE:
+	# The selector sets this flag immediately before opening the Á lesson. The
+	# title fallback also supports direct scene testing without stale lesson data.
+	if force_glissando_start or PracticeRoom.current_song_title.begins_with(LEVEL_7_GLISSANDO_TITLE):
 		current_lesson_id = LEVEL_7_GLISSANDO_ID
 		force_glissando_start = false
 		
@@ -681,111 +705,78 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	if _is_glissando_practice() or _is_error_flash_demo():
+	if _is_error_flash_demo():
 		# Do not show the shared welcome / audio-calibration lesson screen.
-		# Level 7 practical demos open directly into the staff exercise.
+		# The automatic error demo opens directly into the staff exercise.
 		call_deferred("_start_practice")
 	else:
+		# Technique Á reads cô Mai's theory before opening its three exercises.
 		_start_intro()
 
 func _build_glissando_sheet() -> void:
-	var sheet_panel := PanelContainer.new()
-	glissando_sheet = sheet_panel
-	glissando_sheet.name = "GlissandoSheet"
+	glissando_sheet = Control.new()
+	glissando_sheet.name = "GlissandoSheetHUD"
 	glissando_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	staff_card.add_child(glissando_sheet)
 	glissando_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	var sheet_style := StyleBoxFlat.new()
-	sheet_style.bg_color = Color(0.995, 0.98, 0.93, 0.985)
-	sheet_style.corner_radius_top_left = 15
-	sheet_style.corner_radius_top_right = 15
-	sheet_style.corner_radius_bottom_left = 15
-	sheet_style.corner_radius_bottom_right = 15
-	sheet_panel.add_theme_stylebox_override("panel", sheet_style)
+	var header_panel := PanelContainer.new()
+	header_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header_panel.anchor_left = 0.5
+	header_panel.anchor_right = 0.5
+	header_panel.offset_left = -410.0
+	header_panel.offset_right = 410.0
+	header_panel.offset_top = 18.0
+	header_panel.offset_bottom = 105.0
+	var header_style := StyleBoxFlat.new()
+	header_style.bg_color = Color(1.0, 0.98, 0.91, 0.94)
+	header_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	header_style.border_width_left = 2
+	header_style.border_width_right = 2
+	header_style.border_width_top = 2
+	header_style.border_width_bottom = 2
+	header_style.corner_radius_top_left = 14
+	header_style.corner_radius_top_right = 14
+	header_style.corner_radius_bottom_left = 14
+	header_style.corner_radius_bottom_right = 14
+	header_panel.add_theme_stylebox_override("panel", header_style)
+	glissando_sheet.add_child(header_panel)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 30)
-	margin.add_theme_constant_override("margin_right", 30)
-	margin.add_theme_constant_override("margin_top", 20)
-	margin.add_theme_constant_override("margin_bottom", 20)
-	sheet_panel.add_child(margin)
-
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 9)
+	header_panel.add_child(margin)
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 3)
+	content.add_theme_constant_override("separation", 2)
 	margin.add_child(content)
-
-	var header := HBoxContainer.new()
-	content.add_child(header)
-	var title := Label.new()
-	title.text = "KỸ NĂNG Á · VUỐT 17 DÂY"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_color_override("font_color", C_JADE)
-	title.add_theme_font_size_override("font_size", 24)
+	var title_row := HBoxContainer.new()
+	content.add_child(title_row)
+	glissando_instruction_label = Label.new()
+	glissando_instruction_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	glissando_instruction_label.add_theme_color_override("font_color", C_JADE)
+	glissando_instruction_label.add_theme_font_size_override("font_size", 21)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
-		title.add_theme_font_override("font", bold_font)
-	header.add_child(title)
+		glissando_instruction_label.add_theme_font_override("font", bold_font)
+	title_row.add_child(glissando_instruction_label)
 	glissando_progress_label = Label.new()
-	glissando_progress_label.text = "Tiến độ: 0/17"
 	glissando_progress_label.add_theme_color_override("font_color", C_JADE)
-	glissando_progress_label.add_theme_font_size_override("font_size", 16)
-	header.add_child(glissando_progress_label)
+	glissando_progress_label.add_theme_font_size_override("font_size", 15)
+	title_row.add_child(glissando_progress_label)
 
-	var instruction := Label.new()
-	instruction.text = "Ngón trỏ · vuốt liền mạch từ dây 1 đến dây 17 theo đường chéo"
-	instruction.add_theme_color_override("font_color", Color(0.25, 0.28, 0.25, 0.86))
-	instruction.add_theme_font_size_override("font_size", 16)
-	content.add_child(instruction)
-
+	glissando_status_label = Label.new()
+	glissando_status_label.text = "Micro đang nghe đàn thật..."
+	glissando_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	glissando_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	glissando_status_label.add_theme_font_size_override("font_size", 14)
+	content.add_child(glissando_status_label)
 	glissando_progress_bar = ProgressBar.new()
 	glissando_progress_bar.max_value = 17.0
-	glissando_progress_bar.value = 0.0
 	glissando_progress_bar.show_percentage = false
-	glissando_progress_bar.custom_minimum_size = Vector2(0, 8)
+	glissando_progress_bar.custom_minimum_size = Vector2(0, 7)
 	content.add_child(glissando_progress_bar)
-
-	for i in range(17):
-		var row := HBoxContainer.new()
-		row.custom_minimum_size = Vector2(0, 22)
-		content.add_child(row)
-		var string_label := Label.new()
-		string_label.text = "Dây %d" % (i + 1)
-		string_label.custom_minimum_size = Vector2(62, 0)
-		string_label.add_theme_color_override("font_color", Color(0.20, 0.24, 0.21, 0.82))
-		string_label.add_theme_font_size_override("font_size", 13)
-		row.add_child(string_label)
-
-		var track := Control.new()
-		track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		track.custom_minimum_size = Vector2(0, 18)
-		row.add_child(track)
-		var string_line := ColorRect.new()
-		string_line.color = Color(0.45, 0.30, 0.16, 0.46)
-		string_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		string_line.anchor_right = 1.0
-		string_line.anchor_top = 0.5
-		string_line.anchor_bottom = 0.5
-		string_line.offset_top = -1.0
-		string_line.offset_bottom = 1.0
-		track.add_child(string_line)
-
-		var marker := Label.new()
-		marker.text = "▶" if i == 16 else "●"
-		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		marker.add_theme_color_override("font_color", C_GOLD)
-		marker.add_theme_font_size_override("font_size", 17)
-		var ratio := 0.04 + (0.92 * float(i) / 16.0)
-		marker.anchor_left = ratio
-		marker.anchor_right = ratio
-		marker.anchor_top = 0.5
-		marker.anchor_bottom = 0.5
-		marker.offset_left = -12.0
-		marker.offset_right = 12.0
-		marker.offset_top = -12.0
-		marker.offset_bottom = 12.0
-		track.add_child(marker)
 
 
 func _build_error_flash_overlay() -> void:
@@ -922,7 +913,7 @@ func _setup_top_pitch_box():
 	var active_id = SecureDataManager.active_lesson_id
 	if active_id:
 		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
-		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 18: KỸ NĂNG Á"
+		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 10: KỸ THUẬT Á"
 		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
 		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
 		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
@@ -1133,6 +1124,8 @@ func _process(delta):
 		if _is_error_flash_demo():
 			_process_error_demo_sheet(delta)
 			_process_error_flash_demo(delta)
+		elif _is_glissando_practice():
+			_process_glissando_practice()
 		else:
 			_process_practice(delta)
 	
@@ -1872,6 +1865,11 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 				_on_wrong_note_played(note_name, idx, target_note, target_idx)
 
 	elif current_state == State.PRACTICE:
+		if _is_glissando_practice():
+			# Keep virtual strings usable for local testing; microphone events from
+			# a real đàn tranh enter through the same sequence scorer below.
+			_append_glissando_detection(idx)
+			return
 		# Hỗ trợ gảy phím ảo bằng chạm/nhấp chuột trên màn hình đối với nốt khuyết
 		var hit_x = staff_display.hit_line_x
 		for note in active_falling_notes:
@@ -1883,7 +1881,244 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 					consecutive_misses = 0
 					if consecutive_hits >= 5:
 						current_speed_multiplier = user_speed_multiplier
-					break
+						break
+
+func _on_dan_tranh_note_started(note: Dictionary) -> void:
+	if current_state != State.PRACTICE or not _is_glissando_practice():
+		return
+	if not note.get("is_match", false):
+		return
+	var string_idx := int(note.get("string_index", -1))
+	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
+		return
+	_append_glissando_detection(string_idx)
+
+func _append_glissando_detection(string_idx: int) -> void:
+	if glissando_round_locked:
+		return
+	var now_sec := Time.get_ticks_msec() / 1000.0
+	if not glissando_detected_times.is_empty():
+		var gap := now_sec - glissando_detected_times[glissando_detected_times.size() - 1]
+		if gap > GLISSANDO_GAP_TIMEOUT:
+			_evaluate_glissando_gesture()
+			if glissando_round_locked:
+				return
+			glissando_detected_strings.clear()
+			glissando_detected_times.clear()
+
+	if not glissando_detected_strings.is_empty() and glissando_detected_strings.back() == string_idx:
+		glissando_last_detection_time = now_sec
+		return
+
+	glissando_detected_strings.append(string_idx)
+	glissando_detected_times.append(now_sec)
+	glissando_last_detection_time = now_sec
+	_update_glissando_detection_feedback()
+
+func _process_glissando_practice() -> void:
+	if glissando_round_locked or glissando_detected_times.is_empty():
+		return
+	var now_sec := Time.get_ticks_msec() / 1000.0
+	var silence_gap := now_sec - glissando_last_detection_time
+	var gesture_duration := now_sec - glissando_detected_times[0]
+	if silence_gap >= GLISSANDO_GAP_TIMEOUT or gesture_duration >= GLISSANDO_MAX_DURATION:
+		_evaluate_glissando_gesture()
+
+func _start_glissando_round(round_index: int) -> void:
+	if round_index >= GLISSANDO_ROUNDS.size():
+		if analyzer:
+			analyzer.rapid_sequence_mode = false
+		_finish_practice()
+		return
+
+	glissando_round_idx = round_index
+	glissando_round_locked = false
+	glissando_detected_strings.clear()
+	glissando_detected_times.clear()
+	glissando_last_detection_time = 0.0
+	active_falling_notes.clear()
+	staff_display.show_metronome = false
+	staff_display.show_hit_line = false
+	staff_display.show_time_sig = false
+	staff_display.show_clef = true
+	staff_display.glissando_arrow_mode = str(GLISSANDO_ROUNDS[round_index]["mode"])
+	_build_glissando_round_notes(str(GLISSANDO_ROUNDS[round_index]["mode"]))
+
+	if speed_bar_container:
+		speed_bar_container.visible = false
+	if glissando_instruction_label:
+		glissando_instruction_label.text = "%s · %s" % [
+			GLISSANDO_ROUNDS[round_index]["title"],
+			GLISSANDO_ROUNDS[round_index]["instruction"]
+		]
+	if glissando_progress_label:
+		glissando_progress_label.text = "Lượt %d/3 · 0 dây" % (round_index + 1)
+	if glissando_progress_bar:
+		glissando_progress_bar.value = 0.0
+	if glissando_status_label:
+		glissando_status_label.text = "Micro đang nghe đàn thật... Hãy thực hiện một động tác liền mạch."
+		glissando_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	if mic_status_lbl:
+		mic_status_lbl.text = "🎙️ Đang nhận diện chuỗi âm kỹ thuật Á"
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+
+func _build_glissando_round_notes(mode: String) -> void:
+	var string_order: Array[int]
+	if mode == "down":
+		string_order = [16, 14, 12, 10, 8, 6, 4, 2, 0]
+	elif mode == "up":
+		string_order = [0, 2, 4, 6, 8, 10, 12, 14, 16]
+	else:
+		string_order = [16, 12, 8, 4, 0, 4, 8, 12, 16]
+
+	var staff_width := maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
+	var start_x := 315.0
+	var end_x := maxf(start_x + 500.0, staff_width - 85.0)
+	glissando_display_notes.clear()
+	for i in range(string_order.size()):
+		var ratio := float(i) / float(maxi(1, string_order.size() - 1))
+		glissando_display_notes.append({
+			"note": "ZT_" + ALL_17_NOTES[string_order[i]],
+			"x": lerpf(start_x, end_x, ratio),
+			"color": Color(0.16, 0.14, 0.12, 1.0),
+			"type": "quarter"
+		})
+	staff_display.set_notes(glissando_display_notes)
+	staff_display.queue_redraw()
+
+func _update_glissando_detection_feedback() -> void:
+	if glissando_detected_strings.is_empty():
+		return
+	var min_string := glissando_detected_strings[0]
+	var max_string := glissando_detected_strings[0]
+	for value in glissando_detected_strings:
+		min_string = mini(min_string, value)
+		max_string = maxi(max_string, value)
+	var covered_strings := max_string - min_string + 1
+	if glissando_progress_label:
+		glissando_progress_label.text = "Lượt %d/3 · đã nghe %d âm · phủ %d dây" % [
+			glissando_round_idx + 1,
+			glissando_detected_strings.size(),
+			covered_strings
+		]
+	if glissando_progress_bar:
+		glissando_progress_bar.value = clampf(float(covered_strings), 0.0, 17.0)
+	if glissando_status_label:
+		glissando_status_label.text = "Đang nghe: %s (dây %d)" % [
+			ALL_17_NOTES[glissando_detected_strings.back()],
+			glissando_detected_strings.back() + 1
+		]
+
+	var colored_count := mini(glissando_display_notes.size(), glissando_detected_strings.size())
+	for i in range(glissando_display_notes.size()):
+		glissando_display_notes[i]["color"] = Color(0.20, 0.72, 0.34, 1.0) if i < colored_count else Color(0.16, 0.14, 0.12, 1.0)
+	staff_display.queue_redraw()
+
+func _direction_ratio(values: Array[int], expect_increasing: bool) -> float:
+	if values.size() < 2:
+		return 0.0
+	var expected_weight := 0.0
+	var total_weight := 0.0
+	for i in range(1, values.size()):
+		var delta := values[i] - values[i - 1]
+		var weight := maxf(1.0, absf(float(delta)))
+		total_weight += weight
+		if (expect_increasing and delta > 0) or (not expect_increasing and delta < 0):
+			expected_weight += weight
+	return expected_weight / maxf(total_weight, 1.0)
+
+func _evaluate_glissando_gesture() -> void:
+	if glissando_round_locked or glissando_detected_strings.is_empty():
+		return
+
+	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
+	var first: int = glissando_detected_strings.front()
+	var last: int = glissando_detected_strings.back()
+	var min_string: int = first
+	var max_string: int = first
+	for value in glissando_detected_strings:
+		min_string = mini(min_string, value)
+		max_string = maxi(max_string, value)
+	var span: int = max_string - min_string
+	var enough_notes := glissando_detected_strings.size() >= 6
+	var success := false
+
+	if mode == "down":
+		success = enough_notes and span >= 10 and first >= 11 and last <= 5 \
+			and _direction_ratio(glissando_detected_strings, false) >= 0.70
+	elif mode == "up":
+		success = enough_notes and span >= 10 and first <= 5 and last >= 11 \
+			and _direction_ratio(glissando_detected_strings, true) >= 0.70
+	else:
+		var turn_idx := glissando_detected_strings.find(min_string)
+		if turn_idx >= 3 and turn_idx <= glissando_detected_strings.size() - 4:
+			var down_leg: Array[int] = []
+			var up_leg: Array[int] = []
+			for i in range(turn_idx + 1):
+				down_leg.append(glissando_detected_strings[i])
+			for i in range(turn_idx, glissando_detected_strings.size()):
+				up_leg.append(glissando_detected_strings[i])
+			success = glissando_detected_strings.size() >= 9 and min_string <= 5 \
+				and first >= 11 and last >= 11 \
+				and first - min_string >= 9 and last - min_string >= 9 \
+				and _direction_ratio(down_leg, false) >= 0.65 \
+				and _direction_ratio(up_leg, true) >= 0.65
+
+	glissando_round_locked = true
+	if success:
+		_on_glissando_round_success()
+	else:
+		_on_glissando_round_failed(span, glissando_detected_strings.size())
+
+func _on_glissando_round_success() -> void:
+	for note_data in glissando_display_notes:
+		note_data["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	staff_display.queue_redraw()
+	if glissando_progress_bar:
+		glissando_progress_bar.value = 17.0
+	if glissando_status_label:
+		glissando_status_label.text = "✓ Đúng %s: chuỗi âm liền mạch và đúng hướng." % GLISSANDO_ROUNDS[glissando_round_idx]["title"]
+		glissando_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": true,
+		"cents_error": 0.0,
+		"timing": 95.0,
+		"attack_clarity": 95.0,
+		"sustain_duration": 100.0,
+		"vibrato_detected": false,
+		"bend_detected": true
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese("Tốt lắm! Bạn đã thực hiện đúng %s." % GLISSANDO_ROUNDS[glissando_round_idx]["title"])
+	var completed_round := glissando_round_idx
+	get_tree().create_timer(1.7).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_glissando_practice() and glissando_round_idx == completed_round:
+			_start_glissando_round(completed_round + 1)
+	)
+
+func _on_glissando_round_failed(span: int, note_count: int) -> void:
+	if glissando_status_label:
+		if note_count < 6 or span < 10:
+			glissando_status_label.text = "Chưa đủ rộng hoặc còn ngắt quãng. Hãy vuốt qua nhiều dây hơn."
+		else:
+			glissando_status_label.text = "Chuỗi âm chưa đúng hướng mũi tên. Hãy thử lại chậm và liền tay hơn."
+		glissando_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": false,
+		"cents_error": 50.0,
+		"timing": 35.0,
+		"attack_clarity": 55.0,
+		"sustain_duration": 30.0,
+		"vibrato_detected": false,
+		"bend_detected": false
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese("Chưa đúng. Hãy nhìn theo hướng mũi tên và vuốt liền mạch qua nhiều dây hơn nhé.")
+	var failed_round := glissando_round_idx
+	get_tree().create_timer(1.5).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_glissando_practice() and glissando_round_idx == failed_round:
+			_start_glissando_round(failed_round)
+	)
 
 func _is_note_missing(note_idx: int) -> bool:
 	if current_lesson_id != "dan_tranh_level_1_bai_3_practice":
@@ -1910,7 +2145,7 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	staff_display.use_note_colors = _is_error_flash_demo()
+	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice()
 	if _is_error_flash_demo():
 		error_flash_timer = 0.75
 		error_flash_note = {}
@@ -1944,7 +2179,11 @@ func _start_practice():
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
-		pass
+		analyzer.rapid_sequence_mode = _is_glissando_practice()
+
+	if _is_glissando_practice():
+		_start_glissando_round(0)
+		return
 		
 	# Determine BPM based on current lesson
 	var lesson_bpm: float = 60.0
@@ -2266,7 +2505,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 func _finish_practice():
 	current_state = State.COMPLETED
 	if analyzer:
-		pass
+		analyzer.rapid_sequence_mode = false
 	complete_btn.visible = false # Managed by popup action button
 	if speed_bar_container:
 		speed_bar_container.visible = false
@@ -2337,7 +2576,7 @@ func _finish_practice():
 
 func _on_back():
 	if analyzer:
-		pass
+		analyzer.rapid_sequence_mode = false
 	get_tree().change_scene_to_file("res://scenes/LessonDanTranhList.tscn")
 
 func _on_complete():
@@ -2983,6 +3222,8 @@ func _update_staff_layout() -> void:
 	# Zither notes span from Sol_1 (-3.5) to La_4 (7.5), a range of 11.0.
 	# We want them to fit within card_height with comfortable top/bottom padding of 45px.
 	var max_spacing = (card_height - 90.0) / 11.0
-	var spacing = clampf(max_spacing, 46.0, 78.0)
+	var spacing = 32.0 if _is_glissando_practice() else clampf(max_spacing, 46.0, 78.0)
 	staff_display.line_spacing = spacing
+	if _is_glissando_practice() and current_state == State.PRACTICE and not glissando_round_locked:
+		_build_glissando_round_notes(str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"]))
 	staff_display.queue_redraw()
