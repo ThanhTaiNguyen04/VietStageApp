@@ -114,6 +114,7 @@ var _daily_overlay: ColorRect = null
 @onready var card_chords_skills: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardChordsSkills
 @onready var card_classical : PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardClassical
 @onready var card_pop_chords: PanelContainer = $Root/RightContent/RoadmapScroll/RoadmapContent/CardPopChords
+var card_level_7: PanelContainer
 
 # ─── Ready ─────────────────────────────────────────────────────────────────────
 
@@ -170,6 +171,7 @@ func _ready() -> void:
 	_build_bottom_bar()
 	_build_top_bar()
 	_build_profile_menu()
+	_create_level_7_card()
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
@@ -308,6 +310,24 @@ func _setup_drawing_callbacks() -> void:
 		vis_essentials.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
 	)
 
+	# Card Level 3 uses the same progress-ring presentation as Levels 1 and 2.
+	var vis_level_3 := card_level_7.get_node("Margin/Row/Visual") as Control
+	vis_level_3.draw.connect(func() -> void:
+		var cx := vis_level_3.size.x / 2.0
+		var cy := vis_level_3.size.y / 2.0
+		var r := 34.0
+		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
+		var stats: Dictionary = _get_dan_tranh_level_status(7)
+		var pct := float(stats["pct"])
+		var angle_fill := (pct / 100.0) * TAU
+		if angle_fill > 0.001:
+			vis_level_3.draw_arc(Vector2(cx, cy), r, -PI / 2.0, -PI / 2.0 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
+		var font := vis_level_3.get_theme_font("font")
+		var pct_text := str(int(pct)) + "%"
+		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
+		vis_level_3.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
+	)
+
 	# Lock Icons on Locked Cards
 	var lock_soloist := card_soloist_unlock.get_node("Margin/VBox/LockedIcon") as Control
 	lock_soloist.draw.connect(func() -> void: _draw_lock_icon(lock_soloist))
@@ -405,7 +425,7 @@ func _draw_roadmap_paths() -> void:
 
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_bau" or inst == "dan_tranh" or inst == "sao_truc":
-		# Ép tọa độ Y của các điểm neo bằng nhau để đường vàng vẽ thẳng tắp 100%
+		# Căn thẳng hàng Y của các điểm neo để đường vẽ thẳng 100%
 		var straight_y = p_basic.y
 		p_ess.y = straight_y
 		p_sol_sk.y = straight_y
@@ -413,12 +433,17 @@ func _draw_roadmap_paths() -> void:
 		p_pop.y = straight_y
 		p_class.y = straight_y
 
-		# Đường thẳng duy nhất nằm ngang
-		_draw_thick_path(p_basic, p_ess)
-		_draw_thick_path(p_ess, p_sol_sk)
-		_draw_thick_path(p_sol_sk, p_cho_sk)
-		_draw_thick_path(p_cho_sk, p_pop)
 		if inst == "dan_tranh":
+			# Lộ trình Đàn Tranh: 3 card thẳng hàng
+			var p_level7 := card_level_7.position + card_level_7.size / 2.0
+			p_level7.y = straight_y
+			_draw_thick_path(p_basic, p_ess)
+			_draw_thick_path(p_ess, p_level7)
+		else:
+			_draw_thick_path(p_basic, p_ess)
+			_draw_thick_path(p_ess, p_sol_sk)
+			_draw_thick_path(p_sol_sk, p_cho_sk)
+			_draw_thick_path(p_cho_sk, p_pop)
 			_draw_thick_path(p_pop, p_class)
 	else:
 		# Draw roadmap line segments connecting cards
@@ -1464,6 +1489,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 # ─── Roadmap Cards styling ───────────────────────────────────────────────────
+func _create_level_7_card() -> void:
+	card_level_7 = card_essentials.duplicate() as PanelContainer
+	card_level_7.name = "CardLevel7"
+	roadmap_content.add_child(card_level_7)
+
 func _build_roadmap_cards() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
@@ -1526,38 +1556,44 @@ func _build_roadmap_cards() -> void:
 	card_pop_chords.position = Vector2(1930, 455)
 
 	if instrument == "dan_tranh":
-		# Dùng cùng bố cục roadmap thẳng cho 6 level Đàn Tranh.
+		# Lộ trình Đàn Tranh: 3 card thẳng hàng (Level 1 → 2 → 7)
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
-		card_classical.show()
+		card_soloist_skills.hide()
+		card_chords_skills.hide()
+		card_classical.hide()
+		card_pop_chords.hide()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 
-		card_soloist_skills.position = Vector2(1060, 275)
-		card_chords_skills.position = Vector2(1570, 275)
-		card_pop_chords.position = Vector2(2080, 275)
-		card_classical.position = Vector2(2590, 275)
+		card_level_7.show()
+		card_level_7.position = Vector2(1060, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
-		basic_desc.text = "Hiểu nhạc cụ, đọc giao diện nốt rơi và gảy những nốt cơ bản."
-		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
+		basic_desc.text = "Làm quen với đàn tranh, đọc nhạc cơ bản và luyện các ngón gảy đầu tiên."
 
-		ess_title.text = "LEVEL 2: KHÚC DẠO ĐẦU"
-		ess_desc.text = "Chơi hoàn chỉnh bài nhạc đầu tiên với nhịp độ chậm."
-		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
+		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
+		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
 
-		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
-		soloist_skills_bullets.text = "✓ Luyện ngón tốc độ cao – Mã Vũ\n✓ Dân ca Quan họ – Lý Cây Đa\n✓ Làm quen mật độ nốt dày hơn"
-
-		chords_skills_title.text = "LEVEL 4: KỸ THUẬT NÂNG CAO"
-		chords_skills_bullets.text = "✓ Mô phỏng kỹ thuật rung tay trái\n✓ Hòa tấu cùng nhạc cụ khác\n✓ Đánh đàn theo beat"
-
-		pop_chords_title.text = "LEVEL 5: MASTER – NHẠC HIỆN ĐẠI"
-		pop_chords_desc.text = "✓ Nhạc hiện đại: Sứ Thanh Hoa\n✓ Boss Stage sinh tồn\n✓ Biểu diễn không gợi ý"
-
-		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
-		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
+		var level_7_title := card_level_7.get_node("Margin/Row/TextV/Title") as Label
+		var level_7_desc := card_level_7.get_node("Margin/Row/TextV/Desc") as Label
+		var level_7_details := card_level_7.get_node("Margin/Row/TextV/Details") as Label
+		var level_2_stats := _get_dan_tranh_level_status(2)
+		var is_level_3_unlocked := bool(level_2_stats["completed"])
+		var level_3_sb := _flat(
+			C_CARD_BG_DK if is_level_3_unlocked else Color(1.0, 1.0, 1.0, 0.45),
+			Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
+			24
+		)
+		card_level_7.add_theme_stylebox_override("panel", level_3_sb)
+		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
+		level_7_desc.text = "Mở rộng khả năng diễn tấu với các kỹ thuật nâng cao."
+		level_7_title.add_theme_color_override("font_color", C_CREAM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
+		level_7_desc.add_theme_color_override("font_color", C_CREAM_DIM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.4))
+		level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
+		var level_3_stats := _get_dan_tranh_level_status(7)
+		_set_details_text(level_7_details, 4, level_3_stats["stars"], level_3_stats["pct"], false)
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
@@ -1906,6 +1942,13 @@ func _connect_buttons() -> void:
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 5
 				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+	)
+
+	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
+			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
+				_fade_to("res://scenes/LessonDanTranhList.tscn")
 	)
 
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
@@ -2368,8 +2411,8 @@ func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
 		var lesson_number := int(lesson["number"])
 		var prefix := "dan_tranh_level_%d_bai_%d_" % [level_number, lesson_number]
 		if str(lesson["video"]) != "":
-			step_ids.append(prefix + "video")
-		step_ids.append(prefix + "practice")
+			step_ids.append(str(lesson.get("video_id", prefix + "video")))
+		step_ids.append(str(lesson.get("practice_id", prefix + "practice")))
 	var completed_count := 0
 	var total_stars := 0
 	for step_id in step_ids:
