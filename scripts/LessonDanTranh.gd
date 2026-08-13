@@ -262,6 +262,21 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Hãy ghép hai phần đã học để chơi hoàn chỉnh bài Lý cây đa. Bắt đầu chậm, gảy rõ tiếng và giữ nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
+	"dan_tranh_level_2_bai_13_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Sứ thanh hoa.", "highlight": -1},
+		{"action": "speak", "text": "Ở bài này, chúng ta áp dụng luyện tập các kỹ thuật gảy ngón vào nửa đầu bài Sứ thanh hoa. Hãy tập từng câu nhạc chậm, đúng nốt và đều nhịp. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_14_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Sứ thanh hoa.", "highlight": -1},
+		{"action": "speak", "text": "Chú ý các chỗ đổi ngón, nhấn hoặc nếu có rung dây để giai điệu liền mạch và có cảm xúc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_15_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Sứ thanh hoa.", "highlight": -1},
+		{"action": "speak", "text": "Giờ ghép hai phần đã học để chơi hoàn chỉnh bài Sứ thanh hoa. Hãy giữ nhịp ổn định, gảy rõ nốt và thể hiện kỹ thuật đúng vị trí. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
 	"dan_tranh_level_1_bai_7_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật tay cơ bản với ngón gảy số một.", "highlight": -1},
 		{"action": "speak", "text": "Kỹ thuật gảy ngón một sử dụng ngón cái của tay phải để gảy dây đàn.", "highlight": -1},
