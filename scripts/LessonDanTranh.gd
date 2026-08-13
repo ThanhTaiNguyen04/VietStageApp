@@ -201,9 +201,22 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Hãy ghép hai phần đã học để chơi hoàn chỉnh bài Lý cây đa. Bắt đầu chậm, gảy rõ tiếng và giữ nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
+	"dan_tranh_level_1_bai_7_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật tay cơ bản với ngón gảy số một.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật gảy ngón một sử dụng ngón cái của tay phải để gảy dây đàn.", "highlight": -1},
+		{"action": "speak", "text": "Ngón bốn tỳ nhẹ lên cầu đàn, các ngón còn lại khum tự nhiên. Hãy giữ bàn tay thả lỏng và không gồng cổ tay. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_8_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta tiếp tục kỹ thuật tay cơ bản với ngón gảy số hai.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật gảy ngón hai sử dụng ngón trỏ của tay phải để gảy dây đàn.", "highlight": -1},
+		{"action": "speak", "text": "Các ngón còn lại khum tự nhiên và bàn tay giữ thả lỏng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
 	"dan_tranh_level_1_bai_9_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài Luyện ngón cơ bản.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải để gảy chuỗi nốt chạy đều đặn nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta tiếp tục kỹ thuật tay cơ bản với ngón gảy số ba.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật gảy ngón ba sử dụng ngón giữa của tay phải để gảy dây đàn.", "highlight": -1},
+		{"action": "speak", "text": "Các ngón còn lại khum tự nhiên và bàn tay giữ thả lỏng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_4_practice": [
