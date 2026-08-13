@@ -30,6 +30,15 @@ var next_button: Button
 var floating_back_button: Button
 var score_label: Label
 
+func _find_scroll_container(parent: Node) -> ScrollContainer:
+	for child in parent.get_children():
+		if child is ScrollContainer:
+			return child
+		var res := _find_scroll_container(child)
+		if res:
+			return res
+	return null
+
 func _ready() -> void:
 	super._ready()
 	_add_quiz_scrim()
@@ -41,7 +50,7 @@ func _ready() -> void:
 		top_panel.visible = false
 
 	# Find ScrollContainer to get its child MarginContainer (to wrap in a premium card sheet)
-	var scroll = root_box.find_child("ScrollContainer", true, false) as ScrollContainer
+	var scroll = _find_scroll_container(root_box)
 	if scroll and scroll.get_child_count() > 0:
 		var scroll_margin = scroll.get_child(0) as MarginContainer
 		if scroll_margin:
@@ -332,15 +341,24 @@ func _set_bottom_feedback_answered(is_correct: bool, feedback_desc: String) -> v
 
 func _create_option_button(index: int, text_value: String) -> Button:
 	var v_height := get_viewport_rect().size.y
-	var btn_height := 64.0
-	var font_size_option := 16
+	var btn_height := 72.0
+	var font_size_option := 18
+	var badge_size := Vector2(42, 42)
+	var badge_font_size := 16
+	var badge_radius := 21
 
 	if v_height < 500.0:
-		btn_height = 50.0
-		font_size_option = 14
+		btn_height = 58.0
+		font_size_option = 16
+		badge_size = Vector2(36, 36)
+		badge_font_size = 14
+		badge_radius = 18
 	elif v_height >= 700.0:
-		btn_height = 72.0
-		font_size_option = 18
+		btn_height = 80.0
+		font_size_option = 20
+		badge_size = Vector2(48, 48)
+		badge_font_size = 18
+		badge_radius = 24
 
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(0, btn_height)
@@ -353,7 +371,7 @@ func _create_option_button(index: int, text_value: String) -> Button:
 	normal_style.border_color = Color("#cbd5e1") # slate-300
 	normal_style.set_border_width_all(2)
 	normal_style.border_width_bottom = 5
-	normal_style.set_corner_radius_all(16)
+	normal_style.set_corner_radius_all(18)
 	button.add_theme_stylebox_override("normal", normal_style)
 
 	# Hover state
@@ -376,8 +394,8 @@ func _create_option_button(index: int, text_value: String) -> Button:
 
 	# Internal layout container
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
 	margin.add_theme_constant_override("margin_top", 6)
 	margin.add_theme_constant_override("margin_bottom", 6)
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -385,27 +403,27 @@ func _create_option_button(index: int, text_value: String) -> Button:
 	button.add_child(margin)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
+	hbox.add_theme_constant_override("separation", 16)
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(hbox)
 
 	# Circle badge container for letter (A, B, C, D)
 	var badge_panel := PanelContainer.new()
 	badge_panel.name = "Badge"
-	badge_panel.custom_minimum_size = Vector2(32, 32)
+	badge_panel.custom_minimum_size = badge_size
 	badge_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var badge_style := StyleBoxFlat.new()
 	badge_style.bg_color = Color("#f1f5f9")
 	badge_style.border_color = Color("#cbd5e1")
 	badge_style.set_border_width_all(1)
-	badge_style.set_corner_radius_all(16) # circular
+	badge_style.set_corner_radius_all(badge_radius) # circular
 	badge_panel.add_theme_stylebox_override("panel", badge_style)
 
 	var badge_label := Label.new()
 	badge_label.text = char(65 + index)
 	badge_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	badge_label.add_theme_font_size_override("font_size", 14)
+	badge_label.add_theme_font_size_override("font_size", badge_font_size)
 	badge_label.add_theme_color_override("font_color", C_NAVY)
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
