@@ -12,6 +12,7 @@ const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
+enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
 var current_state = State.INTRO
 
 @onready var root = $Root
@@ -165,6 +166,22 @@ const TREMOLO_EXERCISES := [
 	{"mode": "octave", "title": "Vê quãng tám · Sol2 – Sol3", "notes": ["Sol2", "Sol3"]},
 	{"mode": "octave", "title": "Vê quãng tám · La2 – La3", "notes": ["La2", "La3"]}
 ]
+var dan_tranh_string_streams: Array = []
+var technique_sample_player: AudioStreamPlayer
+var technique_sample_kind := TechniqueSampleKind.NONE
+var technique_sample_demo_idx := 0
+var technique_sample_elapsed := 0.0
+var technique_sample_event_elapsed := 0.0
+var technique_sample_sequence: Array[int] = []
+var technique_sample_sequence_idx := 0
+var technique_sample_in_gap := false
+var technique_sample_input_cooldown := 0.0
+const TECHNIQUE_SAMPLE_GAP := 0.65
+const GLISSANDO_SAMPLE_INTERVAL := 0.075
+const PRESS_SAMPLE_DURATION := 2.25
+const VIBRATO_DEMO_DURATION := 2.20
+const TREMOLO_SAMPLE_INTERVAL := 0.14
+const TREMOLO_SAMPLE_DURATION := 2.60
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
@@ -668,11 +685,16 @@ func _ready():
 	
 	var string_notes: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 	var string_freqs: Array[float] = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]
-	var string_streams: Array = []
-	string_streams.resize(17)
+	dan_tranh_string_streams.clear()
+	dan_tranh_string_streams.resize(17)
 	for i in range(17):
-		string_streams[i] = _generate_pluck_stream(string_freqs[i])
-	zither_board.init(string_notes, string_streams, string_freqs)
+		dan_tranh_string_streams[i] = _generate_pluck_stream(string_freqs[i])
+	zither_board.init(string_notes, dan_tranh_string_streams, string_freqs)
+	technique_sample_player = AudioStreamPlayer.new()
+	technique_sample_player.name = "TechniqueSamplePlayer"
+	technique_sample_player.bus = "Master"
+	technique_sample_player.volume_db = -3.0
+	add_child(technique_sample_player)
 	zither_board.visible = false
 	
 	# Hide redundant mode selection buttons (e.g. "Dùng Đàn Thật")
@@ -1169,6 +1191,10 @@ func _is_tremolo_practice() -> bool:
 	return current_lesson_id == LEVEL_8_TREMOLO_ID
 
 
+func _is_technique_sample_practice() -> bool:
+	return _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice() or _is_tremolo_practice()
+
+
 func _is_error_flash_demo() -> bool:
 	return current_lesson_id == ERROR_FLASH_DEMO_ID
 
@@ -1401,10 +1427,15 @@ func _process(delta):
 
 	if is_paused:
 		return
+	technique_sample_input_cooldown = maxf(0.0, technique_sample_input_cooldown - delta)
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		if _is_error_flash_demo():
+		if is_sample_mode and _is_technique_sample_practice():
+			_process_technique_sample(delta)
+		elif technique_sample_input_cooldown > 0.0 and _is_technique_sample_practice():
+			pass
+		elif _is_error_flash_demo():
 			_process_error_demo_sheet(delta)
 			_process_error_flash_demo(delta)
 		elif _is_glissando_practice():
@@ -2124,6 +2155,8 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 	)
 
 func _on_string_plucked(idx: int, note_name: String) -> void:
+	if is_sample_mode and _is_technique_sample_practice():
+		return
 	if current_state == State.PRACTICE_SINGLE:
 		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
@@ -2178,7 +2211,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 						break
 
 func _on_dan_tranh_note_started(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or not _is_glissando_practice():
+	if current_state != State.PRACTICE or is_sample_mode or not _is_glissando_practice():
 		return
 	if not note.get("is_match", false):
 		return
@@ -2188,7 +2221,7 @@ func _on_dan_tranh_note_started(note: Dictionary) -> void:
 	_append_glissando_detection(string_idx)
 
 func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or not _is_tremolo_practice():
+	if current_state != State.PRACTICE or is_sample_mode or not _is_tremolo_practice():
 		return
 	if not note.get("is_match", false):
 		return
@@ -3147,6 +3180,258 @@ func _on_tremolo_failed(count: int, duration: float, rate: float, max_gap: float
 			_start_tremolo_exercise(failed_exercise)
 	)
 
+
+# --- Nghe mẫu cho các kỹ thuật đàn tranh đặc biệt ---------------------------
+func _stop_technique_sample(stop_board_audio: bool = true) -> void:
+	technique_sample_kind = TechniqueSampleKind.NONE
+	technique_sample_demo_idx = 0
+	technique_sample_elapsed = 0.0
+	technique_sample_event_elapsed = 0.0
+	technique_sample_sequence.clear()
+	technique_sample_sequence_idx = 0
+	technique_sample_in_gap = false
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.stop()
+	if stop_board_audio and zither_board and zither_board.has_method("stop_all_audio"):
+		zither_board.call("stop_all_audio")
+
+
+func _play_sustained_technique_note(note_name: String) -> bool:
+	var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
+	if string_idx < 0 or string_idx >= dan_tranh_string_streams.size() or not technique_sample_player:
+		return false
+	technique_sample_player.stop()
+	technique_sample_player.stream = dan_tranh_string_streams[string_idx]
+	technique_sample_player.pitch_scale = 1.0
+	technique_sample_player.play()
+	# Chỉ chạy hiệu ứng dây; âm thanh do player riêng phát để có thể đổi cao độ.
+	zither_board.call("pluck", string_idx, false)
+	return true
+
+
+func _set_sample_listening_status(text: String) -> void:
+	if mic_status_lbl:
+		mic_status_lbl.text = "🔊 " + text
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+
+
+func _finish_technique_sample(message: String, status_label: Label = null) -> void:
+	technique_sample_kind = TechniqueSampleKind.NONE
+	technique_sample_in_gap = false
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.stop()
+	if status_label:
+		status_label.text = message
+		status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	_set_sample_listening_status("Đã nghe xong mẫu. Bấm Luyện tập để tự thực hành.")
+
+
+func _begin_glissando_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.GLISSANDO
+	technique_sample_demo_idx = 0
+	_prepare_glissando_sample_round()
+
+
+func _prepare_glissando_sample_round() -> void:
+	_start_glissando_round(technique_sample_demo_idx)
+	technique_sample_sequence.clear()
+	var mode := str(GLISSANDO_ROUNDS[technique_sample_demo_idx]["mode"])
+	if mode == "up":
+		for string_idx in range(ALL_17_NOTES.size()):
+			technique_sample_sequence.append(string_idx)
+	else:
+		for string_idx in range(ALL_17_NOTES.size() - 1, -1, -1):
+			technique_sample_sequence.append(string_idx)
+		if mode == "round":
+			for string_idx in range(1, ALL_17_NOTES.size()):
+				technique_sample_sequence.append(string_idx)
+	technique_sample_sequence_idx = 0
+	technique_sample_elapsed = 0.0
+	technique_sample_event_elapsed = GLISSANDO_SAMPLE_INTERVAL
+	technique_sample_in_gap = false
+	if glissando_status_label:
+		glissando_status_label.text = "Đang nghe mẫu %s..." % GLISSANDO_ROUNDS[technique_sample_demo_idx]["title"]
+		glissando_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu %s" % GLISSANDO_ROUNDS[technique_sample_demo_idx]["title"])
+
+
+func _process_glissando_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= GLISSANDO_ROUNDS.size():
+				if glissando_progress_bar:
+					glissando_progress_bar.value = 17.0
+				_finish_technique_sample("Đã nghe xong Á xuống, Á lên và Á vòng.", glissando_status_label)
+			else:
+				_prepare_glissando_sample_round()
+		return
+
+	technique_sample_event_elapsed += delta
+	while technique_sample_event_elapsed >= GLISSANDO_SAMPLE_INTERVAL \
+			and technique_sample_sequence_idx < technique_sample_sequence.size():
+		technique_sample_event_elapsed -= GLISSANDO_SAMPLE_INTERVAL
+		var string_idx := technique_sample_sequence[technique_sample_sequence_idx]
+		zither_board.call("pluck", string_idx)
+		technique_sample_sequence_idx += 1
+		if glissando_progress_bar:
+			glissando_progress_bar.value = minf(17.0, float(technique_sample_sequence_idx))
+	if technique_sample_sequence_idx >= technique_sample_sequence.size():
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _begin_press_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.PRESS
+	technique_sample_demo_idx = 0
+	_prepare_press_sample_exercise()
+
+
+func _prepare_press_sample_exercise() -> void:
+	_start_press_exercise(technique_sample_demo_idx)
+	technique_sample_elapsed = 0.0
+	technique_sample_in_gap = false
+	var exercise: Dictionary = PRESS_EXERCISES[technique_sample_demo_idx]
+	_play_sustained_technique_note(str(exercise["source"]))
+	if press_status_label:
+		press_status_label.text = "Đang nghe mẫu nhấn %s → %s..." % [exercise["source"], exercise["target"]]
+		press_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu nhấn %s lên %s" % [exercise["source"], exercise["target"]])
+
+
+func _process_press_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= PRESS_EXERCISES.size():
+				if press_progress_bar:
+					press_progress_bar.value = float(PRESS_EXERCISES.size())
+				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật nhấn.", press_status_label)
+			else:
+				_prepare_press_sample_exercise()
+		return
+
+	technique_sample_elapsed += delta
+	var target_cents := float(PRESS_EXERCISES[technique_sample_demo_idx]["interval"])
+	var current_cents := 0.0
+	if technique_sample_elapsed > 0.30:
+		var rise_ratio := clampf((technique_sample_elapsed - 0.30) / 1.05, 0.0, 1.0)
+		current_cents = lerpf(0.0, target_cents, smoothstep(0.0, 1.0, rise_ratio))
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.pitch_scale = pow(2.0, current_cents / 1200.0)
+	if technique_sample_elapsed >= PRESS_SAMPLE_DURATION:
+		if technique_sample_player:
+			technique_sample_player.stop()
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _begin_vibrato_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.VIBRATO
+	technique_sample_demo_idx = 0
+	_prepare_vibrato_sample_note()
+
+
+func _prepare_vibrato_sample_note() -> void:
+	_start_vibrato_note(technique_sample_demo_idx)
+	technique_sample_elapsed = 0.0
+	technique_sample_in_gap = false
+	var note_name := VIBRATO_NOTES[technique_sample_demo_idx]
+	_play_sustained_technique_note(note_name)
+	if vibrato_status_label:
+		vibrato_status_label.text = "Đang nghe mẫu rung dây nốt %s..." % note_name
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu rung dây nốt %s" % note_name)
+
+
+func _process_vibrato_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= VIBRATO_NOTES.size():
+				if vibrato_progress_bar:
+					vibrato_progress_bar.value = float(VIBRATO_NOTES.size())
+				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật rung dây.", vibrato_status_label)
+			else:
+				_prepare_vibrato_sample_note()
+		return
+
+	technique_sample_elapsed += delta
+	var vibrato_cents := 0.0
+	if technique_sample_elapsed > 0.25:
+		var onset := clampf((technique_sample_elapsed - 0.25) / 0.25, 0.0, 1.0)
+		vibrato_cents = onset * (18.0 + 18.0 * sin((technique_sample_elapsed - 0.25) * TAU * 5.5))
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.pitch_scale = pow(2.0, vibrato_cents / 1200.0)
+	if technique_sample_elapsed >= VIBRATO_DEMO_DURATION:
+		if technique_sample_player:
+			technique_sample_player.stop()
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _begin_tremolo_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.TREMOLO
+	technique_sample_demo_idx = 0
+	_prepare_tremolo_sample_exercise()
+
+
+func _prepare_tremolo_sample_exercise() -> void:
+	_start_tremolo_exercise(technique_sample_demo_idx)
+	technique_sample_elapsed = 0.0
+	technique_sample_event_elapsed = TREMOLO_SAMPLE_INTERVAL
+	technique_sample_sequence_idx = 0
+	technique_sample_in_gap = false
+	var exercise: Dictionary = TREMOLO_EXERCISES[technique_sample_demo_idx]
+	if tremolo_status_label:
+		tremolo_status_label.text = "Đang nghe mẫu %s..." % exercise["title"]
+		tremolo_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu %s" % exercise["title"])
+
+
+func _process_tremolo_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= TREMOLO_EXERCISES.size():
+				if tremolo_progress_bar:
+					tremolo_progress_bar.value = float(TREMOLO_EXERCISES.size())
+				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật vê.", tremolo_status_label)
+			else:
+				_prepare_tremolo_sample_exercise()
+		return
+
+	technique_sample_elapsed += delta
+	technique_sample_event_elapsed += delta
+	var notes: Array = TREMOLO_EXERCISES[technique_sample_demo_idx]["notes"]
+	while technique_sample_event_elapsed >= TREMOLO_SAMPLE_INTERVAL:
+		technique_sample_event_elapsed -= TREMOLO_SAMPLE_INTERVAL
+		var note_name := str(notes[technique_sample_sequence_idx % notes.size()])
+		var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
+		if string_idx >= 0:
+			zither_board.call("pluck", string_idx)
+		technique_sample_sequence_idx += 1
+	if technique_sample_elapsed >= TREMOLO_SAMPLE_DURATION:
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _process_technique_sample(delta: float) -> void:
+	match technique_sample_kind:
+		TechniqueSampleKind.GLISSANDO:
+			_process_glissando_sample(delta)
+		TechniqueSampleKind.PRESS:
+			_process_press_sample(delta)
+		TechniqueSampleKind.VIBRATO:
+			_process_vibrato_sample(delta)
+		TechniqueSampleKind.TREMOLO:
+			_process_tremolo_sample(delta)
+
+
 func _is_note_missing(note_idx: int) -> bool:
 	if current_lesson_id != "dan_tranh_level_1_bai_3_practice":
 		return false
@@ -3155,6 +3440,7 @@ func _is_note_missing(note_idx: int) -> bool:
 
 
 func _start_practice():
+	_stop_technique_sample()
 	current_state = State.PRACTICE
 	if _is_error_flash_demo():
 		if error_flash_tween and error_flash_tween.is_running():
@@ -3211,15 +3497,23 @@ func _start_practice():
 
 	if _is_glissando_practice():
 		_start_glissando_round(0)
+		if is_sample_mode:
+			_begin_glissando_sample()
 		return
 	if _is_press_practice():
 		_start_press_practice()
+		if is_sample_mode:
+			_begin_press_sample()
 		return
 	if _is_vibrato_practice():
 		_start_vibrato_practice()
+		if is_sample_mode:
+			_begin_vibrato_sample()
 		return
 	if _is_tremolo_practice():
 		_start_tremolo_practice()
+		if is_sample_mode:
+			_begin_tremolo_sample()
 		return
 		
 	# Determine BPM based on current lesson
@@ -3540,6 +3834,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 
 func _finish_practice():
+	_stop_technique_sample()
 	current_state = State.COMPLETED
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
@@ -3613,6 +3908,7 @@ func _finish_practice():
 			)
 
 func _on_back():
+	_stop_technique_sample()
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
 		analyzer.contour_tracking_mode = false
@@ -4094,6 +4390,8 @@ func _toggle_pause():
 
 func _toggle_sample_mode():
 	is_sample_mode = not is_sample_mode
+	if not is_sample_mode:
+		technique_sample_input_cooldown = 0.55
 	_start_practice()
 
 func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Button:
