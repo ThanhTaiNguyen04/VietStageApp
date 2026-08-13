@@ -7,7 +7,6 @@ const C_JADE := Color("#173f2d")
 const C_JADE_LIGHT := Color("#245f43")
 const C_GOLD := Color("#c59626")
 const C_GOLD_LIGHT := Color("#f0cb62")
-const C_GOLD_DARK := Color("#7a5b12")
 const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
@@ -26,174 +25,118 @@ const LEVELS := [
 	{
 		"level": 1,
 		"title": "LÝ THUYẾT VÀ NHẠC LÝ CƠ BẢN",
-		"sessions": "Bài 1–9",
-		"objective": "Làm quen đàn tranh, tư thế, nhạc lý cơ bản và luyện từng nốt ở các quãng thấp, trung, cao.",
+		"sessions": "Bài 1–9 (gồm 4.1–4.3 và 5.1)",
+		"objective": "Làm quen đàn tranh, nhạc lý cơ bản, luyện các nốt và hoàn thiện bài Lý Cây Đa.",
 		"lessons": [
-			{
-				"number": 1,
-				"title": "Giới thiệu, nhạc lý và tư thế tay & đàn",
-				"type": "both",
-				"video": "Xem video hướng dẫn lý thuyết nhạc lý, cấu tạo đàn tranh và tư thế ngồi, tư thế tay chuẩn.",
-				"practice": "Nhận biết âm sắc dây đàn và làm quen tư thế tay gảy.",
-				"practice_title": "Làm quen âm sắc & tư thế",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"],
-				"durations": [1.5, 1.5, 1.5, 1.5, 2.0]
-			},
-			{
-				"number": 2,
-				"title": "Luyện tập 10 nốt cơ bản quãng thấp & trung",
-				"type": "practice",
-				"video": "Cách nhận diện cao độ 10 nốt nhạc cơ bản ở quãng thấp và trung trên Đàn Tranh.",
-				"practice": "Gảy lần lượt từng nốt: Sol1, La1, Đô2, Rê2, Mi2, Sol2, La2, Đô3, Rê3, Mi3.",
-				"practice_title": "Luyện tập 10 nốt cơ bản",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"],
-				"durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]
-			},
-			{
-				"number": 3,
-				"title": "Luyện tập 7 nốt quãng cao",
-				"type": "practice",
-				"video": "Cách nhận diện cao độ 7 nốt nhạc ở quãng cao trên khuông nhạc.",
-				"practice": "Gảy lần lượt từng nốt: Sol3, La3, Đô4, Rê4, Mi4, Sol4, La4.",
-				"practice_title": "Luyện tập 7 nốt quãng cao",
-				"sheet": ["Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"],
-				"durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]
-			},
-			{
-				"number": 4,
-				"title": "Tempo, khóa Sol và số chỉ nhịp 4/4, 2/4",
-				"type": "practice",
-				"video": "Tìm hiểu định nghĩa Tempo (tốc độ bài nhạc), Khóa Sol, Nhịp 4/4 và Nhịp 2/4 — cách đếm phách và giữ nhịp đều khi chơi.",
-				"practice": "Luyện tập giữ nhịp độ đều đặn theo máy đếm nhịp: gảy nốt đen theo nhịp 4/4 (đếm 1-2-3-4) rồi nhịp 2/4 (đếm 1-2).",
-				"practice_title": "Tempo, Khóa Sol & Số chỉ nhịp",
-				"sheet": [
-					"Sol2", "La2", "Đô3", "Rê3",
-					"Mi3", "Rê3", "Đô3", "La2",
-					"Sol2", "La2", "Đô3", "Rê3",
-					"Mi3", "Sol3", "Rê3", "Đô3"
-				],
-				"durations": [
-					1.0, 1.0, 1.0, 1.0,
-					1.0, 1.0, 1.0, 1.0,
-					1.0, 1.0, 1.0, 1.0,
-					1.0, 1.0, 1.0, 2.0
-				]
-			},
-			{
-				"number": 5,
-				"title": "Nhạc lý: Trường độ nốt nhạc",
-				"type": "practice",
-				"video": "Tìm hiểu về trường độ nốt nhạc: nốt trắng (2 phách), nốt đen (1 phách), nốt móc đơn (nửa phách), nốt móc kép (1/4 phách).",
-				"practice": "Luyện tập nhận diện và gảy phân biệt các nốt có trường độ khác nhau trên khuông nhạc.",
-				"practice_title": "Trường độ nốt nhạc",
-				"sheet": ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"],
-				"durations": [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]
-			},
-			{
-				"number": 6,
-				"title": "Cấu tạo quãng thấp, cao, trầm",
-				"type": "both",
-				"video": "Tìm hiểu về cấu tạo các quãng âm trên Đàn Tranh và cách nhận biết các quãng trầm, trung, cao.",
-				"practice": "Nhận biết âm vực quãng bằng cách gảy các dây tương ứng trên đàn.",
-				"practice_title": "Cấu tạo quãng âm",
-				"sheet": ["Sol1", "Sol2", "Sol3", "La1", "La2", "La3"],
-				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-			},
-			{
-				"number": 7,
-				"title": "Vai trò hai tay & số ngón",
-				"type": "both",
-				"video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.",
-				"practice": "Luyện tập tư thế tay phối hợp cơ bản.",
-				"practice_title": "Kỹ thuật hai tay & Số ngón",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2"],
-				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
-			},
-			{
-				"number": 8,
-				"title": "Tư thế tay và tư thế đặt đàn",
-				"type": "both",
-				"video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.",
-				"practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.",
-				"practice_title": "Tư thế đặt đàn & Tay gảy",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"],
-				"durations": [1.0, 1.0, 1.0, 1.0, 2.0]
-			},
-			{
-				"number": 9,
-				"title": "Luyện ngón 1 ngón, 2 ngón, 3 ngón",
-				"type": "practice",
-				"video": "Bài tập luyện ngón chạy dây cơ bản sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải.",
-				"practice": "Thực hành gảy chuỗi nốt chạy đều sử dụng kỹ thuật luyện ngón phối hợp.",
-				"practice_title": "Chạy ngón phối hợp",
-				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"],
-				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-			}
+			{"number": 1, "display_number": "1", "title": "Tìm hiểu nhạc cụ Đàn tranh", "type": "both", "video": "Xem video hướng dẫn lý thuyết nhạc lý, cấu tạo đàn tranh và tư thế ngồi, tư thế tay chuẩn.", "practice": "Nhận biết âm sắc dây đàn và làm quen tư thế tay gảy.", "practice_title": "Làm quen âm sắc & tư thế", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.5, 1.5, 1.5, 1.5, 2.0]},
+			{"number": 5, "display_number": "2", "title": "Nhịp điệu cơ bản", "type": "practice", "video": "Tìm hiểu về trường độ nốt nhạc: nốt trắng, nốt đen, nốt móc đơn, nốt móc kép.", "practice": "Luyện tập nhận diện và gảy phân biệt các nốt có trường độ khác nhau trên khuông nhạc.", "practice_title": "Trường độ nốt nhạc", "sheet": ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"], "durations": [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]},
+			{"number": 4, "display_number": "3", "title": "Đọc bản nhạc cơ bản", "type": "practice", "video": "Tìm hiểu định nghĩa Tempo (tốc độ bài nhạc), Khóa Sol, Nhịp 4/4 và Nhịp 2/4 — cách đếm phách và giữ nhịp đều khi chơi.", "practice": "Luyện tập giữ nhịp độ đều đặn theo máy đếm nhịp: gảy nốt đen theo nhịp 4/4 rồi nhịp 2/4.", "practice_title": "Tempo, Khóa Sol & Số chỉ nhịp", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "Rê3", "Đô3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 7, "display_number": "4.1", "title": "Kỹ thuật gảy ngón 1", "type": "both", "video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.", "practice": "Luyện tập tư thế tay phối hợp cơ bản.", "practice_title": "Kỹ thuật hai tay & Số ngón", "sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2"], "durations": [1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 8, "display_number": "4.2", "title": "Kỹ thuật gảy ngón 2", "type": "both", "video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.", "practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.", "practice_title": "Tư thế đặt đàn & Tay gảy", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 9, "display_number": "4.3", "title": "Kỹ thuật gảy ngón 3", "type": "practice", "video": "Bài tập luyện ngón chạy dây cơ bản sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải.", "practice": "Thực hành gảy chuỗi nốt chạy đều sử dụng kỹ thuật luyện ngón phối hợp.", "practice_title": "Chạy ngón phối hợp", "sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 2, "display_number": "5", "title": "Luyện gảy các nốt cơ bản – Phần 1", "type": "practice", "video": "Cách nhận diện cao độ 10 nốt nhạc cơ bản ở quãng thấp và trung trên Đàn Tranh.", "practice": "Gảy lần lượt từng nốt: Sol1, La1, Đô2, Rê2, Mi2, Sol2, La2, Đô3, Rê3, Mi3.", "practice_title": "Luyện tập 10 nốt cơ bản", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"], "durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]},
+			{"number": 6, "display_number": "5.1", "title": "Cấu tạo quãng thấp, cao, trầm", "type": "both", "video": "Tìm hiểu về cấu tạo các quãng âm trên Đàn Tranh và cách nhận biết các quãng trầm, trung, cao.", "practice": "Nhận biết âm vực quãng bằng cách gảy các dây tương ứng trên đàn.", "practice_title": "Cấu tạo quãng âm", "sheet": ["Sol1", "Sol2", "Sol3", "La1", "La2", "La3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 3, "display_number": "6", "title": "Luyện gảy các nốt cơ bản – Phần 2", "type": "practice", "video": "Cách nhận diện cao độ 7 nốt nhạc ở quãng cao trên khuông nhạc.", "practice": "Gảy lần lượt từng nốt: Sol3, La3, Đô4, Rê4, Mi4, Sol4, La4.", "practice_title": "Luyện tập 7 nốt quãng cao", "sheet": ["Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]},
+			{"number": 10, "display_number": "7", "practice_id": "dan_tranh_level_2_bai_10_practice", "video_id": "dan_tranh_level_2_bai_10_video", "title": "Luyện bài Lý cây đa – Nửa đoạn đầu", "type": "practice", "video": "Hướng dẫn gảy đoạn đầu bài Lý Cây Đa: giai điệu và ngón gảy.", "practice": "Luyện gảy đoạn đầu bài Lý Cây Đa với nhịp độ chậm.", "practice_title": "Lý Cây Đa – Đoạn đầu", "sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2"], "durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 2.0]},
+			{"number": 11, "display_number": "8", "practice_id": "dan_tranh_level_2_bai_11_practice", "video_id": "dan_tranh_level_2_bai_11_video", "title": "Luyện bài Lý cây đa – Nửa đoạn cuối", "type": "practice", "video": "Hướng dẫn gảy đoạn sau bài Lý Cây Đa.", "practice": "Luyện gảy đoạn sau bài Lý Cây Đa.", "practice_title": "Lý Cây Đa – Đoạn sau", "sheet": ["La2", "Đô3", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"], "durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 2.0]},
+			{"number": 12, "display_number": "9", "practice_id": "dan_tranh_level_2_bai_12_practice", "video_id": "dan_tranh_level_2_bai_12_video", "title": "Hoàn thiện bài Lý cây đa", "type": "practice", "video": "Ôn tập và ghép hoàn chỉnh bài Lý Cây Đa.", "practice": "Luyện đánh cả bài Lý Cây Đa với tiết tấu ổn định.", "practice_title": "Lý Cây Đa – Cả bài", "sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"], "durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0]}
 		]
 	},
 	{
 		"level": 2,
-		"title": "LUYỆN THEO BÀI",
-		"sessions": "Bài 10–15",
-		"objective": "Tập từng đoạn rồi ghép hoàn chỉnh hai bản dân ca: Lý Cây Đa và Sứ Thanh Hoa.",
+		"title": "LUYỆN THEO BÀI VÀ KỸ THUẬT DIỄN TẤU",
+		"sessions": "Bài 10–16 và bài test 99+",
+		"objective": "Luyện kỹ thuật Á, nhấn, song thanh, rung dây trước khi hoàn thiện Sứ Thanh Hoa.",
+		"lessons": [
+			{"number": 18, "display_number": "10", "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
+			{"number": 19, "display_number": "11", "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ thuật nhấn", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Kỹ thuật nhấn – Nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
+			{
+				"number": 20,
+				"display_number": "12",
+				"practice_id": "dan_tranh_level_7_bai_20_practice",
+				"title": "Kỹ thuật song thanh",
+				"video": "",
+				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice_title": "Luyện tập: Kỹ thuật song thanh",
+				"sheet": [
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
+			},
+			{"number": 21, "display_number": "13", "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung dây", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]},
+			{"number": 13, "display_number": "14", "title": "Luyện bài Sứ thanh hoa – Nửa đoạn đầu", "type": "practice", "video": "Hướng dẫn gảy đoạn đầu bài Sứ Thanh Hoa: chuyển quãng và nhấn nhả nốt.", "practice": "Luyện gảy đoạn đầu bài Sứ Thanh Hoa ở tốc độ chậm.", "practice_title": "Sứ Thanh Hoa – Đoạn đầu", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0]},
+			{"number": 14, "display_number": "15", "title": "Luyện bài Sứ thanh hoa – Nửa đoạn cuối", "type": "practice", "video": "Hướng dẫn gảy đoạn sau bài Sứ Thanh Hoa.", "practice": "Luyện gảy đoạn sau bài Sứ Thanh Hoa.", "practice_title": "Sứ Thanh Hoa – Đoạn sau", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]},
+			{"number": 15, "display_number": "16", "title": "Hoàn thiện bài Sứ thanh hoa", "type": "practice", "video": "Ôn tập và ghép hoàn chỉnh bài Sứ Thanh Hoa.", "practice": "Luyện đánh cả bài Sứ Thanh Hoa ở BPM 80 với các quãng rộng.", "practice_title": "Sứ Thanh Hoa – Cả bài", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3", "Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]},
+			{"number": 22, "display_number": "99+", "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
+		]
+	},
+	{
+		"level": 3,
+		"title": "LUYỆN NGÓN VÀ DÂN CA CỔ TRUYỀN",
+		"sessions": "Bài 7–8",
+		"objective": "Luyện ngón tay linh hoạt qua các bài tập dân ca cổ truyền có tốc độ cao.",
 		"lessons": [
 			{
-				"number": 10,
-				"title": "Lý Cây Đa – Đoạn đầu",
-				"type": "practice",
-				"video": "Hướng dẫn gảy đoạn đầu bài Lý Cây Đa: giai điệu và ngón gảy.",
-				"practice": "Luyện gảy đoạn đầu bài Lý Cây Đa với nhịp độ chậm.",
-				"practice_title": "Lý Cây Đa – Đoạn đầu",
-				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2"],
-				"durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 2.0]
+				"number": 7,
+				"title": "Luyện ngón tốc độ cao – Mã Vũ",
+				"video": "Kỹ thuật giữ khung bàn tay vững chãi và di chuyển ngón nhanh trên các phím đàn khi chơi điệu hành khúc Mã Vũ.",
+				"practice": "Thực hành gảy bài nhạc Mã Vũ đoạn 1 đúng trường độ và nhịp độ nhanh.",
+				"practice_title": "Luyện ngón: Mã Vũ",
+				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
+				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0]
 			},
 			{
-				"number": 11,
-				"title": "Lý Cây Đa – Đoạn sau",
-				"type": "practice",
-				"video": "Hướng dẫn gảy đoạn sau bài Lý Cây Đa.",
-				"practice": "Luyện gảy đoạn sau bài Lý Cây Đa.",
-				"practice_title": "Lý Cây Đa – Đoạn sau",
-				"sheet": ["La2", "Đô3", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"],
-				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 2.0]
-			},
-			{
-				"number": 12,
-				"title": "Lý Cây Đa – Ghép cả bài",
-				"type": "practice",
-				"video": "Ôn tập và ghép hoàn chỉnh bài Lý Cây Đa.",
-				"practice": "Luyện đánh cả bài Lý Cây Đa với tiết tấu ổn định.",
-				"practice_title": "Lý Cây Đa – Cả bài",
+				"number": 8,
+				"title": "Dân ca Quan họ – Lý Cây Đa",
+				"video": "Kỹ thuật luyến láy và giữ nhịp lả lướt đặc trưng của dân ca Quan họ Bắc Ninh.",
+				"practice": "Thực hành chơi bài dân ca Lý Cây Đa đạt độ chính xác cao.",
+				"practice_title": "Lý Cây Đa",
 				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"],
 				"durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0]
+			}
+		]
+	},
+	{
+		"level": 4,
+		"title": "KỸ THUẬT TAY TRÁI & HỢP ÂM",
+		"sessions": "Bài 9–10",
+		"objective": "Làm chủ kỹ thuật nhấn rung tay trái và gảy song âm, hợp âm trên Đàn Tranh.",
+		"lessons": [
+			{
+				"number": 9,
+				"title": "Kỹ thuật nhấn Rung tay trái",
+				"video": "Cách nhấn rung tay trái bên trái nhạn đàn để tạo âm ngân luyến truyền cảm, linh hồn Đàn Tranh.",
+				"practice": "Thực hành gảy các nốt ngân dài kết hợp nhấn rung đều tay trái.",
+				"practice_title": "Rung dây Đàn Tranh",
+				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"],
+				"durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
 			},
 			{
-				"number": 13,
-				"title": "Sứ Thanh Hoa – Đoạn đầu",
-				"type": "practice",
-				"video": "Hướng dẫn gảy đoạn đầu bài Sứ Thanh Hoa: chuyển quãng và nhấn nhả nốt.",
-				"practice": "Luyện gảy đoạn đầu bài Sứ Thanh Hoa ở tốc độ chậm.",
-				"practice_title": "Sứ Thanh Hoa – Đoạn đầu",
-				"sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2"],
-				"durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0]
-			},
+				"number": 10,
+				"title": "Học Song âm & Hợp âm Đô Trưởng",
+				"video": "Kỹ thuật gảy đồng thời hai hoặc ba dây đàn cùng lúc để tạo thành hợp âm Đô trưởng (C) vang rền.",
+				"practice": "Thực hành gảy song âm và hợp âm Đô trưởng đúng kỹ thuật tay phải.",
+				"practice_title": "Hợp âm Đô trưởng",
+				"sheet": ["Đô2+Mi2", "Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"],
+				"durations": [2.0, 2.0, 4.0, 4.0]
+			}
+		]
+	},
+	{
+		"level": 5,
+		"title": "MASTER – NHẠC HIỆN ĐẠI",
+		"sessions": "Session 28–30",
+		"objective": "Ứng dụng kỹ năng Đàn Tranh vào nhạc hiện đại và thử thách tổng hợp.",
+		"lessons": [
 			{
-				"number": 14,
-				"title": "Sứ Thanh Hoa – Đoạn sau",
-				"type": "practice",
-				"video": "Hướng dẫn gảy đoạn sau bài Sứ Thanh Hoa.",
-				"practice": "Luyện gảy đoạn sau bài Sứ Thanh Hoa.",
-				"practice_title": "Sứ Thanh Hoa – Đoạn sau",
-				"sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3"],
-				"durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]
-			},
-			{
-				"number": 15,
-				"title": "Sứ Thanh Hoa – Ghép cả bài",
-				"type": "practice",
-				"video": "Ôn tập và ghép hoàn chỉnh bài Sứ Thanh Hoa.",
-				"practice": "Luyện đánh cả bài Sứ Thanh Hoa ở BPM 80 với các quãng rộng.",
-				"practice_title": "Sứ Thanh Hoa – Cả bài",
+				"number": 11,
+				"title": "Nhạc hiện đại – Sứ Thanh Hoa",
+				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
+				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 with các quãng rộng.",
+				"practice_title": "Sứ Thanh Hoa",
 				"sheet": [
 					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
 					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
@@ -210,57 +153,14 @@ const LEVELS := [
 					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
 					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
 				]
-			}
-		]
-	},
-	{
-		"level": 3,
-		"title": "KỸ THUẬT NÂNG CAO",
-		"sessions": "Bài 16–19",
-		"objective": "Làm chủ các kỹ thuật tay trái và tay phải đặc trưng: á/vuốt, nhấn, rung và song thanh.",
-		"lessons": [
-			{
-				"number": 16,
-				"title": "Kỹ năng á (vuốt 17 dây)",
-				"type": "practice",
-				"video": "Kỹ thuật á/vuốt lướt qua các dây để tạo âm rền liền mạch trên cả 17 dây.",
-				"practice": "Gảy vuốt từ dây trầm nhất lên dây cao nhất rồi ngược lại, giữ âm đều.",
-				"practice_title": "Kỹ năng á – Vuốt 17 dây",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"],
-				"durations": [0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 0.35, 1.0]
 			},
 			{
-				"number": 17,
-				"title": "Kỹ năng nhấn ra nốt Si và nốt Fa",
-				"type": "practice",
-				"video": "Kỹ thuật nhấn dây bằng tay trái để tạo nốt Fa từ Mi và nốt Si từ La.",
-				"practice": "Gảy Mi2 rồi nhấn thành Fa2; gảy La2 rồi nhấn thành Si2; lặp lại ở quãng cao.",
-				"practice_title": "Nhấn ra Si và Fa",
-				"sheet": ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"],
-				"durations": [1.0, 1.5, 1.0, 1.5, 1.0, 1.5, 1.0, 2.0],
-				"cues": ["circle", "press", "circle", "press", "circle", "press", "circle", "press"]
-			},
-			{
-				"number": 18,
-				"title": "Kỹ năng rung dây bằng tay trái",
-				"type": "practice",
-				"video": "Kỹ thuật rung tay trái (vibrato) tạo âm ngân luyến truyền cảm, linh hồn Đàn Tranh.",
-				"practice": "Gảy nốt ngân dài và rung đều tay trái giữ âm vang.",
-				"practice_title": "Rung dây Đàn Tranh",
-				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"],
-				"durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
-				"cues": ["hold", "hold", "hold", "hold", "hold", "hold", "hold", "hold"]
-			},
-			{
-				"number": 19,
-				"title": "Kỹ năng song thanh (rung cùng 1 nốt trên 2 quãng)",
-				"type": "practice",
-				"video": "Kỹ thuật song thanh: gảy và rung cùng một nốt ở hai quãng cách nhau một quãng tám.",
-				"practice": "Gảy đồng thời nốt Sol1+Sol2, La1+La2, Đô2+Đô3… để tạo âm song thanh vang rền.",
-				"practice_title": "Song thanh 2 quãng",
-				"sheet": ["Sol1+Sol2", "La1+La2", "Đô2+Đô3", "Rê2+Rê3", "Mi2+Mi3", "Sol2+Sol3", "La2+La3", "Đô3+Đô4"],
-				"durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0],
-				"cues": ["chord", "chord", "chord", "chord", "chord", "chord", "chord", "chord"]
+				"number": 12,
+				"title": "Boss Stage – Thử thách sinh tồn",
+				"video": "",
+				"practice": "Chọn một bài đã học và biểu diễn bằng giao diện luyện tập hiện có.",
+				"practice_title": "Thử thách sinh tồn 17 dây",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 			}
 		]
 	},
@@ -273,7 +173,6 @@ const LEVELS := [
 			{
 				"number": 13,
 				"title": "Bài 1: Hợp âm là gì?",
-				"type": "practice",
 				"video": "res://Video/DanBauDoan12Bai1.ogv",
 				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
 				"practice_title": "Luyện tập: Hợp âm là gì",
@@ -283,7 +182,6 @@ const LEVELS := [
 			{
 				"number": 14,
 				"title": "Bài 2: Song âm (2 dây)",
-				"type": "practice",
 				"video": "res://Video/DanBauDoan12Bai1.ogv",
 				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
 				"practice_title": "Luyện tập: Song âm",
@@ -298,12 +196,11 @@ const LEVELS := [
 			{
 				"number": 15,
 				"title": "Bài 3: Hợp âm Đô trưởng (C)",
-				"type": "practice",
 				"video": "res://Video/DanBauDoan12Bai1.ogv",
 				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
 				"practice_title": "Luyện tập: Đô trưởng",
 				"sheet": [
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
 				],
@@ -312,7 +209,6 @@ const LEVELS := [
 			{
 				"number": 16,
 				"title": "Bài 4: Hợp âm La thứ (Am)",
-				"type": "practice",
 				"video": "res://Video/DanBauDoan12Bai1.ogv",
 				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
 				"practice_title": "Luyện tập: La thứ",
@@ -326,7 +222,6 @@ const LEVELS := [
 			{
 				"number": 17,
 				"title": "Bài 5: Chuyển hợp âm",
-				"type": "practice",
 				"video": "res://Video/DanBauDoan12Bai1.ogv",
 				"practice": "Chuyển mượt mà giữa Đô trưởng (C) và La thứ (Am).",
 				"practice_title": "Luyện tập: Chuyển hợp âm",
@@ -336,6 +231,66 @@ const LEVELS := [
 					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"
 				],
 				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
+			}
+		]
+	},
+	{
+		"level": 7,
+		"title": "KỸ THUẬT NÂNG CAO MỞ RỘNG",
+		"sessions": "Bài 17–18 (gồm 18.1–18.2)",
+		"objective": "Mở rộng khả năng diễn tấu với kỹ thuật vê và hợp âm ba âm cơ bản.",
+		"lessons": [
+			{
+				"number": 30,
+				"display_number": "17",
+				"practice_id": "dan_tranh_level_8_bai_30_practice",
+				"title": "Kỹ thuật Vê",
+				"video": "",
+				"practice": "Thực hành kỹ thuật vê đều tay để tạo âm thanh liên tục và tròn tiếng.",
+				"practice_title": "Kỹ thuật Vê",
+				"sheet": ["Đô2", "Mi2", "Sol2", "Mi2", "Đô2", "Mi2", "Sol2", "Mi2"],
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+			},
+			{
+				"number": 31,
+				"display_number": "18",
+				"practice_id": "dan_tranh_level_8_bai_31_practice",
+				"title": "Hợp âm ba âm cơ bản",
+				"video": "",
+				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
+				"practice_title": "Hợp âm ba âm cơ bản",
+				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
+			},
+			{
+				"number": 32,
+				"display_number": "18.1",
+				"practice_id": "dan_tranh_level_8_bai_32_practice",
+				"title": "Hợp âm Đô trưởng",
+				"video": "",
+				"practice": "Thực hành đánh hợp âm Đô trưởng bằng ba ngón, giữ tiếng đàn rõ và đồng đều.",
+				"practice_title": "Hợp âm Đô trưởng – Ba ngón",
+				"sheet": [
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
+				],
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+			},
+			{
+				"number": 33,
+				"display_number": "18.2",
+				"practice_id": "dan_tranh_level_8_bai_33_practice",
+				"title": "Hợp âm La thứ",
+				"video": "",
+				"practice": "Thực hành đánh hợp âm La thứ bằng ba ngón, giữ nhịp chắc và cân bằng các dây.",
+				"practice_title": "Hợp âm La thứ – Ba ngón",
+				"sheet": [
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
+					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
+					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
 			}
 		]
 	}
@@ -365,30 +320,29 @@ func _ready() -> void:
 	selected_level = clampi(selected_level, 1, LEVELS.size())
 	InstrumentSelect.selected_instrument = "dan_tranh"
 	SecureDataManager.data["selected_instrument"] = "dan_tranh"
-
+	
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Minigame"
+	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
-
+	
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Bảng xếp hạng"
+	btn_leaderboard.text = "Xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
 	side_v.move_child(btn_leaderboard, 6)
-
+	
 	_build_theme()
 	_build_sidebar()
 	_build_lessons()
 	_build_quiz_btn()
 	_build_profile_btn()
-
 	lessons_hbox.draw.connect(_draw_lesson_path)
 	lessons_hbox.sort_children.connect(func() -> void: lessons_hbox.queue_redraw())
 	_connect_navigation()
@@ -409,7 +363,7 @@ func _build_theme() -> void:
 	top_s.border_width_bottom = 1
 	top_s.content_margin_bottom = 0
 	top_bar.add_theme_stylebox_override("panel", top_s)
-
+	
 	var top_blur_mat = ShaderMaterial.new()
 	var top_blur_shader = Shader.new()
 	top_blur_shader.code = """
@@ -433,7 +387,7 @@ func _build_theme() -> void:
 	var heading_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
 	if heading_font:
 		page_title.add_theme_font_override("font", heading_font)
-
+	
 	back_btn.text = ""
 	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back_btn.expand_icon = true
@@ -444,7 +398,7 @@ func _build_theme() -> void:
 	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_bouncy(back_btn)
-
+	
 	if change_course_btn:
 		_style_outline_button(change_course_btn)
 
@@ -552,14 +506,14 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		4: tex_name = "trending-up"
 		5: tex_name = "user"
 		6: tex_name = "home"
-
+	
 	var texture : Texture2D = null
 	if _sidebar_icon_cache.has(t):
 		texture = _sidebar_icon_cache[t]
 	elif tex_name != "":
 		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
 		_sidebar_icon_cache[t] = texture
-
+	
 	if texture:
 		var icon_sz := Vector2(36, 36)
 		if t == 0:
@@ -570,9 +524,9 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 func _build_lessons() -> void:
 	for child in lessons_hbox.get_children():
 		child.queue_free()
-	lessons_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	var level_data := get_level_data(selected_level)
-	page_title.text = "ĐÀN TRANH · LEVEL %d" % selected_level
+	var display_level := 3 if selected_level == 7 else selected_level
+	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % display_level
 	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
@@ -583,12 +537,15 @@ func _build_lessons() -> void:
 
 func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, completed: Array) -> VBoxContainer:
 	var lesson_number := int(lesson["number"])
+	var display_number := str(lesson.get("display_number", lesson_number))
 	var lesson_type := str(lesson.get("type", "practice"))
-	var practice_id := _lesson_id(lesson_number, "practice")
+	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
 	var lesson_ready: bool = not REQUIRE_SEQUENTIAL_UNLOCK or index == 0
 	if REQUIRE_SEQUENTIAL_UNLOCK and index > 0:
 		var previous: Dictionary = lessons[index - 1]
-		lesson_ready = completed.has(_lesson_id(int(previous["number"]), "practice"))
+		var previous_number := int(previous["number"])
+		var previous_id := str(previous.get("practice_id", _lesson_id(previous_number, "practice")))
+		lesson_ready = completed.has(previous_id)
 	var practice_completed := completed.has(practice_id)
 	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
 
@@ -596,11 +553,11 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	column.custom_minimum_size = Vector2.ZERO
 	column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	column.alignment = BoxContainer.ALIGNMENT_BEGIN
-	column.add_theme_constant_override("separation", 18)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", 24)
 
 	var title := Label.new()
-	title.text = "BÀI %d" % lesson_number
+	title.text = "BÀI %s" % display_number
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", C_TEXT if lesson_ready else Color(C_MUTED, 0.45))
@@ -609,36 +566,28 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		title.add_theme_font_override("font", bold_font)
 	column.add_child(title)
 
-	var main_action := "Luyện tập"
-	var main_is_video := lesson_type == "video"
-	if main_is_video:
-		main_action = "Hướng dẫn"
-	var lesson_button := _create_circle_button(main_action, str(lesson["title"]), practice_unlocked or main_is_video, practice_completed)
+	# Mọi level đàn tranh đều hiển thị trực tiếp tên bài, không lặp thêm nhãn hành động.
+	var lesson_action := ""
+	var lesson_button := _create_circle_button(lesson_action, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
-	if main_is_video:
-		lesson_button.pressed.connect(_open_lesson.bind(lesson, "video"))
-	else:
-		lesson_button.pressed.connect(_open_lesson.bind(lesson, "practice"))
+	lesson_button.pressed.connect(_open_lesson.bind(lesson, "practice"))
 	column.add_child(lesson_button)
-
 	if lesson_type == "both":
-		var video_btn := _create_small_btn("🎬 Hướng dẫn", practice_unlocked)
-		video_btn.name = "VideoBtn"
-		video_btn.pressed.connect(_open_lesson.bind(lesson, "video"))
-		column.add_child(video_btn)
-
+		var video_button := _create_small_btn("Hướng dẫn", practice_unlocked)
+		video_button.name = "VideoBtn"
+		video_button.pressed.connect(_open_lesson.bind(lesson, "video"))
+		column.add_child(video_button)
 	return column
 
 func _create_small_btn(label: String, unlocked: bool) -> Button:
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(150, 42)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.disabled = not unlocked
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if unlocked else Control.CURSOR_ARROW
 	button.text = label
-	var bg := _flat(Color(0, 0, 0, 0), C_JADE, 18, 1)
-	var hover := _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), C_GOLD, 18, 1)
-	button.add_theme_stylebox_override("normal", bg)
-	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("normal", _flat(Color(0, 0, 0, 0), C_JADE, 18, 1))
+	button.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12), C_GOLD, 18, 1))
 	button.add_theme_stylebox_override("pressed", _flat(Color(C_JADE, 0.12), C_JADE, 18, 1))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_color_override("font_color", C_JADE)
@@ -658,17 +607,20 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	button.disabled = not unlocked
 
 	if completed:
-		button.text = "✓\n%s\nHoàn thành" % action
+		button.text = "✓\n%s\nHoàn thành" % (lesson_title if action.is_empty() else action)
 	elif unlocked:
-		var icon := "🎬" if action == "Hướng dẫn" else "🎵"
-		button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
+		if action.is_empty():
+			button.text = lesson_title
+		else:
+			var icon := "🎬" if action == "Hướng dẫn" else "🎵"
+			button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
 	else:
 		button.text = "🔒"
 
 	var bg_color := Color(0.95, 0.93, 0.89, 0.6)
 	var border_color := Color(0.85, 0.82, 0.78, 1.0)
 	var text_color := Color(C_MUTED, 0.8)
-
+	
 	if completed:
 		bg_color = C_JADE
 		border_color = C_GOLD
@@ -685,11 +637,11 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
 	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
 	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
-
+	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
 		s_normal.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-
+		
 	var s_hover := s_normal.duplicate() as StyleBoxFlat
 	if unlocked:
 		if completed:
@@ -721,7 +673,7 @@ func _draw_lesson_path() -> void:
 		return
 	var centers: Array[Vector2] = []
 	var node_unlocked: Array[bool] = []
-
+	
 	for child in lessons_hbox.get_children():
 		var col := child as VBoxContainer
 		if not col: continue
@@ -730,10 +682,10 @@ func _draw_lesson_path() -> void:
 			var l_center: Vector2 = col.position + l_btn.position + l_btn.size / 2.0
 			centers.append(l_center)
 			node_unlocked.append(not l_btn.disabled)
-
+			
 	if centers.is_empty():
 		return
-
+		
 	# Ensure all circles lie on the exact same horizontal straight line (Y coordinate)
 	var line_y := centers[0].y
 	for idx in range(centers.size() - 1):
@@ -765,7 +717,7 @@ func _create_lesson_card(lesson: Dictionary) -> PanelContainer:
 	margin.add_child(content)
 
 	var badge := Label.new()
-	badge.text = "BÀI %d" % lesson["number"]
+	badge.text = "BÀI %s" % str(lesson.get("display_number", lesson["number"]))
 	badge.add_theme_color_override("font_color", C_GOLD)
 	badge.add_theme_font_size_override("font_size", 17)
 	content.add_child(badge)
@@ -892,6 +844,7 @@ func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
 			if bottom_spacer: bottom_spacer.hide()
 			for button: Button in navigation:
 				button.hide()
+			_apply_sidebar_presentation(false)
 		)
 
 func _apply_sidebar_presentation(expanded: bool) -> void:
@@ -924,35 +877,43 @@ func _go_to_levels() -> void:
 
 func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	var lesson_number := int(lesson["number"])
-
+	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])
 	var typed_sheet: Array[String] = []
 	typed_sheet.assign(lesson.get("sheet", []))
 	PracticeRoom.current_song_sheet = typed_sheet
-
+	
 	var typed_durations: Array[float] = []
 	typed_durations.assign(lesson.get("durations", []))
 	LessonDanTranh.current_song_durations = typed_durations
-
+	
 	var typed_cues: Array[String] = []
 	typed_cues.assign(lesson.get("cues", []))
 	LessonDanTranh.current_song_cues = typed_cues
 
-	var lesson_type := str(lesson.get("type", "practice"))
+	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
+	# The mode is stored on Level 7 / Bài 18 itself, so this route cannot collide
+	# with Level 6 / Bài 14 song âm even if selected_level ever becomes stale.
+	if str(lesson.get("practice_mode", "")) == "glissando_17":
+		SecureDataManager.active_lesson_id = practice_id
+		LessonDanTranh.force_glissando_start = true
+		_fade_to("res://scenes/LessonDanTranh.tscn")
+		return
+	
 	if activity == "video":
-		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
+		SecureDataManager.active_lesson_id = str(lesson.get("video_id", _lesson_id(lesson_number, "video")))
 		var VP = load("res://scripts/VideoPlayer.gd")
-		var v_path := str(lesson.get("video", ""))
-		if not v_path.begins_with("res://"):
-			v_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
-		if not ResourceLoader.exists(v_path):
-			v_path = "res://Video/DT_LV1_B1.ogv"
-		VP.custom_video_path = v_path
+		var video_path := str(lesson.get("video", ""))
+		if not video_path.begins_with("res://"):
+			video_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
+		if not ResourceLoader.exists(video_path):
+			video_path = "res://Video/DT_LV1_B1.ogv"
+		VP.custom_video_path = video_path
 		VP.custom_subtitles = VP.SUBTITLES_DAN_TRANH
 		_fade_to("res://scenes/VideoPlayer.tscn")
 	else:
-		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "practice")
+		SecureDataManager.active_lesson_id = practice_id
 		_fade_to("res://scenes/LessonDanTranh.tscn")
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
@@ -998,7 +959,7 @@ func _open_quiz() -> void:
 	for lesson: Dictionary in level_data.get("lessons", []):
 		var number := int(lesson.get("number", 0))
 		if number > 0:
-			ids.append(_lesson_id(number, "practice"))
+			ids.append(str(lesson.get("practice_id", _lesson_id(number, "practice"))))
 	LearningActivityContextScript.configure("dan_tranh", ids, "res://scenes/LessonDanTranhList.tscn")
 	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
@@ -1006,6 +967,8 @@ func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size
 	var mobile: bool = viewport_size.x < 850.0 or viewport_size.x < viewport_size.y
 	sidebar.visible = not mobile
+	if not mobile:
+		_set_sidebar_expanded(_sidebar_expanded, false)
 	var top_margin := $Root/RightContent/TopBar/TopM as MarginContainer
 	top_margin.add_theme_constant_override("margin_left", 16 if mobile else 36)
 	top_margin.add_theme_constant_override("margin_right", 16 if mobile else 36)
@@ -1020,14 +983,10 @@ func _apply_responsive_layout() -> void:
 	content_margin.add_theme_constant_override("margin_left", 18 if mobile else 48)
 	var sep := 32 if mobile else 64
 	lessons_hbox.add_theme_constant_override("separation", sep)
-	lessons_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	for col in lessons_hbox.get_children():
 		if col is VBoxContainer:
-			var col_min_h := 288.0 if mobile else 358.0
-			col.custom_minimum_size = Vector2(0, col_min_h)
+			col.custom_minimum_size = Vector2.ZERO
 			col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			col.alignment = BoxContainer.ALIGNMENT_BEGIN
 			var btn := col.get_node_or_null("LessonBtn") as Button
 			if btn:
 				var sz := Vector2(180, 180) if mobile else Vector2(250, 250)

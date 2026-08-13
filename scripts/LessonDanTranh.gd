@@ -4,6 +4,9 @@ class_name LessonDanTranh
 const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
+const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
+const LEVEL_7_GLISSANDO_TITLE := "Kỹ năng á (vuốt 17 dây)"
+const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
 var current_state = State.INTRO
@@ -79,10 +82,30 @@ class PitchMeterDraw extends Control:
 			# Needle pointer (bright glowing vertical bar + circle cap)
 			draw_line(Vector2(ptr_x, cy - 10), Vector2(ptr_x, cy + 10), ptr_color, 3.5)
 			draw_circle(Vector2(ptr_x, cy), 5.0, ptr_color)
+
+
+var glissando_sheet: Control
+var glissando_progress_label: Label
+var glissando_progress_bar: ProgressBar
+var error_flash_overlay: Control
+var error_flash_badge: Control
+var error_flash_halo: Control
+var error_flash_detail_label: Label
+var error_flash_timer := 0.75
+var error_flash_tween: Tween
+var error_pulse_tween: Tween
+var error_shake_tween: Tween
+var error_flash_note: Dictionary = {}
+var error_feedback_player: AudioStreamPlayer
+var error_tooltip_final_position := Vector2.ZERO
+var error_feedback_showing := false
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
 static var current_song_cues: Array[String] = []
+# Set by the Level 7 lesson selector immediately before the scene is opened.
+# This does not rely on any persisted lesson/session value.
+static var force_glissando_start := false
 
 var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
@@ -122,7 +145,15 @@ const ALL_17_NOTES: Array[String] = [
 
 const LESSON_DIALOGUES = {
 	"dan_tranh_level_1_bai_1_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học Đàn Tranh đầu tiên. Hãy ngồi thẳng lưng và đặt đàn trước mặt. Bên lớn hơn được gọi là đầu đàn sẽ nằm bên phía tay phải nhé. Chúng ta sẽ gảy đàn bằng tay phải và tay trái ấn, giữ dây đàn để tạo âm vang.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trong bài học đầu tiên, chúng ta sẽ cùng tìm hiểu nhạc cụ đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Đàn Tranh là nhạc cụ dây truyền thống của Việt Nam. Đàn thường có mười sáu hoặc mười chín dây, thân đàn dạng hộp dài hình thang, dài khoảng một trăm mười đến một trăm hai mươi xen-ti-mét. Đầu lớn rộng hơn là nơi mắc dây và đặt cầu đàn; đầu nhỏ có các trục để lên dây.", "highlight": -1},
+		{"action": "speak", "text": "Các bộ phận chính của đàn gồm có mặt đàn, thành và đáy đàn, cầu đàn, nhạn, trục đàn, dây đàn và móng gảy.", "highlight": -1},
+		{"action": "speak", "text": "Mặt đàn làm từ gỗ nhẹ, thường là gỗ ngô đồng, có dạng vồng lên. Thành và đáy đàn làm từ các loại gỗ cứng; đáy đàn có lỗ thoát âm và vị trí cầm hoặc treo đàn.", "highlight": -1},
+		{"action": "speak", "text": "Cầu đàn nằm ở đầu rộng, giúp cố định dây đàn. Nhạn, còn gọi là ngựa đàn, là các thanh gỗ nhỏ đỡ dây trên mặt đàn và có thể di chuyển để điều chỉnh cao độ của từng dây.", "highlight": -1},
+		{"action": "speak", "text": "Trục đàn nằm ở đầu nhỏ, dùng để căng và lên dây. Dây đàn thường làm bằng thép hoặc inox, có độ dày khác nhau để tạo ra âm thanh cao thấp.", "highlight": -1},
+		{"action": "speak", "text": "Móng gảy được đeo ở ngón cái, ngón trỏ và ngón giữa của tay phải để gảy đàn; có thể làm từ đồi mồi, sừng hoặc kim loại.", "highlight": -1},
+		{"action": "speak", "text": "Đàn Tranh có thể diễn tấu giai điệu, gảy quãng tám, chập âm và vuốt dây để tạo âm thanh mềm mại, đặc trưng. Đàn được dùng để độc tấu, hòa tấu hoặc đệm cho hát; phù hợp với dân ca, nhạc truyền thống và cả các tác phẩm hiện đại.", "highlight": -1},
+		{"action": "speak", "text": "Bây giờ, hãy ngồi thẳng lưng và đặt đàn trước mặt. Đầu lớn của đàn nằm phía tay phải. Chúng ta dùng tay phải để gảy và tay trái để nhấn, giữ dây tạo âm vang. Hãy cùng bắt đầu phần thực hành nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên, hãy làm quen với âm sắc của 5 nốt cơ bản nhất ở quãng trầm của đàn.", "highlight": -1},
 		{"action": "speak", "text": "Dây 1: Nốt Sol1. Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
 		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
@@ -133,7 +164,9 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 10 nốt cơ bản quãng thấp và trung. Chúng ta sẽ làm quen và gảy từng nốt tương ứng với từng dây nhé.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần một.", "highlight": -1},
+		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol một, La một, Đô hai, Rê hai, Mi hai, Sol hai, La hai, Đô ba, Rê ba và Mi ba.", "highlight": -1},
+		{"action": "speak", "text": "Phần này giúp bạn luyện nhận biết và gảy lần lượt các nốt từ Sol một đến Mi ba. Hãy gảy chậm, rõ tiếng và xác định đúng vị trí từng dây. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
 		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
 		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
@@ -148,23 +181,51 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 7 nốt quãng cao trên Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Hãy gảy lần lượt từng nốt từ Sol3 đến La4 khi chúng chạm vạch phách nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần hai.", "highlight": -1},
+		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol ba, La ba, Đô bốn, Rê bốn, Mi bốn, Sol bốn và La bốn.", "highlight": -1},
+		{"action": "speak", "text": "Phần này chúng ta tiếp tục luyện các nốt từ Sol ba đến La bốn. Hãy gảy từng nốt đều nhịp và chú ý không nhầm vị trí các dây cao. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_10_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Lý cây đa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy áp dụng các nốt và ngón gảy đã học để luyện nửa đầu bài Lý cây đa. Bạn nên tập chậm từng câu và đếm nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_11_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Lý cây đa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy chú ý tên nốt, nhịp và ngón gảy của từng câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_12_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Lý cây đa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy ghép hai phần đã học để chơi hoàn chỉnh bài Lý cây đa. Bắt đầu chậm, gảy rõ tiếng và giữ nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_7_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật tay cơ bản với ngón gảy số một.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật gảy ngón một sử dụng ngón cái của tay phải để gảy dây đàn.", "highlight": -1},
+		{"action": "speak", "text": "Ngón bốn tỳ nhẹ lên cầu đàn, các ngón còn lại khum tự nhiên. Hãy giữ bàn tay thả lỏng và không gồng cổ tay. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_1_bai_8_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta tiếp tục kỹ thuật tay cơ bản với ngón gảy số hai.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật gảy ngón hai sử dụng ngón trỏ của tay phải để gảy dây đàn.", "highlight": -1},
+		{"action": "speak", "text": "Các ngón còn lại khum tự nhiên và bàn tay giữ thả lỏng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_9_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài Luyện ngón cơ bản.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải để gảy chuỗi nốt chạy đều đặn nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta tiếp tục kỹ thuật tay cơ bản với ngón gảy số ba.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật gảy ngón ba sử dụng ngón giữa của tay phải để gảy dây đàn.", "highlight": -1},
+		{"action": "speak", "text": "Các ngón còn lại khum tự nhiên và bàn tay giữ thả lỏng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_4_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học: Tempo, Khóa Sol và Số chỉ nhịp. Đây là những kiến thức nền giúp bạn đọc và chơi bài nhạc đúng nhịp độ.", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên là Tempo. Tempo có nghĩa là tốc độ của bài nhạc, tức là bài đó nhanh hay chậm, được đo bằng số phách trong một phút (BPM). Tempo càng lớn thì bài càng nhanh.", "highlight": -1, "show_speed": true},
-		{"action": "speak", "text": "Bạn thấy thanh điều chỉnh tốc độ ở góc trên bên phải không? Bạn có thể chọn 60%, 80%, 100% hay 120% để luyện tập chậm hoặc nhanh hơn tùy ý. Khi mới học, hãy chọn tốc độ chậm nhé.", "highlight": -1, "show_speed": true},
-		{"action": "speak", "text": "Tiếp theo là Khóa Sol. Khóa Sol nằm ở đầu khuông nhạc, xác định vị trí nốt Sol trên khuông. Nhờ khóa Sol ta biết được các nốt nhạc được đặt trên dòng và khe nào. Bạn thấy ký hiệu Khóa Sol ở đầu khuông nhạc không?", "highlight": -1, "show_staff": true, "clef": true},
-		{"action": "speak", "text": "Bây giờ là Số chỉ nhịp. Số chỉ nhịp gồm hai số xếp dọc nhau ở đầu bài, ngay sau Khóa Sol. Số trên cho biết mỗi ô nhịp có bao nhiêu phách, số dưới cho biết nốt nào được tính là một phách.", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Nhịp 4/4 nghĩa là mỗi ô nhịp có 4 phách, mỗi phách là một nốt đen. Bạn thấy hai số 4 chồng lên nhau ở đầu khuông nhạc không? Cách đếm nhịp 4/4 là: 1-2-3-4, 1-2-3-4... Hãy chú ý nhấn mạnh phách 1.", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Nhịp 2/4 nghĩa là mỗi ô nhịp chỉ có 2 phách, mỗi phách là một nốt đen. Số chỉ nhịp lúc này là số 2 ở trên, số 4 ở dưới. Cách đếm nhịp 2/4 là: 1-2, 1-2... nhanh gọn và đều đặn hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
+		{"action": "speak", "text": "Chào bạn! Khi đọc một bản nhạc, chúng ta cần chú ý đến tempo, khóa nhạc và nhịp.", "highlight": -1},
+		{"action": "speak", "text": "Tempo là tốc độ nhanh hoặc chậm của bản nhạc. Tempo có thể được ghi bằng số B P M; ví dụ, sáu mươi B P M chậm hơn một trăm hai mươi B P M. Khi tập đàn, bạn nên bắt đầu chậm, giữ đều nhịp rồi mới tăng tốc.", "highlight": -1, "show_speed": true},
+		{"action": "speak", "text": "Khóa Sol là ký hiệu thường đặt ở đầu khuông nhạc, giúp chúng ta xác định tên và độ cao của các nốt. Dấu khóa này bắt đầu từ dòng thứ hai của khuông nhạc, cho biết đó là vị trí của nốt Sol.", "highlight": -1, "show_staff": true, "clef": true},
+		{"action": "speak", "text": "Nhịp bốn phần tư nghĩa là mỗi ô nhịp có bốn phách và nốt đen được tính là một phách. Ta đếm đều: một, hai, ba, bốn. Phách một thường mạnh hơn các phách còn lại.", "highlight": -1, "show_staff": true, "time_sig": 4},
+		{"action": "speak", "text": "Nhịp hai phần tư nghĩa là mỗi ô nhịp có hai phách và nốt đen cũng được tính là một phách. Ta đếm: một, hai; trong đó phách một mạnh và phách hai nhẹ hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
+		{"action": "speak", "text": "Hiểu tempo và nhịp sẽ giúp chúng ta gảy đàn đúng tốc độ, đúng điểm rơi của phách. Khóa Sol giúp chúng ta đọc đúng nốt trên bản nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1, "show_staff": true, "time_sig": 4},
 		{"action": "speak", "text": "Bây giờ chúng ta cùng luyện tập theo nhịp 4/4. Ta sẽ gảy nốt Sol2, đếm 1-2-3-4 cho mỗi ô nhịp. Hãy gảy nốt Sol2.", "highlight": 0, "note": "Sol2", "time_sig": 4},
 		{"action": "speak", "text": "Gảy nốt La2 giữ đều nhịp 4/4.", "highlight": 1, "note": "La2", "time_sig": 4},
 		{"action": "speak", "text": "Gảy nốt Đô3 giữ đều nhịp 4/4.", "highlight": 2, "note": "Đô3", "time_sig": 4},
@@ -185,7 +246,11 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_5_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học nhạc lý: Trường độ nốt nhạc. Trường độ là thời gian mỗi nốt nhạc vang lên, được đo bằng phách.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu nhịp điệu cơ bản và trường độ của nốt nhạc.", "highlight": -1},
+		{"action": "speak", "text": "Trường độ là độ dài ngắn của âm thanh. Khi gảy một nốt trên đàn Tranh, chúng ta cần biết âm đó kéo dài bao lâu trước khi chuyển sang nốt tiếp theo.", "highlight": -1},
+		{"action": "speak", "text": "Trong nhịp bốn phần tư, nốt trắng dài hai phách; nốt đen dài một phách; nốt móc đơn dài nửa phách và hai nốt móc đơn bằng một nốt đen.", "highlight": -1},
+		{"action": "speak", "text": "Nốt móc kép dài một phần tư phách và bốn nốt móc kép bằng một nốt đen. Bạn có thể hiểu đơn giản: nốt càng nhiều móc thì âm càng ngắn và cần gảy nhanh hơn.", "highlight": -1},
+		{"action": "speak", "text": "Khi chơi đàn Tranh, hãy đếm đều nhịp trong đầu. Với nốt dài, chúng ta chỉ gảy một lần rồi để tiếng đàn ngân đủ số phách, không gảy lặp lại nhiều lần. Hiểu đúng trường độ sẽ giúp bản nhạc đều nhịp, rõ ràng và dễ nghe hơn. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên là Nốt Trắng. Nốt trắng có đầu hình bầu dục rỗng, có thân nốt, kéo dài 2 phách. Hãy gảy nốt Đô2 và giữ âm vang 2 phách.", "highlight": 0, "note": "Đô2", "type": "half"},
 		{"action": "speak", "text": "Thêm một nốt trắng nữa. Hãy gảy nốt Đô2 và giữ 2 phách nhé.", "highlight": 1, "note": "Đô2", "type": "half"},
 		{"action": "speak", "text": "Tiếp theo là Nốt Đen. Nốt đen có đầu hình bầu dục đặc, có thân nốt, kéo dài 1 phách. Hãy gảy nốt Rê2.", "highlight": 2, "note": "Rê2", "type": "quarter"},
@@ -249,6 +314,54 @@ const LESSON_DIALOGUES = {
 	"dan_tranh_level_4_bai_10_practice": [
 		{"action": "speak", "text": "Chúng ta sẽ làm quen với Song âm và Hợp âm Đô Trưởng.", "highlight": -1},
 		{"action": "speak", "text": "Đặt ngón cái, ngón trỏ và ngón giữa để gảy vang đồng thời cả ba nốt Đô, Mi và Sol cùng một lúc.", "highlight": -1}
+	],
+
+	"dan_tranh_level_7_bai_19_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật nhấn trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật nhấn là dùng tay trái ấn dây ở phía bên trái của nhạn để nâng cao độ của âm thanh sau khi tay phải gảy dây.", "highlight": -1},
+		{"action": "speak", "text": "Nhờ kỹ thuật này, đàn Tranh có thể tạo ra những nốt không có sẵn trên dây. Ví dụ, nhấn dây La để lên nốt Si, hoặc nhấn dây Mi để lên nốt Fa.", "highlight": -1},
+		{"action": "speak", "text": "Khi thực hiện, tay phải gảy dây trước, sau đó tay trái nhấn nhẹ và đều đến đúng cao độ. Không nhấn quá mạnh vì tiếng đàn có thể bị gắt hoặc cao độ bị lệch. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_7_bai_20_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật song thanh trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Song thanh là kỹ thuật gảy để hai nốt cùng phát ra một lúc. Song thanh truyền thống thường sử dụng quãng tám; các nhạc sĩ hiện đại còn kết hợp thêm những quãng khác.", "highlight": -1},
+		{"action": "speak", "text": "Có hai cách tạo song thanh cơ bản: kết hợp ngón 1 với ngón 2, hoặc kết hợp ngón 1 với ngón 3.", "highlight": -1},
+		{"action": "speak", "text": "Khi thực hiện, hai tiếng phải phát ra đồng thời, không bị chênh nhau và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_7_bai_21_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật rung dây trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật rung dây tạo tiếng đàn ngân liên tục, mềm mại và giàu cảm xúc. Có hai kiểu rung chính: rung nhanh với biên độ hẹp và rung chậm với biên độ rộng. Trong bài này, chúng ta luyện kiểu rung để thể hiện nét vui của giai điệu.", "highlight": -1},
+		{"action": "speak", "text": "Sau khi tay phải gảy dây, tay trái rung ngay để tiếng đàn không bị ngắt quãng. Dùng ngón trỏ và ngón giữa tay trái đặt nhẹ lên dây ở phía bên trái nhạn, cách nhạn khoảng mười xen-ti-mét. Không tỳ mạnh xuống dây vì có thể làm sai cao độ.", "highlight": -1},
+		{"action": "speak", "text": "Giữ cổ tay và các ngón tay mềm mại. Dùng hai ngón tay nhồi dây nhẹ nhàng lên xuống, đều tay, để tiếng rung tự nhiên và kéo dài. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_30_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật vê trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật vê là gảy luân phiên thật nhanh và liên tục bằng hai ngón tay phải để tạo tiếng đàn ngân dài, dày và liền mạch.", "highlight": -1},
+		{"action": "speak", "text": "Có hai cách vê cơ bản. Vê một dây là hai ngón thay phiên gảy trên cùng một dây.", "highlight": -1},
+		{"action": "speak", "text": "Vê quãng tám là hai ngón thay phiên gảy trên hai dây cùng tên nốt nhưng khác quãng, ví dụ nốt Đô thấp và nốt Đô cao.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật vê thường dùng để giữ âm, làm nổi bật giai điệu và tăng cảm xúc cho câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_31_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm ba âm cơ bản trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm ba âm là ba nốt khác nhau được gảy cùng lúc, tạo âm thanh đầy đặn hơn một nốt đơn.", "highlight": -1},
+		{"action": "speak", "text": "Trong bài này, chúng ta làm quen với hai hợp âm cơ bản để hiểu thêm về cách hòa âm trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Phần hợp âm ba âm này được học để bạn biết thêm về khả năng tạo âm thanh hợp âm của đàn Tranh; nội dung này không áp dụng vào kiến thức nhạc cụ dân tộc Việt Nam. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_32_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm Đô trưởng.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm Đô trưởng gồm ba nốt: Đô, Mi và Sol.", "highlight": -1},
+		{"action": "speak", "text": "Khi gảy, hãy cố gắng để cả ba nốt vang lên cùng lúc và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_33_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm La thứ.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm La thứ gồm ba nốt: La, Đô và Mi.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm này có màu sắc nhẹ nhàng và trầm hơn hợp âm Đô trưởng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_5_bai_11_practice": [
@@ -329,6 +442,11 @@ func _ready():
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
+	# Only Level 7 / Bài 18 is the direct glissando practice. Its unique title
+	# lets us recover the correct id without affecting Level 6 / Bài 14 song âm.
+	if force_glissando_start or PracticeRoom.current_song_title == LEVEL_7_GLISSANDO_TITLE:
+		current_lesson_id = LEVEL_7_GLISSANDO_ID
+		force_glissando_start = false
 		
 	if not PracticeRoom.current_song_sheet.is_empty():
 		lesson_sheet.assign(PracticeRoom.current_song_sheet)
@@ -428,6 +546,10 @@ func _ready():
 	staff_card.add_child(staff_display)
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if _is_glissando_practice():
+		_build_glissando_sheet()
+	if _is_error_flash_demo():
+		_build_error_flash_overlay()
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -559,13 +681,249 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	_start_intro()
+	if _is_glissando_practice() or _is_error_flash_demo():
+		# Do not show the shared welcome / audio-calibration lesson screen.
+		# Level 7 practical demos open directly into the staff exercise.
+		call_deferred("_start_practice")
+	else:
+		_start_intro()
+
+func _build_glissando_sheet() -> void:
+	var sheet_panel := PanelContainer.new()
+	glissando_sheet = sheet_panel
+	glissando_sheet.name = "GlissandoSheet"
+	glissando_sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(glissando_sheet)
+	glissando_sheet.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var sheet_style := StyleBoxFlat.new()
+	sheet_style.bg_color = Color(0.995, 0.98, 0.93, 0.985)
+	sheet_style.corner_radius_top_left = 15
+	sheet_style.corner_radius_top_right = 15
+	sheet_style.corner_radius_bottom_left = 15
+	sheet_style.corner_radius_bottom_right = 15
+	sheet_panel.add_theme_stylebox_override("panel", sheet_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 30)
+	margin.add_theme_constant_override("margin_right", 30)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	sheet_panel.add_child(margin)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 3)
+	margin.add_child(content)
+
+	var header := HBoxContainer.new()
+	content.add_child(header)
+	var title := Label.new()
+	title.text = "KỸ NĂNG Á · VUỐT 17 DÂY"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_color_override("font_color", C_JADE)
+	title.add_theme_font_size_override("font_size", 24)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		title.add_theme_font_override("font", bold_font)
+	header.add_child(title)
+	glissando_progress_label = Label.new()
+	glissando_progress_label.text = "Tiến độ: 0/17"
+	glissando_progress_label.add_theme_color_override("font_color", C_JADE)
+	glissando_progress_label.add_theme_font_size_override("font_size", 16)
+	header.add_child(glissando_progress_label)
+
+	var instruction := Label.new()
+	instruction.text = "Ngón trỏ · vuốt liền mạch từ dây 1 đến dây 17 theo đường chéo"
+	instruction.add_theme_color_override("font_color", Color(0.25, 0.28, 0.25, 0.86))
+	instruction.add_theme_font_size_override("font_size", 16)
+	content.add_child(instruction)
+
+	glissando_progress_bar = ProgressBar.new()
+	glissando_progress_bar.max_value = 17.0
+	glissando_progress_bar.value = 0.0
+	glissando_progress_bar.show_percentage = false
+	glissando_progress_bar.custom_minimum_size = Vector2(0, 8)
+	content.add_child(glissando_progress_bar)
+
+	for i in range(17):
+		var row := HBoxContainer.new()
+		row.custom_minimum_size = Vector2(0, 22)
+		content.add_child(row)
+		var string_label := Label.new()
+		string_label.text = "Dây %d" % (i + 1)
+		string_label.custom_minimum_size = Vector2(62, 0)
+		string_label.add_theme_color_override("font_color", Color(0.20, 0.24, 0.21, 0.82))
+		string_label.add_theme_font_size_override("font_size", 13)
+		row.add_child(string_label)
+
+		var track := Control.new()
+		track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		track.custom_minimum_size = Vector2(0, 18)
+		row.add_child(track)
+		var string_line := ColorRect.new()
+		string_line.color = Color(0.45, 0.30, 0.16, 0.46)
+		string_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		string_line.anchor_right = 1.0
+		string_line.anchor_top = 0.5
+		string_line.anchor_bottom = 0.5
+		string_line.offset_top = -1.0
+		string_line.offset_bottom = 1.0
+		track.add_child(string_line)
+
+		var marker := Label.new()
+		marker.text = "▶" if i == 16 else "●"
+		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		marker.add_theme_color_override("font_color", C_GOLD)
+		marker.add_theme_font_size_override("font_size", 17)
+		var ratio := 0.04 + (0.92 * float(i) / 16.0)
+		marker.anchor_left = ratio
+		marker.anchor_right = ratio
+		marker.anchor_top = 0.5
+		marker.anchor_bottom = 0.5
+		marker.offset_left = -12.0
+		marker.offset_right = 12.0
+		marker.offset_top = -12.0
+		marker.offset_bottom = 12.0
+		track.add_child(marker)
+
+
+func _build_error_flash_overlay() -> void:
+	error_flash_overlay = Control.new()
+	error_flash_overlay.name = "ErrorFlashOverlay"
+	error_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(error_flash_overlay)
+	error_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_flash_overlay.modulate.a = 1.0
+
+	error_flash_halo = PanelContainer.new()
+	error_flash_halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	error_flash_halo.custom_minimum_size = Vector2(86, 68)
+	var halo_style := StyleBoxFlat.new()
+	halo_style.bg_color = Color(0.96, 0.20, 0.20, 0.10)
+	halo_style.border_color = Color(1.0, 0.30, 0.28, 0.86)
+	halo_style.border_width_left = 3
+	halo_style.border_width_right = 3
+	halo_style.border_width_top = 3
+	halo_style.border_width_bottom = 3
+	halo_style.corner_radius_top_left = 34
+	halo_style.corner_radius_top_right = 34
+	halo_style.corner_radius_bottom_left = 34
+	halo_style.corner_radius_bottom_right = 34
+	halo_style.shadow_color = Color(0.96, 0.12, 0.12, 0.26)
+	halo_style.shadow_size = 12
+	(error_flash_halo as PanelContainer).add_theme_stylebox_override("panel", halo_style)
+	error_flash_overlay.add_child(error_flash_halo)
+	error_flash_halo.pivot_offset = Vector2(43.0, 34.0)
+	error_flash_halo.modulate.a = 0.0
+
+	var error_tooltip := PanelContainer.new()
+	error_flash_badge = error_tooltip
+	error_tooltip.name = "ErrorNoteTooltip"
+	error_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	error_tooltip.custom_minimum_size = Vector2(300.0, 92.0)
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = Color(0.39, 0.075, 0.085, 0.98)
+	badge_style.border_color = Color(0.93, 0.73, 0.28, 0.98)
+	badge_style.set_border_width_all(2)
+	badge_style.corner_radius_top_left = 16
+	badge_style.corner_radius_top_right = 16
+	badge_style.corner_radius_bottom_left = 16
+	badge_style.corner_radius_bottom_right = 16
+	badge_style.shadow_color = Color(0.10, 0.02, 0.02, 0.32)
+	badge_style.shadow_size = 12
+	badge_style.shadow_offset = Vector2(0.0, 6.0)
+	error_tooltip.add_theme_stylebox_override("panel", badge_style)
+	error_flash_overlay.add_child(error_tooltip)
+	error_tooltip.size = Vector2(300.0, 92.0)
+	error_tooltip.pivot_offset = Vector2(150.0, 92.0)
+	error_tooltip.modulate.a = 0.0
+
+	var tooltip_margin := MarginContainer.new()
+	tooltip_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_margin.add_theme_constant_override("margin_left", 20)
+	tooltip_margin.add_theme_constant_override("margin_top", 12)
+	tooltip_margin.add_theme_constant_override("margin_right", 20)
+	tooltip_margin.add_theme_constant_override("margin_bottom", 12)
+	error_tooltip.add_child(tooltip_margin)
+	tooltip_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var text_box := VBoxContainer.new()
+	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_box.add_theme_constant_override("separation", 2)
+	tooltip_margin.add_child(text_box)
+
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var regular_font := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var title_label := Label.new()
+	title_label.text = "Chưa đúng"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
+	title_label.add_theme_font_size_override("font_size", 20)
+	if bold_font:
+		title_label.add_theme_font_override("font", bold_font)
+	text_box.add_child(title_label)
+
+	error_flash_detail_label = Label.new()
+	error_flash_detail_label.text = "Cần gảy: Sol₂"
+	error_flash_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_flash_detail_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.91, 1.0))
+	error_flash_detail_label.add_theme_font_size_override("font_size", 15)
+	if regular_font:
+		error_flash_detail_label.add_theme_font_override("font", regular_font)
+	text_box.add_child(error_flash_detail_label)
+
+	# Hai tam giác chồng nhau tạo mũi chỉ đỏ có viền vàng, nối tooltip với nốt sai.
+	var pointer_border := Polygon2D.new()
+	pointer_border.polygon = PackedVector2Array([Vector2(-12.0, -1.0), Vector2(12.0, -1.0), Vector2(0.0, 15.0)])
+	pointer_border.color = Color(0.93, 0.73, 0.28, 0.98)
+	pointer_border.position = Vector2(150.0, 92.0)
+	error_tooltip.add_child(pointer_border)
+	var pointer_fill := Polygon2D.new()
+	pointer_fill.polygon = PackedVector2Array([Vector2(-8.5, -2.0), Vector2(8.5, -2.0), Vector2(0.0, 10.5)])
+	pointer_fill.color = badge_style.bg_color
+	pointer_fill.position = Vector2(150.0, 92.0)
+	error_tooltip.add_child(pointer_fill)
+
+	error_feedback_player = AudioStreamPlayer.new()
+	error_feedback_player.name = "ErrorFeedbackPlayer"
+	error_feedback_player.volume_db = -20.0
+	error_feedback_player.stream = _generate_error_feedback_stream()
+	add_child(error_feedback_player)
+
+
+func _is_glissando_practice() -> bool:
+	return current_lesson_id == LEVEL_7_GLISSANDO_ID
+
+
+func _is_error_flash_demo() -> bool:
+	return current_lesson_id == ERROR_FLASH_DEMO_ID
+
+
+func _uses_chord_lesson_flow() -> bool:
+	# Các bài kỹ thuật kế thừa cùng luồng: tập từng hợp âm trước, rồi vào khuông nhạc.
+	return current_lesson_id in [
+		"dan_tranh_level_6_bai_14_practice",
+		"dan_tranh_level_7_bai_20_practice",
+		"dan_tranh_level_8_bai_31_practice",
+		"dan_tranh_level_8_bai_32_practice",
+		"dan_tranh_level_8_bai_33_practice"
+	]
+
+
+func _uses_chord_basics_lesson_flow() -> bool:
+	# Bài 31 Level 8 kế thừa cả nhịp luyện nốt đơn của Bài 13 Level 6.
+	return current_lesson_id in ["dan_tranh_level_6_bai_13_practice", "dan_tranh_level_8_bai_31_practice"]
+
 
 func _setup_top_pitch_box():
 	var l_title = "LUYỆN ĐÀN TRANH"
 	var active_id = SecureDataManager.active_lesson_id
 	if active_id:
-		if "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
+		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
+		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 18: KỸ NĂNG Á"
+		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
 		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
 		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
 		elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
@@ -772,9 +1130,197 @@ func _process(delta):
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		_process_practice(delta)
+		if _is_error_flash_demo():
+			_process_error_demo_sheet(delta)
+			_process_error_flash_demo(delta)
+		else:
+			_process_practice(delta)
 	
 	_update_continuous_pitch_hud()
+
+
+func _process_error_flash_demo(delta: float) -> void:
+	error_flash_timer -= delta
+	if error_flash_timer <= 0.0:
+		error_flash_timer = 3.6
+		_play_error_flash_demo()
+
+
+func _process_error_demo_sheet(delta: float) -> void:
+	if active_falling_notes.is_empty():
+		return
+	if error_feedback_showing:
+		staff_display.set_notes(active_falling_notes)
+		return
+	var all_offscreen := true
+	for note in active_falling_notes:
+		note["x"] = float(note.get("x", 0.0)) - 180.0 * delta
+		if float(note["x"]) > -100.0:
+			all_offscreen = false
+	if all_offscreen:
+		_start_practice()
+		return
+	staff_display.set_notes(active_falling_notes)
+
+
+func _play_error_flash_demo() -> void:
+	if not error_flash_overlay or not staff_display:
+		return
+	if error_flash_tween and error_flash_tween.is_running():
+		error_flash_tween.kill()
+	if error_pulse_tween and error_pulse_tween.is_running():
+		error_pulse_tween.kill()
+	if error_shake_tween and error_shake_tween.is_running():
+		error_shake_tween.kill()
+	_set_error_demo_note_color(false)
+
+	_set_error_demo_note_color(true)
+	if error_flash_note.is_empty():
+		error_feedback_showing = false
+		return
+	error_feedback_showing = true
+	_position_error_flash_feedback()
+	error_flash_overlay.modulate.a = 1.0
+	error_flash_badge.position = error_tooltip_final_position + Vector2(0.0, 38.0)
+	error_flash_badge.scale = Vector2(0.84, 0.84)
+	error_flash_badge.modulate.a = 0.0
+	error_flash_halo.scale = Vector2(0.78, 0.78)
+	error_flash_halo.modulate.a = 0.0
+	if error_feedback_player:
+		error_feedback_player.play()
+
+	# Tooltip bật lên từ nốt, nảy rất nhẹ rồi đứng yên đủ lâu để học viên đọc.
+	error_flash_tween = create_tween()
+	error_flash_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	error_flash_tween.tween_property(error_flash_badge, "position", error_tooltip_final_position, 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(1.04, 1.04), 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	error_flash_tween.tween_property(error_flash_badge, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	error_flash_tween.tween_interval(1.25)
+	error_flash_tween.tween_property(error_flash_badge, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "position", error_tooltip_final_position + Vector2(0.0, 12.0), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(0.94, 0.94), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_halo, "modulate:a", 0.0, 0.18)
+	error_flash_tween.tween_callback(_finish_error_flash_demo)
+
+	# Hai nhịp sáng mềm quanh đúng một nốt, không chớp đỏ cả màn hình.
+	error_pulse_tween = create_tween()
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.78, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.06, 1.06), 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(true))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.26, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(0.96, 0.96), 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(false))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.70, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.03, 1.03), 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(true))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.24, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(false))
+	error_pulse_tween.tween_callback(_restore_error_demo_hit_line)
+
+	# Rung ngang rất ngắn lúc lỗi vừa xuất hiện.
+	error_shake_tween = create_tween()
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(-3.5))
+	error_shake_tween.tween_interval(0.045)
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(3.5))
+	error_shake_tween.tween_interval(0.045)
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(-2.0))
+	error_shake_tween.tween_interval(0.045)
+	error_shake_tween.tween_callback(_offset_error_demo_note.bind(0.0))
+
+
+func _finish_error_flash_demo() -> void:
+	_set_error_demo_note_color(false)
+	error_feedback_showing = false
+	if error_flash_badge:
+		error_flash_badge.modulate.a = 0.0
+	if error_flash_halo:
+		error_flash_halo.modulate.a = 0.0
+
+
+func _offset_error_demo_note(offset_x: float) -> void:
+	if error_flash_note.is_empty():
+		return
+	error_flash_note["x"] = float(error_flash_note.get("demo_base_x", error_flash_note.get("x", 0.0))) + offset_x
+	staff_display.queue_redraw()
+
+
+func _position_error_flash_feedback() -> void:
+	if error_flash_note.is_empty() or not error_flash_badge or not error_flash_halo:
+		return
+	var note_x := float(error_flash_note.get("x", staff_display.hit_line_x))
+	var raw_note := str(error_flash_note.get("note", "ZT_Sol2")).replace("ZT_", "")
+	var mapped_note := raw_note
+	if raw_note.length() > 1 and raw_note.right(1).is_valid_int():
+		mapped_note = raw_note.left(-1) + "_" + raw_note.right(1)
+	var note_position := float(staff_display.NOTE_POSITIONS.get(mapped_note, 1.0))
+	var note_y: float = float(staff_display.size.y) * 0.5 + float(staff_display.line_spacing) * 0.45
+	note_y += (2.0 - note_position) * staff_display.line_spacing
+
+	error_flash_halo.position = Vector2(note_x - 43.0, note_y - 34.0)
+	error_flash_halo.size = Vector2(86.0, 68.0)
+	var badge_x := clampf(note_x - 150.0, 12.0, maxf(12.0, staff_display.size.x - 312.0))
+	var badge_y := clampf(note_y - 119.0, 12.0, maxf(12.0, staff_display.size.y - 112.0))
+	error_tooltip_final_position = Vector2(badge_x, badge_y)
+	error_flash_badge.position = error_tooltip_final_position
+	error_flash_badge.size = Vector2(300.0, 92.0)
+	if error_flash_detail_label:
+		error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
+
+
+func _format_note_for_feedback(raw_note: String) -> String:
+	if raw_note.length() <= 1 or not raw_note.right(1).is_valid_int():
+		return raw_note
+	var octave := raw_note.right(1)
+	var subscripts := {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉"}
+	return raw_note.left(-1) + str(subscripts.get(octave, octave))
+
+
+func _set_error_demo_note_pulse(bright: bool) -> void:
+	if error_flash_note.is_empty():
+		return
+	error_flash_note["color"] = Color(1.0, 0.31, 0.27, 1.0) if bright else Color(0.88, 0.12, 0.14, 1.0)
+	staff_display.queue_redraw()
+
+
+func _restore_error_demo_hit_line() -> void:
+	staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
+	staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+	staff_display.queue_redraw()
+
+
+func _set_error_demo_note_color(show_error: bool) -> void:
+	if not show_error:
+		if not error_flash_note.is_empty():
+			error_flash_note["color"] = error_flash_note.get("demo_base_color", Color(0.6, 0.6, 0.6, 0.9))
+			error_flash_note["x"] = error_flash_note.get("demo_base_x", error_flash_note.get("x", 0.0))
+			error_flash_note.erase("demo_base_color")
+			error_flash_note.erase("demo_base_x")
+			error_flash_note = {}
+		staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
+		staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+		staff_display.queue_redraw()
+		return
+
+	var closest_note: Dictionary = {}
+	var closest_distance := INF
+	for note in active_falling_notes:
+		if note.get("hit", false) or note.get("missed", false):
+			continue
+		var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
+		if distance < closest_distance:
+			closest_distance = distance
+			closest_note = note
+	if closest_note.is_empty():
+		return
+	error_flash_note = closest_note
+	error_flash_note["demo_base_color"] = error_flash_note.get("color", Color(0.6, 0.6, 0.6, 0.9))
+	error_flash_note["demo_base_x"] = error_flash_note.get("x", 0.0)
+	error_flash_note["color"] = Color(0.96, 0.10, 0.13, 1.0)
+	staff_display.hit_line_color = Color(0.96, 0.10, 0.13, 1.0)
+	staff_display.hit_line_glow_color = Color(1.0, 0.16, 0.18, 0.34)
+	staff_display.queue_redraw()
 
 func _update_teacher_frame() -> void:
 	if not _teacher_atlas or not _tex_mai_talk_sheet:
@@ -1003,7 +1549,7 @@ func _start_intro():
 func _play_next_intro_step():
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
-		if current_lesson_id.begins_with("dan_tranh_level_6"):
+		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 			_start_practice_single()
 		else:
 			_start_practice()
@@ -1093,7 +1639,7 @@ func _start_practice_single():
 	
 
 	unique_practice_notes.clear()
-	if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+	if _uses_chord_basics_lesson_flow():
 		unique_practice_notes = lesson_sheet.duplicate()
 	else:
 		for note in lesson_sheet:
@@ -1105,7 +1651,7 @@ func _start_practice_single():
 
 func _schedule_next_single_note():
 	if single_practice_idx >= unique_practice_notes.size():
-		if current_lesson_id == "dan_tranh_level_6_bai_13_practice":
+		if _uses_chord_basics_lesson_flow():
 			if ai_audio: ai_audio.speak_vietnamese("Chúc mừng em đã hoàn thành bài học mở đầu về hợp âm!")
 			_finish_practice()
 			return
@@ -1119,7 +1665,7 @@ func _schedule_next_single_note():
 	var notes = raw_note_name.split("+")
 	var text = ""
 	
-	if current_lesson_id == "dan_tranh_level_6_bai_13_practice" and notes.size() > 1:
+	if _uses_chord_basics_lesson_flow() and notes.size() > 1:
 		text = "Đây là một hợp âm. Em hãy thử gảy ba dây cùng lúc để cảm nhận sự khác biệt."
 	elif notes.size() > 1:
 		text = "Hãy gảy hợp âm: " + raw_note_name.replace("+", " và ")
@@ -1348,6 +1894,14 @@ func _is_note_missing(note_idx: int) -> bool:
 
 func _start_practice():
 	current_state = State.PRACTICE
+	if _is_error_flash_demo():
+		if error_flash_tween and error_flash_tween.is_running():
+			error_flash_tween.kill()
+		if error_pulse_tween and error_pulse_tween.is_running():
+			error_pulse_tween.kill()
+		if error_shake_tween and error_shake_tween.is_running():
+			error_shake_tween.kill()
+		_set_error_demo_note_color(false)
 	teacher_area.visible = false
 	feedback_area.visible = true
 	practice_idx = 0
@@ -1356,6 +1910,17 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
+	staff_display.use_note_colors = _is_error_flash_demo()
+	if _is_error_flash_demo():
+		error_flash_timer = 0.75
+		error_flash_note = {}
+		error_feedback_showing = false
+		if error_flash_overlay:
+			error_flash_overlay.modulate.a = 1.0
+		if error_flash_badge:
+			error_flash_badge.modulate.a = 0.0
+		if error_flash_halo:
+			error_flash_halo.modulate.a = 0.0
 	_apply_adaptive_speed()
 	if speed_bar_container:
 		speed_bar_container.visible = true
@@ -1373,6 +1938,9 @@ func _start_practice():
 	_update_staff_layout()
 	if pitch_box:
 		pitch_box.visible = true
+	if _is_error_flash_demo() and mic_status_lbl:
+		mic_status_lbl.text = "Demo tự động: phản hồi sai bật lên từ nốt và lặp lại định kỳ"
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.74, 0.18, 0.16, 1.0))
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
@@ -1610,6 +2178,15 @@ func _process_practice(delta):
 		_finish_practice()
 		
 	staff_display.set_notes(active_falling_notes)
+	if glissando_sheet:
+		var completed := 0
+		for note in active_falling_notes:
+			if note.get("hit", false):
+				completed += 1
+		if glissando_progress_label:
+			glissando_progress_label.text = "Tiến độ: %d/17" % completed
+		if glissando_progress_bar:
+			glissando_progress_bar.value = completed
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
 	if not analyzer:
@@ -1914,6 +2491,30 @@ func _highlight_speed_btn(speed_val: float):
 			btn.add_theme_stylebox_override("pressed", sb_empty)
 			btn.add_theme_color_override("font_color", Color.WHITE)
 			btn.add_theme_color_override("font_hover_color", C_GOLD)
+
+func _generate_error_feedback_stream() -> AudioStreamWAV:
+	const SAMPLE_RATE := 22050
+	const DURATION := 0.12
+	var sample_count := int(SAMPLE_RATE * DURATION)
+	var data := PackedByteArray()
+	data.resize(sample_count * 2)
+	for i in sample_count:
+		var time := float(i) / float(SAMPLE_RATE)
+		var progress := float(i) / float(sample_count)
+		var frequency := 190.0 if progress < 0.48 else 145.0
+		var envelope := pow(1.0 - progress, 2.2)
+		var sample := sin(TAU * frequency * time) * envelope * 0.20
+		var value_i16 := int(clampf(sample, -1.0, 1.0) * 32767.0)
+		var value_u16 := value_i16 & 0xFFFF
+		data[i * 2] = value_u16 & 0xFF
+		data[i * 2 + 1] = (value_u16 >> 8) & 0xFF
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = SAMPLE_RATE
+	stream.stereo = false
+	stream.data = data
+	return stream
+
 
 func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 	# Karplus-Strong synthesizer to generate traditional Zither tones procedurally
