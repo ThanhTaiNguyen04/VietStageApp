@@ -295,6 +295,21 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Giữ cổ tay và các ngón tay mềm mại. Dùng hai ngón tay nhồi dây nhẹ nhàng lên xuống, đều tay, để tiếng rung tự nhiên và kéo dài. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
+	"dan_tranh_level_8_bai_30_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật vê trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật vê là gảy luân phiên thật nhanh và liên tục bằng hai ngón tay phải để tạo tiếng đàn ngân dài, dày và liền mạch.", "highlight": -1},
+		{"action": "speak", "text": "Có hai cách vê cơ bản. Vê một dây là hai ngón thay phiên gảy trên cùng một dây.", "highlight": -1},
+		{"action": "speak", "text": "Vê quãng tám là hai ngón thay phiên gảy trên hai dây cùng tên nốt nhưng khác quãng, ví dụ nốt Đô thấp và nốt Đô cao.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật vê thường dùng để giữ âm, làm nổi bật giai điệu và tăng cảm xúc cho câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_8_bai_31_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm ba âm cơ bản trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Hợp âm ba âm là ba nốt khác nhau được gảy cùng lúc, tạo âm thanh đầy đặn hơn một nốt đơn.", "highlight": -1},
+		{"action": "speak", "text": "Trong bài này, chúng ta làm quen với hai hợp âm cơ bản để hiểu thêm về cách hòa âm trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Phần hợp âm ba âm này giúp bạn biết thêm về khả năng tạo âm thanh hợp âm của đàn Tranh; nội dung này không áp dụng vào kiến thức cốt lõi của nhạc cụ dân tộc Việt Nam. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
 	"dan_tranh_level_5_bai_11_practice": [
 		{"action": "speak", "text": "Chào mừng bạn đến với cấp độ Master. Chúng ta bắt đầu chinh phục đoạn nhạc mở đầu của tác phẩm Sứ Thanh Hoa.", "highlight": -1},
 		{"action": "speak", "text": "Hãy tập trung gảy đúng giai điệu dạo đầu với các quãng nhảy nốt rộng.", "highlight": -1}
