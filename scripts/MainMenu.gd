@@ -1441,8 +1441,8 @@ func _build_roadmap_cards() -> void:
 		basic_desc.text = "Hiểu nhạc cụ, đọc giao diện nốt rơi và gảy những nốt cơ bản."
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 		
-		ess_title.text = "LEVEL 2: KHÚC DẠO ĐẦU"
-		ess_desc.text = "Chơi hoàn chỉnh bài nhạc đầu tiên với nhịp độ chậm."
+		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
+		ess_desc.text = "Luyện bài nhạc cùng kỹ thuật Á, nhấn, song thanh và rung dây."
 		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
 		
 		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
@@ -1457,7 +1457,7 @@ func _build_roadmap_cards() -> void:
 		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
 		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO"
-		level_7_desc.text = "Kỹ thuật Á, nhấn, rung, song thanh, vê và hợp âm ba ngón."
+		level_7_desc.text = "Luyện kỹ thuật vê và thực hành hợp âm ba ngón."
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
@@ -1588,7 +1588,7 @@ func _build_roadmap_cards() -> void:
 		elif instrument == "sao_truc":
 			_set_details_text(ess_details, 7, 0, 0, false)
 		else:
-			_set_details_text(ess_details, 6 if instrument == "dan_tranh" else 3, 0, 0, false)
+			_set_details_text(ess_details, 11 if instrument == "dan_tranh" else 3, 0, 0, false)
 	else:
 		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
@@ -1599,7 +1599,7 @@ func _build_roadmap_cards() -> void:
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 		if instrument == "dan_tranh":
 			var stats := _get_dan_tranh_level_status(2)
-			_set_details_text(ess_details, 6, stats["stars"], stats["pct"], false)
+			_set_details_text(ess_details, 11, stats["stars"], stats["pct"], false)
 		elif instrument == "sao_truc":
 			var stats := _get_sao_truc_card_status("essentials")
 			_set_details_text(ess_details, 7, stats["stars"], stats["pct"], false)
@@ -1673,7 +1673,7 @@ func _build_roadmap_cards() -> void:
 	level_7_title.add_theme_color_override("font_color", C_CREAM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
 	level_7_desc.add_theme_color_override("font_color", C_CREAM_DIM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.4))
 	level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
-	_set_details_text(level_7_details, 9, level_3_stats["stars"], level_3_stats["pct"], false)
+	_set_details_text(level_7_details, 4, level_3_stats["stars"], level_3_stats["pct"], false)
 
 func _style_circular_play_btn(btn: Button) -> void:
 	var pb_n := _flat(C_RED_SON, C_GOLD, 32)

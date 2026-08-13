@@ -41,16 +41,36 @@ const LEVELS := [
 	},
 	{
 		"level": 2,
-		"title": "LUYỆN THEO BÀI",
-		"sessions": "Bài 10–15",
-		"objective": "Tập từng đoạn rồi ghép hoàn chỉnh hai bản dân ca: Lý Cây Đa và Sứ Thanh Hoa.",
+		"title": "LUYỆN THEO BÀI VÀ KỸ THUẬT DIỄN TẤU",
+		"sessions": "Bài 10–15, 18–22",
+		"objective": "Luyện các bản nhạc, kỹ thuật Á, nhấn, song thanh, rung dây và phản hồi khi đánh sai.",
 		"lessons": [
 			{"number": 10, "title": "Lý Cây Đa – Đoạn đầu", "type": "practice", "video": "Hướng dẫn gảy đoạn đầu bài Lý Cây Đa: giai điệu và ngón gảy.", "practice": "Luyện gảy đoạn đầu bài Lý Cây Đa với nhịp độ chậm.", "practice_title": "Lý Cây Đa – Đoạn đầu", "sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2"], "durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 2.0]},
 			{"number": 11, "title": "Lý Cây Đa – Đoạn sau", "type": "practice", "video": "Hướng dẫn gảy đoạn sau bài Lý Cây Đa.", "practice": "Luyện gảy đoạn sau bài Lý Cây Đa.", "practice_title": "Lý Cây Đa – Đoạn sau", "sheet": ["La2", "Đô3", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"], "durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 2.0]},
 			{"number": 12, "title": "Lý Cây Đa – Ghép cả bài", "type": "practice", "video": "Ôn tập và ghép hoàn chỉnh bài Lý Cây Đa.", "practice": "Luyện đánh cả bài Lý Cây Đa với tiết tấu ổn định.", "practice_title": "Lý Cây Đa – Cả bài", "sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"], "durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0]},
 			{"number": 13, "title": "Sứ Thanh Hoa – Đoạn đầu", "type": "practice", "video": "Hướng dẫn gảy đoạn đầu bài Sứ Thanh Hoa: chuyển quãng và nhấn nhả nốt.", "practice": "Luyện gảy đoạn đầu bài Sứ Thanh Hoa ở tốc độ chậm.", "practice_title": "Sứ Thanh Hoa – Đoạn đầu", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0]},
 			{"number": 14, "title": "Sứ Thanh Hoa – Đoạn sau", "type": "practice", "video": "Hướng dẫn gảy đoạn sau bài Sứ Thanh Hoa.", "practice": "Luyện gảy đoạn sau bài Sứ Thanh Hoa.", "practice_title": "Sứ Thanh Hoa – Đoạn sau", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]},
-			{"number": 15, "title": "Sứ Thanh Hoa – Ghép cả bài", "type": "practice", "video": "Ôn tập và ghép hoàn chỉnh bài Sứ Thanh Hoa.", "practice": "Luyện đánh cả bài Sứ Thanh Hoa ở BPM 80 với các quãng rộng.", "practice_title": "Sứ Thanh Hoa – Cả bài", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3", "Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]}
+			{"number": 15, "title": "Sứ Thanh Hoa – Ghép cả bài", "type": "practice", "video": "Ôn tập và ghép hoàn chỉnh bài Sứ Thanh Hoa.", "practice": "Luyện đánh cả bài Sứ Thanh Hoa ở BPM 80 với các quãng rộng.", "practice_title": "Sứ Thanh Hoa – Cả bài", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3", "Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]},
+			{"number": 18, "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
+			{"number": 19, "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ thuật nhấn", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Kỹ thuật nhấn – Nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
+			{
+				"number": 20,
+				"practice_id": "dan_tranh_level_7_bai_20_practice",
+				"video_id": "dan_tranh_level_7_bai_20_video",
+				"title": "Kỹ thuật song thanh",
+				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice_title": "Luyện tập: Kỹ thuật song thanh",
+				"sheet": [
+					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
+					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
+					"La1+Đô2", "La1+Đô2", "La1+Đô2",
+					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
+				],
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
+			},
+			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]},
+			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]}
 		]
 	},
 	{
@@ -217,28 +237,9 @@ const LEVELS := [
 	{
 		"level": 7,
 		"title": "KỸ THUẬT NÂNG CAO ĐÀN TRANH",
-		"sessions": "Bài 18–22, 30–33",
-		"objective": "Luyện các kỹ năng biểu diễn nâng cao, kỹ thuật vê và hợp âm ba ngón trên đàn tranh.",
+		"sessions": "Bài 30–33",
+		"objective": "Luyện kỹ thuật vê và hợp âm ba ngón trên đàn tranh.",
 		"lessons": [
-			{"number": 18, "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
-			{"number": 19, "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ thuật nhấn", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Kỹ thuật nhấn – Nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
-			{
-				"number": 20,
-				"practice_id": "dan_tranh_level_7_bai_20_practice",
-				"title": "Kỹ thuật song thanh",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
-				"practice_title": "Luyện tập: Kỹ thuật song thanh",
-				"sheet": [
-					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
-					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
-					"La1+Đô2", "La1+Đô2", "La1+Đô2",
-					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
-				],
-				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
-			},
-			{"number": 21, "practice_id": "dan_tranh_level_7_bai_21_practice", "title": "Kỹ thuật rung", "video": "", "practice": "Luyện rung dây đều bằng tay trái để tạo tiếng ngân tự nhiên.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]},
-			{"number": 22, "practice_id": "dan_tranh_level_7_bai_22_practice", "practice_mode": "error_flash_demo", "title": "Demo hiệu ứng báo sai", "video": "", "practice": "Bản nhạc mẫu tự động phát hiệu ứng chớp đỏ và rung để xem trước phản hồi khi đánh sai.", "practice_title": "Demo phản hồi sai kiểu Simply Piano", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Đô3", "Mi3", "Sol3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0]},
 			{
 				"number": 30,
 				"practice_id": "dan_tranh_level_8_bai_30_practice",
@@ -892,7 +893,7 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 		return
 	
 	if activity == "video":
-		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")
+		SecureDataManager.active_lesson_id = str(lesson.get("video_id", _lesson_id(lesson_number, "video")))
 		var VP = load("res://scripts/VideoPlayer.gd")
 		var video_path := str(lesson.get("video", ""))
 		if not video_path.begins_with("res://"):
