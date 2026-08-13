@@ -145,7 +145,15 @@ const ALL_17_NOTES: Array[String] = [
 
 const LESSON_DIALOGUES = {
 	"dan_tranh_level_1_bai_1_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học Đàn Tranh đầu tiên. Hãy ngồi thẳng lưng và đặt đàn trước mặt. Bên lớn hơn được gọi là đầu đàn sẽ nằm bên phía tay phải nhé. Chúng ta sẽ gảy đàn bằng tay phải và tay trái ấn, giữ dây đàn để tạo âm vang.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trong bài học đầu tiên, chúng ta sẽ cùng tìm hiểu nhạc cụ đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Đàn Tranh là nhạc cụ dây truyền thống của Việt Nam. Đàn thường có mười sáu hoặc mười chín dây, thân đàn dạng hộp dài hình thang, dài khoảng một trăm mười đến một trăm hai mươi xen-ti-mét. Đầu lớn rộng hơn là nơi mắc dây và đặt cầu đàn; đầu nhỏ có các trục để lên dây.", "highlight": -1},
+		{"action": "speak", "text": "Các bộ phận chính của đàn gồm có mặt đàn, thành và đáy đàn, cầu đàn, nhạn, trục đàn, dây đàn và móng gảy.", "highlight": -1},
+		{"action": "speak", "text": "Mặt đàn làm từ gỗ nhẹ, thường là gỗ ngô đồng, có dạng vồng lên. Thành và đáy đàn làm từ các loại gỗ cứng; đáy đàn có lỗ thoát âm và vị trí cầm hoặc treo đàn.", "highlight": -1},
+		{"action": "speak", "text": "Cầu đàn nằm ở đầu rộng, giúp cố định dây đàn. Nhạn, còn gọi là ngựa đàn, là các thanh gỗ nhỏ đỡ dây trên mặt đàn và có thể di chuyển để điều chỉnh cao độ của từng dây.", "highlight": -1},
+		{"action": "speak", "text": "Trục đàn nằm ở đầu nhỏ, dùng để căng và lên dây. Dây đàn thường làm bằng thép hoặc inox, có độ dày khác nhau để tạo ra âm thanh cao thấp.", "highlight": -1},
+		{"action": "speak", "text": "Móng gảy được đeo ở ngón cái, ngón trỏ và ngón giữa của tay phải để gảy đàn; có thể làm từ đồi mồi, sừng hoặc kim loại.", "highlight": -1},
+		{"action": "speak", "text": "Đàn Tranh có thể diễn tấu giai điệu, gảy quãng tám, chập âm và vuốt dây để tạo âm thanh mềm mại, đặc trưng. Đàn được dùng để độc tấu, hòa tấu hoặc đệm cho hát; phù hợp với dân ca, nhạc truyền thống và cả các tác phẩm hiện đại.", "highlight": -1},
+		{"action": "speak", "text": "Bây giờ, hãy ngồi thẳng lưng và đặt đàn trước mặt. Đầu lớn của đàn nằm phía tay phải. Chúng ta dùng tay phải để gảy và tay trái để nhấn, giữ dây tạo âm vang. Hãy cùng bắt đầu phần thực hành nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên, hãy làm quen với âm sắc của 5 nốt cơ bản nhất ở quãng trầm của đàn.", "highlight": -1},
 		{"action": "speak", "text": "Dây 1: Nốt Sol1. Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
 		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
@@ -156,7 +164,9 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 10 nốt cơ bản quãng thấp và trung. Chúng ta sẽ làm quen và gảy từng nốt tương ứng với từng dây nhé.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần một.", "highlight": -1},
+		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol một, La một, Đô hai, Rê hai, Mi hai, Sol hai, La hai, Đô ba, Rê ba và Mi ba.", "highlight": -1},
+		{"action": "speak", "text": "Phần này giúp bạn luyện nhận biết và gảy lần lượt các nốt từ Sol một đến Mi ba. Hãy gảy chậm, rõ tiếng và xác định đúng vị trí từng dây. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
 		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
 		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
@@ -171,8 +181,24 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài luyện tập 7 nốt quãng cao trên Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Hãy gảy lần lượt từng nốt từ Sol3 đến La4 khi chúng chạm vạch phách nhé.", "highlight": -1}
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần hai.", "highlight": -1},
+		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol ba, La ba, Đô bốn, Rê bốn, Mi bốn, Sol bốn và La bốn.", "highlight": -1},
+		{"action": "speak", "text": "Phần này chúng ta tiếp tục luyện các nốt từ Sol ba đến La bốn. Hãy gảy từng nốt đều nhịp và chú ý không nhầm vị trí các dây cao. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_10_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Lý cây đa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy áp dụng các nốt và ngón gảy đã học để luyện nửa đầu bài Lý cây đa. Bạn nên tập chậm từng câu và đếm nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_11_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Lý cây đa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy chú ý tên nốt, nhịp và ngón gảy của từng câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_2_bai_12_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Lý cây đa.", "highlight": -1},
+		{"action": "speak", "text": "Hãy ghép hai phần đã học để chơi hoàn chỉnh bài Lý cây đa. Bắt đầu chậm, gảy rõ tiếng và giữ nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_9_practice": [
@@ -181,13 +207,12 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_4_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học: Tempo, Khóa Sol và Số chỉ nhịp. Đây là những kiến thức nền giúp bạn đọc và chơi bài nhạc đúng nhịp độ.", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên là Tempo. Tempo có nghĩa là tốc độ của bài nhạc, tức là bài đó nhanh hay chậm, được đo bằng số phách trong một phút (BPM). Tempo càng lớn thì bài càng nhanh.", "highlight": -1, "show_speed": true},
-		{"action": "speak", "text": "Bạn thấy thanh điều chỉnh tốc độ ở góc trên bên phải không? Bạn có thể chọn 60%, 80%, 100% hay 120% để luyện tập chậm hoặc nhanh hơn tùy ý. Khi mới học, hãy chọn tốc độ chậm nhé.", "highlight": -1, "show_speed": true},
-		{"action": "speak", "text": "Tiếp theo là Khóa Sol. Khóa Sol nằm ở đầu khuông nhạc, xác định vị trí nốt Sol trên khuông. Nhờ khóa Sol ta biết được các nốt nhạc được đặt trên dòng và khe nào. Bạn thấy ký hiệu Khóa Sol ở đầu khuông nhạc không?", "highlight": -1, "show_staff": true, "clef": true},
-		{"action": "speak", "text": "Bây giờ là Số chỉ nhịp. Số chỉ nhịp gồm hai số xếp dọc nhau ở đầu bài, ngay sau Khóa Sol. Số trên cho biết mỗi ô nhịp có bao nhiêu phách, số dưới cho biết nốt nào được tính là một phách.", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Nhịp 4/4 nghĩa là mỗi ô nhịp có 4 phách, mỗi phách là một nốt đen. Bạn thấy hai số 4 chồng lên nhau ở đầu khuông nhạc không? Cách đếm nhịp 4/4 là: 1-2-3-4, 1-2-3-4... Hãy chú ý nhấn mạnh phách 1.", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Nhịp 2/4 nghĩa là mỗi ô nhịp chỉ có 2 phách, mỗi phách là một nốt đen. Số chỉ nhịp lúc này là số 2 ở trên, số 4 ở dưới. Cách đếm nhịp 2/4 là: 1-2, 1-2... nhanh gọn và đều đặn hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
+		{"action": "speak", "text": "Chào bạn! Khi đọc một bản nhạc, chúng ta cần chú ý đến tempo, khóa nhạc và nhịp.", "highlight": -1},
+		{"action": "speak", "text": "Tempo là tốc độ nhanh hoặc chậm của bản nhạc. Tempo có thể được ghi bằng số B P M; ví dụ, sáu mươi B P M chậm hơn một trăm hai mươi B P M. Khi tập đàn, bạn nên bắt đầu chậm, giữ đều nhịp rồi mới tăng tốc.", "highlight": -1, "show_speed": true},
+		{"action": "speak", "text": "Khóa Sol là ký hiệu thường đặt ở đầu khuông nhạc, giúp chúng ta xác định tên và độ cao của các nốt. Dấu khóa này bắt đầu từ dòng thứ hai của khuông nhạc, cho biết đó là vị trí của nốt Sol.", "highlight": -1, "show_staff": true, "clef": true},
+		{"action": "speak", "text": "Nhịp bốn phần tư nghĩa là mỗi ô nhịp có bốn phách và nốt đen được tính là một phách. Ta đếm đều: một, hai, ba, bốn. Phách một thường mạnh hơn các phách còn lại.", "highlight": -1, "show_staff": true, "time_sig": 4},
+		{"action": "speak", "text": "Nhịp hai phần tư nghĩa là mỗi ô nhịp có hai phách và nốt đen cũng được tính là một phách. Ta đếm: một, hai; trong đó phách một mạnh và phách hai nhẹ hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
+		{"action": "speak", "text": "Hiểu tempo và nhịp sẽ giúp chúng ta gảy đàn đúng tốc độ, đúng điểm rơi của phách. Khóa Sol giúp chúng ta đọc đúng nốt trên bản nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1, "show_staff": true, "time_sig": 4},
 		{"action": "speak", "text": "Bây giờ chúng ta cùng luyện tập theo nhịp 4/4. Ta sẽ gảy nốt Sol2, đếm 1-2-3-4 cho mỗi ô nhịp. Hãy gảy nốt Sol2.", "highlight": 0, "note": "Sol2", "time_sig": 4},
 		{"action": "speak", "text": "Gảy nốt La2 giữ đều nhịp 4/4.", "highlight": 1, "note": "La2", "time_sig": 4},
 		{"action": "speak", "text": "Gảy nốt Đô3 giữ đều nhịp 4/4.", "highlight": 2, "note": "Đô3", "time_sig": 4},
@@ -208,7 +233,11 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_5_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với bài học nhạc lý: Trường độ nốt nhạc. Trường độ là thời gian mỗi nốt nhạc vang lên, được đo bằng phách.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu nhịp điệu cơ bản và trường độ của nốt nhạc.", "highlight": -1},
+		{"action": "speak", "text": "Trường độ là độ dài ngắn của âm thanh. Khi gảy một nốt trên đàn Tranh, chúng ta cần biết âm đó kéo dài bao lâu trước khi chuyển sang nốt tiếp theo.", "highlight": -1},
+		{"action": "speak", "text": "Trong nhịp bốn phần tư, nốt trắng dài hai phách; nốt đen dài một phách; nốt móc đơn dài nửa phách và hai nốt móc đơn bằng một nốt đen.", "highlight": -1},
+		{"action": "speak", "text": "Nốt móc kép dài một phần tư phách và bốn nốt móc kép bằng một nốt đen. Bạn có thể hiểu đơn giản: nốt càng nhiều móc thì âm càng ngắn và cần gảy nhanh hơn.", "highlight": -1},
+		{"action": "speak", "text": "Khi chơi đàn Tranh, hãy đếm đều nhịp trong đầu. Với nốt dài, chúng ta chỉ gảy một lần rồi để tiếng đàn ngân đủ số phách, không gảy lặp lại nhiều lần. Hiểu đúng trường độ sẽ giúp bản nhạc đều nhịp, rõ ràng và dễ nghe hơn. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên là Nốt Trắng. Nốt trắng có đầu hình bầu dục rỗng, có thân nốt, kéo dài 2 phách. Hãy gảy nốt Đô2 và giữ âm vang 2 phách.", "highlight": 0, "note": "Đô2", "type": "half"},
 		{"action": "speak", "text": "Thêm một nốt trắng nữa. Hãy gảy nốt Đô2 và giữ 2 phách nhé.", "highlight": 1, "note": "Đô2", "type": "half"},
 		{"action": "speak", "text": "Tiếp theo là Nốt Đen. Nốt đen có đầu hình bầu dục đặc, có thân nốt, kéo dài 1 phách. Hãy gảy nốt Rê2.", "highlight": 2, "note": "Rê2", "type": "quarter"},
