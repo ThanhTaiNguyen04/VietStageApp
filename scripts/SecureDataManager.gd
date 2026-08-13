@@ -481,6 +481,31 @@ static func resolve_be_lesson(instrument_key: String, local_lesson_id: String) -
 	return candidates[0]
 
 
+## Chỉ trả lesson khi KHỚP CHÍNH XÁC (orderIndex == số bài local, hoặc legacy map).
+## Trả {} nếu chỉ có fallback candidates[0] — dùng cho report_practice để
+## tránh gửi điểm nhầm sang lesson khác khi BE chưa có bài tương ứng.
+static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: String) -> Dictionary:
+	if be_catalog.is_empty():
+		return {}
+	var inst := _normalize_instrument_key(instrument_key)
+	var local_number := local_lesson_number(local_lesson_id)
+
+	if local_number > 0:
+		for lesson: Dictionary in be_catalog:
+			if not _lesson_matches_instrument(lesson, inst):
+				continue
+			if int(lesson.get("orderIndex", lesson.get("order_index", 0))) == local_number:
+				return lesson
+	# Legacy map: khớp đúng id lesson BE
+	for lesson: Dictionary in be_catalog:
+		var id := int(lesson.get("id", 0))
+		if LEGACY_BACKEND_LESSON_MAP.has(id):
+			var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[id]
+			if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
+				return lesson
+	return {}
+
+
 ## Trả về danh sách lessonId của một nhạc cụ trong catalog (dùng để bỏ ràng buộc lesson khi test).
 static func be_lesson_ids_for_instrument(instrument_key: String) -> Array[int]:
 	var inst := _normalize_instrument_key(instrument_key)

@@ -145,9 +145,10 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 
-	var lesson: Dictionary = SecureDataManager.resolve_be_lesson(instrument, local_lesson_id)
+	var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
 	if lesson.is_empty():
-		return {"submitted": false, "reason": "no_lesson_binding"}
+		push_warning("[Practice] Không khớp lesson BE chính xác (orderIndex/legacy) cho %s — bỏ qua submit để tránh gửi nhầm lesson." % str(local_lesson_id))
+		return {"submitted": false, "reason": "lesson_binding_mismatch"}
 	var lesson_id := int(lesson.get("id", 0))
 
 	var exercise: Dictionary = await ensure_exercises(lesson_id)
