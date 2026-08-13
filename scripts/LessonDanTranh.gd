@@ -274,11 +274,25 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Đặt ngón cái, ngón trỏ và ngón giữa để gảy vang đồng thời cả ba nốt Đô, Mi và Sol cùng một lúc.", "highlight": -1}
 	],
 
+	"dan_tranh_level_7_bai_19_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật nhấn trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật nhấn là dùng tay trái ấn dây ở phía bên trái của nhạn để nâng cao độ của âm thanh sau khi tay phải gảy dây.", "highlight": -1},
+		{"action": "speak", "text": "Nhờ kỹ thuật này, đàn Tranh có thể tạo ra những nốt không có sẵn trên dây. Ví dụ, nhấn dây La để lên nốt Si, hoặc nhấn dây Mi để lên nốt Fa.", "highlight": -1},
+		{"action": "speak", "text": "Khi thực hiện, tay phải gảy dây trước, sau đó tay trái nhấn nhẹ và đều đến đúng cao độ. Không nhấn quá mạnh vì tiếng đàn có thể bị gắt hoặc cao độ bị lệch. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
 	"dan_tranh_level_7_bai_20_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật song thanh trên đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Song thanh là kỹ thuật gảy để hai nốt cùng phát ra một lúc. Song thanh truyền thống thường sử dụng quãng tám; các nhạc sĩ hiện đại còn kết hợp thêm những quãng khác.", "highlight": -1},
 		{"action": "speak", "text": "Có hai cách tạo song thanh cơ bản: kết hợp ngón 1 với ngón 2, hoặc kết hợp ngón 1 với ngón 3.", "highlight": -1},
 		{"action": "speak", "text": "Khi thực hiện, hai tiếng phải phát ra đồng thời, không bị chênh nhau và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
+	"dan_tranh_level_7_bai_21_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật rung dây trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Kỹ thuật rung dây tạo tiếng đàn ngân liên tục, mềm mại và giàu cảm xúc. Có hai kiểu rung chính: rung nhanh với biên độ hẹp và rung chậm với biên độ rộng. Trong bài này, chúng ta luyện kiểu rung để thể hiện nét vui của giai điệu.", "highlight": -1},
+		{"action": "speak", "text": "Sau khi tay phải gảy dây, tay trái rung ngay để tiếng đàn không bị ngắt quãng. Dùng ngón trỏ và ngón giữa tay trái đặt nhẹ lên dây ở phía bên trái nhạn, cách nhạn khoảng mười xen-ti-mét. Không tỳ mạnh xuống dây vì có thể làm sai cao độ.", "highlight": -1},
+		{"action": "speak", "text": "Giữ cổ tay và các ngón tay mềm mại. Dùng hai ngón tay nhồi dây nhẹ nhàng lên xuống, đều tay, để tiếng rung tự nhiên và kéo dài. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_5_bai_11_practice": [
