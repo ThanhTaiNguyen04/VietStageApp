@@ -406,15 +406,15 @@ func _draw_single_tremolo_mark(note_data: Dictionary, center_y: float, color: Co
 	var note_x := float(note_data.get("x", size.x * 0.5))
 	var pos_idx := _get_note_position_index(note_name)
 	var note_y: float = center_y + (2.0 - pos_idx) * line_spacing
-	var note_width := line_spacing * 1.15
-	var stem_len := line_spacing * 2.2
+	var note_width: float = line_spacing * 1.15
+	var stem_len: float = line_spacing * 2.2
 	var stem_up := pos_idx < 2.0
-	var stem_x := note_x + note_width * 0.5 - 2.0 if stem_up else note_x - note_width * 0.5 + 2.0
-	var stem_end_y := note_y - stem_len if stem_up else note_y + stem_len
+	var stem_x: float = note_x + note_width * 0.5 - 2.0 if stem_up else note_x - note_width * 0.5 + 2.0
+	var stem_end_y: float = note_y - stem_len if stem_up else note_y + stem_len
 	var center := Vector2(stem_x, lerpf(note_y, stem_end_y, 0.52))
-	var stroke_length := line_spacing * 0.82
-	var stroke_rise := line_spacing * 0.28
-	var stroke_gap := line_spacing * 0.29
+	var stroke_length: float = line_spacing * 0.82
+	var stroke_rise: float = line_spacing * 0.28
+	var stroke_gap: float = line_spacing * 0.29
 	for i in range(3):
 		var offset := (float(i) - 1.0) * stroke_gap * (1.0 if stem_up else -1.0)
 		var from := center + Vector2(-stroke_length * 0.5, offset - stroke_rise * 0.5)
@@ -431,11 +431,11 @@ func _draw_octave_tremolo_mark(note_data: Dictionary, center_y: float, color: Co
 	var target_pos := _get_note_position_index(target_name)
 	var source_y: float = center_y + (2.0 - source_pos) * line_spacing
 	var target_y: float = center_y + (2.0 - target_pos) * line_spacing
-	var note_width := line_spacing * 1.15
-	var stem_len := line_spacing * 2.2
+	var note_width: float = line_spacing * 1.15
+	var stem_len: float = line_spacing * 2.2
 	var left := Vector2(source_x + note_width * 0.5 - 2.0, source_y - stem_len * 0.48)
 	var right := Vector2(target_x - note_width * 0.5 + 2.0, target_y + stem_len * 0.48)
-	var gap := line_spacing * 0.30
+	var gap: float = line_spacing * 0.30
 	for i in range(3):
 		var y_offset := (float(i) - 1.0) * gap
 		var from := left + Vector2(0.0, y_offset)
