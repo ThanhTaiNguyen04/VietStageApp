@@ -274,6 +274,13 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Đặt ngón cái, ngón trỏ và ngón giữa để gảy vang đồng thời cả ba nốt Đô, Mi và Sol cùng một lúc.", "highlight": -1}
 	],
 
+	"dan_tranh_level_7_bai_20_practice": [
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật song thanh trên đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Song thanh là kỹ thuật gảy để hai nốt cùng phát ra một lúc. Song thanh truyền thống thường sử dụng quãng tám; các nhạc sĩ hiện đại còn kết hợp thêm những quãng khác.", "highlight": -1},
+		{"action": "speak", "text": "Có hai cách tạo song thanh cơ bản: kết hợp ngón 1 với ngón 2, hoặc kết hợp ngón 1 với ngón 3.", "highlight": -1},
+		{"action": "speak", "text": "Khi thực hiện, hai tiếng phải phát ra đồng thời, không bị chênh nhau và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+	],
+
 	"dan_tranh_level_5_bai_11_practice": [
 		{"action": "speak", "text": "Chào mừng bạn đến với cấp độ Master. Chúng ta bắt đầu chinh phục đoạn nhạc mở đầu của tác phẩm Sứ Thanh Hoa.", "highlight": -1},
 		{"action": "speak", "text": "Hãy tập trung gảy đúng giai điệu dạo đầu với các quãng nhảy nốt rộng.", "highlight": -1}
