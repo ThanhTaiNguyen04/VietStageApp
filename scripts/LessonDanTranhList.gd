@@ -11,12 +11,16 @@ const C_GOLD_DARK := Color("#7a5b12")
 const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
+const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 static var selected_level: int = 1
-const REQUIRE_SEQUENTIAL_UNLOCK := false # Tìm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
+const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
 var _sidebar_icon_cache: Dictionary = {}
+var _sidebar_expanded := true
+var _sidebar_tween: Tween = null
+var _sidebar_blur: ColorRect = null
 
 const LEVELS := [
 	{
@@ -299,7 +303,7 @@ const LEVELS := [
 				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
 				"practice_title": "Luyện tập: Đô trưởng",
 				"sheet": [
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
+					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
 				],
@@ -361,7 +365,7 @@ func _ready() -> void:
 	selected_level = clampi(selected_level, 1, LEVELS.size())
 	InstrumentSelect.selected_instrument = "dan_tranh"
 	SecureDataManager.data["selected_instrument"] = "dan_tranh"
-	
+
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
@@ -370,7 +374,7 @@ func _ready() -> void:
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
-	
+
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
 	btn_leaderboard.text = "Bảng xếp hạng"
@@ -378,13 +382,13 @@ func _ready() -> void:
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
 	side_v.move_child(btn_leaderboard, 6)
-	
+
 	_build_theme()
 	_build_sidebar()
 	_build_lessons()
 	_build_quiz_btn()
 	_build_profile_btn()
-	
+
 	lessons_hbox.draw.connect(_draw_lesson_path)
 	lessons_hbox.sort_children.connect(func() -> void: lessons_hbox.queue_redraw())
 	_connect_navigation()
@@ -405,7 +409,7 @@ func _build_theme() -> void:
 	top_s.border_width_bottom = 1
 	top_s.content_margin_bottom = 0
 	top_bar.add_theme_stylebox_override("panel", top_s)
-	
+
 	var top_blur_mat = ShaderMaterial.new()
 	var top_blur_shader = Shader.new()
 	top_blur_shader.code = """
@@ -429,7 +433,7 @@ func _build_theme() -> void:
 	var heading_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
 	if heading_font:
 		page_title.add_theme_font_override("font", heading_font)
-	
+
 	back_btn.text = ""
 	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back_btn.expand_icon = true
@@ -440,7 +444,7 @@ func _build_theme() -> void:
 	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_bouncy(back_btn)
-	
+
 	if change_course_btn:
 		_style_outline_button(change_course_btn)
 
@@ -472,6 +476,7 @@ func _build_sidebar() -> void:
 	blur_rect.show_behind_parent = true
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
+	_sidebar_blur = blur_rect
 
 	if btn_menu: _style_side_icon_btn(btn_menu,     false)
 	if btn_courses: _style_side_icon_btn(btn_courses,  true)
@@ -547,14 +552,14 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		4: tex_name = "trending-up"
 		5: tex_name = "user"
 		6: tex_name = "home"
-	
+
 	var texture : Texture2D = null
 	if _sidebar_icon_cache.has(t):
 		texture = _sidebar_icon_cache[t]
 	elif tex_name != "":
 		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
 		_sidebar_icon_cache[t] = texture
-	
+
 	if texture:
 		var icon_sz := Vector2(36, 36)
 		if t == 0:
@@ -663,7 +668,7 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	var bg_color := Color(0.95, 0.93, 0.89, 0.6)
 	var border_color := Color(0.85, 0.82, 0.78, 1.0)
 	var text_color := Color(C_MUTED, 0.8)
-	
+
 	if completed:
 		bg_color = C_JADE
 		border_color = C_GOLD
@@ -680,11 +685,11 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
 	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
 	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
-	
+
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
 		s_normal.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-		
+
 	var s_hover := s_normal.duplicate() as StyleBoxFlat
 	if unlocked:
 		if completed:
@@ -716,7 +721,7 @@ func _draw_lesson_path() -> void:
 		return
 	var centers: Array[Vector2] = []
 	var node_unlocked: Array[bool] = []
-	
+
 	for child in lessons_hbox.get_children():
 		var col := child as VBoxContainer
 		if not col: continue
@@ -725,10 +730,10 @@ func _draw_lesson_path() -> void:
 			var l_center: Vector2 = col.position + l_btn.position + l_btn.size / 2.0
 			centers.append(l_center)
 			node_unlocked.append(not l_btn.disabled)
-			
+
 	if centers.is_empty():
 		return
-		
+
 	# Ensure all circles lie on the exact same horizontal straight line (Y coordinate)
 	var line_y := centers[0].y
 	for idx in range(centers.size() - 1):
@@ -840,11 +845,69 @@ func _create_action_button(text_value: String, primary: bool) -> Button:
 	_make_bouncy(button)
 	return button
 
+func _toggle_sidebar() -> void:
+	_set_sidebar_expanded(not _sidebar_expanded, true)
+
+func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
+	if _sidebar_tween:
+		_sidebar_tween.kill()
+	_sidebar_expanded = expanded
+
+	var rail_width := 220.0 if expanded else SIDEBAR_COLLAPSED_WIDTH
+	var navigation := [btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]
+	var top_spacer := $Root/Sidebar/SideM/SideV/TopSpacer as Control
+	var bottom_spacer := $Root/Sidebar/SideM/SideV/BotSpacer as Control
+
+	if expanded:
+		if top_spacer: top_spacer.show()
+		if bottom_spacer: bottom_spacer.show()
+		for button: Button in navigation:
+			button.show()
+
+	if not animate:
+		sidebar.custom_minimum_size.x = rail_width
+		btn_menu.custom_minimum_size.x = rail_width
+		for button: Button in navigation:
+			button.custom_minimum_size.x = rail_width
+		_apply_sidebar_presentation(expanded)
+		if not expanded:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		return
+
+	_sidebar_tween = create_tween().set_parallel(true)
+	_sidebar_tween.tween_property(sidebar, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	for button: Button in navigation:
+		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+
+	if expanded:
+		_apply_sidebar_presentation(true)
+	else:
+		_sidebar_tween.set_parallel(false)
+		_sidebar_tween.tween_callback(func() -> void:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		)
+
+func _apply_sidebar_presentation(expanded: bool) -> void:
+	var side_style := _flat(Color(0.95, 0.93, 0.89, 0.6) if expanded else Color(0, 0, 0, 0), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15) if expanded else Color(0, 0, 0, 0), 0, 0)
+	side_style.border_width_left = 0; side_style.border_width_top = 0; side_style.border_width_bottom = 0
+	side_style.border_width_right = 2 if expanded else 0
+	side_style.content_margin_right = 0
+	sidebar.add_theme_stylebox_override("panel", side_style)
+	if _sidebar_blur:
+		_sidebar_blur.visible = expanded
+
 func _connect_navigation() -> void:
 	back_btn.pressed.connect(_go_to_levels)
 	if change_course_btn:
 		change_course_btn.pressed.connect(_go_to_levels)
-	btn_menu.pressed.connect(func() -> void: _fade_to("res://scenes/MainMenu.tscn"))
+	btn_menu.pressed.connect(_toggle_sidebar)
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
@@ -861,21 +924,21 @@ func _go_to_levels() -> void:
 
 func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	var lesson_number := int(lesson["number"])
-	
+
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])
 	var typed_sheet: Array[String] = []
 	typed_sheet.assign(lesson.get("sheet", []))
 	PracticeRoom.current_song_sheet = typed_sheet
-	
+
 	var typed_durations: Array[float] = []
 	typed_durations.assign(lesson.get("durations", []))
 	LessonDanTranh.current_song_durations = typed_durations
-	
+
 	var typed_cues: Array[String] = []
 	typed_cues.assign(lesson.get("cues", []))
 	LessonDanTranh.current_song_cues = typed_cues
-	
+
 	var lesson_type := str(lesson.get("type", "practice"))
 	if activity == "video":
 		SecureDataManager.active_lesson_id = _lesson_id(lesson_number, "video")

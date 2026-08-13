@@ -34,49 +34,51 @@ func _ready() -> void:
 	super._ready()
 	_add_quiz_scrim()
 	title_label.text = "QUIZ - NHẬN DIỆN NỐT NHẠC"
-	
+
 	# Hide the inherited top panel navbar
 	var top_panel = root_box.get_child(0)
 	if top_panel:
 		top_panel.visible = false
-		
-	# Adjust ScrollContainer top margin and wrap content in a premium card sheet
-	var scroll_margin = root_box.find_child("MarginContainer", true, false) as MarginContainer
-	if scroll_margin:
-		scroll_margin.add_theme_constant_override("margin_top", 10)
-		scroll_margin.add_theme_constant_override("margin_bottom", 12)
-		scroll_margin.add_theme_constant_override("margin_left", 16)
-		scroll_margin.add_theme_constant_override("margin_right", 16)
-		
-		var old_content = scroll_margin.get_child(0)
-		if old_content:
-			scroll_margin.remove_child(old_content)
-			
-			var quiz_sheet := PanelContainer.new()
-			quiz_sheet.name = "QuizSheetCard"
-			quiz_sheet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			
-			var sheet_style := StyleBoxFlat.new()
-			sheet_style.bg_color = Color(0.995, 0.99, 0.985, 0.90) # frosted cream
-			sheet_style.set_corner_radius_all(20)
-			sheet_style.set_border_width_all(1)
-			sheet_style.border_color = Color(0.88, 0.84, 0.78, 0.6)
-			sheet_style.shadow_color = Color(0.08, 0.07, 0.05, 0.08)
-			sheet_style.shadow_size = 12
-			sheet_style.shadow_offset = Vector2(0, 5)
-			sheet_style.content_margin_left = 16
-			sheet_style.content_margin_right = 16
-			sheet_style.content_margin_top = 16
-			sheet_style.content_margin_bottom = 16
-			
-			quiz_sheet.add_theme_stylebox_override("panel", sheet_style)
-			scroll_margin.add_child(quiz_sheet)
-			quiz_sheet.add_child(old_content)
-		
+
+	# Find ScrollContainer to get its child MarginContainer (to wrap in a premium card sheet)
+	var scroll = root_box.find_child("ScrollContainer", true, false) as ScrollContainer
+	if scroll and scroll.get_child_count() > 0:
+		var scroll_margin = scroll.get_child(0) as MarginContainer
+		if scroll_margin:
+			scroll_margin.add_theme_constant_override("margin_top", 10)
+			scroll_margin.add_theme_constant_override("margin_bottom", 12)
+			scroll_margin.add_theme_constant_override("margin_left", 16)
+			scroll_margin.add_theme_constant_override("margin_right", 16)
+
+			var old_content = scroll_margin.get_child(0)
+			if old_content:
+				scroll_margin.remove_child(old_content)
+
+				var quiz_sheet := PanelContainer.new()
+				quiz_sheet.name = "QuizSheetCard"
+				quiz_sheet.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+				var sheet_style := StyleBoxFlat.new()
+				sheet_style.bg_color = Color(0.995, 0.99, 0.985, 0.90) # frosted cream
+				sheet_style.set_corner_radius_all(20)
+				sheet_style.set_border_width_all(1)
+				sheet_style.border_color = Color(0.88, 0.84, 0.78, 0.6)
+				sheet_style.shadow_color = Color(0.08, 0.07, 0.05, 0.08)
+				sheet_style.shadow_size = 12
+				sheet_style.shadow_offset = Vector2(0, 5)
+				sheet_style.content_margin_left = 16
+				sheet_style.content_margin_right = 16
+				sheet_style.content_margin_top = 16
+				sheet_style.content_margin_bottom = 16
+
+				quiz_sheet.add_theme_stylebox_override("panel", sheet_style)
+				scroll_margin.add_child(quiz_sheet)
+				quiz_sheet.add_child(old_content)
+
 	# Build persistent elements
 	_build_sticky_progress_bar()
 	_build_bottom_feedback_panel()
-	
+
 	# Hide initially during loading
 	if progress_bar:
 		progress_bar.get_parent().visible = false
@@ -84,7 +86,7 @@ func _ready() -> void:
 		bottom_feedback_panel.visible = false
 	if floating_back_button:
 		floating_back_button.visible = false
-		
+
 	_show_loading()
 	_begin_quiz()
 
@@ -285,7 +287,7 @@ func _set_bottom_feedback_answered(is_correct: bool, feedback_desc: String) -> v
 			if question_index + 1 >= quizzes.size():
 				next_button.text = "Xem kết quả"
 			next_button.disabled = false
-			
+
 			var btn_normal := _panel(C_NAVY, C_NAVY.darkened(0.2), 14, 1)
 			var btn_hover := _panel(C_NAVY.lightened(0.1), C_NAVY.darkened(0.2), 14, 2)
 			var btn_pressed := _panel(C_NAVY.darkened(0.15), C_NAVY.darkened(0.2), 14, 1)

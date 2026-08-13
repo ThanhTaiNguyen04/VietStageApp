@@ -20,6 +20,7 @@ const C_GOLD_DARK   := Color(0.55, 0.40, 0.08, 1.0)
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
+const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
@@ -34,6 +35,14 @@ var btn_leaderboard_mob : Button
 var _api_client = null
 var _profile_level := 1
 var _account_menu_open := false
+var _sidebar_expanded := true
+var _sidebar_tween: Tween = null
+var _sidebar_reveal_tween: Tween = null
+var _sidebar_rail_width := 220.0
+var _sidebar_safe_left := 0.0
+var _sidebar_dropdown: PanelContainer = null
+var _sidebar_blur: ColorRect = null
+var _menu_glass: ColorRect = null
 var _avatar_request: HTTPRequest
 var _remote_avatar_texture: Texture2D
 var _requested_avatar_url := ""
@@ -119,12 +128,12 @@ func _ready() -> void:
 	add_child(_avatar_request)
 	_fetch_and_sync_progress()
 	_fetch_profile_identity()
-	
+
 	# Programmatic instantiation of MiniGame button
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Minigame"
+	btn_minigame.text = "Mini-game"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -133,15 +142,15 @@ func _ready() -> void:
 	var bottom_h := $Root/RightContent/BottomBar/BottomM/BottomH as HBoxContainer
 	btn_minigame_mob = Button.new()
 	btn_minigame_mob.name = "BtnMiniGameMobile"
-	btn_minigame_mob.text = "Minigame"
+	btn_minigame_mob.text = "Mini-game"
 	btn_minigame_mob.flat = true
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)
 	bottom_h.move_child(btn_minigame_mob, 3) # after BtnSongsMobile (index 2)
-	
+
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Bảng xếp hạng"
+	btn_leaderboard.text = "Xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
@@ -149,13 +158,15 @@ func _ready() -> void:
 
 	btn_leaderboard_mob = Button.new()
 	btn_leaderboard_mob.name = "BtnLeaderboardMobile"
-	btn_leaderboard_mob.text = "Bảng xếp hạng"
+	btn_leaderboard_mob.text = "Xếp hạng"
 	btn_leaderboard_mob.flat = true
 	btn_leaderboard_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_leaderboard_mob)
 	bottom_h.move_child(btn_leaderboard_mob, 4)
-	
+
 	_build_sidebar()
+	_build_sidebar_dropdown()
+	_build_menu_glass()
 	_build_bottom_bar()
 	_build_top_bar()
 	_build_profile_menu()
@@ -163,7 +174,7 @@ func _ready() -> void:
 	_connect_buttons()
 	_setup_drawing_callbacks()
 	_animate_in()
-	
+
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.38)
 
@@ -221,7 +232,7 @@ func _process(delta: float) -> void:
 	_time += delta
 	bg_canvas.queue_redraw()
 	roadmap_content.queue_redraw()
-	
+
 	var straight_instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	# Removed hack because _on_viewport_size_changed now handles it properly
 
@@ -231,11 +242,11 @@ func _setup_drawing_callbacks() -> void:
 	# Background curves
 	bg_canvas.draw.connect(_draw_background_waves)
 	bg_canvas.queue_redraw()
-	
+
 	# Roadmap curves + clouds + stars
 	roadmap_content.draw.connect(_draw_roadmap_paths)
 	roadmap_content.queue_redraw()
-	
+
 	# Card Basic Progress Ring in Gold
 	var vis_basic := card_basic.get_node("Margin/Row/Visual") as Control
 	vis_basic.draw.connect(func() -> void:
@@ -244,7 +255,7 @@ func _setup_drawing_callbacks() -> void:
 		var r := 34.0
 		# Gray outer ring
 		vis_basic.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-		
+
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		var pct := 0.0
 		if inst == "dan_tranh":
@@ -256,7 +267,7 @@ func _setup_drawing_callbacks() -> void:
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"):
 				pct = 100.0
-		
+
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_basic.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
@@ -266,7 +277,7 @@ func _setup_drawing_callbacks() -> void:
 		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
 		vis_basic.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
 	)
-	
+
 	# Card Essentials Progress Ring in Gold
 	var vis_essentials := card_essentials.get_node("Margin/Row/Visual") as Control
 	vis_essentials.draw.connect(func() -> void:
@@ -274,7 +285,7 @@ func _setup_drawing_callbacks() -> void:
 		var cy := vis_essentials.size.y / 2.0
 		var r := 34.0
 		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-		
+
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		var pct := 0.0
 		if inst == "dan_tranh":
@@ -286,7 +297,7 @@ func _setup_drawing_callbacks() -> void:
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
-			
+
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_essentials.draw_arc(Vector2(cx, cy), r, -PI/2, -PI/2 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
@@ -296,11 +307,11 @@ func _setup_drawing_callbacks() -> void:
 		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
 		vis_essentials.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
 	)
-	
+
 	# Lock Icons on Locked Cards
 	var lock_soloist := card_soloist_unlock.get_node("Margin/VBox/LockedIcon") as Control
 	lock_soloist.draw.connect(func() -> void: _draw_lock_icon(lock_soloist))
-	
+
 	var lock_chords := card_chords_unlock.get_node("Margin/VBox/LockedIcon") as Control
 	lock_chords.draw.connect(func() -> void: _draw_lock_icon(lock_chords))
 
@@ -322,7 +333,7 @@ func _draw_background_waves() -> void:
 	var sz := bg_canvas.size
 	# Lacquer deep dark brown base
 	bg_canvas.draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARKER)
-	
+
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_tranh" or inst == "dan_bau" or inst == "trong_chau" or inst == "sao_truc":
 		var cache_key := "bg_" + inst
@@ -332,7 +343,7 @@ func _draw_background_waves() -> void:
 				_sidebar_icons_cache[cache_key] = load(tex_path) as Texture2D
 			else:
 				_sidebar_icons_cache[cache_key] = null
-				
+
 		var tex = _sidebar_icons_cache[cache_key]
 		if tex:
 			var scale_factor = max(sz.x / tex.get_width(), sz.y / tex.get_height())
@@ -340,7 +351,7 @@ func _draw_background_waves() -> void:
 			var pos = Vector2((sz.x - new_sz.x) / 2.0, (sz.y - new_sz.y) / 2.0)
 			bg_canvas.draw_texture_rect(tex, Rect2(pos, new_sz), false)
 			return # Bỏ qua vẽ sóng bên dưới
-	
+
 	# Lacquer Red Wave 1 (Animated)
 	var w1_pts := PackedVector2Array()
 	var w1_start := Vector2(0, sz.y * 0.15 + sin(_time * 0.8) * 8.0)
@@ -353,7 +364,7 @@ func _draw_background_waves() -> void:
 	w1_pts.append(Vector2(sz.x, sz.y))
 	w1_pts.append(Vector2(0, sz.y))
 	bg_canvas.draw_colored_polygon(w1_pts, C_WAVE_COLOR)
-	
+
 	# Bronze Golden Wave 2 (Animated)
 	var w2_pts := PackedVector2Array()
 	var w2_start := Vector2(0, sz.y * 0.45 + cos(_time * 0.7) * 10.0)
@@ -373,7 +384,7 @@ func _draw_roadmap_paths() -> void:
 	_draw_traditional_cloud(roadmap_content, Vector2(850 + cos(_time * 0.15) * 12.0, 630), 45.0)
 	_draw_traditional_cloud(roadmap_content, Vector2(1620 + sin(_time * 0.25) * 15.0, 120), 50.0)
 	_draw_traditional_cloud(roadmap_content, Vector2(2150 + cos(_time * 0.18) * 18.0, 620), 55.0)
-	
+
 	# Glowing Gold Stars
 	var star_positions := [
 		Vector2(160, 130), Vector2(280, 620), Vector2(620, 120), Vector2(980, 640),
@@ -391,7 +402,7 @@ func _draw_roadmap_paths() -> void:
 	var p_cho_sk := card_chords_skills.position + card_chords_skills.size / 2.0
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
-		
+
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_bau" or inst == "dan_tranh" or inst == "sao_truc":
 		# Ép tọa độ Y của các điểm neo bằng nhau để đường vàng vẽ thẳng tắp 100%
@@ -401,7 +412,7 @@ func _draw_roadmap_paths() -> void:
 		p_cho_sk.y = straight_y
 		p_pop.y = straight_y
 		p_class.y = straight_y
-		
+
 		# Đường thẳng duy nhất nằm ngang
 		_draw_thick_path(p_basic, p_ess)
 		_draw_thick_path(p_ess, p_sol_sk)
@@ -413,15 +424,15 @@ func _draw_roadmap_paths() -> void:
 		# Draw roadmap line segments connecting cards
 		# Basic Card -> Essentials Card -> Split point
 		_draw_thick_path(p_basic, p_ess)
-		
+
 		# Essentials split into Soloist and Chords paths
 		_draw_curved_path(p_ess, p_sol_un)
 		_draw_curved_path(p_ess, p_cho_un)
-		
+
 		# Top Path (Soloist): SoloistUnlock -> SoloistSkills -> Classical
 		_draw_thick_path(p_sol_un, p_sol_sk)
 		_draw_thick_path(p_sol_sk, p_class)
-		
+
 		# Bottom Path (Chords): ChordsUnlock -> ChordsSkills -> PopChords
 		_draw_thick_path(p_cho_un, p_cho_sk)
 		_draw_thick_path(p_cho_sk, p_pop)
@@ -434,14 +445,14 @@ func _draw_thick_path(from: Vector2, to: Vector2) -> void:
 func _draw_curved_path(from: Vector2, to: Vector2) -> void:
 	var ctrl1 := Vector2(from.x + (to.x - from.x) * 0.4, from.y)
 	var ctrl2 := Vector2(from.x + (to.x - from.x) * 0.6, to.y)
-	
+
 	var line_pts := PackedVector2Array()
-	
+
 	for i in range(20):
 		var t := i / 19.0
 		var p := from.bezier_interpolate(ctrl1, ctrl2, to, t)
 		line_pts.append(p)
-		
+
 	roadmap_content.draw_polyline(line_pts, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24.0, true)
 	roadmap_content.draw_polyline(line_pts, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4), 14.0, true)
 	roadmap_content.draw_polyline(line_pts, Color(1.0, 1.0, 1.0, 0.6), 4.0, true)
@@ -478,7 +489,7 @@ func _build_sidebar() -> void:
 	side_s.border_width_right = 2
 	side_s.content_margin_right = 0
 	sidebar.add_theme_stylebox_override("panel", side_s)
-	
+
 	var blur_mat = ShaderMaterial.new()
 	var blur_shader = Shader.new()
 	blur_shader.code = """
@@ -497,6 +508,7 @@ func _build_sidebar() -> void:
 	blur_rect.show_behind_parent = true
 	sidebar.add_child(blur_rect)
 	sidebar.move_child(blur_rect, 0)
+	_sidebar_blur = blur_rect
 
 	_style_side_icon_btn(btn_menu,     false)
 	_style_side_icon_btn(btn_courses,  true)
@@ -515,6 +527,189 @@ func _build_sidebar() -> void:
 	_attach_icon_draw(btn_account,  5)
 
 	_active_side_btn = btn_courses
+
+func _build_sidebar_dropdown() -> void:
+	_sidebar_dropdown = PanelContainer.new()
+	_sidebar_dropdown.name = "SidebarDropdown"
+	_sidebar_dropdown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sidebar_dropdown.z_index = 20
+	_sidebar_dropdown.hide()
+
+	var dropdown_style := _flat(Color(0.98, 0.97, 0.94, 0.96), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.9), 16)
+	dropdown_style.shadow_color = Color(0.04, 0.10, 0.06, 0.24)
+	dropdown_style.shadow_size = 10
+	dropdown_style.shadow_offset = Vector2(0, 4)
+	_sidebar_dropdown.add_theme_stylebox_override("panel", dropdown_style)
+
+	var label := Label.new()
+	label.text = "Điều hướng"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", C_RED_SON)
+	label.add_theme_font_size_override("font_size", 14)
+	_sidebar_dropdown.add_child(label)
+	add_child(_sidebar_dropdown)
+
+func _build_menu_glass() -> void:
+	_menu_glass = ColorRect.new()
+	_menu_glass.name = "MenuGlass"
+	_menu_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_menu_glass.hide()
+
+	var glass_shader := Shader.new()
+	glass_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	void fragment() {
+		float edge = smoothstep(0.50, 0.46, length(UV - vec2(0.5)));
+		vec3 blurred_scene = textureLod(screen_texture, SCREEN_UV, 2.6).rgb;
+		vec3 glass_tint = mix(blurred_scene, vec3(0.95, 0.97, 0.91), 0.28);
+		COLOR = vec4(glass_tint, edge * 0.94);
+	}
+	"""
+	var glass_material := ShaderMaterial.new()
+	glass_material.shader = glass_shader
+	_menu_glass.material = glass_material
+	btn_menu.add_child(_menu_glass)
+	btn_menu.move_child(_menu_glass, 0)
+	_position_menu_glass()
+
+func _toggle_sidebar() -> void:
+	if _sidebar_expanded:
+		_set_sidebar_expanded(false, true)
+	else:
+		_reveal_sidebar_from_menu()
+
+func _reveal_sidebar_from_menu() -> void:
+	if _sidebar_reveal_tween:
+		_sidebar_reveal_tween.kill()
+	if not _sidebar_dropdown:
+		_set_sidebar_expanded(true, true)
+		return
+
+	var dropdown_width := minf(190.0, _sidebar_rail_width)
+	_sidebar_dropdown.position = Vector2(_sidebar_safe_left + 8.0, btn_menu.global_position.y + btn_menu.size.y + 8.0)
+	_sidebar_dropdown.size = Vector2(SIDEBAR_COLLAPSED_WIDTH, 0.0)
+	_sidebar_dropdown.modulate.a = 0.0
+	_sidebar_dropdown.show()
+
+	_sidebar_reveal_tween = create_tween()
+	_sidebar_reveal_tween.set_parallel(true)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "size", Vector2(dropdown_width, 42.0), 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "modulate:a", 1.0, 0.12)
+	_sidebar_reveal_tween.set_parallel(false)
+	_sidebar_reveal_tween.tween_interval(0.16)
+	_sidebar_reveal_tween.tween_callback(func() -> void: _set_sidebar_expanded(true, true))
+	_sidebar_reveal_tween.set_parallel(true)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "size:y", 0.0, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_sidebar_reveal_tween.tween_property(_sidebar_dropdown, "modulate:a", 0.0, 0.12)
+	_sidebar_reveal_tween.set_parallel(false)
+	_sidebar_reveal_tween.tween_callback(func() -> void: _sidebar_dropdown.hide())
+
+func _set_sidebar_expanded(expanded: bool, animate: bool) -> void:
+	if _sidebar_tween:
+		_sidebar_tween.kill()
+	_sidebar_expanded = expanded
+
+	var rail_width := _sidebar_rail_width if expanded else SIDEBAR_COLLAPSED_WIDTH
+	var sidebar_width := rail_width + _sidebar_safe_left
+	var navigation := [btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard]
+	var top_spacer := $Root/Sidebar/SideM/SideV/TopSpacer as Control
+	var bottom_spacer := $Root/Sidebar/SideM/SideV/BotSpacer as Control
+
+	if expanded:
+		if top_spacer: top_spacer.show()
+		if bottom_spacer: bottom_spacer.show()
+		for button: Button in navigation:
+			button.show()
+
+	if not animate:
+		sidebar.custom_minimum_size.x = sidebar_width
+		btn_menu.custom_minimum_size.x = rail_width
+		btn_menu.custom_minimum_size.y = SIDEBAR_COLLAPSED_WIDTH if not expanded else (92.0 if _sidebar_rail_width <= 168.0 else 100.0)
+		for button: Button in navigation:
+			button.custom_minimum_size.x = rail_width
+		_apply_menu_button_presentation(expanded)
+		_apply_sidebar_panel_presentation(expanded)
+		if not expanded:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		return
+
+	_sidebar_tween = create_tween().set_parallel(true)
+	_sidebar_tween.tween_property(sidebar, "custom_minimum_size:x", sidebar_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	for button: Button in navigation:
+		_sidebar_tween.tween_property(button, "custom_minimum_size:x", rail_width, 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_sidebar_tween.tween_property(btn_menu, "custom_minimum_size:y", SIDEBAR_COLLAPSED_WIDTH if not expanded else (92.0 if _sidebar_rail_width <= 168.0 else 100.0), 0.28).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	if expanded:
+		_apply_menu_button_presentation(true)
+		_apply_sidebar_panel_presentation(true)
+
+	if not expanded:
+		_sidebar_tween.set_parallel(false)
+		_sidebar_tween.tween_callback(func() -> void:
+			if top_spacer: top_spacer.hide()
+			if bottom_spacer: bottom_spacer.hide()
+			for button: Button in navigation:
+				button.hide()
+		)
+
+func _apply_menu_button_presentation(expanded: bool) -> void:
+	var icon := btn_menu.get_node_or_null("IconDraw") as Control
+	if expanded:
+		if _menu_glass:
+			_menu_glass.hide()
+		_style_side_icon_btn(btn_menu, false)
+		if icon:
+			icon.anchors_preset = Control.PRESET_CENTER_TOP
+			icon.anchor_left = 0.5; icon.anchor_right = 0.5
+			icon.anchor_top = 0.0; icon.anchor_bottom = 0.0
+			icon.offset_left = -40; icon.offset_right = 40
+			icon.offset_top = 8; icon.offset_bottom = 64
+		return
+
+	var circle := _flat(Color(0, 0, 0, 0), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.9), 32)
+	circle.shadow_color = Color(0.04, 0.10, 0.06, 0.22)
+	circle.shadow_size = 8
+	circle.shadow_offset = Vector2(0, 3)
+	btn_menu.add_theme_stylebox_override("normal", circle)
+	btn_menu.add_theme_stylebox_override("hover", _flat(Color(1.0, 1.0, 1.0, 0.18), C_GOLD, 32))
+	btn_menu.add_theme_stylebox_override("pressed", _flat(Color(0.91, 0.95, 0.91, 0.28), C_GOLD_DARK, 32))
+	btn_menu.add_theme_stylebox_override("focus", _flat(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 32))
+	btn_menu.add_theme_color_override("font_color", C_RED_SON)
+	if icon:
+		icon.anchors_preset = Control.PRESET_CENTER
+		icon.anchor_left = 0.5; icon.anchor_right = 0.5
+		icon.anchor_top = 0.5; icon.anchor_bottom = 0.5
+		icon.offset_left = -14; icon.offset_right = 14
+		icon.offset_top = -14; icon.offset_bottom = 14
+	if _menu_glass:
+		_menu_glass.show()
+		call_deferred("_position_menu_glass")
+
+func _position_menu_glass() -> void:
+	if not _menu_glass or not _menu_glass.visible:
+		return
+	_menu_glass.anchors_preset = Control.PRESET_CENTER
+	_menu_glass.anchor_left = 0.5; _menu_glass.anchor_right = 0.5
+	_menu_glass.anchor_top = 0.5; _menu_glass.anchor_bottom = 0.5
+	_menu_glass.offset_left = -SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_right = SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_top = -SIDEBAR_COLLAPSED_WIDTH * 0.5
+	_menu_glass.offset_bottom = SIDEBAR_COLLAPSED_WIDTH * 0.5
+
+func _apply_sidebar_panel_presentation(expanded: bool) -> void:
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.93, 0.91, 0.87, 0.6) if expanded else Color(0, 0, 0, 0)
+	panel_style.border_color = Color(0.8, 0.78, 0.73, 0.8) if expanded else Color(0, 0, 0, 0)
+	panel_style.border_width_right = 2 if expanded else 0
+	panel_style.content_margin_right = 0
+	sidebar.add_theme_stylebox_override("panel", panel_style)
+	if _sidebar_blur:
+		_sidebar_blur.visible = expanded
 
 func _build_bottom_bar() -> void:
 	var bottom_s := _flat(C_BG_DARK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0)
@@ -632,21 +827,21 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		4: tex_name = "trending-up"
 		5: tex_name = "user"
 		6: tex_name = "home"
-	
+
 	var texture : Texture2D = null
 	if _sidebar_icons_cache.has(t):
 		texture = _sidebar_icons_cache[t]
 	elif tex_name != "":
 		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
 		_sidebar_icons_cache[t] = texture
-	
+
 	if texture:
 		var icon_sz := Vector2(36, 36)
 		if t == 0:
 			icon_sz = Vector2(28, 28)
 		var rect := Rect2(Vector2(cx - icon_sz.x/2, cy - icon_sz.y/2), icon_sz)
 		c.draw_texture_rect(texture, rect, false, col)
-	
+
 	if is_locked:
 		var lock_tex : Texture2D = null
 		if _sidebar_icons_cache.has("lock"):
@@ -654,7 +849,7 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		else:
 			lock_tex = load("res://assets/textures/lucide/lock.svg") as Texture2D
 			_sidebar_icons_cache["lock"] = lock_tex
-			
+
 		if lock_tex:
 			var lx := cx + 10.0
 			var ly := cy + 8.0
@@ -1021,7 +1216,7 @@ func _style_account_menu() -> void:
 	_style_account_action(logout_action, "log-out")
 	logout_action.add_theme_color_override("font_color", C_TERRACOTTA)
 	logout_action.add_theme_color_override("icon_normal_color", C_TERRACOTTA)
-	
+
 	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.01, 0.04, 0.025, 0.10), Color.TRANSPARENT, 0))
 	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.01, 0.04, 0.025, 0.13), Color.TRANSPARENT, 0))
 	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.02, 0.05, 0.03, 0.12), Color.TRANSPARENT, 0))
@@ -1099,16 +1294,16 @@ func _open_account_destination(destination: String) -> void:
 func _confirm_logout() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 100
-	
+
 	var overlay := ColorRect.new()
 	overlay.color = Color(0, 0, 0, 0.4)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(overlay)
-	
+
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
-	
+
 	var panel := PanelContainer.new()
 	# Minimalist white card style with thin border
 	var p_style := _flat(Color.WHITE, Color("#EAEAEA"), 16)
@@ -1118,20 +1313,20 @@ func _confirm_logout() -> void:
 	panel.add_theme_stylebox_override("panel", p_style)
 	panel.custom_minimum_size = Vector2(340, 0)
 	center.add_child(panel)
-	
+
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 32)
 	margin.add_theme_constant_override("margin_right", 32)
 	margin.add_theme_constant_override("margin_top", 32)
 	margin.add_theme_constant_override("margin_bottom", 32)
 	panel.add_child(margin)
-	
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 24)
 	margin.add_child(vbox)
-	
+
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	
+
 	var title := Label.new()
 	title.text = "Đăng xuất"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1139,7 +1334,7 @@ func _confirm_logout() -> void:
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color("#111111")) # Charcoal black
 	vbox.add_child(title)
-	
+
 	var msg := Label.new()
 	msg.text = "Kết thúc phiên đăng nhập hiện tại?"
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1147,11 +1342,11 @@ func _confirm_logout() -> void:
 	msg.add_theme_color_override("font_color", Color("#787774")) # Muted gray
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(msg)
-	
+
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
 	vbox.add_child(hbox)
-	
+
 	var btn_cancel := Button.new()
 	btn_cancel.text = "Ở lại"
 	btn_cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1167,7 +1362,7 @@ func _confirm_logout() -> void:
 	btn_cancel.add_theme_color_override("font_hover_color", Color("#111111"))
 	if bold_font: btn_cancel.add_theme_font_override("font", bold_font)
 	hbox.add_child(btn_cancel)
-	
+
 	var btn_logout := Button.new()
 	btn_logout.text = "Đăng xuất"
 	btn_logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1183,9 +1378,9 @@ func _confirm_logout() -> void:
 	btn_logout.add_theme_color_override("font_hover_color", Color.WHITE)
 	if bold_font: btn_logout.add_theme_font_override("font", bold_font)
 	hbox.add_child(btn_logout)
-	
+
 	add_child(layer)
-	
+
 	btn_cancel.pressed.connect(func() -> void:
 		_close_custom_dialog(layer, overlay, panel)
 	)
@@ -1193,7 +1388,7 @@ func _confirm_logout() -> void:
 		_close_custom_dialog(layer, overlay, panel)
 		_logout()
 	)
-	
+
 	overlay.modulate.a = 0.0
 	panel.scale = Vector2(0.9, 0.9)
 	panel.pivot_offset = panel.custom_minimum_size / 2.0
@@ -1219,7 +1414,7 @@ func _layout_account_menu(viewport_size: Vector2) -> void:
 	var safe := _safe_insets(viewport_size)
 	var mobile := _is_mobile_layout(viewport_size)
 	var panel_height := account_panel.get_combined_minimum_size().y
-	
+
 	if mobile:
 		var safe_width := viewport_size.x - safe.x - safe.z
 		var panel_width := minf(380.0, safe_width - 32.0)
@@ -1272,42 +1467,42 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_roadmap_cards() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
-	
+
 	# Main labels styling
 	var font_title := load("res://assets/fonts/Lora-Bold.ttf")
 	if font_title:
 		roadmap_guide.add_theme_font_override("font", font_title)
 		path_soloist_title.add_theme_font_override("font", font_title)
 		path_chords_title.add_theme_font_override("font", font_title)
-		
+
 	roadmap_guide.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
 	path_soloist_title.add_theme_color_override("font_color", C_RED_SON)
 	path_chords_title.add_theme_color_override("font_color", C_RED_SON)
-	
+
 	# Cards references
 	var basic_title := card_basic.get_node("Margin/Row/TextV/Title") as Label
 	var basic_desc := card_basic.get_node("Margin/Row/TextV/Desc") as Label
 	var basic_details := card_basic.get_node("Margin/Row/TextV/Details") as Label
-	
+
 	var ess_title := card_essentials.get_node("Margin/Row/TextV/Title") as Label
 	var ess_desc := card_essentials.get_node("Margin/Row/TextV/Desc") as Label
 	var ess_details := card_essentials.get_node("Margin/Row/TextV/Details") as Label
-	
+
 	var soloist_unlock_title := card_soloist_unlock.get_node("Margin/VBox/Title") as Label
 	var chords_unlock_title := card_chords_unlock.get_node("Margin/VBox/Title") as Label
-	
+
 	var soloist_skills_title := card_soloist_skills.get_node("Margin/HBox/TextV/Title") as Label
 	var soloist_skills_bullets := card_soloist_skills.get_node("Margin/HBox/TextV/BulletList") as Label
-	
+
 	var chords_skills_title := card_chords_skills.get_node("Margin/HBox/TextV/Title") as Label
 	var chords_skills_bullets := card_chords_skills.get_node("Margin/HBox/TextV/BulletList") as Label
-	
+
 	var classical_title := card_classical.get_node("Margin/HBox/TextV/Title") as Label
 	var classical_desc := card_classical.get_node("Margin/HBox/TextV/BulletList") as Label
-	
+
 	var pop_chords_title := card_pop_chords.get_node("Margin/HBox/TextV/Title") as Label
 	var pop_chords_desc := card_pop_chords.get_node("Margin/HBox/TextV/BulletList") as Label
-	
+
 	if font_title:
 		basic_title.add_theme_font_override("font", font_title)
 		ess_title.add_theme_font_override("font", font_title)
@@ -1324,7 +1519,7 @@ func _build_roadmap_cards() -> void:
 	card_classical.show()
 	path_soloist_title.show()
 	path_chords_title.show()
-	
+
 	# Khôi phục vị trí gốc cho các nhánh
 	card_soloist_skills.position = Vector2(1410, 95)
 	card_chords_skills.position = Vector2(1410, 455)
@@ -1337,30 +1532,30 @@ func _build_roadmap_cards() -> void:
 		card_classical.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
-		
+
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
 		card_classical.position = Vector2(2590, 275)
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
-		
+
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
 		basic_desc.text = "Hiểu nhạc cụ, đọc giao diện nốt rơi và gảy những nốt cơ bản."
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
-		
+
 		ess_title.text = "LEVEL 2: KHÚC DẠO ĐẦU"
 		ess_desc.text = "Chơi hoàn chỉnh bài nhạc đầu tiên với nhịp độ chậm."
 		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
-		
+
 		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
 		soloist_skills_bullets.text = "✓ Luyện ngón tốc độ cao – Mã Vũ\n✓ Dân ca Quan họ – Lý Cây Đa\n✓ Làm quen mật độ nốt dày hơn"
-		
+
 		chords_skills_title.text = "LEVEL 4: KỸ THUẬT NÂNG CAO"
 		chords_skills_bullets.text = "✓ Mô phỏng kỹ thuật rung tay trái\n✓ Hòa tấu cùng nhạc cụ khác\n✓ Đánh đàn theo beat"
-		
+
 		pop_chords_title.text = "LEVEL 5: MASTER – NHẠC HIỆN ĐẠI"
 		pop_chords_desc.text = "✓ Nhạc hiện đại: Sứ Thanh Hoa\n✓ Boss Stage sinh tồn\n✓ Biểu diễn không gợi ý"
-		
+
 		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
 	elif instrument == "dan_bau":
@@ -1370,34 +1565,34 @@ func _build_roadmap_cards() -> void:
 		card_classical.hide()
 		path_soloist_title.hide()
 		path_chords_title.hide()
-		
+
 		# BẮT BUỘC ĐƯA CÁC THẺ VỀ CÙNG 1 ĐƯỜNG THẲNG NGANG (Y = 275)
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
-		
+
 		# Lộ trình Đàn Bầu
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
 		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
 		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
 		# basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
-		
+
 		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
 		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
 		# ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
-		
+
 		soloist_unlock_title.text = "LEVEL 3"
 		chords_unlock_title.text = "LEVEL 4"
-		
+
 		soloist_skills_title.text = "LEVEL 3: UYỂN CHUYỂN"
 		soloist_skills_bullets.text = "✓ Làm chủ kỹ thuật chùng dây\n✓ Đẩy cần đàn về phía thân người\n✓ Bài hát: Lý Cây Đa"
-		
+
 		chords_skills_title.text = "LEVEL 4: KỸ THUẬT LUYẾN ÂM"
 		chords_skills_bullets.text = "✓ Đánh các nốt luyến dài\n✓ Kỹ thuật Luyến 2 chiều\n✓ Bài hát: Cò Lả & Auld Lang Syne"
-		
+
 		classical_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
 		classical_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Nghệ thuật Hòa tấu (Ensemble)\n✓ Boss Stage: Biểu diễn bằng tai"
-		
+
 		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
 		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
 	elif instrument == "trong_chau":
@@ -1413,26 +1608,26 @@ func _build_roadmap_cards() -> void:
 		card_classical.hide()
 		path_soloist_title.hide()
 		path_chords_title.hide()
-		
+
 		# Ép thẻ về cùng Y = 275
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
-		
+
 		basic_title.text = "LEVEL 1: KHẨU HÌNH MÔI & TẠO ÂM"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
 		# basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
-		
+
 		ess_title.text = "LEVEL 2: BẤM NGÓN & LẤY HƠI"
 		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
 		# ess_details.text = "📖 7 Bài Học | 🔒 Cần hoàn thành bài trước"
-		
+
 		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
 		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
-		
+
 		chords_skills_title.text = "LEVEL 4: INH LẢ ƠI"
 		chords_skills_bullets.text = "✓ Thực hành từng câu\n✓ Luyện tập chuyển ngón\n✓ Hoàn thiện bài Inh Lả Ơi"
-		
+
 		pop_chords_title.text = "LEVEL 5: FUTARI NO KIMOCHI"
 		pop_chords_desc.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
 
@@ -1521,17 +1716,17 @@ func _build_roadmap_cards() -> void:
 			if SecureDataManager.is_lesson_completed(instrument, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(instrument, "Node3"): pct += 50.0
 			_set_details_text(ess_details, 3, total_stars, int(pct), false)
-	
+
 	# Locked Cards (Soloist & Chords Unlock)
 	var lock_sb := _flat(Color(1.0, 1.0, 1.0, 0.45), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 20)
 	lock_sb.border_width_left = 6; lock_sb.border_width_right = 6
 	lock_sb.border_width_top = 6; lock_sb.border_width_bottom = 6
-	
+
 	for card in [card_soloist_unlock, card_chords_unlock]:
 		card.add_theme_stylebox_override("panel", lock_sb)
 		var title := card.get_node("Margin/VBox/Title") as Label
 		title.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
-		
+
 		# Buttons "MỞ KHÓA" - Dark outline on light card
 		var btn := card.get_node("Margin/VBox/BtnUnlock") as Button
 		var btn_sb := _flat(Color(0,0,0,0), Color(0.13, 0.08, 0.05, 0.30), 12)
@@ -1547,18 +1742,18 @@ func _build_roadmap_cards() -> void:
 	var skills_sb := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 20)
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
-	
+
 	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
 		title.add_theme_color_override("font_color", C_RED_SON)
 		bullets.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-		
+
 		# Style circular play button (Vermilion red filled, gold border)
 		var btn := card.get_node("Margin/HBox/BtnPlay") as Button
 		_style_circular_play_btn(btn)
-		
+
 		var det := _ensure_details_label(card)
 		if det:
 			_set_details_text(det, 3, 0, 0, false)
@@ -1568,16 +1763,16 @@ func _style_circular_play_btn(btn: Button) -> void:
 	pb_n.border_width_left = 3; pb_n.border_width_right = 3
 	pb_n.border_width_top = 3; pb_n.border_width_bottom = 3
 	pb_n.shadow_size = 10; pb_n.shadow_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.4)
-	
+
 	var pb_h := _flat(Color(0.85, 0.18, 0.12, 1.0), Color.WHITE, 32)
 	pb_h.border_width_left = 3; pb_h.border_width_right = 3
 	pb_h.border_width_top = 3; pb_h.border_width_bottom = 3
-	
+
 	btn.add_theme_stylebox_override("normal", pb_n)
 	btn.add_theme_stylebox_override("hover", pb_h)
 	btn.add_theme_stylebox_override("pressed", _flat(C_RED_DK, C_GOLD, 32))
 	btn.add_theme_stylebox_override("focus", _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
-	
+
 	# Procedural play triangle icon inside
 	var draw_node := Control.new()
 	draw_node.name = "PlayTriangle"
@@ -1613,9 +1808,9 @@ func _animate_in() -> void:
 
 # ─── Connect Buttons ───────────────────────────────────────────────────────────
 func _connect_buttons() -> void:
-	btn_menu.pressed.connect(_go_instruments)
+	btn_menu.pressed.connect(_toggle_sidebar)
 	_make_btn_bouncy(btn_menu)
-	
+
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void:
 		_fade_to("res://scenes/SongScreen.tscn")
@@ -1623,7 +1818,7 @@ func _connect_buttons() -> void:
 	btn_account.pressed.connect(_go_account)
 	btn_minigame.pressed.connect(_open_learning_activities)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
- 
+
 	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
@@ -1676,7 +1871,7 @@ func _connect_buttons() -> void:
 					SecureDataManager.active_lesson_id = "Node1"
 					_go_practice_room_for_node(2)
 	)
-	
+
 	card_soloist_skills.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1724,7 +1919,7 @@ func _connect_buttons() -> void:
 				if script: script.selected_level = 5
 				_fade_to("res://scenes/LessonSaoTrucList.tscn")
 	)
-	
+
 	# Play Buttons -> Practice Room
 	var play_soloist := card_soloist_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_soloist.pressed.connect(func() -> void:
@@ -1746,7 +1941,7 @@ func _connect_buttons() -> void:
 			_go_practice_room_for_node(4)
 	)
 	_make_btn_bouncy(play_soloist)
-	
+
 	var play_chords := card_chords_skills.get_node("Margin/HBox/BtnPlay") as Button
 	play_chords.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1786,7 +1981,7 @@ func _connect_buttons() -> void:
 			_go_practice()
 	)
 	_make_btn_bouncy(play_classical)
-	
+
 	var play_pop := card_pop_chords.get_node("Margin/HBox/BtnPlay") as Button
 	play_pop.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
@@ -1832,7 +2027,7 @@ func _connect_buttons() -> void:
 	btn_account_mob.pressed.connect(_go_account)
 	btn_minigame_mob.pressed.connect(_open_learning_activities)
 	btn_leaderboard_mob.pressed.connect(_on_btn_leaderboard_pressed)
- 
+
 	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob, btn_leaderboard_mob]:
 		_make_btn_bouncy(btn)
 		btn.pressed.connect(func() -> void: _set_active_tab(btn))
@@ -1851,14 +2046,14 @@ func _set_active_tab(active: Button) -> void:
 	elif active == btn_minigame or active == btn_minigame_mob: active_desktop = btn_minigame
 	elif active == btn_leaderboard or active == btn_leaderboard_mob: active_desktop = btn_leaderboard
 	elif active == btn_account or active == btn_account_mob: active_desktop = btn_account
-	
+
 	for b : Button in all:
 		var is_a : bool = (b == active_desktop)
 		_style_side_icon_btn(b, is_a)
 		var ic := b.get_node_or_null("IconDraw") as Control
 		if ic: ic.queue_redraw()
 	_active_side_btn = active_desktop
-	
+
 	var all_mob : Array[Button] = [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob]
 	var active_mobile : Button = null
 	if active == btn_courses or active == btn_courses_mob: active_mobile = btn_courses_mob
@@ -1866,7 +2061,7 @@ func _set_active_tab(active: Button) -> void:
 	elif active == btn_songs or active == btn_songs_mob: active_mobile = btn_songs_mob
 	elif active == btn_minigame or active == btn_minigame_mob: active_mobile = btn_minigame_mob
 	elif active == btn_account or active == btn_account_mob: active_mobile = btn_account_mob
-	
+
 	for b : Button in all_mob:
 		var is_a : bool = (b == active_mobile)
 		_style_bottom_icon_btn(b, is_a)
@@ -1892,7 +2087,7 @@ func _go_practice() -> void:
 
 func _go_practice_room_for_node(node_index: int) -> void:
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	
+
 	if inst == "dan_tranh":
 		if node_index == 2:
 			PracticeRoom.current_song_title = "3 Nốt Đầu (Đô - Rê - Mi)"
@@ -1946,7 +2141,7 @@ func _go_practice_room_for_node(node_index: int) -> void:
 		path = "res://scenes/PracticeTrongChau.tscn"
 	else:
 		path = "res://scenes/PracticeSaoTruc.tscn"
-		
+
 	_fade_to(path)
 
 func _go_instruments() -> void: _fade_to("res://scenes/InstrumentSelect.tscn")
@@ -1996,22 +2191,24 @@ func _on_viewport_size_changed() -> void:
 	var compact_profile := false
 	var safe_left := minf(safe.x, 104.0) if is_mobile else 0.0
 	var rail_width := 168.0 if is_mobile else 220.0
+	_sidebar_rail_width = rail_width
+	_sidebar_safe_left = safe_left
 
 	# Landscape navigation remains on the left; safe padding keeps controls clear
 	# of Dynamic Island and rounded display corners.
 	sidebar.visible = true
 	bottom_bar.visible = false
-	sidebar.custom_minimum_size.x = rail_width + safe_left
 	side_margin.add_theme_constant_override("margin_left", int(safe_left))
 	side_margin.add_theme_constant_override("margin_right", 0)
 	side_margin.add_theme_constant_override("margin_top", int(safe.y + 20.0) if is_mobile else 32)
 	side_margin.add_theme_constant_override("margin_bottom", int(safe.w + 20.0) if is_mobile else 32)
 	var side_button_height := 92.0 if is_mobile else 100.0
 	for button: Button in [btn_menu, btn_courses, btn_room, btn_songs, btn_minigame, btn_leaderboard, btn_account]:
-		button.custom_minimum_size = Vector2(rail_width, side_button_height)
+		button.custom_minimum_size.y = side_button_height
 		button.add_theme_font_size_override("font_size", 18 if is_mobile else 22)
 	$Root/Sidebar/SideM/SideV/TopSpacer.custom_minimum_size.y = 14.0 if is_mobile else 32.0
-	
+	_set_sidebar_expanded(_sidebar_expanded, false)
+
 	# Responsive profile button styling
 	var radius := 35
 	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), radius)
@@ -2068,23 +2265,23 @@ func _on_viewport_size_changed() -> void:
 	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.01, 0.04, 0.025, overlay_alpha), Color.TRANSPARENT, 0))
 	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.01, 0.04, 0.025, overlay_alpha), Color.TRANSPARENT, 0))
 	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.01, 0.04, 0.025, overlay_alpha + 0.04), Color.TRANSPARENT, 0))
-		
+
 	# Cards scaling
 	# Card content has a real minimum width of 460px. Using a smaller layout
 	# step made neighboring cards overlap even though custom_minimum_size changed.
 	var card_w: float = 460.0
 	var un_card_w: float = 280.0
 	var gap: float = 34.0 if is_mobile else 90.0
-	
+
 	var x_basic: float = 28.0 if is_mobile else 40.0
 	var instrument: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	
+
 	var y_top: float = 40.0 if is_mobile else 95.0
 	var y_mid: float = 180.0 if is_mobile else 275.0
 	var y_bot: float = 320.0 if is_mobile else 455.0
 	var roadmap_h: float = 520.0 if is_mobile else 760.0
 	var x_un: float = 0.0
-	
+
 	if instrument == "dan_bau" or instrument == "sao_truc" or instrument == "trong_chau" or instrument == "dan_tranh":
 		var x_ess: float = x_basic + card_w + gap
 		var x_sk: float = x_ess + card_w + gap
@@ -2092,25 +2289,25 @@ func _on_viewport_size_changed() -> void:
 		var x_pop: float = x_ch + card_w + gap
 		var x_class: float = x_pop + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
-		
+
 		var total_w: float = x_class + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
-		
+
 		card_basic.position = Vector2(x_basic, y_mid)
 		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
-		
+
 		card_essentials.position = Vector2(x_ess, y_mid)
 		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
-		
+
 		card_soloist_skills.position = Vector2(x_sk, y_mid)
 		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
-		
+
 		card_chords_skills.position = Vector2(x_ch, y_mid)
 		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
-		
+
 		card_pop_chords.position = Vector2(x_pop, y_mid)
 		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
-		
+
 		card_classical.position = Vector2(x_class, y_mid)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
 	else:
@@ -2119,38 +2316,38 @@ func _on_viewport_size_changed() -> void:
 		var x_sk: float = x_un + un_card_w + gap
 		var x_end: float = x_sk + card_w + gap
 		var total_w: float = 2590.0 + card_w + 120.0
-		
+
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
-		
+
 		card_basic.position = Vector2(x_basic, y_mid)
 		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
-		
+
 		card_essentials.position = Vector2(x_ess, y_mid)
 		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
-		
+
 		card_soloist_unlock.position = Vector2(x_un, y_top)
 		card_soloist_unlock.custom_minimum_size = Vector2(un_card_w, card_soloist_unlock.custom_minimum_size.y)
-		
+
 		card_chords_unlock.position = Vector2(x_un, y_bot)
 		card_chords_unlock.custom_minimum_size = Vector2(un_card_w, card_chords_unlock.custom_minimum_size.y)
-		
+
 		card_soloist_skills.position = Vector2(x_sk, y_top)
 		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
-		
+
 		card_chords_skills.position = Vector2(x_sk, y_bot)
 		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
-		
+
 		card_classical.position = Vector2(x_end, y_top)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
-		
+
 		card_pop_chords.position = Vector2(x_end, y_bot)
 		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
 
-	
+
 	roadmap_guide.position = Vector2(x_basic, 80.0 if is_mobile else 180.0)
 	path_soloist_title.position = Vector2(x_un, 10.0 if is_mobile else 40.0)
 	path_chords_title.position = Vector2(x_un, 290.0 if is_mobile else 400.0)
-	
+
 	# Redraw to update paths
 	roadmap_content.queue_redraw()
 	if _account_menu_open:
@@ -2194,11 +2391,11 @@ const LESSON_SCRIPT = preload("res://scripts/LessonDanBau.gd")
 func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_bau", [])
 	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("dan_bau", {})
-	
+
 	var total_stars := 0
 	var completed_count := 0
 	var total_count := 2
-	
+
 	var steps_to_check := []
 	if card_type == "basic":
 		steps_to_check = ["dan_bau_level1_bai1_video"]
@@ -2210,12 +2407,12 @@ func _get_dan_bau_card_status(card_type: String) -> Dictionary:
 		steps_to_check = ["dan_bau_level4_bai1_practice", "dan_bau_level4_bai2_practice", "dan_bau_level4_bai3_practice", "dan_bau_level4_bai4_practice", "dan_bau_level4_bai5_practice"]
 	elif card_type == "classical" or card_type == "pop_chords":
 		steps_to_check = ["dan_bau_level5_bai1_practice", "dan_bau_level5_bai2_practice", "dan_bau_level5_bai3_practice", "dan_bau_level5_bai4_practice", "dan_bau_level5_bai5_practice"]
-		
+
 	for step in steps_to_check:
 		if completed.has(step):
 			completed_count += 1
 		total_stars += stars_dict.get(step, 0)
-		
+
 	total_count = steps_to_check.size()
 	var pct = 0
 	if total_count > 0:
@@ -2241,7 +2438,7 @@ func _ensure_details_label(card: Control) -> Label:
 		text_v = card.get_node_or_null("Margin/HBox/TextV")
 	if not text_v:
 		return null
-		
+
 	var details = text_v.get_node_or_null("Details") as Label
 	if not details:
 		details = Label.new()
@@ -2250,7 +2447,7 @@ func _ensure_details_label(card: Control) -> Label:
 		details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		details.add_theme_font_size_override("font_size", 16)
 		text_v.add_child(details)
-	
+
 	details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
 	return details
 
@@ -2258,12 +2455,12 @@ func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_lock
 	for child in lbl.get_children():
 		child.queue_free()
 	lbl.text = ""
-	
+
 	var hbox := HBoxContainer.new()
 	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 6)
 	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
-	
+
 	var add_item = func(icon_name: String, text: String, add_divider: bool = true):
 		var tex = TextureRect.new()
 		var texture = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
@@ -2273,7 +2470,7 @@ func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_lock
 		tex.custom_minimum_size = Vector2(18, 18)
 		tex.modulate = lbl.get_theme_color("font_color")
 		hbox.add_child(tex)
-		
+
 		var t = Label.new()
 		t.text = text
 		t.add_theme_font_size_override("font_size", lbl.get_theme_font_size("font_size"))
@@ -2281,7 +2478,7 @@ func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_lock
 		if lbl.has_theme_font_override("font"):
 			t.add_theme_font_override("font", lbl.get_theme_font("font"))
 		hbox.add_child(t)
-		
+
 		if add_divider:
 			var div = Label.new()
 			div.text = " | "
@@ -2290,7 +2487,7 @@ func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_lock
 			if lbl.has_theme_font_override("font"):
 				div.add_theme_font_override("font", lbl.get_theme_font("font"))
 			hbox.add_child(div)
-			
+
 	add_item.call("book-open", str(n_lessons) + " Bài Học", true)
 	if is_locked:
 		add_item.call("lock", "Cần hoàn thành bài trước", false)
@@ -2300,19 +2497,19 @@ func _set_details_text(lbl: Label, n_lessons: int, stars: int, pct: int, is_lock
 			add_item.call("check-circle", "100% Hoàn Thành", false)
 		else:
 			add_item.call("circle", str(pct) + "% Hoàn Thành", false)
-			
+
 	lbl.add_child(hbox)
 
 func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
 	for child in lbl.get_children():
 		child.queue_free()
 	lbl.text = ""
-	
+
 	var hbox := HBoxContainer.new()
 	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 10)
 	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
-	
+
 	var tex = TextureRect.new()
 	var texture = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
 	tex.texture = texture
@@ -2321,7 +2518,7 @@ func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
 	tex.custom_minimum_size = Vector2(28, 28)
 	tex.modulate = lbl.get_theme_color("font_color")
 	hbox.add_child(tex)
-	
+
 	var t = Label.new()
 	t.text = text
 	if lbl.has_theme_font_size_override("font_size"):
@@ -2331,17 +2528,17 @@ func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
 	if lbl.has_theme_font_override("font"):
 		t.add_theme_font_override("font", lbl.get_theme_font("font"))
 	hbox.add_child(t)
-	
+
 	lbl.add_child(hbox)
 # ─── Sáo Trúc Custom Progression ──────────────────────────────────────────────────
 func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("sao_truc", [])
 	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("sao_truc", {})
-	
+
 	var total_stars := 0
 	var completed_count := 0
 	var total_count := 2
-	
+
 	var steps_to_check := []
 	if card_type == "basic":
 		steps_to_check = ["sao_truc_level1_1_video"]
@@ -2353,15 +2550,15 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 		steps_to_check = ["sao_truc_level4_1", "sao_truc_level4_2"]
 	elif card_type == "classical" or card_type == "pop_chords":
 		steps_to_check = ["sao_truc_level5_1", "sao_truc_level5_2"]
-		
+
 	total_count = steps_to_check.size()
 	if total_count == 0: total_count = 1
-		
+
 	for step in steps_to_check:
 		if completed.has(step):
 			completed_count += 1
 		total_stars += stars_dict.get(step, 0)
-		
+
 	var pct := 0
 	if total_count > 0:
 		pct = int((float(completed_count) / float(total_count)) * 100.0)
