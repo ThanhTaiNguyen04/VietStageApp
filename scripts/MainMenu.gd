@@ -1458,6 +1458,20 @@ func _build_roadmap_cards() -> void:
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
 		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
 		level_7_desc.text = "Mở rộng khả năng diễn tấu với các kỹ thuật nâng cao."
+
+		# Chuẩn hóa typography và khoảng nội dung để ba card luôn bằng nhau,
+		# kể cả khi tiêu đề Level 3 dài hơn và phải xuống dòng.
+		for title: Label in [basic_title, ess_title, level_7_title]:
+			title.add_theme_font_size_override("font_size", 23)
+			title.custom_minimum_size = Vector2(310, 84)
+			title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		for desc: Label in [basic_desc, ess_desc, level_7_desc]:
+			desc.add_theme_font_size_override("font_size", 16)
+			desc.custom_minimum_size = Vector2(310, 54)
+			desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		for details: Label in [basic_details, ess_details, level_7_details]:
+			details.add_theme_font_size_override("font_size", 15)
+			details.custom_minimum_size = Vector2(310, 24)
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
@@ -2326,6 +2340,7 @@ func _on_viewport_size_changed() -> void:
 	# Card content has a real minimum width of 460px. Using a smaller layout
 	# step made neighboring cards overlap even though custom_minimum_size changed.
 	var card_w: float = 460.0
+	var card_h: float = 260.0
 	var un_card_w: float = 280.0
 	var gap: float = 34.0 if is_mobile else 90.0
 	
@@ -2350,10 +2365,12 @@ func _on_viewport_size_changed() -> void:
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 		
 		card_basic.position = Vector2(x_basic, y_mid)
-		card_basic.custom_minimum_size = Vector2(card_w, card_basic.custom_minimum_size.y)
+		card_basic.custom_minimum_size = Vector2(card_w, card_h if instrument == "dan_tranh" else card_basic.custom_minimum_size.y)
+		if instrument == "dan_tranh": card_basic.size = Vector2(card_w, card_h)
 		
 		card_essentials.position = Vector2(x_ess, y_mid)
-		card_essentials.custom_minimum_size = Vector2(card_w, card_essentials.custom_minimum_size.y)
+		card_essentials.custom_minimum_size = Vector2(card_w, card_h if instrument == "dan_tranh" else card_essentials.custom_minimum_size.y)
+		if instrument == "dan_tranh": card_essentials.size = Vector2(card_w, card_h)
 		
 		card_soloist_skills.position = Vector2(x_sk, y_mid)
 		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
@@ -2367,7 +2384,8 @@ func _on_viewport_size_changed() -> void:
 		card_classical.position = Vector2(x_class, y_mid)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
 		card_level_7.position = Vector2(x_sk, y_mid) if instrument == "dan_tranh" else Vector2(x_class, y_mid)
-		card_level_7.custom_minimum_size = Vector2(card_w, card_level_7.custom_minimum_size.y)
+		card_level_7.custom_minimum_size = Vector2(card_w, card_h if instrument == "dan_tranh" else card_level_7.custom_minimum_size.y)
+		if instrument == "dan_tranh": card_level_7.size = Vector2(card_w, card_h)
 	else:
 		var x_ess: float = x_basic + card_w + gap
 		x_un = x_ess + card_w + gap
