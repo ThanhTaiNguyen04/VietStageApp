@@ -49,7 +49,7 @@ const LEVELS := [
 		"objective": "Luyện kỹ thuật Á, nhấn, song thanh, rung dây trước khi hoàn thiện Sứ Thanh Hoa.",
 		"lessons": [
 			{"number": 18, "display_number": "10", "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
-			{"number": 19, "display_number": "11", "practice_id": "dan_tranh_level_7_bai_19_practice", "title": "Kỹ thuật nhấn", "video": "", "practice": "Thực hành nhấn dây để tạo nốt Si và Fa chuẩn cao độ.", "practice_title": "Kỹ thuật nhấn – Nốt Si và Fa", "sheet": ["Si2", "Fa2", "Si2", "Fa2"]},
+			{"number": 19, "display_number": "11", "practice_id": "dan_tranh_level_7_bai_19_practice", "practice_mode": "press_4", "title": "Kỹ thuật nhấn", "video": "", "practice": "Gảy nốt gốc rồi nhấn đúng dây để nâng Mi lên Fa và La lên Si ở hai âm vực.", "practice_title": "Kỹ thuật nhấn – Mi lên Fa, La lên Si", "sheet": ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"], "durations": [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0], "cues": ["press", "", "press", "", "press", "", "press", ""]},
 			{
 				"number": 20,
 				"display_number": "12",

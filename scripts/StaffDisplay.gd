@@ -141,6 +141,8 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		if note_data.has("press_target"):
+			_draw_press_curve(note_data, center_y, n_color)
 		if note_data.get("bar_after", false):
 			var bar_x := float(note_data.get("bar_x", n_x + line_spacing * 1.55))
 			draw_line(
@@ -227,6 +229,39 @@ func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color)
 		base - perpendicular * head_width
 	])
 	draw_colored_polygon(triangle, color)
+
+func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> void:
+	var source_name := str(note_data.get("note", "ZT_Mi2"))
+	var target_name := str(note_data.get("press_target", "ZT_Fa2"))
+	var source_x := float(note_data.get("x", size.x * 0.4))
+	var target_x := float(note_data.get("press_target_x", source_x + line_spacing * 1.8))
+	var source_pos := _get_note_position_index(source_name)
+	var target_pos := _get_note_position_index(target_name)
+	var source_y: float = center_y + (2.0 - source_pos) * line_spacing
+	var target_y: float = center_y + (2.0 - target_pos) * line_spacing
+	var start := Vector2(source_x + line_spacing * 0.34, source_y - line_spacing * 0.20)
+	var tip := Vector2(target_x - line_spacing * 0.34, target_y - line_spacing * 0.20)
+	var control := Vector2((start.x + tip.x) * 0.5, minf(start.y, tip.y) - line_spacing * 0.78)
+	var points := PackedVector2Array()
+	var segments := 24
+	for i in range(segments + 1):
+		var ratio := float(i) / float(segments)
+		var inv := 1.0 - ratio
+		points.append(inv * inv * start + 2.0 * inv * ratio * control + ratio * ratio * tip)
+	draw_polyline(points, Color(color.r, color.g, color.b, 0.22), 9.0, true)
+	draw_polyline(points, color, 3.2, true)
+	_draw_glissando_arrow_head(points[points.size() - 2], tip, color)
+	var font := ThemeDB.fallback_font
+	if font:
+		draw_string(
+			font,
+			Vector2(control.x - line_spacing * 0.48, control.y - 5.0),
+			"NHẤN",
+			HORIZONTAL_ALIGNMENT_CENTER,
+			line_spacing * 0.96,
+			maxi(11, int(line_spacing * 0.23)),
+			color
+		)
 
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
 	var clean_name = note_name

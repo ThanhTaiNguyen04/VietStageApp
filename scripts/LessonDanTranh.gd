@@ -6,6 +6,7 @@ const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
 const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
 const LEVEL_7_GLISSANDO_TITLE := "Kỹ thuật Á"
+const LEVEL_7_PRESS_ID := "dan_tranh_level_7_bai_19_practice"
 const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
@@ -118,6 +119,28 @@ var vibrato_note_locked := false
 const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
+var press_sheet_hud: Control
+var press_instruction_label: Label
+var press_status_label: Label
+var press_progress_bar: ProgressBar
+var press_exercise_idx := 0
+var press_display_notes: Array = []
+var press_cents_history: Array[float] = []
+var press_sample_accumulator := 0.0
+var press_attempt_elapsed := 0.0
+var press_silence_elapsed := 0.0
+var press_target_hold_elapsed := 0.0
+var press_base_note_heard := false
+var press_exercise_locked := false
+var press_max_cents := 0.0
+const PRESS_SAMPLE_INTERVAL := 0.025
+const PRESS_ATTEMPT_TIMEOUT := 5.5
+const PRESS_EXERCISES := [
+	{"source": "Mi2", "target": "Fa2", "interval": 100.0},
+	{"source": "La2", "target": "Si2", "interval": 200.0},
+	{"source": "Mi3", "target": "Fa3", "interval": 100.0},
+	{"source": "La3", "target": "Si3", "interval": 200.0}
+]
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
@@ -588,6 +611,8 @@ func _ready():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _is_glissando_practice():
 		_build_glissando_sheet()
+	if _is_press_practice():
+		_build_press_sheet_hud()
 	if _is_vibrato_practice():
 		_build_vibrato_sheet_hud()
 	if _is_error_flash_demo():
@@ -850,6 +875,60 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_progress_bar.custom_minimum_size = Vector2(0, 6)
 	content.add_child(vibrato_progress_bar)
 
+func _build_press_sheet_hud() -> void:
+	press_sheet_hud = PanelContainer.new()
+	press_sheet_hud.name = "PressSheetHUD"
+	press_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	press_sheet_hud.anchor_left = 0.5
+	press_sheet_hud.anchor_right = 0.5
+	press_sheet_hud.anchor_top = 1.0
+	press_sheet_hud.anchor_bottom = 1.0
+	press_sheet_hud.offset_left = -440.0
+	press_sheet_hud.offset_right = 440.0
+	press_sheet_hud.offset_top = -98.0
+	press_sheet_hud.offset_bottom = -18.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
+	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	panel_style.border_width_left = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 14
+	panel_style.corner_radius_top_right = 14
+	panel_style.corner_radius_bottom_left = 14
+	panel_style.corner_radius_bottom_right = 14
+	press_sheet_hud.add_theme_stylebox_override("panel", panel_style)
+	staff_card.add_child(press_sheet_hud)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	press_sheet_hud.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	press_instruction_label = Label.new()
+	press_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	press_instruction_label.add_theme_color_override("font_color", C_JADE)
+	press_instruction_label.add_theme_font_size_override("font_size", 18)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		press_instruction_label.add_theme_font_override("font", bold_font)
+	content.add_child(press_instruction_label)
+	press_status_label = Label.new()
+	press_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	press_status_label.add_theme_font_size_override("font_size", 14)
+	content.add_child(press_status_label)
+	press_progress_bar = ProgressBar.new()
+	press_progress_bar.max_value = float(PRESS_EXERCISES.size())
+	press_progress_bar.show_percentage = false
+	press_progress_bar.custom_minimum_size = Vector2(0, 6)
+	content.add_child(press_progress_bar)
+
 
 func _build_error_flash_overlay() -> void:
 	error_flash_overlay = Control.new()
@@ -959,6 +1038,9 @@ func _build_error_flash_overlay() -> void:
 func _is_glissando_practice() -> bool:
 	return current_lesson_id == LEVEL_7_GLISSANDO_ID
 
+func _is_press_practice() -> bool:
+	return current_lesson_id == LEVEL_7_PRESS_ID
+
 func _is_vibrato_practice() -> bool:
 	return current_lesson_id == LEVEL_7_VIBRATO_ID
 
@@ -989,6 +1071,7 @@ func _setup_top_pitch_box():
 	if active_id:
 		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
 		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 10: KỸ THUẬT Á"
+		elif active_id == LEVEL_7_PRESS_ID: l_title = "BÀI 11: KỸ THUẬT NHẤN"
 		elif active_id == LEVEL_7_VIBRATO_ID: l_title = "BÀI 13: KỸ THUẬT RUNG DÂY"
 		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
 		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
@@ -1202,6 +1285,8 @@ func _process(delta):
 			_process_error_flash_demo(delta)
 		elif _is_glissando_practice():
 			_process_glissando_practice()
+		elif _is_press_practice():
+			_process_press_practice(delta)
 		elif _is_vibrato_practice():
 			_process_vibrato_practice(delta)
 		else:
@@ -2198,6 +2283,271 @@ func _on_glissando_round_failed(span: int, note_count: int) -> void:
 			_start_glissando_round(failed_round)
 	)
 
+func _start_press_practice() -> void:
+	press_exercise_idx = 0
+	staff_display.show_metronome = false
+	staff_display.show_hit_line = false
+	staff_display.show_clef = true
+	staff_display.show_time_sig = true
+	staff_display.beats_per_measure = 4
+	staff_display.time_sig_denominator = 4
+	staff_display.glissando_arrow_mode = ""
+	if speed_bar_container:
+		speed_bar_container.visible = false
+	_build_press_display_notes()
+	_start_press_exercise(0)
+
+func _build_press_display_notes() -> void:
+	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
+	var start_x := 320.0
+	var end_x: float = maxf(start_x + 920.0, staff_width - 120.0)
+	var pair_width := (end_x - start_x) / float(PRESS_EXERCISES.size())
+	press_display_notes.clear()
+	for i in range(PRESS_EXERCISES.size()):
+		var exercise: Dictionary = PRESS_EXERCISES[i]
+		var source_x := start_x + pair_width * float(i) + pair_width * 0.12
+		var target_x := start_x + pair_width * float(i) + pair_width * 0.52
+		var bar_x := start_x + pair_width * float(i + 1)
+		press_display_notes.append({
+			"note": "ZT_" + str(exercise["source"]),
+			"x": source_x,
+			"color": Color(0.16, 0.14, 0.12, 1.0),
+			"type": "half",
+			"press_target": "ZT_" + str(exercise["target"]),
+			"press_target_x": target_x
+		})
+		press_display_notes.append({
+			"note": "ZT_" + str(exercise["target"]),
+			"x": target_x,
+			"color": Color(0.16, 0.14, 0.12, 1.0),
+			"type": "half",
+			"bar_after": i < PRESS_EXERCISES.size() - 1,
+			"bar_x": bar_x
+		})
+	staff_display.set_notes(press_display_notes)
+	staff_display.queue_redraw()
+
+func _start_press_exercise(exercise_index: int) -> void:
+	if exercise_index >= PRESS_EXERCISES.size():
+		if analyzer:
+			analyzer.contour_tracking_mode = false
+		_finish_practice()
+		return
+	press_exercise_idx = exercise_index
+	press_cents_history.clear()
+	press_sample_accumulator = 0.0
+	press_attempt_elapsed = 0.0
+	press_silence_elapsed = 0.0
+	press_target_hold_elapsed = 0.0
+	press_base_note_heard = false
+	press_exercise_locked = false
+	press_max_cents = 0.0
+	for pair_idx in range(PRESS_EXERCISES.size()):
+		var color := Color(0.16, 0.14, 0.12, 1.0)
+		if pair_idx < exercise_index:
+			color = Color(0.12, 0.72, 0.30, 1.0)
+		elif pair_idx == exercise_index:
+			color = C_GOLD
+		press_display_notes[pair_idx * 2]["color"] = color
+		press_display_notes[pair_idx * 2 + 1]["color"] = color
+	staff_display.queue_redraw()
+
+	var exercise: Dictionary = PRESS_EXERCISES[exercise_index]
+	var source := str(exercise["source"])
+	var target := str(exercise["target"])
+	var string_number := int(NOTE_TO_STRING.get(source, 0)) + 1
+	if press_instruction_label:
+		press_instruction_label.text = "Lượt %d/4 · %s → %s (dây %d)" % [exercise_index + 1, source, target, string_number]
+	if press_status_label:
+		press_status_label.text = "Gảy %s trước, sau đó nhấn tay trái lên đúng cao độ %s và giữ ổn định." % [source, target]
+		press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	if press_progress_bar:
+		press_progress_bar.value = float(exercise_index)
+	if mic_status_lbl:
+		mic_status_lbl.text = "🎙️ Đang nghe đường nhấn %s lên %s" % [source, target]
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+
+func _process_press_practice(delta: float) -> void:
+	if press_exercise_locked or press_exercise_idx >= PRESS_EXERCISES.size() or not analyzer:
+		return
+	press_attempt_elapsed += delta
+	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
+	var source := str(exercise["source"])
+	var target := str(exercise["target"])
+	var source_hz := float(NOTE_FREQS.get(source, 0.0))
+	var target_interval := float(exercise["interval"])
+	var pitch := float(analyzer.current_pitch)
+	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
+
+	if signal_active and source_hz > 0.0:
+		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
+		if not press_base_note_heard:
+			if absf(cents) <= 50.0:
+				press_base_note_heard = true
+				press_silence_elapsed = 0.0
+				press_cents_history.append(cents)
+				if press_status_label:
+					press_status_label.text = "Đã nhận đúng %s. Hãy nhấn dần lên %s..." % [source, target]
+		else:
+			press_silence_elapsed = 0.0
+			if cents >= -60.0 and cents <= target_interval + 110.0:
+				press_max_cents = maxf(press_max_cents, cents)
+				press_sample_accumulator += delta
+				while press_sample_accumulator >= PRESS_SAMPLE_INTERVAL:
+					press_sample_accumulator -= PRESS_SAMPLE_INTERVAL
+					press_cents_history.append(cents)
+					if press_cents_history.size() > 180:
+						press_cents_history.pop_front()
+			if absf(cents - target_interval) <= 38.0:
+				press_target_hold_elapsed += delta
+			else:
+				press_target_hold_elapsed = maxf(0.0, press_target_hold_elapsed - delta * 1.5)
+
+			if press_status_label:
+				if cents > target_interval + 55.0:
+					press_status_label.text = "Cao quá (+%.0f cents). Hãy giảm lực tay trái." % cents
+					press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+				elif cents < target_interval - 38.0:
+					press_status_label.text = "Đang nhấn: +%.0f/%d cents · cần nhấn thêm." % [cents, int(target_interval)]
+					press_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+				else:
+					press_status_label.text = "Đã tới %s · giữ cao độ thêm một chút..." % target
+					press_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	else:
+		press_silence_elapsed += delta
+
+	if press_base_note_heard and press_target_hold_elapsed >= 0.30:
+		var result := _analyze_press_contour(press_cents_history, target_interval)
+		if result.get("detected", false):
+			_on_press_exercise_success(result)
+			return
+
+	if press_attempt_elapsed >= PRESS_ATTEMPT_TIMEOUT or (press_base_note_heard and press_silence_elapsed >= 0.9):
+		_on_press_exercise_failed(target_interval)
+
+func _analyze_press_contour(history: Array[float], target_interval: float) -> Dictionary:
+	var result := {
+		"detected": false,
+		"max_cents": 0.0,
+		"final_cents": 0.0,
+		"rise_time": 0.0,
+		"smoothness": 0.0
+	}
+	if history.size() < 10 or target_interval <= 0.0:
+		return result
+	var smoothed: Array[float] = []
+	for i in range(history.size()):
+		var from_idx := maxi(0, i - 1)
+		var to_idx := mini(history.size() - 1, i + 1)
+		var sum := 0.0
+		for j in range(from_idx, to_idx + 1):
+			sum += history[j]
+		smoothed.append(sum / float(to_idx - from_idx + 1))
+
+	var max_cents := smoothed[0]
+	var positive_motion := 0.0
+	var negative_motion := 0.0
+	var rise_start_idx := -1
+	var target_idx := -1
+	for i in range(smoothed.size()):
+		max_cents = maxf(max_cents, smoothed[i])
+		if rise_start_idx < 0 and smoothed[i] >= target_interval * 0.12:
+			rise_start_idx = i
+		if target_idx < 0 and smoothed[i] >= target_interval - 38.0:
+			target_idx = i
+		if i > 0:
+			var movement := smoothed[i] - smoothed[i - 1]
+			if movement >= 0.0:
+				positive_motion += movement
+			elif absf(movement) > 3.0:
+				negative_motion += absf(movement)
+	var final_count := mini(8, smoothed.size())
+	var final_sum := 0.0
+	for i in range(smoothed.size() - final_count, smoothed.size()):
+		final_sum += smoothed[i]
+	var final_cents := final_sum / float(final_count)
+	var rise_time := 0.0
+	if rise_start_idx >= 0 and target_idx >= rise_start_idx:
+		rise_time = float(target_idx - rise_start_idx) * PRESS_SAMPLE_INTERVAL
+	var smoothness := positive_motion / maxf(positive_motion + negative_motion, 0.001)
+	result["max_cents"] = max_cents
+	result["final_cents"] = final_cents
+	result["rise_time"] = rise_time
+	result["smoothness"] = smoothness
+	result["detected"] = absf(smoothed[0]) <= 55.0 \
+		and max_cents >= target_interval - 38.0 \
+		and max_cents <= target_interval + 62.0 \
+		and absf(final_cents - target_interval) <= 42.0 \
+		and rise_time >= 0.10 and rise_time <= 2.5 \
+		and smoothness >= 0.62
+	return result
+
+func _on_press_exercise_success(result: Dictionary) -> void:
+	press_exercise_locked = true
+	press_display_notes[press_exercise_idx * 2]["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	staff_display.queue_redraw()
+	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
+	if press_progress_bar:
+		press_progress_bar.value = float(press_exercise_idx + 1)
+	if press_status_label:
+		press_status_label.text = "✓ Nhấn đúng %s → %s · đích %.0f cents · độ mượt %.0f%%" % [
+			exercise["source"],
+			exercise["target"],
+			float(result.get("final_cents", 0.0)),
+			float(result.get("smoothness", 0.0)) * 100.0
+		]
+		press_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": true,
+		"cents_error": absf(float(result.get("final_cents", 0.0)) - float(exercise["interval"])),
+		"timing": 92.0,
+		"attack_clarity": 95.0,
+		"sustain_duration": 100.0,
+		"vibrato_detected": false,
+		"bend_detected": true
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese("Tốt lắm! Bạn đã nhấn đúng từ %s lên %s." % [exercise["source"], exercise["target"]])
+	var completed_exercise := press_exercise_idx
+	get_tree().create_timer(1.3).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_press_practice() and press_exercise_idx == completed_exercise:
+			_start_press_exercise(completed_exercise + 1)
+	)
+
+func _on_press_exercise_failed(target_interval: float) -> void:
+	press_exercise_locked = true
+	press_display_notes[press_exercise_idx * 2]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+	staff_display.queue_redraw()
+	var feedback := "Chưa nhận đúng nốt gốc. Hãy gảy đúng dây được chỉ dẫn trước."
+	if press_base_note_heard:
+		if press_max_cents < target_interval - 38.0:
+			feedback = "Chưa đủ cao. Hãy nhấn thêm một chút và giữ lực tay trái."
+		elif press_max_cents > target_interval + 62.0:
+			feedback = "Cao quá. Hãy giảm lực nhấn để không vượt nốt đích."
+		else:
+			feedback = "Đã gần đúng cao độ nhưng chưa giữ ổn định. Hãy nhấn đều và giữ nốt đích."
+	if press_status_label:
+		press_status_label.text = feedback
+		press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": false,
+		"cents_error": absf(target_interval - press_max_cents),
+		"timing": 30.0,
+		"attack_clarity": 55.0,
+		"sustain_duration": 30.0,
+		"vibrato_detected": false,
+		"bend_detected": false
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese(feedback)
+	var failed_exercise := press_exercise_idx
+	get_tree().create_timer(1.6).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_press_practice() and press_exercise_idx == failed_exercise:
+			_start_press_exercise(failed_exercise)
+	)
+
 func _start_vibrato_practice() -> void:
 	vibrato_note_idx = 0
 	staff_display.show_metronome = false
@@ -2433,7 +2783,7 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_vibrato_practice()
+	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice()
 	if _is_error_flash_demo():
 		error_flash_timer = 0.75
 		error_flash_note = {}
@@ -2468,10 +2818,13 @@ func _start_practice():
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
 		analyzer.rapid_sequence_mode = _is_glissando_practice()
-		analyzer.contour_tracking_mode = _is_vibrato_practice()
+		analyzer.contour_tracking_mode = _is_press_practice() or _is_vibrato_practice()
 
 	if _is_glissando_practice():
 		_start_glissando_round(0)
+		return
+	if _is_press_practice():
+		_start_press_practice()
 		return
 	if _is_vibrato_practice():
 		_start_vibrato_practice()
