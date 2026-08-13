@@ -73,6 +73,9 @@ var clef_highlight: bool = false    # draw clef in gold when teaching it
 var time_sig_highlight: bool = false # draw time signature in gold when teaching it
 var time_sig_denominator: int = 4   # bottom number of the time signature
 var clef_scale: float = 6.5         # clef glyph size relative to line_spacing
+var use_note_colors: bool = false   # set true to use per-note colors from set_notes
+var hit_line_color := Color(0.2, 0.85, 0.3, 0.95)
+var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -130,14 +133,14 @@ func _draw():
 			draw_string(num_font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
 	if show_hit_line:
-		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
-		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.2, 0.85, 0.3, 0.95), 3.5, true)
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_glow_color, 8.0, true)
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_color, 3.5, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x * 0.5)
-		var n_color = note_data.get("color", Color.BLACK)
+		var n_color = note_data.get("color", Color.BLACK) if use_note_colors else Color.BLACK
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")

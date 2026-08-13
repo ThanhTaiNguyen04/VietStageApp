@@ -136,9 +136,9 @@ func _ready() -> void:
 	for l in ALL_LESSONS:
 		if l.get("level", 1) == selected_level:
 			LESSONS.append(l)
-			
+
 	SecureDataManager.load_data()
-	
+
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
@@ -147,7 +147,7 @@ func _ready() -> void:
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
 	side_v.move_child(btn_minigame, 5) # after BtnSongs (index 4)
-	
+
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
 	btn_leaderboard.text = "Bảng xếp hạng"
@@ -155,19 +155,19 @@ func _ready() -> void:
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
 	side_v.move_child(btn_leaderboard, 6)
-	
+
 	_build_theme()
 	_connect_buttons()
 	_build_quiz_btn()
 	_build_profile_btn()
 	_build_lesson_list()
 	_build_sidebar()
-	
+
 	lessons_hbox.draw.connect(_draw_connecting_lines)
 	lessons_hbox.sort_children.connect(func():
 		lessons_hbox.queue_redraw()
 	)
-	
+
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
 	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -187,12 +187,12 @@ func _input(event: InputEvent) -> void:
 
 func _build_theme() -> void:
 	bg_rect.texture = load("res://assets/textures/sao_truc_background.png")
-	
+
 	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD, 0.28), 0, 0)
 	top_s.border_width_bottom = 1
 	top_s.content_margin_bottom = 0
 	top_bar.add_theme_stylebox_override("panel", top_s)
-	
+
 	var top_blur_mat = ShaderMaterial.new()
 	var top_blur_shader = Shader.new()
 	top_blur_shader.code = """
@@ -211,14 +211,14 @@ func _build_theme() -> void:
 	top_blur_rect.show_behind_parent = true
 	top_bar.add_child(top_blur_rect)
 	top_bar.move_child(top_blur_rect, 0)
-	
+
 	page_title.text = "GIÁO TRÌNH SÁO TRÚC - LEVEL %d" % selected_level
 	page_title.add_theme_color_override("font_color", C_JADE)
-	
+
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
 	if f_title:
 		page_title.add_theme_font_override("font", f_title)
-		
+
 	back_btn.text = ""
 	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back_btn.expand_icon = true
@@ -229,7 +229,7 @@ func _build_theme() -> void:
 	back_btn.add_theme_color_override("icon_pressed_color", C_JADE)
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_btn_bouncy(back_btn)
-	
+
 	# Outlined style for ChangeCourseBtn
 	var s_outline := StyleBoxFlat.new()
 	s_outline.bg_color = Color(0, 0, 0, 0)
@@ -242,10 +242,10 @@ func _build_theme() -> void:
 	s_outline.corner_radius_top_right = 24
 	s_outline.corner_radius_bottom_left = 24
 	s_outline.corner_radius_bottom_right = 24
-	
+
 	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
 	s_outline_hover.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08)
-	
+
 	change_course_btn.text = "Đổi khóa học"
 	change_course_btn.add_theme_stylebox_override("normal", s_outline)
 	change_course_btn.add_theme_stylebox_override("hover", s_outline_hover)
@@ -261,7 +261,7 @@ func _connect_buttons() -> void:
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
-	
+
 	change_course_btn.pressed.connect(func() -> void:
 		var t := create_tween()
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
@@ -446,14 +446,14 @@ func _draw_sidebar_icon(c: Control, t: int, is_locked: bool = false) -> void:
 		4: tex_name = "trending-up"
 		5: tex_name = "user"
 		6: tex_name = "home"
-	
+
 	var texture : Texture2D = null
 	if _sidebar_icons_cache.has(t):
 		texture = _sidebar_icons_cache[t]
 	elif tex_name != "":
 		texture = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
 		_sidebar_icons_cache[t] = texture
-	
+
 	if texture:
 		var icon_sz := Vector2(36, 36)
 		if t == 0:
@@ -486,17 +486,17 @@ func _build_lesson_list() -> void:
 	# Clear existing children
 	for child in lessons_hbox.get_children():
 		child.queue_free()
-		
+
 	var inst := "sao_truc"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
 	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["sao_truc_level1_1_video"])
-	
+
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	
+
 	for i in range(LESSONS.size()):
 		var lesson_item : Dictionary = LESSONS[i]
 		var id := lesson_item["id"] as String
-		
+
 		# Unlocking checks
 		var is_unlocked := false
 		if i == 0:
@@ -504,9 +504,9 @@ func _build_lesson_list() -> void:
 		else:
 			var prev_id := LESSONS[i - 1]["id"] as String
 			is_unlocked = true # FORCE UNLOCK
-			
+
 		var is_completed := completed_lessons.has(id) or completed_lessons.has(id + "_practice")
-		
+
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
 		col.custom_minimum_size = Vector2.ZERO
@@ -514,7 +514,7 @@ func _build_lesson_list() -> void:
 		col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.add_theme_constant_override("separation", 24)
-		
+
 		# Top: Lesson Title Label
 		var title_lbl := Label.new()
 		title_lbl.text = lesson_item["title"]
@@ -524,14 +524,14 @@ func _build_lesson_list() -> void:
 		if f_bold:
 			title_lbl.add_theme_font_override("font", f_bold)
 		col.add_child(title_lbl)
-		
+
 		# Center: Single Circle Button
 		var row := HBoxContainer.new()
 		row.name = "Row"
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_theme_constant_override("separation", 100)
 		col.add_child(row)
-		
+
 		var btn := Button.new()
 		btn.mouse_filter = Control.MOUSE_FILTER_PASS
 		btn.name = "LessonBtn"
@@ -539,22 +539,22 @@ func _build_lesson_list() -> void:
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		
+
 		if is_completed:
 			btn.text = "✔️\n%s\nHoàn thành" % lesson_item["note"]
 		elif not is_unlocked:
 			btn.text = "🔒"
 		else:
 			btn.text = "🎵\n%s" % lesson_item["note"]
-			
+
 		_style_circle_btn(btn, is_unlocked, is_completed)
 		_make_btn_bouncy(btn)
 		row.add_child(btn)
-		
+
 		btn.pressed.connect(func() -> void:
 			_open_lesson(id)
 		)
-		
+
 		lessons_hbox.add_child(col)
 
 func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> void:
@@ -562,7 +562,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Light warm gray-cream for locked
 	var border_color := Color(0.85, 0.82, 0.78, 1.0) # Gray border for locked
 	var text_color := C_TEXT_MUTED # Translucent charcoal text for locked
-	
+
 	if is_completed:
 		bg_color = C_JADE # Solid Jade Green for completed
 		border_color = C_GOLD # Gold border
@@ -571,7 +571,7 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		bg_color = Color(1.0, 1.0, 1.0, 0.8) # semi-transparent white for glass effect
 		border_color = C_JADE_LIGHT # Jade border
 		text_color = C_TEXT # Dark charcoal text
-		
+
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -579,19 +579,19 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
 	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
 	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
-	
+
 	# Glow effect for active step (using softer, wider gold shadow)
 	if is_unlocked and not is_completed:
 		s_normal.shadow_size = 24
 		s_normal.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
-		
+
 	var s_hover := s_normal.duplicate() as StyleBoxFlat
 	if is_unlocked:
 		if is_completed:
 			s_hover.bg_color = bg_color.lightened(0.1)
 		else:
 			s_hover.bg_color = Color(1.0, 1.0, 1.0, 0.95)
-		
+
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
@@ -600,12 +600,12 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 	btn.add_theme_color_override("font_hover_color", C_JADE if (is_unlocked and not is_completed) else text_color)
 	btn.add_theme_color_override("font_pressed_color", text_color)
 	btn.add_theme_color_override("font_disabled_color", text_color)
-	
+
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
 	btn.add_theme_font_size_override("font_size", 21)
-	
+
 	btn.disabled = not is_unlocked
 
 func _draw_connecting_lines() -> void:
@@ -622,15 +622,15 @@ func _draw_connecting_lines() -> void:
 		if not col: continue
 		var row := col.get_node_or_null("Row") as HBoxContainer
 		if not row: continue
-		
+
 		var btn := row.get_node_or_null("LessonBtn") as Button
 		if not btn: continue
-		
+
 		# Compute centers in HBox local coordinates
 		var center := col.position + row.position + btn.position + btn.size / 2.0
-		
+
 		centers.append(center)
-		
+
 		# Determine unlock status - currently forcing true to match UI
 		node_unlocked.append(true)
 
@@ -641,11 +641,11 @@ func _draw_connecting_lines() -> void:
 	for idx in range(centers.size() - 1):
 		var p1 := Vector2(centers[idx].x, line_y)
 		var p2 := Vector2(centers[idx + 1].x, line_y)
-		
+
 		var active := node_unlocked[idx + 1]
 		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.08)
 		var line_thickness := 14.0 if active else 7.0
-		
+
 		lessons_hbox.draw_line(p1, p2, line_color, line_thickness, true)
 
 func _apply_responsive_layout() -> void:
@@ -712,5 +712,20 @@ func _make_btn_bouncy(btn: Button) -> void:
 
 func _open_lesson(node_id: String) -> void:
 	SecureDataManager.active_lesson_id = node_id
-	SecureDataManager.data["current_song_title"] = node_id
+
+	var song_title = node_id
+	var song_frame = ""
+	for l in ALL_LESSONS:
+		if l["id"] == node_id:
+			var note_str = l.get("note", "")
+			if "(" in note_str:
+				var parts = note_str.split("(")
+				song_title = parts[0].strip_edges()
+				song_frame = parts[1].replace(")", "").strip_edges()
+			else:
+				song_title = note_str
+			break
+
+	SecureDataManager.data["current_song_title"] = song_title
+	SecureDataManager.data["current_song_frame"] = song_frame
 	_fade_to("res://scenes/LessonSaoTruc.tscn")

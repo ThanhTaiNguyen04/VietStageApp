@@ -75,6 +75,10 @@ var _tex_linh_walk_down : Texture2D
 var _tex_linh_walk_up : Texture2D
 var _tex_linh_walk_left : Texture2D
 var _tex_linh_walk_right : Texture2D
+var _tex_linh_walk_down_left : Texture2D
+var _tex_linh_walk_down_right : Texture2D
+var _tex_linh_walk_up_left : Texture2D
+var _tex_linh_walk_up_right : Texture2D
 var _tex_player : Texture2D
 var _tex_wall : Texture2D
 var _linh_walk_direction : String = "down"
@@ -195,6 +199,10 @@ func _ready() -> void:
 	_tex_linh_walk_up = load("res://assets/textures/coMai/mai_walk_up_sheet.png") as Texture2D
 	_tex_linh_walk_left = load("res://assets/textures/coMai/mai_walk_left_sheet.png") as Texture2D
 	_tex_linh_walk_right = load("res://assets/textures/coMai/mai_walk_right_sheet.png") as Texture2D
+	_tex_linh_walk_down_left = load("res://assets/textures/coMai/mai_walk_down_left_sheet.png") as Texture2D
+	_tex_linh_walk_down_right = load("res://assets/textures/coMai/mai_walk_down_right_sheet.png") as Texture2D
+	_tex_linh_walk_up_left = load("res://assets/textures/coMai/mai_walk_up_left_sheet.png") as Texture2D
+	_tex_linh_walk_up_right = load("res://assets/textures/coMai/mai_walk_up_right_sheet.png") as Texture2D
 	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
 	_tex_wall = load("res://assets/textures/backgroundphonghocao.png") as Texture2D
 	
@@ -792,10 +800,7 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 	var linh_feet_offset := _get_linh_feet_offset()
 	var current_feet := char_linh.position + linh_feet_offset
 	var move_delta := target_feet - current_feet
-	if absf(move_delta.x) > absf(move_delta.y):
-		_linh_walk_direction = "right" if move_delta.x >= 0.0 else "left"
-	else:
-		_linh_walk_direction = "down" if move_delta.y >= 0.0 else "up"
+	_linh_walk_direction = _get_linh_walk_direction(move_delta)
 	_linh_is_moving = true
 	var target_x := target_feet.x - linh_feet_offset.x
 	var target_y := target_feet.y - linh_feet_offset.y
@@ -813,6 +818,17 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 		else:
 			_select_instrument_and_enter(station_code)
 	)
+
+func _get_linh_walk_direction(move_delta: Vector2) -> String:
+	var horizontal := absf(move_delta.x)
+	var vertical := absf(move_delta.y)
+	if minf(horizontal, vertical) >= maxf(horizontal, vertical) * 0.35:
+		if move_delta.y >= 0.0:
+			return "down_right" if move_delta.x >= 0.0 else "down_left"
+		return "up_right" if move_delta.x >= 0.0 else "up_left"
+	if horizontal > vertical:
+		return "right" if move_delta.x >= 0.0 else "left"
+	return "down" if move_delta.y >= 0.0 else "up"
 
 func _linh_talk(_txt: String) -> void:
 	# Speech bubble removed — teacher speaks through the popup now
@@ -1521,6 +1537,10 @@ func _draw_linh(c: Control) -> void:
 			"up": animation_sheet = _tex_linh_walk_up
 			"left": animation_sheet = _tex_linh_walk_left
 			"right": animation_sheet = _tex_linh_walk_right
+			"down_left": animation_sheet = _tex_linh_walk_down_left
+			"down_right": animation_sheet = _tex_linh_walk_down_right
+			"up_left": animation_sheet = _tex_linh_walk_up_left
+			"up_right": animation_sheet = _tex_linh_walk_up_right
 			_: animation_sheet = _tex_linh_walk_down
 	elif is_speaking:
 		animation_sheet = _tex_linh_talk
