@@ -8,9 +8,11 @@ const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
 const LEVEL_7_GLISSANDO_TITLE := "Kỹ thuật Á"
 const LEVEL_7_PRESS_ID := "dan_tranh_level_7_bai_19_practice"
 const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
+const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
+enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
 var current_state = State.INTRO
 
 @onready var root = $Root
@@ -141,6 +143,45 @@ const PRESS_EXERCISES := [
 	{"source": "Mi3", "target": "Fa3", "interval": 100.0},
 	{"source": "La3", "target": "Si3", "interval": 200.0}
 ]
+var tremolo_sheet_hud: Control
+var tremolo_instruction_label: Label
+var tremolo_status_label: Label
+var tremolo_progress_bar: ProgressBar
+var tremolo_exercise_idx := 0
+var tremolo_display_notes: Array = []
+var tremolo_attack_strings: Array[int] = []
+var tremolo_attack_times: Array[float] = []
+var tremolo_attempt_started_at := 0.0
+var tremolo_last_attack_at := 0.0
+var tremolo_exercise_locked := false
+var tremolo_wrong_attacks := 0
+const TREMOLO_REQUIRED_DURATION := 2.4
+const TREMOLO_GAP_TIMEOUT := 0.68
+const TREMOLO_EXERCISE_TIMEOUT := 6.5
+const TREMOLO_EXERCISES := [
+	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
+	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
+	{"mode": "single", "title": "Vê một dây · Đô3", "notes": ["Đô3"]},
+	{"mode": "octave", "title": "Vê quãng tám · Đô2 – Đô3", "notes": ["Đô2", "Đô3"]},
+	{"mode": "octave", "title": "Vê quãng tám · Sol2 – Sol3", "notes": ["Sol2", "Sol3"]},
+	{"mode": "octave", "title": "Vê quãng tám · La2 – La3", "notes": ["La2", "La3"]}
+]
+var dan_tranh_string_streams: Array = []
+var technique_sample_player: AudioStreamPlayer
+var technique_sample_kind := TechniqueSampleKind.NONE
+var technique_sample_demo_idx := 0
+var technique_sample_elapsed := 0.0
+var technique_sample_event_elapsed := 0.0
+var technique_sample_sequence: Array[int] = []
+var technique_sample_sequence_idx := 0
+var technique_sample_in_gap := false
+var technique_sample_input_cooldown := 0.0
+const TECHNIQUE_SAMPLE_GAP := 0.65
+const GLISSANDO_SAMPLE_INTERVAL := 0.075
+const PRESS_SAMPLE_DURATION := 2.25
+const VIBRATO_DEMO_DURATION := 2.20
+const TREMOLO_SAMPLE_INTERVAL := 0.14
+const TREMOLO_SAMPLE_DURATION := 2.60
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
@@ -517,6 +558,8 @@ func _ready():
 	analyzer.volume_threshold_db = -58.0
 	if not analyzer.dan_tranh_note_started.is_connected(_on_dan_tranh_note_started):
 		analyzer.dan_tranh_note_started.connect(_on_dan_tranh_note_started)
+	if not analyzer.dan_tranh_rapid_attack.is_connected(_on_dan_tranh_rapid_attack):
+		analyzer.dan_tranh_rapid_attack.connect(_on_dan_tranh_rapid_attack)
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
@@ -630,6 +673,8 @@ func _ready():
 		_build_press_sheet_hud()
 	if _is_vibrato_practice():
 		_build_vibrato_sheet_hud()
+	if _is_tremolo_practice():
+		_build_tremolo_sheet_hud()
 	if _is_error_flash_demo():
 		_build_error_flash_overlay()
 	
@@ -640,11 +685,16 @@ func _ready():
 	
 	var string_notes: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
 	var string_freqs: Array[float] = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]
-	var string_streams: Array = []
-	string_streams.resize(17)
+	dan_tranh_string_streams.clear()
+	dan_tranh_string_streams.resize(17)
 	for i in range(17):
-		string_streams[i] = _generate_pluck_stream(string_freqs[i])
-	zither_board.init(string_notes, string_streams, string_freqs)
+		dan_tranh_string_streams[i] = _generate_pluck_stream(string_freqs[i])
+	zither_board.init(string_notes, dan_tranh_string_streams, string_freqs)
+	technique_sample_player = AudioStreamPlayer.new()
+	technique_sample_player.name = "TechniqueSamplePlayer"
+	technique_sample_player.bus = "Master"
+	technique_sample_player.volume_db = -3.0
+	add_child(technique_sample_player)
 	zither_board.visible = false
 	
 	# Hide redundant mode selection buttons (e.g. "Dùng Đàn Thật")
@@ -837,6 +887,15 @@ func _build_glissando_sheet() -> void:
 	content.add_child(glissando_progress_bar)
 
 func _build_vibrato_sheet_hud() -> void:
+	# PanelContainer stretches every direct Control child to its full content area.
+	# Keep the compact HUD inside a neutral full-size layer so its bottom anchors
+	# are respected instead of letting its cream panel cover the whole staff.
+	var hud_layer := Control.new()
+	hud_layer.name = "VibratoHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
 	vibrato_sheet_hud = PanelContainer.new()
 	vibrato_sheet_hud.name = "VibratoSheetHUD"
 	vibrato_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -860,7 +919,7 @@ func _build_vibrato_sheet_hud() -> void:
 	panel_style.corner_radius_bottom_left = 14
 	panel_style.corner_radius_bottom_right = 14
 	vibrato_sheet_hud.add_theme_stylebox_override("panel", panel_style)
-	staff_card.add_child(vibrato_sheet_hud)
+	hud_layer.add_child(vibrato_sheet_hud)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
@@ -891,6 +950,15 @@ func _build_vibrato_sheet_hud() -> void:
 	content.add_child(vibrato_progress_bar)
 
 func _build_press_sheet_hud() -> void:
+	# Use an intermediate layer for the same reason as the vibrato HUD: adding
+	# the compact panel directly to StaffCard makes PanelContainer expand it and
+	# its opaque background washes out the notes underneath.
+	var hud_layer := Control.new()
+	hud_layer.name = "PressHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
 	press_sheet_hud = PanelContainer.new()
 	press_sheet_hud.name = "PressSheetHUD"
 	press_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -914,7 +982,7 @@ func _build_press_sheet_hud() -> void:
 	panel_style.corner_radius_bottom_left = 14
 	panel_style.corner_radius_bottom_right = 14
 	press_sheet_hud.add_theme_stylebox_override("panel", panel_style)
-	staff_card.add_child(press_sheet_hud)
+	hud_layer.add_child(press_sheet_hud)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
@@ -943,6 +1011,66 @@ func _build_press_sheet_hud() -> void:
 	press_progress_bar.show_percentage = false
 	press_progress_bar.custom_minimum_size = Vector2(0, 6)
 	content.add_child(press_progress_bar)
+
+func _build_tremolo_sheet_hud() -> void:
+	var hud_layer := Control.new()
+	hud_layer.name = "TremoloHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	tremolo_sheet_hud = PanelContainer.new()
+	tremolo_sheet_hud.name = "TremoloSheetHUD"
+	tremolo_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tremolo_sheet_hud.anchor_left = 0.5
+	tremolo_sheet_hud.anchor_right = 0.5
+	tremolo_sheet_hud.anchor_top = 1.0
+	tremolo_sheet_hud.anchor_bottom = 1.0
+	tremolo_sheet_hud.offset_left = -450.0
+	tremolo_sheet_hud.offset_right = 450.0
+	tremolo_sheet_hud.offset_top = -102.0
+	tremolo_sheet_hud.offset_bottom = -18.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.96)
+	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.76)
+	panel_style.border_width_left = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 14
+	panel_style.corner_radius_top_right = 14
+	panel_style.corner_radius_bottom_left = 14
+	panel_style.corner_radius_bottom_right = 14
+	tremolo_sheet_hud.add_theme_stylebox_override("panel", panel_style)
+	hud_layer.add_child(tremolo_sheet_hud)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	tremolo_sheet_hud.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	tremolo_instruction_label = Label.new()
+	tremolo_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tremolo_instruction_label.add_theme_color_override("font_color", C_JADE)
+	tremolo_instruction_label.add_theme_font_size_override("font_size", 18)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		tremolo_instruction_label.add_theme_font_override("font", bold_font)
+	content.add_child(tremolo_instruction_label)
+	tremolo_status_label = Label.new()
+	tremolo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tremolo_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	tremolo_status_label.add_theme_font_size_override("font_size", 14)
+	content.add_child(tremolo_status_label)
+	tremolo_progress_bar = ProgressBar.new()
+	tremolo_progress_bar.max_value = float(TREMOLO_EXERCISES.size())
+	tremolo_progress_bar.show_percentage = false
+	tremolo_progress_bar.custom_minimum_size = Vector2(0, 6)
+	content.add_child(tremolo_progress_bar)
 
 
 func _build_error_flash_overlay() -> void:
@@ -1058,6 +1186,13 @@ func _is_press_practice() -> bool:
 
 func _is_vibrato_practice() -> bool:
 	return current_lesson_id == LEVEL_7_VIBRATO_ID
+
+func _is_tremolo_practice() -> bool:
+	return current_lesson_id == LEVEL_8_TREMOLO_ID
+
+
+func _is_technique_sample_practice() -> bool:
+	return _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice() or _is_tremolo_practice()
 
 
 func _is_error_flash_demo() -> bool:
@@ -1292,10 +1427,15 @@ func _process(delta):
 
 	if is_paused:
 		return
+	technique_sample_input_cooldown = maxf(0.0, technique_sample_input_cooldown - delta)
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		if _is_error_flash_demo():
+		if is_sample_mode and _is_technique_sample_practice():
+			_process_technique_sample(delta)
+		elif technique_sample_input_cooldown > 0.0 and _is_technique_sample_practice():
+			pass
+		elif _is_error_flash_demo():
 			_process_error_demo_sheet(delta)
 			_process_error_flash_demo(delta)
 		elif _is_glissando_practice():
@@ -1304,6 +1444,8 @@ func _process(delta):
 			_process_press_practice(delta)
 		elif _is_vibrato_practice():
 			_process_vibrato_practice(delta)
+		elif _is_tremolo_practice():
+			_process_tremolo_practice()
 		else:
 			_process_practice(delta)
 	
@@ -2013,6 +2155,8 @@ func _on_single_note_correct(raw_note_name: String) -> void:
 	)
 
 func _on_string_plucked(idx: int, note_name: String) -> void:
+	if is_sample_mode and _is_technique_sample_practice():
+		return
 	if current_state == State.PRACTICE_SINGLE:
 		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
@@ -2048,6 +2192,11 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 			# a real đàn tranh enter through the same sequence scorer below.
 			_append_glissando_detection(idx)
 			return
+		if _is_tremolo_practice():
+			# Virtual strings use the same scorer as microphone attacks, which keeps
+			# local testing representative of the real-instrument lesson.
+			_append_tremolo_attack(idx)
+			return
 		# Hỗ trợ gảy phím ảo bằng chạm/nhấp chuột trên màn hình đối với nốt khuyết
 		var hit_x = staff_display.hit_line_x
 		for note in active_falling_notes:
@@ -2062,7 +2211,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 						break
 
 func _on_dan_tranh_note_started(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or not _is_glissando_practice():
+	if current_state != State.PRACTICE or is_sample_mode or not _is_glissando_practice():
 		return
 	if not note.get("is_match", false):
 		return
@@ -2070,6 +2219,16 @@ func _on_dan_tranh_note_started(note: Dictionary) -> void:
 	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
 		return
 	_append_glissando_detection(string_idx)
+
+func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
+	if current_state != State.PRACTICE or is_sample_mode or not _is_tremolo_practice():
+		return
+	if not note.get("is_match", false):
+		return
+	var string_idx := int(note.get("string_index", -1))
+	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
+		return
+	_append_tremolo_attack(string_idx)
 
 func _append_glissando_detection(string_idx: int) -> void:
 	if glissando_round_locked:
@@ -2773,6 +2932,506 @@ func _on_vibrato_note_failed() -> void:
 			_start_vibrato_note(failed_note)
 	)
 
+func _start_tremolo_practice() -> void:
+	tremolo_exercise_idx = 0
+	staff_display.show_metronome = false
+	staff_display.show_hit_line = false
+	staff_display.show_clef = true
+	staff_display.show_time_sig = true
+	staff_display.beats_per_measure = 4
+	staff_display.time_sig_denominator = 4
+	staff_display.glissando_arrow_mode = ""
+	if speed_bar_container:
+		speed_bar_container.visible = false
+	_start_tremolo_exercise(0)
+
+func _start_tremolo_exercise(exercise_index: int) -> void:
+	if exercise_index >= TREMOLO_EXERCISES.size():
+		if analyzer:
+			analyzer.rapid_sequence_mode = false
+		_finish_practice()
+		return
+	tremolo_exercise_idx = exercise_index
+	tremolo_attack_strings.clear()
+	tremolo_attack_times.clear()
+	tremolo_attempt_started_at = 0.0
+	tremolo_last_attack_at = 0.0
+	tremolo_exercise_locked = false
+	tremolo_wrong_attacks = 0
+	_build_tremolo_display_notes()
+
+	var exercise: Dictionary = TREMOLO_EXERCISES[exercise_index]
+	var mode := str(exercise["mode"])
+	if tremolo_instruction_label:
+		tremolo_instruction_label.text = "Lượt %d/6 · %s" % [exercise_index + 1, exercise["title"]]
+	if tremolo_status_label:
+		if mode == "single":
+			tremolo_status_label.text = "Gảy luân phiên hai ngón trên cùng một dây, nhanh và đều trong khoảng 3 giây."
+		else:
+			tremolo_status_label.text = "Gảy luân phiên hai dây cùng tên nốt, khác quãng; không gảy đồng thời."
+		tremolo_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	if tremolo_progress_bar:
+		tremolo_progress_bar.value = float(exercise_index)
+	if mic_status_lbl:
+		mic_status_lbl.text = "🎙️ Đang nghe tốc độ và độ đều của kỹ thuật vê"
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+
+func _build_tremolo_display_notes() -> void:
+	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
+	var mode := str(exercise["mode"])
+	var notes: Array = exercise["notes"]
+	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
+	var center_x := maxf(440.0, staff_width * 0.58)
+	tremolo_display_notes.clear()
+	if mode == "single":
+		tremolo_display_notes.append({
+			"note": "ZT_" + str(notes[0]),
+			"x": center_x,
+			"color": C_GOLD,
+			"type": "half",
+			"cue": "tremolo_single"
+		})
+	else:
+		var source_x := center_x - 120.0
+		var target_x := center_x + 120.0
+		tremolo_display_notes.append({
+			"note": "ZT_" + str(notes[0]),
+			"x": source_x,
+			"color": C_GOLD,
+			"type": "half",
+			"tremolo_pair_target": "ZT_" + str(notes[1]),
+			"tremolo_pair_target_x": target_x
+		})
+		tremolo_display_notes.append({
+			"note": "ZT_" + str(notes[1]),
+			"x": target_x,
+			"color": C_GOLD,
+			"type": "half"
+		})
+	staff_display.set_notes(tremolo_display_notes)
+	staff_display.queue_redraw()
+
+func _append_tremolo_attack(string_idx: int) -> void:
+	if tremolo_exercise_locked or tremolo_exercise_idx >= TREMOLO_EXERCISES.size():
+		return
+	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
+	var notes: Array = exercise["notes"]
+	var allowed_strings: Array[int] = []
+	for note_name in notes:
+		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
+	if not allowed_strings.has(string_idx):
+		tremolo_wrong_attacks += 1
+		if tremolo_status_label:
+			var target_label := str(notes[0])
+			if notes.size() > 1:
+				target_label = "%s – %s" % [notes[0], notes[1]]
+			tremolo_status_label.text = "Sai dây. Hãy vê đúng %s." % target_label
+			tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+		return
+
+	var now_sec := Time.get_ticks_msec() / 1000.0
+	if tremolo_attack_times.is_empty():
+		tremolo_attempt_started_at = now_sec
+	tremolo_attack_strings.append(string_idx)
+	tremolo_attack_times.append(now_sec)
+	tremolo_last_attack_at = now_sec
+	var duration := now_sec - tremolo_attempt_started_at
+	var rate := float(tremolo_attack_times.size() - 1) / maxf(duration, 0.25)
+	if tremolo_status_label:
+		tremolo_status_label.text = "Đã nghe %d lần gảy · %.1f lần/giây · tiếp tục giữ đều..." % [
+			tremolo_attack_times.size(), rate
+		]
+		tremolo_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+
+func _process_tremolo_practice() -> void:
+	if tremolo_exercise_locked or tremolo_attack_times.is_empty():
+		return
+	var now_sec := Time.get_ticks_msec() / 1000.0
+	var duration := now_sec - tremolo_attempt_started_at
+	var silence_gap := now_sec - tremolo_last_attack_at
+	if duration >= TREMOLO_REQUIRED_DURATION or silence_gap >= TREMOLO_GAP_TIMEOUT \
+			or duration >= TREMOLO_EXERCISE_TIMEOUT:
+		_evaluate_tremolo_attempt()
+
+func _evaluate_tremolo_attempt() -> void:
+	if tremolo_exercise_locked:
+		return
+	tremolo_exercise_locked = true
+	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
+	var mode := str(exercise["mode"])
+	var count := tremolo_attack_times.size()
+	var duration := 0.0
+	if count >= 2:
+		duration = tremolo_attack_times[count - 1] - tremolo_attack_times[0]
+	var intervals: Array[float] = []
+	for i in range(1, count):
+		intervals.append(tremolo_attack_times[i] - tremolo_attack_times[i - 1])
+	var mean_interval := 0.0
+	var max_gap := 99.0
+	var regularity := 0.0
+	if not intervals.is_empty():
+		max_gap = 0.0
+		for interval in intervals:
+			mean_interval += interval
+			max_gap = maxf(max_gap, interval)
+		mean_interval /= float(intervals.size())
+		var variance := 0.0
+		for interval in intervals:
+			variance += pow(interval - mean_interval, 2.0)
+		variance /= float(intervals.size())
+		var variation := sqrt(variance) / maxf(mean_interval, 0.001)
+		regularity = clampf(1.0 - variation, 0.0, 1.0)
+	var rate := float(maxi(0, count - 1)) / maxf(duration, 0.25)
+	var alternating_ratio := 1.0
+	var balance_ok := true
+	if mode == "octave":
+		var transitions := 0
+		var first_count := 0
+		var second_count := 0
+		var exercise_notes: Array = exercise["notes"]
+		var first_string := int(NOTE_TO_STRING.get(str(exercise_notes[0]), -1))
+		for i in range(count):
+			if tremolo_attack_strings[i] == first_string:
+				first_count += 1
+			else:
+				second_count += 1
+			if i > 0 and tremolo_attack_strings[i] != tremolo_attack_strings[i - 1]:
+				transitions += 1
+		alternating_ratio = float(transitions) / float(maxi(1, count - 1))
+		balance_ok = first_count >= 3 and second_count >= 3
+
+	var success := count >= 8 and duration >= 1.7 and rate >= 3.5 and rate <= 13.0 \
+		and max_gap <= 0.48 and regularity >= 0.42 and tremolo_wrong_attacks <= 1
+	if mode == "octave":
+		success = success and alternating_ratio >= 0.72 and balance_ok
+	if success:
+		_on_tremolo_success(rate, regularity, alternating_ratio)
+	else:
+		_on_tremolo_failed(count, duration, rate, max_gap, regularity, alternating_ratio)
+
+func _set_tremolo_note_color(color: Color) -> void:
+	for note in tremolo_display_notes:
+		note["color"] = color
+	staff_display.queue_redraw()
+
+func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: float) -> void:
+	_set_tremolo_note_color(Color(0.12, 0.78, 0.30, 1.0))
+	if tremolo_progress_bar:
+		tremolo_progress_bar.value = float(tremolo_exercise_idx + 1)
+	if tremolo_status_label:
+		var extra := ""
+		if str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave":
+			extra = " · luân phiên %.0f%%" % (alternating_ratio * 100.0)
+		tremolo_status_label.text = "✓ Vê đạt · %.1f lần/giây · độ đều %.0f%%%s" % [
+			rate, regularity * 100.0, extra
+		]
+		tremolo_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": true,
+		"cents_error": 0.0,
+		"timing": regularity * 100.0,
+		"attack_clarity": clampf(rate / 7.0 * 100.0, 0.0, 100.0),
+		"sustain_duration": 100.0,
+		"vibrato_detected": false,
+		"bend_detected": false,
+		"tremolo_detected": true
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese("Tốt lắm! Bạn đã thực hiện kỹ thuật vê nhanh, đều và liền mạch.")
+	var completed_exercise := tremolo_exercise_idx
+	get_tree().create_timer(1.4).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_tremolo_practice() and tremolo_exercise_idx == completed_exercise:
+			_start_tremolo_exercise(completed_exercise + 1)
+	)
+
+func _on_tremolo_failed(count: int, duration: float, rate: float, max_gap: float, regularity: float, alternating_ratio: float) -> void:
+	_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
+	var feedback := "Chưa đủ số lần gảy. Hãy dùng hai ngón gảy liên tục và nhanh hơn."
+	if count >= 8 and duration < 1.7:
+		feedback = "Bạn đang vê quá ngắn. Hãy duy trì tiếng vê liên tục khoảng 3 giây."
+	elif max_gap > 0.48:
+		feedback = "Tiếng vê đang bị ngắt quãng. Hãy giữ hai ngón luân phiên liên tục."
+	elif rate > 13.0:
+		feedback = "Tốc độ quá gấp và chưa rõ tiếng. Hãy giảm nhẹ tốc độ để từng tiếng đều hơn."
+	elif regularity < 0.42:
+		feedback = "Các lần gảy chưa đều. Hãy giữ chuyển động hai ngón ổn định hơn."
+	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" and alternating_ratio < 0.72:
+		feedback = "Hãy gảy luân phiên nốt thấp và nốt cao; không lặp nhiều lần trên cùng một dây."
+	elif tremolo_wrong_attacks > 1:
+		feedback = "Bạn đã gảy nhầm dây. Hãy nhìn đúng hai nốt đang được chỉ dẫn trên sheet."
+	if tremolo_status_label:
+		tremolo_status_label.text = feedback
+		tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": tremolo_wrong_attacks <= 1,
+		"cents_error": 0.0,
+		"timing": regularity * 100.0,
+		"attack_clarity": clampf(rate / 7.0 * 100.0, 0.0, 100.0),
+		"sustain_duration": clampf(duration / TREMOLO_REQUIRED_DURATION * 100.0, 0.0, 100.0),
+		"vibrato_detected": false,
+		"bend_detected": false,
+		"tremolo_detected": false
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese(feedback)
+	var failed_exercise := tremolo_exercise_idx
+	get_tree().create_timer(1.6).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_tremolo_practice() and tremolo_exercise_idx == failed_exercise:
+			_start_tremolo_exercise(failed_exercise)
+	)
+
+
+# --- Nghe mẫu cho các kỹ thuật đàn tranh đặc biệt ---------------------------
+func _stop_technique_sample(stop_board_audio: bool = true) -> void:
+	technique_sample_kind = TechniqueSampleKind.NONE
+	technique_sample_demo_idx = 0
+	technique_sample_elapsed = 0.0
+	technique_sample_event_elapsed = 0.0
+	technique_sample_sequence.clear()
+	technique_sample_sequence_idx = 0
+	technique_sample_in_gap = false
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.stop()
+	if stop_board_audio and zither_board and zither_board.has_method("stop_all_audio"):
+		zither_board.call("stop_all_audio")
+
+
+func _play_sustained_technique_note(note_name: String) -> bool:
+	var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
+	if string_idx < 0 or string_idx >= dan_tranh_string_streams.size() or not technique_sample_player:
+		return false
+	technique_sample_player.stop()
+	technique_sample_player.stream = dan_tranh_string_streams[string_idx]
+	technique_sample_player.pitch_scale = 1.0
+	technique_sample_player.play()
+	# Chỉ chạy hiệu ứng dây; âm thanh do player riêng phát để có thể đổi cao độ.
+	zither_board.call("pluck", string_idx, false)
+	return true
+
+
+func _set_sample_listening_status(text: String) -> void:
+	if mic_status_lbl:
+		mic_status_lbl.text = "🔊 " + text
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+
+
+func _finish_technique_sample(message: String, status_label: Label = null) -> void:
+	technique_sample_kind = TechniqueSampleKind.NONE
+	technique_sample_in_gap = false
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.stop()
+	if status_label:
+		status_label.text = message
+		status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	_set_sample_listening_status("Đã nghe xong mẫu. Bấm Luyện tập để tự thực hành.")
+
+
+func _begin_glissando_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.GLISSANDO
+	technique_sample_demo_idx = 0
+	_prepare_glissando_sample_round()
+
+
+func _prepare_glissando_sample_round() -> void:
+	_start_glissando_round(technique_sample_demo_idx)
+	technique_sample_sequence.clear()
+	var mode := str(GLISSANDO_ROUNDS[technique_sample_demo_idx]["mode"])
+	if mode == "up":
+		for string_idx in range(ALL_17_NOTES.size()):
+			technique_sample_sequence.append(string_idx)
+	else:
+		for string_idx in range(ALL_17_NOTES.size() - 1, -1, -1):
+			technique_sample_sequence.append(string_idx)
+		if mode == "round":
+			for string_idx in range(1, ALL_17_NOTES.size()):
+				technique_sample_sequence.append(string_idx)
+	technique_sample_sequence_idx = 0
+	technique_sample_elapsed = 0.0
+	technique_sample_event_elapsed = GLISSANDO_SAMPLE_INTERVAL
+	technique_sample_in_gap = false
+	if glissando_status_label:
+		glissando_status_label.text = "Đang nghe mẫu %s..." % GLISSANDO_ROUNDS[technique_sample_demo_idx]["title"]
+		glissando_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu %s" % GLISSANDO_ROUNDS[technique_sample_demo_idx]["title"])
+
+
+func _process_glissando_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= GLISSANDO_ROUNDS.size():
+				if glissando_progress_bar:
+					glissando_progress_bar.value = 17.0
+				_finish_technique_sample("Đã nghe xong Á xuống, Á lên và Á vòng.", glissando_status_label)
+			else:
+				_prepare_glissando_sample_round()
+		return
+
+	technique_sample_event_elapsed += delta
+	while technique_sample_event_elapsed >= GLISSANDO_SAMPLE_INTERVAL \
+			and technique_sample_sequence_idx < technique_sample_sequence.size():
+		technique_sample_event_elapsed -= GLISSANDO_SAMPLE_INTERVAL
+		var string_idx := technique_sample_sequence[technique_sample_sequence_idx]
+		zither_board.call("pluck", string_idx)
+		technique_sample_sequence_idx += 1
+		if glissando_progress_bar:
+			glissando_progress_bar.value = minf(17.0, float(technique_sample_sequence_idx))
+	if technique_sample_sequence_idx >= technique_sample_sequence.size():
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _begin_press_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.PRESS
+	technique_sample_demo_idx = 0
+	_prepare_press_sample_exercise()
+
+
+func _prepare_press_sample_exercise() -> void:
+	_start_press_exercise(technique_sample_demo_idx)
+	technique_sample_elapsed = 0.0
+	technique_sample_in_gap = false
+	var exercise: Dictionary = PRESS_EXERCISES[technique_sample_demo_idx]
+	_play_sustained_technique_note(str(exercise["source"]))
+	if press_status_label:
+		press_status_label.text = "Đang nghe mẫu nhấn %s → %s..." % [exercise["source"], exercise["target"]]
+		press_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu nhấn %s lên %s" % [exercise["source"], exercise["target"]])
+
+
+func _process_press_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= PRESS_EXERCISES.size():
+				if press_progress_bar:
+					press_progress_bar.value = float(PRESS_EXERCISES.size())
+				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật nhấn.", press_status_label)
+			else:
+				_prepare_press_sample_exercise()
+		return
+
+	technique_sample_elapsed += delta
+	var target_cents := float(PRESS_EXERCISES[technique_sample_demo_idx]["interval"])
+	var current_cents := 0.0
+	if technique_sample_elapsed > 0.30:
+		var rise_ratio := clampf((technique_sample_elapsed - 0.30) / 1.05, 0.0, 1.0)
+		current_cents = lerpf(0.0, target_cents, smoothstep(0.0, 1.0, rise_ratio))
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.pitch_scale = pow(2.0, current_cents / 1200.0)
+	if technique_sample_elapsed >= PRESS_SAMPLE_DURATION:
+		if technique_sample_player:
+			technique_sample_player.stop()
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _begin_vibrato_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.VIBRATO
+	technique_sample_demo_idx = 0
+	_prepare_vibrato_sample_note()
+
+
+func _prepare_vibrato_sample_note() -> void:
+	_start_vibrato_note(technique_sample_demo_idx)
+	technique_sample_elapsed = 0.0
+	technique_sample_in_gap = false
+	var note_name := VIBRATO_NOTES[technique_sample_demo_idx]
+	_play_sustained_technique_note(note_name)
+	if vibrato_status_label:
+		vibrato_status_label.text = "Đang nghe mẫu rung dây nốt %s..." % note_name
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu rung dây nốt %s" % note_name)
+
+
+func _process_vibrato_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= VIBRATO_NOTES.size():
+				if vibrato_progress_bar:
+					vibrato_progress_bar.value = float(VIBRATO_NOTES.size())
+				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật rung dây.", vibrato_status_label)
+			else:
+				_prepare_vibrato_sample_note()
+		return
+
+	technique_sample_elapsed += delta
+	var vibrato_cents := 0.0
+	if technique_sample_elapsed > 0.25:
+		var onset := clampf((technique_sample_elapsed - 0.25) / 0.25, 0.0, 1.0)
+		vibrato_cents = onset * (18.0 + 18.0 * sin((technique_sample_elapsed - 0.25) * TAU * 5.5))
+	if technique_sample_player and technique_sample_player.playing:
+		technique_sample_player.pitch_scale = pow(2.0, vibrato_cents / 1200.0)
+	if technique_sample_elapsed >= VIBRATO_DEMO_DURATION:
+		if technique_sample_player:
+			technique_sample_player.stop()
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _begin_tremolo_sample() -> void:
+	technique_sample_kind = TechniqueSampleKind.TREMOLO
+	technique_sample_demo_idx = 0
+	_prepare_tremolo_sample_exercise()
+
+
+func _prepare_tremolo_sample_exercise() -> void:
+	_start_tremolo_exercise(technique_sample_demo_idx)
+	technique_sample_elapsed = 0.0
+	technique_sample_event_elapsed = TREMOLO_SAMPLE_INTERVAL
+	technique_sample_sequence_idx = 0
+	technique_sample_in_gap = false
+	var exercise: Dictionary = TREMOLO_EXERCISES[technique_sample_demo_idx]
+	if tremolo_status_label:
+		tremolo_status_label.text = "Đang nghe mẫu %s..." % exercise["title"]
+		tremolo_status_label.add_theme_color_override("font_color", Color(0.72, 0.46, 0.08, 1.0))
+	_set_sample_listening_status("Mẫu %s" % exercise["title"])
+
+
+func _process_tremolo_sample(delta: float) -> void:
+	if technique_sample_in_gap:
+		technique_sample_elapsed += delta
+		if technique_sample_elapsed >= TECHNIQUE_SAMPLE_GAP:
+			technique_sample_demo_idx += 1
+			if technique_sample_demo_idx >= TREMOLO_EXERCISES.size():
+				if tremolo_progress_bar:
+					tremolo_progress_bar.value = float(TREMOLO_EXERCISES.size())
+				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật vê.", tremolo_status_label)
+			else:
+				_prepare_tremolo_sample_exercise()
+		return
+
+	technique_sample_elapsed += delta
+	technique_sample_event_elapsed += delta
+	var notes: Array = TREMOLO_EXERCISES[technique_sample_demo_idx]["notes"]
+	while technique_sample_event_elapsed >= TREMOLO_SAMPLE_INTERVAL:
+		technique_sample_event_elapsed -= TREMOLO_SAMPLE_INTERVAL
+		var note_name := str(notes[technique_sample_sequence_idx % notes.size()])
+		var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
+		if string_idx >= 0:
+			zither_board.call("pluck", string_idx)
+		technique_sample_sequence_idx += 1
+	if technique_sample_elapsed >= TREMOLO_SAMPLE_DURATION:
+		technique_sample_in_gap = true
+		technique_sample_elapsed = 0.0
+
+
+func _process_technique_sample(delta: float) -> void:
+	match technique_sample_kind:
+		TechniqueSampleKind.GLISSANDO:
+			_process_glissando_sample(delta)
+		TechniqueSampleKind.PRESS:
+			_process_press_sample(delta)
+		TechniqueSampleKind.VIBRATO:
+			_process_vibrato_sample(delta)
+		TechniqueSampleKind.TREMOLO:
+			_process_tremolo_sample(delta)
+
+
 func _is_note_missing(note_idx: int) -> bool:
 	if current_lesson_id != "dan_tranh_level_1_bai_3_practice":
 		return false
@@ -2781,6 +3440,7 @@ func _is_note_missing(note_idx: int) -> bool:
 
 
 func _start_practice():
+	_stop_technique_sample()
 	current_state = State.PRACTICE
 	if _is_error_flash_demo():
 		if error_flash_tween and error_flash_tween.is_running():
@@ -2798,7 +3458,7 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice()
+	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice() or _is_tremolo_practice()
 	if _is_error_flash_demo():
 		error_flash_timer = 0.75
 		error_flash_note = {}
@@ -2832,17 +3492,28 @@ func _start_practice():
 	
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
-		analyzer.rapid_sequence_mode = _is_glissando_practice()
+		analyzer.rapid_sequence_mode = _is_glissando_practice() or _is_tremolo_practice()
 		analyzer.contour_tracking_mode = _is_press_practice() or _is_vibrato_practice()
 
 	if _is_glissando_practice():
 		_start_glissando_round(0)
+		if is_sample_mode:
+			_begin_glissando_sample()
 		return
 	if _is_press_practice():
 		_start_press_practice()
+		if is_sample_mode:
+			_begin_press_sample()
 		return
 	if _is_vibrato_practice():
 		_start_vibrato_practice()
+		if is_sample_mode:
+			_begin_vibrato_sample()
+		return
+	if _is_tremolo_practice():
+		_start_tremolo_practice()
+		if is_sample_mode:
+			_begin_tremolo_sample()
 		return
 		
 	# Determine BPM based on current lesson
@@ -3163,6 +3834,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 
 func _finish_practice():
+	_stop_technique_sample()
 	current_state = State.COMPLETED
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
@@ -3202,7 +3874,7 @@ func _finish_practice():
 			sum_timing += att["timing"]
 			sum_attack += att["attack_clarity"]
 			sum_sustain += att["sustain_duration"]
-			if att["vibrato_detected"] or att["bend_detected"]:
+			if att.get("vibrato_detected", false) or att.get("bend_detected", false) or att.get("tremolo_detected", false):
 				tech_hits += 1
 		
 		var string_acc = float(correct_strings) / total_attempts * 100.0
@@ -3236,6 +3908,7 @@ func _finish_practice():
 			)
 
 func _on_back():
+	_stop_technique_sample()
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
 		analyzer.contour_tracking_mode = false
@@ -3717,6 +4390,8 @@ func _toggle_pause():
 
 func _toggle_sample_mode():
 	is_sample_mode = not is_sample_mode
+	if not is_sample_mode:
+		technique_sample_input_cooldown = 0.55
 	_start_practice()
 
 func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Button:

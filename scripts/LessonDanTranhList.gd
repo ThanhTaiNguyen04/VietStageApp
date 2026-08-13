@@ -244,6 +244,7 @@ const LEVELS := [
 				"number": 30,
 				"display_number": "17",
 				"practice_id": "dan_tranh_level_8_bai_30_practice",
+				"practice_mode": "tremolo_6",
 				"title": "Kỹ thuật Vê",
 				"video": "",
 				"practice": "Thực hành kỹ thuật vê đều tay để tạo âm thanh liên tục và tròn tiếng.",

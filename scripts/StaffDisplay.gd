@@ -143,6 +143,10 @@ func _draw():
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
+		if n_cue == "tremolo_single":
+			_draw_single_tremolo_mark(note_data, center_y, n_color)
+		if note_data.has("tremolo_pair_target"):
+			_draw_octave_tremolo_mark(note_data, center_y, n_color)
 		if note_data.get("bar_after", false):
 			var bar_x := float(note_data.get("bar_x", n_x + line_spacing * 1.55))
 			draw_line(
@@ -396,6 +400,48 @@ func _draw_vibrato_mark(center: Vector2, color: Color, spacing: float) -> void:
 		var y := center.y + sin(ratio * TAU * 3.0) * amplitude
 		points.append(Vector2(x, y))
 	draw_polyline(points, color, maxf(2.4, spacing * 0.065), true)
+
+func _draw_single_tremolo_mark(note_data: Dictionary, center_y: float, color: Color) -> void:
+	var note_name := str(note_data.get("note", "ZT_Đô2"))
+	var note_x := float(note_data.get("x", size.x * 0.5))
+	var pos_idx := _get_note_position_index(note_name)
+	var note_y: float = center_y + (2.0 - pos_idx) * line_spacing
+	var note_width: float = line_spacing * 1.15
+	var stem_len: float = line_spacing * 2.2
+	var stem_up := pos_idx < 2.0
+	var stem_x: float = note_x + note_width * 0.5 - 2.0 if stem_up else note_x - note_width * 0.5 + 2.0
+	var stem_end_y: float = note_y - stem_len if stem_up else note_y + stem_len
+	var center := Vector2(stem_x, lerpf(note_y, stem_end_y, 0.52))
+	var stroke_length: float = line_spacing * 0.82
+	var stroke_rise: float = line_spacing * 0.28
+	var stroke_gap: float = line_spacing * 0.29
+	for i in range(3):
+		var offset := (float(i) - 1.0) * stroke_gap * (1.0 if stem_up else -1.0)
+		var from := center + Vector2(-stroke_length * 0.5, offset - stroke_rise * 0.5)
+		var to := center + Vector2(stroke_length * 0.5, offset + stroke_rise * 0.5)
+		draw_line(from, to, Color(color.r, color.g, color.b, 0.20), 10.0, true)
+		draw_line(from, to, color, maxf(4.0, line_spacing * 0.085), true)
+
+func _draw_octave_tremolo_mark(note_data: Dictionary, center_y: float, color: Color) -> void:
+	var source_name := str(note_data.get("note", "ZT_Đô2"))
+	var target_name := str(note_data.get("tremolo_pair_target", "ZT_Đô3"))
+	var source_x := float(note_data.get("x", size.x * 0.43))
+	var target_x := float(note_data.get("tremolo_pair_target_x", size.x * 0.57))
+	var source_pos := _get_note_position_index(source_name)
+	var target_pos := _get_note_position_index(target_name)
+	var source_y: float = center_y + (2.0 - source_pos) * line_spacing
+	var target_y: float = center_y + (2.0 - target_pos) * line_spacing
+	var note_width: float = line_spacing * 1.15
+	var stem_len: float = line_spacing * 2.2
+	var left := Vector2(source_x + note_width * 0.5 - 2.0, source_y - stem_len * 0.48)
+	var right := Vector2(target_x - note_width * 0.5 + 2.0, target_y + stem_len * 0.48)
+	var gap: float = line_spacing * 0.30
+	for i in range(3):
+		var y_offset := (float(i) - 1.0) * gap
+		var from := left + Vector2(0.0, y_offset)
+		var to := right + Vector2(0.0, y_offset)
+		draw_line(from, to, Color(color.r, color.g, color.b, 0.20), 11.0, true)
+		draw_line(from, to, color, maxf(4.2, line_spacing * 0.09), true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()

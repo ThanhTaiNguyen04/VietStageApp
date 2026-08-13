@@ -4,6 +4,10 @@ class_name AudioCaptureAnalyzer
 
 signal dan_tranh_note_started(note: Dictionary)
 signal dan_tranh_note_ended(note: Dictionary)
+# Emitted for every distinct string attack while rapid tracking is enabled.
+# Unlike dan_tranh_note_started, repeated attacks on the same string are kept;
+# technique lessons such as tremolo need their timing information.
+signal dan_tranh_rapid_attack(note: Dictionary)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -46,6 +50,11 @@ var pitch_profile: Resource = null
 # trajectory instead of waiting for one isolated pluck to finish. This flag is
 # enabled only by that lesson, so normal note exercises keep their stricter gate.
 var rapid_sequence_mode := false
+var _rapid_attack_pending := false
+var _rapid_attack_pending_elapsed := 0.0
+var _rapid_attack_last_emit_msec := -1000
+const RAPID_ATTACK_REFRACTORY_MSEC := 65
+const RAPID_ATTACK_PITCH_WINDOW := 0.18
 
 # Keeps estimating the fundamental throughout a sustained note so technique
 # lessons can measure periodic pitch movement (rung dây) after the attack.
@@ -205,6 +214,8 @@ func _process(delta: float) -> void:
 	
 	var gate_open = current_amplitude_db > volume_threshold_db
 	if not gate_open:
+		_rapid_attack_pending = false
+		_rapid_attack_pending_elapsed = 0.0
 		_handle_silence(delta)
 		_update_sample_history(samples)
 		return
@@ -212,6 +223,14 @@ func _process(delta: float) -> void:
 	# Step 3: Onset Detection (plucked instrument logic)
 	var is_onset = _detect_onset(samples)
 	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
+	if rapid_sequence_mode:
+		if is_onset and Time.get_ticks_msec() - _rapid_attack_last_emit_msec >= RAPID_ATTACK_REFRACTORY_MSEC:
+			_rapid_attack_pending = true
+			_rapid_attack_pending_elapsed = 0.0
+		elif _rapid_attack_pending:
+			_rapid_attack_pending_elapsed += delta
+			if _rapid_attack_pending_elapsed > RAPID_ATTACK_PITCH_WINDOW:
+				_rapid_attack_pending = false
 	
 	if profile_plucked and not rapid_sequence_mode and not contour_tracking_mode:
 		if is_onset and (not pluck_locked or pitch_estimation_done or time_since_onset > 0.15):
@@ -248,6 +267,15 @@ func _process(delta: float) -> void:
 	var mapped_note := {}
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null:
 		mapped_note = pitch_profile.match_pitch(current_pitch)
+	if rapid_sequence_mode and _rapid_attack_pending \
+			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
+		var rapid_note := mapped_note.duplicate()
+		rapid_note["attack_time_msec"] = Time.get_ticks_msec()
+		rapid_note["amplitude_db"] = current_amplitude_db
+		dan_tranh_rapid_attack.emit(rapid_note)
+		_rapid_attack_last_emit_msec = Time.get_ticks_msec()
+		_rapid_attack_pending = false
+		_rapid_attack_pending_elapsed = 0.0
 	
 	# Step 7: Lesson Scoring & Tracking
 	if rapid_sequence_mode or contour_tracking_mode:
