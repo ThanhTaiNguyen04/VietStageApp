@@ -54,6 +54,8 @@ const NOTE_POSITIONS = {
 var active_note = "Đô"
 var line_spacing = 65.0
 var clef_tex: Texture2D
+var staff_bg_color := Color("#fdfbf7")
+var number_font: Font = preload("res://assets/fonts/BeVietnamPro-Bold.ttf")
 
 func _ready():
 	if ResourceLoader.exists("res://image/khung nhav.png"):
@@ -119,11 +121,13 @@ func _draw():
 			var ts_size = int(line_spacing * 2.3)
 			var ts_color := Color(0.9, 0.55, 0.1, 0.95) if time_sig_highlight else Color(0.15, 0.15, 0.15, 0.95)
 			var ts_x = 16.0 + line_spacing * clef_scale * 0.55
+			
+			var num_font = number_font if number_font else font
 			# The standard time signature uses numbers that fill exactly two staff spaces each.
 			# Top digit: occupies top two spaces (between line 3 and line 5). Baseline sits near the middle line.
-			draw_string(font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
+			draw_string(num_font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			# Bottom digit: occupies bottom two spaces (between line 1 and line 3). Baseline sits near the bottom line.
-			draw_string(font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
+			draw_string(num_font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
 	if show_hit_line:
 		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), Color(0.3, 0.9, 0.4, 0.3), 8.0, true)
@@ -242,7 +246,7 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
 		# Make it hollow
 		var inner_rect = Rect2(note_x - note_width/2.5, note_y - note_height/2.5, note_width * 0.8, note_height * 0.8)
-		var bg_color = Color(0.995, 0.98, 0.93, 1.0) # Matches StaffCard bg
+		var bg_color = staff_bg_color
 		_draw_rotated_ellipse(inner_rect, deg_to_rad(-18), bg_color)
 	else:
 		_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
