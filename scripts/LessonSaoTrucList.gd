@@ -4,12 +4,11 @@ extends Control
 const C_BG           := Color(0.98, 0.97, 0.94, 1.0) # Warm cream background matching the project
 const C_GOLD         := Color(0.77, 0.58, 0.15, 1.0) # Lacquer gold
 const C_GOLD_LIGHT   := Color(0.92, 0.76, 0.30, 1.0) # Lighter gold
+const C_GOLD_DARK    := Color(0.478, 0.36, 0.07, 1.0)
 const C_JADE         := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green
 const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for active path borders
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
 const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
-
-const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
 
 # ─── @onready Refs
 @onready var bg_rect           : TextureRect      = $BG
@@ -141,7 +140,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Minigame"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -149,7 +148,7 @@ func _ready() -> void:
 	
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.text = "Bảng xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
@@ -157,7 +156,7 @@ func _ready() -> void:
 	
 	_build_theme()
 	_connect_buttons()
-	_build_quiz_btn()
+
 	_build_lesson_list()
 	_build_sidebar()
 	
@@ -266,48 +265,7 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
 
-func _build_quiz_btn() -> void:
-	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
-	if toph == null:
-		return
-	var s_outline := StyleBoxFlat.new()
-	s_outline.bg_color = Color(0, 0, 0, 0)
-	s_outline.border_color = C_JADE
-	s_outline.border_width_left = 3
-	s_outline.border_width_right = 3
-	s_outline.border_width_top = 3
-	s_outline.border_width_bottom = 3
-	s_outline.corner_radius_top_left = 24
-	s_outline.corner_radius_top_right = 24
-	s_outline.corner_radius_bottom_left = 24
-	s_outline.corner_radius_bottom_right = 24
-	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
-	s_outline_hover.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
 
-	var quiz_btn := Button.new()
-	quiz_btn.name = "QuizBtn"
-	quiz_btn.text = "📝 Quiz"
-	quiz_btn.custom_minimum_size = Vector2(148, 48)
-	quiz_btn.add_theme_stylebox_override("normal", s_outline)
-	quiz_btn.add_theme_stylebox_override("hover", s_outline_hover)
-	quiz_btn.add_theme_stylebox_override("pressed", s_outline)
-	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	quiz_btn.add_theme_color_override("font_color", C_JADE)
-	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	quiz_btn.add_theme_font_size_override("font_size", 17)
-	quiz_btn.pressed.connect(_open_quiz)
-	_make_btn_bouncy(quiz_btn)
-	toph.add_child(quiz_btn)
-	toph.move_child(quiz_btn, change_course_btn.get_index())
-
-func _open_quiz() -> void:
-	var ids: Array[String] = []
-	for l in LESSONS:
-		ids.append(str(l.get("id", "")))
-	QuizScreenScript.quiz_instrument = "sao_truc"
-	QuizScreenScript.quiz_local_ids = ids
-	QuizScreenScript.quiz_return_scene = "res://scenes/LessonSaoTrucList.tscn"
-	_fade_to("res://scenes/QuizScreen.tscn")
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
@@ -697,5 +655,20 @@ func _make_btn_bouncy(btn: Button) -> void:
 
 func _open_lesson(node_id: String) -> void:
 	SecureDataManager.active_lesson_id = node_id
-	SecureDataManager.data["current_song_title"] = node_id
+	
+	var song_title = node_id
+	var song_frame = ""
+	for l in ALL_LESSONS:
+		if l["id"] == node_id:
+			var note_str = l.get("note", "")
+			if "(" in note_str:
+				var parts = note_str.split("(")
+				song_title = parts[0].strip_edges()
+				song_frame = parts[1].replace(")", "").strip_edges()
+			else:
+				song_title = note_str
+			break
+			
+	SecureDataManager.data["current_song_title"] = song_title
+	SecureDataManager.data["current_song_frame"] = song_frame
 	_fade_to("res://scenes/LessonSaoTruc.tscn")
