@@ -236,12 +236,13 @@ const LEVELS := [
 	},
 	{
 		"level": 7,
-		"title": "KỸ THUẬT NÂNG CAO ĐÀN TRANH",
-		"sessions": "Bài 30–33",
-		"objective": "Luyện kỹ thuật vê và hợp âm ba ngón trên đàn tranh.",
+		"title": "KỸ THUẬT NÂNG CAO MỞ RỘNG",
+		"sessions": "Bài 17–18 (gồm 18.1–18.2)",
+		"objective": "Mở rộng khả năng diễn tấu với kỹ thuật vê và hợp âm ba âm cơ bản.",
 		"lessons": [
 			{
 				"number": 30,
+				"display_number": "17",
 				"practice_id": "dan_tranh_level_8_bai_30_practice",
 				"title": "Kỹ thuật Vê",
 				"video": "",
@@ -252,18 +253,20 @@ const LEVELS := [
 			},
 			{
 				"number": 31,
+				"display_number": "18",
 				"practice_id": "dan_tranh_level_8_bai_31_practice",
-				"title": "Kỹ thuật hợp âm",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
+				"title": "Hợp âm ba âm cơ bản",
+				"video": "",
 				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
-				"practice_title": "Kỹ thuật hợp âm",
+				"practice_title": "Hợp âm ba âm cơ bản",
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
 				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
 			},
 			{
 				"number": 32,
+				"display_number": "18.1",
 				"practice_id": "dan_tranh_level_8_bai_32_practice",
-				"title": "Kỹ thuật đánh hợp âm Đô trưởng",
+				"title": "Hợp âm Đô trưởng",
 				"video": "",
 				"practice": "Thực hành đánh hợp âm Đô trưởng bằng ba ngón, giữ tiếng đàn rõ và đồng đều.",
 				"practice_title": "Hợp âm Đô trưởng – Ba ngón",
@@ -276,8 +279,9 @@ const LEVELS := [
 			},
 			{
 				"number": 33,
+				"display_number": "18.2",
 				"practice_id": "dan_tranh_level_8_bai_33_practice",
-				"title": "Kỹ thuật đánh hợp âm La thứ",
+				"title": "Hợp âm La thứ",
 				"video": "",
 				"practice": "Thực hành đánh hợp âm La thứ bằng ba ngón, giữ nhịp chắc và cân bằng các dây.",
 				"practice_title": "Hợp âm La thứ – Ba ngón",
