@@ -114,8 +114,9 @@ func _build_sticky_progress_bar() -> void:
 	progress_container.add_child(hbox)
 
 	# 1. Sticky Back Button
+	# 1. Sticky Back Button (Double size)
 	floating_back_button = Button.new()
-	floating_back_button.custom_minimum_size = Vector2(44 if mobile else 48, 44 if mobile else 48)
+	floating_back_button.custom_minimum_size = Vector2(76, 76)
 	floating_back_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	floating_back_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(floating_back_button)
@@ -123,12 +124,12 @@ func _build_sticky_progress_bar() -> void:
 	floating_back_button.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	floating_back_button.expand_icon = true
 	floating_back_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	floating_back_button.add_theme_constant_override("icon_max_width", 24 if mobile else 28)
+	floating_back_button.add_theme_constant_override("icon_max_width", 38)
 
 	var style_n := StyleBoxFlat.new()
 	style_n.bg_color = Color.WHITE
-	style_n.set_corner_radius_all(24)
-	style_n.border_width_bottom = 3
+	style_n.set_corner_radius_all(38)
+	style_n.border_width_bottom = 5
 	style_n.border_color = Color("#cbd5e1")
 	style_n.shadow_color = Color(0, 0, 0, 0.05)
 	style_n.shadow_size = 4
@@ -149,7 +150,7 @@ func _build_sticky_progress_bar() -> void:
 
 	floating_back_button.pressed.connect(_go_back)
 
-	floating_back_button.pivot_offset = Vector2(22 if mobile else 24, 22 if mobile else 24)
+	floating_back_button.pivot_offset = Vector2(38, 38)
 	floating_back_button.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(floating_back_button, "scale", Vector2(1.08, 1.08), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
@@ -157,18 +158,18 @@ func _build_sticky_progress_bar() -> void:
 		create_tween().tween_property(floating_back_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 
-	# 2. Progress Bar
+	# 2. Progress Bar (Thick Duolingo style)
 	progress_bar = ProgressBar.new()
 	progress_bar.max_value = 100.0
 	progress_bar.value = 0.0
 	progress_bar.show_percentage = false
-	progress_bar.custom_minimum_size = Vector2(0, 10 if mobile else 12)
+	progress_bar.custom_minimum_size = Vector2(0, 16 if mobile else 20)
 	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	progress_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	# Premium capsule design
-	progress_bar.add_theme_stylebox_override("background", _panel(Color("#e9edf5"), Color("#e9edf5"), 6, 0))
-	progress_bar.add_theme_stylebox_override("fill", _panel(C_BLUE, C_BLUE, 6, 0))
+	var bar_radius := 8 if mobile else 10
+	progress_bar.add_theme_stylebox_override("background", _panel(Color("#e9edf5"), Color("#e9edf5"), bar_radius, 0))
+	progress_bar.add_theme_stylebox_override("fill", _panel(C_BLUE, C_BLUE, bar_radius, 0))
 	hbox.add_child(progress_bar)
 
 	# Insert in root_box as the second child, below the top panel
@@ -647,15 +648,15 @@ func _show_question() -> void:
 	if v_height < 500.0: # Mobile Landscape
 		staff_height = 115.0
 		staff_spacing = 22.0
-		font_size_prompt = 20
+		font_size_prompt = 28
 	elif v_height < 700.0: # Portrait Mobile
 		staff_height = 180.0
 		staff_spacing = 30.0
-		font_size_prompt = 24
+		font_size_prompt = 34
 	else: # Desktop / Tablet
 		staff_height = 250.0
 		staff_spacing = 40.0
-		font_size_prompt = 30
+		font_size_prompt = 42
 
 	# Update bottom feedback drawer to waiting state
 	_set_bottom_feedback_waiting()
@@ -688,51 +689,43 @@ func _show_question() -> void:
 	var status_hbox := HBoxContainer.new()
 	status_bar.add_child(status_hbox)
 
-	# Left: Question Pill
-	var q_pill := PanelContainer.new()
-	var q_style := StyleBoxFlat.new()
-	q_style.bg_color = Color("#fbf3db") # gold bg
-	q_style.border_color = C_GOLD
-	q_style.set_border_width_all(1)
-	q_style.set_corner_radius_all(8)
-	q_style.content_margin_left = 10
-	q_style.content_margin_right = 10
-	q_style.content_margin_top = 4
-	q_style.content_margin_bottom = 4
-	q_pill.add_theme_stylebox_override("panel", q_style)
-	status_hbox.add_child(q_pill)
-
-	var q_label := Label.new()
-	q_label.text = "CÂU HỎI %d / %d" % [question_index + 1, quizzes.size()]
-	q_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	q_label.add_theme_font_size_override("font_size", 12 if mobile else 13)
-	q_label.add_theme_color_override("font_color", C_NAVY)
-	q_pill.add_child(q_label)
-
+	# Left side of status row is empty (Question indicator removed per Duolingo style)
 	var status_spacer := Control.new()
 	status_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_hbox.add_child(status_spacer)
 
-	# Right: Score Pill
+	# Right: Score Pill (Doubled size, gamified Duolingo style)
 	var s_pill := PanelContainer.new()
 	var s_style := StyleBoxFlat.new()
 	s_style.bg_color = Color("#edf3ec") # jade bg
 	s_style.border_color = Color("#2e7d32")
-	s_style.set_border_width_all(1)
-	s_style.set_corner_radius_all(8)
-	s_style.content_margin_left = 10
-	s_style.content_margin_right = 10
-	s_style.content_margin_top = 4
-	s_style.content_margin_bottom = 4
+	s_style.set_border_width_all(2)
+	s_style.set_corner_radius_all(16)
+	s_style.content_margin_left = 20
+	s_style.content_margin_right = 20
+	s_style.content_margin_top = 8
+	s_style.content_margin_bottom = 8
 	s_pill.add_theme_stylebox_override("panel", s_style)
 	status_hbox.add_child(s_pill)
 
+	var s_hbox := HBoxContainer.new()
+	s_hbox.add_theme_constant_override("separation", 8)
+	s_pill.add_child(s_hbox)
+
+	var s_icon := TextureRect.new()
+	s_icon.texture = load("res://assets/textures/lucide/trophy.svg") as Texture2D
+	s_icon.custom_minimum_size = Vector2(26, 26)
+	s_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	s_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	s_icon.modulate = Color("#e7ae22") # Gold trophy icon
+	s_hbox.add_child(s_icon)
+
 	score_label = Label.new()
-	score_label.text = "ĐIỂM: %d" % score
+	score_label.text = str(score) # clean gamified score number
 	score_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	score_label.add_theme_font_size_override("font_size", 12 if mobile else 13)
+	score_label.add_theme_font_size_override("font_size", 22)
 	score_label.add_theme_color_override("font_color", Color("#1b5e20"))
-	s_pill.add_child(score_label)
+	s_hbox.add_child(score_label)
 
 	# Question prompt (larger & clearer)
 	var prompt := Label.new()
@@ -767,28 +760,39 @@ func _show_question() -> void:
 		card_header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card_header.add_child(card_header_spacer)
 
-		# Nghe mẫu button at the top-right of the card
+		# Nghe mẫu button at the top-right of the card (Icon-only 3D circle button)
 		audio_button = Button.new()
-		audio_button.text = " Nghe mẫu"
-		audio_button.custom_minimum_size = Vector2(120 if mobile else 140, 36)
-		audio_button.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-		audio_button.add_theme_font_size_override("font_size", 12 if mobile else 13)
+		audio_button.custom_minimum_size = Vector2(48, 48)
 		audio_button.icon = load("res://assets/textures/lucide/volume-2.svg") as Texture2D
 		audio_button.expand_icon = true
-		audio_button.add_theme_constant_override("icon_max_width", 14)
+		audio_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		audio_button.add_theme_constant_override("icon_max_width", 24)
 		audio_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 
-		var btn_style_n := _panel(Color.WHITE, Color(C_NAVY.r, C_NAVY.g, C_NAVY.b, 0.35), 18, 1)
-		var btn_style_h := _panel(Color(C_NAVY.r, C_NAVY.g, C_NAVY.b, 0.05), C_NAVY, 18, 1)
-		var btn_style_p := _panel(Color(C_NAVY.r, C_NAVY.g, C_NAVY.b, 0.12), C_NAVY, 18, 1)
+		var btn_style_n := StyleBoxFlat.new()
+		btn_style_n.bg_color = Color.WHITE
+		btn_style_n.border_color = Color("#cbd5e1")
+		btn_style_n.set_border_width_all(2)
+		btn_style_n.border_width_bottom = 4
+		btn_style_n.set_corner_radius_all(24)
+
+		var btn_style_h := btn_style_n.duplicate() as StyleBoxFlat
+		btn_style_h.bg_color = Color("#f8fafc")
+		btn_style_h.border_color = Color("#94a3b8")
+
+		var btn_style_p := btn_style_n.duplicate() as StyleBoxFlat
+		btn_style_p.bg_color = Color("#f1f5f9")
+		btn_style_p.border_color = Color("#64748b")
+		btn_style_p.border_width_top = 3
+		btn_style_p.border_width_bottom = 1
+
 		audio_button.add_theme_stylebox_override("normal", btn_style_n)
 		audio_button.add_theme_stylebox_override("hover", btn_style_h)
 		audio_button.add_theme_stylebox_override("pressed", btn_style_p)
 		audio_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		audio_button.add_theme_color_override("font_color", C_NAVY)
-		audio_button.add_theme_color_override("font_hover_color", C_NAVY.darkened(0.15))
+		audio_button.add_theme_color_override("icon_normal_color", C_NAVY)
 
-		audio_button.pivot_offset = Vector2(60 if mobile else 70, 18)
+		audio_button.pivot_offset = Vector2(24, 24)
 		audio_button.mouse_entered.connect(func() -> void:
 			create_tween().tween_property(audio_button, "scale", Vector2(1.08, 1.08), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		)
@@ -1004,7 +1008,7 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 
 	# Update score pill label immediately
 	if score_label and is_instance_valid(score_label):
-		score_label.text = "ĐIỂM: %d" % score
+		score_label.text = str(score)
 
 	# Display feedback text below the options box
 	var feedback_color := Color("#2e7d32") if is_correct else Color("#c62828")
