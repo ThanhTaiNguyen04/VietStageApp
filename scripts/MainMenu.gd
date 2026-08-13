@@ -1438,11 +1438,11 @@ func _build_roadmap_cards() -> void:
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
-		basic_desc.text = "Hiểu nhạc cụ, luyện nốt cơ bản và hoàn thiện bài Lý Cây Đa."
+		basic_desc.text = "Làm quen với đàn tranh, đọc nhạc cơ bản và luyện các ngón gảy đầu tiên."
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 		
 		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
-		ess_desc.text = "Luyện bài nhạc cùng kỹ thuật Á, nhấn, song thanh và rung dây."
+		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
 		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
 		
 		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
@@ -1456,8 +1456,8 @@ func _build_roadmap_cards() -> void:
 		
 		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
 		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
-		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO"
-		level_7_desc.text = "Luyện kỹ thuật vê và thực hành hợp âm ba ngón."
+		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
+		level_7_desc.text = "Mở rộng khả năng diễn tấu với các kỹ thuật nâng cao."
 	elif instrument == "dan_bau":
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
