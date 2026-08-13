@@ -6,6 +6,7 @@ const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
 const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
 const LEVEL_7_GLISSANDO_TITLE := "Kỹ thuật Á"
+const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
@@ -102,6 +103,21 @@ const GLISSANDO_ROUNDS := [
 	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
 	{"mode": "round", "title": "Á vòng", "instruction": "Vuốt từ dây cao xuống dây thấp rồi trở lên dây cao"}
 ]
+var vibrato_sheet_hud: Control
+var vibrato_instruction_label: Label
+var vibrato_status_label: Label
+var vibrato_progress_bar: ProgressBar
+var vibrato_note_idx := 0
+var vibrato_display_notes: Array = []
+var vibrato_pitch_history: Array[float] = []
+var vibrato_sample_accumulator := 0.0
+var vibrato_attempt_elapsed := 0.0
+var vibrato_silence_elapsed := 0.0
+var vibrato_base_note_heard := false
+var vibrato_note_locked := false
+const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
+const VIBRATO_SAMPLE_INTERVAL := 0.025
+const VIBRATO_ATTEMPT_TIMEOUT := 5.0
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
@@ -572,6 +588,8 @@ func _ready():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _is_glissando_practice():
 		_build_glissando_sheet()
+	if _is_vibrato_practice():
+		_build_vibrato_sheet_hud()
 	if _is_error_flash_demo():
 		_build_error_flash_overlay()
 	
@@ -778,6 +796,60 @@ func _build_glissando_sheet() -> void:
 	glissando_progress_bar.custom_minimum_size = Vector2(0, 7)
 	content.add_child(glissando_progress_bar)
 
+func _build_vibrato_sheet_hud() -> void:
+	vibrato_sheet_hud = PanelContainer.new()
+	vibrato_sheet_hud.name = "VibratoSheetHUD"
+	vibrato_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vibrato_sheet_hud.anchor_left = 0.5
+	vibrato_sheet_hud.anchor_right = 0.5
+	vibrato_sheet_hud.anchor_top = 1.0
+	vibrato_sheet_hud.anchor_bottom = 1.0
+	vibrato_sheet_hud.offset_left = -430.0
+	vibrato_sheet_hud.offset_right = 430.0
+	vibrato_sheet_hud.offset_top = -98.0
+	vibrato_sheet_hud.offset_bottom = -18.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
+	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	panel_style.border_width_left = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 14
+	panel_style.corner_radius_top_right = 14
+	panel_style.corner_radius_bottom_left = 14
+	panel_style.corner_radius_bottom_right = 14
+	vibrato_sheet_hud.add_theme_stylebox_override("panel", panel_style)
+	staff_card.add_child(vibrato_sheet_hud)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	vibrato_sheet_hud.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	vibrato_instruction_label = Label.new()
+	vibrato_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vibrato_instruction_label.add_theme_color_override("font_color", C_JADE)
+	vibrato_instruction_label.add_theme_font_size_override("font_size", 18)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		vibrato_instruction_label.add_theme_font_override("font", bold_font)
+	content.add_child(vibrato_instruction_label)
+	vibrato_status_label = Label.new()
+	vibrato_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vibrato_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	vibrato_status_label.add_theme_font_size_override("font_size", 14)
+	content.add_child(vibrato_status_label)
+	vibrato_progress_bar = ProgressBar.new()
+	vibrato_progress_bar.max_value = float(VIBRATO_NOTES.size())
+	vibrato_progress_bar.show_percentage = false
+	vibrato_progress_bar.custom_minimum_size = Vector2(0, 6)
+	content.add_child(vibrato_progress_bar)
+
 
 func _build_error_flash_overlay() -> void:
 	error_flash_overlay = Control.new()
@@ -887,6 +959,9 @@ func _build_error_flash_overlay() -> void:
 func _is_glissando_practice() -> bool:
 	return current_lesson_id == LEVEL_7_GLISSANDO_ID
 
+func _is_vibrato_practice() -> bool:
+	return current_lesson_id == LEVEL_7_VIBRATO_ID
+
 
 func _is_error_flash_demo() -> bool:
 	return current_lesson_id == ERROR_FLASH_DEMO_ID
@@ -914,6 +989,7 @@ func _setup_top_pitch_box():
 	if active_id:
 		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
 		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 10: KỸ THUẬT Á"
+		elif active_id == LEVEL_7_VIBRATO_ID: l_title = "BÀI 13: KỸ THUẬT RUNG DÂY"
 		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
 		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
 		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
@@ -1126,6 +1202,8 @@ func _process(delta):
 			_process_error_flash_demo(delta)
 		elif _is_glissando_practice():
 			_process_glissando_practice()
+		elif _is_vibrato_practice():
+			_process_vibrato_practice(delta)
 		else:
 			_process_practice(delta)
 	
@@ -2120,6 +2198,216 @@ func _on_glissando_round_failed(span: int, note_count: int) -> void:
 			_start_glissando_round(failed_round)
 	)
 
+func _start_vibrato_practice() -> void:
+	vibrato_note_idx = 0
+	staff_display.show_metronome = false
+	staff_display.show_hit_line = false
+	staff_display.show_clef = true
+	staff_display.show_time_sig = true
+	staff_display.beats_per_measure = 4
+	staff_display.time_sig_denominator = 4
+	staff_display.glissando_arrow_mode = ""
+	if speed_bar_container:
+		speed_bar_container.visible = false
+	_build_vibrato_display_notes()
+	_start_vibrato_note(0)
+
+func _build_vibrato_display_notes() -> void:
+	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
+	var start_x := 330.0
+	var end_x: float = maxf(start_x + 780.0, staff_width - 120.0)
+	vibrato_display_notes.clear()
+	for i in range(VIBRATO_NOTES.size()):
+		var ratio := float(i) / float(maxi(1, VIBRATO_NOTES.size() - 1))
+		var note_x := lerpf(start_x, end_x, ratio)
+		var next_x := lerpf(start_x, end_x, float(i + 1) / float(maxi(1, VIBRATO_NOTES.size() - 1))) if i + 1 < VIBRATO_NOTES.size() else end_x + 90.0
+		vibrato_display_notes.append({
+			"note": "ZT_" + VIBRATO_NOTES[i],
+			"x": note_x,
+			"color": Color(0.16, 0.14, 0.12, 1.0),
+			"type": "half",
+			"cue": "vibrato",
+			"bar_after": i < VIBRATO_NOTES.size() - 1,
+			"bar_x": (note_x + next_x) * 0.5
+		})
+	staff_display.set_notes(vibrato_display_notes)
+	staff_display.queue_redraw()
+
+func _start_vibrato_note(note_index: int) -> void:
+	if note_index >= VIBRATO_NOTES.size():
+		if analyzer:
+			analyzer.contour_tracking_mode = false
+		_finish_practice()
+		return
+	vibrato_note_idx = note_index
+	vibrato_pitch_history.clear()
+	vibrato_sample_accumulator = 0.0
+	vibrato_attempt_elapsed = 0.0
+	vibrato_silence_elapsed = 0.0
+	vibrato_base_note_heard = false
+	vibrato_note_locked = false
+	for i in range(vibrato_display_notes.size()):
+		if i < note_index:
+			vibrato_display_notes[i]["color"] = Color(0.12, 0.72, 0.30, 1.0)
+		elif i == note_index:
+			vibrato_display_notes[i]["color"] = C_GOLD
+		else:
+			vibrato_display_notes[i]["color"] = Color(0.16, 0.14, 0.12, 1.0)
+	staff_display.queue_redraw()
+
+	var target_note := VIBRATO_NOTES[note_index]
+	var target_string := int(NOTE_TO_STRING.get(target_note, 0)) + 1
+	if vibrato_instruction_label:
+		vibrato_instruction_label.text = "Nốt %d/7 · %s (dây %d)" % [note_index + 1, target_note, target_string]
+	if vibrato_status_label:
+		vibrato_status_label.text = "Gảy nốt rồi rung ngay bằng tay trái; giữ tiếng rung đều ít nhất 1 giây."
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	if vibrato_progress_bar:
+		vibrato_progress_bar.value = float(note_index)
+	if mic_status_lbl:
+		mic_status_lbl.text = "🎙️ Đang nghe nốt %s và dao động rung dây" % target_note
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+
+func _process_vibrato_practice(delta: float) -> void:
+	if vibrato_note_locked or vibrato_note_idx >= VIBRATO_NOTES.size() or not analyzer:
+		return
+	vibrato_attempt_elapsed += delta
+	var target_note := VIBRATO_NOTES[vibrato_note_idx]
+	var target_hz := float(NOTE_FREQS.get(target_note, 0.0))
+	var pitch := float(analyzer.current_pitch)
+	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
+
+	if signal_active and target_hz > 0.0:
+		var cents := 1200.0 * log(pitch / target_hz) / log(2.0)
+		if not vibrato_base_note_heard:
+			# The attack must first identify the requested physical string. Pitch is
+			# allowed to rise afterwards because left-hand rung bends the same string.
+			if absf(cents) <= 55.0:
+				vibrato_base_note_heard = true
+				vibrato_silence_elapsed = 0.0
+				if vibrato_status_label:
+					vibrato_status_label.text = "Đã nhận đúng %s. Tiếp tục rung đều tay trái..." % target_note
+		else:
+			vibrato_silence_elapsed = 0.0
+			if cents >= -70.0 and cents <= 190.0:
+				vibrato_sample_accumulator += delta
+				while vibrato_sample_accumulator >= VIBRATO_SAMPLE_INTERVAL:
+					vibrato_sample_accumulator -= VIBRATO_SAMPLE_INTERVAL
+					vibrato_pitch_history.append(cents)
+					if vibrato_pitch_history.size() > 160:
+						vibrato_pitch_history.pop_front()
+	else:
+		vibrato_silence_elapsed += delta
+
+	if vibrato_base_note_heard and vibrato_pitch_history.size() >= 24:
+		var result := _analyze_vibrato_cents(vibrato_pitch_history)
+		if result.get("detected", false):
+			_on_vibrato_note_success(result)
+			return
+		if vibrato_status_label:
+			vibrato_status_label.text = "Đang đo rung: %.0f cents · %.1f Hz" % [
+				float(result.get("depth_cents", 0.0)),
+				float(result.get("rate_hz", 0.0))
+			]
+
+	if vibrato_attempt_elapsed >= VIBRATO_ATTEMPT_TIMEOUT or (vibrato_base_note_heard and vibrato_silence_elapsed >= 0.8):
+		_on_vibrato_note_failed()
+
+func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
+	var result := {"detected": false, "depth_cents": 0.0, "rate_hz": 0.0, "cycles": 0.0}
+	if history.size() < 24:
+		return result
+	var smoothed: Array[float] = []
+	for i in range(history.size()):
+		var from_idx := maxi(0, i - 1)
+		var to_idx := mini(history.size() - 1, i + 1)
+		var sum := 0.0
+		for j in range(from_idx, to_idx + 1):
+			sum += history[j]
+		smoothed.append(sum / float(to_idx - from_idx + 1))
+
+	var sorted := smoothed.duplicate()
+	sorted.sort()
+	var low_idx := clampi(int(float(sorted.size() - 1) * 0.10), 0, sorted.size() - 1)
+	var high_idx := clampi(int(float(sorted.size() - 1) * 0.90), 0, sorted.size() - 1)
+	var depth: float = sorted[high_idx] - sorted[low_idx]
+	var center: float = (sorted[high_idx] + sorted[low_idx]) * 0.5
+	var hysteresis := maxf(2.5, depth * 0.10)
+	var state := 0
+	var switches := 0
+	for value in smoothed:
+		var centered: float = value - center
+		if centered >= hysteresis and state <= 0:
+			if state < 0:
+				switches += 1
+			state = 1
+		elif centered <= -hysteresis and state >= 0:
+			if state > 0:
+				switches += 1
+			state = -1
+	var cycles := float(switches) * 0.5
+	var duration := float(smoothed.size()) * VIBRATO_SAMPLE_INTERVAL
+	var rate := cycles / maxf(duration, 0.001)
+	result["depth_cents"] = depth
+	result["rate_hz"] = rate
+	result["cycles"] = cycles
+	result["detected"] = cycles >= 2.0 and rate >= 3.0 and rate <= 9.0 and depth >= 12.0 and depth <= 145.0
+	return result
+
+func _on_vibrato_note_success(result: Dictionary) -> void:
+	vibrato_note_locked = true
+	vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	staff_display.queue_redraw()
+	if vibrato_progress_bar:
+		vibrato_progress_bar.value = float(vibrato_note_idx + 1)
+	if vibrato_status_label:
+		vibrato_status_label.text = "✓ Rung đúng %s · %.0f cents · %.1f Hz" % [
+			VIBRATO_NOTES[vibrato_note_idx],
+			float(result.get("depth_cents", 0.0)),
+			float(result.get("rate_hz", 0.0))
+		]
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": true,
+		"cents_error": 0.0,
+		"timing": 95.0,
+		"attack_clarity": 95.0,
+		"sustain_duration": 100.0,
+		"vibrato_detected": true,
+		"bend_detected": false
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese("Tốt lắm! Bạn đã rung đúng nốt %s." % VIBRATO_NOTES[vibrato_note_idx])
+	var completed_note := vibrato_note_idx
+	get_tree().create_timer(1.2).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_vibrato_practice() and vibrato_note_idx == completed_note:
+			_start_vibrato_note(completed_note + 1)
+	)
+
+func _on_vibrato_note_failed() -> void:
+	vibrato_note_locked = true
+	vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+	staff_display.queue_redraw()
+	if vibrato_status_label:
+		vibrato_status_label.text = "Chưa nhận được rung đều. Hãy gảy lại rồi nhồi dây nhẹ, liên tục bằng tay trái."
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+	_dan_tranh_attempts.append({
+		"correct_string": false,
+		"cents_error": 50.0,
+		"timing": 30.0,
+		"attack_clarity": 55.0,
+		"sustain_duration": 30.0,
+		"vibrato_detected": false,
+		"bend_detected": false
+	})
+	if ai_audio:
+		ai_audio.speak_vietnamese("Chưa thấy tiếng rung đều. Bạn hãy gảy lại nốt rồi rung nhẹ và liên tục bằng tay trái nhé.")
+	var failed_note := vibrato_note_idx
+	get_tree().create_timer(1.5).timeout.connect(func():
+		if current_state == State.PRACTICE and _is_vibrato_practice() and vibrato_note_idx == failed_note:
+			_start_vibrato_note(failed_note)
+	)
+
 func _is_note_missing(note_idx: int) -> bool:
 	if current_lesson_id != "dan_tranh_level_1_bai_3_practice":
 		return false
@@ -2145,7 +2433,7 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice()
+	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_vibrato_practice()
 	if _is_error_flash_demo():
 		error_flash_timer = 0.75
 		error_flash_note = {}
@@ -2180,9 +2468,13 @@ func _start_practice():
 	zither_board.call("clear_lesson_markers")
 	if analyzer:
 		analyzer.rapid_sequence_mode = _is_glissando_practice()
+		analyzer.contour_tracking_mode = _is_vibrato_practice()
 
 	if _is_glissando_practice():
 		_start_glissando_round(0)
+		return
+	if _is_vibrato_practice():
+		_start_vibrato_practice()
 		return
 		
 	# Determine BPM based on current lesson
@@ -2506,6 +2798,7 @@ func _finish_practice():
 	current_state = State.COMPLETED
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
+		analyzer.contour_tracking_mode = false
 	complete_btn.visible = false # Managed by popup action button
 	if speed_bar_container:
 		speed_bar_container.visible = false
@@ -2577,6 +2870,7 @@ func _finish_practice():
 func _on_back():
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
+		analyzer.contour_tracking_mode = false
 	get_tree().change_scene_to_file("res://scenes/LessonDanTranhList.tscn")
 
 func _on_complete():

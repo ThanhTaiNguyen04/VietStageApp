@@ -141,6 +141,15 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		if note_data.get("bar_after", false):
+			var bar_x := float(note_data.get("bar_x", n_x + line_spacing * 1.55))
+			draw_line(
+				Vector2(bar_x, center_y - 2.0 * line_spacing),
+				Vector2(bar_x, center_y + 2.0 * line_spacing),
+				line_color,
+				3.0,
+				true
+			)
 
 	if glissando_arrow_mode != "":
 		_draw_glissando_arrow(center_y)
@@ -336,6 +345,22 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			if note_type == "sixteenth":
 				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.22 * hook_dir)
 				_draw_flag(f2_start, hook_dir, flag_w, flag_h, note_color, stem_w)
+
+	if cue == "vibrato":
+		var mark_y: float = note_y - line_spacing * (2.65 if pos_idx < 2.0 else 1.25)
+		_draw_vibrato_mark(Vector2(note_x, mark_y), note_color, line_spacing)
+
+func _draw_vibrato_mark(center: Vector2, color: Color, spacing: float) -> void:
+	var points := PackedVector2Array()
+	var width := spacing * 1.25
+	var amplitude := maxf(3.5, spacing * 0.10)
+	var segments := 32
+	for i in range(segments + 1):
+		var ratio := float(i) / float(segments)
+		var x := center.x - width * 0.5 + width * ratio
+		var y := center.y + sin(ratio * TAU * 3.0) * amplitude
+		points.append(Vector2(x, y))
+	draw_polyline(points, color, maxf(2.4, spacing * 0.065), true)
 
 func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var points = PackedVector2Array()

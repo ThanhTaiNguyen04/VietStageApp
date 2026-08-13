@@ -47,6 +47,10 @@ var pitch_profile: Resource = null
 # enabled only by that lesson, so normal note exercises keep their stricter gate.
 var rapid_sequence_mode := false
 
+# Keeps estimating the fundamental throughout a sustained note so technique
+# lessons can measure periodic pitch movement (rung dây) after the attack.
+var contour_tracking_mode := false
+
 # Calibration (Phase 1)
 var calibration_active := false
 var calibration_db_samples: Array[float] = []
@@ -209,7 +213,7 @@ func _process(delta: float) -> void:
 	var is_onset = _detect_onset(samples)
 	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	
-	if profile_plucked and not rapid_sequence_mode:
+	if profile_plucked and not rapid_sequence_mode and not contour_tracking_mode:
 		if is_onset and (not pluck_locked or pitch_estimation_done or time_since_onset > 0.15):
 			if _dan_tranh_note_active:
 				_finish_dan_tranh_note()
@@ -225,7 +229,7 @@ func _process(delta: float) -> void:
 	# Step 4: Pitch Estimation (estimate every frame inside the 30-150 ms onset
 	# window so the stability gate can accumulate PITCH_STABILITY_FRAMES candidates)
 	var raw_pitch := 0.0
-	if rapid_sequence_mode:
+	if rapid_sequence_mode or contour_tracking_mode:
 		raw_pitch = _estimate_pitch(samples)
 	elif profile_plucked:
 		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.15:
@@ -246,7 +250,7 @@ func _process(delta: float) -> void:
 		mapped_note = pitch_profile.match_pitch(current_pitch)
 	
 	# Step 7: Lesson Scoring & Tracking
-	if rapid_sequence_mode:
+	if rapid_sequence_mode or contour_tracking_mode:
 		_update_continuous_note_tracking(mapped_note, delta)
 	elif profile_plucked:
 		_update_dan_tranh_tracking_plucked(mapped_note, delta)
@@ -387,9 +391,10 @@ func _clear_pitch_detection() -> void:
 func _update_reliable_pitch(detected_pitch: float) -> void:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
-	var stability_frames := 2 if rapid_sequence_mode else PITCH_STABILITY_FRAMES
-	var jump_limit := 420.0 if rapid_sequence_mode else PITCH_JUMP_CENTS
-	var stability_limit := 55.0 if rapid_sequence_mode else PITCH_STABILITY_CENTS
+	var fast_tracking := rapid_sequence_mode or contour_tracking_mode
+	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
+	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
+	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
 	
 	if detected_pitch < min_f or detected_pitch > max_f:
 		_clear_pitch_detection()
