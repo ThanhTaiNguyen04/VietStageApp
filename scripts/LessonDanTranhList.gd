@@ -556,21 +556,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 24)
 
-	var title := Label.new()
-	title.text = "BÀI %s" % display_number
-	title.custom_minimum_size = Vector2(0, 28)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", C_TEXT if lesson_ready else Color(C_MUTED, 0.45))
-	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	if bold_font:
-		title.add_theme_font_override("font", bold_font)
-	column.add_child(title)
-
-	# Mọi level đàn tranh đều hiển thị trực tiếp tên bài, không lặp thêm nhãn hành động.
-	var lesson_action := ""
-	var lesson_button := _create_circle_button(lesson_action, str(lesson["title"]), practice_unlocked, practice_completed)
+	# Tên bài nằm trực tiếp trong card, cùng ngôn ngữ thị giác với các card Level.
+	var lesson_button := _create_lesson_card_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "practice"))
 	column.add_child(lesson_button)
@@ -581,7 +568,7 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		column.add_child(video_button)
 	else:
 		# Giữ một ô hành động có cùng chiều cao dưới mọi bài. Nếu bỏ ô này,
-		# VBox ngắn hơn sẽ được HBox căn giữa và làm tâm hình tròn lệch khỏi
+		# VBox ngắn hơn sẽ được HBox căn giữa và làm tâm card lệch khỏi
 		# đường nối so với những bài có nút Hướng dẫn.
 		var action_slot_spacer := Control.new()
 		action_slot_spacer.name = "ActionSlotSpacer"
@@ -608,10 +595,10 @@ func _create_small_btn(label: String, unlocked: bool) -> Button:
 	_make_bouncy(button)
 	return button
 
-func _create_circle_button(action: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
+func _create_lesson_card_button(display_number: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
 	var button := Button.new()
 	button.mouse_filter = Control.MOUSE_FILTER_PASS
-	button.custom_minimum_size = Vector2(250, 250)
+	button.custom_minimum_size = Vector2(280, 180)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -619,13 +606,9 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	button.disabled = not unlocked
 
 	if completed:
-		button.text = "✓\n%s\nHoàn thành" % (lesson_title if action.is_empty() else action)
+		button.text = "✓\nBÀI %s\n%s\nHoàn thành" % [display_number, lesson_title]
 	elif unlocked:
-		if action.is_empty():
-			button.text = lesson_title
-		else:
-			var icon := "🎬" if action == "Hướng dẫn" else "🎵"
-			button.text = "%s\n%s\n(%s)" % [icon, action, lesson_title]
+		button.text = "BÀI %s\n%s" % [display_number, lesson_title]
 	else:
 		button.text = "🔒"
 
@@ -647,8 +630,8 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
-	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
+	s_normal.corner_radius_top_left = 24; s_normal.corner_radius_top_right = 24
+	s_normal.corner_radius_bottom_left = 24; s_normal.corner_radius_bottom_right = 24
 	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
@@ -673,7 +656,7 @@ func _create_circle_button(action: String, lesson_title: String, unlocked: bool,
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		button.add_theme_font_override("font", bold_font)
-	button.add_theme_font_size_override("font_size", 21)
+	button.add_theme_font_size_override("font_size", 19)
 	_make_bouncy(button)
 	return button
 
@@ -698,15 +681,24 @@ func _draw_lesson_path() -> void:
 	if centers.is_empty():
 		return
 		
-	# Ensure all circles lie on the exact same horizontal straight line (Y coordinate)
+	# Ensure all cards lie on the exact same horizontal straight line (Y coordinate).
 	var line_y := centers[0].y
 	for idx in range(centers.size() - 1):
-		var p1 := Vector2(centers[idx].x, line_y)
-		var p2 := Vector2(centers[idx + 1].x, line_y)
+		var left_col := lessons_hbox.get_child(idx) as VBoxContainer
+		var right_col := lessons_hbox.get_child(idx + 1) as VBoxContainer
+		var left_card := left_col.get_node_or_null("LessonBtn") as Button
+		var right_card := right_col.get_node_or_null("LessonBtn") as Button
+		if not left_card or not right_card:
+			continue
+		var p1 := Vector2(centers[idx].x + left_card.size.x * 0.5, line_y)
+		var p2 := Vector2(centers[idx + 1].x - right_card.size.x * 0.5, line_y)
 		var active := node_unlocked[idx + 1]
-		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.08)
-		var line_thickness := 14.0 if active else 7.0
+		var line_color := C_JADE if active else Color(0.13, 0.08, 0.05, 0.16)
+		var line_thickness := 14.0 if active else 8.0
+		# Ba lớp nét giống đường nối các card Level: nền mềm, nét chính và lõi sáng.
+		lessons_hbox.draw_line(p1, p2, Color(line_color, 0.22), line_thickness + 10.0, true)
 		lessons_hbox.draw_line(p1, p2, line_color, line_thickness, true)
+		lessons_hbox.draw_line(p1, p2, Color(1.0, 1.0, 1.0, 0.62), 4.0, true)
 
 func _create_lesson_card(lesson: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
@@ -986,9 +978,9 @@ func _apply_responsive_layout() -> void:
 			col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			var btn := col.get_node_or_null("LessonBtn") as Button
 			if btn:
-				var sz := Vector2(180, 180) if mobile else Vector2(250, 250)
+				var sz := Vector2(210, 150) if mobile else Vector2(280, 180)
 				btn.custom_minimum_size = sz
-				btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
+				btn.add_theme_font_size_override("font_size", 16 if mobile else 19)
 
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
 	btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
