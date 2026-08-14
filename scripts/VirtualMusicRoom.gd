@@ -1237,9 +1237,9 @@ func _get_sort_y(node: Control) -> float:
 	return node.position.y + node.size.y
 
 func _sort_room_elements() -> void:
-	if not char_player:
-		return
-	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh, char_player]
+	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh]
+	if char_player:
+		items.append(char_player)
 	for c in room_content.get_children():
 		if c.name.begins_with("Decor_"):
 			items.append(c)
@@ -2570,14 +2570,11 @@ func _fetch_cosmetics_data() -> void:
 	_cosmetics_locked = []
 	if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
 		var all_mock = [
-			{"id": 1, "name": "Chau sen nho", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang tri phong nhac."},
-			{"id": 2, "name": "Ban tra", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang tri phong nhac."},
-			{"id": 3, "name": "Tranh phong canh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang tri phong nhac."},
-			{"id": 4, "name": "Quat treo tuong", "assetUrl": "quat", "unlockValue": 150, "description": "Trang tri phong nhac."},
-			{"id": 5, "name": "Den long do", "assetUrl": "denlong", "unlockValue": 75, "description": "Trang tri phong nhac."},
-			{"id": 6, "name": "Den da Nhat", "assetUrl": "denda", "unlockValue": 120, "description": "Trang tri phong nhac."},
-			{"id": 7, "name": "Chuong gio", "assetUrl": "chuonggio", "unlockValue": 80, "description": "Trang tri phong nhac."},
-			{"id": 8, "name": "Binh sen lon", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang tri phong nhac."}
+			{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
+			{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
+			{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
+			{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
+			{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
 		]
 		var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
 		var active = SecureDataManager.data.get("active_decorations", [])
@@ -2809,7 +2806,6 @@ func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> v
 					# Calculate offset based on scaled size to prevent jumping
 					var scaled_global = ctrl.global_position + ctrl.pivot_offset - (ctrl.pivot_offset * 1.1)
 					_drag_offset = event.global_position - scaled_global
-					ctrl.move_to_front()
 					var t = create_tween()
 					t.tween_property(ctrl, "scale", Vector2(1.15, 1.15), 0.1)
 					t.tween_property(ctrl, "scale", Vector2(1.1, 1.1), 0.1)
@@ -2843,6 +2839,7 @@ func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> v
 			new_pos.y = clamp(new_pos.y, ctrl.pivot_offset.y * (1.0 - ctrl.scale.y), vp_size.y - scaled_size.y + ctrl.pivot_offset.y * (1.0 - ctrl.scale.y))
 			
 			ctrl.global_position = new_pos
+			_sort_room_elements()
 		elif _pressed_decor == ctrl:
 			if event.global_position.distance_to(_press_start_pos) > 10.0:
 				if _press_timer_tween and _press_timer_tween.is_valid():
@@ -3355,3 +3352,6 @@ func _skip_intro_cinematic() -> void:
 	if is_instance_valid(_audio_manager) and is_instance_valid(_audio_manager.audio_player):
 		_audio_manager.audio_player.stop()
 	_end_intro_cinematic()
+
+
+
