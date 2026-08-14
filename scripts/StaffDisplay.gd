@@ -201,12 +201,12 @@ func _draw_glissando_arrow(center_y: float) -> void:
 	if notes_to_draw.is_empty():
 		return
 	var arrow_color := Color(0.08, 0.075, 0.065, 1.0)
-	var stem_top: float = center_y - 2.55 * float(line_spacing)
-	var stem_bottom: float = center_y + 1.55 * float(line_spacing)
+	var stem_top: float = center_y - 2.45 * float(line_spacing)
+	var stem_bottom: float = center_y + 2.0 * float(line_spacing)
 	for note_data in notes_to_draw:
 		var note_x := float(note_data.get("x", size.x / 2.0))
 		# Ký hiệu Á nằm trước từng nốt như sheet mẫu, không nối các nốt với nhau.
-		var cue_x := note_x - maxf(20.0, line_spacing * 0.72)
+		var cue_x := float(note_data.get("glissando_cue_x", note_x - maxf(20.0, line_spacing * 0.72)))
 		if glissando_arrow_mode == "up":
 			var up_tip := Vector2(cue_x, stem_top)
 			var up_from := Vector2(cue_x, stem_bottom)
