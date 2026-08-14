@@ -118,7 +118,8 @@ func _draw():
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		var flash_t = note_data.get("flash_trigger", 0.0)
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
 		
 	# Draw measure bar lines
 	for bx in bar_lines:
@@ -147,7 +148,7 @@ func _draw():
 			if b == current_beat:
 				draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
@@ -201,8 +202,16 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			else:
 				break
 	
-	var note_width = line_spacing * (1.15 if is_zither else 1.35)
-	var note_height = line_spacing * (0.8 if is_zither else 0.95)
+	var scale_mod = 1.0
+	if flash_t > 0.0:
+		var elapsed = Time.get_ticks_msec() - flash_t
+		if elapsed < 400: # 400ms flash
+			var progress = elapsed / 400.0
+			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
+			note_color = Color(1.0, 0.3, 0.3).lerp(note_color, progress)
+			
+	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
+	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
 
 	# Draw ledger lines for notes outside the 5-line staff
 	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)

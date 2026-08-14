@@ -69,6 +69,10 @@ var target_hz := 0.0
 var time_correct := 0.0
 var REQUIRED_HOLD_TIME := 0.4 # Quicker recognition (0.4s) to feel instant
 
+var _idle_note_timer: float = 0.0
+var _last_practice_idx: int = -1
+var _last_rhythm_note_time: float = -1.0
+
 var rhythm_time := 0.0
 var spawned_notes := 0
 var active_falling_notes := []
@@ -337,10 +341,9 @@ func _ready():
 	bpm_controls_row.anchor_right = 1.0
 	bpm_controls_row.anchor_top = 0.0
 	bpm_controls_row.anchor_bottom = 0.0
-	bpm_controls_row.offset_left = -420
+	bpm_controls_row.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	bpm_controls_row.offset_right = -16
 	bpm_controls_row.offset_top = 16
-	bpm_controls_row.offset_bottom = 56
 	bpm_controls_row.visible = false
 	add_child(bpm_controls_row)
 
@@ -353,8 +356,8 @@ func _ready():
 	pause_btn = Button.new()
 	pause_btn.name = "PauseBtn"
 	pause_btn.text = "⏸"
-	pause_btn.custom_minimum_size = Vector2(44, 40)
-	pause_btn.add_theme_font_size_override("font_size", 20)
+	pause_btn.custom_minimum_size = Vector2(56, 50)
+	pause_btn.add_theme_font_size_override("font_size", 26)
 	var sb_pause = StyleBoxFlat.new()
 	sb_pause.bg_color = Color(0.22, 0.18, 0.1, 0.92)
 	sb_pause.border_color = Color(0.75, 0.6, 0.3, 0.6)
@@ -375,8 +378,8 @@ func _ready():
 	var restart_btn = Button.new()
 	restart_btn.name = "RestartBtn"
 	restart_btn.text = "↺"
-	restart_btn.custom_minimum_size = Vector2(44, 40)
-	restart_btn.add_theme_font_size_override("font_size", 22)
+	restart_btn.custom_minimum_size = Vector2(56, 50)
+	restart_btn.add_theme_font_size_override("font_size", 26)
 	var sb_restart = StyleBoxFlat.new()
 	sb_restart.bg_color = Color(0.22, 0.18, 0.1, 0.92)
 	sb_restart.border_color = Color(0.75, 0.6, 0.3, 0.6)
@@ -845,8 +848,8 @@ func _build_bpm_btn(lbl: String, mul: float) -> void:
 	var btn = Button.new()
 	btn.text = lbl
 	btn.name = "BpmBtn_" + lbl.replace("%", "pct")
-	btn.custom_minimum_size = Vector2(72, 40)
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.custom_minimum_size = Vector2(88, 50)
+	btn.add_theme_font_size_override("font_size", 22)
 	var sb_norm = StyleBoxFlat.new()
 	sb_norm.bg_color = Color(0.22, 0.18, 0.1, 0.92)
 	sb_norm.border_color = Color(0.75, 0.6, 0.3, 0.6)
@@ -932,7 +935,7 @@ func _process(delta):
 				var color = Color(0.96, 0.75, 0.25)
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
-				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w, "type": note_data.get("type", "quarter")})
+				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
 			staff_display.set_notes(notes)
 					
 		if sample_active:
@@ -967,6 +970,10 @@ func _process_rhythm(delta, rect):
 			break
 			
 	if current_overlapping_note != null:
+		if _last_rhythm_note_time != current_overlapping_note["time"]:
+			_last_rhythm_note_time = current_overlapping_note["time"]
+			_idle_note_timer = 0.0
+			
 		var is_blowing = amp > -35.0 # Lenient volume threshold
 		var is_correct = false
 		
@@ -978,22 +985,30 @@ func _process_rhythm(delta, rect):
 					is_correct = true
 					
 		if is_correct:
+			_idle_note_timer = 0.0
 			time_delta = delta
 			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
-		elif is_blowing:
-			time_delta = -delta * 1.5
-			wrong_rhythm_duration += delta
-			current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
-			mic_status.text = "Sai ngón! Thổi lại..."
-			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 		else:
-			time_delta = 0
-			current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
-			mic_status.text = "Đang đợi..."
-			mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+			_idle_note_timer += delta
+			if _idle_note_timer >= 15.0:
+				current_overlapping_note["flash_trigger"] = Time.get_ticks_msec()
+				_idle_note_timer -= 3.0
+				
+			if is_blowing:
+				time_delta = -delta * 1.5
+				wrong_rhythm_duration += delta
+				current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
+				mic_status.text = "Sai ngón! Thổi lại..."
+				mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+			else:
+				time_delta = 0
+				current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
+				mic_status.text = "Đang đợi..."
+				mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	else:
+		_idle_note_timer = 0.0
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		
@@ -1023,7 +1038,7 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter")})
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
@@ -1566,23 +1581,40 @@ func _process_real(delta):
 	
 	if _current_practice_idx >= _practice_sequence.size(): return
 	
+	if _current_practice_idx != _last_practice_idx:
+		_last_practice_idx = _current_practice_idx
+		_idle_note_timer = 0.0
+	
 	if amp > -35.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
 		if hz > 150.0:
-			var target_hz = NOTE_FREQS.get(current_note_name, 0.0)
-			if target_hz > 0.0:
-				var tol = target_hz * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
-				if abs(hz - target_hz) < tol or abs(hz / 2.0 - target_hz) < tol or abs(hz * 2.0 - target_hz) < tol:
+			var target_hz_r = NOTE_FREQS.get(current_note_name, 0.0)
+			if target_hz_r > 0.0:
+				var tol = target_hz_r * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
+				if abs(hz - target_hz_r) < tol or abs(hz / 2.0 - target_hz_r) < tol or abs(hz * 2.0 - target_hz_r) < tol:
 					# Đúng nốt -> Tiến lên
+					_idle_note_timer = 0.0
 					_check_advance(delta, 1)
 				else:
 					# Sai nốt -> Lùi lại
+					_idle_note_timer += delta
+					if _idle_note_timer >= 15.0:
+						_practice_sequence[_current_practice_idx]["flash_trigger"] = Time.get_ticks_msec()
+						_idle_note_timer -= 3.0
 					_check_advance(delta, -1)
 			else:
 				_check_advance(delta, 0)
 		else:
+			_idle_note_timer += delta
+			if _idle_note_timer >= 15.0:
+				_practice_sequence[_current_practice_idx]["flash_trigger"] = Time.get_ticks_msec()
+				_idle_note_timer -= 3.0
 			_check_advance(delta, 0)
 	else:
+		_idle_note_timer += delta
+		if _idle_note_timer >= 15.0:
+			_practice_sequence[_current_practice_idx]["flash_trigger"] = Time.get_ticks_msec()
+			_idle_note_timer -= 3.0
 		_check_advance(delta, 0)
 
 func _hit_note():
