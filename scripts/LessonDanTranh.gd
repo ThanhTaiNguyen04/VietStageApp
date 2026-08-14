@@ -3593,7 +3593,8 @@ func _start_practice():
 			else:
 				n_type = "sixteenth"
 				
-			for single_note in notes_in_chord:
+			for chord_component_index in range(notes_in_chord.size()):
+				var single_note = notes_in_chord[chord_component_index]
 				var string_idx = NOTE_TO_STRING.get(single_note, 0)
 				var final_color = note_color
 						
@@ -3608,6 +3609,7 @@ func _start_practice():
 					"is_missing": missing,
 					"cue": cue_name,
 					"chord_group_id": i,
+					"chord_component_index": chord_component_index,
 					"raw_chord_name": raw_note_name,
 					"type": n_type
 				})
@@ -3666,12 +3668,17 @@ func _process_practice(delta):
 		# Active practice note handling
 		if not is_sample_mode and note.get("is_missing", false) and not note.get("hit", false):
 			if abs(note["x"] - hit_x) < 40.0 or (is_wait_mode and note["x"] <= hit_x):
+				var raw_chord_name = note.get("raw_chord_name", clean_note)
+				if not _should_score_song_thanh_component(
+					raw_chord_name,
+					int(note.get("chord_component_index", 0))
+				):
+					continue
+
 				# Highlight target string on zither board
 				zither_board.call("set_lesson_marker", s_idx, "Gảy: " + clean_note, 1)
 				
 				var target_hz = NOTE_FREQS.get(clean_note, 0.0)
-				
-				var raw_chord_name = note.get("raw_chord_name", clean_note)
 				if mic_cooldown <= 0.0 and _check_mic_pitch(target_hz, delta, raw_chord_name):
 					var cents_err = 0.0
 					if analyzer:
@@ -3848,20 +3855,44 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				pitch_meter.is_active = true
 				pitch_meter.queue_redraw()
 			is_match = _is_pitch_match_robust(target_hz, _target_note_name, pitch)
-	var hold_time_needed = CHORD_SIMULTANEOUS_HOLD_TIME if is_strict_song_thanh else REQUIRED_HOLD_TIME
+
+	if is_strict_song_thanh:
+		return _advance_song_thanh_confirmation(is_match, delta)
+
+	var hold_time_needed = REQUIRED_HOLD_TIME
 	if not is_poly and target_hz > 1000.0:
 		hold_time_needed = 0.08  # ~5 frames for extremely high strings (Đô3, Mi3, Sol4, La4)
 	elif not is_poly and target_hz > 600.0:
 		hold_time_needed = 0.12  # ~7 frames for high strings (Sol3, La3)
 
 	if not is_match:
-		# Chord confirmation must be uninterrupted: frames containing only one
-		# component cannot accumulate toward a successful song-thanh gesture.
-		time_correct = 0.0 if is_strict_song_thanh else max(0.0, time_correct - delta * 2.0)
+		time_correct = max(0.0, time_correct - delta * 2.0)
 		return false
 
 	time_correct += delta
 	if time_correct < hold_time_needed:
+		return false
+
+	time_correct = 0.0
+	return true
+
+
+func _should_score_song_thanh_component(raw_chord_name: String, component_index: int) -> bool:
+	if current_lesson_id != LEVEL_7_SONG_THANH_ID or "+" not in raw_chord_name:
+		return true
+	# Both visual notes belong to one microphone gesture. Only the first visual
+	# component may update the shared confirmation timer in a frame.
+	return component_index == 0
+
+
+func _advance_song_thanh_confirmation(all_fundamentals_present: bool, delta: float) -> bool:
+	if not all_fundamentals_present:
+		# Missing either component breaks simultaneity; do not retain partial time.
+		time_correct = 0.0
+		return false
+
+	time_correct += maxf(delta, 0.0)
+	if time_correct < CHORD_SIMULTANEOUS_HOLD_TIME:
 		return false
 
 	time_correct = 0.0

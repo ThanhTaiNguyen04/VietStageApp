@@ -35,6 +35,29 @@ func _init() -> void:
 	if lesson._are_all_chord_fundamentals_present(PackedStringArray(["Đô2"]), both_notes):
 		failures.append("Sai: bộ nhận song thanh chấp nhận mục tiêu một nốt")
 
+	lesson.current_lesson_id = "dan_tranh_level_7_bai_20_practice"
+	if not lesson._should_score_song_thanh_component("Đô2+Mi2", 0):
+		failures.append("Sai: thành phần đầu của nhóm Song thanh không được chấm")
+	if lesson._should_score_song_thanh_component("Đô2+Mi2", 1):
+		failures.append("Sai: thành phần thứ hai làm bộ đếm tăng hai lần mỗi frame")
+
+	lesson.time_correct = 0.0
+	for _frame in 6:
+		if lesson._advance_song_thanh_confirmation(true, 0.016):
+			failures.append("Sai: Song thanh hoàn thành trước 0,10 giây")
+	if not lesson._advance_song_thanh_confirmation(true, 0.016):
+		failures.append("Không hoàn thành sau khi đủ hơn 0,10 giây liên tục")
+
+	lesson.time_correct = 0.0
+	for _frame in 4:
+		lesson._advance_song_thanh_confirmation(true, 0.016)
+	lesson._advance_song_thanh_confirmation(false, 0.016)
+	for _frame in 3:
+		if lesson._advance_song_thanh_confirmation(true, 0.016):
+			failures.append("Sai: thời gian trước khi mất một nốt vẫn bị cộng dồn")
+	if lesson.time_correct > 0.049:
+		failures.append("Bộ đếm Song thanh không đặt lại khi thiếu một nốt")
+
 	lesson.free()
 	if failures.is_empty():
 		print("PASS: Song thanh chỉ đúng khi đủ hai tần số đồng thời")
