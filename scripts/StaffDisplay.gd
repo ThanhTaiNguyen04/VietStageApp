@@ -201,8 +201,8 @@ func _draw_glissando_arrow(center_y: float) -> void:
 	if notes_to_draw.is_empty():
 		return
 	var arrow_color := Color(0.08, 0.075, 0.065, 1.0)
-	var stem_top := center_y - 2.55 * line_spacing
-	var stem_bottom := center_y + 1.55 * line_spacing
+	var stem_top: float = center_y - 2.55 * float(line_spacing)
+	var stem_bottom: float = center_y + 1.55 * float(line_spacing)
 	for note_data in notes_to_draw:
 		var note_x := float(note_data.get("x", size.x / 2.0))
 		# Ký hiệu Á nằm trước từng nốt như sheet mẫu, không nối các nốt với nhau.
