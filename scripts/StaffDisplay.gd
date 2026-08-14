@@ -228,27 +228,11 @@ func _draw_glissando_round_mark(down_x: float, up_x: float, top_y: float, bottom
 	var top_right := Vector2(up_x, top_y)
 	var bottom_right := Vector2(up_x, bottom_y)
 
-	# Á vòng theo ký hiệu (↓ ↑): xuống ở bên trái, lên ở bên phải.
+	# Á vòng: mũi tên xuống ở bên trái, mũi tên lên ở bên phải.
 	draw_line(top_left, bottom_left - Vector2(0, 12.0), color, 3.0, true)
 	_draw_glissando_arrow_head(top_left, bottom_left, color, 14.0, 7.0)
 	draw_line(bottom_right, top_right + Vector2(0, 12.0), color, 3.0, true)
 	_draw_glissando_arrow_head(bottom_right, top_right, color, 14.0, 7.0)
-	_draw_glissando_parenthesis(down_x - 11.0, top_y, bottom_y, true, color)
-	_draw_glissando_parenthesis(up_x + 11.0, top_y, bottom_y, false, color)
-
-
-func _draw_glissando_parenthesis(x: float, top_y: float, bottom_y: float, is_left: bool, color: Color) -> void:
-	var points := PackedVector2Array()
-	var center_y := (top_y + bottom_y) * 0.5
-	var radius_y := (bottom_y - top_y) * 0.5 + 5.0
-	var radius_x := 6.0
-	var start_angle := PI * 0.5 if is_left else -PI * 0.5
-	var end_angle := PI * 1.5 if is_left else PI * 0.5
-	for i in range(17):
-		var ratio := float(i) / 16.0
-		var angle := lerpf(start_angle, end_angle, ratio)
-		points.append(Vector2(x + cos(angle) * radius_x, center_y + sin(angle) * radius_y))
-	draw_polyline(points, color, 2.6, true)
 
 
 func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color, head_length: float = 24.0, head_width: float = 13.0) -> void:
