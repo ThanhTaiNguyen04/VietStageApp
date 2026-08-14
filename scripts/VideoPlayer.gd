@@ -459,6 +459,11 @@ func _on_forward_pressed() -> void:
 		
 		if custom_video_sequence.size() > 0:
 			_show_sequence_modal()
+		elif SecureDataManager.active_lesson_id == "dan_tranh_level_1_bai_1_video":
+			# Bài 1 là luồng nhập môn: video kết thúc thì vào thẳng phần cô Mai
+			# hướng dẫn, không bắt người học bấm thêm một nút trung gian.
+			SecureDataManager.active_lesson_id = "dan_tranh_level_1_bai_1_practice"
+			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
 		else:
 			_va_success_prompt()
 			linh_rect.visible = true

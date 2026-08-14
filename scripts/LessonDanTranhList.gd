@@ -564,9 +564,12 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	# Giữ hình tròn bài học và đặt cả số bài lẫn tên bài bên trong.
 	var lesson_button := _create_circle_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
-	lesson_button.pressed.connect(_open_lesson.bind(lesson, "practice"))
+	# Bài mở đầu phải bắt đầu bằng video giới thiệu; xem xong mới vào phần cô Mai
+	# hướng dẫn và thực hành trong LessonDanTranh.
+	var opens_video_first := selected_level == 1 and lesson_number == 1
+	lesson_button.pressed.connect(_open_lesson.bind(lesson, "video" if opens_video_first else "practice"))
 	column.add_child(lesson_button)
-	if lesson_type == "both":
+	if lesson_type == "both" and not opens_video_first:
 		var video_button := _create_small_btn("Hướng dẫn", practice_unlocked)
 		video_button.name = "VideoBtn"
 		video_button.pressed.connect(_open_lesson.bind(lesson, "video"))
