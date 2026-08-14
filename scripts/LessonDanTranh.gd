@@ -2312,14 +2312,22 @@ func _build_glissando_round_notes(_mode: String) -> void:
 	var measure_width := (end_x - start_x) / float(string_order.size())
 	glissando_display_notes.clear()
 	for i in range(string_order.size()):
-		var measure_start := start_x + measure_width * float(i)
-		var cue_x := measure_start + measure_width * 0.18
-		var note_x := measure_start + measure_width * 0.68
-		var bar_x := measure_start + measure_width
+		var measure_start: float = start_x + measure_width * float(i)
+		var cue_ratio: float = 0.18
+		var note_ratio: float = 0.68
+		if _mode == "round":
+			# Á vòng phải đọc từ trái sang phải: mũi tên xuống, mũi tên lên, rồi đến nốt.
+			cue_ratio = 0.10
+			note_ratio = 0.72
+		var cue_x: float = measure_start + measure_width * cue_ratio
+		var second_cue_x: float = measure_start + measure_width * 0.38
+		var note_x: float = measure_start + measure_width * note_ratio
+		var bar_x: float = measure_start + measure_width
 		glissando_display_notes.append({
 			"note": "ZT_" + ALL_17_NOTES[string_order[i]],
 			"x": note_x,
 			"glissando_cue_x": cue_x,
+			"glissando_second_cue_x": second_cue_x,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "quarter",
 			"bar_after": true,

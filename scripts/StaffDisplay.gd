@@ -213,7 +213,8 @@ func _draw_glissando_arrow(center_y: float) -> void:
 			draw_line(up_from, up_tip + Vector2(0, 12.0), arrow_color, 3.2, true)
 			_draw_glissando_arrow_head(up_from, up_tip, arrow_color, 15.0, 8.0)
 		elif glissando_arrow_mode == "round":
-			_draw_glissando_round_mark(cue_x, stem_top, stem_bottom, arrow_color)
+			var second_cue_x := float(note_data.get("glissando_second_cue_x", cue_x + maxf(28.0, line_spacing)))
+			_draw_glissando_round_mark(cue_x, second_cue_x, stem_top, stem_bottom, arrow_color)
 		else:
 			var down_from := Vector2(cue_x, stem_top)
 			var down_tip := Vector2(cue_x, stem_bottom)
@@ -221,21 +222,19 @@ func _draw_glissando_arrow(center_y: float) -> void:
 			_draw_glissando_arrow_head(down_from, down_tip, arrow_color, 15.0, 8.0)
 
 
-func _draw_glissando_round_mark(cue_x: float, top_y: float, bottom_y: float, color: Color) -> void:
-	var left_arrow_x := cue_x - 7.0
-	var right_arrow_x := cue_x + 7.0
-	var top_left := Vector2(left_arrow_x, top_y)
-	var bottom_left := Vector2(left_arrow_x, bottom_y)
-	var top_right := Vector2(right_arrow_x, top_y)
-	var bottom_right := Vector2(right_arrow_x, bottom_y)
+func _draw_glissando_round_mark(down_x: float, up_x: float, top_y: float, bottom_y: float, color: Color) -> void:
+	var top_left := Vector2(down_x, top_y)
+	var bottom_left := Vector2(down_x, bottom_y)
+	var top_right := Vector2(up_x, top_y)
+	var bottom_right := Vector2(up_x, bottom_y)
 
 	# Á vòng theo ký hiệu (↓ ↑): xuống ở bên trái, lên ở bên phải.
 	draw_line(top_left, bottom_left - Vector2(0, 12.0), color, 3.0, true)
 	_draw_glissando_arrow_head(top_left, bottom_left, color, 14.0, 7.0)
 	draw_line(bottom_right, top_right + Vector2(0, 12.0), color, 3.0, true)
 	_draw_glissando_arrow_head(bottom_right, top_right, color, 14.0, 7.0)
-	_draw_glissando_parenthesis(cue_x - 17.0, top_y, bottom_y, true, color)
-	_draw_glissando_parenthesis(cue_x + 17.0, top_y, bottom_y, false, color)
+	_draw_glissando_parenthesis(down_x - 11.0, top_y, bottom_y, true, color)
+	_draw_glissando_parenthesis(up_x + 11.0, top_y, bottom_y, false, color)
 
 
 func _draw_glissando_parenthesis(x: float, top_y: float, bottom_y: float, is_left: bool, color: Color) -> void:
