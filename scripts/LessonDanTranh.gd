@@ -7,9 +7,12 @@ const C_JADE = Color("#173f2d")
 const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
 const LEVEL_7_GLISSANDO_TITLE := "Kỹ thuật Á"
 const LEVEL_7_PRESS_ID := "dan_tranh_level_7_bai_19_practice"
+const LEVEL_7_SONG_THANH_ID := "dan_tranh_level_7_bai_20_practice"
 const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
 const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
+const CHORD_MIN_FUNDAMENTAL_DB := -52.0
+const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
 enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
@@ -2181,9 +2184,17 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		else:
 			var target_note = unique_practice_notes[single_practice_idx]
 			var is_correct = false
-			if "+" in target_note:
+			if "+" in target_note and current_lesson_id == LEVEL_7_SONG_THANH_ID:
+				# A virtual single-string click must never complete a two-note chord.
+				# Song thanh is scored only from the microphone spectrum, where both
+				# fundamentals can be verified in the same time window.
 				if note_name in target_note.split("+"):
-					is_correct = true
+					if mic_status_lbl:
+						mic_status_lbl.text = "Hãy gảy đồng thời cả hai nốt: %s" % target_note.replace("+", " và ")
+						mic_status_lbl.add_theme_color_override("font_color", C_GOLD)
+					return
+			elif "+" in target_note:
+				is_correct = note_name in target_note.split("+")
 			else:
 				if note_name == target_note:
 					is_correct = true
@@ -3789,6 +3800,7 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var pitch: float = analyzer.current_pitch
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
+	var is_strict_song_thanh = is_poly and current_lesson_id == LEVEL_7_SONG_THANH_ID
 	
 	# Relaxed volume threshold to pick up standard acoustic instruments
 	if db <= analyzer.volume_threshold_db:
@@ -3799,7 +3811,11 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 		return false
 
 	var is_match = false
-	if is_poly:
+	if is_strict_song_thanh:
+		# Polyphonic targets are intentionally spectrum-only. YIN returns one
+		# fundamental, so accepting it here allowed either component to pass alone.
+		is_match = _are_all_chord_fundamentals_present(_target_note_name.split("+"))
+	elif is_poly:
 		var notes = _target_note_name.split("+")
 		if analyzer and analyzer.get("_spectrum") != null:
 			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
@@ -3811,20 +3827,17 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
 					var max_mag = max(mag1, mag2)
 					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					# Relaxed threshold to -52.0 dB to prevent soft pluck chord recognition failure
 					if freq_db < -52.0:
 						all_detected = false
 						break
 			if all_detected:
 				is_match = true
-		
-		# Fallback to monophonic YIN match of any note in the chord if spectrum analyzer did not match
 		if not is_match:
 			for n in notes:
 				var freq = NOTE_FREQS.get(n, 0.0)
 				if freq > 0.0 and pitch > 0.0:
 					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-					if cents_error <= 45.0: # Match robust threshold
+					if cents_error <= 45.0:
 						is_match = true
 						break
 	else:
@@ -3835,14 +3848,16 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				pitch_meter.is_active = true
 				pitch_meter.queue_redraw()
 			is_match = _is_pitch_match_robust(target_hz, _target_note_name, pitch)
-	var hold_time_needed = REQUIRED_HOLD_TIME
-	if target_hz > 1000.0:
+	var hold_time_needed = CHORD_SIMULTANEOUS_HOLD_TIME if is_strict_song_thanh else REQUIRED_HOLD_TIME
+	if not is_poly and target_hz > 1000.0:
 		hold_time_needed = 0.08  # ~5 frames for extremely high strings (Đô3, Mi3, Sol4, La4)
-	elif target_hz > 600.0:
+	elif not is_poly and target_hz > 600.0:
 		hold_time_needed = 0.12  # ~7 frames for high strings (Sol3, La3)
 
 	if not is_match:
-		time_correct = max(0.0, time_correct - delta * 2.0)
+		# Chord confirmation must be uninterrupted: frames containing only one
+		# component cannot accumulate toward a successful song-thanh gesture.
+		time_correct = 0.0 if is_strict_song_thanh else max(0.0, time_correct - delta * 2.0)
 		return false
 
 	time_correct += delta
@@ -3850,6 +3865,32 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 		return false
 
 	time_correct = 0.0
+	return true
+
+
+func _are_all_chord_fundamentals_present(
+	notes: PackedStringArray,
+	band_db_reader: Callable = Callable()
+) -> bool:
+	if notes.size() < 2:
+		return false
+	if not band_db_reader.is_valid() and (not analyzer or analyzer.get("_spectrum") == null):
+		return false
+
+	for note_name in notes:
+		var frequency: float = NOTE_FREQS.get(note_name, 0.0)
+		if frequency <= 0.0:
+			return false
+
+		var fundamental_db: float
+		if band_db_reader.is_valid():
+			fundamental_db = float(band_db_reader.call(frequency))
+		else:
+			fundamental_db = _get_spectrum_band_db(frequency, 0.03)
+
+		if fundamental_db < CHORD_MIN_FUNDAMENTAL_DB:
+			return false
+
 	return true
 
 
