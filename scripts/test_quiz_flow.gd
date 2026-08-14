@@ -1,10 +1,13 @@
 extends SceneTree
 
 func _init() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
 	# Mock AuthSession to simulate being signed in
 	var AuthSessionStore = preload("res://scripts/AuthSession.gd")
 	AuthSessionStore.access_token = "mock_token"
-	AuthSessionStore.session_id = 1
+	AuthSessionStore.session_id = "mock_session"
 	AuthSessionStore.refresh_token = "mock_refresh"
 	
 	var Context = preload("res://scripts/LearningActivityContext.gd")
@@ -14,9 +17,6 @@ func _init() -> void:
 	var root = Node.new()
 	root.add_child(BackendReport)
 	get_root().add_child(root)
-	
-	# Manually setup API
-	var _api = BackendReport._api
 	
 	print("--- STARTING TEST ---")
 	
