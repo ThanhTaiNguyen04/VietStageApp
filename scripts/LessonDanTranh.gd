@@ -207,6 +207,7 @@ var lesson_durations: Array[float] = []
 
 var practice_idx: int = 0
 var intro_step: int = 0
+var intro_playback_token: int = 0
 var time_correct: float = 0.0
 var REQUIRED_HOLD_TIME: float = 0.20
 
@@ -1852,6 +1853,8 @@ func _start_intro():
 		speed_bar_container.visible = false
 	if skip_intro_btn:
 		skip_intro_btn.visible = true
+	if previous_intro_btn:
+		previous_intro_btn.visible = true
 	if pause_btn:
 		pause_btn.visible = false
 	if pause_overlay:
@@ -1861,6 +1864,8 @@ func _start_intro():
 	_play_next_intro_step()
 
 func _play_next_intro_step():
+	intro_playback_token += 1
+	var playback_token := intro_playback_token
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
 		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
@@ -1928,7 +1933,7 @@ func _play_next_intro_step():
 		# Wait for speech to finish then go to next step
 		var wait_time = max(1.5, step_data["text"].length() * 0.1)
 		get_tree().create_timer(wait_time).timeout.connect(func():
-			if current_state == State.INTRO:
+			if current_state == State.INTRO and playback_token == intro_playback_token:
 				_play_next_intro_step()
 		)
 	intro_step += 1
@@ -1946,6 +1951,8 @@ func _start_practice_single():
 	_update_staff_layout()
 	if skip_intro_btn:
 		skip_intro_btn.visible = false
+	if previous_intro_btn:
+		previous_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
 	if pitch_box:
@@ -3488,6 +3495,8 @@ func _start_practice():
 		speed_bar_container.visible = true
 	if skip_intro_btn:
 		skip_intro_btn.visible = false
+	if previous_intro_btn:
+		previous_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
 	
@@ -4164,8 +4173,28 @@ func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 
 # --- Tạo nút Skip (Bỏ qua hướng dẫn) ---
 var skip_intro_btn: Button = null
+var previous_intro_btn: Button = null
 
 func _create_skip_intro_button():
+	previous_intro_btn = _create_aesthetic_btn(
+		"← TRƯỚC",
+		"res://icons8/icons8-back-100.png",
+		false,
+		C_WOOD,
+		C_WOOD.lightened(0.12),
+		Color.WHITE,
+		C_GOLD,
+		16,
+		Vector2(150, 48)
+	)
+	add_child(previous_intro_btn)
+	previous_intro_btn.anchor_left = 1.0
+	previous_intro_btn.anchor_right = 1.0
+	previous_intro_btn.anchor_top = 1.0
+	previous_intro_btn.anchor_bottom = 1.0
+	previous_intro_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	previous_intro_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
 	skip_intro_btn = _create_aesthetic_btn(
 		"SKIP", 
 		"res://icons8/icons8-play-100.png", 
@@ -4189,6 +4218,10 @@ func _create_skip_intro_button():
 	
 	# Cập nhật vị trí nút theo kích thước viewport (responsive)
 	var update_skip_pos = func():
+		previous_intro_btn.offset_left = -350
+		previous_intro_btn.offset_right = -200
+		previous_intro_btn.offset_top = -85
+		previous_intro_btn.offset_bottom = -40
 		skip_intro_btn.offset_left = -190
 		skip_intro_btn.offset_right = -40
 		skip_intro_btn.offset_top = -85
@@ -4201,6 +4234,18 @@ func _create_skip_intro_button():
 	skip_intro_btn.pressed.connect(func():
 		_start_practice()
 	)
+	previous_intro_btn.pressed.connect(_play_previous_intro_step)
+
+
+func _play_previous_intro_step() -> void:
+	if current_state != State.INTRO:
+		return
+	# intro_step points to the next speech after the one currently on screen.
+	# Move back two positions, then let the regular dialogue renderer replay it.
+	if intro_step <= 1:
+		return
+	intro_step = max(0, intro_step - 2)
+	_play_next_intro_step()
 
 # --- Hệ thống Tạm dừng (Pause) & Nghe mẫu (Sample) ---
 var pause_btn: Button = null
