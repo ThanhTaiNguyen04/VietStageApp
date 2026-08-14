@@ -420,6 +420,7 @@ func _draw_roadmap_paths() -> void:
 	var p_cho_sk := card_chords_skills.position + card_chords_skills.size / 2.0
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
+	var p_string_roll := card_string_roll.position + card_string_roll.size / 2.0 if is_instance_valid(card_string_roll) else p_class
 		
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_tranh":
@@ -436,12 +437,14 @@ func _draw_roadmap_paths() -> void:
 		p_cho_sk.y = straight_y
 		p_pop.y = straight_y
 		p_class.y = straight_y
+		p_string_roll.y = straight_y
 		
 		# Đường thẳng duy nhất nằm ngang
 		_draw_thick_path(p_basic, p_ess)
 		_draw_thick_path(p_ess, p_sol_sk)
 		_draw_thick_path(p_sol_sk, p_cho_sk)
 		_draw_thick_path(p_cho_sk, p_pop)
+
 	else:
 		# Draw roadmap line segments connecting cards
 		# Basic Card -> Essentials Card -> Split point
@@ -1355,7 +1358,6 @@ func _create_level_7_card() -> void:
 	card_level_7.name = "CardLevel7"
 	roadmap_content.add_child(card_level_7)
 
-
 func _build_roadmap_cards() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	var is_tranh := (instrument == "dan_tranh")
@@ -1673,7 +1675,7 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords, card_string_roll]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
@@ -2375,6 +2377,7 @@ func _on_viewport_size_changed() -> void:
 		var x_ch: float = x_sk + card_w + gap
 		var x_pop: float = x_ch + card_w + gap
 		var x_class: float = x_pop + card_w + gap
+		var x_string_roll: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
 		var total_w: float = x_ch + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0

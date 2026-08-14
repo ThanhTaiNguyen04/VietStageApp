@@ -529,6 +529,7 @@ func _build_lessons() -> void:
 	var display_level := 3 if selected_level == 7 else selected_level
 	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % display_level
 	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
+	page_title.text = "GIÁO TRÌNH ĐÀN TRANH - LEVEL %d" % selected_level
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
 	for index in range(lessons.size()):

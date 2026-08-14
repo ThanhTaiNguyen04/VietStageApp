@@ -74,6 +74,8 @@ var use_note_colors: bool = false
 var hit_line_color := Color(0.2, 0.85, 0.3, 0.95)
 var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
 var glissando_arrow_mode := ""
+var current_bpm: float = 60.0  # Updated by LessonSaoTruc to match bpm_multiplier
+var bar_lines: Array = []
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -140,7 +142,8 @@ func _draw():
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		var flash_t = note_data.get("flash_trigger", 0.0)
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
 		if n_cue == "tremolo_single":
@@ -157,13 +160,17 @@ func _draw():
 				true
 			)
 
+	for bx in bar_lines:
+		var top_y = center_y - 2 * line_spacing
+		var bot_y = center_y + 2 * line_spacing
+		draw_line(Vector2(bx, top_y), Vector2(bx, bot_y), line_color, 2.0, true)
+
 	if glissando_arrow_mode != "":
 		_draw_glissando_arrow(center_y)
 		
 	# Draw 4-beat Metronome above the hit line
 	if show_metronome:
-		var bpm = 60.0
-		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
+		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (current_bpm / 60.0)
 		var current_beat = int(floor(beat_time_total)) % beats_per_measure
 		var beat_fraction = fmod(beat_time_total, 1.0)
 		
@@ -281,7 +288,7 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 			color
 		)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
@@ -335,8 +342,16 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			else:
 				break
 	
-	var note_width = line_spacing * (1.15 if is_zither else 1.35)
-	var note_height = line_spacing * (0.8 if is_zither else 0.95)
+	var scale_mod = 1.0
+	if flash_t > 0.0:
+		var elapsed = Time.get_ticks_msec() - flash_t
+		if elapsed < 400: # 400ms flash
+			var progress = elapsed / 400.0
+			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
+			note_color = Color(1.0, 0.3, 0.3).lerp(note_color, progress)
+			
+	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
+	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
 
 	# Draw ledger lines for notes outside the 5-line staff
 	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)
@@ -352,7 +367,13 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
-	# Duration tail drawing removed per user request
+	# Draw duration tail
+	if tail_w > 0.0:
+		var tail_y = note_y
+		var tail_color = note_color
+		tail_color.a = 0.35 # Semi-transparent
+		var tail_h = line_spacing * 0.4
+		draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, tail_w, tail_h), tail_color)
 			
 	# Draw soft radiating halo around notes removed since notes are now black
 			

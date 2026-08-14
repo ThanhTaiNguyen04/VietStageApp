@@ -726,7 +726,25 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if f_bold:
 		btn.add_theme_font_override("font", f_bold)
-	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_font_size_override("font_size", 18)
+
+	btn.draw.connect(func():
+		var tex_name = ""
+		if not unlocked: tex_name = "music"
+		elif completed: tex_name = "music"
+		else: tex_name = "play-circle" if type == "video" else "music"
+		
+		var tex = load("res://assets/textures/lucide/" + tex_name + ".svg") as Texture2D
+		if tex:
+			var w = 32.0
+			var rect = Rect2((btn.size.x - w) / 2.0, 32.0, w, w)
+			
+			var draw_color = text_color
+			if unlocked and not completed and btn.is_hovered():
+				draw_color = C_JADE
+			
+			btn.draw_texture_rect(tex, rect, false, draw_color)
+	)
 	_make_btn_bouncy(btn)
 
 func _draw_connecting_lines() -> void:
