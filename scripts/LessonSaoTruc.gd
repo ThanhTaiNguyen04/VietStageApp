@@ -992,18 +992,18 @@ func _process_rhythm(delta, rect):
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
 			_idle_note_timer += delta
+			time_delta = delta # Timeline keeps moving, forcing the player to stay in rhythm!
+			
 			if _idle_note_timer >= 15.0:
 				current_overlapping_note["flash_trigger"] = Time.get_ticks_msec()
 				_idle_note_timer -= 3.0
 				
 			if is_blowing:
-				time_delta = -delta * 1.5
 				wrong_rhythm_duration += delta
 				current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
 				mic_status.text = "Sai ngón! Thổi lại..."
 				mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 			else:
-				time_delta = 0
 				current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
 				mic_status.text = "Đang đợi..."
 				mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
