@@ -3352,6 +3352,3 @@ func _skip_intro_cinematic() -> void:
 	if is_instance_valid(_audio_manager) and is_instance_valid(_audio_manager.audio_player):
 		_audio_manager.audio_player.stop()
 	_end_intro_cinematic()
-
-
-
