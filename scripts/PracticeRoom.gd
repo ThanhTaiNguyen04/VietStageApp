@@ -2551,6 +2551,7 @@ func _process_level1_guided_song_audio(delta: float) -> void:
 	var correction: String = "↓" if target_cents > 0.0 else "↑"
 	if _board:
 		_board.set_feedback_detail(target_idx, "✕ %s · cần %s" % [detected_name, target_name], 2)
+		_board.flash_playhead(false)
 	
 	_set_level1_status("CHƯA ĐÚNG · Nghe thấy %s %s%d¢. Hãy gảy lại nốt %s trên đàn thật!" % [detected_name, correction, int(absf(target_cents)), target_name], C_RED_ERR)
 	_update_level1_score()
@@ -2641,6 +2642,7 @@ func _register_level1_correct(detail: String) -> void:
 	_level1_consecutive_misses = 0
 	if _board:
 		_board.set_feedback_detail(idx, detail, 1)
+		_board.flash_playhead(true)
 		if _level1_lesson2_mode:
 			_board.pluck(idx)
 	_set_level1_status("Chính xác · %s" % detail, C_GREEN_OK)
@@ -2677,6 +2679,7 @@ func _register_level1_miss(detail: String) -> void:
 	_level1_consecutive_misses += 1
 	if _board:
 		_board.set_feedback_detail(idx, detail, 2)
+		_board.flash_playhead(false)
 	_set_level1_status("Chưa đúng · %s" % detail, C_RED_ERR)
 	if str(_level1_config["mode"]) == "rhythm" and _level1_consecutive_misses >= 3:
 		var phrase_start := int(_note_idx / 4) * 4
