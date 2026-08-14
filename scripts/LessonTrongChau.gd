@@ -509,7 +509,7 @@ func _build_lesson_list() -> void:
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
 	if not is_unlocked: return
 	SecureDataManager.active_lesson_id = v_id
-	VideoPlayer.custom_video_path = "res://Video/DanBauDoan12Bai1.ogv"
+	VideoPlayer.custom_video_path = "res://Video/coMai_danBau.ogv"
 	VideoPlayer.custom_subtitles = subtitles
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)

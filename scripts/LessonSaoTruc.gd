@@ -266,28 +266,6 @@ const NOTE_FREQS = {
 }
 
 func _ready():
-	# Configure InstrumentPitchProfile for Sao Truc (Flute)
-	var profile_script = load("res://scripts/InstrumentPitchProfile.gd")
-	var profile = profile_script.new()
-	profile.notes.assign(NOTE_FREQS.keys())
-	var freqs_array: Array[float] = []
-	var mappings_array: Array[int] = []
-	var keys = NOTE_FREQS.keys()
-	for i in range(keys.size()):
-		freqs_array.append(NOTE_FREQS[keys[i]])
-		mappings_array.append(i)
-	profile.frequencies = PackedFloat32Array(freqs_array)
-	profile.physical_mappings = mappings_array
-	
-	profile.min_frequency = 250.0
-	profile.max_frequency = 2200.0
-	profile.volume_threshold_db = -45.0
-	profile.cents_tolerance = 40.0
-	profile.hold_time_sec = 0.40
-	profile.is_plucked_instrument = false
-	
-	analyzer.pitch_profile = profile
-	
 	volume_bar.visible = false
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = -5.0
@@ -566,6 +544,7 @@ func _setup_premium_practice_ui():
 	pl_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	pl_vbox.add_theme_constant_override("separation", 2)
 	title_plaque.add_child(pl_vbox)
+	
 	var lbl_num = Label.new()
 	if l_num == "":
 		lbl_num.visible = false
@@ -661,6 +640,10 @@ func _setup_premium_practice_ui():
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
+	
+	if sub_instr_row:
+		sub_instr_row.visible = false
+
 
 func _start_real():
 	if LESSON_NOTES.has(active_node_id):
@@ -998,6 +981,17 @@ func _process_rhythm(delta, rect):
 func _generate_melody(target_note_key: String) -> Array:
 	var seq = []
 	var time = 1.0
+	
+	# Helper lambda to add type based on duration
+	var add_note = func(n_name, n_time, n_dur):
+		var n_type = "quarter"
+		if n_dur >= 3.0: n_type = "whole"
+		elif n_dur >= 2.0: n_type = "half"
+		elif n_dur >= 1.0: n_type = "quarter"
+		elif n_dur >= 0.5: n_type = "eighth"
+		else: n_type = "sixteenth"
+		seq.append({"note": n_name, "time": n_time, "duration": n_dur, "type": n_type})
+
 	
 	
 	if target_note_key == "Node9":
@@ -1465,27 +1459,27 @@ func _check_advance(delta: float, state: int):
 		_practice_time += delta
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		_set_note_color(Color(0.6, 0.6, 0.6, 0.9)) # Xám ban đầu
+		_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
 	else:
 		if state == 1:
 			_practice_time += delta
-			_set_note_color(Color(0.2, 0.8, 0.3, 1.0)) # Xanh lá
+			_set_note_color(Color(0.2, 0.8, 0.2)) # Xanh lá
 			var time_left = max(0, step_decimals(end_time - _practice_time))
 			mic_status.text = "Thổi tốt! Giữ thêm " + str(time_left) + "s..."
-			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.3))
+			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 			
 			if _practice_time >= end_time:
 				_advance_practice_note()
 		elif state == -1:
 			# Lùi thời gian về lại vị trí bắt đầu nốt (rewind)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
-			_set_note_color(Color(0.9, 0.15, 0.15, 1.0)) # Đỏ
+			_set_note_color(Color(0.9, 0.2, 0.2)) # Đỏ
 			mic_status.text = "Sai nốt rồi! Hãy sửa lại."
 			mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 		else:
 			# state == 0 (idle)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
-			_set_note_color(Color(0.6, 0.6, 0.6, 0.9)) # Xám ban đầu
+			_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
 			mic_status.text = ""
 
 

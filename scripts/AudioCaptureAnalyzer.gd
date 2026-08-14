@@ -4,6 +4,10 @@ class_name AudioCaptureAnalyzer
 
 signal dan_tranh_note_started(note: Dictionary)
 signal dan_tranh_note_ended(note: Dictionary)
+# Emitted for every distinct string attack while rapid tracking is enabled.
+# Unlike dan_tranh_note_started, repeated attacks on the same string are kept;
+# technique lessons such as tremolo need their timing information.
+signal dan_tranh_rapid_attack(note: Dictionary)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -41,6 +45,20 @@ var volume_threshold_db := -55.0
 
 # Instrument Profile (Phase 1)
 var pitch_profile: Resource = null
+
+# Technique lessons such as đàn-tranh glissando need to follow a fast pitch
+# trajectory instead of waiting for one isolated pluck to finish. This flag is
+# enabled only by that lesson, so normal note exercises keep their stricter gate.
+var rapid_sequence_mode := false
+var _rapid_attack_pending := false
+var _rapid_attack_pending_elapsed := 0.0
+var _rapid_attack_last_emit_msec := -1000
+const RAPID_ATTACK_REFRACTORY_MSEC := 65
+const RAPID_ATTACK_PITCH_WINDOW := 0.18
+
+# Keeps estimating the fundamental throughout a sustained note so technique
+# lessons can measure periodic pitch movement (rung dây) after the attack.
+var contour_tracking_mode := false
 
 # Calibration (Phase 1)
 var calibration_active := false
@@ -195,6 +213,8 @@ func _process(delta: float) -> void:
 	
 	var gate_open = current_amplitude_db > volume_threshold_db
 	if not gate_open:
+		_rapid_attack_pending = false
+		_rapid_attack_pending_elapsed = 0.0
 		_handle_silence(delta)
 		_update_sample_history(samples)
 		return
@@ -202,8 +222,16 @@ func _process(delta: float) -> void:
 	# Step 3: Onset Detection (plucked instrument logic)
 	var is_onset = _detect_onset(samples)
 	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
+	if rapid_sequence_mode:
+		if is_onset and Time.get_ticks_msec() - _rapid_attack_last_emit_msec >= RAPID_ATTACK_REFRACTORY_MSEC:
+			_rapid_attack_pending = true
+			_rapid_attack_pending_elapsed = 0.0
+		elif _rapid_attack_pending:
+			_rapid_attack_pending_elapsed += delta
+			if _rapid_attack_pending_elapsed > RAPID_ATTACK_PITCH_WINDOW:
+				_rapid_attack_pending = false
 	
-	if profile_plucked:
+	if profile_plucked and not rapid_sequence_mode and not contour_tracking_mode:
 		if is_onset and (not pluck_locked or pitch_estimation_done or time_since_onset > 0.15):
 			if _dan_tranh_note_active:
 				_finish_dan_tranh_note()
@@ -219,7 +247,9 @@ func _process(delta: float) -> void:
 	# Step 4: Pitch Estimation (estimate every frame inside the 30-150 ms onset
 	# window so the stability gate can accumulate PITCH_STABILITY_FRAMES candidates)
 	var raw_pitch := 0.0
-	if profile_plucked:
+	if rapid_sequence_mode or contour_tracking_mode:
+		raw_pitch = _estimate_pitch(samples)
+	elif profile_plucked:
 		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.15:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
@@ -236,9 +266,20 @@ func _process(delta: float) -> void:
 	var mapped_note := {}
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null:
 		mapped_note = pitch_profile.match_pitch(current_pitch)
+	if rapid_sequence_mode and _rapid_attack_pending \
+			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
+		var rapid_note := mapped_note.duplicate()
+		rapid_note["attack_time_msec"] = Time.get_ticks_msec()
+		rapid_note["amplitude_db"] = current_amplitude_db
+		dan_tranh_rapid_attack.emit(rapid_note)
+		_rapid_attack_last_emit_msec = Time.get_ticks_msec()
+		_rapid_attack_pending = false
+		_rapid_attack_pending_elapsed = 0.0
 	
 	# Step 7: Lesson Scoring & Tracking
-	if profile_plucked:
+	if rapid_sequence_mode or contour_tracking_mode:
+		_update_continuous_note_tracking(mapped_note, delta)
+	elif profile_plucked:
 		_update_dan_tranh_tracking_plucked(mapped_note, delta)
 	else:
 		_update_continuous_note_tracking(mapped_note, delta)
@@ -377,6 +418,10 @@ func _clear_pitch_detection() -> void:
 func _update_reliable_pitch(detected_pitch: float) -> void:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
+	var fast_tracking := rapid_sequence_mode or contour_tracking_mode
+	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
+	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
+	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
 	
 	if detected_pitch < min_f or detected_pitch > max_f:
 		_clear_pitch_detection()
@@ -385,24 +430,29 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	if not _pitch_candidates.is_empty():
 		var previous := _pitch_candidates[_pitch_candidates.size() - 1]
 		var jump_cents := absf(1200.0 * log(detected_pitch / previous) / log(2.0))
-		if jump_cents > PITCH_JUMP_CENTS:
+		if jump_cents > jump_limit:
 			_pitch_candidates.clear()
 
 	_pitch_candidates.append(detected_pitch)
-	if _pitch_candidates.size() > PITCH_STABILITY_FRAMES:
+	if _pitch_candidates.size() > stability_frames:
 		_pitch_candidates.pop_front()
-	if _pitch_candidates.size() < PITCH_STABILITY_FRAMES:
+	if _pitch_candidates.size() < stability_frames:
 		current_pitch = 0.0
-		current_pitch_confidence = float(_pitch_candidates.size()) / float(PITCH_STABILITY_FRAMES)
+		current_pitch_confidence = float(_pitch_candidates.size()) / float(stability_frames)
 		current_pitch_is_reliable = false
 		return
 
 	var sorted := _pitch_candidates.duplicate()
 	sorted.sort()
-	var median: float = (sorted[1] + sorted[2]) * 0.5
+	var middle := sorted.size() / 2
+	var median: float
+	if sorted.size() % 2 == 0:
+		median = (float(sorted[middle - 1]) + float(sorted[middle])) * 0.5
+	else:
+		median = float(sorted[middle])
 	var spread_cents := absf(1200.0 * log(sorted[sorted.size() - 1] / sorted[0]) / log(2.0))
-	current_pitch_confidence = clampf(1.0 - spread_cents / PITCH_STABILITY_CENTS, 0.0, 1.0)
-	current_pitch_is_reliable = spread_cents <= PITCH_STABILITY_CENTS
+	current_pitch_confidence = clampf(1.0 - spread_cents / stability_limit, 0.0, 1.0)
+	current_pitch_is_reliable = spread_cents <= stability_limit
 	current_pitch = median if current_pitch_is_reliable else 0.0
 
 func get_current_dan_tranh_note() -> Dictionary:

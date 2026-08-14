@@ -597,9 +597,13 @@ func _on_complete() -> void:
 	t.tween_callback(func() -> void:
 		if lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
-			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
-		elif inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
-			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
+			get_tree().change_scene_to_file("res://scenes/PracticeRoom.tscn")
+		elif lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeDanBau.tscn")
+		elif lesson_id.begins_with("trong_chau_coban_") and lesson_id.ends_with("_video"):
+			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
+			get_tree().change_scene_to_file("res://scenes/PracticeTrongChau.tscn")
 		else:
 			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
@@ -660,6 +664,7 @@ func _make_button_bouncy(btn: Button) -> void:
 	)
 	btn.button_up.connect(func() -> void:
 		var t := create_tween()
+		t.tween_property(btn, "scale", Vector2(1.05, 1.05) if btn.is_hovered() else Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 
 func _setup_simply_piano_layout() -> void:

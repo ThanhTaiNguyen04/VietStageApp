@@ -158,8 +158,7 @@ func _ready() -> void:
 
 	_build_theme()
 	_connect_buttons()
-	_build_quiz_btn()
-	_build_profile_btn()
+
 	_build_lesson_list()
 	_build_sidebar()
 
@@ -268,23 +267,6 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
 
-func _build_quiz_btn() -> void:
-	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
-	if toph == null:
-		return
-	var s_outline := StyleBoxFlat.new()
-	s_outline.bg_color = Color(0, 0, 0, 0)
-	s_outline.border_color = C_JADE
-	s_outline.border_width_left = 3
-	s_outline.border_width_right = 3
-	s_outline.border_width_top = 3
-	s_outline.border_width_bottom = 3
-	s_outline.corner_radius_top_left = 24
-	s_outline.corner_radius_top_right = 24
-	s_outline.corner_radius_bottom_left = 24
-	s_outline.corner_radius_bottom_right = 24
-	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
-	s_outline_hover.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
 
 	var quiz_btn := Button.new()
 	quiz_btn.name = "QuizBtn"
@@ -725,7 +707,6 @@ func _open_lesson(node_id: String) -> void:
 			else:
 				song_title = note_str
 			break
-
 	SecureDataManager.data["current_song_title"] = song_title
 	SecureDataManager.data["current_song_frame"] = song_frame
 	_fade_to("res://scenes/LessonSaoTruc.tscn")

@@ -64,7 +64,7 @@ flat = true
 [node name="BtnRoom" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=1741912450]
 custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
-text = "Phòng học"
+text = "Phòng nhạc"
 flat = true
 
 [node name="BtnSongs" type="Button" parent="Root/Sidebar/SideM/SideV" unique_id=1473946370]
@@ -125,7 +125,7 @@ autowrap_mode = 2
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 2
-vertical_scroll_mode = 0
+vertical_scroll_mode = 2
 
 [node name="ContentMargin" type="MarginContainer" parent="Root/RightContent/ScrollContainer" unique_id=943455737]
 layout_mode = 2

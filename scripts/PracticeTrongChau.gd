@@ -38,6 +38,7 @@ const C_TEXT_MUTED := Color("#5c503e")
 
 # ─── State ────────────────────────────────────────────────────────────────────
 var _recording   := false
+var _is_demoing  := false
 var _mic_mode    := false # Default to Touch mode for reliable drumming
 var _score       := 100.0
 var _time        := 0.0
@@ -351,8 +352,50 @@ func _connect_buttons() -> void:
 	)
 	_make_button_bouncy(reset_btn)
 
+	var demo_btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("DemoBtn")
+	if demo_btn:
+		demo_btn.pressed.connect(_on_demo_btn_pressed)
+		_make_button_bouncy(demo_btn)
+
 func _va_say(txt: String) -> void:
 	speech_label.text = txt
+
+func _on_demo_btn_pressed() -> void:
+	if _is_demoing or not _board: return
+	_is_demoing = true
+	
+	var demo_btn = $SettingsPanel/SettingsM/SettingsVBox/CtrlBtns.get_node_or_null("DemoBtn")
+	if demo_btn:
+		demo_btn.text = "\nNghe mẫu: ĐANG PHÁT"
+		
+	var sz = _board.size
+	var center = sz * 0.5
+	var rim_r = minf(sz.x, sz.y) * 0.44
+	var head_r = rim_r * 0.8
+	
+	var sequence = [
+		{"type": "Center", "pos": center, "delay": 0.0},
+		{"type": "Center", "pos": center, "delay": 0.5},
+		{"type": "Rim", "pos": center + Vector2(-rim_r * 1.05, 0), "delay": 0.5},
+		{"type": "Rim", "pos": center + Vector2(rim_r * 1.05, 0), "delay": 0.3},
+		{"type": "Edge", "pos": center + Vector2(0, head_r * 0.95), "delay": 0.5},
+		{"type": "OffCenter", "pos": center + Vector2(head_r * 0.6, head_r * 0.3), "delay": 0.4},
+		{"type": "Center", "pos": center, "delay": 0.4},
+		{"type": "Hard", "pos": center, "delay": 0.4},
+		{"type": "Roll", "pos": center, "delay": 0.8},
+		{"type": "Hard", "pos": center, "delay": 1.5}
+	]
+	
+	for step in sequence:
+		if step.delay > 0:
+			await get_tree().create_timer(step.delay).timeout
+		if _board and is_instance_valid(_board):
+			_board.hit(step.type, step.pos)
+			
+	await get_tree().create_timer(1.2).timeout
+	if demo_btn and is_instance_valid(demo_btn):
+		demo_btn.text = "Demo"
+	_is_demoing = false
 
 func _setup_collapsible_linh() -> void:
 	var btn := Button.new()
