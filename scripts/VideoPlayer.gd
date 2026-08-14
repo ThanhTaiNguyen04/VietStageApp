@@ -684,6 +684,22 @@ func _setup_simply_piano_layout() -> void:
 	player_card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	if video_frame:
 		video_frame.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		video_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var frame_m := video_frame.get_node_or_null("FrameM") as MarginContainer
+	if frame_m:
+		frame_m.add_theme_constant_override("margin_left", 0)
+		frame_m.add_theme_constant_override("margin_right", 0)
+		frame_m.add_theme_constant_override("margin_top", 0)
+		frame_m.add_theme_constant_override("margin_bottom", 0)
+
+	# Cover makes the 16:9 media fill ultrawide screens, keeping controls on it.
+	var media_aspect := screen_anch.get_node_or_null("MediaAspect") as AspectRatioContainer
+	if media_aspect:
+		media_aspect.ratio = 16.0 / 9.0
+		media_aspect.stretch_mode = AspectRatioContainer.STRETCH_COVER
+	var screen_bg := screen_anch.get_node_or_null("ScreenBG") as ColorRect
+	if screen_bg:
+		screen_bg.color = Color.BLACK
 		
 	# Chuyển nền tổng thành đen để không lộ viền trắng khi video có letterbox
 	var bg_node := get_node_or_null("BG") as ColorRect
