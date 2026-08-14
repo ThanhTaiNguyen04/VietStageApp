@@ -201,14 +201,14 @@ func _ready() -> void:
 	
 	_spawn_decorations()
 	_setup_hud_shop_button()
-	_tex_decor_chausen = load("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png") as Texture2D
-	_tex_decor_bantra = load("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png") as Texture2D
-	_tex_decor_tranh = load("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png") as Texture2D
-	_tex_decor_quat = load("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png") as Texture2D
-	_tex_decor_denlong = load("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png") as Texture2D
-	_tex_decor_denda = load("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png") as Texture2D
-	_tex_decor_chuonggio = load("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png") as Texture2D
-	_tex_decor_binhsen = load("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png") as Texture2D
+	_tex_decor_chausen = _load_decor_texture("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png")
+	_tex_decor_bantra = _load_decor_texture("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png")
+	_tex_decor_tranh = _load_decor_texture("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png")
+	_tex_decor_quat = _load_decor_texture("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png")
+	_tex_decor_denlong = _load_decor_texture("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png")
+	_tex_decor_denda = _load_decor_texture("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png")
+	_tex_decor_chuonggio = _load_decor_texture("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png")
+	_tex_decor_binhsen = _load_decor_texture("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png")
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -2873,6 +2873,12 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 		var angle = float(i) * TAU / steps
 		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
 	c.draw_polyline(pts, color, width, true)
+
+func _load_decor_texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
+
 
 func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
 	var sz := c.size
