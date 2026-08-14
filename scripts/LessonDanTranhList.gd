@@ -45,7 +45,7 @@ const LEVELS := [
 	},
 	{
 		"level": 2,
-		"title": "LUYỆN THEO BÀI VÀ KỸ THUẬT DIỄN TẤU",
+		"title": "KỸ THUẬT DIỄN TẤU",
 		"sessions": "Bài 10–16 và bài test 99+",
 		"objective": "Luyện kỹ thuật Á, nhấn, song thanh, rung dây trước khi hoàn thiện Sứ Thanh Hoa.",
 		"lessons": [

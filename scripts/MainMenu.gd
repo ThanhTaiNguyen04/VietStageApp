@@ -1439,6 +1439,10 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
 		basic_desc.text = "Làm quen với đàn tranh, đọc nhạc cơ bản và luyện các ngón gảy đầu tiên."
+		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
+		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
+		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
+		level_7_desc.text = "Mở rộng khả năng diễn tấu với kỹ thuật vê và hợp âm ba âm cơ bản."
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 	elif instrument == "trong_chau":
 		# Lộ trình Trống Chầu
