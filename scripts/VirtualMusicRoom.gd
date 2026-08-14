@@ -2570,14 +2570,11 @@ func _fetch_cosmetics_data() -> void:
 	_cosmetics_locked = []
 	if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
 		var all_mock = [
-			{"id": 1, "name": "Chau sen nho", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang tri phong nhac."},
-			{"id": 2, "name": "Ban tra", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang tri phong nhac."},
-			{"id": 3, "name": "Tranh phong canh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang tri phong nhac."},
-			{"id": 4, "name": "Quat treo tuong", "assetUrl": "quat", "unlockValue": 150, "description": "Trang tri phong nhac."},
-			{"id": 5, "name": "Den long do", "assetUrl": "denlong", "unlockValue": 75, "description": "Trang tri phong nhac."},
-			{"id": 6, "name": "Den da Nhat", "assetUrl": "denda", "unlockValue": 120, "description": "Trang tri phong nhac."},
-			{"id": 7, "name": "Chuong gio", "assetUrl": "chuonggio", "unlockValue": 80, "description": "Trang tri phong nhac."},
-			{"id": 8, "name": "Binh sen lon", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang tri phong nhac."}
+			{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
+			{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
+			{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
+			{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
+			{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
 		]
 		var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
 		var active = SecureDataManager.data.get("active_decorations", [])
@@ -3349,3 +3346,4 @@ func _skip_intro_cinematic() -> void:
 	if is_instance_valid(_audio_manager) and is_instance_valid(_audio_manager.audio_player):
 		_audio_manager.audio_player.stop()
 	_end_intro_cinematic()
+
