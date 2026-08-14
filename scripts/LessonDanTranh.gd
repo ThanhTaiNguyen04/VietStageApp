@@ -2276,8 +2276,10 @@ func _start_glissando_round(round_index: int) -> void:
 	active_falling_notes.clear()
 	staff_display.show_metronome = false
 	staff_display.show_hit_line = false
-	staff_display.show_time_sig = false
+	staff_display.show_time_sig = true
 	staff_display.show_clef = true
+	staff_display.beats_per_measure = 2
+	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = str(GLISSANDO_ROUNDS[round_index]["mode"])
 	_build_glissando_round_notes(str(GLISSANDO_ROUNDS[round_index]["mode"]))
 
@@ -2314,11 +2316,15 @@ func _build_glissando_round_notes(mode: String) -> void:
 	glissando_display_notes.clear()
 	for i in range(string_order.size()):
 		var ratio := float(i) / float(maxi(1, string_order.size() - 1))
+		var note_x := lerpf(start_x, end_x, ratio)
+		var next_x := lerpf(start_x, end_x, float(i + 1) / float(maxi(1, string_order.size() - 1))) if i + 1 < string_order.size() else end_x
 		glissando_display_notes.append({
 			"note": "ZT_" + ALL_17_NOTES[string_order[i]],
-			"x": lerpf(start_x, end_x, ratio),
+			"x": note_x,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
-			"type": "quarter"
+			"type": "quarter",
+			"bar_after": i < string_order.size() - 1,
+			"bar_x": (note_x + next_x) * 0.5
 		})
 	staff_display.set_notes(glissando_display_notes)
 	staff_display.queue_redraw()
