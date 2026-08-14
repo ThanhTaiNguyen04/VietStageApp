@@ -43,11 +43,6 @@ var show_only_current_note : bool = false
 var show_note_duration_glyphs : bool = false
 var note_label_overrides: Dictionary = {}
 
-# Simply-style timing guide: a bright playhead stays fixed while notes travel to it.
-# A short coloured pulse makes the result of the player's pluck unambiguous.
-var _playhead_feedback_time := 0.0
-var _playhead_feedback_color := Color.WHITE
-
 # ─── Notes on strings properties ──────────────────────────────────────────────
 var sheet_notes        : Array = []
 var sheet_durations    : Array = []
@@ -145,11 +140,6 @@ func set_playhead_ratio(value: float) -> void:
 
 func set_note_travel_direction(left_to_right: bool) -> void:
 	notes_move_left_to_right = left_to_right
-	queue_redraw()
-
-func flash_playhead(is_correct: bool) -> void:
-	_playhead_feedback_time = 0.42 if is_correct else 0.62
-	_playhead_feedback_color = Color("#55e58a") if is_correct else Color("#ff4f5e")
 	queue_redraw()
 
 func set_scrolling_note_visibility(cued_only: bool, current_only: bool) -> void:
@@ -329,12 +319,6 @@ func _process(delta: float) -> void:
 	if _pluck_amp.size() < STR_COUNT:
 		return
 	var need := false
-	if _playhead_feedback_time > 0.0:
-		_playhead_feedback_time = maxf(0.0, _playhead_feedback_time - delta)
-		need = true
-	# Keep the timing guide gently breathing while a practice sequence is running.
-	if is_active:
-		need = true
 	for i in STR_COUNT:
 		if _pluck_amp[i] > 0.0:
 			_pluck_time[i] += delta
@@ -992,15 +976,8 @@ func _draw() -> void:
 			
 	# 5. Draw the target finish line (đường thẳng kết thúc)
 	var finish_x := get_playhead_x()
-	var breathe := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
-	var feedback_strength := clampf(_playhead_feedback_time / 0.62, 0.0, 1.0)
-	var playhead_color := Color.WHITE.lerp(_playhead_feedback_color, feedback_strength * 0.88)
-	var glow_alpha := 0.13 + breathe * 0.07 + feedback_strength * 0.22
-	# Layered strokes create a bloom-like scan line without a texture or shader.
-	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(playhead_color.r, playhead_color.g, playhead_color.b, glow_alpha * 0.22), 52.0)
-	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(playhead_color.r, playhead_color.g, playhead_color.b, glow_alpha * 0.52), 24.0)
-	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(playhead_color.r, playhead_color.g, playhead_color.b, 0.52 + breathe * 0.16 + feedback_strength * 0.25), 7.0)
-	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(1.0, 1.0, 1.0, 0.94), 1.6)
+	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(0.95, 0.72, 0.18, 0.20), 10.0)
+	draw_line(Vector2(finish_x, iy), Vector2(finish_x, iy + ih), Color(1.0, 0.85, 0.15, 0.92), 2.0)
 
 func _draw_bridge(bx: float, cy: float, rh: float) -> void:
 	var bw := 20.0

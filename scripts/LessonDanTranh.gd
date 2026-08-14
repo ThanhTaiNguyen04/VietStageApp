@@ -667,6 +667,10 @@ func _ready():
 	staff_card.add_child(staff_display)
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	staff_display.simply_playhead_enabled = _is_error_flash_demo()
+	if _is_error_flash_demo():
+		staff_display.hit_line_color = Color(1.0, 1.0, 1.0, 0.96)
+		staff_display.hit_line_glow_color = Color(1.0, 1.0, 1.0, 0.30)
 	if _is_glissando_practice():
 		_build_glissando_sheet()
 	if _is_press_practice():
@@ -1598,8 +1602,8 @@ func _set_error_demo_note_pulse(bright: bool) -> void:
 
 
 func _restore_error_demo_hit_line() -> void:
-	staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
-	staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+	staff_display.hit_line_color = Color(1.0, 1.0, 1.0, 0.96)
+	staff_display.hit_line_glow_color = Color(1.0, 1.0, 1.0, 0.30)
 	staff_display.queue_redraw()
 
 
@@ -1611,8 +1615,8 @@ func _set_error_demo_note_color(show_error: bool) -> void:
 			error_flash_note.erase("demo_base_color")
 			error_flash_note.erase("demo_base_x")
 			error_flash_note = {}
-		staff_display.hit_line_color = Color(0.2, 0.85, 0.3, 0.95)
-		staff_display.hit_line_glow_color = Color(0.3, 0.9, 0.4, 0.3)
+		staff_display.hit_line_color = Color(1.0, 1.0, 1.0, 0.96)
+		staff_display.hit_line_glow_color = Color(1.0, 1.0, 1.0, 0.30)
 		staff_display.queue_redraw()
 		return
 
