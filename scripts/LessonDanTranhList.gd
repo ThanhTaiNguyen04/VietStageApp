@@ -16,6 +16,7 @@ const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
 
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
+const SHOW_ALL_LESSONS_AS_AVAILABLE := true # Chế độ chỉnh sửa: mọi card trắng, mở và bấm được; không xóa tiến độ đã lưu.
 var _sidebar_icon_cache: Dictionary = {}
 var _sidebar_expanded := true
 var _sidebar_tween: Tween = null
@@ -546,8 +547,12 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		var previous_number := int(previous["number"])
 		var previous_id := str(previous.get("practice_id", _lesson_id(previous_number, "practice")))
 		lesson_ready = completed.has(previous_id)
-	var practice_completed := completed.has(practice_id)
+	var practice_completed: bool = completed.has(practice_id)
 	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
+	if SHOW_ALL_LESSONS_AS_AVAILABLE:
+		lesson_ready = true
+		practice_completed = false
+		practice_unlocked = true
 
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2.ZERO
@@ -556,8 +561,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 24)
 
-	# Tên bài nằm trực tiếp trong card, cùng ngôn ngữ thị giác với các card Level.
-	var lesson_button := _create_lesson_card_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed)
+	# Giữ hình tròn bài học và đặt cả số bài lẫn tên bài bên trong.
+	var lesson_button := _create_circle_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "practice"))
 	column.add_child(lesson_button)
@@ -595,10 +600,10 @@ func _create_small_btn(label: String, unlocked: bool) -> Button:
 	_make_bouncy(button)
 	return button
 
-func _create_lesson_card_button(display_number: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
+func _create_circle_button(display_number: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
 	var button := Button.new()
 	button.mouse_filter = Control.MOUSE_FILTER_PASS
-	button.custom_minimum_size = Vector2(280, 180)
+	button.custom_minimum_size = Vector2(250, 250)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -610,7 +615,7 @@ func _create_lesson_card_button(display_number: String, lesson_title: String, un
 	elif unlocked:
 		button.text = "BÀI %s\n%s" % [display_number, lesson_title]
 	else:
-		button.text = "🔒"
+		button.text = "🔒\nBÀI %s" % display_number
 
 	var bg_color := Color(0.95, 0.93, 0.89, 0.6)
 	var border_color := Color(0.85, 0.82, 0.78, 1.0)
@@ -630,8 +635,8 @@ func _create_lesson_card_button(display_number: String, lesson_title: String, un
 	s_normal.border_color = border_color
 	s_normal.border_width_left = 6; s_normal.border_width_right = 6
 	s_normal.border_width_top = 6; s_normal.border_width_bottom = 6
-	s_normal.corner_radius_top_left = 24; s_normal.corner_radius_top_right = 24
-	s_normal.corner_radius_bottom_left = 24; s_normal.corner_radius_bottom_right = 24
+	s_normal.corner_radius_top_left = 125; s_normal.corner_radius_top_right = 125
+	s_normal.corner_radius_bottom_left = 125; s_normal.corner_radius_bottom_right = 125
 	
 	if unlocked and not completed:
 		s_normal.shadow_size = 24
@@ -656,7 +661,7 @@ func _create_lesson_card_button(display_number: String, lesson_title: String, un
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		button.add_theme_font_override("font", bold_font)
-	button.add_theme_font_size_override("font_size", 19)
+	button.add_theme_font_size_override("font_size", 21)
 	_make_bouncy(button)
 	return button
 
@@ -978,9 +983,9 @@ func _apply_responsive_layout() -> void:
 			col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			var btn := col.get_node_or_null("LessonBtn") as Button
 			if btn:
-				var sz := Vector2(210, 150) if mobile else Vector2(280, 180)
+				var sz := Vector2(180, 180) if mobile else Vector2(250, 250)
 				btn.custom_minimum_size = sz
-				btn.add_theme_font_size_override("font_size", 16 if mobile else 19)
+				btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
 
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
 	btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
