@@ -420,7 +420,6 @@ func _draw_roadmap_paths() -> void:
 	var p_cho_sk := card_chords_skills.position + card_chords_skills.size / 2.0
 	var p_class := card_classical.position + card_classical.size / 2.0
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
-	var p_string_roll := card_string_roll.position + card_string_roll.size / 2.0 if is_instance_valid(card_string_roll) else p_class
 		
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 	if inst == "dan_tranh":
@@ -437,7 +436,6 @@ func _draw_roadmap_paths() -> void:
 		p_cho_sk.y = straight_y
 		p_pop.y = straight_y
 		p_class.y = straight_y
-		p_string_roll.y = straight_y
 		
 		# Đường thẳng duy nhất nằm ngang
 		_draw_thick_path(p_basic, p_ess)
@@ -1675,7 +1673,7 @@ func _build_roadmap_cards() -> void:
 	skills_sb.border_width_left = 6; skills_sb.border_width_right = 6
 	skills_sb.border_width_top = 6; skills_sb.border_width_bottom = 6
 	
-	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords, card_string_roll]:
+	for card in [card_soloist_skills, card_chords_skills, card_classical, card_pop_chords]:
 		card.add_theme_stylebox_override("panel", skills_sb)
 		var title := card.get_node("Margin/HBox/TextV/Title") as Label
 		var bullets := card.get_node("Margin/HBox/TextV/BulletList") as Label
