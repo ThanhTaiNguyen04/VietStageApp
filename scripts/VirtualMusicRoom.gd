@@ -1237,9 +1237,9 @@ func _get_sort_y(node: Control) -> float:
 	return node.position.y + node.size.y
 
 func _sort_room_elements() -> void:
-	if not char_player:
-		return
-	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh, char_player]
+	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh]
+	if char_player:
+		items.append(char_player)
 	for c in room_content.get_children():
 		if c.name.begins_with("Decor_"):
 			items.append(c)
@@ -3346,5 +3346,6 @@ func _skip_intro_cinematic() -> void:
 	if is_instance_valid(_audio_manager) and is_instance_valid(_audio_manager.audio_player):
 		_audio_manager.audio_player.stop()
 	_end_intro_cinematic()
+
 
 
