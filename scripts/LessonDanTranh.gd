@@ -775,6 +775,7 @@ func _ready():
 		back_btn.offset_bottom = 92 # Cao 68px
 	get_viewport().size_changed.connect(update_back_btn_pos)
 	update_back_btn_pos.call()
+	_create_lesson_guide_button()
 	
 	complete_btn.visible = false
 	var custom_complete_btn = _create_aesthetic_btn(
@@ -4463,6 +4464,43 @@ func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Butt
 	btn.pressed.connect(pressed_callable)
 	_make_btn_bouncy(btn)
 	return btn
+
+
+# Bài 1 có video giới thiệu riêng. Đặt lối vào ngay trong màn luyện để người học
+# không phải quay về danh sách bài mới tìm được nút "Hướng dẫn".
+func _create_lesson_guide_button() -> void:
+	if current_lesson_id != "dan_tranh_level_1_bai_1_practice":
+		return
+
+	var guide_btn := Button.new()
+	guide_btn.name = "LessonGuideBtn"
+	guide_btn.text = "▶  Xem hướng dẫn cô Mai"
+	guide_btn.custom_minimum_size = Vector2(272, 58)
+	guide_btn.focus_mode = Control.FOCUS_NONE
+	guide_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	guide_btn.anchor_left = 1.0
+	guide_btn.anchor_right = 1.0
+	guide_btn.offset_left = -322.0
+	guide_btn.offset_right = -40.0
+	guide_btn.offset_top = 24.0
+	guide_btn.offset_bottom = 82.0
+	guide_btn.add_theme_font_size_override("font_size", 18)
+	guide_btn.add_theme_color_override("font_color", Color.WHITE)
+	guide_btn.add_theme_color_override("font_hover_color", C_GOLD)
+	guide_btn.add_theme_stylebox_override("normal", _flat_sb(Color(C_WOOD.r, C_WOOD.g, C_WOOD.b, 0.9), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 18))
+	guide_btn.add_theme_stylebox_override("hover", _flat_sb(Color(C_WOOD.r, C_WOOD.g, C_WOOD.b, 1.0), C_GOLD, 18))
+	guide_btn.add_theme_stylebox_override("pressed", _flat_sb(Color(C_WOOD.r, C_WOOD.g, C_WOOD.b, 0.72), C_GOLD, 18))
+	guide_btn.pressed.connect(_open_lesson_1_guide_video)
+	add_child(guide_btn)
+	_make_btn_bouncy(guide_btn)
+
+
+func _open_lesson_1_guide_video() -> void:
+	SecureDataManager.active_lesson_id = "dan_tranh_level_1_bai_1_video"
+	VideoPlayer.custom_video_path = "res://Video/DT_LV1_B1.ogv"
+	VideoPlayer.custom_subtitles = VideoPlayer.SUBTITLES_DAN_TRANH
+	get_tree().change_scene_to_file("res://scenes/VideoPlayer.tscn")
+
 
 func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool, bg_color: Color, hover_bg_color: Color, text_color: Color, hover_text_color: Color, radius: int, size: Vector2) -> Button:
 	var btn = Button.new()
