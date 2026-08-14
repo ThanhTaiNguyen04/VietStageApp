@@ -558,7 +558,9 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 
 	var title := Label.new()
 	title.text = "BÀI %s" % display_number
+	title.custom_minimum_size = Vector2(0, 28)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", C_TEXT if lesson_ready else Color(C_MUTED, 0.45))
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
@@ -577,6 +579,16 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		video_button.name = "VideoBtn"
 		video_button.pressed.connect(_open_lesson.bind(lesson, "video"))
 		column.add_child(video_button)
+	else:
+		# Giữ một ô hành động có cùng chiều cao dưới mọi bài. Nếu bỏ ô này,
+		# VBox ngắn hơn sẽ được HBox căn giữa và làm tâm hình tròn lệch khỏi
+		# đường nối so với những bài có nút Hướng dẫn.
+		var action_slot_spacer := Control.new()
+		action_slot_spacer.name = "ActionSlotSpacer"
+		action_slot_spacer.custom_minimum_size = Vector2(150, 42)
+		action_slot_spacer.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		action_slot_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(action_slot_spacer)
 	return column
 
 func _create_small_btn(label: String, unlocked: bool) -> Button:
