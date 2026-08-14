@@ -222,13 +222,12 @@ func _draw_glissando_arrow(center_y: float) -> void:
 
 
 func _draw_glissando_round_mark(cue_x: float, top_y: float, bottom_y: float, color: Color) -> void:
-	var left_x := cue_x - 6.0
-	var right_x := cue_x + 6.0
-	var turn_y := bottom_y - 7.0
-	draw_line(Vector2(left_x, top_y), Vector2(left_x, turn_y), color, 3.0, true)
-	draw_arc(Vector2(cue_x, turn_y), 6.0, 0.0, PI, 12, color, 3.0, true)
-	draw_line(Vector2(right_x, turn_y), Vector2(right_x, top_y + 12.0), color, 3.0, true)
-	_draw_glissando_arrow_head(Vector2(right_x, turn_y), Vector2(right_x, top_y), color, 14.0, 7.0)
+	var top_tip := Vector2(cue_x, top_y)
+	var bottom_tip := Vector2(cue_x, bottom_y)
+	draw_line(top_tip + Vector2(0, 12.0), bottom_tip - Vector2(0, 12.0), color, 3.2, true)
+	# Á vòng: cùng một ký hiệu có hai đầu mũi tên lên và xuống.
+	_draw_glissando_arrow_head(bottom_tip, top_tip, color, 15.0, 8.0)
+	_draw_glissando_arrow_head(top_tip, bottom_tip, color, 15.0, 8.0)
 
 
 func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color, head_length: float = 24.0, head_width: float = 13.0) -> void:
