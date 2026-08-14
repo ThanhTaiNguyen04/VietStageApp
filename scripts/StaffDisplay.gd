@@ -73,7 +73,6 @@ var time_sig_denominator: int = 4   # bottom number of the time signature
 var use_note_colors: bool = false
 var hit_line_color := Color(0.2, 0.85, 0.3, 0.95)
 var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
-var simply_playhead_enabled := false
 var glissando_arrow_mode := ""
 
 func set_note(note_name: String):
@@ -128,21 +127,10 @@ func _draw():
 			# Bottom digit: occupies bottom two spaces (between line 1 and line 3). Baseline sits near the bottom line.
 			draw_string(font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
-	# The 99+ demo uses a layered scan line so the timing guide has the same
-	# bright, soft-bloom appearance as Simply Guitar.
+	# Draw hit line with modern glowing effect (kept as it is for timing)
 	if show_hit_line:
-		var top := Vector2(hit_line_x, center_y - 3.2 * line_spacing)
-		var bottom := Vector2(hit_line_x, center_y + 3.2 * line_spacing)
-		if simply_playhead_enabled:
-			var breathe := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
-			var glow_strength := 0.16 + breathe * 0.10
-			draw_line(top, bottom, Color(hit_line_color.r, hit_line_color.g, hit_line_color.b, glow_strength * 0.24), 52.0, true)
-			draw_line(top, bottom, Color(hit_line_color.r, hit_line_color.g, hit_line_color.b, glow_strength * 0.58), 24.0, true)
-			draw_line(top, bottom, Color(hit_line_color.r, hit_line_color.g, hit_line_color.b, 0.58 + breathe * 0.20), 7.0, true)
-			draw_line(top, bottom, Color(1.0, 1.0, 1.0, 0.94), 1.6, true)
-		else:
-			draw_line(top, bottom, hit_line_glow_color, 8.0, true)
-			draw_line(top, bottom, hit_line_color, 3.5, true)
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_glow_color, 8.0, true)
+		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_color, 3.5, true)
 		
 	# Draw all notes
 	for note_data in notes_to_draw:
