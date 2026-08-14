@@ -185,7 +185,6 @@ const TREMOLO_SAMPLE_DURATION := 2.60
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
-var error_flash_beam: Control
 var error_flash_detail_label: Label
 var error_flash_timer := 0.75
 var error_flash_tween: Tween
@@ -1082,82 +1081,62 @@ func _build_error_flash_overlay() -> void:
 	error_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	error_flash_overlay.modulate.a = 1.0
 
-	# A soft vertical spotlight appears only while wrong-note feedback is open.
-	# Layered translucent rectangles approximate the Simply-style bloom cleanly
-	# without keeping any always-running animation on the staff.
-	error_flash_beam = Control.new()
-	error_flash_beam.name = "ErrorNoteSpotlight"
-	error_flash_beam.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	error_flash_overlay.add_child(error_flash_beam)
-	error_flash_beam.size = Vector2(104.0, staff_card.size.y)
-	error_flash_beam.modulate.a = 0.0
-	var beam_outer := ColorRect.new()
-	beam_outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	beam_outer.color = Color(1.0, 0.22, 0.24, 0.055)
-	error_flash_beam.add_child(beam_outer)
-	beam_outer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var beam_middle := ColorRect.new()
-	beam_middle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	beam_middle.color = Color(1.0, 0.28, 0.28, 0.09)
-	beam_middle.anchor_left = 0.24
-	beam_middle.anchor_right = 0.76
-	beam_middle.anchor_bottom = 1.0
-	error_flash_beam.add_child(beam_middle)
-	var beam_core := ColorRect.new()
-	beam_core.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	beam_core.color = Color(1.0, 0.78, 0.72, 0.20)
-	beam_core.anchor_left = 0.46
-	beam_core.anchor_right = 0.54
-	beam_core.anchor_bottom = 1.0
-	error_flash_beam.add_child(beam_core)
-
 	error_flash_halo = PanelContainer.new()
 	error_flash_halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	error_flash_halo.custom_minimum_size = Vector2(104, 82)
+	error_flash_halo.custom_minimum_size = Vector2(86, 68)
 	var halo_style := StyleBoxFlat.new()
-	halo_style.bg_color = Color(1.0, 0.18, 0.20, 0.075)
-	halo_style.border_color = Color(1.0, 0.92, 0.88, 0.92)
-	halo_style.set_border_width_all(3)
-	halo_style.set_corner_radius_all(41)
-	halo_style.shadow_color = Color(1.0, 0.10, 0.14, 0.34)
-	halo_style.shadow_size = 18
+	halo_style.bg_color = Color(0.96, 0.20, 0.20, 0.10)
+	halo_style.border_color = Color(1.0, 0.30, 0.28, 0.86)
+	halo_style.border_width_left = 3
+	halo_style.border_width_right = 3
+	halo_style.border_width_top = 3
+	halo_style.border_width_bottom = 3
+	halo_style.corner_radius_top_left = 34
+	halo_style.corner_radius_top_right = 34
+	halo_style.corner_radius_bottom_left = 34
+	halo_style.corner_radius_bottom_right = 34
+	halo_style.shadow_color = Color(0.96, 0.12, 0.12, 0.26)
+	halo_style.shadow_size = 12
 	(error_flash_halo as PanelContainer).add_theme_stylebox_override("panel", halo_style)
 	error_flash_overlay.add_child(error_flash_halo)
-	error_flash_halo.pivot_offset = Vector2(52.0, 41.0)
+	error_flash_halo.pivot_offset = Vector2(43.0, 34.0)
 	error_flash_halo.modulate.a = 0.0
 
 	var error_tooltip := PanelContainer.new()
 	error_flash_badge = error_tooltip
 	error_tooltip.name = "ErrorNoteTooltip"
 	error_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	error_tooltip.custom_minimum_size = Vector2(360.0, 108.0)
+	error_tooltip.custom_minimum_size = Vector2(300.0, 92.0)
 	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = Color(0.055, 0.045, 0.042, 0.985)
-	badge_style.border_color = Color(1.0, 0.97, 0.91, 0.98)
-	badge_style.set_border_width_all(3)
-	badge_style.set_corner_radius_all(18)
-	badge_style.shadow_color = Color(0.10, 0.02, 0.02, 0.48)
-	badge_style.shadow_size = 18
-	badge_style.shadow_offset = Vector2(0.0, 8.0)
+	badge_style.bg_color = Color(0.39, 0.075, 0.085, 0.98)
+	badge_style.border_color = Color(0.93, 0.73, 0.28, 0.98)
+	badge_style.set_border_width_all(2)
+	badge_style.corner_radius_top_left = 16
+	badge_style.corner_radius_top_right = 16
+	badge_style.corner_radius_bottom_left = 16
+	badge_style.corner_radius_bottom_right = 16
+	badge_style.shadow_color = Color(0.10, 0.02, 0.02, 0.32)
+	badge_style.shadow_size = 12
+	badge_style.shadow_offset = Vector2(0.0, 6.0)
 	error_tooltip.add_theme_stylebox_override("panel", badge_style)
 	error_flash_overlay.add_child(error_tooltip)
-	error_tooltip.size = Vector2(360.0, 108.0)
-	error_tooltip.pivot_offset = Vector2(180.0, 108.0)
+	error_tooltip.size = Vector2(300.0, 92.0)
+	error_tooltip.pivot_offset = Vector2(150.0, 92.0)
 	error_tooltip.modulate.a = 0.0
 
 	var tooltip_margin := MarginContainer.new()
 	tooltip_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tooltip_margin.add_theme_constant_override("margin_left", 24)
-	tooltip_margin.add_theme_constant_override("margin_top", 14)
-	tooltip_margin.add_theme_constant_override("margin_right", 24)
-	tooltip_margin.add_theme_constant_override("margin_bottom", 14)
+	tooltip_margin.add_theme_constant_override("margin_left", 20)
+	tooltip_margin.add_theme_constant_override("margin_top", 12)
+	tooltip_margin.add_theme_constant_override("margin_right", 20)
+	tooltip_margin.add_theme_constant_override("margin_bottom", 12)
 	error_tooltip.add_child(tooltip_margin)
 	tooltip_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	var text_box := VBoxContainer.new()
 	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	text_box.add_theme_constant_override("separation", 4)
+	text_box.add_theme_constant_override("separation", 2)
 	tooltip_margin.add_child(text_box)
 
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
@@ -1165,8 +1144,8 @@ func _build_error_flash_overlay() -> void:
 	var title_label := Label.new()
 	title_label.text = "Chưa đúng"
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_color_override("font_color", Color(1.0, 0.98, 0.94, 1.0))
-	title_label.add_theme_font_size_override("font_size", 22)
+	title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
+	title_label.add_theme_font_size_override("font_size", 20)
 	if bold_font:
 		title_label.add_theme_font_override("font", bold_font)
 	text_box.add_child(title_label)
@@ -1174,22 +1153,22 @@ func _build_error_flash_overlay() -> void:
 	error_flash_detail_label = Label.new()
 	error_flash_detail_label.text = "Cần gảy: Sol₂"
 	error_flash_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	error_flash_detail_label.add_theme_color_override("font_color", Color(1.0, 0.63, 0.58, 1.0))
-	error_flash_detail_label.add_theme_font_size_override("font_size", 17)
+	error_flash_detail_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.91, 1.0))
+	error_flash_detail_label.add_theme_font_size_override("font_size", 15)
 	if regular_font:
 		error_flash_detail_label.add_theme_font_override("font", regular_font)
 	text_box.add_child(error_flash_detail_label)
 
 	# Hai tam giác chồng nhau tạo mũi chỉ đỏ có viền vàng, nối tooltip với nốt sai.
 	var pointer_border := Polygon2D.new()
-	pointer_border.polygon = PackedVector2Array([Vector2(-14.0, -2.0), Vector2(14.0, -2.0), Vector2(0.0, 17.0)])
-	pointer_border.color = Color(1.0, 0.97, 0.91, 0.98)
-	pointer_border.position = Vector2(180.0, 108.0)
+	pointer_border.polygon = PackedVector2Array([Vector2(-12.0, -1.0), Vector2(12.0, -1.0), Vector2(0.0, 15.0)])
+	pointer_border.color = Color(0.93, 0.73, 0.28, 0.98)
+	pointer_border.position = Vector2(150.0, 92.0)
 	error_tooltip.add_child(pointer_border)
 	var pointer_fill := Polygon2D.new()
-	pointer_fill.polygon = PackedVector2Array([Vector2(-9.5, -3.0), Vector2(9.5, -3.0), Vector2(0.0, 11.5)])
+	pointer_fill.polygon = PackedVector2Array([Vector2(-8.5, -2.0), Vector2(8.5, -2.0), Vector2(0.0, 10.5)])
 	pointer_fill.color = badge_style.bg_color
-	pointer_fill.position = Vector2(180.0, 108.0)
+	pointer_fill.position = Vector2(150.0, 92.0)
 	error_tooltip.add_child(pointer_fill)
 
 	error_feedback_player = AudioStreamPlayer.new()
@@ -1515,41 +1494,42 @@ func _play_error_flash_demo() -> void:
 	error_feedback_showing = true
 	_position_error_flash_feedback()
 	error_flash_overlay.modulate.a = 1.0
-	error_flash_badge.position = error_tooltip_final_position + Vector2(0.0, 18.0)
-	error_flash_badge.scale = Vector2(0.94, 0.94)
+	error_flash_badge.position = error_tooltip_final_position + Vector2(0.0, 38.0)
+	error_flash_badge.scale = Vector2(0.84, 0.84)
 	error_flash_badge.modulate.a = 0.0
-	error_flash_halo.scale = Vector2(0.88, 0.88)
+	error_flash_halo.scale = Vector2(0.78, 0.78)
 	error_flash_halo.modulate.a = 0.0
-	if error_flash_beam:
-		error_flash_beam.scale = Vector2(0.72, 1.0)
-		error_flash_beam.modulate.a = 0.0
 	if error_feedback_player:
 		error_feedback_player.play()
 
 	# Tooltip bật lên từ nốt, nảy rất nhẹ rồi đứng yên đủ lâu để học viên đọc.
 	error_flash_tween = create_tween()
 	error_flash_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
-	error_flash_tween.tween_property(error_flash_badge, "position", error_tooltip_final_position, 0.22).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
-	error_flash_tween.parallel().tween_property(error_flash_badge, "modulate:a", 1.0, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	error_flash_tween.tween_interval(1.55)
-	error_flash_tween.tween_property(error_flash_badge, "modulate:a", 0.0, 0.20).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	error_flash_tween.parallel().tween_property(error_flash_badge, "position", error_tooltip_final_position + Vector2(0.0, 8.0), 0.20).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	error_flash_tween.parallel().tween_property(error_flash_halo, "modulate:a", 0.0, 0.20)
-	if error_flash_beam:
-		error_flash_tween.parallel().tween_property(error_flash_beam, "modulate:a", 0.0, 0.20)
+	error_flash_tween.tween_property(error_flash_badge, "position", error_tooltip_final_position, 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(1.04, 1.04), 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	error_flash_tween.tween_property(error_flash_badge, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	error_flash_tween.tween_interval(1.25)
+	error_flash_tween.tween_property(error_flash_badge, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "position", error_tooltip_final_position + Vector2(0.0, 12.0), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(0.94, 0.94), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	error_flash_tween.parallel().tween_property(error_flash_halo, "modulate:a", 0.0, 0.18)
 	error_flash_tween.tween_callback(_finish_error_flash_demo)
 
 	# Hai nhịp sáng mềm quanh đúng một nốt, không chớp đỏ cả màn hình.
 	error_pulse_tween = create_tween()
-	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.92, 0.12).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.06, 1.06), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	if error_flash_beam:
-		error_pulse_tween.parallel().tween_property(error_flash_beam, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		error_pulse_tween.parallel().tween_property(error_flash_beam, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
-	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.46, 0.30).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2.ONE, 0.30).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	error_pulse_tween.tween_interval(0.42)
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.78, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.06, 1.06), 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(true))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.26, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(0.96, 0.96), 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(false))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.70, 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2(1.03, 1.03), 0.14).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(true))
+	error_pulse_tween.tween_property(error_flash_halo, "modulate:a", 0.24, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.parallel().tween_property(error_flash_halo, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	error_pulse_tween.tween_callback(_set_error_demo_note_pulse.bind(false))
 	error_pulse_tween.tween_callback(_restore_error_demo_hit_line)
 
 	# Rung ngang rất ngắn lúc lỗi vừa xuất hiện.
@@ -1570,8 +1550,6 @@ func _finish_error_flash_demo() -> void:
 		error_flash_badge.modulate.a = 0.0
 	if error_flash_halo:
 		error_flash_halo.modulate.a = 0.0
-	if error_flash_beam:
-		error_flash_beam.modulate.a = 0.0
 
 
 func _offset_error_demo_note(offset_x: float) -> void:
@@ -1593,17 +1571,13 @@ func _position_error_flash_feedback() -> void:
 	var note_y: float = float(staff_display.size.y) * 0.5 + float(staff_display.line_spacing) * 0.45
 	note_y += (2.0 - note_position) * staff_display.line_spacing
 
-	error_flash_halo.position = Vector2(note_x - 52.0, note_y - 41.0)
-	error_flash_halo.size = Vector2(104.0, 82.0)
-	if error_flash_beam:
-		error_flash_beam.position = Vector2(note_x - 52.0, 0.0)
-		error_flash_beam.size = Vector2(104.0, staff_display.size.y)
-		error_flash_beam.pivot_offset = Vector2(52.0, staff_display.size.y * 0.5)
-	var badge_x := clampf(note_x - 180.0, 12.0, maxf(12.0, staff_display.size.x - 372.0))
-	var badge_y := clampf(note_y - 135.0, 12.0, maxf(12.0, staff_display.size.y - 128.0))
+	error_flash_halo.position = Vector2(note_x - 43.0, note_y - 34.0)
+	error_flash_halo.size = Vector2(86.0, 68.0)
+	var badge_x := clampf(note_x - 150.0, 12.0, maxf(12.0, staff_display.size.x - 312.0))
+	var badge_y := clampf(note_y - 119.0, 12.0, maxf(12.0, staff_display.size.y - 112.0))
 	error_tooltip_final_position = Vector2(badge_x, badge_y)
 	error_flash_badge.position = error_tooltip_final_position
-	error_flash_badge.size = Vector2(360.0, 108.0)
+	error_flash_badge.size = Vector2(300.0, 92.0)
 	if error_flash_detail_label:
 		error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
 
@@ -3508,8 +3482,6 @@ func _start_practice():
 			error_flash_badge.modulate.a = 0.0
 		if error_flash_halo:
 			error_flash_halo.modulate.a = 0.0
-		if error_flash_beam:
-			error_flash_beam.modulate.a = 0.0
 	_apply_adaptive_speed()
 	if speed_bar_container:
 		speed_bar_container.visible = true
