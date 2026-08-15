@@ -124,9 +124,18 @@ var vibrato_attempt_elapsed := 0.0
 var vibrato_silence_elapsed := 0.0
 var vibrato_base_note_heard := false
 var vibrato_note_locked := false
+var vibrato_attack_generation := -1
+var vibrato_consumed_attack_generation := -1
+var vibrato_contour_elapsed := 0.0
+var vibrato_min_amplitude_db := 0.0
+var vibrato_added_sound_elapsed := 0.0
 const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
+const VIBRATO_MAX_SIGNAL_GAP := 0.16
+const VIBRATO_ADDED_SOUND_RISE_DB := 8.0
+const VIBRATO_ADDED_SOUND_HOLD_SEC := 0.10
+const VIBRATO_MIN_DURATION_SEC := 0.85
 var press_sheet_hud: Control
 var press_instruction_label: Label
 var press_status_label: Label
@@ -1249,7 +1258,7 @@ func _set_micro_scoring_locked(locked: bool) -> void:
 
 
 func _clear_partial_micro_attempts() -> void:
-	var interrupted_press_generation := _get_current_press_attack_generation()
+	var interrupted_attack_generation := _get_current_technique_attack_generation()
 	time_correct = 0.0
 	wrong_note_time = 0.0
 	glissando_detected_strings.clear()
@@ -1263,7 +1272,7 @@ func _clear_partial_micro_attempts() -> void:
 	press_base_note_heard = false
 	press_max_cents = 0.0
 	press_attack_generation = -1
-	press_consumed_attack_generation = interrupted_press_generation
+	press_consumed_attack_generation = interrupted_attack_generation
 	press_contour_elapsed = 0.0
 	press_min_amplitude_db = 0.0
 	press_added_sound_elapsed = 0.0
@@ -1272,6 +1281,11 @@ func _clear_partial_micro_attempts() -> void:
 	vibrato_attempt_elapsed = 0.0
 	vibrato_silence_elapsed = 0.0
 	vibrato_base_note_heard = false
+	vibrato_attack_generation = -1
+	vibrato_consumed_attack_generation = interrupted_attack_generation
+	vibrato_contour_elapsed = 0.0
+	vibrato_min_amplitude_db = 0.0
+	vibrato_added_sound_elapsed = 0.0
 	tremolo_attack_strings.clear()
 	tremolo_attack_times.clear()
 	tremolo_attempt_started_at = 0.0
@@ -2648,7 +2662,7 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_min_amplitude_db = 0.0
 	press_added_sound_elapsed = 0.0
 	# Never reuse a still-ringing attack from the previous instruction/attempt.
-	press_consumed_attack_generation = _get_current_press_attack_generation()
+	press_consumed_attack_generation = _get_current_technique_attack_generation()
 	for pair_idx in range(PRESS_EXERCISES.size()):
 		var color := Color(0.16, 0.14, 0.12, 1.0)
 		if pair_idx < exercise_index:
@@ -2685,7 +2699,7 @@ func _process_press_practice(delta: float) -> void:
 	var target_interval := float(exercise["interval"])
 	var pitch := float(analyzer.current_pitch)
 	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
-	var attack_identity := _get_press_attack_identity()
+	var attack_identity := _get_technique_attack_identity()
 
 	if signal_active and source_hz > 0.0:
 		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
@@ -2771,7 +2785,7 @@ func _process_press_practice(delta: float) -> void:
 		_on_press_exercise_failed(target_interval)
 
 
-func _get_press_attack_identity() -> Dictionary:
+func _get_technique_attack_identity() -> Dictionary:
 	if analyzer and analyzer.has_method("get_dan_tranh_attack_identity"):
 		var identity = analyzer.call("get_dan_tranh_attack_identity")
 		if identity is Dictionary:
@@ -2779,8 +2793,8 @@ func _get_press_attack_identity() -> Dictionary:
 	return {}
 
 
-func _get_current_press_attack_generation() -> int:
-	return int(_get_press_attack_identity().get("generation", -1))
+func _get_current_technique_attack_generation() -> int:
+	return int(_get_technique_attack_identity().get("generation", -1))
 
 
 func _is_press_source_attack_valid(identity: Dictionary, source: String) -> bool:
@@ -3008,6 +3022,12 @@ func _start_vibrato_note(note_index: int) -> void:
 	vibrato_silence_elapsed = 0.0
 	vibrato_base_note_heard = false
 	vibrato_note_locked = false
+	vibrato_attack_generation = -1
+	vibrato_contour_elapsed = 0.0
+	vibrato_min_amplitude_db = 0.0
+	vibrato_added_sound_elapsed = 0.0
+	# A still-ringing note from the sample/instruction must not open a new turn.
+	vibrato_consumed_attack_generation = _get_current_technique_attack_generation()
 	for i in range(vibrato_display_notes.size()):
 		if i < note_index:
 			vibrato_display_notes[i]["color"] = Color(0.12, 0.72, 0.30, 1.0)
@@ -3038,18 +3058,47 @@ func _process_vibrato_practice(delta: float) -> void:
 	var target_hz := float(NOTE_FREQS.get(target_note, 0.0))
 	var pitch := float(analyzer.current_pitch)
 	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
+	var attack_identity := _get_technique_attack_identity()
 
 	if signal_active and target_hz > 0.0:
 		var cents := 1200.0 * log(pitch / target_hz) / log(2.0)
 		if not vibrato_base_note_heard:
-			# The attack must first identify the requested physical string. Pitch is
-			# allowed to rise afterwards because left-hand rung bends the same string.
-			if absf(cents) <= 55.0:
+			var generation := int(attack_identity.get("generation", -1))
+			if absf(cents) <= 55.0 \
+					and generation != vibrato_consumed_attack_generation \
+					and _is_vibrato_source_attack_valid(attack_identity, target_note):
 				vibrato_base_note_heard = true
+				vibrato_attack_generation = generation
+				vibrato_consumed_attack_generation = generation
+				vibrato_contour_elapsed = 0.0
+				vibrato_min_amplitude_db = float(analyzer.current_amplitude_db)
+				vibrato_added_sound_elapsed = 0.0
 				vibrato_silence_elapsed = 0.0
 				if vibrato_status_label:
-					vibrato_status_label.text = "Đã nhận đúng %s. Tiếp tục rung đều tay trái..." % target_note
+					vibrato_status_label.text = "Đã nhận đúng lần gảy dây %s. Tiếp tục rung đều tay trái..." % target_note
+			elif bool(attack_identity.get("active", false)) \
+					and int(attack_identity.get("string_index", -1)) >= 0 \
+					and vibrato_status_label:
+				var heard_note := str(attack_identity.get("note_name", "âm khác"))
+				vibrato_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi rung." % [heard_note, target_note]
+				vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 		else:
+			if not _is_vibrato_contour_session_valid(attack_identity, target_note, vibrato_attack_generation):
+				_reset_vibrato_attempt_tracking("Tiếng rung không còn thuộc lần gảy dây %s. Hãy gảy lại rồi rung." % target_note)
+				return
+			vibrato_contour_elapsed += delta
+			vibrato_min_amplitude_db = minf(vibrato_min_amplitude_db, float(analyzer.current_amplitude_db))
+			if _is_vibrato_added_sound_level(
+					float(analyzer.current_amplitude_db),
+					vibrato_min_amplitude_db,
+					vibrato_contour_elapsed
+			):
+				vibrato_added_sound_elapsed += delta
+			else:
+				vibrato_added_sound_elapsed = maxf(0.0, vibrato_added_sound_elapsed - delta * 2.0)
+			if vibrato_added_sound_elapsed >= VIBRATO_ADDED_SOUND_HOLD_SEC:
+				_reset_vibrato_attempt_tracking("Phát hiện giọng hoặc âm mới chồng lên tiếng đàn. Hãy chỉ gảy và rung dây bằng tay trái.")
+				return
 			vibrato_silence_elapsed = 0.0
 			if cents >= -70.0 and cents <= 190.0:
 				vibrato_sample_accumulator += delta
@@ -3060,6 +3109,9 @@ func _process_vibrato_practice(delta: float) -> void:
 						vibrato_pitch_history.pop_front()
 	else:
 		vibrato_silence_elapsed += delta
+		if vibrato_base_note_heard and vibrato_silence_elapsed >= VIBRATO_MAX_SIGNAL_GAP:
+			_reset_vibrato_attempt_tracking("Tiếng đàn bị ngắt giữa quá trình rung. Hãy gảy lại và rung liền mạch.")
+			return
 
 	if vibrato_base_note_heard and vibrato_pitch_history.size() >= 24:
 		var result := _analyze_vibrato_cents(vibrato_pitch_history)
@@ -3072,11 +3124,54 @@ func _process_vibrato_practice(delta: float) -> void:
 				float(result.get("rate_hz", 0.0))
 			]
 
-	if vibrato_attempt_elapsed >= VIBRATO_ATTEMPT_TIMEOUT or (vibrato_base_note_heard and vibrato_silence_elapsed >= 0.8):
+	if vibrato_attempt_elapsed >= VIBRATO_ATTEMPT_TIMEOUT:
 		_on_vibrato_note_failed()
 
+
+func _is_vibrato_source_attack_valid(identity: Dictionary, target_note: String) -> bool:
+	if not bool(identity.get("active", false)):
+		return false
+	var expected_string := int(NOTE_TO_STRING.get(target_note, -1))
+	return expected_string >= 0 \
+		and int(identity.get("string_index", -1)) == expected_string \
+		and str(identity.get("note_name", "")) == target_note
+
+
+func _is_vibrato_contour_session_valid(identity: Dictionary, target_note: String, generation: int) -> bool:
+	return generation >= 0 \
+		and int(identity.get("generation", -1)) == generation \
+		and _is_vibrato_source_attack_valid(identity, target_note)
+
+
+func _is_vibrato_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
+	return contour_elapsed >= 0.12 and current_db >= minimum_db + VIBRATO_ADDED_SOUND_RISE_DB
+
+
+func _reset_vibrato_attempt_tracking(message: String) -> void:
+	vibrato_pitch_history.clear()
+	vibrato_sample_accumulator = 0.0
+	vibrato_attempt_elapsed = 0.0
+	vibrato_silence_elapsed = 0.0
+	vibrato_base_note_heard = false
+	vibrato_attack_generation = -1
+	vibrato_contour_elapsed = 0.0
+	vibrato_min_amplitude_db = 0.0
+	vibrato_added_sound_elapsed = 0.0
+	if vibrato_status_label:
+		vibrato_status_label.text = message
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+
 func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
-	var result := {"detected": false, "depth_cents": 0.0, "rate_hz": 0.0, "cycles": 0.0}
+	var result := {
+		"detected": false,
+		"depth_cents": 0.0,
+		"rate_hz": 0.0,
+		"cycles": 0.0,
+		"low_cents": 0.0,
+		"high_cents": 0.0,
+		"center_cents": 0.0,
+		"duration": 0.0
+	}
 	if history.size() < 24:
 		return result
 	var smoothed: Array[float] = []
@@ -3094,6 +3189,8 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	var high_idx := clampi(int(float(sorted.size() - 1) * 0.90), 0, sorted.size() - 1)
 	var depth: float = sorted[high_idx] - sorted[low_idx]
 	var center: float = (sorted[high_idx] + sorted[low_idx]) * 0.5
+	var low_cents: float = sorted[low_idx]
+	var high_cents: float = sorted[high_idx]
 	var hysteresis := maxf(2.5, depth * 0.10)
 	var state := 0
 	var switches := 0
@@ -3113,7 +3210,20 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	result["depth_cents"] = depth
 	result["rate_hz"] = rate
 	result["cycles"] = cycles
-	result["detected"] = cycles >= 2.0 and rate >= 3.0 and rate <= 9.0 and depth >= 12.0 and depth <= 145.0
+	result["low_cents"] = low_cents
+	result["high_cents"] = high_cents
+	result["center_cents"] = center
+	result["duration"] = duration
+	# Left-hand đàn-tranh vibrato bends an open string mainly upward from its
+	# resting pitch. Symmetric modulation around the sung note is typical vocal
+	# vibrato and must not pass even when its rate/depth looks convincing.
+	result["detected"] = duration >= VIBRATO_MIN_DURATION_SEC \
+		and cycles >= 2.5 \
+		and rate >= 3.0 and rate <= 9.0 \
+		and depth >= 12.0 and depth <= 145.0 \
+		and low_cents >= -28.0 \
+		and high_cents >= 14.0 \
+		and center >= maxf(5.0, depth * 0.12)
 	return result
 
 func _on_vibrato_note_success(result: Dictionary) -> void:
