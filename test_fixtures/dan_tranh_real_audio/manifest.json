@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "ready": false,
+  "description": "Bộ hồi quy thu thật cho bộ lọc tiếng đàn tranh. Chỉ đổi ready thành true sau khi thay đủ các file WAV bằng bản thu thật theo README.md.",
+  "required_categories": [
+    "real_dan_tranh_pluck",
+    "normal_speech",
+    "sung_target_note",
+    "long_hum",
+    "pitch_glide",
+    "vocal_vibrato",
+    "tap",
+    "clap",
+    "room_noise",
+    "speaker_playback"
+  ],
+  "cases": [
+    {"id": "dan_tranh_low", "category": "real_dan_tranh_pluck", "path": "dan_tranh_low.wav", "expected": true},
+    {"id": "dan_tranh_mid", "category": "real_dan_tranh_pluck", "path": "dan_tranh_mid.wav", "expected": true},
+    {"id": "dan_tranh_high", "category": "real_dan_tranh_pluck", "path": "dan_tranh_high.wav", "expected": true},
+    {"id": "normal_speech", "category": "normal_speech", "path": "normal_speech.wav", "expected": false},
+    {"id": "sung_target_note", "category": "sung_target_note", "path": "sung_target_note.wav", "expected": false},
+    {"id": "long_hum", "category": "long_hum", "path": "long_hum.wav", "expected": false},
+    {"id": "pitch_glide", "category": "pitch_glide", "path": "pitch_glide.wav", "expected": false},
+    {"id": "vocal_vibrato", "category": "vocal_vibrato", "path": "vocal_vibrato.wav", "expected": false},
+    {"id": "tap", "category": "tap", "path": "tap.wav", "expected": false},
+    {"id": "clap", "category": "clap", "path": "clap.wav", "expected": false},
+    {"id": "room_noise", "category": "room_noise", "path": "room_noise.wav", "expected": false},
+    {"id": "speaker_playback", "category": "speaker_playback", "path": "speaker_playback.wav", "expected": false}
+  ]
+}

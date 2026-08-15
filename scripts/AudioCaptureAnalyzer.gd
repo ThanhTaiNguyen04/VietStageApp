@@ -90,7 +90,11 @@ const DAN_TRANH_GATE_FREQUENCIES: Array[float] = [
 	523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66,
 	1318.51, 1567.98, 1760.00
 ]
-const DAN_TRANH_GATE_TUNING_OFFSETS: Array[float] = [-0.03, -0.015, 0.0, 0.015, 0.03]
+const DAN_TRANH_GATE_TUNING_OFFSETS: Array[float] = [
+	-0.03, -0.025, -0.02, -0.015, -0.01, -0.005,
+	0.0,
+	0.005, 0.01, 0.015, 0.02, 0.025, 0.03
+]
 
 # Calibration (Phase 1)
 var calibration_active := false
