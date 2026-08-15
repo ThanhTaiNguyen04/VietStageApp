@@ -82,6 +82,8 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		var is_onset := analyzer._detect_onset(frame)
 		var profile_plucked: bool = analyzer.pitch_profile != null and analyzer.pitch_profile.is_plucked_instrument
+		if profile_plucked:
+			analyzer._update_instrument_sound_gate(frame, is_onset, 0.016)
 
 		if profile_plucked:
 			if is_onset and (not analyzer.pluck_locked or analyzer.pitch_estimation_done or analyzer.time_since_onset > 0.15):
@@ -107,6 +109,8 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		if raw_pitch > 0.0:
 			analyzer._update_reliable_pitch(raw_pitch)
+		if profile_plucked and not analyzer.has_recent_dan_tranh_attack():
+			analyzer._clear_pitch_detection()
 
 		if analyzer.current_pitch_is_reliable and analyzer.current_pitch > 0.0 and analyzer.pitch_profile != null:
 			reliable_frames += 1
@@ -172,8 +176,143 @@ func _init() -> void:
 	if not bow_analyzer.detect_dan_tranh_note(click_buf, SAMPLE_RATE).is_empty():
 		failures.append("Single-shot nhận nhầm tiếng click/gõ")
 
+	# 6. Á accepts only instrument-validated attack events, then checks distinct
+	#    strings, covered range, direction and timing continuity independently.
+	var lesson = load("res://scripts/LessonDanTranh.gd").new()
+	var validated_event := {
+		"is_match": true,
+		"instrument_validated": true,
+		"instrument_confidence": 82.0,
+		"attack_generation": 10,
+		"attack_time_msec": 1000,
+		"string_index": 16
+	}
+	if not lesson._is_validated_dan_tranh_rapid_attack(validated_event):
+		failures.append("Á loại nhầm tiếng gảy đã qua bộ lọc tiếng đàn")
+	var unfiltered_event := validated_event.duplicate()
+	unfiltered_event["instrument_validated"] = false
+	if lesson._is_validated_dan_tranh_rapid_attack(unfiltered_event):
+		failures.append("Á nhận sự kiện chưa qua bộ lọc tiếng đàn")
+
+	var down_strings: Array[int] = [16, 14, 12, 10, 8, 6, 4]
+	var down_times: Array[float] = [1.00, 1.12, 1.24, 1.36, 1.48, 1.60, 1.72]
+	var down_result: Dictionary = lesson._analyze_glissando_gesture(down_strings, down_times, "down")
+	if not down_result.get("success", false):
+		failures.append("Á xuống hợp lệ không vượt qua đủ dây/phạm vi/hướng/liên tục")
+
+	var too_few_strings: Array[int] = [16, 13, 10, 7, 4]
+	var too_few_times: Array[float] = [1.00, 1.12, 1.24, 1.36, 1.48]
+	if lesson._analyze_glissando_gesture(too_few_strings, too_few_times, "down").get("success", false):
+		failures.append("Á vẫn đúng khi chưa đủ số dây khác nhau")
+
+	var narrow_strings: Array[int] = [12, 11, 10, 9, 8, 7]
+	var narrow_times: Array[float] = [1.00, 1.10, 1.20, 1.30, 1.40, 1.50]
+	if lesson._analyze_glissando_gesture(narrow_strings, narrow_times, "down").get("success", false):
+		failures.append("Á vẫn đúng khi phạm vi dây quá hẹp")
+
+	var wrong_direction := down_strings.duplicate()
+	wrong_direction.reverse()
+	if lesson._analyze_glissando_gesture(wrong_direction, down_times, "down").get("success", false):
+		failures.append("Á xuống vẫn đúng khi chuỗi đi ngược hướng")
+
+	var broken_times: Array[float] = [1.00, 1.12, 1.24, 1.62, 1.74, 1.86, 1.98]
+	var broken_result: Dictionary = lesson._analyze_glissando_gesture(down_strings, broken_times, "down")
+	if broken_result.get("success", false) or broken_result.get("continuous", true):
+		failures.append("Á vẫn đúng khi khoảng nghỉ giữa hai tiếng gảy quá dài")
+	var skipped_strings: Array[int] = [16, 11, 10, 9, 8, 7, 4]
+	var skipped_result: Dictionary = lesson._analyze_glissando_gesture(skipped_strings, down_times, "down")
+	if skipped_result.get("success", false) or skipped_result.get("continuous", true):
+		failures.append("Á vẫn đúng khi bộ nhận bỏ cách quá nhiều dây liền nhau")
+
+	var round_strings: Array[int] = [16, 14, 12, 10, 8, 6, 4, 6, 8, 10, 12, 14, 16]
+	var round_times: Array[float] = []
+	for i in round_strings.size():
+		round_times.append(2.0 + float(i) * 0.12)
+	if not lesson._analyze_glissando_gesture(round_strings, round_times, "round").get("success", false):
+		failures.append("Á vòng hợp lệ không được nhận")
+
+	# 7. Vê requires one validated generation per attack and independently checks
+	#    target strings, speed, regularity and the longest pause.
+	var tremolo_strings: Array[int] = []
+	var tremolo_times: Array[float] = []
+	var tremolo_generations: Array[int] = []
+	for i in 12:
+		tremolo_strings.append(2)
+		tremolo_times.append(3.0 + float(i) * 0.20)
+		tremolo_generations.append(30 + i)
+	var allowed_single: Array[int] = [2]
+	var single_tremolo: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if not single_tremolo.get("success", false):
+		failures.append("Vê một dây đúng, nhanh và đều không được nhận")
+
+	var duplicate_generation: Array[int] = tremolo_generations.duplicate()
+	duplicate_generation[6] = duplicate_generation[5]
+	var duplicate_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, duplicate_generation, "single", allowed_single, 0
+	)
+	if duplicate_result.get("success", false) or duplicate_result.get("all_attacks_valid", true):
+		failures.append("Vê tính một onset tiếng đàn lặp lại thành hai lần gảy")
+
+	var wrong_tremolo_strings: Array[int] = tremolo_strings.duplicate()
+	wrong_tremolo_strings[5] = 5
+	var wrong_tremolo: Dictionary = lesson._analyze_tremolo_sequence(
+		wrong_tremolo_strings, tremolo_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if wrong_tremolo.get("success", false) or wrong_tremolo.get("correct_strings", true):
+		failures.append("Vê vẫn đúng khi có lần gảy sai dây")
+
+	var pause_times: Array[float] = tremolo_times.duplicate()
+	for i in range(6, pause_times.size()):
+		pause_times[i] += 0.36
+	var pause_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, pause_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if pause_result.get("success", false) or float(pause_result.get("max_gap", 0.0)) <= 0.34:
+		failures.append("Vê vẫn đúng khi có khoảng nghỉ quá dài")
+	var slow_times: Array[float] = []
+	for i in tremolo_times.size():
+		slow_times.append(3.0 + float(i) * 0.30)
+	var slow_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, slow_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if slow_result.get("success", false) or float(slow_result.get("rate", 99.0)) >= 3.5:
+		failures.append("Vê vẫn đúng khi tốc độ thấp hơn yêu cầu")
+
+	var uneven_times: Array[float] = [3.00]
+	for i in 12:
+		var uneven_interval := 0.08 if i % 2 == 0 else 0.32
+		uneven_times.append(uneven_times.back() + uneven_interval)
+	var uneven_strings: Array[int] = []
+	var uneven_generations: Array[int] = []
+	for i in uneven_times.size():
+		uneven_strings.append(2)
+		uneven_generations.append(60 + i)
+	var uneven_result: Dictionary = lesson._analyze_tremolo_sequence(
+		uneven_strings, uneven_times, uneven_generations, "single", allowed_single, 0
+	)
+	if uneven_result.get("success", false) or float(uneven_result.get("regularity", 1.0)) >= 0.62:
+		failures.append("Vê vẫn đúng khi nhịp gảy không đều")
+
+	var octave_strings: Array[int] = []
+	for i in tremolo_times.size():
+		octave_strings.append(2 if i % 2 == 0 else 7)
+	var allowed_octave: Array[int] = [2, 7]
+	var octave_result: Dictionary = lesson._analyze_tremolo_sequence(
+		octave_strings, tremolo_times, tremolo_generations, "octave", allowed_octave, 0
+	)
+	if not octave_result.get("success", false):
+		failures.append("Vê quãng tám luân phiên đúng hai dây không được nhận")
+	var wrong_attack_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, tremolo_generations, "single", allowed_single, 1
+	)
+	if wrong_attack_result.get("success", false) or wrong_attack_result.get("correct_strings", true):
+		failures.append("Vê vẫn hoàn thành sau một lần tấn công sai dây")
+	lesson.free()
+
 	if failures.is_empty():
-		print("PASS: plucked flow recognizes all 17 strings and rejects taps/noise/voice")
+		print("PASS: filtered plucks validate Á and Vê timing/string technique")
 		quit(0)
 	else:
 		for failure in failures:

@@ -21,7 +21,7 @@ elif env["platform"] == "ios":
         )
     else:
         library = env.StaticLibrary(
-            "bin/libvietstage.{}.{}.a".format(env["platform"], env["target"]),
+            "bin/libvietstage.{}.{}.{}.a".format(env["platform"], env["target"], env["arch"]),
             source=sources,
         )
 else:

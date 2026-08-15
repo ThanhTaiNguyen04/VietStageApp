@@ -37,8 +37,8 @@ var _portrait_is_talking := false
 var _portrait_frame := 0
 var _portrait_frame_elapsed := 0.0
 const PORTRAIT_FRAME_DURATION := 0.08
-const PORTRAIT_FRAME_COUNT := 16
-const PORTRAIT_SHEET_COLUMNS := 4
+const PORTRAIT_FRAME_COUNT := 24
+const PORTRAIT_SHEET_COLUMNS := 6
 const PORTRAIT_SHEET_ROWS := 4
 
 # Fonts
@@ -68,7 +68,7 @@ var _instrument_context: String = "general"
 
 func _ready() -> void:
 	# Load assets
-	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
+	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_24_frames.png") as Texture2D
 	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
 	
 	_font_title = load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -556,7 +556,7 @@ func _draw_mai_chat_portrait() -> void:
 		return
 	var portrait_size := ai_portrait.size
 	if _tex_mai_talk_sheet:
-		# The smooth sheet is a 3-column × 6-row grid of upper-body talking poses.
+		# The smooth sheet is a 6-column × 4-row grid of upper-body talking poses.
 		var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
 		var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
 		var source_rect := Rect2(

@@ -4,6 +4,7 @@ extends Control
 const C_BG           := Color(0.98, 0.97, 0.94, 1.0) # Warm cream background matching the project
 const C_GOLD         := Color(0.77, 0.58, 0.15, 1.0) # Lacquer gold
 const C_GOLD_LIGHT   := Color(0.92, 0.76, 0.30, 1.0) # Lighter gold
+const C_GOLD_DARK    := Color(0.478, 0.36, 0.07, 1.0)
 const C_JADE         := Color(0.09, 0.27, 0.18, 1.0) # Premium deep jade green
 const C_JADE_LIGHT   := Color(0.12, 0.37, 0.23, 1.0) # Lake jade green for active path borders
 const C_TEXT         := Color(0.13, 0.08, 0.05, 1.0) # Dark charcoal
@@ -139,7 +140,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Minigame"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -147,7 +148,7 @@ func _ready() -> void:
 	
 	btn_leaderboard = Button.new()
 	btn_leaderboard.name = "BtnLeaderboard"
-	btn_leaderboard.text = "Xếp hạng"
+	btn_leaderboard.text = "Bảng xếp hạng"
 	btn_leaderboard.flat = true
 	btn_leaderboard.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_leaderboard)
@@ -155,6 +156,7 @@ func _ready() -> void:
 	
 	_build_theme()
 	_connect_buttons()
+
 	_build_lesson_list()
 	_build_sidebar()
 	
@@ -262,6 +264,8 @@ func _connect_buttons() -> void:
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
+
+
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)

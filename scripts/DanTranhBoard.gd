@@ -304,6 +304,15 @@ func pluck(idx: int, play_sound: bool = true) -> void:
 	var name_idx := idx % _note_names.size()
 	string_plucked.emit(idx, _note_names[name_idx])
 	queue_redraw()
+func stop_all_audio() -> void:
+	for i in range(_audio_players.size()):
+		var player_ref = _audio_players[i]
+		if player_ref != null and is_instance_valid(player_ref):
+			var player := player_ref as AudioStreamPlayer
+			player.stop()
+			player.queue_free()
+		_audio_players[i] = null
+
 
 # ─── Process ──────────────────────────────────────────────────────────────────
 func _process(delta: float) -> void:

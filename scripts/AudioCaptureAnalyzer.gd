@@ -4,6 +4,10 @@ class_name AudioCaptureAnalyzer
 
 signal dan_tranh_note_started(note: Dictionary)
 signal dan_tranh_note_ended(note: Dictionary)
+# Emitted for every distinct string attack while rapid tracking is enabled.
+# Unlike dan_tranh_note_started, repeated attacks on the same string are kept;
+# technique lessons such as tremolo need their timing information.
+signal dan_tranh_rapid_attack(note: Dictionary)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -28,6 +32,7 @@ var current_breath_purity := 100.0
 var current_composite_score := 100.0
 var recent_scores_history : Array[float] = []
 var difficulty_tolerance_scale := 1.0
+var analysis_suspended := false
 
 var _analyzer: RefCounted = null
 
@@ -41,6 +46,55 @@ var volume_threshold_db := -55.0
 
 # Instrument Profile (Phase 1)
 var pitch_profile: Resource = null
+
+# Technique lessons such as đàn-tranh glissando need to follow a fast pitch
+# trajectory instead of waiting for one isolated pluck to finish. This flag is
+# enabled only by that lesson, so normal note exercises keep their stricter gate.
+var rapid_sequence_mode := false
+var _rapid_attack_pending := false
+var _rapid_attack_pending_elapsed := 0.0
+var _rapid_attack_last_emit_msec := -1000
+const RAPID_ATTACK_REFRACTORY_MSEC := 65
+const RAPID_ATTACK_PITCH_WINDOW := 0.18
+
+# Keeps estimating the fundamental throughout a sustained note so technique
+# lessons can measure periodic pitch movement (rung dây) after the attack.
+var contour_tracking_mode := false
+
+# Shared đàn-tranh timbre gate. Every scoring mode must first observe a real
+# plucked-string attack before pitch data is exposed to the lesson.
+var instrument_gate_open := false
+var current_instrument_confidence := 0.0
+var _instrument_gate_string_index := -1
+var _instrument_gate_note_name := ""
+var _instrument_gate_generation := 0
+var _instrument_gate_elapsed := 0.0
+var _instrument_gate_silence_elapsed := 0.0
+var _instrument_attack_candidate_active := false
+var _instrument_attack_candidate := PackedFloat32Array()
+var _instrument_last_candidate_msec := -1000
+const INSTRUMENT_ATTACK_MIN_SAMPLES := 1024
+const INSTRUMENT_ATTACK_MAX_SAMPLES := 4096
+const INSTRUMENT_GATE_NORMAL_SEC := 0.65
+const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
+const INSTRUMENT_GATE_SILENCE_SEC := 0.35
+const INSTRUMENT_MIN_ATTACK_RATIO := 1.18
+const INSTRUMENT_MIN_DECAY_DB := 2.0
+const INSTRUMENT_MIN_LATE_DECAY_DB := 0.75
+const INSTRUMENT_MIN_TAIL_RATIO := 0.04
+const INSTRUMENT_MIN_PERIODICITY := 18.0
+const INSTRUMENT_MIN_STRING_TONALITY := 0.055
+const INSTRUMENT_MIN_CREST_FACTOR := 1.35
+const DAN_TRANH_GATE_FREQUENCIES: Array[float] = [
+	196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00,
+	523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66,
+	1318.51, 1567.98, 1760.00
+]
+const DAN_TRANH_GATE_TUNING_OFFSETS: Array[float] = [
+	-0.03, -0.025, -0.02, -0.015, -0.01, -0.005,
+	0.0,
+	0.005, 0.01, 0.015, 0.02, 0.025, 0.03
+]
 
 # Calibration (Phase 1)
 var calibration_active := false
@@ -179,11 +233,51 @@ func finish_calibration() -> float:
 	print("Calibrated background noise. Avg: %.1f dB, threshold set to: %.1f dB" % [avg, volume_threshold_db])
 	return volume_threshold_db
 
+
+func set_analysis_suspended(suspended: bool) -> void:
+	analysis_suspended = suspended
+	_reset_live_analysis_state()
+	if _effect:
+		_effect.clear_buffer()
+
+
+func _reset_live_analysis_state() -> void:
+	_clear_pitch_detection()
+	current_amplitude_db = -80.0
+	_analysis_buffer.clear()
+	_rapid_attack_pending = false
+	_rapid_attack_pending_elapsed = 0.0
+	pluck_locked = false
+	onset_detected = false
+	pitch_estimation_done = false
+	time_since_onset = 0.0
+	pluck_release_time = 0.0
+	_dan_tranh_note_active = false
+	_dan_tranh_note_duration = 0.0
+	_dan_tranh_release_elapsed = 0.0
+	current_dan_tranh_note = {}
+	_close_instrument_gate()
+	for i in range(_sample_history.size()):
+		_sample_history[i] = 0.0
+
+
+func _discard_captured_samples() -> void:
+	if not _effect:
+		return
+	var frames_available := _effect.get_frames_available()
+	if frames_available > 0:
+		_effect.get_buffer(frames_available)
+
 # ─── Standardised 7-Step DSP Pipeline ───
 func _process(delta: float) -> void:
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 	if not _effect: return
+	if analysis_suspended:
+		# Keep draining the capture effect so cô Mai's speech cannot remain buffered
+		# and be analyzed immediately after the post-TTS cooldown.
+		_discard_captured_samples()
+		return
 	
 	# Step 1: Capture
 	var samples = _capture_samples()
@@ -196,6 +290,8 @@ func _process(delta: float) -> void:
 	
 	var gate_open = current_amplitude_db > volume_threshold_db
 	if not gate_open:
+		_rapid_attack_pending = false
+		_rapid_attack_pending_elapsed = 0.0
 		_handle_silence(delta)
 		_update_sample_history(samples)
 		return
@@ -203,8 +299,15 @@ func _process(delta: float) -> void:
 	# Step 3: Onset Detection (plucked instrument logic)
 	var is_onset = _detect_onset(samples)
 	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
-	
 	if profile_plucked:
+		_update_instrument_sound_gate(samples, is_onset, delta)
+	if rapid_sequence_mode:
+		if _rapid_attack_pending:
+			_rapid_attack_pending_elapsed += delta
+			if _rapid_attack_pending_elapsed > RAPID_ATTACK_PITCH_WINDOW:
+				_rapid_attack_pending = false
+	
+	if profile_plucked and not rapid_sequence_mode and not contour_tracking_mode:
 		if is_onset and (not pluck_locked or pitch_estimation_done or time_since_onset > 0.15):
 			if _dan_tranh_note_active:
 				_finish_dan_tranh_note()
@@ -220,7 +323,9 @@ func _process(delta: float) -> void:
 	# Step 4: Pitch Estimation (estimate every frame inside the 30-150 ms onset
 	# window so the stability gate can accumulate PITCH_STABILITY_FRAMES candidates)
 	var raw_pitch := 0.0
-	if profile_plucked:
+	if rapid_sequence_mode or contour_tracking_mode:
+		raw_pitch = _estimate_pitch(samples)
+	elif profile_plucked:
 		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.15:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
@@ -232,14 +337,42 @@ func _process(delta: float) -> void:
 	# Step 5: Stabilization
 	if raw_pitch > 0.0:
 		_update_reliable_pitch(raw_pitch)
+	if profile_plucked and not instrument_gate_open:
+		# Do not expose stable vocal/noise pitch while no valid đàn-tranh attack
+		# has opened the shared instrument gate.
+		_clear_pitch_detection()
 	
 	# Step 6: Note Mapping (Standardised core note mapping using InstrumentPitchProfile)
 	var mapped_note := {}
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null:
 		mapped_note = pitch_profile.match_pitch(current_pitch)
+	if instrument_gate_open and _instrument_gate_string_index < 0 \
+			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
+		# Bind the gate to the first reliable pitch produced by this accepted
+		# string attack. Contour lessons can then prove that a bend still belongs
+		# to the original pluck instead of accepting a later vocal glide.
+		_instrument_gate_string_index = int(mapped_note.get("string_index", -1))
+		_instrument_gate_note_name = str(mapped_note.get("note_name", ""))
+	if rapid_sequence_mode and _rapid_attack_pending \
+			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
+		var rapid_note := mapped_note.duplicate()
+		rapid_note["attack_time_msec"] = Time.get_ticks_msec()
+		rapid_note["amplitude_db"] = current_amplitude_db
+		# This event exists only after analyze_dan_tranh_sound() accepted the
+		# onset. Carry that proof with the event so rapid-technique scorers never
+		# confuse a continuous vocal pitch estimate with a plucked string.
+		rapid_note["instrument_validated"] = true
+		rapid_note["instrument_confidence"] = current_instrument_confidence
+		rapid_note["attack_generation"] = _instrument_gate_generation
+		dan_tranh_rapid_attack.emit(rapid_note)
+		_rapid_attack_last_emit_msec = Time.get_ticks_msec()
+		_rapid_attack_pending = false
+		_rapid_attack_pending_elapsed = 0.0
 	
 	# Step 7: Lesson Scoring & Tracking
-	if profile_plucked:
+	if rapid_sequence_mode or contour_tracking_mode:
+		_update_continuous_note_tracking(mapped_note, delta)
+	elif profile_plucked:
 		_update_dan_tranh_tracking_plucked(mapped_note, delta)
 	else:
 		_update_continuous_note_tracking(mapped_note, delta)
@@ -289,6 +422,10 @@ func _handle_silence(delta: float) -> void:
 	_clear_pitch_detection()
 	current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 	current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
+	if instrument_gate_open:
+		_instrument_gate_silence_elapsed += delta
+		if _instrument_gate_silence_elapsed >= INSTRUMENT_GATE_SILENCE_SEC:
+			_close_instrument_gate()
 	
 	# Release pluck lock when signal level is silent (Phase 2)
 	pluck_release_time += delta
@@ -378,6 +515,10 @@ func _clear_pitch_detection() -> void:
 func _update_reliable_pitch(detected_pitch: float) -> void:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
+	var fast_tracking := rapid_sequence_mode or contour_tracking_mode
+	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
+	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
+	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
 	
 	if detected_pitch < min_f or detected_pitch > max_f:
 		_clear_pitch_detection()
@@ -386,28 +527,112 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	if not _pitch_candidates.is_empty():
 		var previous := _pitch_candidates[_pitch_candidates.size() - 1]
 		var jump_cents := absf(1200.0 * log(detected_pitch / previous) / log(2.0))
-		if jump_cents > PITCH_JUMP_CENTS:
+		if jump_cents > jump_limit:
 			_pitch_candidates.clear()
 
 	_pitch_candidates.append(detected_pitch)
-	if _pitch_candidates.size() > PITCH_STABILITY_FRAMES:
+	if _pitch_candidates.size() > stability_frames:
 		_pitch_candidates.pop_front()
-	if _pitch_candidates.size() < PITCH_STABILITY_FRAMES:
+	if _pitch_candidates.size() < stability_frames:
 		current_pitch = 0.0
-		current_pitch_confidence = float(_pitch_candidates.size()) / float(PITCH_STABILITY_FRAMES)
+		current_pitch_confidence = float(_pitch_candidates.size()) / float(stability_frames)
 		current_pitch_is_reliable = false
 		return
 
 	var sorted := _pitch_candidates.duplicate()
 	sorted.sort()
-	var median: float = (sorted[1] + sorted[2]) * 0.5
+	var middle := sorted.size() / 2
+	var median: float
+	if sorted.size() % 2 == 0:
+		median = (float(sorted[middle - 1]) + float(sorted[middle])) * 0.5
+	else:
+		median = float(sorted[middle])
 	var spread_cents := absf(1200.0 * log(sorted[sorted.size() - 1] / sorted[0]) / log(2.0))
-	current_pitch_confidence = clampf(1.0 - spread_cents / PITCH_STABILITY_CENTS, 0.0, 1.0)
-	current_pitch_is_reliable = spread_cents <= PITCH_STABILITY_CENTS
+	current_pitch_confidence = clampf(1.0 - spread_cents / stability_limit, 0.0, 1.0)
+	current_pitch_is_reliable = spread_cents <= stability_limit
 	current_pitch = median if current_pitch_is_reliable else 0.0
 
 func get_current_dan_tranh_note() -> Dictionary:
 	return current_dan_tranh_note.duplicate()
+
+
+func has_recent_dan_tranh_attack() -> bool:
+	return instrument_gate_open and not analysis_suspended
+
+
+func get_dan_tranh_attack_identity() -> Dictionary:
+	return {
+		"active": has_recent_dan_tranh_attack(),
+		"string_index": _instrument_gate_string_index,
+		"note_name": _instrument_gate_note_name,
+		"generation": _instrument_gate_generation,
+		"confidence": current_instrument_confidence
+	}
+
+
+func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, delta: float) -> void:
+	if instrument_gate_open:
+		_instrument_gate_elapsed += delta
+		_instrument_gate_silence_elapsed = 0.0
+		var max_open_time := INSTRUMENT_GATE_CONTOUR_SEC if contour_tracking_mode else INSTRUMENT_GATE_NORMAL_SEC
+		if _instrument_gate_elapsed >= max_open_time:
+			_close_instrument_gate()
+
+	var now_msec := Time.get_ticks_msec()
+	var candidate_refractory := RAPID_ATTACK_REFRACTORY_MSEC if rapid_sequence_mode else 120
+	if is_onset and not _instrument_attack_candidate_active \
+			and now_msec - _instrument_last_candidate_msec >= candidate_refractory:
+		_instrument_attack_candidate_active = true
+		_instrument_attack_candidate = samples.duplicate()
+		_instrument_last_candidate_msec = now_msec
+		instrument_gate_open = false
+		current_instrument_confidence = 0.0
+		_instrument_gate_string_index = -1
+		_instrument_gate_note_name = ""
+	elif _instrument_attack_candidate_active:
+		_instrument_attack_candidate.append_array(samples)
+
+	if not _instrument_attack_candidate_active:
+		return
+	if _instrument_attack_candidate.size() > INSTRUMENT_ATTACK_MAX_SAMPLES:
+		_instrument_attack_candidate = _instrument_attack_candidate.slice(
+			0, INSTRUMENT_ATTACK_MAX_SAMPLES
+		)
+	if _instrument_attack_candidate.size() < INSTRUMENT_ATTACK_MIN_SAMPLES:
+		return
+
+	var classification := analyze_dan_tranh_sound(
+		_instrument_attack_candidate, AudioServer.get_mix_rate()
+	)
+	_instrument_attack_candidate_active = false
+	_instrument_attack_candidate.clear()
+	current_instrument_confidence = float(classification.get("confidence", 0.0))
+	if classification.get("accepted", false):
+		instrument_gate_open = true
+		_instrument_gate_generation += 1
+		_instrument_gate_string_index = -1
+		_instrument_gate_note_name = ""
+		_instrument_gate_elapsed = 0.0
+		_instrument_gate_silence_elapsed = 0.0
+		if rapid_sequence_mode and Time.get_ticks_msec() - _rapid_attack_last_emit_msec >= RAPID_ATTACK_REFRACTORY_MSEC:
+			_rapid_attack_pending = true
+			_rapid_attack_pending_elapsed = 0.0
+	else:
+		_close_instrument_gate()
+		_clear_pitch_detection()
+
+
+func _close_instrument_gate() -> void:
+	instrument_gate_open = false
+	current_instrument_confidence = 0.0
+	_instrument_gate_string_index = -1
+	_instrument_gate_note_name = ""
+	_instrument_gate_elapsed = 0.0
+	_instrument_gate_silence_elapsed = 0.0
+	_instrument_attack_candidate_active = false
+	_instrument_attack_candidate.clear()
+	_rapid_attack_pending = false
+	_rapid_attack_pending_elapsed = 0.0
 
 # ─── GDScript Advanced AI Fallbacks ───
 func _calculate_peak_db_gdscript(samples: PackedFloat32Array) -> float:
@@ -711,17 +936,11 @@ func _draw() -> void:
 		draw_polyline(points, C_JADE, 2.0, true)
 
 func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
+	if analysis_suspended:
+		return {}
 	if pitch_profile:
-		# Reject silence and continuous/non-plucked signals (voice hum, sustained
-		# tones, room tone): a real pluck is a sharp attack followed by decay, so
-		# the front half of the analysis window must clearly dominate the tail.
-		if _calculate_amplitude_db(samples) < pitch_profile.volume_threshold_db:
-			return {}
-		if not _has_pluck_attack(samples):
-			return {}
-		# Reject transient clicks/taps: they are front-loaded but aperiodic,
-		# so their autocorrelation periodicity score is far below a real tone.
-		if _evaluate_tone_quality_gdscript(samples) < 50.0:
+		var classification := analyze_dan_tranh_sound(samples, sample_rate)
+		if not classification.get("accepted", false):
 			return {}
 		var f := 0.0
 		if _analyzer:
@@ -731,17 +950,166 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 		return pitch_profile.match_pitch(f)
 	return {}
 
+
+func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 44100.0) -> Dictionary:
+	var result := {
+		"accepted": false,
+		"confidence": 0.0,
+		"attack_ratio": 0.0,
+		"decay_db": 0.0,
+		"late_decay_db": 0.0,
+		"tail_ratio": 0.0,
+		"periodicity": 0.0,
+		"string_tonality": 0.0,
+		"crest_factor": 0.0,
+		"peak_position": 1.0,
+		"reason": "too_short"
+	}
+	var size := samples.size()
+	if size < INSTRUMENT_ATTACK_MIN_SAMPLES:
+		return result
+
+	var threshold: float = float(pitch_profile.volume_threshold_db) if pitch_profile else volume_threshold_db
+	var amplitude_db := _calculate_amplitude_db(samples)
+	if amplitude_db < threshold:
+		result["reason"] = "too_quiet"
+		return result
+
+	var quarter := maxi(1, size / 4)
+	var early_energy := 0.0
+	var middle_energy := 0.0
+	var second_quarter_energy := 0.0
+	var tail_energy := 0.0
+	var total_energy := 0.0
+	var peak := 0.0
+	var peak_index := 0
+	for i in range(size):
+		var value := float(samples[i])
+		var energy := value * value
+		total_energy += energy
+		if i < quarter:
+			early_energy += energy
+		elif i < quarter * 3:
+			middle_energy += energy
+			if i < quarter * 2:
+				second_quarter_energy += energy
+		else:
+			tail_energy += energy
+		var absolute := absf(value)
+		if absolute > peak:
+			peak = absolute
+			peak_index = i
+
+	var early_rms := sqrt(early_energy / float(quarter))
+	var middle_count := maxi(1, mini(size, quarter * 3) - quarter)
+	var middle_rms := sqrt(middle_energy / float(middle_count))
+	var second_quarter_count := maxi(1, mini(size, quarter * 2) - quarter)
+	var second_quarter_rms := sqrt(second_quarter_energy / float(second_quarter_count))
+	var tail_count := maxi(1, size - quarter * 3)
+	var tail_rms := sqrt(tail_energy / float(tail_count))
+	var total_rms := sqrt(total_energy / float(size))
+	var attack_ratio := early_rms / maxf(middle_rms, 0.000001)
+	var tail_ratio := tail_rms / maxf(early_rms, 0.000001)
+	var decay_db := 20.0 * log(maxf(early_rms, 0.000001) / maxf(tail_rms, 0.000001)) / log(10.0)
+	var late_decay_db := 20.0 * log(maxf(second_quarter_rms, 0.000001) / maxf(tail_rms, 0.000001)) / log(10.0)
+	var periodicity := _evaluate_tone_quality_gdscript(samples)
+	var string_tonality := _calculate_dan_tranh_string_tonality(samples, sample_rate)
+	var crest_factor := peak / maxf(total_rms, 0.000001)
+	var peak_position := float(peak_index) / float(maxi(1, size - 1))
+
+	result["attack_ratio"] = attack_ratio
+	result["decay_db"] = decay_db
+	result["late_decay_db"] = late_decay_db
+	result["tail_ratio"] = tail_ratio
+	result["periodicity"] = periodicity
+	result["string_tonality"] = string_tonality
+	result["crest_factor"] = crest_factor
+	result["peak_position"] = peak_position
+
+	if attack_ratio < INSTRUMENT_MIN_ATTACK_RATIO:
+		result["reason"] = "no_fast_attack"
+		return result
+	if decay_db < INSTRUMENT_MIN_DECAY_DB:
+		result["reason"] = "no_string_decay"
+		return result
+	if late_decay_db < INSTRUMENT_MIN_LATE_DECAY_DB:
+		result["reason"] = "sustained_voice_after_attack"
+		return result
+	if tail_ratio < INSTRUMENT_MIN_TAIL_RATIO:
+		result["reason"] = "transient_too_short"
+		return result
+	if periodicity < INSTRUMENT_MIN_PERIODICITY:
+		result["reason"] = "aperiodic_noise_or_tap"
+		return result
+	if string_tonality < INSTRUMENT_MIN_STRING_TONALITY:
+		result["reason"] = "not_a_dan_tranh_frequency"
+		return result
+	if crest_factor < INSTRUMENT_MIN_CREST_FACTOR:
+		result["reason"] = "flat_sustained_tone"
+		return result
+	if peak_position > 0.45:
+		result["reason"] = "slow_or_late_attack"
+		return result
+
+	var attack_score := clampf((attack_ratio - 1.0) / 1.8, 0.0, 1.0)
+	var decay_score := clampf(decay_db / 12.0, 0.0, 1.0)
+	var periodicity_score := clampf(periodicity / 65.0, 0.0, 1.0)
+	var tonality_score := clampf(string_tonality / 0.35, 0.0, 1.0)
+	var sustain_score := clampf((tail_ratio - INSTRUMENT_MIN_TAIL_RATIO) / 0.30, 0.0, 1.0)
+	result["confidence"] = 100.0 * (
+		0.25 * attack_score + 0.20 * decay_score
+		+ 0.20 * periodicity_score + 0.25 * tonality_score + 0.10 * sustain_score
+	)
+	result["accepted"] = true
+	result["reason"] = "dan_tranh_pluck"
+	return result
+
+
 func _has_pluck_attack(samples: PackedFloat32Array) -> bool:
-	var size : int = samples.size()
-	if size < 256:
-		return false
-	var half : int = size / 2
-	var e_first := 0.0
-	var e_second := 0.0
-	for i in range(half):
-		e_first += samples[i] * samples[i]
-	for i in range(half, size):
-		e_second += samples[i] * samples[i]
-	if e_second <= 0.000001:
-		return e_first > 0.000001
-	return e_first / e_second > 1.8
+	return bool(analyze_dan_tranh_sound(samples).get("accepted", false))
+
+
+func _calculate_dan_tranh_string_tonality(
+	samples: PackedFloat32Array,
+	sample_rate: float
+) -> float:
+	if samples.size() < 256 or sample_rate <= 0.0:
+		return 0.0
+
+	# Measure how much energy projects onto any real đàn-tranh string frequency.
+	# Oscillator recurrence avoids running sin/cos for every individual sample.
+	var sampled_energy := 0.0
+	var sampled_count := 0
+	for i in range(0, samples.size(), 2):
+		var value := float(samples[i])
+		sampled_energy += value * value
+		sampled_count += 1
+	if sampled_energy <= 0.000001 or sampled_count <= 0:
+		return 0.0
+
+	var strongest_ratio := 0.0
+	for base_frequency in DAN_TRANH_GATE_FREQUENCIES:
+		# Scan ±3% so a physically detuned string inside the lesson's pitch
+		# tolerance is not rejected, especially on the highest strings.
+		for tuning_offset in DAN_TRANH_GATE_TUNING_OFFSETS:
+			var frequency := base_frequency * (1.0 + tuning_offset)
+			var angle_step := TAU * frequency * 2.0 / sample_rate
+			var step_cos := cos(angle_step)
+			var step_sin := sin(angle_step)
+			var oscillator_cos := 1.0
+			var oscillator_sin := 0.0
+			var real_projection := 0.0
+			var imaginary_projection := 0.0
+			for i in range(0, samples.size(), 2):
+				var value := float(samples[i])
+				real_projection += value * oscillator_cos
+				imaginary_projection -= value * oscillator_sin
+				var next_cos := oscillator_cos * step_cos - oscillator_sin * step_sin
+				oscillator_sin = oscillator_sin * step_cos + oscillator_cos * step_sin
+				oscillator_cos = next_cos
+			var projection_power := real_projection * real_projection \
+				+ imaginary_projection * imaginary_projection
+			var ratio := 2.0 * projection_power / (float(sampled_count) * sampled_energy)
+			strongest_ratio = maxf(strongest_ratio, ratio)
+
+	return clampf(strongest_ratio, 0.0, 1.0)

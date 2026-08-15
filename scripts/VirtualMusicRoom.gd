@@ -56,7 +56,11 @@ var _hovered_station : String = ""
 var _linh_base_y : float = 220.0
 var _speech_timer : float = 0.0
 var _welcome_bow_timer : float = 1.6
-
+var _dragged_decor : Control = null
+var _drag_offset : Vector2 = Vector2.ZERO
+var _pressed_decor : Control = null
+var _press_timer_tween : Tween = null
+var _press_start_pos : Vector2 = Vector2.ZERO
 
 var _current_popup_instrument : String = ""
 var _audio_manager : AIAudioManager = null
@@ -75,8 +79,20 @@ var _tex_linh_walk_down : Texture2D
 var _tex_linh_walk_up : Texture2D
 var _tex_linh_walk_left : Texture2D
 var _tex_linh_walk_right : Texture2D
+var _tex_linh_walk_down_left : Texture2D
+var _tex_linh_walk_down_right : Texture2D
+var _tex_linh_walk_up_left : Texture2D
+var _tex_linh_walk_up_right : Texture2D
 var _tex_player : Texture2D
 var _tex_wall : Texture2D
+var _tex_decor_chausen : Texture2D
+var _tex_decor_bantra : Texture2D
+var _tex_decor_tranh : Texture2D
+var _tex_decor_quat : Texture2D
+var _tex_decor_denlong : Texture2D
+var _tex_decor_denda : Texture2D
+var _tex_decor_chuonggio : Texture2D
+var _tex_decor_binhsen : Texture2D
 var _linh_walk_direction : String = "down"
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
@@ -185,6 +201,14 @@ func _ready() -> void:
 	
 	_spawn_decorations()
 	_setup_hud_shop_button()
+	_tex_decor_chausen = _load_decor_texture("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png")
+	_tex_decor_bantra = _load_decor_texture("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png")
+	_tex_decor_tranh = _load_decor_texture("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png")
+	_tex_decor_quat = _load_decor_texture("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png")
+	_tex_decor_denlong = _load_decor_texture("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png")
+	_tex_decor_denda = _load_decor_texture("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png")
+	_tex_decor_chuonggio = _load_decor_texture("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png")
+	_tex_decor_binhsen = _load_decor_texture("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png")
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -195,6 +219,10 @@ func _ready() -> void:
 	_tex_linh_walk_up = load("res://assets/textures/coMai/mai_walk_up_sheet.png") as Texture2D
 	_tex_linh_walk_left = load("res://assets/textures/coMai/mai_walk_left_sheet.png") as Texture2D
 	_tex_linh_walk_right = load("res://assets/textures/coMai/mai_walk_right_sheet.png") as Texture2D
+	_tex_linh_walk_down_left = load("res://assets/textures/coMai/mai_walk_down_left_sheet.png") as Texture2D
+	_tex_linh_walk_down_right = load("res://assets/textures/coMai/mai_walk_down_right_sheet.png") as Texture2D
+	_tex_linh_walk_up_left = load("res://assets/textures/coMai/mai_walk_up_left_sheet.png") as Texture2D
+	_tex_linh_walk_up_right = load("res://assets/textures/coMai/mai_walk_up_right_sheet.png") as Texture2D
 	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
 	_tex_wall = load("res://assets/textures/backgroundphonghocao.png") as Texture2D
 	
@@ -792,10 +820,7 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 	var linh_feet_offset := _get_linh_feet_offset()
 	var current_feet := char_linh.position + linh_feet_offset
 	var move_delta := target_feet - current_feet
-	if absf(move_delta.x) > absf(move_delta.y):
-		_linh_walk_direction = "right" if move_delta.x >= 0.0 else "left"
-	else:
-		_linh_walk_direction = "down" if move_delta.y >= 0.0 else "up"
+	_linh_walk_direction = _get_linh_walk_direction(move_delta)
 	_linh_is_moving = true
 	var target_x := target_feet.x - linh_feet_offset.x
 	var target_y := target_feet.y - linh_feet_offset.y
@@ -813,6 +838,19 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 		else:
 			_select_instrument_and_enter(station_code)
 	)
+
+func _get_linh_walk_direction(move_delta: Vector2) -> String:
+	# Use a diagonal animation when both axes make up a meaningful part of the path.
+	# This avoids a barely diagonal route looking like it is moving sideways or vertically.
+	var horizontal := absf(move_delta.x)
+	var vertical := absf(move_delta.y)
+	if minf(horizontal, vertical) >= maxf(horizontal, vertical) * 0.35:
+		if move_delta.y >= 0.0:
+			return "down_right" if move_delta.x >= 0.0 else "down_left"
+		return "up_right" if move_delta.x >= 0.0 else "up_left"
+	if horizontal > vertical:
+		return "right" if move_delta.x >= 0.0 else "left"
+	return "down" if move_delta.y >= 0.0 else "up"
 
 func _linh_talk(_txt: String) -> void:
 	# Speech bubble removed — teacher speaks through the popup now
@@ -1199,9 +1237,9 @@ func _get_sort_y(node: Control) -> float:
 	return node.position.y + node.size.y
 
 func _sort_room_elements() -> void:
-	if not char_player:
-		return
-	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh, char_player]
+	var items : Array[Control] = [s_tranh, s_sao, s_bau, s_trong, char_linh]
+	if char_player:
+		items.append(char_player)
 	for c in room_content.get_children():
 		if c.name.begins_with("Decor_"):
 			items.append(c)
@@ -1521,6 +1559,10 @@ func _draw_linh(c: Control) -> void:
 			"up": animation_sheet = _tex_linh_walk_up
 			"left": animation_sheet = _tex_linh_walk_left
 			"right": animation_sheet = _tex_linh_walk_right
+			"down_left": animation_sheet = _tex_linh_walk_down_left
+			"down_right": animation_sheet = _tex_linh_walk_down_right
+			"up_left": animation_sheet = _tex_linh_walk_up_left
+			"up_right": animation_sheet = _tex_linh_walk_up_right
 			_: animation_sheet = _tex_linh_walk_down
 	elif is_speaking:
 		animation_sheet = _tex_linh_talk
@@ -2469,7 +2511,7 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	hud_hbox.offset_top = 12 if is_mobile else 32
 	hud_hbox.offset_right = -12 if is_mobile else -32
-	hud_hbox.offset_left = -120 if is_mobile else -172
+	hud_hbox.offset_left = -280 if is_mobile else -340
 	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 56)
 	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
 	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
@@ -2521,20 +2563,28 @@ func _make_btn_bouncy(btn: Button) -> void:
 func _fetch_cosmetics_data() -> void:
 	if _api_client == null:
 		return
-	var response = await _api_client.get_all_cosmetics()
-	if _api_client._is_success(response):
-		_cosmetics_all = response.get("body", {}).get("data", [])
-	else:
-		_cosmetics_all = []
-		
-	var my_response = await _api_client.get_my_cosmetics()
-	if _api_client._is_success(my_response):
-		var body = my_response.get("body", {}).get("data", {})
-		_cosmetics_owned = body.get("owned", [])
-		_cosmetics_locked = body.get("locked", [])
-	else:
-		_cosmetics_owned = []
-		_cosmetics_locked = []
+	
+	# BYPASS API FOR LOCAL TEST
+	_cosmetics_all = []
+	_cosmetics_owned = []
+	_cosmetics_locked = []
+	if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
+		var all_mock = [
+			{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
+			{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
+			{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
+			{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
+			{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
+		]
+		var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
+		var active = SecureDataManager.data.get("active_decorations", [])
+		for m_item in all_mock:
+			var m_key = _get_draw_key(m_item)
+			if unlocked.has(m_key):
+				m_item["isEquipped"] = active.has(m_key)
+				_cosmetics_owned.append(m_item)
+			else:
+				_cosmetics_locked.append(m_item)
 		
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_spawn_decorations()
@@ -2545,15 +2595,31 @@ func _get_draw_key(item: Dictionary) -> String:
 	var asset_url := str(item.get("assetUrl", "")).to_lower()
 	var item_name := str(item.get("name", "")).to_lower()
 	
-	if "painting" in asset_url or "painting" in item_name or "tranh" in item_name:
-		return "painting"
+	if "chausen" in asset_url: return "chausen"
+	elif "bantra" in asset_url: return "bantra"
+	elif "tranh" in asset_url: return "tranh"
+	elif "quat" in asset_url: return "quat"
+	elif "denlong" in asset_url: return "denlong"
+	elif "denda" in asset_url: return "denda"
+	elif "chuonggio" in asset_url: return "chuonggio"
+	elif "binhsen" in asset_url: return "binhsen"
+	
+	if "chau sen" in item_name or "chậu sen" in item_name: return "chausen"
+	elif "ban tra" in item_name or "bàn trà" in item_name: return "bantra"
+	elif "quat" in item_name or "quạt" in item_name: return "quat"
+	elif "den long" in item_name or "đèn lồng" in item_name: return "denlong"
+	elif "den da" in item_name or "đèn đá" in item_name: return "denda"
+	elif "chuong gio" in item_name or "chuông gió" in item_name: return "chuonggio"
+	elif "binh sen" in item_name or "bình sen" in item_name: return "binhsen"
+	elif "painting" in asset_url or "painting" in item_name or "tranh" in item_name:
+		return "tranh"
 	elif "vase" in asset_url or "vase" in item_name or "bình" in item_name or "hoa" in item_name:
-		return "vase"
+		return "binhsen"
 	elif "bamboo" in asset_url or "bamboo" in item_name or "trúc" in item_name:
-		return "bamboo"
+		return "chausen"
 	elif "drum" in asset_url or "drum" in item_name or "trống" in item_name:
-		return "bronze_drum"
-	return "painting"
+		return "bantra"
+	return "tranh"
 
 func _fetch_instruments_data() -> void:
 	if _api_client == null:
@@ -2629,16 +2695,34 @@ func _setup_hud_shop_button() -> void:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_margin.add_child(badge_label)
 
-	# Create Shop Button (Icon button for mobile style)
+	# Create Shop Button
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = ""
+	btn_shop.text = " Cửa Hàng"
 	btn_shop.icon = load("res://icons8/icons8-store-16.png") as Texture2D
-	btn_shop.expand_icon = true
-	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	btn_shop.custom_minimum_size = Vector2(56, 56)
+	btn_shop.expand_icon = false
+	btn_shop.add_theme_font_size_override("font_size", 16)
+	if _font_body_bold:
+		btn_shop.add_theme_font_override("font", _font_body_bold)
+	btn_shop.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12))
+	btn_shop.add_theme_color_override("icon_normal_color", Color(0.25, 0.18, 0.12))
+	
+	var btn_s := StyleBoxFlat.new()
+	btn_s.bg_color = Color(0.97, 0.95, 0.91, 0.95)
+	btn_s.border_color = Color(0.79, 0.60, 0.24, 0.5)
+	btn_s.border_width_left = 2; btn_s.border_width_right = 2
+	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
+	btn_s.corner_radius_top_left = 24; btn_s.corner_radius_top_right = 24
+	btn_s.corner_radius_bottom_left = 24; btn_s.corner_radius_bottom_right = 24
+	btn_shop.add_theme_stylebox_override("normal", btn_s)
+	
+	var btn_h = btn_s.duplicate()
+	btn_h.bg_color = Color(1.0, 0.98, 0.95, 1.0)
+	btn_shop.add_theme_stylebox_override("hover", btn_h)
+	btn_shop.custom_minimum_size = Vector2(140, 48) if _is_mobile_layout else Vector2(160, 48)
 	hud_hbox.add_child(btn_shop)
-	_style_hud_icon_button(btn_shop)
+	hud_hbox.move_child(btn_shop, 0)
+	
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
 
@@ -2650,7 +2734,8 @@ func _update_star_badge() -> void:
 func _spawn_decorations() -> void:
 	# Clear old decorations first
 	for c in room_content.get_children():
-		if c.name.begins_with("Decor_"):
+		if "Decor_" in c.name:
+			room_content.remove_child(c)
 			c.queue_free()
 			
 	for item in _cosmetics_owned:
@@ -2658,26 +2743,111 @@ func _spawn_decorations() -> void:
 			var item_id = _get_draw_key(item)
 			var ctrl := Control.new()
 			ctrl.name = "Decor_" + str(item.get("id"))
+			ctrl.mouse_filter = Control.MOUSE_FILTER_STOP
+			ctrl.gui_input.connect(_on_decor_gui_input.bind(ctrl, item_id))
+			
+			var saved_positions = SecureDataManager.data.get("decor_positions", {})
+			var has_saved = saved_positions.has(item_id)
 			
 			# Define sizes and positions for room layout
 			match item_id:
-				"painting":
-					ctrl.position = Vector2(180, 55)
-					ctrl.size = Vector2(80, 120)
-				"vase":
-					ctrl.position = Vector2(390, 420)
-					ctrl.size = Vector2(70, 90)
-				"bamboo":
-					ctrl.position = Vector2(50, 240)
-					ctrl.size = Vector2(80, 110)
-				"bronze_drum":
-					ctrl.position = Vector2(600 - 150, 800 - 180) # Center bottom
-					ctrl.size = Vector2(300, 180)
+				"chausen":
+					ctrl.position = Vector2(65, 469)
+					ctrl.size = Vector2(200, 200)
+				"bantra":
+					ctrl.position = Vector2(899, 512)
+					ctrl.size = Vector2(250, 200)
+				"tranh":
+					ctrl.position = Vector2(60, 180)
+					ctrl.size = Vector2(300, 200)
+				"quat":
+					ctrl.position = Vector2(850, 180)
+					ctrl.size = Vector2(300, 200)
+				"denlong":
+					ctrl.position = Vector2(130, -20)
+					ctrl.size = Vector2(150, 250)
+				"denda":
+					ctrl.position = Vector2(40, 610)
+					ctrl.size = Vector2(120, 200)
+				"chuonggio":
+					ctrl.position = Vector2(920, -20)
+					ctrl.size = Vector2(150, 250)
+				"binhsen":
+					ctrl.position = Vector2(1080, 400)
+					ctrl.size = Vector2(120, 250)
+				_:
+					ctrl.position = Vector2(0, 0)
+					ctrl.size = Vector2(100, 100)
 					
+			if has_saved:
+				var pos = saved_positions[item_id]
+				ctrl.position = Vector2(pos.x, pos.y)
+				
+			ctrl.pivot_offset = ctrl.size / 2.0
 			room_content.add_child(ctrl)
 			ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id, false))
 	
 	_sort_room_elements()
+
+func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_pressed_decor = ctrl
+				_press_start_pos = event.global_position
+				
+				if _press_timer_tween and _press_timer_tween.is_valid():
+					_press_timer_tween.kill()
+				
+				_press_timer_tween = create_tween()
+				_press_timer_tween.tween_property(ctrl, "scale", Vector2(1.1, 1.1), 0.4).set_trans(Tween.TRANS_SINE)
+				_press_timer_tween.tween_callback(func():
+					_dragged_decor = ctrl
+					# Calculate offset based on scaled size to prevent jumping
+					var scaled_global = ctrl.global_position + ctrl.pivot_offset - (ctrl.pivot_offset * 1.1)
+					_drag_offset = event.global_position - scaled_global
+					var t = create_tween()
+					t.tween_property(ctrl, "scale", Vector2(1.15, 1.15), 0.1)
+					t.tween_property(ctrl, "scale", Vector2(1.1, 1.1), 0.1)
+				)
+			else:
+				if _press_timer_tween and _press_timer_tween.is_valid():
+					_press_timer_tween.kill()
+					_press_timer_tween = null
+					
+				if _dragged_decor == ctrl:
+					_dragged_decor = null
+					var t = create_tween()
+					t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BOUNCE)
+					if not SecureDataManager.data.has("decor_positions"):
+						SecureDataManager.data["decor_positions"] = {}
+					SecureDataManager.data["decor_positions"][item_id] = {"x": ctrl.position.x, "y": ctrl.position.y}
+					SecureDataManager.save_data()
+				elif _pressed_decor == ctrl:
+					var t = create_tween()
+					t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.1)
+				
+				_pressed_decor = null
+					
+	elif event is InputEventMouseMotion:
+		if _dragged_decor == ctrl:
+			var new_pos = event.global_position - _drag_offset
+			var vp_size = get_viewport().get_visible_rect().size
+			# Account for scaling in clamps
+			var scaled_size = ctrl.size * ctrl.scale
+			new_pos.x = clamp(new_pos.x, ctrl.pivot_offset.x * (1.0 - ctrl.scale.x), vp_size.x - scaled_size.x + ctrl.pivot_offset.x * (1.0 - ctrl.scale.x))
+			new_pos.y = clamp(new_pos.y, ctrl.pivot_offset.y * (1.0 - ctrl.scale.y), vp_size.y - scaled_size.y + ctrl.pivot_offset.y * (1.0 - ctrl.scale.y))
+			
+			ctrl.global_position = new_pos
+			_sort_room_elements()
+		elif _pressed_decor == ctrl:
+			if event.global_position.distance_to(_press_start_pos) > 10.0:
+				if _press_timer_tween and _press_timer_tween.is_valid():
+					_press_timer_tween.kill()
+					_press_timer_tween = null
+				_pressed_decor = null
+				var t = create_tween()
+				t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.1)
 
 func _draw_decor_node(c: Control, item_id: String, in_shop: bool = false) -> void:
 	var scale := 1.0
@@ -2701,336 +2871,33 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
 	c.draw_polyline(pts, color, width, true)
 
+func _load_decor_texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
+
+
 func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
 	var sz := c.size
-	var cx := sz.x * 0.5
-	var cy := sz.y * 0.5
-	
+	var tex: Texture2D = null
 	match item_id:
-		"painting":
-			var rect_w := 68.0 * size_scale
-			var rect_h := 110.0 * size_scale
-			var px := cx - rect_w/2
-			var py := cy - rect_h/2
-			
-			# Rollers at top and bottom (dark wood with gold caps)
-			var roller_color := Color(0.18, 0.10, 0.05)
-			c.draw_rect(Rect2(px - 6 * size_scale, py - 3 * size_scale, rect_w + 12 * size_scale, 6 * size_scale), roller_color, true)
-			c.draw_circle(Vector2(px - 6 * size_scale, py), 3 * size_scale, C_GOLD)
-			c.draw_circle(Vector2(px + rect_w + 6 * size_scale, py), 3 * size_scale, C_GOLD)
-			
-			c.draw_rect(Rect2(px - 6 * size_scale, py + rect_h - 3 * size_scale, rect_w + 12 * size_scale, 6 * size_scale), roller_color, true)
-			c.draw_circle(Vector2(px - 6 * size_scale, py + rect_h), 3 * size_scale, C_GOLD)
-			c.draw_circle(Vector2(px + rect_w + 6 * size_scale, py + rect_h), 3 * size_scale, C_GOLD)
-			
-			# Hanging string at top
-			c.draw_line(Vector2(px + rect_w*0.2, py - 3*size_scale), Vector2(cx, py - 15*size_scale), C_RED_SON, 1.5 * size_scale)
-			c.draw_line(Vector2(px + rect_w*0.8, py - 3*size_scale), Vector2(cx, py - 15*size_scale), C_RED_SON, 1.5 * size_scale)
-			
-			# Scroll background (aged silk paper)
-			var paper_rect := Rect2(px, py, rect_w, rect_h)
-			c.draw_rect(paper_rect, Color(0.94, 0.89, 0.74), true) # Aged silk
-			c.draw_rect(paper_rect, C_GOLD, false, 1.2 * size_scale) # Thin gold border
-			
-			# Inner thin border
-			c.draw_rect(Rect2(px + 4 * size_scale, py + 4 * size_scale, rect_w - 8 * size_scale, rect_h - 8 * size_scale), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.2), false, 0.8 * size_scale)
-			
-			# Painting Content: Traditional female musician playing a flute/zither
-			# 1. Stylized background: mountains (light gold-brown wash) & sun (red)
-			var bg_sun_c := Vector2(cx + 12 * size_scale, cy - 20 * size_scale)
-			c.draw_circle(bg_sun_c, 10.0 * size_scale, Color(0.68, 0.15, 0.15, 0.75)) # Red sun
-			
-			# Mountain silhouette
-			var mount_pts := PackedVector2Array([
-				Vector2(px + 6*size_scale, py + rect_h - 10*size_scale),
-				Vector2(px + rect_w*0.35, cy + 15*size_scale),
-				Vector2(px + rect_w*0.65, cy + 28*size_scale),
-				Vector2(px + rect_w - 6*size_scale, py + rect_h - 10*size_scale)
-			])
-			c.draw_colored_polygon(mount_pts, Color(0.77, 0.58, 0.15, 0.25))
-			
-			# 2. Female figure silhouette/drawing (stylized Ao Dai player)
-			var fig_x := cx - 8 * size_scale
-			var fig_y := cy + 15 * size_scale
-			# Ao Dai robe body (deep jade green / blue blend)
-			var body_pts := PackedVector2Array([
-				Vector2(fig_x - 10*size_scale, fig_y + 25*size_scale),
-				Vector2(fig_x + 12*size_scale, fig_y + 25*size_scale),
-				Vector2(fig_x + 4*size_scale, fig_y - 12*size_scale),
-				Vector2(fig_x - 4*size_scale, fig_y - 12*size_scale)
-			])
-			c.draw_colored_polygon(body_pts, Color(0.09, 0.27, 0.18, 0.85)) # Jade Ao Dai
-			c.draw_polyline(body_pts, C_GOLD, 0.8 * size_scale, true)
-			
-			# Head & Turban
-			var head_c := Vector2(fig_x, fig_y - 20 * size_scale)
-			c.draw_circle(head_c, 7.0 * size_scale, C_CREAM) # face
-			c.draw_circle(head_c - Vector2(0, 2*size_scale), 7.5 * size_scale, Color(0.12, 0.12, 0.12)) # hair/turban
-			c.draw_circle(head_c - Vector2(0, 4*size_scale), 8.5 * size_scale, Color(0.77, 0.58, 0.15)) # golden turban outer
-			
-			# Hands & Flute
-			var flute_p1 := Vector2(fig_x - 14*size_scale, fig_y - 8*size_scale)
-			var flute_p2 := Vector2(fig_x + 16*size_scale, fig_y - 14*size_scale)
-			c.draw_line(flute_p1, flute_p2, Color(0.85, 0.65, 0.28), 2.2 * size_scale, true) # bamboo flute
-			c.draw_circle(Vector2(fig_x - 2*size_scale, fig_y - 10*size_scale), 2.5 * size_scale, C_CREAM) # hands
-			
-			# Red Calligraphy Seal
-			c.draw_rect(Rect2(px + 8*size_scale, py + rect_h - 22*size_scale, 8*size_scale, 8*size_scale), C_RED_SON, true)
-			c.draw_rect(Rect2(px + 8*size_scale, py + rect_h - 22*size_scale, 8*size_scale, 8*size_scale), C_GOLD, false, 0.5 * size_scale)
-			
-			# Calligraphy Text (vertical abstract Nom script strokes)
-			c.draw_line(Vector2(px + 10*size_scale, py + 12*size_scale), Vector2(px + 10*size_scale, py + 38*size_scale), Color(0.15, 0.12, 0.10, 0.85), 1.0 * size_scale)
-			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + 14*size_scale, py + 30*size_scale), Color(0.15, 0.12, 0.10, 0.75), 1.0 * size_scale)
-			
-		"vase":
-			var stand_w := 60.0 * size_scale
-			var stand_h := 82.0 * size_scale
-			var px := cx - stand_w / 2
-			var py := cy - stand_h / 2
-			
-			# Bounding stand base
-			c.draw_rect(Rect2(px - 4*size_scale, py + stand_h - 8*size_scale, stand_w + 8*size_scale, 8*size_scale), Color(0.18, 0.10, 0.05), true)
-			c.draw_rect(Rect2(px - 4*size_scale, py + stand_h - 8*size_scale, stand_w + 8*size_scale, 8*size_scale), C_GOLD, false, 1.0 * size_scale)
-			
-			# Left and Right Pillars (dark mahogany wood)
-			var pillar_col := Color(0.24, 0.12, 0.06)
-			c.draw_rect(Rect2(px, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), pillar_col, true)
-			c.draw_rect(Rect2(px, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), C_GOLD, false, 0.8 * size_scale)
-			
-			c.draw_rect(Rect2(px + stand_w - 6*size_scale, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), pillar_col, true)
-			c.draw_rect(Rect2(px + stand_w - 6*size_scale, py + 12*size_scale, 6*size_scale, stand_h - 20*size_scale), C_GOLD, false, 0.8 * size_scale)
-			
-			# Curved Top Beam (Pagoda roof style silhouette)
-			var roof_pts := PackedVector2Array([
-				Vector2(px - 8*size_scale, py + 16*size_scale),
-				Vector2(px, py + 6*size_scale),
-				Vector2(cx, py + 4*size_scale),
-				Vector2(px + stand_w, py + 6*size_scale),
-				Vector2(px + stand_w + 8*size_scale, py + 16*size_scale),
-				Vector2(px + stand_w + 2*size_scale, py + 16*size_scale),
-				Vector2(cx, py + 10*size_scale),
-				Vector2(px - 2*size_scale, py + 16*size_scale)
-			])
-			c.draw_colored_polygon(roof_pts, pillar_col)
-			c.draw_polyline(roof_pts, C_GOLD, 1.2 * size_scale, true)
-			
-			# Hanging cords (red)
-			var gong_center := Vector2(cx, py + stand_h * 0.52)
-			c.draw_line(Vector2(cx - 10*size_scale, py + 10*size_scale), gong_center - Vector2(6*size_scale, 16*size_scale), C_RED_SON, 1.5 * size_scale)
-			c.draw_line(Vector2(cx + 10*size_scale, py + 10*size_scale), gong_center + Vector2(6*size_scale, -16*size_scale), C_RED_SON, 1.5 * size_scale)
-			
-			# Bronze Gong (Chiêng Đồng)
-			var gong_r := 19.0 * size_scale
-			c.draw_circle(gong_center, gong_r, Color(0.68, 0.52, 0.22)) # Bronze body
-			
-			# Concentric rings & details on gong face
-			c.draw_circle(gong_center, gong_r * 0.95, Color(0.58, 0.44, 0.16)) # Darker outer band
-			c.draw_circle(gong_center, gong_r * 0.8, Color(0.68, 0.52, 0.22))
-			c.draw_circle(gong_center, gong_r * 0.45, Color(0.58, 0.44, 0.16)) # Darker inner ring
-			
-			# Center Boss (Núm chiêng - raised hub)
-			c.draw_circle(gong_center, gong_r * 0.24, Color(0.85, 0.68, 0.28)) # Bright gold center
-			c.draw_circle(gong_center - Vector2(1, 1)*size_scale, gong_r * 0.12, Color.WHITE) # Specular shine
-			
-			# Fine gold rim line
-			c.draw_arc(gong_center, gong_r - 0.5*size_scale, 0.0, TAU, 32, C_GOLD_LIGHT, 1.0 * size_scale)
-			c.draw_arc(gong_center, gong_r * 0.6, 0.0, TAU, 24, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 0.8 * size_scale)
-			
-			# Mallet resting against stand
-			var mallet_p1 := Vector2(cx + 14*size_scale, py + stand_h - 10*size_scale)
-			var mallet_p2 := Vector2(cx + 26*size_scale, py + stand_h * 0.45)
-			c.draw_line(mallet_p1, mallet_p2, Color(0.48, 0.32, 0.20), 2.2 * size_scale, true) # Stick
-			c.draw_circle(mallet_p2, 4.5 * size_scale, C_RED_SON) # Red head mallet
-
-		"bamboo":
-			var rack_w := 70.0 * size_scale
-			var rack_h := 100.0 * size_scale
-			var px := cx - rack_w / 2
-			var py := cy - rack_h / 2
-			
-			# Stand base pot/wood mount
-			c.draw_rect(Rect2(px + 10*size_scale, py + rack_h - 10*size_scale, rack_w - 20*size_scale, 10*size_scale), Color(0.18, 0.14, 0.12), true)
-			c.draw_rect(Rect2(px + 10*size_scale, py + rack_h - 10*size_scale, rack_w - 20*size_scale, 10*size_scale), C_GOLD, false, 1.0 * size_scale)
-			
-			# Two vertical support posts (bamboo structure)
-			var post_col := Color(0.35, 0.22, 0.10)
-			c.draw_rect(Rect2(px + 20*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), post_col, true)
-			c.draw_rect(Rect2(px + 20*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), Color(0.50, 0.32, 0.16), false, 0.8 * size_scale)
-			
-			c.draw_rect(Rect2(px + rack_w - 26*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), post_col, true)
-			c.draw_rect(Rect2(px + rack_w - 26*size_scale, py + 10*size_scale, 6*size_scale, rack_h - 20*size_scale), Color(0.50, 0.32, 0.16), false, 0.8 * size_scale)
-			
-			# Ornate shelf headers
-			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + rack_w - 14*size_scale, py + 15*size_scale), post_col, 4.0 * size_scale)
-			c.draw_line(Vector2(px + 14*size_scale, py + 15*size_scale), Vector2(px + rack_w - 14*size_scale, py + 15*size_scale), C_GOLD, 0.8 * size_scale)
-			
-			# Draw 3 horizontal flutes with different colors and sizes
-			var fl_colors := [
-				Color(0.85, 0.65, 0.28), # Yellow bamboo
-				Color(0.18, 0.44, 0.24), # Green fresh bamboo
-				Color(0.36, 0.18, 0.08)  # Aged dark wood/bamboo
-			]
-			
-			var fl_y_coords := [
-				py + 30.0 * size_scale,
-				py + 52.0 * size_scale,
-				py + 74.0 * size_scale
-			]
-			
-			var fl_widths := [
-				68.0 * size_scale,
-				58.0 * size_scale,
-				62.0 * size_scale
-			]
-			
-			var fl_thicknesses := [
-				5.5 * size_scale,
-				4.5 * size_scale,
-				5.0 * size_scale
-			]
-			
-			for i in range(3):
-				var f_w : float = fl_widths[i]
-				var f_y : float = fl_y_coords[i]
-				var f_th : float = fl_thicknesses[i]
-				var f_x1 := cx - f_w * 0.5
-				var f_x2 := cx + f_w * 0.5
-				
-				# 1. Flute Body
-				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x2, f_y), fl_colors[i], f_th, true)
-				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x2, f_y), Color(1, 1, 1, 0.22), 1.0 * size_scale) # specular line
-				
-				# 2. Red thread wraps at ends
-				c.draw_line(Vector2(f_x1, f_y), Vector2(f_x1 + 4*size_scale, f_y), C_RED_SON, f_th + 0.5*size_scale)
-				c.draw_line(Vector2(f_x2 - 4*size_scale, f_y), Vector2(f_x2, f_y), C_RED_SON, f_th + 0.5*size_scale)
-				
-				# 3. Finger holes (tiny black dots)
-				for h_idx in range(6):
-					var hole_x = lerpf(f_x1 + f_w*0.3, f_x2 - f_w*0.2, float(h_idx)/5.0)
-					c.draw_circle(Vector2(hole_x, f_y), 1.2 * size_scale, Color.BLACK)
-				
-				# 4. Lively swaying red tassels hanging from left end
-				var sway := sin(_time * 2.5 + i * 1.2) * 6.0 * size_scale
-				var tassel_start := Vector2(f_x1 + 2*size_scale, f_y)
-				var tassel_end := tassel_start + Vector2(sway * 0.5, 18.0 * size_scale)
-				
-				c.draw_line(tassel_start, tassel_end, C_RED_SON, 1.2 * size_scale) # hanging string
-				c.draw_circle(tassel_end, 2.5 * size_scale, C_GOLD) # bead
-				
-				# Fringes body
-				var fringe_pts := PackedVector2Array([
-					tassel_end,
-					tassel_end + Vector2(sway - 2*size_scale, 14*size_scale),
-					tassel_end + Vector2(sway + 2*size_scale, 14*size_scale)
-				])
-				c.draw_colored_polygon(fringe_pts, C_RED_SON)
-
-		"bronze_drum":
-			var dr_r := 38.0 * size_scale
-			var dr_h := 46.0 * size_scale
-			var drum_base_y := cy + 24 * size_scale
-			
-			# Wooden base platform (Darker and thicker)
-			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 12.0 * size_scale), Color(0.12, 0.08, 0.04), true)
-			c.draw_rect(Rect2(cx - dr_r * 1.15, drum_base_y, dr_r * 2.3, 12.0 * size_scale), Color(0.3, 0.2, 0.1), false, 2.0 * size_scale)
-			
-			# Drum Body polygon (Realistic flare and waist)
-			var body_pts := PackedVector2Array()
-			var steps := 32
-			for i in range(steps + 1):
-				var t := float(i) / steps
-				var py = drum_base_y - t * dr_h
-				var w_fac = 1.0
-				if t < 0.3:
-					# Lower flare (Chân trống)
-					w_fac = lerpf(0.98, 0.78, t / 0.3)
-				elif t < 0.75:
-					# Curved waist (Lưng trống)
-					var wt = (t - 0.3) / 0.45
-					w_fac = 0.78 + (1.0 - 0.78) * sin(wt * PI) * 0.12
-					if wt > 0.5:
-						w_fac = lerpf(0.78, 0.98, (wt - 0.5) * 2.0)
-				else:
-					# Top flare (Tang trống)
-					w_fac = lerpf(0.98, 1.08, (t - 0.75) / 0.25)
-				body_pts.append(Vector2(cx - dr_r * w_fac, py))
-			for i in range(steps, -1, -1):
-				var t := float(i) / steps
-				var py = drum_base_y - t * dr_h
-				var w_fac = 1.0
-				if t < 0.3:
-					w_fac = lerpf(0.98, 0.78, t / 0.3)
-				elif t < 0.75:
-					var wt = (t - 0.3) / 0.45
-					w_fac = 0.78 + (1.0 - 0.78) * sin(wt * PI) * 0.12
-					if wt > 0.5:
-						w_fac = lerpf(0.78, 0.98, (wt - 0.5) * 2.0)
-				else:
-					w_fac = lerpf(0.98, 1.08, (t - 0.75) / 0.25)
-				body_pts.append(Vector2(cx + dr_r * w_fac, py))
-				
-			# Rich, oxidized bronze base color
-			c.draw_colored_polygon(body_pts, Color(0.35, 0.28, 0.18)) 
-			
-			# Edge outlines
-			c.draw_polyline(body_pts, Color(0.15, 0.10, 0.05), 1.5 * size_scale, true)
-			
-			# 3D Shading/Highlight on the left side to simulate cylindrical volume
-			var highlight_pts := PackedVector2Array()
-			for pt in body_pts:
-				if pt.x < cx: highlight_pts.append(pt)
-			c.draw_polyline(highlight_pts, Color(0.7, 0.6, 0.4, 0.3), 6.0 * size_scale, false)
-			
-			# Horizontal decorative bands (văn hoa)
-			for by_f in [0.28, 0.5, 0.72]:
-				var dy = drum_base_y - dr_h * by_f
-				c.draw_line(Vector2(cx - dr_r * 0.75, dy), Vector2(cx + dr_r * 0.75, dy), Color(0.5, 0.4, 0.25, 0.7), 1.8 * size_scale)
-				
-			# Side handles (4 quai kép)
-			var h_color := Color(0.4, 0.3, 0.15)
-			var h_y1 := drum_base_y - dr_h * 0.65
-			var h_y2 := drum_base_y - dr_h * 0.35
-			# Left loops
-			c.draw_line(Vector2(cx - dr_r * 0.85, h_y1), Vector2(cx - dr_r * 1.05, h_y1 + 4*size_scale), h_color, 2.5 * size_scale)
-			c.draw_line(Vector2(cx - dr_r * 0.82, h_y2), Vector2(cx - dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
-			c.draw_line(Vector2(cx - dr_r * 1.05, h_y1 + 4*size_scale), Vector2(cx - dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
-			# Right loops
-			c.draw_line(Vector2(cx + dr_r * 0.85, h_y1), Vector2(cx + dr_r * 1.05, h_y1 + 4*size_scale), h_color, 2.5 * size_scale)
-			c.draw_line(Vector2(cx + dr_r * 0.82, h_y2), Vector2(cx + dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
-			c.draw_line(Vector2(cx + dr_r * 1.05, h_y1 + 4*size_scale), Vector2(cx + dr_r * 1.05, h_y2 - 4*size_scale), h_color, 2.5 * size_scale)
-			
-			# Drumhead ellipse top (Mặt trống)
-			var dh_center := Vector2(cx, drum_base_y - dr_h)
-			var dh_rx := dr_r * 1.08
-			var dh_ry := 13.0 * size_scale
-			_draw_ellipse_poly(c, dh_center, dh_rx, dh_ry, Color(0.42, 0.35, 0.22))
-			_draw_ellipse_line(c, dh_center, dh_rx, dh_ry, Color(0.8, 0.7, 0.5, 0.8), 2.0 * size_scale)
-			
-			# Concentric rings on drumhead (Vòng tròn đồng tâm)
-			_draw_ellipse_line(c, dh_center, dh_rx * 0.8, dh_ry * 0.8, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.2 * size_scale)
-			_draw_ellipse_line(c, dh_center, dh_rx * 0.6, dh_ry * 0.6, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.2 * size_scale)
-			_draw_ellipse_line(c, dh_center, dh_rx * 0.4, dh_ry * 0.4, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), 1.2 * size_scale)
-			
-			# Chim Lạc flying bird icons (little golden arcs) in the middle ring
-			for deg in range(0, 360, 30):
-				var rad := float(deg) * PI / 180.0
-				var bird_pos := dh_center + Vector2(cos(rad) * dh_rx * 0.7, sin(rad) * dh_ry * 0.7)
-				c.draw_arc(bird_pos, 1.8 * size_scale, PI * 0.8, PI * 2.0, 8, Color(1, 0.9, 0.7), 1.0 * size_scale)
-			
-			# Star motif in center (14-pointed star Ngôi sao 14 cánh đặc trưng Ngọc Lũ)
-			var star_pts := PackedVector2Array()
-			var star_inner_r := 2.2 * size_scale
-			var star_outer_r := 7.0 * size_scale
-			var star_points := 14
-			for step in range(star_points * 2):
-				var angle := step * (TAU / (star_points * 2.0))
-				var r := star_outer_r if step % 2 == 0 else star_inner_r
-				star_pts.append(dh_center + Vector2(cos(angle) * r, sin(angle) * r * (dh_ry / dh_rx)))
-			c.draw_colored_polygon(star_pts, Color(1, 0.9, 0.6))
-			
-			# Center sun bump
-			var sun_glow_p := 0.25 + 0.15 * sin(_time * 4.0)
-			c.draw_circle(dh_center, 1.5 * size_scale, Color(1, 1, 1, sun_glow_p))
+		"chausen": tex = _tex_decor_chausen
+		"bantra": tex = _tex_decor_bantra
+		"tranh": tex = _tex_decor_tranh
+		"quat": tex = _tex_decor_quat
+		"denlong": tex = _tex_decor_denlong
+		"denda": tex = _tex_decor_denda
+		"chuonggio": tex = _tex_decor_chuonggio
+		"binhsen": tex = _tex_decor_binhsen
+	if tex:
+		var tex_size = tex.get_size()
+		var scale_x = sz.x / tex_size.x
+		var scale_y = sz.y / tex_size.y
+		var final_scale = min(scale_x, scale_y) * size_scale
+		var w = tex_size.x * final_scale
+		var h = tex_size.y * final_scale
+		var rect = Rect2((sz.x - w) / 2.0, (sz.y - h) / 2.0, w, h)
+		c.draw_texture_rect(tex, rect, false)
 
 func _open_shop_popup() -> void:
 	if not shop_popup:
@@ -3102,13 +2969,20 @@ func _setup_shop_popup() -> void:
 		stars_label.add_theme_font_override("font", _font_body_bold)
 	scroll_content.add_child(stars_label)
 	
+	var shop_scroll := ScrollContainer.new()
+	shop_scroll.name = "ShopScroll"
+	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shop_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_content.add_child(shop_scroll)
+	
 	var grid := GridContainer.new()
 	grid.name = "Grid"
 	grid.columns = 2
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 24)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 16)
-	scroll_content.add_child(grid)
+	shop_scroll.add_child(grid)
 	
 	var btn_close := Button.new()
 	btn_close.text = "ĐÓNG"
@@ -3131,31 +3005,51 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 		return
 	
 	if not owned:
-		var response = await _api_client.unlock_cosmetic(cosmetic_id)
-		if _api_client._is_success(response):
+		var success = false
+		var cost = int(item.get("unlockValue", 0))
+		var item_key = _get_draw_key(item)
+		if SecureDataManager.unlock_decoration(item_key, cost):
+			if SecureDataManager.data.has("stars") and SecureDataManager.data["stars"].has("test"):
+				SecureDataManager.data["stars"]["test"]["free"] = max(0, SecureDataManager.data["stars"]["test"]["free"] - cost)
+				SecureDataManager.save_data()
+			success = true
+		if success:
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
-			# Khấu trừ sao ngay lập tức để cập nhật mượt hơn
-			var cost = int(item.get("unlockValue", 0))
-			var current_stars = SecureDataManager.get_total_stars()
-			SecureDataManager.data["total_stars"] = max(0, current_stars - cost)
-			SecureDataManager.save_data()
 			_update_star_badge()
 			_fetch_cosmetics_data()
+			_update_shop_items()
 	else:
 		var is_equipped = item.get("isEquipped", false)
-		var response = await _api_client.equip_cosmetic(cosmetic_id, not is_equipped)
-		if _api_client._is_success(response):
-			_fetch_cosmetics_data()
+		var item_key = _get_draw_key(item)
+		if not is_equipped:
+			if not SecureDataManager.data.has("active_decorations"):
+				SecureDataManager.data["active_decorations"] = []
+			if not SecureDataManager.data["active_decorations"].has(item_key):
+				SecureDataManager.data["active_decorations"].append(item_key)
+		else:
+			if SecureDataManager.data.has("active_decorations"):
+				SecureDataManager.data["active_decorations"].erase(item_key)
+		SecureDataManager.save_data()
+		_fetch_cosmetics_data()
+		_update_shop_items()
 
 func _update_shop_items() -> void:
+	if SecureDataManager.get_total_stars() < 9999:
+		if not SecureDataManager.data.has("stars"):
+			SecureDataManager.data["stars"] = {}
+		if not SecureDataManager.data["stars"].has("test"):
+			SecureDataManager.data["stars"]["test"] = {}
+		SecureDataManager.data["stars"]["test"]["free"] = 9999
+		SecureDataManager.save_data()
+	
 	var stars = SecureDataManager.get_total_stars()
 	var stars_label = shop_popup.get_node("ScrollPanel/ScrollContent/StarsLabel") as Label
 	if stars_label:
 		stars_label.text = "Bạn có: ⭐ %d Sao" % stars
 		
-	var grid = shop_popup.get_node("ScrollPanel/ScrollContent/Grid") as GridContainer
+	var grid = shop_popup.get_node("ScrollPanel/ScrollContent/ShopScroll/Grid") as GridContainer
 	if not grid:
 		return
 	
@@ -3181,7 +3075,7 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	
 	var card := PanelContainer.new()
 	card.name = "Card_" + str(item.get("id"))
-	card.custom_minimum_size = Vector2(360, 150)
+	card.custom_minimum_size = Vector2(340, 150)
 	var sb := _flat_sb(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, true, 1.5)
 	card.add_theme_stylebox_override("panel", sb)
 	
@@ -3196,11 +3090,28 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	hbox.add_theme_constant_override("separation", 16)
 	margin.add_child(hbox)
 	
-	var preview := Control.new()
+	var preview := TextureRect.new()
 	preview.custom_minimum_size = Vector2(90, 110)
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(preview)
-	preview.draw.connect(_draw_decor_node.bind(preview, item_id, true))
+	
+	var tex: Texture2D = null
+	match item_id:
+		"chausen": tex = _tex_decor_chausen
+		"bantra": tex = _tex_decor_bantra
+		"tranh": tex = _tex_decor_tranh
+		"quat": tex = _tex_decor_quat
+		"denlong": tex = _tex_decor_denlong
+		"denda": tex = _tex_decor_denda
+		"chuonggio": tex = _tex_decor_chuonggio
+		"binhsen": tex = _tex_decor_binhsen
+		
+	if tex != null:
+		preview.texture = tex
+	else:
+		preview.draw.connect(_draw_decor_node.bind(preview, item_id, true))
 	
 	var vbox := VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL

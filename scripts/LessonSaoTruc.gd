@@ -20,6 +20,7 @@ var current_state = State.INTRO
 @onready var complete_btn = $CompleteBtn
 
 @onready var teacher_area = $TeacherArea
+@onready var teacher_char = $TeacherArea/TeacherChar
 @onready var speech_text = $TeacherArea/DialogBox/M/V/SpeechText
 @onready var real_mode_btn = $TeacherArea/DialogBox/M/V/ModeButtons/RealModeBtn
 
@@ -27,6 +28,17 @@ var current_state = State.INTRO
 @onready var feedback_area = $FeedbackArea
 @onready var mic_status = $FeedbackArea/MicStatus
 @onready var volume_bar = $FeedbackArea/VolumeBar
+
+# Virtual Teacher Portrait Animation States
+var _tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
+var _teacher_atlas : AtlasTexture
+var _portrait_is_talking := false
+var _portrait_frame := 0
+var _portrait_frame_elapsed := 0.0
+const PORTRAIT_FRAME_DURATION := 0.08
+const PORTRAIT_FRAME_COUNT := 16
+const PORTRAIT_SHEET_COLUMNS := 4
+const PORTRAIT_SHEET_ROWS := 4
 
 var staff_display: Control
 var staff_card: PanelContainer
@@ -420,6 +432,12 @@ func _ready():
 	
 	_build_complete_overlay()
 	_build_flute()
+	
+	if teacher_char and _tex_mai_talk_sheet:
+		_teacher_atlas = AtlasTexture.new()
+		_teacher_atlas.atlas = _tex_mai_talk_sheet
+		teacher_char.texture = _teacher_atlas
+		_update_teacher_frame()
 	
 	# Style the DialogBox
 	var dialog_sb = StyleBoxFlat.new()
@@ -895,6 +913,23 @@ func _on_bpm_btn_pressed(mul: float, lbl: String) -> void:
 			child.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
 
 func _process(delta):
+	# Update teacher talking animation
+	var active_ai_audio = get_node_or_null("AIAudio")
+	if active_ai_audio and is_instance_valid(active_ai_audio.audio_player):
+		_portrait_is_talking = active_ai_audio.audio_player.is_playing()
+	else:
+		_portrait_is_talking = false
+		
+	if _portrait_is_talking:
+		_portrait_frame_elapsed += delta
+		if _portrait_frame_elapsed >= PORTRAIT_FRAME_DURATION:
+			_portrait_frame_elapsed = 0.0
+			_portrait_frame = (_portrait_frame + 1) % PORTRAIT_FRAME_COUNT
+			_update_teacher_frame()
+	elif _portrait_frame != 0:
+		_portrait_frame = 0
+		_update_teacher_frame()
+
 	_process_sample(delta)
 
 	var rect = _get_flute_draw_rect()
@@ -948,6 +983,19 @@ func _process(delta):
 			_process_real(delta)
 	elif current_state == State.RHYTHM_GAME:
 		_process_rhythm(delta, rect)
+
+func _update_teacher_frame() -> void:
+	if not _teacher_atlas or not _tex_mai_talk_sheet:
+		return
+	var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
+	var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
+	var source_rect := Rect2(
+		float(_portrait_frame % PORTRAIT_SHEET_COLUMNS) * frame_width,
+		float(_portrait_frame / PORTRAIT_SHEET_COLUMNS) * frame_height,
+		frame_width,
+		frame_height
+	)
+	_teacher_atlas.region = source_rect
 
 func _process_rhythm(delta, rect):
 	if has_rhythm_completed:
