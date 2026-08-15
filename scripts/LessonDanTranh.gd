@@ -2400,7 +2400,7 @@ func _append_glissando_detection(
 			and attack_generation <= glissando_detected_generations.back():
 		return
 	if not glissando_detected_times.is_empty():
-		var gap := attack_time_sec - glissando_detected_times.back()
+		var gap: float = attack_time_sec - float(glissando_detected_times.back())
 		if gap > GLISSANDO_GAP_TIMEOUT:
 			_evaluate_glissando_gesture()
 			if glissando_round_locked:
@@ -2608,11 +2608,11 @@ func _analyze_glissando_gesture(
 			max_step = maxi(max_step, absi(strings[i] - strings[i - 1]))
 
 	var span := max_string - min_string
-	var duration := times.back() - times.front()
+	var duration: float = float(times.back()) - float(times.front())
 	var distinct_count := distinct.size()
 	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
 	var max_duration := 3.8 if mode == "round" else 2.4
-	var continuous := times_increasing \
+	var continuous: bool = times_increasing \
 		and max_gap <= GLISSANDO_MAX_ATTACK_GAP \
 		and max_step <= GLISSANDO_MAX_STRING_STEP \
 		and duration <= max_duration
