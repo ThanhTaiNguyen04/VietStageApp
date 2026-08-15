@@ -82,6 +82,8 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		var is_onset := analyzer._detect_onset(frame)
 		var profile_plucked: bool = analyzer.pitch_profile != null and analyzer.pitch_profile.is_plucked_instrument
+		if profile_plucked:
+			analyzer._update_instrument_sound_gate(frame, is_onset, 0.016)
 
 		if profile_plucked:
 			if is_onset and (not analyzer.pluck_locked or analyzer.pitch_estimation_done or analyzer.time_since_onset > 0.15):
@@ -107,6 +109,8 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		if raw_pitch > 0.0:
 			analyzer._update_reliable_pitch(raw_pitch)
+		if profile_plucked and not analyzer.has_recent_dan_tranh_attack():
+			analyzer._clear_pitch_detection()
 
 		if analyzer.current_pitch_is_reliable and analyzer.current_pitch > 0.0 and analyzer.pitch_profile != null:
 			reliable_frames += 1

@@ -2310,25 +2310,23 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 						current_speed_multiplier = user_speed_multiplier
 						break
 
-func _on_dan_tranh_note_started(note: Dictionary) -> void:
-	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode or not _is_glissando_practice():
-		return
-	if not note.get("is_match", false):
-		return
-	var string_idx := int(note.get("string_index", -1))
-	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
-		return
-	_append_glissando_detection(string_idx)
+func _on_dan_tranh_note_started(_note: Dictionary) -> void:
+	# Á is scored from validated rapid-attack events below. Continuous pitch
+	# changes are intentionally ignored so a sung glide cannot create an Á chain.
+	pass
 
 func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
-	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode or not _is_tremolo_practice():
+	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode:
 		return
 	if not note.get("is_match", false):
 		return
 	var string_idx := int(note.get("string_index", -1))
 	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
 		return
-	_append_tremolo_attack(string_idx)
+	if _is_glissando_practice():
+		_append_glissando_detection(string_idx)
+	elif _is_tremolo_practice():
+		_append_tremolo_attack(string_idx)
 
 func _append_glissando_detection(string_idx: int) -> void:
 	if glissando_round_locked:
@@ -3882,6 +3880,10 @@ func _process_practice(delta):
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
 	if _is_micro_scoring_blocked() or not analyzer:
+		time_correct = 0.0
+		return false
+	if analyzer.has_method("has_recent_dan_tranh_attack") \
+			and not analyzer.has_recent_dan_tranh_attack():
 		time_correct = 0.0
 		return false
 
