@@ -13,6 +13,7 @@ const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 const CHORD_MIN_FUNDAMENTAL_DB := -52.0
 const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
+const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
 enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
@@ -33,6 +34,8 @@ var current_state = State.INTRO
 @onready var volume_bar = $FeedbackArea/VolumeBar
 var ai_audio = null
 var _dan_tranh_attempts: Array[Dictionary] = []
+var _micro_scoring_locked := false
+var _tts_resume_token := 0
 
 # Virtual Teacher Portrait Animation States
 var _tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
@@ -646,6 +649,8 @@ func _ready():
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
+	ai_audio.tts_started.connect(_on_teacher_tts_started)
+	ai_audio.tts_finished.connect(_on_teacher_tts_finished)
 	
 	if teacher_char and _tex_mai_talk_sheet:
 		_teacher_atlas = AtlasTexture.new()
@@ -1196,6 +1201,68 @@ func _is_tremolo_practice() -> bool:
 	return current_lesson_id == LEVEL_8_TREMOLO_ID
 
 
+func _is_micro_scoring_blocked() -> bool:
+	if _micro_scoring_locked:
+		return true
+	return analyzer != null and bool(analyzer.get("analysis_suspended"))
+
+
+func _on_teacher_tts_started() -> void:
+	# Invalidate any pending resume from an earlier sentence or interrupted TTS.
+	_tts_resume_token += 1
+	_set_micro_scoring_locked(true)
+
+
+func _on_teacher_tts_finished() -> void:
+	_tts_resume_token += 1
+	var resume_token := _tts_resume_token
+	get_tree().create_timer(TTS_MIC_RESUME_DELAY_SEC).timeout.connect(func() -> void:
+		if not is_inside_tree() or resume_token != _tts_resume_token:
+			return
+		_set_micro_scoring_locked(false)
+	)
+
+
+func _set_micro_scoring_locked(locked: bool) -> void:
+	_micro_scoring_locked = locked
+	if locked:
+		_clear_partial_micro_attempts()
+	if analyzer and analyzer.has_method("set_analysis_suspended"):
+		analyzer.set_analysis_suspended(locked)
+	if mic_status_lbl:
+		if locked:
+			mic_status_lbl.text = "🔇 Tạm dừng nghe khi cô Mai đang nói..."
+			mic_status_lbl.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+		else:
+			mic_status_lbl.text = "🎙️ Đang nghe đàn thật..."
+			mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+
+
+func _clear_partial_micro_attempts() -> void:
+	time_correct = 0.0
+	wrong_note_time = 0.0
+	glissando_detected_strings.clear()
+	glissando_detected_times.clear()
+	glissando_last_detection_time = 0.0
+	press_cents_history.clear()
+	press_sample_accumulator = 0.0
+	press_attempt_elapsed = 0.0
+	press_silence_elapsed = 0.0
+	press_target_hold_elapsed = 0.0
+	press_base_note_heard = false
+	press_max_cents = 0.0
+	vibrato_pitch_history.clear()
+	vibrato_sample_accumulator = 0.0
+	vibrato_attempt_elapsed = 0.0
+	vibrato_silence_elapsed = 0.0
+	vibrato_base_note_heard = false
+	tremolo_attack_strings.clear()
+	tremolo_attack_times.clear()
+	tremolo_attempt_started_at = 0.0
+	tremolo_last_attack_at = 0.0
+	tremolo_wrong_attacks = 0
+
+
 func _is_technique_sample_practice() -> bool:
 	return _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice() or _is_tremolo_practice()
 
@@ -1656,6 +1723,18 @@ func _update_teacher_frame() -> void:
 func _update_continuous_pitch_hud():
 	if not analyzer:
 		return
+	if _is_micro_scoring_blocked():
+		if volume_bar:
+			volume_bar.value = 0.0
+		if pitch_note_lbl:
+			pitch_note_lbl.text = "🎵 Nốt: ---"
+		if pitch_status_lbl:
+			pitch_status_lbl.text = "🔇 Tạm dừng nghe khi cô Mai đang nói"
+			pitch_status_lbl.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+		if pitch_meter:
+			pitch_meter.is_active = false
+			pitch_meter.queue_redraw()
+		return
 
 	# Cập nhật thanh lực âm thanh (VolumeBar) theo thời gian thực
 	if volume_bar:
@@ -2007,6 +2086,8 @@ func _schedule_next_single_note():
 	staff_display.set_notes(staff_notes)
 
 func _process_practice_single(delta: float) -> void:
+	if _is_micro_scoring_blocked():
+		return
 	wrong_note_cooldown = max(0.0, wrong_note_cooldown - delta)
 	
 	var target_note := ""
@@ -2230,7 +2311,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 						break
 
 func _on_dan_tranh_note_started(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or is_sample_mode or not _is_glissando_practice():
+	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode or not _is_glissando_practice():
 		return
 	if not note.get("is_match", false):
 		return
@@ -2240,7 +2321,7 @@ func _on_dan_tranh_note_started(note: Dictionary) -> void:
 	_append_glissando_detection(string_idx)
 
 func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or is_sample_mode or not _is_tremolo_practice():
+	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode or not _is_tremolo_practice():
 		return
 	if not note.get("is_match", false):
 		return
@@ -2272,7 +2353,7 @@ func _append_glissando_detection(string_idx: int) -> void:
 	_update_glissando_detection_feedback()
 
 func _process_glissando_practice() -> void:
-	if glissando_round_locked or glissando_detected_times.is_empty():
+	if _is_micro_scoring_blocked() or glissando_round_locked or glissando_detected_times.is_empty():
 		return
 	var now_sec := Time.get_ticks_msec() / 1000.0
 	var silence_gap := now_sec - glissando_last_detection_time
@@ -2574,7 +2655,7 @@ func _start_press_exercise(exercise_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _process_press_practice(delta: float) -> void:
-	if press_exercise_locked or press_exercise_idx >= PRESS_EXERCISES.size() or not analyzer:
+	if _is_micro_scoring_blocked() or press_exercise_locked or press_exercise_idx >= PRESS_EXERCISES.size() or not analyzer:
 		return
 	press_attempt_elapsed += delta
 	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
@@ -2825,7 +2906,7 @@ func _start_vibrato_note(note_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _process_vibrato_practice(delta: float) -> void:
-	if vibrato_note_locked or vibrato_note_idx >= VIBRATO_NOTES.size() or not analyzer:
+	if _is_micro_scoring_blocked() or vibrato_note_locked or vibrato_note_idx >= VIBRATO_NOTES.size() or not analyzer:
 		return
 	vibrato_attempt_elapsed += delta
 	var target_note := VIBRATO_NOTES[vibrato_note_idx]
@@ -3076,7 +3157,7 @@ func _append_tremolo_attack(string_idx: int) -> void:
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
 
 func _process_tremolo_practice() -> void:
-	if tremolo_exercise_locked or tremolo_attack_times.is_empty():
+	if _is_micro_scoring_blocked() or tremolo_exercise_locked or tremolo_attack_times.is_empty():
 		return
 	var now_sec := Time.get_ticks_msec() / 1000.0
 	var duration := now_sec - tremolo_attempt_started_at
@@ -3729,7 +3810,7 @@ func _process_practice(delta):
 					continue
 					
 				# 2. Check if user played WRONG note (requires 0.18s debounce hold time)
-				if analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
+				if not _is_micro_scoring_blocked() and analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
 					var db = analyzer.current_amplitude_db
 					if db > -28.0:
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
@@ -3800,7 +3881,7 @@ func _process_practice(delta):
 			glissando_progress_bar.value = completed
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
-	if not analyzer:
+	if _is_micro_scoring_blocked() or not analyzer:
 		time_correct = 0.0
 		return false
 

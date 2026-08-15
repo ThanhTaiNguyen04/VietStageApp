@@ -254,8 +254,8 @@ func _play_next_sentence(index: int) -> void:
 		current_playing_idx = index
 		if item["stream"] != null:
 			audio_player.stream = item["stream"]
-			audio_player.play()
 			tts_started.emit()
+			audio_player.play()
 			
 			current_sentence_text = item["text"]
 			current_sentence_vowels = _parse_sentence_vowels(current_sentence_text)
@@ -270,8 +270,8 @@ func _play_next_sentence(index: int) -> void:
 			if not voices.is_empty():
 				voice_id = voices[0]
 				
-			DisplayServer.tts_speak(item["text"], voice_id)
 			tts_started.emit()
+			DisplayServer.tts_speak(item["text"], voice_id)
 			
 			current_sentence_text = item["text"]
 			current_sentence_vowels = _parse_sentence_vowels(current_sentence_text)

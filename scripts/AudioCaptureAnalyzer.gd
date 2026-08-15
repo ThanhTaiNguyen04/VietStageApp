@@ -32,6 +32,7 @@ var current_breath_purity := 100.0
 var current_composite_score := 100.0
 var recent_scores_history : Array[float] = []
 var difficulty_tolerance_scale := 1.0
+var analysis_suspended := false
 
 var _analyzer: RefCounted = null
 
@@ -197,11 +198,50 @@ func finish_calibration() -> float:
 	print("Calibrated background noise. Avg: %.1f dB, threshold set to: %.1f dB" % [avg, volume_threshold_db])
 	return volume_threshold_db
 
+
+func set_analysis_suspended(suspended: bool) -> void:
+	analysis_suspended = suspended
+	_reset_live_analysis_state()
+	if _effect:
+		_effect.clear_buffer()
+
+
+func _reset_live_analysis_state() -> void:
+	_clear_pitch_detection()
+	current_amplitude_db = -80.0
+	_analysis_buffer.clear()
+	_rapid_attack_pending = false
+	_rapid_attack_pending_elapsed = 0.0
+	pluck_locked = false
+	onset_detected = false
+	pitch_estimation_done = false
+	time_since_onset = 0.0
+	pluck_release_time = 0.0
+	_dan_tranh_note_active = false
+	_dan_tranh_note_duration = 0.0
+	_dan_tranh_release_elapsed = 0.0
+	current_dan_tranh_note = {}
+	for i in range(_sample_history.size()):
+		_sample_history[i] = 0.0
+
+
+func _discard_captured_samples() -> void:
+	if not _effect:
+		return
+	var frames_available := _effect.get_frames_available()
+	if frames_available > 0:
+		_effect.get_buffer(frames_available)
+
 # ─── Standardised 7-Step DSP Pipeline ───
 func _process(delta: float) -> void:
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 	if not _effect: return
+	if analysis_suspended:
+		# Keep draining the capture effect so cô Mai's speech cannot remain buffered
+		# and be analyzed immediately after the post-TTS cooldown.
+		_discard_captured_samples()
+		return
 	
 	# Step 1: Capture
 	var samples = _capture_samples()
@@ -761,6 +801,8 @@ func _draw() -> void:
 		draw_polyline(points, C_JADE, 2.0, true)
 
 func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> Dictionary:
+	if analysis_suspended:
+		return {}
 	if pitch_profile:
 		# Reject silence and continuous/non-plucked signals (voice hum, sustained
 		# tones, room tone): a real pluck is a sharp attack followed by decay, so
