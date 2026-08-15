@@ -221,6 +221,7 @@ const TREMOLO_SAMPLE_DURATION := 2.60
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
+var error_flash_title_label: Label
 var error_flash_detail_label: Label
 var error_flash_timer := 0.75
 var error_flash_tween: Tween
@@ -230,6 +231,11 @@ var error_flash_note: Dictionary = {}
 var error_feedback_player: AudioStreamPlayer
 var error_tooltip_final_position := Vector2.ZERO
 var error_feedback_showing := false
+var error_feedback_target_note := ""
+var error_feedback_title := "Chưa đúng"
+var error_feedback_detail := ""
+var unrecognized_audio_elapsed := 0.0
+const UNRECOGNIZED_AUDIO_HINT_DELAY := 0.30
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -714,8 +720,9 @@ func _ready():
 		_build_vibrato_sheet_hud()
 	if _is_tremolo_practice():
 		_build_tremolo_sheet_hud()
-	if _is_error_flash_demo():
-		_build_error_flash_overlay()
+	# Build the visual layer for every lesson. Only lesson 99+ drives it from an
+	# automatic timer; real lessons call it after a validated scoring error.
+	_build_error_flash_overlay()
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -1181,18 +1188,21 @@ func _build_error_flash_overlay() -> void:
 
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	var regular_font := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
-	var title_label := Label.new()
-	title_label.text = "Chưa đúng"
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
-	title_label.add_theme_font_size_override("font_size", 20)
+	error_flash_title_label = Label.new()
+	error_flash_title_label.text = "Chưa đúng"
+	error_flash_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_flash_title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
+	error_flash_title_label.add_theme_font_size_override("font_size", 20)
 	if bold_font:
-		title_label.add_theme_font_override("font", bold_font)
-	text_box.add_child(title_label)
+		error_flash_title_label.add_theme_font_override("font", bold_font)
+	text_box.add_child(error_flash_title_label)
 
 	error_flash_detail_label = Label.new()
 	error_flash_detail_label.text = "Cần gảy: Sol₂"
 	error_flash_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_flash_detail_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	error_flash_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	error_flash_detail_label.max_lines_visible = 2
 	error_flash_detail_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.91, 1.0))
 	error_flash_detail_label.add_theme_font_size_override("font_size", 15)
 	if regular_font:
@@ -1565,7 +1575,7 @@ func _process(delta):
 		else:
 			_process_practice(delta)
 	
-	_update_continuous_pitch_hud()
+	_update_continuous_pitch_hud(delta)
 
 
 func _process_error_flash_demo(delta: float) -> void:
@@ -1593,6 +1603,28 @@ func _process_error_demo_sheet(delta: float) -> void:
 
 
 func _play_error_flash_demo() -> void:
+	error_feedback_target_note = ""
+	error_feedback_title = "Chưa đúng"
+	error_feedback_detail = ""
+	_play_error_flash_effect()
+
+
+func _show_practice_error_feedback(
+	target_note: String,
+	detail: String,
+	title: String = "Chưa đúng"
+) -> void:
+	if _is_error_flash_demo() or current_state == State.COMPLETED:
+		return
+	if error_feedback_showing:
+		return
+	error_feedback_target_note = target_note
+	error_feedback_title = title
+	error_feedback_detail = detail
+	_play_error_flash_effect()
+
+
+func _play_error_flash_effect() -> void:
 	if not error_flash_overlay or not staff_display:
 		return
 	if error_flash_tween and error_flash_tween.is_running():
@@ -1662,6 +1694,9 @@ func _play_error_flash_demo() -> void:
 func _finish_error_flash_demo() -> void:
 	_set_error_demo_note_color(false)
 	error_feedback_showing = false
+	error_feedback_target_note = ""
+	error_feedback_title = "Chưa đúng"
+	error_feedback_detail = ""
 	if error_flash_badge:
 		error_flash_badge.modulate.a = 0.0
 	if error_flash_halo:
@@ -1694,8 +1729,13 @@ func _position_error_flash_feedback() -> void:
 	error_tooltip_final_position = Vector2(badge_x, badge_y)
 	error_flash_badge.position = error_tooltip_final_position
 	error_flash_badge.size = Vector2(300.0, 92.0)
+	if error_flash_title_label:
+		error_flash_title_label.text = error_feedback_title
 	if error_flash_detail_label:
-		error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
+		if not error_feedback_detail.is_empty():
+			error_flash_detail_label.text = error_feedback_detail
+		else:
+			error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
 
 
 func _format_note_for_feedback(raw_note: String) -> String:
@@ -1732,15 +1772,30 @@ func _set_error_demo_note_color(show_error: bool) -> void:
 		staff_display.queue_redraw()
 		return
 
+	var candidate_notes: Array = active_falling_notes
+	if candidate_notes.is_empty() and staff_display.get("notes_to_draw") is Array:
+		candidate_notes = staff_display.get("notes_to_draw")
+	var target_components := error_feedback_target_note.split("+")
 	var closest_note: Dictionary = {}
 	var closest_distance := INF
-	for note in active_falling_notes:
+	for note in candidate_notes:
 		if note.get("hit", false) or note.get("missed", false):
+			continue
+		var clean_note := str(note.get("note", "")).replace("ZT_", "")
+		if not error_feedback_target_note.is_empty() and clean_note not in target_components:
 			continue
 		var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
 		if distance < closest_distance:
 			closest_distance = distance
 			closest_note = note
+	if closest_note.is_empty() and not error_feedback_target_note.is_empty():
+		for note in candidate_notes:
+			if note.get("hit", false) or note.get("missed", false):
+				continue
+			var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_note = note
 	if closest_note.is_empty():
 		return
 	error_flash_note = closest_note
@@ -1764,10 +1819,11 @@ func _update_teacher_frame() -> void:
 	)
 	_teacher_atlas.region = source_rect
 
-func _update_continuous_pitch_hud():
+func _update_continuous_pitch_hud(delta: float = 0.016):
 	if not analyzer:
 		return
 	if _is_micro_scoring_blocked():
+		unrecognized_audio_elapsed = 0.0
 		if volume_bar:
 			volume_bar.value = 0.0
 		if pitch_note_lbl:
@@ -1795,17 +1851,39 @@ func _update_continuous_pitch_hud():
 		
 	var db: float = analyzer.current_amplitude_db
 	var pitch: float = analyzer.current_pitch
-	
-	if db <= analyzer.volume_threshold_db or pitch <= 0.0:
+	var has_valid_pluck := true
+	if analyzer.has_method("has_recent_dan_tranh_attack"):
+		has_valid_pluck = analyzer.has_recent_dan_tranh_attack()
+
+	if db <= analyzer.volume_threshold_db:
+		unrecognized_audio_elapsed = 0.0
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
 			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🎙️ Đang nghe..."
+				pitch_status_lbl.text = "🎙️ Đang chờ bạn gảy đàn..."
 				pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
 			if pitch_meter:
 				pitch_meter.is_active = false
 				pitch_meter.queue_redraw()
 		return
+
+	if pitch <= 0.0 or not has_valid_pluck:
+		unrecognized_audio_elapsed += maxf(delta, 0.0)
+		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
+			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
+			if pitch_status_lbl:
+				if unrecognized_audio_elapsed >= UNRECOGNIZED_AUDIO_HINT_DELAY:
+					pitch_status_lbl.text = "🟡 Chưa nghe rõ tiếng đàn · hãy gảy lại gần micro"
+					pitch_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
+				else:
+					pitch_status_lbl.text = "🎙️ Đang nhận diện tiếng đàn..."
+					pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
+			if pitch_meter:
+				pitch_meter.is_active = false
+				pitch_meter.queue_redraw()
+		return
+
+	unrecognized_audio_elapsed = 0.0
 
 	# Use the stabilized pitch first; re-analyzing the rolling buffer can report a stale lower octave.
 	var det_name := _get_closest_dan_tranh_note_name(pitch)
@@ -2173,6 +2251,15 @@ func _process_practice_single(delta: float) -> void:
 			var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 			var det_name = note_info.get("note_name", "None")
 			var det_idx = note_info.get("string_index", -1)
+			var is_partial_song_thanh: bool = current_lesson_id == LEVEL_7_SONG_THANH_ID \
+				and "+" in target_note and det_name in target_note.split("+")
+			if det_name != "None" and det_idx >= 0 and is_partial_song_thanh:
+				wrong_note_time += delta
+				if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+					wrong_note_time = 0.0
+					wrong_note_cooldown = 2.0
+					_show_song_thanh_incomplete(target_note)
+				return
 			var is_wrong = true
 			if det_name == target_note or det_idx == target_string_idx:
 				is_wrong = false
@@ -2200,6 +2287,11 @@ func _process_practice_single(delta: float) -> void:
 
 
 func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note: String, target_idx: int) -> void:
+	_show_practice_error_feedback(
+		target_note,
+		"Cần gảy: " + target_note.replace("+", " + "),
+		"Chưa đúng"
+	)
 	if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + detected_note
 	if pitch_status_lbl:
 		pitch_status_lbl.text = "🔴 CHƯA ĐÚNG! (Cần: " + target_note + ")"
@@ -2235,6 +2327,18 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	
 	if ai_audio:
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
+
+
+func _show_song_thanh_incomplete(target_note: String) -> void:
+	var target_label := target_note.replace("+", " và ")
+	var feedback := "Cần gảy đồng thời đủ hai nốt: %s" % target_label
+	_show_practice_error_feedback(target_note, feedback, "Chưa đủ Song thanh")
+	if pitch_status_lbl:
+		pitch_status_lbl.text = "🟡 CHƯA ĐỦ HAI NỐT"
+		pitch_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
+	if mic_status_lbl:
+		mic_status_lbl.text = feedback
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
 
 func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
@@ -2687,16 +2791,23 @@ func _on_glissando_round_success() -> void:
 	)
 
 func _on_glissando_round_failed(result: Dictionary) -> void:
+	var feedback := "Chuỗi âm chưa đúng hướng mũi tên. Hãy vuốt lại đúng chiều."
+	var overlay_detail := "Cần vuốt đúng hướng mũi tên"
+	if not result.get("enough_strings", false):
+		feedback = "Chưa đủ số dây. Hãy vuốt qua ít nhất 6 dây khác nhau."
+		overlay_detail = "Cần vuốt qua ít nhất 6 dây"
+	elif not result.get("range_valid", false):
+		feedback = "Phạm vi Á chưa đủ rộng hoặc chưa chạm đúng vùng dây đầu/cuối."
+		overlay_detail = "Cần vuốt phạm vi dây rộng hơn"
+	elif not result.get("continuous", false):
+		feedback = "Chuỗi Á còn ngắt quãng hoặc bỏ cách quá nhiều dây. Hãy vuốt liền tay hơn."
+		overlay_detail = "Cần vuốt liền mạch hơn"
 	if glissando_status_label:
-		if not result.get("enough_strings", false):
-			glissando_status_label.text = "Chưa đủ số dây. Hãy vuốt qua ít nhất 6 dây khác nhau."
-		elif not result.get("range_valid", false):
-			glissando_status_label.text = "Phạm vi Á chưa đủ rộng hoặc chưa chạm đúng vùng dây đầu/cuối."
-		elif not result.get("continuous", false):
-			glissando_status_label.text = "Chuỗi Á còn ngắt quãng hoặc bỏ cách quá nhiều dây. Hãy vuốt liền tay hơn."
-		else:
-			glissando_status_label.text = "Chuỗi âm chưa đúng hướng mũi tên. Hãy vuốt lại đúng chiều."
+		glissando_status_label.text = feedback
 		glissando_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
+	var anchor_note := "Sol1" if mode == "up" else "La4"
+	_show_practice_error_feedback(anchor_note, overlay_detail, "Chưa đúng kỹ thuật Á")
 	_dan_tranh_attempts.append({
 		"correct_string": false,
 		"cents_error": 50.0,
@@ -2840,6 +2951,11 @@ func _process_press_practice(delta: float) -> void:
 				var heard_note := str(attack_identity.get("note_name", "âm khác"))
 				press_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi nhấn." % [heard_note, source]
 				press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+				_show_practice_error_feedback(
+					source,
+					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, source],
+					"Sai dây"
+				)
 		else:
 			if not _is_press_contour_session_valid(attack_identity, source, press_attack_generation):
 				_reset_press_attempt_tracking("Âm nhấn không còn thuộc lần gảy dây %s. Hãy gảy lại đúng dây rồi nhấn." % source)
@@ -2898,7 +3014,13 @@ func _process_press_practice(delta: float) -> void:
 			return
 
 	if press_attempt_elapsed >= PRESS_ATTEMPT_TIMEOUT:
-		_on_press_exercise_failed(target_interval)
+		if press_base_note_heard:
+			_on_press_exercise_failed(target_interval)
+		else:
+			press_attempt_elapsed = 0.0
+			if press_status_label:
+				press_status_label.text = "Chưa nghe thấy lần gảy đúng dây. Hãy gảy nốt được chỉ dẫn để bắt đầu nhấn."
+				press_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
 
 
 func _get_technique_attack_identity() -> Dictionary:
@@ -3063,13 +3185,23 @@ func _on_press_exercise_failed(target_interval: float) -> void:
 	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
 	staff_display.queue_redraw()
 	var feedback := "Chưa nhận đúng nốt gốc. Hãy gảy đúng dây được chỉ dẫn trước."
+	var overlay_detail := "Cần gảy đúng dây trước khi nhấn"
 	if press_base_note_heard:
 		if press_max_cents < target_interval - 38.0:
 			feedback = "Chưa đủ cao. Hãy nhấn thêm một chút và giữ lực tay trái."
+			overlay_detail = "Cần nhấn cao thêm"
 		elif press_max_cents > target_interval + 62.0:
 			feedback = "Cao quá. Hãy giảm lực nhấn để không vượt nốt đích."
+			overlay_detail = "Cần giảm lực nhấn"
 		else:
 			feedback = "Đã gần đúng cao độ nhưng chưa giữ ổn định. Hãy nhấn đều và giữ nốt đích."
+			overlay_detail = "Cần giữ cao độ ổn định"
+	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
+	_show_practice_error_feedback(
+		str(exercise["source"]),
+		overlay_detail,
+		"Chưa đúng kỹ thuật Nhấn"
+	)
 	if press_status_label:
 		press_status_label.text = feedback
 		press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
@@ -3198,6 +3330,11 @@ func _process_vibrato_practice(delta: float) -> void:
 				var heard_note := str(attack_identity.get("note_name", "âm khác"))
 				vibrato_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi rung." % [heard_note, target_note]
 				vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+				_show_practice_error_feedback(
+					target_note,
+					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, target_note],
+					"Sai dây"
+				)
 		else:
 			if not _is_vibrato_contour_session_valid(attack_identity, target_note, vibrato_attack_generation):
 				_reset_vibrato_attempt_tracking("Tiếng rung không còn thuộc lần gảy dây %s. Hãy gảy lại rồi rung." % target_note)
@@ -3241,7 +3378,13 @@ func _process_vibrato_practice(delta: float) -> void:
 			]
 
 	if vibrato_attempt_elapsed >= VIBRATO_ATTEMPT_TIMEOUT:
-		_on_vibrato_note_failed()
+		if vibrato_base_note_heard:
+			_on_vibrato_note_failed()
+		else:
+			vibrato_attempt_elapsed = 0.0
+			if vibrato_status_label:
+				vibrato_status_label.text = "Chưa nghe thấy lần gảy đúng dây. Hãy gảy nốt được chỉ dẫn rồi mới bắt đầu rung."
+				vibrato_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
 
 
 func _is_vibrato_source_attack_valid(identity: Dictionary, target_note: String) -> bool:
@@ -3376,8 +3519,14 @@ func _on_vibrato_note_failed() -> void:
 	vibrato_note_locked = true
 	vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
 	staff_display.queue_redraw()
+	var feedback := "Chưa nhận được rung đều. Hãy gảy lại rồi nhồi dây nhẹ, liên tục bằng tay trái."
+	_show_practice_error_feedback(
+		VIBRATO_NOTES[vibrato_note_idx],
+		"Cần gảy lại và rung đều hơn",
+		"Chưa đúng kỹ thuật Rung"
+	)
 	if vibrato_status_label:
-		vibrato_status_label.text = "Chưa nhận được rung đều. Hãy gảy lại rồi nhồi dây nhẹ, liên tục bằng tay trái."
+		vibrato_status_label.text = feedback
 		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 	_dan_tranh_attempts.append({
 		"correct_string": false,
@@ -3497,12 +3646,17 @@ func _append_tremolo_attack(
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	if not allowed_strings.has(string_idx):
 		tremolo_wrong_attacks += 1
+		var target_label := str(notes[0])
+		if notes.size() > 1:
+			target_label = "%s – %s" % [notes[0], notes[1]]
 		if tremolo_status_label:
-			var target_label := str(notes[0])
-			if notes.size() > 1:
-				target_label = "%s – %s" % [notes[0], notes[1]]
 			tremolo_status_label.text = "Sai dây. Hãy vê đúng %s." % target_label
 			tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+		_show_practice_error_feedback(
+			str(notes[0]),
+			"Cần vê đúng: %s" % target_label,
+			"Sai dây"
+		)
 		return
 
 	if not tremolo_attack_times.is_empty() and attack_time_sec <= tremolo_attack_times.back():
@@ -3714,6 +3868,12 @@ func _on_tremolo_failed(result: Dictionary) -> void:
 	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" \
 			and (alternating_ratio < 0.78 or not result.get("balance_ok", false)):
 		feedback = "Hãy gảy luân phiên nốt thấp và nốt cao; không lặp nhiều lần trên cùng một dây."
+	var target_notes: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["notes"]
+	_show_practice_error_feedback(
+		str(target_notes[0]),
+		"Cần vê nhanh, đều và đúng dây",
+		"Chưa đúng kỹ thuật Vê"
+	)
 	if tremolo_status_label:
 		tremolo_status_label.text = feedback
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
@@ -3997,14 +4157,17 @@ func _is_note_missing(note_idx: int) -> bool:
 func _start_practice():
 	_stop_technique_sample()
 	current_state = State.PRACTICE
-	if _is_error_flash_demo():
-		if error_flash_tween and error_flash_tween.is_running():
-			error_flash_tween.kill()
-		if error_pulse_tween and error_pulse_tween.is_running():
-			error_pulse_tween.kill()
-		if error_shake_tween and error_shake_tween.is_running():
-			error_shake_tween.kill()
-		_set_error_demo_note_color(false)
+	if error_flash_tween and error_flash_tween.is_running():
+		error_flash_tween.kill()
+	if error_pulse_tween and error_pulse_tween.is_running():
+		error_pulse_tween.kill()
+	if error_shake_tween and error_shake_tween.is_running():
+		error_shake_tween.kill()
+	_set_error_demo_note_color(false)
+	error_feedback_showing = false
+	error_feedback_target_note = ""
+	error_feedback_title = "Chưa đúng"
+	error_feedback_detail = ""
 	teacher_area.visible = false
 	feedback_area.visible = true
 	practice_idx = 0
@@ -4013,7 +4176,9 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice() or _is_tremolo_practice()
+	# Every real practice can now pulse its exact target note on a validated error.
+	# The 99+ lesson still keeps its separate automatic demo timer below.
+	staff_display.use_note_colors = true
 	if _is_error_flash_demo():
 		error_flash_timer = 0.75
 		error_flash_note = {}
@@ -4145,6 +4310,7 @@ func _process_practice(delta):
 		
 	if mic_cooldown > 0.0:
 		mic_cooldown -= delta
+	wrong_note_cooldown = maxf(0.0, wrong_note_cooldown - delta)
 
 	practice_time += delta
 	var hit_x = staff_display.hit_line_x
@@ -4258,6 +4424,15 @@ func _process_practice(delta):
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 						var det_name = note_info.get("note_name", "None")
 						var det_idx = note_info.get("string_index", -1)
+						var is_partial_song_thanh: bool = current_lesson_id == LEVEL_7_SONG_THANH_ID \
+							and "+" in raw_chord_name and det_name in raw_chord_name.split("+")
+						if det_name != "None" and det_idx >= 0 and is_partial_song_thanh:
+							wrong_note_time += delta
+							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+								wrong_note_time = 0.0
+								wrong_note_cooldown = 2.0
+								_show_song_thanh_incomplete(raw_chord_name)
+							continue
 						var is_wrong = true
 						if "+" in raw_chord_name:
 							if det_name in raw_chord_name.split("+"):
