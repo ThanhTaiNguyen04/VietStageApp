@@ -354,6 +354,12 @@ func _process(delta: float) -> void:
 		var rapid_note := mapped_note.duplicate()
 		rapid_note["attack_time_msec"] = Time.get_ticks_msec()
 		rapid_note["amplitude_db"] = current_amplitude_db
+		# This event exists only after analyze_dan_tranh_sound() accepted the
+		# onset. Carry that proof with the event so rapid-technique scorers never
+		# confuse a continuous vocal pitch estimate with a plucked string.
+		rapid_note["instrument_validated"] = true
+		rapid_note["instrument_confidence"] = current_instrument_confidence
+		rapid_note["attack_generation"] = _instrument_gate_generation
 		dan_tranh_rapid_attack.emit(rapid_note)
 		_rapid_attack_last_emit_msec = Time.get_ticks_msec()
 		_rapid_attack_pending = false

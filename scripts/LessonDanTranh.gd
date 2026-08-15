@@ -102,11 +102,14 @@ var glissando_status_label: Label
 var glissando_round_idx := 0
 var glissando_detected_strings: Array[int] = []
 var glissando_detected_times: Array[float] = []
+var glissando_detected_generations: Array[int] = []
 var glissando_display_notes: Array = []
 var glissando_last_detection_time := 0.0
 var glissando_round_locked := false
 const GLISSANDO_GAP_TIMEOUT := 0.58
-const GLISSANDO_MAX_DURATION := 4.0
+const GLISSANDO_MAX_ATTACK_GAP := 0.24
+const GLISSANDO_MAX_STRING_STEP := 4
+const GLISSANDO_MIN_DISTINCT_STRINGS := 6
 const GLISSANDO_ROUNDS := [
 	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
 	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
@@ -1263,6 +1266,7 @@ func _clear_partial_micro_attempts() -> void:
 	wrong_note_time = 0.0
 	glissando_detected_strings.clear()
 	glissando_detected_times.clear()
+	glissando_detected_generations.clear()
 	glissando_last_detection_time = 0.0
 	press_cents_history.clear()
 	press_sample_accumulator = 0.0
@@ -2318,9 +2322,11 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 
 	elif current_state == State.PRACTICE:
 		if _is_glissando_practice():
-			# Keep virtual strings usable for local testing; microphone events from
-			# a real đàn tranh enter through the same sequence scorer below.
-			_append_glissando_detection(idx)
+			# Á is a microphone technique exercise. Virtual clicks have not passed
+			# the đàn-tranh attack classifier and therefore must not enter its chain.
+			if glissando_status_label:
+				glissando_status_label.text = "Hãy thực hiện kỹ thuật Á trên đàn thật để micro nhận chuỗi tiếng gảy."
+				glissando_status_label.add_theme_color_override("font_color", C_GOLD)
 			return
 		if _is_tremolo_practice():
 			# Virtual strings use the same scorer as microphone attacks, which keeps
@@ -2348,36 +2354,54 @@ func _on_dan_tranh_note_started(_note: Dictionary) -> void:
 func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
 	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode:
 		return
-	if not note.get("is_match", false):
+	if not _is_validated_dan_tranh_rapid_attack(note):
 		return
 	var string_idx := int(note.get("string_index", -1))
-	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
-		return
+	var attack_generation := int(note.get("attack_generation", -1))
+	var attack_time_sec := float(note.get("attack_time_msec", 0)) / 1000.0
 	if _is_glissando_practice():
-		_append_glissando_detection(string_idx)
+		_append_glissando_detection(string_idx, attack_time_sec, attack_generation, true)
 	elif _is_tremolo_practice():
 		_append_tremolo_attack(string_idx)
 
-func _append_glissando_detection(string_idx: int) -> void:
-	if glissando_round_locked:
+
+func _is_validated_dan_tranh_rapid_attack(note: Dictionary) -> bool:
+	var string_idx := int(note.get("string_index", -1))
+	return bool(note.get("is_match", false)) \
+		and bool(note.get("instrument_validated", false)) \
+		and float(note.get("instrument_confidence", 0.0)) > 0.0 \
+		and int(note.get("attack_generation", -1)) > 0 \
+		and int(note.get("attack_time_msec", 0)) > 0 \
+		and string_idx >= 0 and string_idx < ALL_17_NOTES.size()
+
+func _append_glissando_detection(
+	string_idx: int,
+	attack_time_sec: float,
+	attack_generation: int,
+	instrument_validated: bool
+) -> void:
+	if glissando_round_locked or not instrument_validated:
 		return
-	var now_sec := Time.get_ticks_msec() / 1000.0
+	if string_idx < 0 or string_idx >= ALL_17_NOTES.size() \
+			or attack_time_sec <= 0.0 or attack_generation <= 0:
+		return
+	if not glissando_detected_generations.is_empty() \
+			and attack_generation <= glissando_detected_generations.back():
+		return
 	if not glissando_detected_times.is_empty():
-		var gap := now_sec - glissando_detected_times[glissando_detected_times.size() - 1]
+		var gap := attack_time_sec - glissando_detected_times.back()
 		if gap > GLISSANDO_GAP_TIMEOUT:
 			_evaluate_glissando_gesture()
 			if glissando_round_locked:
 				return
 			glissando_detected_strings.clear()
 			glissando_detected_times.clear()
-
-	if not glissando_detected_strings.is_empty() and glissando_detected_strings.back() == string_idx:
-		glissando_last_detection_time = now_sec
-		return
+			glissando_detected_generations.clear()
 
 	glissando_detected_strings.append(string_idx)
-	glissando_detected_times.append(now_sec)
-	glissando_last_detection_time = now_sec
+	glissando_detected_times.append(attack_time_sec)
+	glissando_detected_generations.append(attack_generation)
+	glissando_last_detection_time = attack_time_sec
 	_update_glissando_detection_feedback()
 
 func _process_glissando_practice() -> void:
@@ -2386,7 +2410,9 @@ func _process_glissando_practice() -> void:
 	var now_sec := Time.get_ticks_msec() / 1000.0
 	var silence_gap := now_sec - glissando_last_detection_time
 	var gesture_duration := now_sec - glissando_detected_times[0]
-	if silence_gap >= GLISSANDO_GAP_TIMEOUT or gesture_duration >= GLISSANDO_MAX_DURATION:
+	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
+	var max_duration := 3.8 if mode == "round" else 2.4
+	if silence_gap >= GLISSANDO_GAP_TIMEOUT or gesture_duration >= max_duration:
 		_evaluate_glissando_gesture()
 
 func _start_glissando_round(round_index: int) -> void:
@@ -2400,6 +2426,7 @@ func _start_glissando_round(round_index: int) -> void:
 	glissando_round_locked = false
 	glissando_detected_strings.clear()
 	glissando_detected_times.clear()
+	glissando_detected_generations.clear()
 	glissando_last_detection_time = 0.0
 	active_falling_notes.clear()
 	staff_display.show_metronome = false
@@ -2473,10 +2500,14 @@ func _update_glissando_detection_feedback() -> void:
 		min_string = mini(min_string, value)
 		max_string = maxi(max_string, value)
 	var covered_strings := max_string - min_string + 1
+	var distinct := {}
+	for value in glissando_detected_strings:
+		distinct[value] = true
 	if glissando_progress_label:
-		glissando_progress_label.text = "Lượt %d/3 · đã nghe %d âm · phủ %d dây" % [
+		glissando_progress_label.text = "Lượt %d/3 · %d âm hợp lệ · %d dây khác nhau · phủ %d dây" % [
 			glissando_round_idx + 1,
 			glissando_detected_strings.size(),
+			distinct.size(),
 			covered_strings
 		]
 	if glissando_progress_bar:
@@ -2510,43 +2541,113 @@ func _evaluate_glissando_gesture() -> void:
 		return
 
 	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
-	var first: int = glissando_detected_strings.front()
-	var last: int = glissando_detected_strings.back()
-	var min_string: int = first
-	var max_string: int = first
-	for value in glissando_detected_strings:
-		min_string = mini(min_string, value)
-		max_string = maxi(max_string, value)
-	var span: int = max_string - min_string
-	var enough_notes := glissando_detected_strings.size() >= 6
-	var success := false
+	var result := _analyze_glissando_gesture(
+		glissando_detected_strings, glissando_detected_times, mode
+	)
+
+	glissando_round_locked = true
+	if result.get("success", false):
+		_on_glissando_round_success()
+	else:
+		_on_glissando_round_failed(result)
+
+
+func _analyze_glissando_gesture(
+	strings: Array[int],
+	times: Array[float],
+	mode: String
+) -> Dictionary:
+	var result := {
+		"success": false,
+		"event_count": strings.size(),
+		"distinct_count": 0,
+		"span": 0,
+		"duration": 0.0,
+		"max_gap": 0.0,
+		"max_step": 0,
+		"direction_ratio": 0.0,
+		"enough_strings": false,
+		"range_valid": false,
+		"direction_valid": false,
+		"continuous": false
+	}
+	if strings.is_empty() or strings.size() != times.size():
+		return result
+
+	var first: int = strings.front()
+	var last: int = strings.back()
+	var min_string := first
+	var max_string := first
+	var distinct := {}
+	var max_gap := 0.0
+	var max_step := 0
+	var times_increasing := true
+	for i in range(strings.size()):
+		var string_idx := strings[i]
+		if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
+			return result
+		distinct[string_idx] = true
+		min_string = mini(min_string, string_idx)
+		max_string = maxi(max_string, string_idx)
+		if i > 0:
+			var gap := times[i] - times[i - 1]
+			if gap <= 0.0:
+				times_increasing = false
+			max_gap = maxf(max_gap, gap)
+			max_step = maxi(max_step, absi(strings[i] - strings[i - 1]))
+
+	var span := max_string - min_string
+	var duration := times.back() - times.front()
+	var distinct_count := distinct.size()
+	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
+	var max_duration := 3.8 if mode == "round" else 2.4
+	var continuous := times_increasing \
+		and max_gap <= GLISSANDO_MAX_ATTACK_GAP \
+		and max_step <= GLISSANDO_MAX_STRING_STEP \
+		and duration <= max_duration
+	var enough_strings := distinct_count >= GLISSANDO_MIN_DISTINCT_STRINGS \
+		and strings.size() >= (9 if mode == "round" else 6)
+	var range_valid := false
+	var direction_valid := false
+	var direction_ratio := 0.0
 
 	if mode == "down":
-		success = enough_notes and span >= 10 and first >= 11 and last <= 5 \
-			and _direction_ratio(glissando_detected_strings, false) >= 0.70
+		direction_ratio = _direction_ratio(strings, false)
+		range_valid = span >= 10 and first >= 11 and last <= 5 and coverage_ratio >= 0.45
+		direction_valid = direction_ratio >= 0.75
 	elif mode == "up":
-		success = enough_notes and span >= 10 and first <= 5 and last >= 11 \
-			and _direction_ratio(glissando_detected_strings, true) >= 0.70
-	else:
-		var turn_idx := glissando_detected_strings.find(min_string)
-		if turn_idx >= 3 and turn_idx <= glissando_detected_strings.size() - 4:
+		direction_ratio = _direction_ratio(strings, true)
+		range_valid = span >= 10 and first <= 5 and last >= 11 and coverage_ratio >= 0.45
+		direction_valid = direction_ratio >= 0.75
+	elif mode == "round":
+		var turn_idx := strings.find(min_string)
+		if turn_idx >= 3 and turn_idx <= strings.size() - 4:
 			var down_leg: Array[int] = []
 			var up_leg: Array[int] = []
 			for i in range(turn_idx + 1):
-				down_leg.append(glissando_detected_strings[i])
-			for i in range(turn_idx, glissando_detected_strings.size()):
-				up_leg.append(glissando_detected_strings[i])
-			success = glissando_detected_strings.size() >= 9 and min_string <= 5 \
-				and first >= 11 and last >= 11 \
+				down_leg.append(strings[i])
+			for i in range(turn_idx, strings.size()):
+				up_leg.append(strings[i])
+			var down_ratio := _direction_ratio(down_leg, false)
+			var up_ratio := _direction_ratio(up_leg, true)
+			direction_ratio = minf(down_ratio, up_ratio)
+			range_valid = min_string <= 5 and first >= 11 and last >= 11 \
 				and first - min_string >= 9 and last - min_string >= 9 \
-				and _direction_ratio(down_leg, false) >= 0.65 \
-				and _direction_ratio(up_leg, true) >= 0.65
+				and coverage_ratio >= 0.45
+			direction_valid = down_ratio >= 0.70 and up_ratio >= 0.70
 
-	glissando_round_locked = true
-	if success:
-		_on_glissando_round_success()
-	else:
-		_on_glissando_round_failed(span, glissando_detected_strings.size())
+	result["distinct_count"] = distinct_count
+	result["span"] = span
+	result["duration"] = duration
+	result["max_gap"] = max_gap
+	result["max_step"] = max_step
+	result["direction_ratio"] = direction_ratio
+	result["enough_strings"] = enough_strings
+	result["range_valid"] = range_valid
+	result["direction_valid"] = direction_valid
+	result["continuous"] = continuous
+	result["success"] = enough_strings and range_valid and direction_valid and continuous
+	return result
 
 func _on_glissando_round_success() -> void:
 	for note_data in glissando_display_notes:
@@ -2574,12 +2675,16 @@ func _on_glissando_round_success() -> void:
 			_start_glissando_round(completed_round + 1)
 	)
 
-func _on_glissando_round_failed(span: int, note_count: int) -> void:
+func _on_glissando_round_failed(result: Dictionary) -> void:
 	if glissando_status_label:
-		if note_count < 6 or span < 10:
-			glissando_status_label.text = "Chưa đủ rộng hoặc còn ngắt quãng. Hãy vuốt qua nhiều dây hơn."
+		if not result.get("enough_strings", false):
+			glissando_status_label.text = "Chưa đủ số dây. Hãy vuốt qua ít nhất 6 dây khác nhau."
+		elif not result.get("range_valid", false):
+			glissando_status_label.text = "Phạm vi Á chưa đủ rộng hoặc chưa chạm đúng vùng dây đầu/cuối."
+		elif not result.get("continuous", false):
+			glissando_status_label.text = "Chuỗi Á còn ngắt quãng hoặc bỏ cách quá nhiều dây. Hãy vuốt liền tay hơn."
 		else:
-			glissando_status_label.text = "Chuỗi âm chưa đúng hướng mũi tên. Hãy thử lại chậm và liền tay hơn."
+			glissando_status_label.text = "Chuỗi âm chưa đúng hướng mũi tên. Hãy vuốt lại đúng chiều."
 		glissando_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 	_dan_tranh_attempts.append({
 		"correct_string": false,
