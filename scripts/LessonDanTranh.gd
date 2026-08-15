@@ -141,8 +141,18 @@ var press_target_hold_elapsed := 0.0
 var press_base_note_heard := false
 var press_exercise_locked := false
 var press_max_cents := 0.0
+var press_attack_generation := -1
+var press_consumed_attack_generation := -1
+var press_contour_elapsed := 0.0
+var press_min_amplitude_db := 0.0
+var press_added_sound_elapsed := 0.0
 const PRESS_SAMPLE_INTERVAL := 0.025
 const PRESS_ATTEMPT_TIMEOUT := 5.5
+const PRESS_MAX_SIGNAL_GAP := 0.16
+const PRESS_MAX_SAMPLE_JUMP_CENTS := 70.0
+const PRESS_MAX_RISE_DELAY := 0.80
+const PRESS_ADDED_SOUND_RISE_DB := 8.0
+const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
 const PRESS_EXERCISES := [
 	{"source": "Mi2", "target": "Fa2", "interval": 100.0},
 	{"source": "La2", "target": "Si2", "interval": 200.0},
@@ -1239,6 +1249,7 @@ func _set_micro_scoring_locked(locked: bool) -> void:
 
 
 func _clear_partial_micro_attempts() -> void:
+	var interrupted_press_generation := _get_current_press_attack_generation()
 	time_correct = 0.0
 	wrong_note_time = 0.0
 	glissando_detected_strings.clear()
@@ -1251,6 +1262,11 @@ func _clear_partial_micro_attempts() -> void:
 	press_target_hold_elapsed = 0.0
 	press_base_note_heard = false
 	press_max_cents = 0.0
+	press_attack_generation = -1
+	press_consumed_attack_generation = interrupted_press_generation
+	press_contour_elapsed = 0.0
+	press_min_amplitude_db = 0.0
+	press_added_sound_elapsed = 0.0
 	vibrato_pitch_history.clear()
 	vibrato_sample_accumulator = 0.0
 	vibrato_attempt_elapsed = 0.0
@@ -2627,6 +2643,12 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_base_note_heard = false
 	press_exercise_locked = false
 	press_max_cents = 0.0
+	press_attack_generation = -1
+	press_contour_elapsed = 0.0
+	press_min_amplitude_db = 0.0
+	press_added_sound_elapsed = 0.0
+	# Never reuse a still-ringing attack from the previous instruction/attempt.
+	press_consumed_attack_generation = _get_current_press_attack_generation()
 	for pair_idx in range(PRESS_EXERCISES.size()):
 		var color := Color(0.16, 0.14, 0.12, 1.0)
 		if pair_idx < exercise_index:
@@ -2663,23 +2685,58 @@ func _process_press_practice(delta: float) -> void:
 	var target_interval := float(exercise["interval"])
 	var pitch := float(analyzer.current_pitch)
 	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
+	var attack_identity := _get_press_attack_identity()
 
 	if signal_active and source_hz > 0.0:
 		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
 		if not press_base_note_heard:
-			if absf(cents) <= 50.0:
+			var generation := int(attack_identity.get("generation", -1))
+			if absf(cents) <= 50.0 \
+					and generation != press_consumed_attack_generation \
+					and _is_press_source_attack_valid(attack_identity, source):
 				press_base_note_heard = true
+				press_attack_generation = generation
+				press_consumed_attack_generation = generation
+				press_contour_elapsed = 0.0
+				press_min_amplitude_db = float(analyzer.current_amplitude_db)
+				press_added_sound_elapsed = 0.0
 				press_silence_elapsed = 0.0
 				press_cents_history.append(cents)
 				if press_status_label:
-					press_status_label.text = "Đã nhận đúng %s. Hãy nhấn dần lên %s..." % [source, target]
+					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
+			elif bool(attack_identity.get("active", false)) \
+					and int(attack_identity.get("string_index", -1)) >= 0 \
+					and press_status_label:
+				var heard_note := str(attack_identity.get("note_name", "âm khác"))
+				press_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi nhấn." % [heard_note, source]
+				press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 		else:
+			if not _is_press_contour_session_valid(attack_identity, source, press_attack_generation):
+				_reset_press_attempt_tracking("Âm nhấn không còn thuộc lần gảy dây %s. Hãy gảy lại đúng dây rồi nhấn." % source)
+				return
+			press_contour_elapsed += delta
+			press_min_amplitude_db = minf(press_min_amplitude_db, float(analyzer.current_amplitude_db))
+			if _is_press_added_sound_level(
+					float(analyzer.current_amplitude_db),
+					press_min_amplitude_db,
+					press_contour_elapsed
+			):
+				press_added_sound_elapsed += delta
+			else:
+				press_added_sound_elapsed = maxf(0.0, press_added_sound_elapsed - delta * 2.0)
+			if press_added_sound_elapsed >= PRESS_ADDED_SOUND_HOLD_SEC:
+				_reset_press_attempt_tracking("Phát hiện âm mới chồng lên tiếng đàn. Hãy chỉ gảy dây rồi nhấn bằng tay trái.")
+				return
 			press_silence_elapsed = 0.0
 			if cents >= -60.0 and cents <= target_interval + 110.0:
 				press_max_cents = maxf(press_max_cents, cents)
 				press_sample_accumulator += delta
 				while press_sample_accumulator >= PRESS_SAMPLE_INTERVAL:
 					press_sample_accumulator -= PRESS_SAMPLE_INTERVAL
+					if not press_cents_history.is_empty() \
+							and absf(cents - press_cents_history[-1]) > PRESS_MAX_SAMPLE_JUMP_CENTS:
+						_reset_press_attempt_tracking("Cao độ bị nhảy đột ngột, không giống một lần nhấn dây liên tục. Hãy gảy và nhấn lại.")
+						return
 					press_cents_history.append(cents)
 					if press_cents_history.size() > 180:
 						press_cents_history.pop_front()
@@ -2700,6 +2757,9 @@ func _process_press_practice(delta: float) -> void:
 					press_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
 	else:
 		press_silence_elapsed += delta
+		if press_base_note_heard and press_silence_elapsed >= PRESS_MAX_SIGNAL_GAP:
+			_reset_press_attempt_tracking("Tiếng đàn bị ngắt trước khi tới nốt đích. Hãy gảy lại và nhấn liền mạch.")
+			return
 
 	if press_base_note_heard and press_target_hold_elapsed >= 0.30:
 		var result := _analyze_press_contour(press_cents_history, target_interval)
@@ -2707,8 +2767,56 @@ func _process_press_practice(delta: float) -> void:
 			_on_press_exercise_success(result)
 			return
 
-	if press_attempt_elapsed >= PRESS_ATTEMPT_TIMEOUT or (press_base_note_heard and press_silence_elapsed >= 0.9):
+	if press_attempt_elapsed >= PRESS_ATTEMPT_TIMEOUT:
 		_on_press_exercise_failed(target_interval)
+
+
+func _get_press_attack_identity() -> Dictionary:
+	if analyzer and analyzer.has_method("get_dan_tranh_attack_identity"):
+		var identity = analyzer.call("get_dan_tranh_attack_identity")
+		if identity is Dictionary:
+			return identity
+	return {}
+
+
+func _get_current_press_attack_generation() -> int:
+	return int(_get_press_attack_identity().get("generation", -1))
+
+
+func _is_press_source_attack_valid(identity: Dictionary, source: String) -> bool:
+	if not bool(identity.get("active", false)):
+		return false
+	var expected_string := int(NOTE_TO_STRING.get(source, -1))
+	return expected_string >= 0 \
+		and int(identity.get("string_index", -1)) == expected_string \
+		and str(identity.get("note_name", "")) == source
+
+
+func _is_press_contour_session_valid(identity: Dictionary, source: String, generation: int) -> bool:
+	return generation >= 0 \
+		and int(identity.get("generation", -1)) == generation \
+		and _is_press_source_attack_valid(identity, source)
+
+
+func _is_press_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
+	return contour_elapsed >= 0.12 and current_db >= minimum_db + PRESS_ADDED_SOUND_RISE_DB
+
+
+func _reset_press_attempt_tracking(message: String) -> void:
+	press_cents_history.clear()
+	press_sample_accumulator = 0.0
+	press_attempt_elapsed = 0.0
+	press_silence_elapsed = 0.0
+	press_target_hold_elapsed = 0.0
+	press_base_note_heard = false
+	press_attack_generation = -1
+	press_max_cents = 0.0
+	press_contour_elapsed = 0.0
+	press_min_amplitude_db = 0.0
+	press_added_sound_elapsed = 0.0
+	if press_status_label:
+		press_status_label.text = message
+		press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 
 func _analyze_press_contour(history: Array[float], target_interval: float) -> Dictionary:
 	var result := {
@@ -2716,7 +2824,10 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 		"max_cents": 0.0,
 		"final_cents": 0.0,
 		"rise_time": 0.0,
-		"smoothness": 0.0
+		"rise_delay": 0.0,
+		"smoothness": 0.0,
+		"max_step": 0.0,
+		"reversals": 0
 	}
 	if history.size() < 10 or target_interval <= 0.0:
 		return result
@@ -2734,6 +2845,9 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 	var negative_motion := 0.0
 	var rise_start_idx := -1
 	var target_idx := -1
+	var max_step := 0.0
+	var reversal_count := 0
+	var previous_direction := 0
 	for i in range(smoothed.size()):
 		max_cents = maxf(max_cents, smoothed[i])
 		if rise_start_idx < 0 and smoothed[i] >= target_interval * 0.12:
@@ -2742,10 +2856,16 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 			target_idx = i
 		if i > 0:
 			var movement := smoothed[i] - smoothed[i - 1]
+			max_step = maxf(max_step, absf(movement))
 			if movement >= 0.0:
 				positive_motion += movement
 			elif absf(movement) > 3.0:
 				negative_motion += absf(movement)
+			if target_idx < 0 and absf(movement) > 4.0:
+				var movement_direction := 1 if movement > 0.0 else -1
+				if previous_direction != 0 and movement_direction != previous_direction:
+					reversal_count += 1
+				previous_direction = movement_direction
 	var final_count := mini(8, smoothed.size())
 	var final_sum := 0.0
 	for i in range(smoothed.size() - final_count, smoothed.size()):
@@ -2754,17 +2874,24 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 	var rise_time := 0.0
 	if rise_start_idx >= 0 and target_idx >= rise_start_idx:
 		rise_time = float(target_idx - rise_start_idx) * PRESS_SAMPLE_INTERVAL
+	var rise_delay := float(rise_start_idx) * PRESS_SAMPLE_INTERVAL if rise_start_idx >= 0 else 999.0
 	var smoothness := positive_motion / maxf(positive_motion + negative_motion, 0.001)
 	result["max_cents"] = max_cents
 	result["final_cents"] = final_cents
 	result["rise_time"] = rise_time
+	result["rise_delay"] = rise_delay
 	result["smoothness"] = smoothness
+	result["max_step"] = max_step
+	result["reversals"] = reversal_count
 	result["detected"] = absf(smoothed[0]) <= 55.0 \
 		and max_cents >= target_interval - 38.0 \
 		and max_cents <= target_interval + 62.0 \
 		and absf(final_cents - target_interval) <= 42.0 \
 		and rise_time >= 0.10 and rise_time <= 2.5 \
-		and smoothness >= 0.62
+		and rise_delay <= PRESS_MAX_RISE_DELAY \
+		and max_step <= PRESS_MAX_SAMPLE_JUMP_CENTS \
+		and reversal_count <= 3 \
+		and smoothness >= 0.68
 	return result
 
 func _on_press_exercise_success(result: Dictionary) -> void:

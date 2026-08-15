@@ -65,6 +65,9 @@ var contour_tracking_mode := false
 # plucked-string attack before pitch data is exposed to the lesson.
 var instrument_gate_open := false
 var current_instrument_confidence := 0.0
+var _instrument_gate_string_index := -1
+var _instrument_gate_note_name := ""
+var _instrument_gate_generation := 0
 var _instrument_gate_elapsed := 0.0
 var _instrument_gate_silence_elapsed := 0.0
 var _instrument_attack_candidate_active := false
@@ -339,6 +342,13 @@ func _process(delta: float) -> void:
 	var mapped_note := {}
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null:
 		mapped_note = pitch_profile.match_pitch(current_pitch)
+	if instrument_gate_open and _instrument_gate_string_index < 0 \
+			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
+		# Bind the gate to the first reliable pitch produced by this accepted
+		# string attack. Contour lessons can then prove that a bend still belongs
+		# to the original pluck instead of accepting a later vocal glide.
+		_instrument_gate_string_index = int(mapped_note.get("string_index", -1))
+		_instrument_gate_note_name = str(mapped_note.get("note_name", ""))
 	if rapid_sequence_mode and _rapid_attack_pending \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
 		var rapid_note := mapped_note.duplicate()
@@ -540,6 +550,16 @@ func has_recent_dan_tranh_attack() -> bool:
 	return instrument_gate_open and not analysis_suspended
 
 
+func get_dan_tranh_attack_identity() -> Dictionary:
+	return {
+		"active": has_recent_dan_tranh_attack(),
+		"string_index": _instrument_gate_string_index,
+		"note_name": _instrument_gate_note_name,
+		"generation": _instrument_gate_generation,
+		"confidence": current_instrument_confidence
+	}
+
+
 func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, delta: float) -> void:
 	if instrument_gate_open:
 		_instrument_gate_elapsed += delta
@@ -557,6 +577,8 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 		_instrument_last_candidate_msec = now_msec
 		instrument_gate_open = false
 		current_instrument_confidence = 0.0
+		_instrument_gate_string_index = -1
+		_instrument_gate_note_name = ""
 	elif _instrument_attack_candidate_active:
 		_instrument_attack_candidate.append_array(samples)
 
@@ -577,6 +599,9 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 	current_instrument_confidence = float(classification.get("confidence", 0.0))
 	if classification.get("accepted", false):
 		instrument_gate_open = true
+		_instrument_gate_generation += 1
+		_instrument_gate_string_index = -1
+		_instrument_gate_note_name = ""
 		_instrument_gate_elapsed = 0.0
 		_instrument_gate_silence_elapsed = 0.0
 		if rapid_sequence_mode and Time.get_ticks_msec() - _rapid_attack_last_emit_msec >= RAPID_ATTACK_REFRACTORY_MSEC:
@@ -590,6 +615,8 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 func _close_instrument_gate() -> void:
 	instrument_gate_open = false
 	current_instrument_confidence = 0.0
+	_instrument_gate_string_index = -1
+	_instrument_gate_note_name = ""
 	_instrument_gate_elapsed = 0.0
 	_instrument_gate_silence_elapsed = 0.0
 	_instrument_attack_candidate_active = false
