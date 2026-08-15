@@ -230,10 +230,89 @@ func _init() -> void:
 		round_times.append(2.0 + float(i) * 0.12)
 	if not lesson._analyze_glissando_gesture(round_strings, round_times, "round").get("success", false):
 		failures.append("Á vòng hợp lệ không được nhận")
+
+	# 7. Vê requires one validated generation per attack and independently checks
+	#    target strings, speed, regularity and the longest pause.
+	var tremolo_strings: Array[int] = []
+	var tremolo_times: Array[float] = []
+	var tremolo_generations: Array[int] = []
+	for i in 12:
+		tremolo_strings.append(2)
+		tremolo_times.append(3.0 + float(i) * 0.20)
+		tremolo_generations.append(30 + i)
+	var allowed_single: Array[int] = [2]
+	var single_tremolo: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if not single_tremolo.get("success", false):
+		failures.append("Vê một dây đúng, nhanh và đều không được nhận")
+
+	var duplicate_generation: Array[int] = tremolo_generations.duplicate()
+	duplicate_generation[6] = duplicate_generation[5]
+	var duplicate_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, duplicate_generation, "single", allowed_single, 0
+	)
+	if duplicate_result.get("success", false) or duplicate_result.get("all_attacks_valid", true):
+		failures.append("Vê tính một onset tiếng đàn lặp lại thành hai lần gảy")
+
+	var wrong_tremolo_strings: Array[int] = tremolo_strings.duplicate()
+	wrong_tremolo_strings[5] = 5
+	var wrong_tremolo: Dictionary = lesson._analyze_tremolo_sequence(
+		wrong_tremolo_strings, tremolo_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if wrong_tremolo.get("success", false) or wrong_tremolo.get("correct_strings", true):
+		failures.append("Vê vẫn đúng khi có lần gảy sai dây")
+
+	var pause_times: Array[float] = tremolo_times.duplicate()
+	for i in range(6, pause_times.size()):
+		pause_times[i] += 0.36
+	var pause_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, pause_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if pause_result.get("success", false) or float(pause_result.get("max_gap", 0.0)) <= 0.34:
+		failures.append("Vê vẫn đúng khi có khoảng nghỉ quá dài")
+	var slow_times: Array[float] = []
+	for i in tremolo_times.size():
+		slow_times.append(3.0 + float(i) * 0.30)
+	var slow_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, slow_times, tremolo_generations, "single", allowed_single, 0
+	)
+	if slow_result.get("success", false) or float(slow_result.get("rate", 99.0)) >= 3.5:
+		failures.append("Vê vẫn đúng khi tốc độ thấp hơn yêu cầu")
+
+	var uneven_times: Array[float] = [3.00]
+	for i in 12:
+		var uneven_interval := 0.08 if i % 2 == 0 else 0.32
+		uneven_times.append(uneven_times.back() + uneven_interval)
+	var uneven_strings: Array[int] = []
+	var uneven_generations: Array[int] = []
+	for i in uneven_times.size():
+		uneven_strings.append(2)
+		uneven_generations.append(60 + i)
+	var uneven_result: Dictionary = lesson._analyze_tremolo_sequence(
+		uneven_strings, uneven_times, uneven_generations, "single", allowed_single, 0
+	)
+	if uneven_result.get("success", false) or float(uneven_result.get("regularity", 1.0)) >= 0.62:
+		failures.append("Vê vẫn đúng khi nhịp gảy không đều")
+
+	var octave_strings: Array[int] = []
+	for i in tremolo_times.size():
+		octave_strings.append(2 if i % 2 == 0 else 7)
+	var allowed_octave: Array[int] = [2, 7]
+	var octave_result: Dictionary = lesson._analyze_tremolo_sequence(
+		octave_strings, tremolo_times, tremolo_generations, "octave", allowed_octave, 0
+	)
+	if not octave_result.get("success", false):
+		failures.append("Vê quãng tám luân phiên đúng hai dây không được nhận")
+	var wrong_attack_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, tremolo_generations, "single", allowed_single, 1
+	)
+	if wrong_attack_result.get("success", false) or wrong_attack_result.get("correct_strings", true):
+		failures.append("Vê vẫn hoàn thành sau một lần tấn công sai dây")
 	lesson.free()
 
 	if failures.is_empty():
-		print("PASS: plucked flow filters sound and validates the complete Á gesture")
+		print("PASS: filtered plucks validate Á and Vê timing/string technique")
 		quit(0)
 	else:
 		for failure in failures:

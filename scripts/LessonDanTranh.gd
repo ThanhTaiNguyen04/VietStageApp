@@ -179,13 +179,21 @@ var tremolo_exercise_idx := 0
 var tremolo_display_notes: Array = []
 var tremolo_attack_strings: Array[int] = []
 var tremolo_attack_times: Array[float] = []
+var tremolo_attack_generations: Array[int] = []
 var tremolo_attempt_started_at := 0.0
 var tremolo_last_attack_at := 0.0
+var tremolo_last_seen_generation := -1
 var tremolo_exercise_locked := false
 var tremolo_wrong_attacks := 0
 const TREMOLO_REQUIRED_DURATION := 2.4
-const TREMOLO_GAP_TIMEOUT := 0.68
+const TREMOLO_GAP_TIMEOUT := 0.42
 const TREMOLO_EXERCISE_TIMEOUT := 6.5
+const TREMOLO_MIN_SCORED_DURATION := 2.10
+const TREMOLO_MIN_ATTACK_COUNT := 9
+const TREMOLO_MIN_RATE := 3.5
+const TREMOLO_MAX_RATE := 13.0
+const TREMOLO_MAX_ATTACK_GAP := 0.34
+const TREMOLO_MIN_REGULARITY := 0.62
 const TREMOLO_EXERCISES := [
 	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
 	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
@@ -1292,8 +1300,10 @@ func _clear_partial_micro_attempts() -> void:
 	vibrato_added_sound_elapsed = 0.0
 	tremolo_attack_strings.clear()
 	tremolo_attack_times.clear()
+	tremolo_attack_generations.clear()
 	tremolo_attempt_started_at = 0.0
 	tremolo_last_attack_at = 0.0
+	tremolo_last_seen_generation = -1
 	tremolo_wrong_attacks = 0
 
 
@@ -2329,9 +2339,10 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 				glissando_status_label.add_theme_color_override("font_color", C_GOLD)
 			return
 		if _is_tremolo_practice():
-			# Virtual strings use the same scorer as microphone attacks, which keeps
-			# local testing representative of the real-instrument lesson.
-			_append_tremolo_attack(idx)
+			# Vê is scored only from individually validated microphone attacks.
+			if tremolo_status_label:
+				tremolo_status_label.text = "Hãy thực hiện kỹ thuật Vê trên đàn thật để micro đo từng lần gảy."
+				tremolo_status_label.add_theme_color_override("font_color", C_GOLD)
 			return
 		# Hỗ trợ gảy phím ảo bằng chạm/nhấp chuột trên màn hình đối với nốt khuyết
 		var hit_x = staff_display.hit_line_x
@@ -2362,7 +2373,7 @@ func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
 	if _is_glissando_practice():
 		_append_glissando_detection(string_idx, attack_time_sec, attack_generation, true)
 	elif _is_tremolo_practice():
-		_append_tremolo_attack(string_idx)
+		_append_tremolo_attack(string_idx, attack_time_sec, attack_generation, true)
 
 
 func _is_validated_dan_tranh_rapid_attack(note: Dictionary) -> bool:
@@ -3407,8 +3418,10 @@ func _start_tremolo_exercise(exercise_index: int) -> void:
 	tremolo_exercise_idx = exercise_index
 	tremolo_attack_strings.clear()
 	tremolo_attack_times.clear()
+	tremolo_attack_generations.clear()
 	tremolo_attempt_started_at = 0.0
 	tremolo_last_attack_at = 0.0
+	tremolo_last_seen_generation = -1
 	tremolo_exercise_locked = false
 	tremolo_wrong_attacks = 0
 	_build_tremolo_display_notes()
@@ -3464,9 +3477,19 @@ func _build_tremolo_display_notes() -> void:
 	staff_display.set_notes(tremolo_display_notes)
 	staff_display.queue_redraw()
 
-func _append_tremolo_attack(string_idx: int) -> void:
-	if tremolo_exercise_locked or tremolo_exercise_idx >= TREMOLO_EXERCISES.size():
+func _append_tremolo_attack(
+	string_idx: int,
+	attack_time_sec: float,
+	attack_generation: int,
+	instrument_validated: bool
+) -> void:
+	if tremolo_exercise_locked or tremolo_exercise_idx >= TREMOLO_EXERCISES.size() \
+			or not instrument_validated:
 		return
+	if string_idx < 0 or string_idx >= ALL_17_NOTES.size() \
+			or attack_time_sec <= 0.0 or attack_generation <= tremolo_last_seen_generation:
+		return
+	tremolo_last_seen_generation = attack_generation
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var notes: Array = exercise["notes"]
 	var allowed_strings: Array[int] = []
@@ -3482,13 +3505,15 @@ func _append_tremolo_attack(string_idx: int) -> void:
 			tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 		return
 
-	var now_sec := Time.get_ticks_msec() / 1000.0
+	if not tremolo_attack_times.is_empty() and attack_time_sec <= tremolo_attack_times.back():
+		return
 	if tremolo_attack_times.is_empty():
-		tremolo_attempt_started_at = now_sec
+		tremolo_attempt_started_at = attack_time_sec
 	tremolo_attack_strings.append(string_idx)
-	tremolo_attack_times.append(now_sec)
-	tremolo_last_attack_at = now_sec
-	var duration := now_sec - tremolo_attempt_started_at
+	tremolo_attack_times.append(attack_time_sec)
+	tremolo_attack_generations.append(attack_generation)
+	tremolo_last_attack_at = attack_time_sec
+	var duration := attack_time_sec - tremolo_attempt_started_at
 	var rate := float(tremolo_attack_times.size() - 1) / maxf(duration, 0.25)
 	if tremolo_status_label:
 		tremolo_status_label.text = "Đã nghe %d lần gảy · %.1f lần/giây · tiếp tục giữ đều..." % [
@@ -3512,13 +3537,69 @@ func _evaluate_tremolo_attempt() -> void:
 	tremolo_exercise_locked = true
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
-	var count := tremolo_attack_times.size()
+	var allowed_strings: Array[int] = []
+	for note_name in exercise["notes"]:
+		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
+	var result := _analyze_tremolo_sequence(
+		tremolo_attack_strings,
+		tremolo_attack_times,
+		tremolo_attack_generations,
+		mode,
+		allowed_strings,
+		tremolo_wrong_attacks
+	)
+	if result.get("success", false):
+		_on_tremolo_success(
+			float(result.get("rate", 0.0)),
+			float(result.get("regularity", 0.0)),
+			float(result.get("alternating_ratio", 1.0))
+		)
+	else:
+		_on_tremolo_failed(result)
+
+
+func _analyze_tremolo_sequence(
+	strings: Array[int],
+	times: Array[float],
+	generations: Array[int],
+	mode: String,
+	allowed_strings: Array[int],
+	wrong_attacks: int
+) -> Dictionary:
+	var count := times.size()
+	var result := {
+		"success": false,
+		"count": count,
+		"duration": 0.0,
+		"rate": 0.0,
+		"max_gap": 99.0,
+		"regularity": 0.0,
+		"alternating_ratio": 1.0,
+		"balance_ok": mode != "octave",
+		"all_attacks_valid": false,
+		"correct_strings": false
+	}
+	if count == 0 or strings.size() != count or generations.size() != count \
+			or allowed_strings.is_empty():
+		return result
+
+	var all_attacks_valid := true
+	var correct_strings := wrong_attacks == 0
+	for i in range(count):
+		if generations[i] <= 0 or (i > 0 and generations[i] <= generations[i - 1]):
+			all_attacks_valid = false
+		if not allowed_strings.has(strings[i]):
+			correct_strings = false
+
 	var duration := 0.0
 	if count >= 2:
-		duration = tremolo_attack_times[count - 1] - tremolo_attack_times[0]
+		duration = times.back() - times.front()
 	var intervals: Array[float] = []
 	for i in range(1, count):
-		intervals.append(tremolo_attack_times[i] - tremolo_attack_times[i - 1])
+		var interval := times[i] - times[i - 1]
+		if interval <= 0.0:
+			all_attacks_valid = false
+		intervals.append(interval)
 	var mean_interval := 0.0
 	var max_gap := 99.0
 	var regularity := 0.0
@@ -3541,26 +3622,36 @@ func _evaluate_tremolo_attempt() -> void:
 		var transitions := 0
 		var first_count := 0
 		var second_count := 0
-		var exercise_notes: Array = exercise["notes"]
-		var first_string := int(NOTE_TO_STRING.get(str(exercise_notes[0]), -1))
+		var first_string := allowed_strings[0]
 		for i in range(count):
-			if tremolo_attack_strings[i] == first_string:
+			if strings[i] == first_string:
 				first_count += 1
 			else:
 				second_count += 1
-			if i > 0 and tremolo_attack_strings[i] != tremolo_attack_strings[i - 1]:
+			if i > 0 and strings[i] != strings[i - 1]:
 				transitions += 1
 		alternating_ratio = float(transitions) / float(maxi(1, count - 1))
 		balance_ok = first_count >= 3 and second_count >= 3
 
-	var success := count >= 8 and duration >= 1.7 and rate >= 3.5 and rate <= 13.0 \
-		and max_gap <= 0.48 and regularity >= 0.42 and tremolo_wrong_attacks <= 1
+	var success := all_attacks_valid and correct_strings \
+		and count >= TREMOLO_MIN_ATTACK_COUNT \
+		and duration >= TREMOLO_MIN_SCORED_DURATION \
+		and rate >= TREMOLO_MIN_RATE and rate <= TREMOLO_MAX_RATE \
+		and max_gap <= TREMOLO_MAX_ATTACK_GAP \
+		and regularity >= TREMOLO_MIN_REGULARITY
 	if mode == "octave":
-		success = success and alternating_ratio >= 0.72 and balance_ok
-	if success:
-		_on_tremolo_success(rate, regularity, alternating_ratio)
-	else:
-		_on_tremolo_failed(count, duration, rate, max_gap, regularity, alternating_ratio)
+		success = success and alternating_ratio >= 0.78 and balance_ok
+
+	result["duration"] = duration
+	result["rate"] = rate
+	result["max_gap"] = max_gap
+	result["regularity"] = regularity
+	result["alternating_ratio"] = alternating_ratio
+	result["balance_ok"] = balance_ok
+	result["all_attacks_valid"] = all_attacks_valid
+	result["correct_strings"] = correct_strings
+	result["success"] = success
+	return result
 
 func _set_tremolo_note_color(color: Color) -> void:
 	for note in tremolo_display_notes:
@@ -3597,26 +3688,37 @@ func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: floa
 			_start_tremolo_exercise(completed_exercise + 1)
 	)
 
-func _on_tremolo_failed(count: int, duration: float, rate: float, max_gap: float, regularity: float, alternating_ratio: float) -> void:
+func _on_tremolo_failed(result: Dictionary) -> void:
 	_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
+	var count := int(result.get("count", 0))
+	var duration := float(result.get("duration", 0.0))
+	var rate := float(result.get("rate", 0.0))
+	var max_gap := float(result.get("max_gap", 99.0))
+	var regularity := float(result.get("regularity", 0.0))
+	var alternating_ratio := float(result.get("alternating_ratio", 1.0))
 	var feedback := "Chưa đủ số lần gảy. Hãy dùng hai ngón gảy liên tục và nhanh hơn."
-	if count >= 8 and duration < 1.7:
+	if not result.get("all_attacks_valid", false):
+		feedback = "Có lần tấn công âm chưa được xác nhận là tiếng dây đàn. Hãy vê rõ từng tiếng trên đàn thật."
+	elif not result.get("correct_strings", false):
+		feedback = "Bạn đã gảy nhầm dây. Hãy nhìn đúng nốt đang được chỉ dẫn trên sheet."
+	elif count >= TREMOLO_MIN_ATTACK_COUNT and duration < TREMOLO_MIN_SCORED_DURATION:
 		feedback = "Bạn đang vê quá ngắn. Hãy duy trì tiếng vê liên tục khoảng 3 giây."
-	elif max_gap > 0.48:
+	elif max_gap > TREMOLO_MAX_ATTACK_GAP:
 		feedback = "Tiếng vê đang bị ngắt quãng. Hãy giữ hai ngón luân phiên liên tục."
-	elif rate > 13.0:
+	elif rate < TREMOLO_MIN_RATE:
+		feedback = "Tốc độ vê còn chậm. Hãy tăng dần tốc độ nhưng vẫn giữ rõ từng tiếng."
+	elif rate > TREMOLO_MAX_RATE:
 		feedback = "Tốc độ quá gấp và chưa rõ tiếng. Hãy giảm nhẹ tốc độ để từng tiếng đều hơn."
-	elif regularity < 0.42:
+	elif regularity < TREMOLO_MIN_REGULARITY:
 		feedback = "Các lần gảy chưa đều. Hãy giữ chuyển động hai ngón ổn định hơn."
-	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" and alternating_ratio < 0.72:
+	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" \
+			and (alternating_ratio < 0.78 or not result.get("balance_ok", false)):
 		feedback = "Hãy gảy luân phiên nốt thấp và nốt cao; không lặp nhiều lần trên cùng một dây."
-	elif tremolo_wrong_attacks > 1:
-		feedback = "Bạn đã gảy nhầm dây. Hãy nhìn đúng hai nốt đang được chỉ dẫn trên sheet."
 	if tremolo_status_label:
 		tremolo_status_label.text = feedback
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 	_dan_tranh_attempts.append({
-		"correct_string": tremolo_wrong_attacks <= 1,
+		"correct_string": bool(result.get("correct_strings", false)),
 		"cents_error": 0.0,
 		"timing": regularity * 100.0,
 		"attack_clarity": clampf(rate / 7.0 * 100.0, 0.0, 100.0),
