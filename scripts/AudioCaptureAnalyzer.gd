@@ -73,8 +73,7 @@ var _instrument_gate_silence_elapsed := 0.0
 var _instrument_attack_candidate_active := false
 var _instrument_attack_candidate := PackedFloat32Array()
 var _instrument_last_candidate_msec := -1000
-const INSTRUMENT_ATTACK_MIN_SAMPLES := 1024
-const INSTRUMENT_ATTACK_MAX_SAMPLES := 4096
+const INSTRUMENT_ATTACK_ANALYSIS_SAMPLES := 4096
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
@@ -115,7 +114,9 @@ var _onset_previous_rms := 0.0
 var _onset_noise_floor_rms := 0.000001
 var _onset_refractory_remaining := 0.0
 var _onset_state_initialized := false
+var _last_onset_sample_offset := 0
 const ONSET_BLOCK_SAMPLES := 256
+const ONSET_PRE_ROLL_SAMPLES := 128
 const ONSET_MIN_RISE_RATIO := 1.55
 const ONSET_NOISE_FLOOR_RATIO := 2.20
 const ONSET_REFRACTORY_SEC := 0.055
@@ -307,9 +308,14 @@ func _process(delta: float) -> void:
 	# chunks establish the live microphone floor and preserve continuity across
 	# AudioEffectCapture frame boundaries.
 	var is_onset := _detect_onset(samples)
+	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	
 	var gate_open = current_amplitude_db > volume_threshold_db
 	if not gate_open:
+		# Once an attack starts, keep its natural decay in the 4096-sample
+		# candidate even when later chunks fall below the live noise gate.
+		if profile_plucked and _instrument_attack_candidate_active:
+			_update_instrument_sound_gate(samples, false, delta)
 		_rapid_attack_pending = false
 		_rapid_attack_pending_elapsed = 0.0
 		_handle_silence(delta)
@@ -317,7 +323,6 @@ func _process(delta: float) -> void:
 		return
 	
 	# Step 3: Onset Detection (plucked instrument logic)
-	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	if profile_plucked:
 		_update_instrument_sound_gate(samples, is_onset, delta)
 	if rapid_sequence_mode:
@@ -339,13 +344,15 @@ func _process(delta: float) -> void:
 		if onset_detected:
 			time_since_onset += delta
 	
-	# Step 4: Pitch Estimation (estimate every frame inside the 30-150 ms onset
+	# Step 4: Pitch Estimation (estimate every frame inside the 30-250 ms onset
 	# window so the stability gate can accumulate PITCH_STABILITY_FRAMES candidates)
 	var raw_pitch := 0.0
 	if rapid_sequence_mode or contour_tracking_mode:
 		raw_pitch = _estimate_pitch(samples)
 	elif profile_plucked:
-		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.15:
+		# The timbre gate needs about 4096 samples (92.9 ms at 44.1 kHz).
+		# Keep this open long enough to stabilize after that gate is validated.
+		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.25:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
 				if raw_pitch > 0.0 and current_pitch_is_reliable:
@@ -410,8 +417,8 @@ func _capture_samples() -> PackedFloat32Array:
 				
 			for val in mono_samples:
 				_analysis_buffer.append(val)
-			if _analysis_buffer.size() > 2048:
-				var excess = _analysis_buffer.size() - 2048
+			if _analysis_buffer.size() > INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
+				var excess = _analysis_buffer.size() - INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 				_analysis_buffer = _analysis_buffer.slice(excess)
 	return mono_samples
 
@@ -424,7 +431,9 @@ func _detect_onset(samples: PackedFloat32Array) -> bool:
 	if samples.is_empty():
 		return false
 
+	var buffered_sample_count := _onset_sample_buffer.size()
 	_onset_sample_buffer.append_array(samples)
+	_last_onset_sample_offset = 0
 	var sample_rate := maxf(AudioServer.get_mix_rate(), 1.0)
 	var threshold_rms := pow(10.0, volume_threshold_db / 20.0) * 0.5
 	var onset_found := false
@@ -470,6 +479,13 @@ func _detect_onset(samples: PackedFloat32Array) -> bool:
 				and rise_ratio >= ONSET_MIN_RISE_RATIO:
 			onset_found = true
 			_onset_refractory_remaining = ONSET_REFRACTORY_SEC
+			# Translate the fixed-block position back to this capture chunk. A
+			# short pre-roll preserves the transient used by the timbre classifier.
+			_last_onset_sample_offset = clampi(
+				consumed - buffered_sample_count - ONSET_PRE_ROLL_SAMPLES,
+				0,
+				samples.size()
+			)
 
 		# Learn only quiet/near-floor blocks. A loud sustained note must not raise
 		# the floor and hide the attack of the next string.
@@ -493,6 +509,7 @@ func _reset_onset_detector() -> void:
 	_onset_noise_floor_rms = 0.000001
 	_onset_refractory_remaining = 0.0
 	_onset_state_initialized = false
+	_last_onset_sample_offset = 0
 
 func _estimate_pitch(samples: PackedFloat32Array) -> float:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
@@ -668,7 +685,8 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 	if is_onset and not _instrument_attack_candidate_active \
 			and now_msec - _instrument_last_candidate_msec >= candidate_refractory:
 		_instrument_attack_candidate_active = true
-		_instrument_attack_candidate = samples.duplicate()
+		var candidate_start := clampi(_last_onset_sample_offset, 0, samples.size())
+		_instrument_attack_candidate = samples.slice(candidate_start)
 		_instrument_last_candidate_msec = now_msec
 		instrument_gate_open = false
 		current_instrument_confidence = 0.0
@@ -679,11 +697,11 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 
 	if not _instrument_attack_candidate_active:
 		return
-	if _instrument_attack_candidate.size() > INSTRUMENT_ATTACK_MAX_SAMPLES:
+	if _instrument_attack_candidate.size() > INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
 		_instrument_attack_candidate = _instrument_attack_candidate.slice(
-			0, INSTRUMENT_ATTACK_MAX_SAMPLES
+			0, INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 		)
-	if _instrument_attack_candidate.size() < INSTRUMENT_ATTACK_MIN_SAMPLES:
+	if _instrument_attack_candidate.size() < INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
 		return
 
 	var classification := analyze_dan_tranh_sound(
@@ -1051,7 +1069,7 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 		"reason": "too_short"
 	}
 	var size := samples.size()
-	if size < INSTRUMENT_ATTACK_MIN_SAMPLES:
+	if size < INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
 		return result
 
 	var threshold: float = float(pitch_profile.volume_threshold_db) if pitch_profile else volume_threshold_db

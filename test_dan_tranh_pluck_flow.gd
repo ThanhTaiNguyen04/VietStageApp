@@ -83,6 +83,15 @@ func _count_onsets(analyzer: AudioCaptureAnalyzer, stream: PackedFloat32Array, f
 		offset = frame_end
 	return onset_count
 
+func _split_frames(stream: PackedFloat32Array, frame_size: int) -> Array[PackedFloat32Array]:
+	var frames: Array[PackedFloat32Array] = []
+	var offset := 0
+	while offset < stream.size():
+		var frame_end := mini(offset + frame_size, stream.size())
+		frames.append(stream.slice(offset, frame_end))
+		offset = frame_end
+	return frames
+
 # Mirrors AudioCaptureAnalyzer._process exactly (headless: no audio device needed).
 func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Array]) -> Dictionary:
 	var buffer := PackedFloat32Array()
@@ -90,18 +99,22 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 	var notes_seen := {}
 	for frame in frames:
 		buffer.append_array(frame)
-		if buffer.size() > 2048:
-			buffer = buffer.slice(buffer.size() - 2048)
+		if buffer.size() > analyzer.INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
+			buffer = buffer.slice(
+				buffer.size() - analyzer.INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
+			)
 		analyzer._analysis_buffer = buffer
 
 		var db := analyzer._calculate_amplitude_db(frame)
 		analyzer.current_amplitude_db = db
 		var is_onset := analyzer._detect_onset(frame)
+		var profile_plucked: bool = analyzer.pitch_profile != null and analyzer.pitch_profile.is_plucked_instrument
 		if db <= analyzer.volume_threshold_db:
+			if profile_plucked and analyzer._instrument_attack_candidate_active:
+				analyzer._update_instrument_sound_gate(frame, false, 0.016)
 			analyzer._handle_silence(0.016)
 			continue
 
-		var profile_plucked: bool = analyzer.pitch_profile != null and analyzer.pitch_profile.is_plucked_instrument
 		if profile_plucked:
 			analyzer._update_instrument_sound_gate(frame, is_onset, 0.016)
 
@@ -119,7 +132,7 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		var raw_pitch := 0.0
 		if profile_plucked:
-			if analyzer.onset_detected and analyzer.time_since_onset >= 0.03 and analyzer.time_since_onset <= 0.15:
+			if analyzer.onset_detected and analyzer.time_since_onset >= 0.03 and analyzer.time_since_onset <= 0.25:
 				if not analyzer.pitch_estimation_done:
 					raw_pitch = analyzer._estimate_pitch(frame)
 					if raw_pitch > 0.0 and analyzer.current_pitch_is_reliable:
@@ -182,6 +195,18 @@ func _init() -> void:
 		)
 	rapid_onset_analyzer.free()
 
+	# The complete timbre/pitch flow must also survive an attack located at the
+	# end of a capture frame, after collecting the full 4096-sample candidate.
+	var boundary_flow_analyzer := _make_analyzer()
+	var boundary_flow_stream := _stream_with_shifted_pluck(440.0, 720, 7000)
+	var boundary_flow_result := _run_frames(
+		boundary_flow_analyzer,
+		_split_frames(boundary_flow_stream, FRAME_SIZE)
+	)
+	if not boundary_flow_result["notes_seen"].has("La2"):
+		failures.append("Luồng 4096 mẫu bỏ sót La2 khi onset nằm cuối khung thu")
+	boundary_flow_analyzer.free()
+
 	# 1. Every real string note must be recognized during a normal pluck.
 	for note in ALL_17_NOTES:
 		var analyzer := _make_analyzer()
@@ -224,10 +249,10 @@ func _init() -> void:
 	# 5. Single-shot fallback (detect_dan_tranh_note): accepts a pluck attack,
 	#    but rejects sustained voice, ambient room tone, and click bursts.
 	var bow_analyzer := _make_analyzer()
-	var pluck_buf: PackedFloat32Array = _plucked_tone(440.0, 2048)
+	var pluck_buf: PackedFloat32Array = _plucked_tone(440.0, 4096)
 	if bow_analyzer.detect_dan_tranh_note(pluck_buf, SAMPLE_RATE).get("note_name", "None") != "La2":
 		failures.append("Single-shot bỏ sót âm gảy La2")
-	var voiced_buf: PackedFloat32Array = _sine_tone(440.0, 2048)
+	var voiced_buf: PackedFloat32Array = _sine_tone(440.0, 4096)
 	if not bow_analyzer.detect_dan_tranh_note(voiced_buf, SAMPLE_RATE).is_empty():
 		failures.append("Single-shot nhận nhầm nốt bền (hum 440 Hz)")
 	var click_buf: PackedFloat32Array = _noise_burst(0.05)

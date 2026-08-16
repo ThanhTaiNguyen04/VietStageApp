@@ -189,10 +189,20 @@ func _init() -> void:
 			])
 
 	var pluck := _plucked_tone(440.0)
-	analyzer._update_instrument_sound_gate(pluck.slice(0, 600), true, 0.016)
-	analyzer._update_instrument_sound_gate(pluck.slice(600, 1200), false, 0.016)
+	var candidate_offset := 0
+	while candidate_offset < SAMPLE_COUNT:
+		var candidate_end := mini(candidate_offset + 600, SAMPLE_COUNT)
+		analyzer._update_instrument_sound_gate(
+			pluck.slice(candidate_offset, candidate_end),
+			candidate_offset == 0,
+			0.016
+		)
+		candidate_offset = candidate_end
+		if candidate_offset < SAMPLE_COUNT and analyzer.has_recent_dan_tranh_attack():
+			failures.append("Cổng tiếng đàn mở trước khi thu đủ 4096 mẫu")
+			break
 	if not analyzer.has_recent_dan_tranh_attack():
-		failures.append("Tiếng gảy hợp lệ không mở cổng tiếng đàn dùng chung")
+		failures.append("Tiếng gảy hợp lệ không mở cổng sau khi thu đủ 4096 mẫu")
 	analyzer._handle_silence(0.36)
 	if analyzer.has_recent_dan_tranh_attack():
 		failures.append("Cổng tiếng đàn không đóng sau khi mất tín hiệu")
