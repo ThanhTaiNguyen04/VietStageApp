@@ -13,6 +13,8 @@ const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
 const CHORD_MIN_FUNDAMENTAL_DB := -52.0
 const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
+const CHORD_MAX_COMPONENT_SPREAD_DB := 20.0
+const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 6.0
 const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
@@ -2251,14 +2253,14 @@ func _process_practice_single(delta: float) -> void:
 			var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 			var det_name = note_info.get("note_name", "None")
 			var det_idx = note_info.get("string_index", -1)
-			var is_partial_song_thanh: bool = current_lesson_id == LEVEL_7_SONG_THANH_ID \
-				and "+" in target_note and det_name in target_note.split("+")
-			if det_name != "None" and det_idx >= 0 and is_partial_song_thanh:
+			var is_partial_polyphonic: bool = "+" in target_note \
+				and det_name in target_note.split("+")
+			if det_name != "None" and det_idx >= 0 and is_partial_polyphonic:
 				wrong_note_time += delta
 				if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
 					wrong_note_time = 0.0
 					wrong_note_cooldown = 2.0
-					_show_song_thanh_incomplete(target_note)
+					_show_polyphonic_incomplete(target_note)
 				return
 			var is_wrong = true
 			if det_name == target_note or det_idx == target_string_idx:
@@ -2329,12 +2331,15 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
 
 
-func _show_song_thanh_incomplete(target_note: String) -> void:
+func _show_polyphonic_incomplete(target_note: String) -> void:
+	var target_notes := target_note.split("+")
 	var target_label := target_note.replace("+", " và ")
-	var feedback := "Cần gảy đồng thời đủ hai nốt: %s" % target_label
-	_show_practice_error_feedback(target_note, feedback, "Chưa đủ Song thanh")
+	var required_count := target_notes.size()
+	var feedback := "Cần gảy đồng thời đủ %d nốt: %s" % [required_count, target_label]
+	var title := "Chưa đủ Song thanh" if required_count == 2 else "Chưa đủ hợp âm"
+	_show_practice_error_feedback(target_note, feedback, title)
 	if pitch_status_lbl:
-		pitch_status_lbl.text = "🟡 CHƯA ĐỦ HAI NỐT"
+		pitch_status_lbl.text = "🟡 CHƯA ĐỦ %d NỐT" % required_count
 		pitch_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
 	if mic_status_lbl:
 		mic_status_lbl.text = feedback
@@ -2413,17 +2418,15 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		else:
 			var target_note = unique_practice_notes[single_practice_idx]
 			var is_correct = false
-			if "+" in target_note and current_lesson_id == LEVEL_7_SONG_THANH_ID:
-				# A virtual single-string click must never complete a two-note chord.
-				# Song thanh is scored only from the microphone spectrum, where both
-				# fundamentals can be verified in the same time window.
+			if "+" in target_note:
+				# A virtual single-string click must never complete Song thanh or a
+				# chord. Polyphonic targets are scored only from one microphone window
+				# containing every required fundamental.
 				if note_name in target_note.split("+"):
 					if mic_status_lbl:
-						mic_status_lbl.text = "Hãy gảy đồng thời cả hai nốt: %s" % target_note.replace("+", " và ")
+						mic_status_lbl.text = "Hãy gảy đồng thời đủ các nốt: %s" % target_note.replace("+", " và ")
 						mic_status_lbl.add_theme_color_override("font_color", C_GOLD)
 					return
-			elif "+" in target_note:
-				is_correct = note_name in target_note.split("+")
 			else:
 				if note_name == target_note:
 					is_correct = true
@@ -4358,7 +4361,7 @@ func _process_practice(delta):
 		if not is_sample_mode and note.get("is_missing", false) and not note.get("hit", false):
 			if abs(note["x"] - hit_x) < 40.0 or (is_wait_mode and note["x"] <= hit_x):
 				var raw_chord_name = note.get("raw_chord_name", clean_note)
-				if not _should_score_song_thanh_component(
+				if not _should_score_polyphonic_component(
 					raw_chord_name,
 					int(note.get("chord_component_index", 0))
 				):
@@ -4424,14 +4427,14 @@ func _process_practice(delta):
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 						var det_name = note_info.get("note_name", "None")
 						var det_idx = note_info.get("string_index", -1)
-						var is_partial_song_thanh: bool = current_lesson_id == LEVEL_7_SONG_THANH_ID \
-							and "+" in raw_chord_name and det_name in raw_chord_name.split("+")
-						if det_name != "None" and det_idx >= 0 and is_partial_song_thanh:
+						var is_partial_polyphonic: bool = "+" in raw_chord_name \
+							and det_name in raw_chord_name.split("+")
+						if det_name != "None" and det_idx >= 0 and is_partial_polyphonic:
 							wrong_note_time += delta
 							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
 								wrong_note_time = 0.0
 								wrong_note_cooldown = 2.0
-								_show_song_thanh_incomplete(raw_chord_name)
+								_show_polyphonic_incomplete(raw_chord_name)
 							continue
 						var is_wrong = true
 						if "+" in raw_chord_name:
@@ -4509,7 +4512,6 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var pitch: float = analyzer.current_pitch
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
-	var is_strict_song_thanh = is_poly and current_lesson_id == LEVEL_7_SONG_THANH_ID
 	
 	# Relaxed volume threshold to pick up standard acoustic instruments
 	if db <= analyzer.volume_threshold_db:
@@ -4520,35 +4522,10 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 		return false
 
 	var is_match = false
-	if is_strict_song_thanh:
-		# Polyphonic targets are intentionally spectrum-only. YIN returns one
-		# fundamental, so accepting it here allowed either component to pass alone.
+	if is_poly:
+		# Every polyphonic target is spectrum-only. YIN returns one fundamental;
+		# falling back to it would allow a single component to complete a chord.
 		is_match = _are_all_chord_fundamentals_present(_target_note_name.split("+"))
-	elif is_poly:
-		var notes = _target_note_name.split("+")
-		if analyzer and analyzer.get("_spectrum") != null:
-			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
-			var all_detected = true
-			for n in notes:
-				var freq = NOTE_FREQS.get(n, 0.0)
-				if freq > 0.0:
-					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.97, freq * 1.03).length()
-					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
-					var max_mag = max(mag1, mag2)
-					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					if freq_db < -52.0:
-						all_detected = false
-						break
-			if all_detected:
-				is_match = true
-		if not is_match:
-			for n in notes:
-				var freq = NOTE_FREQS.get(n, 0.0)
-				if freq > 0.0 and pitch > 0.0:
-					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-					if cents_error <= 45.0:
-						is_match = true
-						break
 	else:
 		if target_hz > 0.0 and pitch > 0.0:
 			var cents_error = 1200.0 * log(pitch / target_hz) / log(2.0)
@@ -4558,8 +4535,8 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				pitch_meter.queue_redraw()
 			is_match = _is_pitch_match_robust(target_hz, _target_note_name, pitch)
 
-	if is_strict_song_thanh:
-		return _advance_song_thanh_confirmation(is_match, delta)
+	if is_poly:
+		return _advance_polyphonic_confirmation(is_match, delta)
 
 	var hold_time_needed = REQUIRED_HOLD_TIME
 	if not is_poly and target_hz > 1000.0:
@@ -4579,15 +4556,15 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	return true
 
 
-func _should_score_song_thanh_component(raw_chord_name: String, component_index: int) -> bool:
-	if current_lesson_id != LEVEL_7_SONG_THANH_ID or "+" not in raw_chord_name:
+func _should_score_polyphonic_component(raw_chord_name: String, component_index: int) -> bool:
+	if "+" not in raw_chord_name:
 		return true
-	# Both visual notes belong to one microphone gesture. Only the first visual
-	# component may update the shared confirmation timer in a frame.
+	# All visual components belong to one microphone gesture. Only the first may
+	# update the shared confirmation timer in a frame.
 	return component_index == 0
 
 
-func _advance_song_thanh_confirmation(all_fundamentals_present: bool, delta: float) -> bool:
+func _advance_polyphonic_confirmation(all_fundamentals_present: bool, delta: float) -> bool:
 	if not all_fundamentals_present:
 		# Missing either component breaks simultaneity; do not retain partial time.
 		time_correct = 0.0
@@ -4610,10 +4587,21 @@ func _are_all_chord_fundamentals_present(
 	if not band_db_reader.is_valid() and (not analyzer or analyzer.get("_spectrum") == null):
 		return false
 
+	var target_names: Dictionary = {}
+	var target_physical_strings: Dictionary = {}
+	var target_frequencies: Array[float] = []
+	var component_levels: Array[float] = []
 	for note_name in notes:
 		var frequency: float = NOTE_FREQS.get(note_name, 0.0)
 		if frequency <= 0.0:
 			return false
+		var physical_string := int(NOTE_TO_STRING.get(note_name, -1))
+		if physical_string < 0 or target_names.has(note_name) \
+				or target_physical_strings.has(physical_string):
+			return false
+		target_names[note_name] = true
+		target_physical_strings[physical_string] = true
+		target_frequencies.append(frequency)
 
 		var fundamental_db: float
 		if band_db_reader.is_valid():
@@ -4623,8 +4611,44 @@ func _are_all_chord_fundamentals_present(
 
 		if fundamental_db < CHORD_MIN_FUNDAMENTAL_DB:
 			return false
+		component_levels.append(fundamental_db)
+
+	component_levels.sort()
+	var weakest_target_db := float(component_levels[0])
+	var strongest_target_db := float(component_levels[component_levels.size() - 1])
+	if strongest_target_db - weakest_target_db > CHORD_MAX_COMPONENT_SPREAD_DB:
+		return false
+
+	# Reject a clearly played non-target string. Ignore bins that are integer
+	# harmonics of a requested lower string because those naturally belong to its
+	# timbre and are not independent extra notes.
+	for physical_note in ALL_17_NOTES:
+		if target_names.has(physical_note):
+			continue
+		var other_frequency: float = NOTE_FREQS.get(physical_note, 0.0)
+		if other_frequency <= 0.0 or _is_target_harmonic(other_frequency, target_frequencies):
+			continue
+		var other_db: float
+		if band_db_reader.is_valid():
+			other_db = float(band_db_reader.call(other_frequency))
+		else:
+			other_db = _get_spectrum_band_db(other_frequency, 0.03)
+		if other_db >= CHORD_MIN_FUNDAMENTAL_DB \
+				and other_db >= weakest_target_db - CHORD_UNEXPECTED_NOTE_MARGIN_DB:
+			return false
 
 	return true
+
+
+func _is_target_harmonic(frequency: float, target_frequencies: Array[float]) -> bool:
+	for target_frequency in target_frequencies:
+		if target_frequency <= 0.0 or frequency <= target_frequency:
+			continue
+		var ratio := frequency / target_frequency
+		var harmonic := roundf(ratio)
+		if harmonic >= 2.0 and harmonic <= 4.0 and absf(ratio - harmonic) <= 0.03:
+			return true
+	return false
 
 
 
