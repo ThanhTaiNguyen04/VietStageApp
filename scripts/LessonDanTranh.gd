@@ -588,7 +588,7 @@ func _ready():
 	profile.frequencies = PackedFloat32Array(freqs)
 	profile.physical_mappings = mappings
 	profile.min_frequency = 180.0
-	profile.max_frequency = 4200.0
+	profile.max_frequency = 1900.0
 	profile.volume_threshold_db = -58.0
 	profile.cents_tolerance = 45.0 # robust pitch tolerance
 	profile.hold_time_sec = 0.20
@@ -597,7 +597,7 @@ func _ready():
 	analyzer.pitch_profile = profile
 	
 	analyzer.min_frequency = 180.0
-	analyzer.max_frequency = 4200.0
+	analyzer.max_frequency = 1900.0
 	analyzer.volume_threshold_db = -58.0
 	if not analyzer.dan_tranh_note_started.is_connected(_on_dan_tranh_note_started):
 		analyzer.dan_tranh_note_started.connect(_on_dan_tranh_note_started)

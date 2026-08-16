@@ -1073,6 +1073,11 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 	if analysis_suspended:
 		return {}
 	if pitch_profile:
+		# Reuse the pitch already stabilized for the currently validated attack.
+		# Reclassifying a later rolling buffer can lose the original transient and
+		# incorrectly turn a recognized physical string back into "None".
+		if instrument_gate_open and current_pitch_is_reliable and current_pitch > 0.0:
+			return pitch_profile.match_pitch(current_pitch)
 		var classification := analyze_dan_tranh_sound(samples, sample_rate)
 		if not classification.get("accepted", false):
 			return {}

@@ -7,32 +7,45 @@ const ALL_17_NOTES := [
 	"Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3",
 	"Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4",
 ]
+const RUNTIME_PROFILE_NOTES := [
+	"Sol1", "La1", "Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2",
+	"Đô3", "Rê3", "Mi3", "Fa3", "Sol3", "La3", "Si3", "Đô4", "Rê4",
+	"Mi4", "Sol4", "La4",
+]
 const NOTE_FREQS := {
 	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Sol2": 392.00, "La2": 440.00, "Đô3": 523.25, "Rê3": 587.33, "Mi3": 659.25,
-	"Sol3": 783.99, "La3": 880.00, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51,
+	"Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88,
+	"Đô3": 523.25, "Rê3": 587.33, "Mi3": 659.25, "Fa3": 698.46,
+	"Sol3": 783.99, "La3": 880.00, "Si3": 987.77, "Đô4": 1046.50,
+	"Rê4": 1174.66, "Mi4": 1318.51,
 	"Sol4": 1567.98, "La4": 1760.00,
+}
+const NOTE_TO_STRING := {
+	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4, "Fa2": 4,
+	"Sol2": 5, "La2": 6, "Si2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9,
+	"Fa3": 9, "Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12,
+	"Rê4": 13, "Mi4": 14, "Sol4": 15, "La4": 16,
 }
 
 func _make_analyzer() -> AudioCaptureAnalyzer:
 	var analyzer = load("res://scripts/AudioCaptureAnalyzer.gd").new()
 	var profile = load("res://scripts/InstrumentPitchProfile.gd").new()
-	profile.notes.assign(ALL_17_NOTES)
+	profile.notes.assign(RUNTIME_PROFILE_NOTES)
 	var freqs: Array[float] = []
 	var mappings: Array[int] = []
-	for i in range(ALL_17_NOTES.size()):
-		freqs.append(NOTE_FREQS[ALL_17_NOTES[i]])
-		mappings.append(i)
+	for note in RUNTIME_PROFILE_NOTES:
+		freqs.append(NOTE_FREQS[note])
+		mappings.append(NOTE_TO_STRING[note])
 	profile.frequencies = PackedFloat32Array(freqs)
 	profile.physical_mappings = mappings
 	profile.min_frequency = 180.0
-	profile.max_frequency = 4200.0
+	profile.max_frequency = 1900.0
 	profile.volume_threshold_db = -58.0
 	profile.cents_tolerance = 35.0
 	profile.is_plucked_instrument = true
 	analyzer.pitch_profile = profile
 	analyzer.min_frequency = 180.0
-	analyzer.max_frequency = 4200.0
+	analyzer.max_frequency = 1900.0
 	analyzer.volume_threshold_db = -58.0
 	return analyzer
 
@@ -97,6 +110,7 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 	var buffer := PackedFloat32Array()
 	var reliable_frames := 0
 	var notes_seen := {}
+	var string_indices_seen := {}
 	for frame in frames:
 		buffer.append_array(frame)
 		if buffer.size() > analyzer.INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
@@ -153,9 +167,15 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 			var mapped: Dictionary = analyzer.pitch_profile.match_pitch(analyzer.current_pitch)
 			if mapped.get("is_match", false):
 				var name: String = mapped.get("note_name", "")
+				var string_index := int(mapped.get("string_index", -1))
 				notes_seen[name] = notes_seen.get(name, 0) + 1
+				string_indices_seen[string_index] = string_indices_seen.get(string_index, 0) + 1
 
-	return {"reliable_frames": reliable_frames, "notes_seen": notes_seen}
+	return {
+		"reliable_frames": reliable_frames,
+		"notes_seen": notes_seen,
+		"string_indices_seen": string_indices_seen,
+	}
 
 func _init() -> void:
 	var failures: Array[String] = []
@@ -221,6 +241,14 @@ func _init() -> void:
 		var result := _run_frames(analyzer, frames)
 		if not result["notes_seen"].has(note):
 			failures.append("Dây %s không được nhận diện trong luồng gảy (reliable frames: %d)" % [note, result["reliable_frames"]])
+		if not result["string_indices_seen"].has(ALL_17_NOTES.find(note)):
+			failures.append("Nốt %s không ánh xạ về đúng dây vật lý %d" % [
+				note, ALL_17_NOTES.find(note) + 1
+			])
+		if result["notes_seen"].size() != 1 or result["string_indices_seen"].size() != 1:
+			failures.append("Dây %s bị nhận lẫn sang nốt/dây khác: %s / %s" % [
+				note, result["notes_seen"], result["string_indices_seen"]
+			])
 
 	# 2. Tap / click noise (sharp short burst) must NOT produce a note.
 	var tap_analyzer := _make_analyzer()
@@ -249,18 +277,46 @@ func _init() -> void:
 	if not voice_result["notes_seen"].is_empty():
 		failures.append("Giọng hát/hum 220 Hz bị nhận nhầm thành nốt: %s" % [voice_result["notes_seen"]])
 
-	# 5. Single-shot fallback (detect_dan_tranh_note): accepts a pluck attack,
-	#    but rejects sustained voice, ambient room tone, and click bursts.
+	# 5. Single-shot fallback must resolve every physical string exactly, including
+	#    normal acoustic tuning drift, while still rejecting voice and clicks.
 	var bow_analyzer := _make_analyzer()
-	var pluck_buf: PackedFloat32Array = _plucked_tone(440.0, 4096)
-	if bow_analyzer.detect_dan_tranh_note(pluck_buf, SAMPLE_RATE).get("note_name", "None") != "La2":
-		failures.append("Single-shot bỏ sót âm gảy La2")
+	for string_index in ALL_17_NOTES.size():
+		var expected_note: String = ALL_17_NOTES[string_index]
+		for tuning_cents in [-30.0, 0.0, 30.0]:
+			var tuned_frequency: float = float(NOTE_FREQS[expected_note]) \
+				* pow(2.0, tuning_cents / 1200.0)
+			var pluck_buf: PackedFloat32Array = _plucked_tone(tuned_frequency, 4096)
+			var detected_note: Dictionary = bow_analyzer.detect_dan_tranh_note(
+				pluck_buf, SAMPLE_RATE
+			)
+			if detected_note.get("note_name", "None") != expected_note \
+					or int(detected_note.get("string_index", -1)) != string_index:
+				failures.append(
+					"Single-shot dây %d %s lệch %+.0f cents nhận thành %s/dây %d" % [
+						string_index + 1,
+						expected_note,
+						tuning_cents,
+						detected_note.get("note_name", "None"),
+						int(detected_note.get("string_index", -1)) + 1,
+					]
+				)
 	var voiced_buf: PackedFloat32Array = _sine_tone(440.0, 4096)
 	if not bow_analyzer.detect_dan_tranh_note(voiced_buf, SAMPLE_RATE).is_empty():
 		failures.append("Single-shot nhận nhầm nốt bền (hum 440 Hz)")
 	var click_buf: PackedFloat32Array = _noise_burst(0.05)
 	if not bow_analyzer.detect_dan_tranh_note(click_buf, SAMPLE_RATE).is_empty():
 		failures.append("Single-shot nhận nhầm tiếng click/gõ")
+	bow_analyzer._clear_pitch_detection()
+	for stable_frame in 4:
+		bow_analyzer._update_reliable_pitch(440.0)
+	bow_analyzer.instrument_gate_open = true
+	var stale_buffer_result: Dictionary = bow_analyzer.detect_dan_tranh_note(
+		_silence(4096), SAMPLE_RATE
+	)
+	if stale_buffer_result.get("note_name", "None") != "La2" \
+			or int(stale_buffer_result.get("string_index", -1)) != 6:
+		failures.append("Pitch La2 đã xác nhận bị mất khi transient rời rolling buffer")
+	bow_analyzer.instrument_gate_open = false
 
 	# 6. Á accepts only instrument-validated attack events, then checks distinct
 	#    strings, covered range, direction and timing continuity independently.
