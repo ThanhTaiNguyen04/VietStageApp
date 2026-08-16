@@ -2210,9 +2210,9 @@ func _close_dialogue() -> void:
 # ─── Focus Mode Vector Custom Diagrams ─────────────────────────────────────────
 func _draw_popup_scroll(c: Control) -> void:
 	var sz := c.size
-	# 1. Cream paper scroll body
+	# 1. Cream paper scroll body with glassmorphic transparency
 	var paper_rect := Rect2(40, 30, sz.x - 80, sz.y - 60)
-	c.draw_rect(paper_rect, C_CREAM, true)
+	c.draw_rect(paper_rect, Color(0.99, 0.98, 0.95, 0.72), true)
 	c.draw_rect(paper_rect, C_GOLD, false, 3.5)
 	
 	# Decorative inner border
@@ -2662,16 +2662,34 @@ func _setup_hud_shop_button() -> void:
 	hud_hbox.offset_bottom = 32 + 48
 	hud_hbox.alignment = BoxContainer.ALIGNMENT_END
 	hud_hbox.add_theme_constant_override("separation", 16)
+
+	var blur_shader := Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
 	
 	# Create Star Badge
 	var star_badge := PanelContainer.new()
 	star_badge.name = "StarBadge"
-	star_badge.custom_minimum_size = Vector2(140, 48)
+	star_badge.custom_minimum_size = Vector2(100, 48)
 	hud_hbox.add_child(star_badge)
 	
+	var badge_blur_rect := ColorRect.new()
+	badge_blur_rect.material = ShaderMaterial.new()
+	badge_blur_rect.material.shader = blur_shader
+	badge_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	badge_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_blur_rect.show_behind_parent = true
+	star_badge.add_child(badge_blur_rect)
+	
 	var badge_s := StyleBoxFlat.new()
-	badge_s.bg_color = Color(0.95, 0.93, 0.89, 0.92) # Lacquer warm ivory #F3EFE3
-	badge_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) # Soft gold border
+	badge_s.bg_color = Color(0.95, 0.93, 0.89, 0.65) # Glassmorphic lacquer warm ivory
+	badge_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45) # Soft gold border
 	badge_s.border_width_left = 2; badge_s.border_width_right = 2
 	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
 	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
@@ -2682,43 +2700,60 @@ func _setup_hud_shop_button() -> void:
 	
 	var badge_margin := MarginContainer.new()
 	badge_margin.name = "Margin"
-	badge_margin.add_theme_constant_override("margin_left", 14)
-	badge_margin.add_theme_constant_override("margin_right", 14)
+	badge_margin.add_theme_constant_override("margin_left", 12)
+	badge_margin.add_theme_constant_override("margin_right", 16)
 	star_badge.add_child(badge_margin)
+	
+	var badge_hbox := HBoxContainer.new()
+	badge_hbox.add_theme_constant_override("separation", 6)
+	badge_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	badge_margin.add_child(badge_hbox)
+	
+	var badge_icon := TextureRect.new()
+	badge_icon.texture = load("res://assets/textures/lucide/star.svg") as Texture2D
+	badge_icon.custom_minimum_size = Vector2(20, 20)
+	badge_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	badge_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge_icon.modulate = C_GOLD
+	badge_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	badge_hbox.add_child(badge_icon)
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "⭐ %d" % SecureDataManager.get_total_stars()
+	badge_label.text = "%d" % SecureDataManager.get_total_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
 	badge_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
-	badge_margin.add_child(badge_label)
+	badge_hbox.add_child(badge_label)
 
-	# Create Shop Button
+	# Create Shop Button (Only Icon, Frosted Glass)
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = " Cửa hàng"
+	btn_shop.text = ""
 	var store_icon := load("res://assets/textures/lucide/palette.svg") as Texture2D
 	if not store_icon:
 		store_icon = load("res://assets/textures/lucide/sparkles.svg") as Texture2D
 	btn_shop.icon = store_icon
 	btn_shop.expand_icon = true
-	btn_shop.custom_minimum_size = Vector2(160, 48)
-	btn_shop.add_theme_font_size_override("font_size", 16)
-	if _font_body_bold:
-		btn_shop.add_theme_font_override("font", _font_body_bold)
-	btn_shop.add_theme_color_override("font_color", C_JADE)
-	btn_shop.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
-	btn_shop.add_theme_color_override("font_pressed_color", C_JADE)
+	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn_shop.custom_minimum_size = Vector2(48, 48)
 	btn_shop.add_theme_color_override("icon_normal_color", C_JADE)
 	btn_shop.add_theme_color_override("icon_hover_color", C_GOLD)
 	btn_shop.add_theme_color_override("icon_pressed_color", C_JADE)
 	
+	var btn_blur_rect := ColorRect.new()
+	btn_blur_rect.material = ShaderMaterial.new()
+	btn_blur_rect.material.shader = blur_shader
+	btn_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	btn_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn_blur_rect.show_behind_parent = true
+	btn_shop.add_child(btn_blur_rect)
+	
 	var btn_s := StyleBoxFlat.new()
-	btn_s.bg_color = Color(0.95, 0.93, 0.89, 0.92) # Lacquer warm ivory
+	btn_s.bg_color = Color(0.95, 0.93, 0.89, 0.65) # Glassmorphic warm ivory
 	btn_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
 	btn_s.border_width_left = 2; btn_s.border_width_right = 2
 	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
@@ -2729,12 +2764,12 @@ func _setup_hud_shop_button() -> void:
 	btn_shop.add_theme_stylebox_override("normal", btn_s)
 	
 	var btn_h := btn_s.duplicate() as StyleBoxFlat
-	btn_h.bg_color = Color(1.0, 0.98, 0.94, 1.0)
+	btn_h.bg_color = Color(1.0, 0.98, 0.94, 0.85)
 	btn_h.border_color = C_GOLD
 	btn_shop.add_theme_stylebox_override("hover", btn_h)
 
 	var btn_p := btn_s.duplicate() as StyleBoxFlat
-	btn_p.bg_color = Color(0.90, 0.88, 0.84, 1.0)
+	btn_p.bg_color = Color(0.90, 0.88, 0.84, 0.85)
 	btn_p.border_color = C_JADE
 	btn_shop.add_theme_stylebox_override("pressed", btn_p)
 	btn_shop.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
@@ -2746,9 +2781,11 @@ func _setup_hud_shop_button() -> void:
 	btn_shop.pressed.connect(_open_shop_popup)
 
 func _update_star_badge() -> void:
-	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
+	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/HBoxContainer/Label") as Label
+	if not label:
+		label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "⭐ %d" % SecureDataManager.get_total_stars()
+		label.text = "%d" % SecureDataManager.get_total_stars()
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
@@ -2938,9 +2975,27 @@ func _setup_shop_popup() -> void:
 	
 	var overlay := ColorRect.new()
 	overlay.name = "OverlayBG"
-	overlay.color = Color(0.06, 0.04, 0.02, 0.75)
+	overlay.color = Color(0.06, 0.04, 0.02, 0.55) # Lighter overlay for better glass blur visual contrast
 	shop_popup.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	var blur_shader := Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	
+	# Full screen frosted glass behind the scroll panel
+	var popup_blur := ColorRect.new()
+	popup_blur.material = ShaderMaterial.new()
+	popup_blur.material.shader = blur_shader
+	popup_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shop_popup.add_child(popup_blur)
 	
 	var scroll_panel := Control.new()
 	scroll_panel.name = "ScrollPanel"
@@ -2973,14 +3028,6 @@ func _setup_shop_popup() -> void:
 	title_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	title_hbox.add_theme_constant_override("separation", 10)
 	scroll_content.add_child(title_hbox)
-	
-	var title_icon := TextureRect.new()
-	title_icon.texture = load("res://assets/textures/lucide/palette.svg") as Texture2D
-	title_icon.custom_minimum_size = Vector2(28, 28)
-	title_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	title_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	title_icon.modulate = C_JADE
-	title_hbox.add_child(title_icon)
 
 	var title := Label.new()
 	title.text = "CỬA HÀNG TRANG TRÍ"
@@ -2991,15 +3038,37 @@ func _setup_shop_popup() -> void:
 		title.add_theme_font_override("font", _font_title)
 	title_hbox.add_child(title)
 	
-	var stars_label := Label.new()
-	stars_label.name = "StarsLabel"
-	stars_label.text = "Bạn có: ⭐ %d Sao" % SecureDataManager.get_total_stars()
-	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stars_label.add_theme_font_size_override("font_size", 14)
-	stars_label.add_theme_color_override("font_color", C_GOLD)
+	var stars_container := HBoxContainer.new()
+	stars_container.name = "StarsContainer"
+	stars_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	stars_container.add_theme_constant_override("separation", 8)
+	scroll_content.add_child(stars_container)
+	
+	var prefix_label := Label.new()
+	prefix_label.text = "Bạn có: "
+	prefix_label.add_theme_font_size_override("font_size", 14)
+	prefix_label.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
-		stars_label.add_theme_font_override("font", _font_body_bold)
-	scroll_content.add_child(stars_label)
+		prefix_label.add_theme_font_override("font", _font_body_bold)
+	stars_container.add_child(prefix_label)
+	
+	var star_icon := TextureRect.new()
+	star_icon.texture = load("res://assets/textures/lucide/star.svg") as Texture2D
+	star_icon.custom_minimum_size = Vector2(18, 18)
+	star_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	star_icon.modulate = C_GOLD
+	star_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stars_container.add_child(star_icon)
+	
+	var stars_val_label := Label.new()
+	stars_val_label.name = "StarsValLabel"
+	stars_val_label.text = "%d Sao" % SecureDataManager.get_total_stars()
+	stars_val_label.add_theme_font_size_override("font_size", 14)
+	stars_val_label.add_theme_color_override("font_color", C_GOLD)
+	if _font_body_bold:
+		stars_val_label.add_theme_font_override("font", _font_body_bold)
+	stars_container.add_child(stars_val_label)
 	
 	var shop_scroll := ScrollContainer.new()
 	shop_scroll.name = "ShopScroll"
@@ -3020,6 +3089,8 @@ func _setup_shop_popup() -> void:
 	btn_close.text = "ĐÓNG"
 	btn_close.custom_minimum_size = Vector2(180, 44)
 	btn_close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if _font_body_bold:
+		btn_close.add_theme_font_override("font", _font_body_bold)
 	_style_outline_btn(btn_close)
 	_make_btn_bouncy(btn_close)
 	scroll_content.add_child(btn_close)
@@ -3077,9 +3148,9 @@ func _update_shop_items() -> void:
 		SecureDataManager.save_data()
 	
 	var stars = SecureDataManager.get_total_stars()
-	var stars_label = shop_popup.get_node("ScrollPanel/ScrollContent/StarsLabel") as Label
-	if stars_label:
-		stars_label.text = "Bạn có: ⭐ %d Sao" % stars
+	var stars_val_label = shop_popup.get_node_or_null("ScrollPanel/ScrollContent/StarsContainer/StarsValLabel") as Label
+	if stars_val_label:
+		stars_val_label.text = "%d Sao" % stars
 		
 	var grid = shop_popup.get_node("ScrollPanel/ScrollContent/ShopScroll/Grid") as GridContainer
 	if not grid:
@@ -3167,13 +3238,34 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		name_lbl.add_theme_font_override("font", _font_body_bold)
 	vbox.add_child(name_lbl)
 	
+	var cost_hbox := HBoxContainer.new()
+	cost_hbox.add_theme_constant_override("separation", 6)
+	vbox.add_child(cost_hbox)
+	
+	var req_lbl := Label.new()
+	req_lbl.text = "Yêu cầu: "
+	req_lbl.add_theme_font_size_override("font_size", 13)
+	req_lbl.add_theme_color_override("font_color", C_GOLD)
+	if _font_body_bold:
+		req_lbl.add_theme_font_override("font", _font_body_bold)
+	cost_hbox.add_child(req_lbl)
+	
+	var req_star_icon := TextureRect.new()
+	req_star_icon.texture = load("res://assets/textures/lucide/star.svg") as Texture2D
+	req_star_icon.custom_minimum_size = Vector2(16, 16)
+	req_star_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	req_star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	req_star_icon.modulate = C_GOLD
+	req_star_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cost_hbox.add_child(req_star_icon)
+	
 	var cost_lbl := Label.new()
-	cost_lbl.text = "Yêu cầu: ⭐ %d Sao" % cost
+	cost_lbl.text = "%d Sao" % cost
 	cost_lbl.add_theme_font_size_override("font_size", 13)
 	cost_lbl.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
 		cost_lbl.add_theme_font_override("font", _font_body_bold)
-	vbox.add_child(cost_lbl)
+	cost_hbox.add_child(cost_lbl)
 	
 	var desc_lbl := Label.new()
 	desc_lbl.text = desc
@@ -3186,6 +3278,8 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(0, 38)
+	if _font_body_bold:
+		btn.add_theme_font_override("font", _font_body_bold)
 	vbox.add_child(btn)
 	_make_btn_bouncy(btn)
 	
@@ -3201,12 +3295,13 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		btn.disabled = false
 		var active = item.get("isEquipped", false)
 		if active:
-			btn.text = "CẤT ĐI 📦"
+			btn.text = "CẤT ĐI"
 			_style_outline_btn(btn)
 		else:
-			btn.text = "TRƯNG BÀY ✨"
+			btn.text = "TRƯNG BÀY"
 			_style_primary_btn(btn)
 			
+		# Clean extra emojis from equipped button texts and add style box customization if needed
 	btn.pressed.connect(_on_shop_action_pressed.bind(item, owned))
 	return card
 
