@@ -97,7 +97,7 @@ var total_rhythm_duration: float = 0.0
 var wrong_rhythm_duration: float = 0.0
 var has_rhythm_completed: bool = false
 
-var _current_note_color: Color = Color(0.96, 0.75, 0.25)
+var _current_note_color: Color = Color.BLACK
 const HIT_WINDOW := 0.5 # Nới lỏng thời gian chấm điểm thêm nữa
 
 var melody_sequence = []
@@ -255,6 +255,7 @@ const LESSON_DIALOGUES = {
 }
 
 const NOTE_FREQS = {
+	# Octave 5 (Vietnamese bamboo flute in C - primary range)
 	"Đô": 523.25,
 	"Rê": 587.33,
 	"Mi": 659.25,
@@ -263,6 +264,7 @@ const NOTE_FREQS = {
 	"La": 880.00,
 	"Sib": 932.33,
 	"Si": 987.77,
+	# Octave 6 (high register)
 	"Đô2": 1046.50,
 	"Rê2": 1174.66,
 	"Mi2": 1318.51,
@@ -270,7 +272,15 @@ const NOTE_FREQS = {
 	"Sol2": 1567.98,
 	"La2": 1760.00,
 	"Sib2": 1864.66,
-	"Si2": 1975.53
+	"Si2": 1975.53,
+	# Octave 4 aliases (some flutes produce one octave lower)
+	"Đô_low": 261.63,
+	"Rê_low": 293.66,
+	"Mi_low": 329.63,
+	"Fa_low": 349.23,
+	"Sol_low": 392.00,
+	"La_low": 440.00,
+	"Si_low": 493.88
 }
 
 func _ready():
@@ -636,6 +646,7 @@ func _setup_premium_practice_ui():
 	
 	staff_display = load("res://scripts/StaffDisplay.gd").new()
 	staff_display.name = "StaffDisplay"
+	staff_display.use_note_colors = true
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	# Level 4 lessons use 2/4 time signature
@@ -719,15 +730,26 @@ func _start_practice():
 		_practice_note_node.queue_free()
 		_practice_note_node = null
 		
-	# Populate practice sequence
+	# Populate practice sequence - 4 ô nhịp 4/4 chuẩn âm nhạc:
+	# Ô 1 (phách 1-4):   1 nốt tròn = 4 phách
+	# Ô 2 (phách 5-8):   1 nốt trắng (2ph) + 1 dấu lặng trắng (2ph)
+	# Ô 3 (phách 9-12):  4 nốt đen = 4×1 phách
+	# Ô 4 (phách 13-16): 2 nốt trắng = 2×2 phách
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		_practice_sequence = [
-			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 0.0},
-			{"note": active_note, "type": "whole", "duration": 4.0, "time": 2.5},
-			{"note": active_note, "type": "half", "duration": 2.0, "time": 8.0},
-			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 11.5},
-			{"note": active_note, "type": "eighth", "duration": 0.5, "time": 14.0},
-			{"note": active_note, "type": "sixteenth", "duration": 0.25, "time": 16.0}
+			# Ô nhịp 1: Nốt tròn (4 phách)
+			{"note": active_note, "type": "whole",   "duration": 4.0, "time": 0.0},
+			# Ô nhịp 2: Nốt trắng (2 phách) + Dấu lặng trắng (2 phách)
+			{"note": active_note, "type": "half",    "duration": 2.0, "time": 4.0},
+			{"note": "REST",      "type": "half",    "duration": 2.0, "time": 6.0},
+			# Ô nhịp 3: 4 nốt đen (mỗi nốt = 1 phách)
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 8.0},
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 9.0},
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 10.0},
+			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 11.0},
+			# Ô nhịp 4: 2 nốt trắng (mỗi nốt = 2 phách)
+			{"note": active_note, "type": "half",    "duration": 2.0, "time": 12.0},
+			{"note": active_note, "type": "half",    "duration": 2.0, "time": 14.0},
 		]
 	else:
 		_practice_sequence = _generate_melody(active_node_id)
@@ -740,9 +762,12 @@ func _start_practice():
 
 func _update_practice_fingers():
 	var current_note_name = _practice_sequence[_current_practice_idx]["note"]
+	_update_fingers_for_note(current_note_name)
+
+func _update_fingers_for_note(note_name: String):
 	var req = []
 	for k in LESSON_NOTES.keys():
-		if LESSON_NOTES[k]["note"] == current_note_name:
+		if LESSON_NOTES[k]["note"] == note_name:
 			req = LESSON_NOTES[k]["fingers"]
 			break
 			
@@ -753,7 +778,7 @@ func _update_practice_fingers():
 		_holes[i].get_child(0).visible = req[i]
 		_holes[i].get_child(0).modulate = Color(0.2, 0.8, 0.2, 0.6)
 
-	mic_status.text = "Hãy bấm nốt " + current_note_name + " và thổi..."
+	mic_status.text = "Hãy bấm nốt " + note_name + " và thổi..."
 	mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 
 var sample_player: AudioStreamPlayer
@@ -967,11 +992,24 @@ func _process(delta):
 				var note_x = hit_x + (time_diff * BASE_SCROLL_SPEED * bpm_multiplier)
 				var duration = note_data.get("duration", 1.0)
 				var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
-				var color = Color(0.96, 0.75, 0.25)
+				var color = Color.BLACK
 				if _practice_time >= note_data["time"]:
 					color = _current_note_color
 				notes.append({"note": note_data["note"], "x": note_x, "color": color, "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
 			staff_display.set_notes(notes)
+			# Tính vạch chia ô nhịp 4/4 cho Practice mode (mỗi 4 phách = 1 ô nhịp)
+			var beats_per_bar = 4.0
+			var practice_bar_lines = []
+			var total_seq_time = 16.0 # 4 ô nhịp × 4 phách
+			var bar_beat = beats_per_bar
+			while bar_beat <= total_seq_time:
+				var b_diff = bar_beat - _practice_time
+				# Trừ đi 55px để vạch nhịp cách bên trái nốt nhạc một khoảng nhỏ (~5px)
+				var bx = hit_x + (b_diff * BASE_SCROLL_SPEED * bpm_multiplier) - 55.0
+				if bx < get_viewport_rect().size.x + 200 and bx > -200:
+					practice_bar_lines.append(bx)
+				bar_beat += beats_per_bar
+			staff_display.bar_lines = practice_bar_lines
 					
 		if sample_active:
 			mic_status.text = "Đang phát nhạc mẫu..."
@@ -1021,6 +1059,7 @@ func _process_rhythm(delta, rect):
 		if _last_rhythm_note_time != current_overlapping_note["time"]:
 			_last_rhythm_note_time = current_overlapping_note["time"]
 			_idle_note_timer = 0.0
+			_update_fingers_for_note(current_overlapping_note["note_name"])
 			
 		var is_blowing = amp > -35.0 # Lenient volume threshold
 		var is_correct = false
@@ -1040,7 +1079,7 @@ func _process_rhythm(delta, rect):
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
 			_idle_note_timer += delta
-			time_delta = delta # Timeline keeps moving, forcing the player to stay in rhythm!
+			time_delta = 0 # Không trôi qua nếu chưa thổi đúng
 			
 			if _idle_note_timer >= 15.0:
 				current_overlapping_note["flash_trigger"] = Time.get_ticks_msec()
@@ -1048,11 +1087,11 @@ func _process_rhythm(delta, rect):
 				
 			if is_blowing:
 				wrong_rhythm_duration += delta
-				current_overlapping_note["color"] = Color(1.0, 0.2, 0.2)
+				current_overlapping_note["color"] = Color(1.0, 0.2, 0.2) # Thổi sai -> Màu đỏ
 				mic_status.text = "Sai ngón! Thổi lại..."
 				mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 			else:
-				current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
+				current_overlapping_note["color"] = Color.BLACK # Không thổi -> Giữ nguyên màu đen
 				mic_status.text = "Đang đợi..."
 				mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	else:
@@ -1086,7 +1125,7 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color.BLACK), "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
@@ -1096,7 +1135,8 @@ func _process_rhythm(delta, rect):
 		var b_lines = []
 		for bt in bar_times:
 			var b_diff = bt - rhythm_time
-			var bx = hit_x + (b_diff * BASE_SCROLL_SPEED * bpm_multiplier)
+			# Trừ đi 55px để vạch nhịp cách bên trái nốt nhạc một khoảng nhỏ (~5px)
+			var bx = hit_x + (b_diff * BASE_SCROLL_SPEED * bpm_multiplier) - 55.0
 			if bx < get_viewport_rect().size.x + 200 and bx > -200:
 				b_lines.append(bx)
 		staff_display.bar_lines = b_lines
@@ -1577,11 +1617,15 @@ func _check_advance(delta: float, state: int):
 	var start_time = note_data["time"]
 	var end_time = start_time + note_data.get("duration", 1.0)
 	
+	if state == 1 and _practice_time < start_time:
+		# Only snap forward when blowing CORRECTLY to reduce latency
+		_practice_time = start_time
+	
 	if _practice_time < start_time:
 		_practice_time += delta
 		mic_status.text = "Chuẩn bị..."
 		mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
+		_set_note_color(Color.BLACK) # Đen ban đầu
 	else:
 		if state == 1:
 			_practice_time += delta
@@ -1601,7 +1645,7 @@ func _check_advance(delta: float, state: int):
 		else:
 			# state == 0 (idle)
 			_practice_time = max(start_time, _practice_time - delta * 2.5)
-			_set_note_color(Color(0.9, 0.7, 0.2)) # Vàng ban đầu
+			_set_note_color(Color.BLACK) # Đen ban đầu
 			mic_status.text = ""
 
 
@@ -1635,16 +1679,26 @@ func _process_real(delta):
 	
 	if amp > -35.0 and hz > 0:
 		var current_note_name = _practice_sequence[_current_practice_idx]["note"]
+		if current_note_name == "REST":
+			_check_advance(delta, 1)
+			return
 		if hz > 150.0:
 			var target_hz_r = NOTE_FREQS.get(current_note_name, 0.0)
 			if target_hz_r > 0.0:
-				var tol = target_hz_r * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
-				if abs(hz - target_hz_r) < tol or abs(hz / 2.0 - target_hz_r) < tol or abs(hz * 2.0 - target_hz_r) < tol:
-					# Đúng nốt -> Tiến lên
+				var tol = target_hz_r * 0.06
+				var matched = (
+					abs(hz - target_hz_r) < tol or
+					abs(hz * 2.0 - target_hz_r) < (target_hz_r * 0.06) or
+					abs(hz / 2.0 - target_hz_r) < tol or
+					abs(hz * 4.0 - target_hz_r) < (target_hz_r * 0.06) or
+					abs(hz / 4.0 - target_hz_r) < tol
+				)
+				if matched:
+					# ĐÚng nốt -> xanh lá, tiến lên
 					_idle_note_timer = 0.0
 					_check_advance(delta, 1)
 				else:
-					# Sai nốt -> Lùi lại
+					# Sai nốt -> đỏ, lùi lại
 					_idle_note_timer += delta
 					if _idle_note_timer >= 15.0:
 						_practice_sequence[_current_practice_idx]["flash_trigger"] = Time.get_ticks_msec()
@@ -1659,6 +1713,10 @@ func _process_real(delta):
 				_idle_note_timer -= 3.0
 			_check_advance(delta, 0)
 	else:
+		var current_note_name_idle = _practice_sequence[_current_practice_idx]["note"]
+		if current_note_name_idle == "REST":
+			_check_advance(delta, 1)
+			return
 		_idle_note_timer += delta
 		if _idle_note_timer >= 15.0:
 			_practice_sequence[_current_practice_idx]["flash_trigger"] = Time.get_ticks_msec()
@@ -1739,7 +1797,7 @@ func _start_rhythm_game():
 			"time": note["time"],
 			"duration": note.get("duration", 1.0),
 			"note_name": note["note"],
-			"color": Color(0.96, 0.75, 0.25),
+			"color": Color.BLACK,
 			"hit": false,
 			"failed": false
 		})
