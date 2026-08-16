@@ -2497,7 +2497,7 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 			label.add_theme_font_size_override("font_size", 12 if is_mobile else 15)
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
-		btn_shop.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
+		btn_shop.custom_minimum_size = Vector2(100, 42) if is_mobile else Vector2(140, 48)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2704,18 +2704,17 @@ func _setup_hud_shop_button() -> void:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_hbox.add_child(badge_label)
 
-	# Create Shop Button (Only Icon, Frosted Glass)
+	# Create Shop Button (Text-only, Frosted Glass)
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = ""
-	var store_icon := load("res://assets/textures/lucide/sparkles.svg") as Texture2D
-	btn_shop.icon = store_icon
-	btn_shop.expand_icon = true
-	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	btn_shop.custom_minimum_size = Vector2(48, 48)
-	btn_shop.add_theme_color_override("icon_normal_color", C_JADE)
-	btn_shop.add_theme_color_override("icon_hover_color", C_GOLD)
-	btn_shop.add_theme_color_override("icon_pressed_color", C_JADE)
+	btn_shop.text = "Cửa hàng"
+	btn_shop.custom_minimum_size = Vector2(130, 48)
+	btn_shop.add_theme_font_size_override("font_size", 16)
+	if _font_body_bold:
+		btn_shop.add_theme_font_override("font", _font_body_bold)
+	btn_shop.add_theme_color_override("font_color", C_JADE)
+	btn_shop.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn_shop.add_theme_color_override("font_pressed_color", C_JADE)
 	
 	var btn_blur_rect := ColorRect.new()
 	btn_blur_rect.material = ShaderMaterial.new()
@@ -3151,7 +3150,8 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	
 	var card := PanelContainer.new()
 	card.name = "Card_" + str(item.get("id"))
-	card.custom_minimum_size = Vector2(340, 150)
+	card.custom_minimum_size = Vector2(380, 160)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.99, 0.98, 0.96, 0.96) # Clean warm ivory card
 	sb.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40) # Soft refined gold border
