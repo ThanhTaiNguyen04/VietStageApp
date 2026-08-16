@@ -2708,9 +2708,7 @@ func _setup_hud_shop_button() -> void:
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
 	btn_shop.text = ""
-	var store_icon := load("res://assets/textures/lucide/shopping-cart.svg") as Texture2D
-	if not store_icon:
-		store_icon = load("res://assets/textures/lucide/sparkles.svg") as Texture2D
+	var store_icon := load("res://assets/textures/lucide/sparkles.svg") as Texture2D
 	btn_shop.icon = store_icon
 	btn_shop.expand_icon = true
 	btn_shop.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
