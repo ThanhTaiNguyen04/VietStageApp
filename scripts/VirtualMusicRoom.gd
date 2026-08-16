@@ -302,6 +302,7 @@ func _ready() -> void:
 	
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
+	_setup_hanging_scroll()
 	
 	# Setup Back button to return to Main Menu (Icon button for mobile style)
 	btn_back.show()
@@ -1040,18 +1041,12 @@ func _draw_room_background() -> void:
 	for cx_n in range(start_notch, right_bound, 80.0):
 		bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
 	
-	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
+	# ── 4. Central hanging scroll calligraphy panel rollers and ribbons ───────────
 	var scroll_w := 160.0 if _is_mobile_layout else 220.0
 	var scroll_h := 160.0 if _is_mobile_layout else 210.0
 	var scroll_x := (sz.x - scroll_w) / 2.0
 	var scroll_y := 12.0
-	# Scroll background (aged silk)
-	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), Color(0.94, 0.89, 0.74))
-	# Decorative inner border
-	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(0.94, 0.89, 0.74), false)
-	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), false, 1.5)
-	# Gold outer frame
-	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), C_GOLD, false, 3.0)
+	
 	# Top & bottom rollers (dark lacquered wood)
 	var roller_col := Color(0.18, 0.10, 0.05)
 	bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y - 10, scroll_w + 24, 14), roller_col)
@@ -1067,29 +1062,6 @@ func _draw_room_background() -> void:
 	var rib_x2 := scroll_x + scroll_w * 0.75
 	bg_canvas.draw_line(Vector2(rib_x1, scroll_y - 10), Vector2(rib_x1, 0), C_RED_SON, 3.0)
 	bg_canvas.draw_line(Vector2(rib_x2, scroll_y - 10), Vector2(rib_x2, 0), C_RED_SON, 3.0)
-	# Kanji/Chu Nom style vertical strokes (abstract decorative)
-	var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
-	if font:
-		if _is_mobile_layout:
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 36), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 20, C_RED_SON)
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 70), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 12, C_RED_DK)
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 92), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 14, C_RED_SON)
-			# Thin horizontal separator lines
-			bg_canvas.draw_line(Vector2(scroll_x + 16, scroll_y + 48), Vector2(scroll_x + scroll_w - 16, scroll_y + 48), C_GOLD, 1.0)
-			bg_canvas.draw_line(Vector2(scroll_x + 16, scroll_y + 104), Vector2(scroll_x + scroll_w - 16, scroll_y + 104), C_GOLD, 1.0)
-		else:
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 40), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 76), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
-			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
-			# Thin horizontal separator lines
-			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 54), Vector2(scroll_x + scroll_w - 20, scroll_y + 54), C_GOLD, 1.0)
-			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
-	# Ink-wash lotus / seal decorative motif
-	var seal_radius := 16.0 if _is_mobile_layout else 20.0
-	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + (128 if _is_mobile_layout else 170))
-	bg_canvas.draw_circle(seal_pos, seal_radius, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
-	bg_canvas.draw_arc(seal_pos, seal_radius - 2.0, 0, TAU, 32, C_RED_SON, 1.5)
-	bg_canvas.draw_circle(seal_pos, 6.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
 	# ── 5. Side column pillars (deep jade green wood - Framed to Screen!) ──
 	for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
@@ -2466,6 +2438,7 @@ func _on_viewport_size_changed() -> void:
 	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
 	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
 	_update_hud_hbox_layout(is_mobile)
+	_update_hanging_scroll_layout()
 
 func _apply_popup_layout(target_popup: Control, is_mobile: bool) -> void:
 	target_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2474,8 +2447,10 @@ func _apply_popup_layout(target_popup: Control, is_mobile: bool) -> void:
 	if not panel:
 		return
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	var panel_w := minf(920.0, viewport_size.x - (24.0 if is_mobile else 80.0))
-	var panel_h := minf(580.0, viewport_size.y - (24.0 if is_mobile else 80.0))
+	var max_w := 980.0 if target_popup.name == "ShopPopup" else 920.0
+	var max_h := 620.0 if target_popup.name == "ShopPopup" else 580.0
+	var panel_w := minf(max_w, viewport_size.x - (24.0 if is_mobile else 80.0))
+	var panel_h := minf(max_h, viewport_size.y - (24.0 if is_mobile else 80.0))
 	panel.size = Vector2(maxf(300.0, panel_w), maxf(300.0 if is_mobile else 480.0, panel_h))
 	panel.custom_minimum_size = panel.size
 	panel.position = (viewport_size - panel.size) * 0.5
@@ -2733,7 +2708,7 @@ func _setup_hud_shop_button() -> void:
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
 	btn_shop.text = ""
-	var store_icon := load("res://assets/textures/lucide/palette.svg") as Texture2D
+	var store_icon := load("res://assets/textures/lucide/shopping-cart.svg") as Texture2D
 	if not store_icon:
 		store_icon = load("res://assets/textures/lucide/sparkles.svg") as Texture2D
 	btn_shop.icon = store_icon
@@ -3553,3 +3528,141 @@ func _skip_intro_cinematic() -> void:
 	if is_instance_valid(_audio_manager) and is_instance_valid(_audio_manager.audio_player):
 		_audio_manager.audio_player.stop()
 	_end_intro_cinematic()
+
+func _setup_hanging_scroll() -> void:
+	var scroll = room_content.get_node_or_null("HangingScroll")
+	if scroll:
+		return
+		
+	scroll = PanelContainer.new()
+	scroll.name = "HangingScroll"
+	room_content.add_child(scroll)
+	room_content.move_child(scroll, 0) # Keep it in background
+	
+	# Frosted Glass Shader for Hanging Scroll
+	var blur_shader := Shader.new()
+	blur_shader.code = """
+	shader_type canvas_item;
+	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+	uniform float lod: hint_range(0.0, 5.0) = 2.0;
+	void fragment() {
+		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
+	}
+	"""
+	
+	var blur_rect := ColorRect.new()
+	blur_rect.name = "BlurBG"
+	blur_rect.material = ShaderMaterial.new()
+	blur_rect.material.shader = blur_shader
+	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	blur_rect.show_behind_parent = true
+	scroll.add_child(blur_rect)
+	
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.99, 0.98, 0.96, 0.65) # Warm cream glass
+	sb.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65)
+	sb.border_width_left = 3
+	sb.border_width_right = 3
+	sb.border_width_top = 3
+	sb.border_width_bottom = 3
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_left = 6
+	sb.corner_radius_bottom_right = 6
+	scroll.add_theme_stylebox_override("panel", sb)
+	
+	var margin := MarginContainer.new()
+	margin.name = "Margin"
+	margin.add_theme_constant_override("margin_left", 8)
+	margin.add_theme_constant_override("margin_right", 8)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	scroll.add_child(margin)
+	
+	var vbox := VBoxContainer.new()
+	vbox.name = "VBox"
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
+	margin.add_child(vbox)
+	
+	var lbl_music := Label.new()
+	lbl_music.name = "LblMusic"
+	lbl_music.text = "ÂM NHẠC"
+	lbl_music.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_music.add_theme_color_override("font_color", C_JADE)
+	if _font_title:
+		lbl_music.add_theme_font_override("font", _font_title)
+	vbox.add_child(lbl_music)
+	
+	var sep1 := HSeparator.new()
+	sep1.name = "Sep1"
+	sep1.modulate = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+	vbox.add_child(sep1)
+	
+	var lbl_trad := Label.new()
+	lbl_trad.name = "LblTrad"
+	lbl_trad.text = "TRUYỀN THỐNG"
+	lbl_trad.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_trad.add_theme_color_override("font_color", C_GOLD)
+	if _font_body_bold:
+		lbl_trad.add_theme_font_override("font", _font_body_bold)
+	vbox.add_child(lbl_trad)
+	
+	var lbl_viet := Label.new()
+	lbl_viet.name = "LblViet"
+	lbl_viet.text = "VIỆT NAM"
+	lbl_viet.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_viet.add_theme_color_override("font_color", C_JADE)
+	if _font_title:
+		lbl_viet.add_theme_font_override("font", _font_title)
+	vbox.add_child(lbl_viet)
+	
+	var sep2 := HSeparator.new()
+	sep2.name = "Sep2"
+	sep2.modulate = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+	vbox.add_child(sep2)
+	
+	var seal_ctrl := Control.new()
+	seal_ctrl.name = "Seal"
+	seal_ctrl.custom_minimum_size = Vector2(32, 32)
+	seal_ctrl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	seal_ctrl.draw.connect(func() -> void:
+		var seal_r := seal_ctrl.size.x / 2.0
+		var seal_pos := Vector2(seal_r, seal_r)
+		seal_ctrl.draw_circle(seal_pos, seal_r, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
+		seal_ctrl.draw_arc(seal_pos, seal_r - 2.0, 0, TAU, 32, C_RED_SON, 1.5)
+		seal_ctrl.draw_circle(seal_pos, 4.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
+	)
+	vbox.add_child(seal_ctrl)
+
+func _update_hanging_scroll_layout() -> void:
+	var scroll = room_content.get_node_or_null("HangingScroll")
+	if not scroll:
+		return
+	
+	var scroll_w := 160.0 if _is_mobile_layout else 220.0
+	var scroll_h := 160.0 if _is_mobile_layout else 210.0
+	var scroll_x := (1200.0 - scroll_w) / 2.0
+	var scroll_y := 12.0
+	
+	scroll.position = Vector2(scroll_x, scroll_y)
+	scroll.size = Vector2(scroll_w, scroll_h)
+	scroll.custom_minimum_size = Vector2(scroll_w, scroll_h)
+	
+	var vbox = scroll.get_node("Margin/VBox")
+	var lbl_music = vbox.get_node("LblMusic") as Label
+	var lbl_trad = vbox.get_node("LblTrad") as Label
+	var lbl_viet = vbox.get_node("LblViet") as Label
+	var seal = vbox.get_node("Seal") as Control
+	
+	if _is_mobile_layout:
+		lbl_music.add_theme_font_size_override("font_size", 16)
+		lbl_trad.add_theme_font_size_override("font_size", 11)
+		lbl_viet.add_theme_font_size_override("font_size", 14)
+		seal.custom_minimum_size = Vector2(28, 28)
+	else:
+		lbl_music.add_theme_font_size_override("font_size", 22)
+		lbl_trad.add_theme_font_size_override("font_size", 13)
+		lbl_viet.add_theme_font_size_override("font_size", 17)
+		seal.custom_minimum_size = Vector2(34, 34)
