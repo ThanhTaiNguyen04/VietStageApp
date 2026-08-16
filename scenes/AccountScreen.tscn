@@ -41,11 +41,11 @@ layout_mode = 1
 anchors_preset = 0
 offset_left = 24
 offset_top = 24
-offset_right = 104
-offset_bottom = 104
+offset_right = 76
+offset_bottom = 76
 
 [node name="BackButton" type="Button" parent="FloatingMargin"]
-custom_minimum_size = Vector2(80, 80)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
