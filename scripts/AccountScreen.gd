@@ -75,6 +75,11 @@ func _ready() -> void:
 	_api_client = ApiClientScript.new()
 	add_child(_api_client)
 	_build_theme()
+	_populate_from_local_cache()
+	_render_summary(_get_local_summary())
+	state_card.visible = false
+	profile_card.visible = true
+	
 	back_button.pressed.connect(_go_back)
 	retry_button.pressed.connect(_refresh_from_api)
 	avatar_request.request_completed.connect(_on_avatar_loaded)
@@ -82,7 +87,7 @@ func _ready() -> void:
 	_apply_responsive_layout()
 	
 	# Bouncy hover/press micro-interactions for the floating back button
-	back_button.pivot_offset = Vector2(26, 26)
+	back_button.pivot_offset = Vector2(28, 28)
 	back_button.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(back_button, "scale", Vector2(1.12, 1.12), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
@@ -172,13 +177,13 @@ func _render_profile() -> void:
 	name_label.text = _value_or_dash(_profile.get("fullName"))
 	role_label.text = _role_name(str(_profile.get("role", "")))
 	var active: bool = bool(_profile.get("active", false))
-	status_label.text = "Hoạt động" if active else "Tạm khóa"
+	status_label.text = "Đang hoạt động" if active else "Tạm khóa"
 	
 	var status_bg := C_PASTEL_GREEN_BG if active else C_PASTEL_RED_BG
 	var status_fg := C_PASTEL_GREEN_TXT if active else C_PASTEL_RED_TXT
 	status_dot.color = status_fg
 	status_label.add_theme_color_override("font_color", status_fg)
-	status_pill.add_theme_stylebox_override("panel", _flat(status_bg, C_BORDER, 14, 1))
+	status_pill.add_theme_stylebox_override("panel", _flat(status_bg, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 12, 1))
 
 	_clear_children(info_grid)
 	for field: Array in INFO_FIELDS:
@@ -196,54 +201,80 @@ func _render_summary(summary: Dictionary) -> void:
 	_clear_children(stats_grid)
 	for field: Array in STAT_FIELDS:
 		var raw_value: Variant = summary.get(field[0], null)
-		var value := "—" if raw_value == null else _format_number(int(raw_value))
+		var field_key := str(field[0])
+		var value := _format_summary_value(field_key, raw_value)
 		stats_grid.add_child(_make_data_card(value, str(field[1]), str(field[2]), field[3], field[4], true))
 	progress_state.visible = false
 	stats_grid.visible = true
 
 
+func _format_summary_value(field_key: String, raw_value: Variant) -> String:
+	if raw_value == null:
+		return "—"
+	if field_key == "adaptive_difficulty":
+		return str(raw_value)
+	if raw_value is int:
+		return _format_number(raw_value)
+	if raw_value is float:
+		return _format_number(int(raw_value))
+	var text := str(raw_value).strip_edges()
+	if text.is_valid_int():
+		return _format_number(text.to_int())
+	return text if not text.is_empty() else "—"
+
+
 func _make_data_card(value: String, caption: String, icon_name: String, accent: Color, bg_pastel: Color, compact: bool) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 92 if compact else 96)
+	panel.custom_minimum_size = Vector2(0, 68 if compact else 74)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", _data_card_style(accent))
+	
 	var margin := MarginContainer.new()
 	for side: String in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
+		margin.add_theme_constant_override("margin_" + side, 12)
 	for side: String in ["top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 14)
+		margin.add_theme_constant_override("margin_" + side, 8)
 	panel.add_child(margin)
+	
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 10)
 	margin.add_child(row)
+	
 	var icon_wrap := PanelContainer.new()
-	icon_wrap.custom_minimum_size = Vector2(46, 46)
+	icon_wrap.custom_minimum_size = Vector2(38, 38)
 	icon_wrap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	icon_wrap.add_theme_stylebox_override("panel", _flat(bg_pastel, Color.TRANSPARENT, 12, 0))
+	icon_wrap.add_theme_stylebox_override("panel", _flat(bg_pastel, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.25), 10, 1))
 	row.add_child(icon_wrap)
+	
 	var icon := TextureRect.new()
 	icon.texture = _icon(icon_name)
 	icon.modulate = accent
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.custom_minimum_size = Vector2(20, 20)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon_wrap.add_child(icon)
+	
 	var labels := VBoxContainer.new()
 	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	labels.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	labels.add_theme_constant_override("separation", 3)
+	labels.add_theme_constant_override("separation", 1)
 	row.add_child(labels)
+	
 	var value_label := Label.new()
 	value_label.text = value
 	value_label.tooltip_text = value
 	value_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	value_label.add_theme_font_override("font", _font_bold())
-	value_label.add_theme_font_size_override("font_size", 22 if compact else 18)
-	value_label.add_theme_color_override("font_color", C_TEXT_MAIN)
+	value_label.add_theme_font_size_override("font_size", 16 if compact else 15)
+	value_label.add_theme_color_override("font_color", C_INK)
 	labels.add_child(value_label)
+	
 	var caption_label := Label.new()
 	caption_label.text = caption
 	caption_label.add_theme_font_override("font", _font_regular())
-	caption_label.add_theme_font_size_override("font_size", 13)
+	caption_label.add_theme_font_size_override("font_size", 12)
 	caption_label.add_theme_color_override("font_color", C_TEXT_MUTED)
 	labels.add_child(caption_label)
 	return panel
@@ -302,50 +333,60 @@ func _on_avatar_loaded(_result: int, response_code: int, headers: PackedStringAr
 
 func _build_theme() -> void:
 	profile_card.add_theme_stylebox_override("panel", _profile_style())
-	state_card.add_theme_stylebox_override("panel", _flat(Color(1, 0.99, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
-	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(120.0))
+	state_card.add_theme_stylebox_override("panel", _flat(Color(0.99, 0.98, 0.96, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1))
+	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(86.0))
 	title_label.add_theme_font_override("font", _font_display())
-	title_label.add_theme_color_override("font_color", C_TEXT_MAIN)
+	title_label.add_theme_color_override("font_color", C_JADE)
 	name_label.add_theme_font_override("font", _font_display())
-	name_label.add_theme_color_override("font_color", C_TEXT_MAIN)
+	name_label.add_theme_color_override("font_color", C_JADE)
 	for label: Label in [account_title, learning_title]:
 		label.add_theme_font_override("font", _font_bold())
-		label.add_theme_color_override("font_color", C_TEXT_MAIN)
+		label.add_theme_color_override("font_color", C_JADE)
+		label.add_theme_font_size_override("font_size", 15)
 	for label: Label in [role_label, status_label, state_label, progress_state]:
 		label.add_theme_font_override("font", _font_regular())
 	role_label.add_theme_color_override("font_color", C_TEXT_MUTED)
+	role_label.add_theme_font_size_override("font_size", 13)
 	state_label.add_theme_color_override("font_color", C_JADE)
 	progress_state.add_theme_color_override("font_color", C_TEXT_MUTED)
 	state_icon.texture = _icon("hourglass")
 	state_icon.modulate = C_GOLD
-	_style_back_button(back_button, C_TEXT_MAIN)
-	_set_icon_button(retry_button, "rotate-cw", C_TEXT_MAIN)
+	_style_back_button(back_button, C_JADE)
+	_set_icon_button(retry_button, "rotate-cw", C_JADE)
 
 
 func _apply_responsive_layout() -> void:
-	var width := get_viewport_rect().size.x
+	var viewport_sz := get_viewport_rect().size
+	var width := viewport_sz.x
+	var height := viewport_sz.y
 	var mobile := width < 720.0 or OS.has_feature("mobile") or OS.has_feature("android")
 	var portrait_layout := width < 600.0
-	var side := 12 if mobile else 30
-	content.custom_minimum_size.x = minf(780.0, maxf(292.0, width - float(side * 2)))
-	content_margin.add_theme_constant_override("margin_left", side)
-	content_margin.add_theme_constant_override("margin_right", side)
-	content_margin.add_theme_constant_override("margin_top", 112 if mobile else 120) # Push content below floating back button
+	
+	# Determine optimum card width and margins so the whole card fits comfortably in view
+	var target_w := minf(860.0, maxf(300.0, width - 64.0))
+	content.custom_minimum_size.x = target_w
+	content_margin.add_theme_constant_override("margin_left", 24 if mobile else 32)
+	content_margin.add_theme_constant_override("margin_right", 24 if mobile else 32)
+	content_margin.add_theme_constant_override("margin_top", 12 if height < 700.0 else 24)
+	content_margin.add_theme_constant_override("margin_bottom", 12 if height < 700.0 else 24)
+	
 	card_margin.add_theme_constant_override("margin_left", 16 if mobile else 28)
 	card_margin.add_theme_constant_override("margin_right", 16 if mobile else 28)
-	card_margin.add_theme_constant_override("margin_top", 20 if mobile else 26)
-	card_margin.add_theme_constant_override("margin_bottom", 22 if mobile else 28)
+	card_margin.add_theme_constant_override("margin_top", 14 if height < 700.0 else 20)
+	card_margin.add_theme_constant_override("margin_bottom", 14 if height < 700.0 else 20)
+	
 	hero.vertical = portrait_layout
 	hero.alignment = BoxContainer.ALIGNMENT_CENTER if portrait_layout else BoxContainer.ALIGNMENT_BEGIN
 	identity.alignment = BoxContainer.ALIGNMENT_CENTER
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if portrait_layout else HORIZONTAL_ALIGNMENT_LEFT
 	role_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if portrait_layout else HORIZONTAL_ALIGNMENT_LEFT
 	status_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if portrait_layout else Control.SIZE_SHRINK_BEGIN
-	info_grid.columns = 1 if width < 440.0 else 2
-	stats_grid.columns = 1 if width < 340.0 else (2 if width < 660.0 else 3)
-	title_label.add_theme_font_size_override("font_size", 30 if mobile else 40)
-	name_label.add_theme_font_size_override("font_size", 28 if mobile else 34)
-	var avatar_size := 104.0 if mobile else 120.0
+	
+	info_grid.columns = 1 if width < 460.0 else 2
+	stats_grid.columns = 1 if width < 360.0 else (2 if width < 660.0 else 3)
+	
+	name_label.add_theme_font_size_override("font_size", 22 if mobile else 26)
+	var avatar_size := 76.0 if (mobile or height < 700.0) else 86.0
 	avatar_frame.custom_minimum_size = Vector2(avatar_size, avatar_size)
 	avatar_frame.add_theme_stylebox_override("panel", _avatar_style(avatar_size))
 
@@ -416,16 +457,23 @@ func _clear_children(parent: Node) -> void:
 
 
 func _style_back_button(button: Button, color: Color) -> void:
-	button.icon = _icon("arrow-left")
+	button.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.add_theme_color_override("icon_normal_color", C_JADE)
 	button.add_theme_color_override("icon_hover_color", C_GOLD)
 	button.add_theme_color_override("icon_pressed_color", C_JADE)
 	button.add_theme_color_override("icon_focus_color", C_JADE)
-	button.add_theme_constant_override("icon_max_width", 32)
+	button.add_theme_constant_override("icon_max_width", 26)
 
-	var normal_style := _flat(Color(0.97, 0.95, 0.91, 0.92), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 24, 2)
-	normal_style.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
+	var normal_style := StyleBoxFlat.new()
+	normal_style.bg_color = Color(0.97, 0.95, 0.91, 0.92) # Lacquer warm ivory #F3EFE3
+	normal_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+	normal_style.border_width_left = 2; normal_style.border_width_right = 2
+	normal_style.border_width_top = 2; normal_style.border_width_bottom = 2
+	normal_style.corner_radius_top_left = 28; normal_style.corner_radius_top_right = 28
+	normal_style.corner_radius_bottom_left = 28; normal_style.corner_radius_bottom_right = 28
+	normal_style.shadow_color = Color(0.13, 0.08, 0.05, 0.14)
 	normal_style.shadow_size = 8
 	normal_style.shadow_offset = Vector2(0, 3)
 
@@ -487,9 +535,15 @@ func _font_regular() -> Font:
 
 
 func _profile_style() -> StyleBoxFlat:
-	var style := _flat(Color(0.99, 0.98, 0.96, 0.94), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45), 24, 2)
-	style.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
-	style.shadow_size = 18
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.99, 0.98, 0.96, 0.95) # Warm lacquer ivory #FAF8F5
+	style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45) # Soft gold border
+	style.border_width_left = 2; style.border_width_right = 2
+	style.border_width_top = 2; style.border_width_bottom = 2
+	style.corner_radius_top_left = 24; style.corner_radius_top_right = 24
+	style.corner_radius_bottom_left = 24; style.corner_radius_bottom_right = 24
+	style.shadow_color = Color(0.13, 0.08, 0.05, 0.16)
+	style.shadow_size = 20
 	style.shadow_offset = Vector2(0, 6)
 	return style
 
@@ -503,9 +557,15 @@ func _avatar_style(size: float = 104.0) -> StyleBoxFlat:
 
 
 func _data_card_style(accent: Color) -> StyleBoxFlat:
-	var style := _flat(Color(0.97, 0.96, 0.93, 0.90), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16, 1)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.97, 0.95, 0.92, 0.92) # Soft warm ivory
+	style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	style.border_width_left = 1; style.border_width_right = 1
+	style.border_width_top = 1; style.border_width_bottom = 1
+	style.corner_radius_top_left = 14; style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14; style.corner_radius_bottom_right = 14
 	style.shadow_color = Color(0.13, 0.08, 0.05, 0.06)
-	style.shadow_size = 6
+	style.shadow_size = 4
 	style.shadow_offset = Vector2(0, 2)
 	return style
 
