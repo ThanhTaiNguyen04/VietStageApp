@@ -73,7 +73,14 @@ var _instrument_gate_silence_elapsed := 0.0
 var _instrument_attack_candidate_active := false
 var _instrument_attack_candidate := PackedFloat32Array()
 var _instrument_last_candidate_msec := -1000
+var _instrument_timbre_attempts := 0
+var _instrument_next_analysis_size := 4096
+var _instrument_last_rejection_reason := ""
 const INSTRUMENT_ATTACK_ANALYSIS_SAMPLES := 4096
+const INSTRUMENT_TIMBRE_RETRY_SAMPLES := 512
+const INSTRUMENT_TIMBRE_MAX_WINDOWS := 3
+const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
+	+ INSTRUMENT_TIMBRE_RETRY_SAMPLES * (INSTRUMENT_TIMBRE_MAX_WINDOWS - 1)
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
@@ -363,14 +370,16 @@ func _process(delta: float) -> void:
 	# Step 5: Stabilization
 	if raw_pitch > 0.0:
 		_update_reliable_pitch(raw_pitch)
-	if profile_plucked and not instrument_gate_open:
-		# Do not expose stable vocal/noise pitch while no valid đàn-tranh attack
-		# has opened the shared instrument gate.
+	if profile_plucked and not instrument_gate_open \
+			and not _instrument_attack_candidate_active:
+		# A final timbre rejection may clear pitch. While a candidate is still
+		# being retried, preserve its stable pitch evidence for the next window.
 		_clear_pitch_detection()
 	
 	# Step 6: Note Mapping (Standardised core note mapping using InstrumentPitchProfile)
 	var mapped_note := {}
-	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null:
+	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null \
+			and (not profile_plucked or instrument_gate_open):
 		mapped_note = pitch_profile.match_pitch(current_pitch)
 	if instrument_gate_open and _instrument_gate_string_index < 0 \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
@@ -521,7 +530,8 @@ func _estimate_pitch(samples: PackedFloat32Array) -> float:
 
 func _handle_silence(delta: float) -> void:
 	_time_since_last_pitch += delta
-	_clear_pitch_detection()
+	if not _instrument_attack_candidate_active:
+		_clear_pitch_detection()
 	current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 	current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 	if instrument_gate_open:
@@ -687,6 +697,9 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 		_instrument_attack_candidate_active = true
 		var candidate_start := clampi(_last_onset_sample_offset, 0, samples.size())
 		_instrument_attack_candidate = samples.slice(candidate_start)
+		_instrument_timbre_attempts = 0
+		_instrument_next_analysis_size = INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
+		_instrument_last_rejection_reason = ""
 		_instrument_last_candidate_msec = now_msec
 		instrument_gate_open = false
 		current_instrument_confidence = 0.0
@@ -697,20 +710,27 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 
 	if not _instrument_attack_candidate_active:
 		return
-	if _instrument_attack_candidate.size() > INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
+	if _instrument_attack_candidate.size() > INSTRUMENT_ATTACK_MAX_SAMPLES:
 		_instrument_attack_candidate = _instrument_attack_candidate.slice(
-			0, INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
+			0, INSTRUMENT_ATTACK_MAX_SAMPLES
 		)
-	if _instrument_attack_candidate.size() < INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
+	if _instrument_attack_candidate.size() < _instrument_next_analysis_size:
 		return
 
-	var classification := analyze_dan_tranh_sound(
-		_instrument_attack_candidate, AudioServer.get_mix_rate()
+	var analysis_window := _instrument_attack_candidate.slice(
+		0, _instrument_next_analysis_size
 	)
-	_instrument_attack_candidate_active = false
-	_instrument_attack_candidate.clear()
-	current_instrument_confidence = float(classification.get("confidence", 0.0))
+	var classification := analyze_dan_tranh_sound(
+		analysis_window, AudioServer.get_mix_rate()
+	)
+	_instrument_timbre_attempts += 1
+	current_instrument_confidence = maxf(
+		current_instrument_confidence,
+		float(classification.get("confidence", 0.0))
+	)
 	if classification.get("accepted", false):
+		_instrument_attack_candidate_active = false
+		_instrument_attack_candidate.clear()
 		instrument_gate_open = true
 		_instrument_gate_generation += 1
 		_instrument_gate_string_index = -1
@@ -721,6 +741,15 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 			_rapid_attack_pending = true
 			_rapid_attack_pending_elapsed = 0.0
 	else:
+		_instrument_last_rejection_reason = str(classification.get("reason", "unknown"))
+		if _instrument_timbre_attempts < INSTRUMENT_TIMBRE_MAX_WINDOWS:
+			# Keep both pitch evidence and the original transient. The next window
+			# adds more decay samples instead of judging the same 4096 samples again.
+			_instrument_next_analysis_size = mini(
+				INSTRUMENT_ATTACK_MAX_SAMPLES,
+				_instrument_next_analysis_size + INSTRUMENT_TIMBRE_RETRY_SAMPLES
+			)
+			return
 		_close_instrument_gate()
 		_clear_pitch_detection()
 
@@ -734,6 +763,8 @@ func _close_instrument_gate() -> void:
 	_instrument_gate_silence_elapsed = 0.0
 	_instrument_attack_candidate_active = false
 	_instrument_attack_candidate.clear()
+	_instrument_timbre_attempts = 0
+	_instrument_next_analysis_size = INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 	_rapid_attack_pending = false
 	_rapid_attack_pending_elapsed = 0.0
 

@@ -142,10 +142,13 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		if raw_pitch > 0.0:
 			analyzer._update_reliable_pitch(raw_pitch)
-		if profile_plucked and not analyzer.has_recent_dan_tranh_attack():
+		if profile_plucked and not analyzer.has_recent_dan_tranh_attack() \
+				and not analyzer._instrument_attack_candidate_active:
 			analyzer._clear_pitch_detection()
 
-		if analyzer.current_pitch_is_reliable and analyzer.current_pitch > 0.0 and analyzer.pitch_profile != null:
+		if analyzer.current_pitch_is_reliable and analyzer.current_pitch > 0.0 \
+				and analyzer.pitch_profile != null \
+				and (not profile_plucked or analyzer.has_recent_dan_tranh_attack()):
 			reliable_frames += 1
 			var mapped: Dictionary = analyzer.pitch_profile.match_pitch(analyzer.current_pitch)
 			if mapped.get("is_match", false):
