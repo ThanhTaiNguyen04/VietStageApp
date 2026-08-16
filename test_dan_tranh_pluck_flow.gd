@@ -327,7 +327,8 @@ func _init() -> void:
 		"instrument_confidence": 82.0,
 		"attack_generation": 10,
 		"attack_time_msec": 1000,
-		"string_index": 16
+		"string_index": 16,
+		"note_name": "La4"
 	}
 	if not lesson._is_validated_dan_tranh_rapid_attack(validated_event):
 		failures.append("Á loại nhầm tiếng gảy đã qua bộ lọc tiếng đàn")
@@ -335,12 +336,28 @@ func _init() -> void:
 	unfiltered_event["instrument_validated"] = false
 	if lesson._is_validated_dan_tranh_rapid_attack(unfiltered_event):
 		failures.append("Á nhận sự kiện chưa qua bộ lọc tiếng đàn")
+	var inconsistent_string_event := validated_event.duplicate()
+	inconsistent_string_event["note_name"] = "Sol4"
+	if lesson._is_validated_dan_tranh_rapid_attack(inconsistent_string_event):
+		failures.append("Á/Vê nhận sự kiện có tên nốt không khớp dây vật lý")
+	var zero_confidence_event := validated_event.duplicate()
+	zero_confidence_event["instrument_confidence"] = 0.0
+	if lesson._is_validated_dan_tranh_rapid_attack(zero_confidence_event):
+		failures.append("Á/Vê nhận sự kiện tiếng đàn có độ tin cậy bằng 0")
+	var stale_generation_event := validated_event.duplicate()
+	stale_generation_event["attack_generation"] = 0
+	if lesson._is_validated_dan_tranh_rapid_attack(stale_generation_event):
+		failures.append("Á/Vê nhận sự kiện không có thế hệ tấn công hợp lệ")
 
 	var down_strings: Array[int] = [16, 14, 12, 10, 8, 6, 4]
 	var down_times: Array[float] = [1.00, 1.12, 1.24, 1.36, 1.48, 1.60, 1.72]
 	var down_result: Dictionary = lesson._analyze_glissando_gesture(down_strings, down_times, "down")
 	if not down_result.get("success", false):
 		failures.append("Á xuống hợp lệ không vượt qua đủ dây/phạm vi/hướng/liên tục")
+	var up_strings := down_strings.duplicate()
+	up_strings.reverse()
+	if not lesson._analyze_glissando_gesture(up_strings, down_times, "up").get("success", false):
+		failures.append("Á lên hợp lệ không vượt qua đủ dây/phạm vi/hướng/liên tục")
 
 	var too_few_strings: Array[int] = [16, 13, 10, 7, 4]
 	var too_few_times: Array[float] = [1.00, 1.12, 1.24, 1.36, 1.48]
@@ -451,6 +468,47 @@ func _init() -> void:
 	)
 	if wrong_attack_result.get("success", false) or wrong_attack_result.get("correct_strings", true):
 		failures.append("Vê vẫn hoàn thành sau một lần tấn công sai dây")
+	var invalid_mode_result: Dictionary = lesson._analyze_tremolo_sequence(
+		tremolo_strings, tremolo_times, tremolo_generations, "unknown", allowed_single, 0
+	)
+	if invalid_mode_result.get("success", false):
+		failures.append("Vê chấp nhận chế độ kỹ thuật không hợp lệ")
+	var duplicated_octave_targets: Array[int] = [2, 2]
+	var duplicated_target_result: Dictionary = lesson._analyze_tremolo_sequence(
+		octave_strings,
+		tremolo_times,
+		tremolo_generations,
+		"octave",
+		duplicated_octave_targets,
+		0
+	)
+	if duplicated_target_result.get("success", false):
+		failures.append("Vê quãng tám chấp nhận hai mục tiêu trùng cùng một dây")
+	var too_fast_strings: Array[int] = []
+	var too_fast_times: Array[float] = []
+	var too_fast_generations: Array[int] = []
+	for i in 33:
+		too_fast_strings.append(2)
+		too_fast_times.append(5.0 + float(i) * 0.07)
+		too_fast_generations.append(100 + i)
+	var too_fast_result: Dictionary = lesson._analyze_tremolo_sequence(
+		too_fast_strings, too_fast_times, too_fast_generations, "single", allowed_single, 0
+	)
+	if too_fast_result.get("success", false) or float(too_fast_result.get("rate", 0.0)) <= 13.0:
+		failures.append("Vê vẫn đúng khi tốc độ vượt ngưỡng rõ tiếng")
+	var unbalanced_octave_strings: Array[int] = []
+	for i in tremolo_times.size():
+		unbalanced_octave_strings.append(2 if i < 9 else 7)
+	var unbalanced_octave_result: Dictionary = lesson._analyze_tremolo_sequence(
+		unbalanced_octave_strings,
+		tremolo_times,
+		tremolo_generations,
+		"octave",
+		allowed_octave,
+		0
+	)
+	if unbalanced_octave_result.get("success", false):
+		failures.append("Vê quãng tám vẫn đúng khi hai dây không được gảy luân phiên")
 	lesson.free()
 
 	if failures.is_empty():

@@ -34,6 +34,30 @@ func _init() -> void:
 	if lesson._is_vibrato_source_attack_valid(vocal_without_pluck, "Sol2"):
 		failures.append("Sai: giọng ngân không có onset đàn vẫn mở lượt Rung")
 
+	var no_generation := valid_sol_attack.duplicate()
+	no_generation["generation"] = 0
+	if lesson._is_vibrato_source_attack_valid(no_generation, "Sol2"):
+		failures.append("Sai: lượt Rung được mở khi không có generation tiếng gảy hợp lệ")
+	var no_confidence := valid_sol_attack.duplicate()
+	no_confidence["confidence"] = 0.0
+	if lesson._is_vibrato_source_attack_valid(no_confidence, "Sol2"):
+		failures.append("Sai: lượt Rung được mở khi bộ lọc tiếng đàn có độ tin cậy bằng 0")
+	var mismatched_name := valid_sol_attack.duplicate()
+	mismatched_name["note_name"] = "La2"
+	if lesson._is_vibrato_source_attack_valid(mismatched_name, "Sol2"):
+		failures.append("Sai: tên nốt không khớp vẫn mở lượt Rung trên dây Sol2")
+
+	for target_note in lesson.VIBRATO_NOTES:
+		var target_identity := {
+			"active": true,
+			"string_index": int(lesson.NOTE_TO_STRING[target_note]),
+			"note_name": target_note,
+			"generation": 30,
+			"confidence": 0.90
+		}
+		if not lesson._is_vibrato_source_attack_valid(target_identity, target_note):
+			failures.append("Không mở được lượt Rung hợp lệ cho nốt %s" % target_note)
+
 	if not lesson._is_vibrato_contour_session_valid(valid_sol_attack, "Sol2", 21):
 		failures.append("Không theo dõi được đúng dây và đúng lần gảy ban đầu")
 	if lesson._is_vibrato_contour_session_valid(valid_sol_attack, "Sol2", 20):
@@ -51,6 +75,18 @@ func _init() -> void:
 	var too_short := _make_vibrato(22.0, 20.0, 5.0, 0.70)
 	if lesson._analyze_vibrato_cents(too_short).get("detected", false):
 		failures.append("Sai: rung chưa đủ thời gian vẫn được hoàn thành")
+	var steady_pitch := _make_vibrato(0.0, 0.0, 5.0, 1.20)
+	if lesson._analyze_vibrato_cents(steady_pitch).get("detected", false):
+		failures.append("Sai: cao độ giữ nguyên vẫn được tính là kỹ thuật Rung")
+	var too_slow := _make_vibrato(22.0, 20.0, 2.0, 1.50)
+	if lesson._analyze_vibrato_cents(too_slow).get("detected", false):
+		failures.append("Sai: dao động quá chậm vẫn được tính là kỹ thuật Rung")
+	var too_fast := _make_vibrato(22.0, 20.0, 11.0, 1.20)
+	if lesson._analyze_vibrato_cents(too_fast).get("detected", false):
+		failures.append("Sai: dao động quá nhanh vẫn được tính là kỹ thuật Rung")
+	var too_deep := _make_vibrato(80.0, 80.0, 5.0, 1.20)
+	if lesson._analyze_vibrato_cents(too_deep).get("detected", false):
+		failures.append("Sai: rung quá sâu vượt vùng cao độ đàn vẫn được chấp nhận")
 
 	if not lesson._is_vibrato_added_sound_level(-31.0, -40.0, 0.35):
 		failures.append("Không phát hiện giọng hoặc âm mới chồng lên đuôi tiếng đàn")

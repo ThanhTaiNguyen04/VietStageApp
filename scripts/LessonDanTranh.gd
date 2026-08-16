@@ -141,6 +141,8 @@ const VIBRATO_MAX_SIGNAL_GAP := 0.16
 const VIBRATO_ADDED_SOUND_RISE_DB := 8.0
 const VIBRATO_ADDED_SOUND_HOLD_SEC := 0.10
 const VIBRATO_MIN_DURATION_SEC := 0.85
+const VIBRATO_MAX_RAW_UPWARD_CENTS := 150.0
+const VIBRATO_MIN_RAW_CENTS := -40.0
 var press_sheet_hud: Control
 var press_instruction_label: Label
 var press_status_label: Label
@@ -2490,7 +2492,8 @@ func _is_validated_dan_tranh_rapid_attack(note: Dictionary) -> bool:
 		and float(note.get("instrument_confidence", 0.0)) > 0.0 \
 		and int(note.get("attack_generation", -1)) > 0 \
 		and int(note.get("attack_time_msec", 0)) > 0 \
-		and string_idx >= 0 and string_idx < ALL_17_NOTES.size()
+		and string_idx >= 0 and string_idx < ALL_17_NOTES.size() \
+		and str(note.get("note_name", "")) == ALL_17_NOTES[string_idx]
 
 func _append_glissando_detection(
 	string_idx: int,
@@ -3039,18 +3042,24 @@ func _get_current_technique_attack_generation() -> int:
 
 
 func _is_press_source_attack_valid(identity: Dictionary, source: String) -> bool:
-	if not bool(identity.get("active", false)):
-		return false
-	var expected_string := int(NOTE_TO_STRING.get(source, -1))
-	return expected_string >= 0 \
-		and int(identity.get("string_index", -1)) == expected_string \
-		and str(identity.get("note_name", "")) == source
+	return _is_valid_technique_source_attack(identity, source)
 
 
 func _is_press_contour_session_valid(identity: Dictionary, source: String, generation: int) -> bool:
-	return generation >= 0 \
+	return generation > 0 \
 		and int(identity.get("generation", -1)) == generation \
 		and _is_press_source_attack_valid(identity, source)
+
+
+func _is_valid_technique_source_attack(identity: Dictionary, expected_note: String) -> bool:
+	if not bool(identity.get("active", false)) \
+			or int(identity.get("generation", -1)) <= 0 \
+			or float(identity.get("confidence", 0.0)) <= 0.0:
+		return false
+	var expected_string := int(NOTE_TO_STRING.get(expected_note, -1))
+	return expected_string >= 0 \
+		and int(identity.get("string_index", -1)) == expected_string \
+		and str(identity.get("note_name", "")) == expected_note
 
 
 func _is_press_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
@@ -3391,16 +3400,11 @@ func _process_vibrato_practice(delta: float) -> void:
 
 
 func _is_vibrato_source_attack_valid(identity: Dictionary, target_note: String) -> bool:
-	if not bool(identity.get("active", false)):
-		return false
-	var expected_string := int(NOTE_TO_STRING.get(target_note, -1))
-	return expected_string >= 0 \
-		and int(identity.get("string_index", -1)) == expected_string \
-		and str(identity.get("note_name", "")) == target_note
+	return _is_valid_technique_source_attack(identity, target_note)
 
 
 func _is_vibrato_contour_session_valid(identity: Dictionary, target_note: String, generation: int) -> bool:
-	return generation >= 0 \
+	return generation > 0 \
 		and int(identity.get("generation", -1)) == generation \
 		and _is_vibrato_source_attack_valid(identity, target_note)
 
@@ -3432,10 +3436,17 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 		"low_cents": 0.0,
 		"high_cents": 0.0,
 		"center_cents": 0.0,
+		"raw_low_cents": 0.0,
+		"raw_high_cents": 0.0,
 		"duration": 0.0
 	}
 	if history.size() < 24:
 		return result
+	var raw_low_cents := float(history[0])
+	var raw_high_cents := float(history[0])
+	for raw_cents in history:
+		raw_low_cents = minf(raw_low_cents, float(raw_cents))
+		raw_high_cents = maxf(raw_high_cents, float(raw_cents))
 	var smoothed: Array[float] = []
 	for i in range(history.size()):
 		var from_idx := maxi(0, i - 1)
@@ -3475,6 +3486,8 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	result["low_cents"] = low_cents
 	result["high_cents"] = high_cents
 	result["center_cents"] = center
+	result["raw_low_cents"] = raw_low_cents
+	result["raw_high_cents"] = raw_high_cents
 	result["duration"] = duration
 	# Left-hand đàn-tranh vibrato bends an open string mainly upward from its
 	# resting pitch. Symmetric modulation around the sung note is typical vocal
@@ -3485,6 +3498,8 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 		and depth >= 12.0 and depth <= 145.0 \
 		and low_cents >= -28.0 \
 		and high_cents >= 14.0 \
+		and raw_low_cents >= VIBRATO_MIN_RAW_CENTS \
+		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS \
 		and center >= maxf(5.0, depth * 0.12)
 	return result
 
@@ -3736,8 +3751,19 @@ func _analyze_tremolo_sequence(
 		"all_attacks_valid": false,
 		"correct_strings": false
 	}
+	if mode not in ["single", "octave"]:
+		return result
+	if (mode == "single" and allowed_strings.size() != 1) \
+			or (mode == "octave" and allowed_strings.size() != 2):
+		return result
+	var unique_allowed_strings: Dictionary = {}
+	for allowed_string in allowed_strings:
+		if allowed_string < 0 or allowed_string >= ALL_17_NOTES.size() \
+				or unique_allowed_strings.has(allowed_string):
+			return result
+		unique_allowed_strings[allowed_string] = true
 	if count == 0 or strings.size() != count or generations.size() != count \
-			or allowed_strings.is_empty():
+			or wrong_attacks < 0:
 		return result
 
 	var all_attacks_valid := true
