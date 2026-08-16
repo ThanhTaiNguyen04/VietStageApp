@@ -2670,18 +2670,20 @@ func _setup_hud_shop_button() -> void:
 	hud_hbox.add_child(star_badge)
 	
 	var badge_s := StyleBoxFlat.new()
-	badge_s.bg_color = Color(0.97, 0.95, 0.91, 0.85) # Elegant warm ivory
-	badge_s.border_color = Color(0.79, 0.60, 0.24, 0.5) # Soft gold border
+	badge_s.bg_color = Color(0.95, 0.93, 0.89, 0.92) # Lacquer warm ivory #F3EFE3
+	badge_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) # Soft gold border
 	badge_s.border_width_left = 2; badge_s.border_width_right = 2
 	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
 	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
 	badge_s.corner_radius_bottom_left = 24; badge_s.corner_radius_bottom_right = 24
+	badge_s.shadow_size = 6
+	badge_s.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
 	star_badge.add_theme_stylebox_override("panel", badge_s)
 	
 	var badge_margin := MarginContainer.new()
 	badge_margin.name = "Margin"
-	badge_margin.add_theme_constant_override("margin_left", 12)
-	badge_margin.add_theme_constant_override("margin_right", 12)
+	badge_margin.add_theme_constant_override("margin_left", 14)
+	badge_margin.add_theme_constant_override("margin_right", 14)
 	star_badge.add_child(badge_margin)
 	
 	var badge_label := Label.new()
@@ -2689,8 +2691,8 @@ func _setup_hud_shop_button() -> void:
 	badge_label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge_label.add_theme_font_size_override("font_size", 15)
-	badge_label.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12)) # Deep warm bronze-brown
+	badge_label.add_theme_font_size_override("font_size", 16)
+	badge_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_margin.add_child(badge_label)
@@ -2698,28 +2700,45 @@ func _setup_hud_shop_button() -> void:
 	# Create Shop Button
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = " Cửa Hàng"
-	btn_shop.icon = load("res://icons8/icons8-store-16.png") as Texture2D
-	btn_shop.expand_icon = false
+	btn_shop.text = " Cửa hàng"
+	var store_icon := load("res://assets/textures/lucide/palette.svg") as Texture2D
+	if not store_icon:
+		store_icon = load("res://assets/textures/lucide/sparkles.svg") as Texture2D
+	btn_shop.icon = store_icon
+	btn_shop.expand_icon = true
+	btn_shop.custom_minimum_size = Vector2(160, 48)
 	btn_shop.add_theme_font_size_override("font_size", 16)
 	if _font_body_bold:
 		btn_shop.add_theme_font_override("font", _font_body_bold)
-	btn_shop.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12))
-	btn_shop.add_theme_color_override("icon_normal_color", Color(0.25, 0.18, 0.12))
+	btn_shop.add_theme_color_override("font_color", C_JADE)
+	btn_shop.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn_shop.add_theme_color_override("font_pressed_color", C_JADE)
+	btn_shop.add_theme_color_override("icon_normal_color", C_JADE)
+	btn_shop.add_theme_color_override("icon_hover_color", C_GOLD)
+	btn_shop.add_theme_color_override("icon_pressed_color", C_JADE)
 	
 	var btn_s := StyleBoxFlat.new()
-	btn_s.bg_color = Color(0.97, 0.95, 0.91, 0.95)
-	btn_s.border_color = Color(0.79, 0.60, 0.24, 0.5)
+	btn_s.bg_color = Color(0.95, 0.93, 0.89, 0.92) # Lacquer warm ivory
+	btn_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
 	btn_s.border_width_left = 2; btn_s.border_width_right = 2
 	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
 	btn_s.corner_radius_top_left = 24; btn_s.corner_radius_top_right = 24
 	btn_s.corner_radius_bottom_left = 24; btn_s.corner_radius_bottom_right = 24
+	btn_s.shadow_size = 8
+	btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
 	btn_shop.add_theme_stylebox_override("normal", btn_s)
 	
-	var btn_h = btn_s.duplicate()
-	btn_h.bg_color = Color(1.0, 0.98, 0.95, 1.0)
+	var btn_h := btn_s.duplicate() as StyleBoxFlat
+	btn_h.bg_color = Color(1.0, 0.98, 0.94, 1.0)
+	btn_h.border_color = C_GOLD
 	btn_shop.add_theme_stylebox_override("hover", btn_h)
-	btn_shop.custom_minimum_size = Vector2(140, 48) if _is_mobile_layout else Vector2(160, 48)
+
+	var btn_p := btn_s.duplicate() as StyleBoxFlat
+	btn_p.bg_color = Color(0.90, 0.88, 0.84, 1.0)
+	btn_p.border_color = C_JADE
+	btn_shop.add_theme_stylebox_override("pressed", btn_p)
+	btn_shop.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
 	hud_hbox.add_child(btn_shop)
 	hud_hbox.move_child(btn_shop, 0)
 	
@@ -2950,14 +2969,27 @@ func _setup_shop_popup() -> void:
 	scroll_content.offset_bottom = -54
 	scroll_content.add_theme_constant_override("separation", 14)
 	
+	var title_hbox := HBoxContainer.new()
+	title_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	title_hbox.add_theme_constant_override("separation", 10)
+	scroll_content.add_child(title_hbox)
+	
+	var title_icon := TextureRect.new()
+	title_icon.texture = load("res://assets/textures/lucide/palette.svg") as Texture2D
+	title_icon.custom_minimum_size = Vector2(28, 28)
+	title_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title_icon.modulate = C_JADE
+	title_hbox.add_child(title_icon)
+
 	var title := Label.new()
-	title.text = "🎨 CỬA HÀNG TRANG TRÍ"
+	title.text = "CỬA HÀNG TRANG TRÍ"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", C_RED_SON)
+	title.add_theme_color_override("font_color", C_JADE)
 	if _font_title:
 		title.add_theme_font_override("font", _font_title)
-	scroll_content.add_child(title)
+	title_hbox.add_child(title)
 	
 	var stars_label := Label.new()
 	stars_label.name = "StarsLabel"
@@ -2986,9 +3018,9 @@ func _setup_shop_popup() -> void:
 	
 	var btn_close := Button.new()
 	btn_close.text = "ĐÓNG"
-	btn_close.custom_minimum_size = Vector2(180, 46)
+	btn_close.custom_minimum_size = Vector2(180, 44)
 	btn_close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_style_popup_button(btn_close, false)
+	_style_outline_btn(btn_close)
 	_make_btn_bouncy(btn_close)
 	scroll_content.add_child(btn_close)
 	
@@ -3076,14 +3108,23 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	var card := PanelContainer.new()
 	card.name = "Card_" + str(item.get("id"))
 	card.custom_minimum_size = Vector2(340, 150)
-	var sb := _flat_sb(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, true, 1.5)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.99, 0.98, 0.96, 0.96) # Clean warm ivory card
+	sb.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40) # Soft refined gold border
+	sb.border_width_left = 2; sb.border_width_right = 2
+	sb.border_width_top = 2; sb.border_width_bottom = 2
+	sb.corner_radius_top_left = 18; sb.corner_radius_top_right = 18
+	sb.corner_radius_bottom_left = 18; sb.corner_radius_bottom_right = 18
+	sb.shadow_size = 8
+	sb.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
+	sb.shadow_offset = Vector2(0, 3)
 	card.add_theme_stylebox_override("panel", sb)
 	
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
 	card.add_child(margin)
 	
 	var hbox := HBoxContainer.new()
@@ -3120,8 +3161,8 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	
 	var name_lbl := Label.new()
 	name_lbl.text = name
-	name_lbl.add_theme_font_size_override("font_size", 16)
-	name_lbl.add_theme_color_override("font_color", C_RED_DK)
+	name_lbl.add_theme_font_size_override("font_size", 17)
+	name_lbl.add_theme_color_override("font_color", C_JADE)
 	if _font_body_bold:
 		name_lbl.add_theme_font_override("font", _font_body_bold)
 	vbox.add_child(name_lbl)
@@ -3138,20 +3179,20 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	desc_lbl.text = desc
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	desc_lbl.add_theme_font_size_override("font_size", 12)
-	desc_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
+	desc_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.9))
 	if _font_body:
 		desc_lbl.add_theme_font_override("font", _font_body)
 	vbox.add_child(desc_lbl)
 	
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, 36)
+	btn.custom_minimum_size = Vector2(0, 38)
 	vbox.add_child(btn)
 	_make_btn_bouncy(btn)
 	
 	if not owned:
 		btn.text = "MỞ KHÓA"
 		if stars >= cost:
-			_style_popup_button(btn, true)
+			_style_primary_btn(btn)
 			btn.disabled = false
 		else:
 			_style_disabled_button(btn)
@@ -3161,24 +3202,89 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		var active = item.get("isEquipped", false)
 		if active:
 			btn.text = "CẤT ĐI 📦"
-			_style_popup_button(btn, false)
+			_style_outline_btn(btn)
 		else:
 			btn.text = "TRƯNG BÀY ✨"
-			_style_popup_button(btn, true)
+			_style_primary_btn(btn)
 			
 	btn.pressed.connect(_on_shop_action_pressed.bind(item, owned))
 	return card
 
+func _style_primary_btn(btn: Button) -> void:
+	var s_norm := StyleBoxFlat.new()
+	s_norm.bg_color = C_JADE
+	s_norm.border_color = C_GOLD
+	s_norm.border_width_left = 2; s_norm.border_width_right = 2
+	s_norm.border_width_top = 2; s_norm.border_width_bottom = 2
+	s_norm.corner_radius_top_left = 20; s_norm.corner_radius_top_right = 20
+	s_norm.corner_radius_bottom_left = 20; s_norm.corner_radius_bottom_right = 20
+	s_norm.shadow_size = 6
+	s_norm.shadow_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.35)
+	
+	var s_hov := s_norm.duplicate() as StyleBoxFlat
+	s_hov.bg_color = Color(0.18, 0.48, 0.32, 1.0)
+	s_hov.border_color = C_GOLD_LIGHT
+	
+	var s_prs := s_norm.duplicate() as StyleBoxFlat
+	s_prs.bg_color = Color(0.08, 0.25, 0.16, 1.0)
+	s_prs.border_color = C_GOLD
+	
+	btn.add_theme_stylebox_override("normal", s_norm)
+	btn.add_theme_stylebox_override("hover", s_hov)
+	btn.add_theme_stylebox_override("pressed", s_prs)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.add_theme_color_override("font_color", Color(0.99, 0.98, 0.95, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0, 1.0))
+	btn.add_theme_color_override("font_pressed_color", Color(0.90, 0.88, 0.84, 1.0))
+	btn.add_theme_font_size_override("font_size", 14)
+	if _font_body_bold:
+		btn.add_theme_font_override("font", _font_body_bold)
+	btn.remove_theme_stylebox_override("disabled")
+	btn.remove_theme_color_override("font_disabled_color")
+
+func _style_outline_btn(btn: Button) -> void:
+	var s_norm := StyleBoxFlat.new()
+	s_norm.bg_color = Color(0, 0, 0, 0)
+	s_norm.border_color = C_JADE
+	s_norm.border_width_left = 2; s_norm.border_width_right = 2
+	s_norm.border_width_top = 2; s_norm.border_width_bottom = 2
+	s_norm.corner_radius_top_left = 20; s_norm.corner_radius_top_right = 20
+	s_norm.corner_radius_bottom_left = 20; s_norm.corner_radius_bottom_right = 20
+	
+	var s_hov := s_norm.duplicate() as StyleBoxFlat
+	s_hov.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
+	s_hov.border_color = C_GOLD
+	
+	var s_prs := s_norm.duplicate() as StyleBoxFlat
+	s_prs.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.15)
+	s_prs.border_color = C_JADE
+	
+	btn.add_theme_stylebox_override("normal", s_norm)
+	btn.add_theme_stylebox_override("hover", s_hov)
+	btn.add_theme_stylebox_override("pressed", s_prs)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.add_theme_color_override("font_color", C_JADE)
+	btn.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn.add_theme_color_override("font_pressed_color", C_JADE)
+	btn.add_theme_font_size_override("font_size", 14)
+	if _font_body_bold:
+		btn.add_theme_font_override("font", _font_body_bold)
+	btn.remove_theme_stylebox_override("disabled")
+	btn.remove_theme_color_override("font_disabled_color")
+
 func _style_disabled_button(btn: Button) -> void:
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.16, 0.14, 0.12, 0.7) # Dark warm grey/brown
-	s.border_color = Color(0.30, 0.26, 0.22, 0.4) # Subtle dark brown border
+	s.bg_color = Color(0.92, 0.90, 0.86, 0.70) # Warm muted soft beige
+	s.border_color = Color(0.78, 0.75, 0.70, 0.50)
 	s.border_width_left = 2; s.border_width_right = 2
 	s.border_width_top = 2; s.border_width_bottom = 2
 	s.corner_radius_top_left = 20; s.corner_radius_top_right = 20
 	s.corner_radius_bottom_left = 20; s.corner_radius_bottom_right = 20
 	btn.add_theme_stylebox_override("disabled", s)
-	btn.add_theme_color_override("font_disabled_color", Color(0.43, 0.38, 0.33, 0.8)) # Grey text
+	btn.add_theme_color_override("font_disabled_color", Color(0.55, 0.50, 0.45, 0.7))
+	btn.add_theme_font_size_override("font_size", 14)
+	if _font_body_bold:
+		btn.add_theme_font_override("font", _font_body_bold)
 
 func _make_texture_transparent(tex: Texture2D) -> Texture2D:
 	if not tex: return null

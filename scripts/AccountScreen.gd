@@ -403,7 +403,7 @@ func _set_icon_button(button: Button, icon_name: String, color: Color) -> void:
 	button.icon = _icon(icon_name)
 	button.expand_icon = true
 	button.add_theme_color_override("icon_normal_color", color)
-	button.add_theme_color_override("icon_hover_color", color.darkened(0.12))
+ 	button.add_theme_color_override("icon_hover_color", color.darkened(0.12))
 	button.add_theme_color_override("icon_pressed_color", color.darkened(0.25))
 	button.add_theme_color_override("icon_focus_color", color)
 	button.add_theme_constant_override("icon_max_width", 26)
