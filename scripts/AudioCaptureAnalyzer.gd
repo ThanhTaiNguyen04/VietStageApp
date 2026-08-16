@@ -107,6 +107,20 @@ var pitch_estimation_done := false
 var time_since_onset := 0.0
 var pluck_release_time := 0.0
 
+# Stateful onset detector. AudioEffectCapture returns chunks aligned to render
+# frames, not to the instant a string is plucked. Keep fixed-size energy blocks
+# across calls so an attack can start anywhere inside (or across) a chunk.
+var _onset_sample_buffer := PackedFloat32Array()
+var _onset_previous_rms := 0.0
+var _onset_noise_floor_rms := 0.000001
+var _onset_refractory_remaining := 0.0
+var _onset_state_initialized := false
+const ONSET_BLOCK_SAMPLES := 256
+const ONSET_MIN_RISE_RATIO := 1.55
+const ONSET_NOISE_FLOOR_RATIO := 2.20
+const ONSET_REFRACTORY_SEC := 0.055
+const ONSET_NOISE_FLOOR_SMOOTHING := 0.08
+
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
 var _analysis_buffer := PackedFloat32Array()
@@ -256,6 +270,7 @@ func _reset_live_analysis_state() -> void:
 	_dan_tranh_note_duration = 0.0
 	_dan_tranh_release_elapsed = 0.0
 	current_dan_tranh_note = {}
+	_reset_onset_detector()
 	_close_instrument_gate()
 	for i in range(_sample_history.size()):
 		_sample_history[i] = 0.0
@@ -287,6 +302,11 @@ func _process(delta: float) -> void:
 	current_amplitude_db = _calculate_amplitude_db(samples)
 	if calibration_active:
 		calibration_db_samples.append(current_amplitude_db)
+
+	# Always feed the stateful onset detector, including quiet chunks. Those
+	# chunks establish the live microphone floor and preserve continuity across
+	# AudioEffectCapture frame boundaries.
+	var is_onset := _detect_onset(samples)
 	
 	var gate_open = current_amplitude_db > volume_threshold_db
 	if not gate_open:
@@ -297,7 +317,6 @@ func _process(delta: float) -> void:
 		return
 	
 	# Step 3: Onset Detection (plucked instrument logic)
-	var is_onset = _detect_onset(samples)
 	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	if profile_plucked:
 		_update_instrument_sound_gate(samples, is_onset, delta)
@@ -402,12 +421,78 @@ func _calculate_amplitude_db(samples: PackedFloat32Array) -> float:
 	return _calculate_peak_db_gdscript(samples)
 
 func _detect_onset(samples: PackedFloat32Array) -> bool:
-	if _analyzer:
-		var onset_info = _analyzer.detect_note_onset_and_duration(samples, AudioServer.get_mix_rate(), volume_threshold_db)
-		return onset_info.get("is_onset", false)
-	
-	var onset_info = _detect_note_onset_and_duration_gdscript(samples, AudioServer.get_mix_rate(), volume_threshold_db)
-	return onset_info.get("is_onset", false)
+	if samples.is_empty():
+		return false
+
+	_onset_sample_buffer.append_array(samples)
+	var sample_rate := maxf(AudioServer.get_mix_rate(), 1.0)
+	var threshold_rms := pow(10.0, volume_threshold_db / 20.0) * 0.5
+	var onset_found := false
+	var consumed := 0
+
+	while _onset_sample_buffer.size() - consumed >= ONSET_BLOCK_SAMPLES:
+		var energy := 0.0
+		for i in range(consumed, consumed + ONSET_BLOCK_SAMPLES):
+			var value := float(_onset_sample_buffer[i])
+			energy += value * value
+		var block_rms := sqrt(energy / float(ONSET_BLOCK_SAMPLES))
+		var block_duration := float(ONSET_BLOCK_SAMPLES) / sample_rate
+		_onset_refractory_remaining = maxf(
+			0.0, _onset_refractory_remaining - block_duration
+		)
+
+		if not _onset_state_initialized:
+			# A lesson can start while a pluck is already entering the first capture
+			# chunk. Use the configured gate as a conservative initial reference
+			# instead of discarding that first attack.
+			_onset_noise_floor_rms = maxf(
+				0.000001, minf(block_rms, threshold_rms * 0.5)
+			)
+			_onset_previous_rms = maxf(
+				_onset_noise_floor_rms, threshold_rms * 0.25
+			)
+			_onset_state_initialized = true
+
+		var reference_rms := maxf(
+			_onset_previous_rms,
+			maxf(_onset_noise_floor_rms, threshold_rms * 0.25)
+		)
+		var rise_ratio := block_rms / maxf(reference_rms, 0.000001)
+		var above_input_gate := block_rms >= threshold_rms
+		var above_noise_floor := block_rms >= (
+			_onset_noise_floor_rms * ONSET_NOISE_FLOOR_RATIO
+		)
+
+		if not onset_found \
+				and _onset_refractory_remaining <= 0.0 \
+				and above_input_gate \
+				and above_noise_floor \
+				and rise_ratio >= ONSET_MIN_RISE_RATIO:
+			onset_found = true
+			_onset_refractory_remaining = ONSET_REFRACTORY_SEC
+
+		# Learn only quiet/near-floor blocks. A loud sustained note must not raise
+		# the floor and hide the attack of the next string.
+		if block_rms <= maxf(threshold_rms, _onset_noise_floor_rms * 1.5):
+			_onset_noise_floor_rms = lerpf(
+				_onset_noise_floor_rms,
+				maxf(block_rms, 0.000001),
+				ONSET_NOISE_FLOOR_SMOOTHING
+			)
+		_onset_previous_rms = block_rms
+		consumed += ONSET_BLOCK_SAMPLES
+
+	if consumed > 0:
+		_onset_sample_buffer = _onset_sample_buffer.slice(consumed)
+	return onset_found
+
+
+func _reset_onset_detector() -> void:
+	_onset_sample_buffer.clear()
+	_onset_previous_rms = 0.0
+	_onset_noise_floor_rms = 0.000001
+	_onset_refractory_remaining = 0.0
+	_onset_state_initialized = false
 
 func _estimate_pitch(samples: PackedFloat32Array) -> float:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency

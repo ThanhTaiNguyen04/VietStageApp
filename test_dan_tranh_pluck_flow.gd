@@ -63,6 +63,26 @@ func _sine_tone(frequency: float, count: int) -> PackedFloat32Array:
 		samples[i] = 0.6 * sin(TAU * frequency * float(i) / SAMPLE_RATE)
 	return samples
 
+func _silence(count: int) -> PackedFloat32Array:
+	var samples := PackedFloat32Array()
+	samples.resize(count)
+	return samples
+
+func _stream_with_shifted_pluck(frequency: float, silence_samples: int, pluck_samples: int) -> PackedFloat32Array:
+	var samples := _silence(silence_samples)
+	samples.append_array(_plucked_tone(frequency, pluck_samples))
+	return samples
+
+func _count_onsets(analyzer: AudioCaptureAnalyzer, stream: PackedFloat32Array, frame_size: int) -> int:
+	var onset_count := 0
+	var offset := 0
+	while offset < stream.size():
+		var frame_end := mini(offset + frame_size, stream.size())
+		if analyzer._detect_onset(stream.slice(offset, frame_end)):
+			onset_count += 1
+		offset = frame_end
+	return onset_count
+
 # Mirrors AudioCaptureAnalyzer._process exactly (headless: no audio device needed).
 func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Array]) -> Dictionary:
 	var buffer := PackedFloat32Array()
@@ -76,11 +96,11 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 		var db := analyzer._calculate_amplitude_db(frame)
 		analyzer.current_amplitude_db = db
+		var is_onset := analyzer._detect_onset(frame)
 		if db <= analyzer.volume_threshold_db:
 			analyzer._handle_silence(0.016)
 			continue
 
-		var is_onset := analyzer._detect_onset(frame)
 		var profile_plucked: bool = analyzer.pitch_profile != null and analyzer.pitch_profile.is_plucked_instrument
 		if profile_plucked:
 			analyzer._update_instrument_sound_gate(frame, is_onset, 0.016)
@@ -123,6 +143,44 @@ func _run_frames(analyzer: AudioCaptureAnalyzer, frames: Array[PackedFloat32Arra
 
 func _init() -> void:
 	var failures: Array[String] = []
+
+	# 0. Onset must be independent of AudioEffectCapture chunk boundaries.
+	# The attack is deliberately placed at the start, middle and final samples
+	# of a 735-sample render frame.
+	for onset_frequency in [196.0, 440.0, 1760.0]:
+		for onset_offset in [0, 320, 720, 735, 1090]:
+			var onset_analyzer := _make_analyzer()
+			var shifted_stream := _stream_with_shifted_pluck(
+				onset_frequency, onset_offset, 4096
+			)
+			var onset_count := _count_onsets(onset_analyzer, shifted_stream, FRAME_SIZE)
+			if onset_count != 1:
+				failures.append(
+					"Onset %.0f Hz lệch %d mẫu phải được nhận đúng một lần, thực tế: %d" \
+					% [onset_frequency, onset_offset, onset_count]
+				)
+			onset_analyzer.free()
+
+	var steady_analyzer := _make_analyzer()
+	var steady_stream := _sine_tone(440.0, FRAME_SIZE * 12)
+	var steady_onsets := _count_onsets(steady_analyzer, steady_stream, FRAME_SIZE)
+	if steady_onsets > 1:
+		failures.append("Âm ngân ổn định tạo onset lặp: %d" % steady_onsets)
+	steady_analyzer.free()
+
+	# Two real attacks about 70 ms apart must remain distinct for Á/Vê.
+	var rapid_onset_analyzer := _make_analyzer()
+	var rapid_onset_stream := _plucked_tone(440.0, 3072)
+	rapid_onset_stream.append_array(_plucked_tone(523.25, 4096))
+	var rapid_onset_count := _count_onsets(
+		rapid_onset_analyzer, rapid_onset_stream, FRAME_SIZE
+	)
+	if rapid_onset_count != 2:
+		failures.append(
+			"Hai lần gảy cách nhau khoảng 70 ms phải tạo 2 onset, thực tế: %d" \
+			% rapid_onset_count
+		)
+	rapid_onset_analyzer.free()
 
 	# 1. Every real string note must be recognized during a normal pluck.
 	for note in ALL_17_NOTES:
