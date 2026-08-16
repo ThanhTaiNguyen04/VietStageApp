@@ -5,6 +5,14 @@ const MANIFEST_PATH := FIXTURE_DIRECTORY + "/manifest.json"
 const WINDOW_SIZE := 4096
 const WINDOW_HOP := 512
 const MAX_AUDIO_SECONDS := 3.0
+const ALL_17_NOTES: Array[String] = [
+	"Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3",
+	"Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"
+]
+const NOTE_FREQUENCIES: Array[float] = [
+	196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33,
+	659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00
+]
 
 
 func _init() -> void:
@@ -54,6 +62,18 @@ func _init() -> void:
 		if not test_case.has("expected") or not test_case["expected"] is bool:
 			failures.append("manifest.json: %s phải có expected kiểu bool" % case_id)
 			continue
+		if test_case.has("expected_note"):
+			var expected_note := str(test_case.get("expected_note", "")).strip_edges()
+			var expected_string := int(test_case.get("expected_string", -1))
+			var expected_note_index := ALL_17_NOTES.find(expected_note)
+			if expected_note_index < 0:
+				failures.append("manifest.json: %s có expected_note không thuộc 17 dây" % case_id)
+				continue
+			if expected_string != expected_note_index + 1:
+				failures.append(
+					"manifest.json: %s gán sai expected_string cho nốt %s" % [case_id, expected_note]
+				)
+				continue
 		if relative_path.contains("..") or relative_path.begins_with("/") \
 				or relative_path.contains(":"):
 			failures.append("manifest.json: đường dẫn không an toàn ở %s" % case_id)
@@ -77,12 +97,32 @@ func _init() -> void:
 		_finish(failures)
 		return
 
-	var analyzer = load("res://scripts/AudioCaptureAnalyzer.gd").new()
-	analyzer.volume_threshold_db = -58.0
+	var analyzer := _make_dan_tranh_analyzer()
 	for test_case in validated_cases:
 		_run_case(analyzer, test_case, failures)
 	analyzer.free()
 	_finish(failures)
+
+
+func _make_dan_tranh_analyzer() -> Node:
+	var analyzer = load("res://scripts/AudioCaptureAnalyzer.gd").new()
+	var profile = load("res://scripts/InstrumentPitchProfile.gd").new()
+	profile.notes.assign(ALL_17_NOTES)
+	profile.frequencies = PackedFloat32Array(NOTE_FREQUENCIES)
+	var physical_mappings: Array[int] = []
+	for string_index in ALL_17_NOTES.size():
+		physical_mappings.append(string_index)
+	profile.physical_mappings = physical_mappings
+	profile.min_frequency = 180.0
+	profile.max_frequency = 1900.0
+	profile.volume_threshold_db = -58.0
+	profile.cents_tolerance = 35.0
+	profile.is_plucked_instrument = true
+	analyzer.pitch_profile = profile
+	analyzer.min_frequency = 180.0
+	analyzer.max_frequency = 1900.0
+	analyzer.volume_threshold_db = -58.0
+	return analyzer
 
 
 func _load_manifest(failures: Array[String]) -> Dictionary:
@@ -126,6 +166,7 @@ func _run_case(analyzer: Node, test_case: Dictionary, failures: Array[String]) -
 	var accepted_offset := -1
 	var best_confidence := -1.0
 	var best_reason := "không có cửa sổ đủ dài"
+	var detected_note: Dictionary = {}
 
 	for offset in range(0, maximum_samples - WINDOW_SIZE + 1, WINDOW_HOP):
 		var window := samples.slice(offset, offset + WINDOW_SIZE)
@@ -139,6 +180,8 @@ func _run_case(analyzer: Node, test_case: Dictionary, failures: Array[String]) -
 			accepted_offset = offset
 			best_confidence = confidence
 			best_reason = str(result.get("reason", ""))
+			if test_case.has("expected_note"):
+				detected_note = analyzer.detect_dan_tranh_note(window, sample_rate)
 			break
 
 	if accepted != expected:
@@ -147,6 +190,19 @@ func _run_case(analyzer: Node, test_case: Dictionary, failures: Array[String]) -
 		failures.append("%s [%s/%s] confidence=%.1f reason=%s time=%.0fms" % [
 			error_kind, category, case_id, best_confidence, best_reason, time_ms
 		])
+	elif expected and test_case.has("expected_note"):
+		var expected_note := str(test_case.get("expected_note", ""))
+		var expected_string := int(test_case.get("expected_string", -1))
+		var actual_note := str(detected_note.get("note_name", "None"))
+		var actual_string := int(detected_note.get("string_index", -1)) + 1
+		if actual_note != expected_note or actual_string != expected_string:
+			failures.append("WRONG STRING [%s/%s] cần %s/dây %d, nhận %s/dây %d" % [
+				category, case_id, expected_note, expected_string, actual_note, actual_string
+			])
+		else:
+			print("PASS [%s/%s] nốt=%s dây=%d confidence=%.1f" % [
+				category, case_id, actual_note, actual_string, best_confidence
+			])
 	else:
 		print("PASS [%s/%s] expected=%s confidence=%.1f reason=%s" % [
 			category, case_id, expected, best_confidence, best_reason

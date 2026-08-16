@@ -8,6 +8,7 @@ signal dan_tranh_note_ended(note: Dictionary)
 # Unlike dan_tranh_note_started, repeated attacks on the same string are kept;
 # technique lessons such as tremolo need their timing information.
 signal dan_tranh_rapid_attack(note: Dictionary)
+signal microphone_permission_changed(granted: bool)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -33,6 +34,11 @@ var current_composite_score := 100.0
 var recent_scores_history : Array[float] = []
 var difficulty_tolerance_scale := 1.0
 var analysis_suspended := false
+var microphone_permission_granted := true
+var microphone_permission_request_pending := false
+var _microphone_permission_poll_elapsed := 0.0
+const ANDROID_MICROPHONE_PERMISSION := "android.permission.RECORD_AUDIO"
+const MICROPHONE_PERMISSION_POLL_SEC := 0.25
 
 var _analyzer: RefCounted = null
 
@@ -147,9 +153,90 @@ func _ready() -> void:
 		_analyzer = ClassDB.instantiate("AudioAnalyzer")
 		
 	_setup_audio_bus()
+	_initialize_microphone_permission()
 	
 	for i in range(MAX_SAMPLES):
 		_sample_history.append(0.0)
+
+
+func _initialize_microphone_permission() -> void:
+	if not OS.has_feature("android"):
+		_set_microphone_permission_state(true)
+		return
+	var permission_signal := StringName("on_request_permissions_result")
+	var permission_callback := Callable(self, "_on_request_permissions_result")
+	if get_tree() and get_tree().has_signal(permission_signal) \
+			and not get_tree().is_connected(permission_signal, permission_callback):
+		get_tree().connect(permission_signal, permission_callback)
+	request_microphone_permission()
+
+
+func request_microphone_permission() -> bool:
+	if not OS.has_feature("android"):
+		_set_microphone_permission_state(true)
+		return true
+	if _is_android_microphone_permission_granted():
+		microphone_permission_request_pending = false
+		_set_microphone_permission_state(true)
+		return true
+	microphone_permission_request_pending = true
+	var already_granted := OS.request_permission(ANDROID_MICROPHONE_PERMISSION)
+	if already_granted:
+		microphone_permission_request_pending = false
+		_set_microphone_permission_state(true)
+	else:
+		_set_microphone_permission_state(false)
+	return already_granted
+
+
+func has_microphone_permission() -> bool:
+	if OS.has_feature("android"):
+		return _is_android_microphone_permission_granted()
+	return microphone_permission_granted
+
+
+func _is_android_microphone_permission_granted() -> bool:
+	var granted_permissions := OS.get_granted_permissions()
+	return granted_permissions.has(ANDROID_MICROPHONE_PERMISSION) \
+		or granted_permissions.has("RECORD_AUDIO")
+
+
+func _on_request_permissions_result(permission: String, granted: bool) -> void:
+	if permission != ANDROID_MICROPHONE_PERMISSION and permission != "RECORD_AUDIO":
+		return
+	microphone_permission_request_pending = false
+	_set_microphone_permission_state(granted)
+
+
+func _set_microphone_permission_state(granted: bool) -> void:
+	if microphone_permission_granted == granted:
+		return
+	microphone_permission_granted = granted
+	if not granted:
+		if _mic_player and _mic_player.playing:
+			_mic_player.stop()
+		_reset_live_analysis_state()
+	elif _effect:
+		_effect.clear_buffer()
+	microphone_permission_changed.emit(granted)
+
+
+func _refresh_mobile_microphone_permission(delta: float) -> bool:
+	if not OS.has_feature("android"):
+		return true
+	_microphone_permission_poll_elapsed += maxf(delta, 0.0)
+	if _microphone_permission_poll_elapsed >= MICROPHONE_PERMISSION_POLL_SEC:
+		_microphone_permission_poll_elapsed = 0.0
+		var granted := _is_android_microphone_permission_granted()
+		if granted:
+			microphone_permission_request_pending = false
+		_set_microphone_permission_state(granted)
+	return microphone_permission_granted
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED and OS.has_feature("android"):
+		_microphone_permission_poll_elapsed = MICROPHONE_PERMISSION_POLL_SEC
 
 func _setup_audio_bus() -> void:
 	_bus_index = AudioServer.get_bus_index("Record")
@@ -293,6 +380,9 @@ func _discard_captured_samples() -> void:
 
 # ─── Standardised 7-Step DSP Pipeline ───
 func _process(delta: float) -> void:
+	if not _refresh_mobile_microphone_permission(delta):
+		current_amplitude_db = -80.0
+		return
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 	if not _effect: return
