@@ -158,6 +158,8 @@ func _ready() -> void:
 
 	_build_theme()
 	_connect_buttons()
+	_build_quiz_btn()
+	_build_profile_btn()
 
 	_build_lesson_list()
 	_build_sidebar()
@@ -267,18 +269,21 @@ func _connect_buttons() -> void:
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
 
-
+func _build_quiz_btn() -> void:
+	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
+	if toph == null or change_course_btn == null:
+		return
 	var quiz_btn := Button.new()
 	quiz_btn.name = "QuizBtn"
 	quiz_btn.text = "📝 Quiz"
 	quiz_btn.custom_minimum_size = Vector2(148, 48)
-	quiz_btn.add_theme_stylebox_override("normal", s_outline)
-	quiz_btn.add_theme_stylebox_override("hover", s_outline_hover)
-	quiz_btn.add_theme_stylebox_override("pressed", s_outline)
+	quiz_btn.add_theme_font_size_override("font_size", 17)
+	quiz_btn.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, C_JADE, 18, 2))
+	quiz_btn.add_theme_stylebox_override("hover", _flat(Color(C_GOLD, 0.12), C_GOLD, 18, 2))
+	quiz_btn.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD, 0.15), C_GOLD, 18, 2))
 	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	quiz_btn.add_theme_color_override("font_color", C_JADE)
 	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	quiz_btn.add_theme_font_size_override("font_size", 17)
 	quiz_btn.pressed.connect(_open_quiz)
 	_make_btn_bouncy(quiz_btn)
 	toph.add_child(quiz_btn)

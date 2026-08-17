@@ -834,6 +834,7 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 	_linh_tween.set_parallel(false)
 	_linh_tween.tween_callback(func() -> void:
 		_linh_is_moving = false
+		_station_transitioning = false
 		if show_popup_after_move:
 			_open_focus_mode_popup(station_code)
 		else:
@@ -883,6 +884,7 @@ func _setup_focus_popup_controls() -> void:
 	
 	btn_popup_close.pressed.connect(func() -> void:
 		_player_expression = "normal"
+		_station_transitioning = false
 		var t := create_tween()
 		t.tween_property(popup, "modulate:a", 0.0, 0.2)
 		t.tween_callback(func() -> void: popup.visible = false)
@@ -2626,7 +2628,8 @@ func _fetch_instruments_data() -> void:
 			if code != "":
 				_instruments_data[code] = {
 					"name": item.get("name", _instruments_data[code]["name"]),
-					"desc": item.get("description", _instruments_data[code]["desc"])
+					"desc": item.get("description", _instruments_data[code]["desc"]),
+					"fingering": _instruments_data[code].get("fingering", "")
 				}
 
 func _get_instrument_code_mapping(api_code: String) -> String:

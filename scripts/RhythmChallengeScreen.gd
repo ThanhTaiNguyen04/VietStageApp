@@ -36,7 +36,7 @@ func _load_challenge() -> void:
 			var lesson := SecureDataManager.resolve_be_lesson(Context.instrument, local_id)
 			if lesson.is_empty():
 				continue
-			lesson_id = _safe_int(lesson.get("id", 0))
+			var lesson_id := _safe_int(lesson.get("id", 0))
 			var minigames: Array = await report.ensure_minigame_list(lesson_id)
 			for item: Variant in minigames:
 				if item is Dictionary:
