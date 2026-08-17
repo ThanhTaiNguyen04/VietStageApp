@@ -834,6 +834,7 @@ func _move_linh_to_station(station_code: String, show_popup_after_move: bool = t
 	_linh_tween.set_parallel(false)
 	_linh_tween.tween_callback(func() -> void:
 		_linh_is_moving = false
+		_station_transitioning = false
 		if show_popup_after_move:
 			_open_focus_mode_popup(station_code)
 		else:
@@ -883,6 +884,7 @@ func _setup_focus_popup_controls() -> void:
 	
 	btn_popup_close.pressed.connect(func() -> void:
 		_player_expression = "normal"
+		_station_transitioning = false
 		var t := create_tween()
 		t.tween_property(popup, "modulate:a", 0.0, 0.2)
 		t.tween_callback(func() -> void: popup.visible = false)
@@ -1219,9 +1221,18 @@ func _sort_room_elements() -> void:
 	items.sort_custom(func(a, b):
 		return _get_sort_y(a) < _get_sort_y(b)
 	)
-	# FloorCanvas is at index 0, so move other children starting from index 1
+	
+	# Keep HangingScroll at index 0 and FloorCanvas at index 1 (rendering in the background)
+	var scroll = room_content.get_node_or_null("HangingScroll")
+	if scroll:
+		room_content.move_child(scroll, 0)
+	if floor_canvas:
+		room_content.move_child(floor_canvas, 1 if scroll else 0)
+		
+	# Render sorted interactive items above the backgrounds
+	var start_idx := 2 if scroll else 1
 	for i in range(items.size()):
-		room_content.move_child(items[i], i + 1)
+		room_content.move_child(items[i], start_idx + i)
 
 func _draw_instrument_image(c: Button, tex: Texture2D, height_ratio: float = 0.74) -> void:
 	var sz := c.size
@@ -2539,27 +2550,60 @@ func _fetch_cosmetics_data() -> void:
 	if _api_client == null:
 		return
 	
-	# BYPASS API FOR LOCAL TEST
-	_cosmetics_all = []
-	_cosmetics_owned = []
-	_cosmetics_locked = []
-	if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
-		var all_mock = [
-			{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
-			{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
-			{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
-			{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
-			{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
-		]
-		var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
-		var active = SecureDataManager.data.get("active_decorations", [])
-		for m_item in all_mock:
-			var m_key = _get_draw_key(m_item)
-			if unlocked.has(m_key):
-				m_item["isEquipped"] = active.has(m_key)
-				_cosmetics_owned.append(m_item)
-			else:
-				_cosmetics_locked.append(m_item)
+	if BackendReport.is_signed_in():
+		var response = await _api_client.get_all_cosmetics()
+		if _api_client._is_success(response):
+			_cosmetics_all = response.get("body", {}).get("data", [])
+		else:
+			_cosmetics_all = []
+			
+		var my_response = await _api_client.get_my_cosmetics()
+		if _api_client._is_success(my_response):
+			var body = my_response.get("body", {}).get("data", {})
+			_cosmetics_owned = body.get("owned", [])
+			_cosmetics_locked = body.get("locked", [])
+			
+			# Respect local active list for equipped states
+			var active = SecureDataManager.data.get("active_decorations", [])
+			for item in _cosmetics_owned:
+				var m_key = _get_draw_key(item)
+				item["isEquipped"] = item.get("isEquipped", item.get("is_equipped", false)) or active.has(m_key)
+		else:
+			_cosmetics_owned = []
+			_cosmetics_locked = []
+	else:
+		# BYPASS API FOR LOCAL TEST
+		_cosmetics_all = []
+		_cosmetics_owned = []
+		_cosmetics_locked = []
+		if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
+			var all_mock = [
+				{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
+				{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
+				{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
+				{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
+				{"id": 5, "name": "Đèn lồng đỏ", "assetUrl": "denlong", "unlockValue": 75, "description": "Trang trí phòng nhạc."},
+				{"id": 6, "name": "Đèn đá Nhật", "assetUrl": "denda", "unlockValue": 120, "description": "Trang trí phòng nhạc."},
+				{"id": 7, "name": "Chuông gió", "assetUrl": "chuonggio", "unlockValue": 80, "description": "Trang trí phòng nhạc."},
+				{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
+			]
+			var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
+			var active = SecureDataManager.data.get("active_decorations", [])
+			if unlocked.is_empty():
+				# Initialize defaults to avoid an empty room on first launch/offline mode
+				unlocked = ["chausen", "tranh", "quat"]
+				active = ["chausen", "tranh", "quat"]
+				SecureDataManager.data["unlocked_decorations"] = unlocked
+				SecureDataManager.data["active_decorations"] = active
+				SecureDataManager.save_data()
+				
+			for m_item in all_mock:
+				var m_key = _get_draw_key(m_item)
+				if unlocked.has(m_key):
+					m_item["isEquipped"] = active.has(m_key)
+					_cosmetics_owned.append(m_item)
+				else:
+					_cosmetics_locked.append(m_item)
 		
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_spawn_decorations()
@@ -2607,7 +2651,8 @@ func _fetch_instruments_data() -> void:
 			if code != "":
 				_instruments_data[code] = {
 					"name": item.get("name", _instruments_data[code]["name"]),
-					"desc": item.get("description", _instruments_data[code]["desc"])
+					"desc": item.get("description", _instruments_data[code]["desc"]),
+					"fingering": _instruments_data[code].get("fingering", "")
 				}
 
 func _get_instrument_code_mapping(api_code: String) -> String:
