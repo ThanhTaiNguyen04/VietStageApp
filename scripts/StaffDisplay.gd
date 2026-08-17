@@ -77,6 +77,8 @@ var use_note_colors: bool = false   # set true to use per-note colors from set_n
 var hit_line_color := Color(0.2, 0.85, 0.3, 0.95)
 var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
 var glissando_arrow_mode := ""
+var current_bpm: float = 60.0  # Updated by LessonSaoTruc to match bpm_multiplier
+var bar_lines: Array = []
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -146,7 +148,8 @@ func _draw():
 		var n_tail = note_data.get("tail", 0.0)
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type)
+		var flash_t = note_data.get("flash_trigger", 0.0)
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
 		if n_cue == "tremolo_single":
@@ -163,13 +166,17 @@ func _draw():
 				true
 			)
 
+	for bx in bar_lines:
+		var top_y = center_y - 2 * line_spacing
+		var bot_y = center_y + 2 * line_spacing
+		draw_line(Vector2(bx, top_y), Vector2(bx, bot_y), line_color, 2.0, true)
+
 	if glissando_arrow_mode != "":
 		_draw_glissando_arrow(center_y)
 		
 	# Draw 4-beat Metronome above the hit line
 	if show_metronome:
-		var bpm = 60.0
-		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (bpm / 60.0)
+		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (current_bpm / 60.0)
 		var current_beat = int(floor(beat_time_total)) % beats_per_measure
 		var beat_fraction = fmod(beat_time_total, 1.0)
 		
@@ -204,34 +211,48 @@ func _get_note_position_index(note_name: String) -> float:
 	return float(NOTE_POSITIONS.get(mapped_name, 0.0))
 
 func _draw_glissando_arrow(center_y: float) -> void:
-	if notes_to_draw.size() < 2:
+	if notes_to_draw.is_empty():
 		return
-	var arrow_points := PackedVector2Array()
+	var arrow_color := Color(0.08, 0.075, 0.065, 1.0)
+	var stem_top: float = center_y - 2.45 * float(line_spacing)
+	var stem_bottom: float = center_y + 2.0 * float(line_spacing)
 	for note_data in notes_to_draw:
 		var note_x := float(note_data.get("x", size.x / 2.0))
-		var pos_idx := _get_note_position_index(str(note_data.get("note", "Mi2")))
-		var note_y: float = center_y + (2.0 - pos_idx) * line_spacing
-		# Keep the direction line below the note heads so its high-note arrowhead
-		# stays visible beneath the lesson HUD.
-		arrow_points.append(Vector2(note_x, note_y + line_spacing * 0.58))
+		# Ký hiệu Á nằm trước từng nốt như sheet mẫu, không nối các nốt với nhau.
+		var cue_x := float(note_data.get("glissando_cue_x", note_x - maxf(20.0, line_spacing * 0.72)))
+		if glissando_arrow_mode == "up":
+			var up_tip := Vector2(cue_x, stem_top)
+			var up_from := Vector2(cue_x, stem_bottom)
+			draw_line(up_from, up_tip + Vector2(0, 12.0), arrow_color, 3.2, true)
+			_draw_glissando_arrow_head(up_from, up_tip, arrow_color, 15.0, 8.0)
+		elif glissando_arrow_mode == "round":
+			var second_cue_x := float(note_data.get("glissando_second_cue_x", cue_x + maxf(28.0, line_spacing)))
+			_draw_glissando_round_mark(cue_x, second_cue_x, stem_top, stem_bottom, arrow_color)
+		else:
+			var down_from := Vector2(cue_x, stem_top)
+			var down_tip := Vector2(cue_x, stem_bottom)
+			draw_line(down_from, down_tip - Vector2(0, 12.0), arrow_color, 3.2, true)
+			_draw_glissando_arrow_head(down_from, down_tip, arrow_color, 15.0, 8.0)
 
-	var glow_color := Color(0.96, 0.72, 0.18, 0.20)
-	var arrow_color := Color(0.82, 0.46, 0.06, 0.98)
-	draw_polyline(arrow_points, glow_color, 11.0, true)
-	draw_polyline(arrow_points, arrow_color, 4.5, true)
-	_draw_glissando_arrow_head(
-		arrow_points[arrow_points.size() - 2],
-		arrow_points[arrow_points.size() - 1],
-		arrow_color
-	)
 
-func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color) -> void:
+func _draw_glissando_round_mark(down_x: float, up_x: float, top_y: float, bottom_y: float, color: Color) -> void:
+	var top_left := Vector2(down_x, top_y)
+	var bottom_left := Vector2(down_x, bottom_y)
+	var top_right := Vector2(up_x, top_y)
+	var bottom_right := Vector2(up_x, bottom_y)
+
+	# Á vòng: mũi tên xuống ở bên trái, mũi tên lên ở bên phải.
+	draw_line(top_left, bottom_left - Vector2(0, 12.0), color, 3.0, true)
+	_draw_glissando_arrow_head(top_left, bottom_left, color, 14.0, 7.0)
+	draw_line(bottom_right, top_right + Vector2(0, 12.0), color, 3.0, true)
+	_draw_glissando_arrow_head(bottom_right, top_right, color, 14.0, 7.0)
+
+
+func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color, head_length: float = 24.0, head_width: float = 13.0) -> void:
 	var direction := (tip - from_point).normalized()
 	if direction.length_squared() <= 0.001:
 		return
 	var perpendicular := Vector2(-direction.y, direction.x)
-	var head_length := 24.0
-	var head_width := 13.0
 	var base := tip - direction * head_length
 	var triangle := PackedVector2Array([
 		tip,
@@ -273,7 +294,7 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 			color
 		)
 
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter"):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
@@ -327,8 +348,16 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			else:
 				break
 	
-	var note_width = line_spacing * (1.15 if is_zither else 1.35)
-	var note_height = line_spacing * (0.8 if is_zither else 0.95)
+	var scale_mod = 1.0
+	if flash_t > 0.0:
+		var elapsed = Time.get_ticks_msec() - flash_t
+		if elapsed < 400: # 400ms flash
+			var progress = elapsed / 400.0
+			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
+			note_color = Color(1.0, 0.3, 0.3).lerp(note_color, progress)
+			
+	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
+	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
 
 	# Draw ledger lines for notes outside the 5-line staff
 	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)
@@ -344,7 +373,13 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
-	# Duration tail drawing removed per user request
+	# Draw duration tail
+	if tail_w > 0.0:
+		var tail_y = note_y
+		var tail_color = note_color
+		tail_color.a = 0.35 # Semi-transparent
+		var tail_h = line_spacing * 0.4
+		draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, tail_w, tail_h), tail_color)
 			
 	# Draw soft radiating halo around notes removed since notes are now black
 			

@@ -7,9 +7,15 @@ const C_JADE = Color("#173f2d")
 const LEVEL_7_GLISSANDO_ID := "dan_tranh_level_7_bai_18_practice"
 const LEVEL_7_GLISSANDO_TITLE := "Kỹ thuật Á"
 const LEVEL_7_PRESS_ID := "dan_tranh_level_7_bai_19_practice"
+const LEVEL_7_SONG_THANH_ID := "dan_tranh_level_7_bai_20_practice"
 const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
 const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
+const CHORD_MIN_FUNDAMENTAL_DB := -52.0
+const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
+const CHORD_MAX_COMPONENT_SPREAD_DB := 20.0
+const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 6.0
+const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
 enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
@@ -30,6 +36,8 @@ var current_state = State.INTRO
 @onready var volume_bar = $FeedbackArea/VolumeBar
 var ai_audio = null
 var _dan_tranh_attempts: Array[Dictionary] = []
+var _micro_scoring_locked := false
+var _tts_resume_token := 0
 
 # Virtual Teacher Portrait Animation States
 var _tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_16_frames.png") as Texture2D
@@ -96,11 +104,14 @@ var glissando_status_label: Label
 var glissando_round_idx := 0
 var glissando_detected_strings: Array[int] = []
 var glissando_detected_times: Array[float] = []
+var glissando_detected_generations: Array[int] = []
 var glissando_display_notes: Array = []
 var glissando_last_detection_time := 0.0
 var glissando_round_locked := false
 const GLISSANDO_GAP_TIMEOUT := 0.58
-const GLISSANDO_MAX_DURATION := 4.0
+const GLISSANDO_MAX_ATTACK_GAP := 0.24
+const GLISSANDO_MAX_STRING_STEP := 4
+const GLISSANDO_MIN_DISTINCT_STRINGS := 6
 const GLISSANDO_ROUNDS := [
 	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
 	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
@@ -118,9 +129,20 @@ var vibrato_attempt_elapsed := 0.0
 var vibrato_silence_elapsed := 0.0
 var vibrato_base_note_heard := false
 var vibrato_note_locked := false
+var vibrato_attack_generation := -1
+var vibrato_consumed_attack_generation := -1
+var vibrato_contour_elapsed := 0.0
+var vibrato_min_amplitude_db := 0.0
+var vibrato_added_sound_elapsed := 0.0
 const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
+const VIBRATO_MAX_SIGNAL_GAP := 0.16
+const VIBRATO_ADDED_SOUND_RISE_DB := 8.0
+const VIBRATO_ADDED_SOUND_HOLD_SEC := 0.10
+const VIBRATO_MIN_DURATION_SEC := 0.85
+const VIBRATO_MAX_RAW_UPWARD_CENTS := 150.0
+const VIBRATO_MIN_RAW_CENTS := -40.0
 var press_sheet_hud: Control
 var press_instruction_label: Label
 var press_status_label: Label
@@ -135,8 +157,18 @@ var press_target_hold_elapsed := 0.0
 var press_base_note_heard := false
 var press_exercise_locked := false
 var press_max_cents := 0.0
+var press_attack_generation := -1
+var press_consumed_attack_generation := -1
+var press_contour_elapsed := 0.0
+var press_min_amplitude_db := 0.0
+var press_added_sound_elapsed := 0.0
 const PRESS_SAMPLE_INTERVAL := 0.025
 const PRESS_ATTEMPT_TIMEOUT := 5.5
+const PRESS_MAX_SIGNAL_GAP := 0.16
+const PRESS_MAX_SAMPLE_JUMP_CENTS := 70.0
+const PRESS_MAX_RISE_DELAY := 0.80
+const PRESS_ADDED_SOUND_RISE_DB := 8.0
+const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
 const PRESS_EXERCISES := [
 	{"source": "Mi2", "target": "Fa2", "interval": 100.0},
 	{"source": "La2", "target": "Si2", "interval": 200.0},
@@ -151,13 +183,21 @@ var tremolo_exercise_idx := 0
 var tremolo_display_notes: Array = []
 var tremolo_attack_strings: Array[int] = []
 var tremolo_attack_times: Array[float] = []
+var tremolo_attack_generations: Array[int] = []
 var tremolo_attempt_started_at := 0.0
 var tremolo_last_attack_at := 0.0
+var tremolo_last_seen_generation := -1
 var tremolo_exercise_locked := false
 var tremolo_wrong_attacks := 0
 const TREMOLO_REQUIRED_DURATION := 2.4
-const TREMOLO_GAP_TIMEOUT := 0.68
+const TREMOLO_GAP_TIMEOUT := 0.42
 const TREMOLO_EXERCISE_TIMEOUT := 6.5
+const TREMOLO_MIN_SCORED_DURATION := 2.10
+const TREMOLO_MIN_ATTACK_COUNT := 9
+const TREMOLO_MIN_RATE := 3.5
+const TREMOLO_MAX_RATE := 13.0
+const TREMOLO_MAX_ATTACK_GAP := 0.34
+const TREMOLO_MIN_REGULARITY := 0.62
 const TREMOLO_EXERCISES := [
 	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
 	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
@@ -185,6 +225,7 @@ const TREMOLO_SAMPLE_DURATION := 2.60
 var error_flash_overlay: Control
 var error_flash_badge: Control
 var error_flash_halo: Control
+var error_flash_title_label: Label
 var error_flash_detail_label: Label
 var error_flash_timer := 0.75
 var error_flash_tween: Tween
@@ -194,6 +235,11 @@ var error_flash_note: Dictionary = {}
 var error_feedback_player: AudioStreamPlayer
 var error_tooltip_final_position := Vector2.ZERO
 var error_feedback_showing := false
+var error_feedback_target_note := ""
+var error_feedback_title := "Chưa đúng"
+var error_feedback_detail := ""
+var unrecognized_audio_elapsed := 0.0
+const UNRECOGNIZED_AUDIO_HINT_DELAY := 0.30
 var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
@@ -207,6 +253,7 @@ var lesson_durations: Array[float] = []
 
 var practice_idx: int = 0
 var intro_step: int = 0
+var intro_playback_token: int = 0
 var time_correct: float = 0.0
 var REQUIRED_HOLD_TIME: float = 0.20
 
@@ -545,7 +592,7 @@ func _ready():
 	profile.frequencies = PackedFloat32Array(freqs)
 	profile.physical_mappings = mappings
 	profile.min_frequency = 180.0
-	profile.max_frequency = 4200.0
+	profile.max_frequency = 1900.0
 	profile.volume_threshold_db = -58.0
 	profile.cents_tolerance = 45.0 # robust pitch tolerance
 	profile.hold_time_sec = 0.20
@@ -554,7 +601,7 @@ func _ready():
 	analyzer.pitch_profile = profile
 	
 	analyzer.min_frequency = 180.0
-	analyzer.max_frequency = 4200.0
+	analyzer.max_frequency = 1900.0
 	analyzer.volume_threshold_db = -58.0
 	if not analyzer.dan_tranh_note_started.is_connected(_on_dan_tranh_note_started):
 		analyzer.dan_tranh_note_started.connect(_on_dan_tranh_note_started)
@@ -642,6 +689,8 @@ func _ready():
 	ai_audio = load("res://scripts/AIAudioManager.gd").new()
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
+	ai_audio.tts_started.connect(_on_teacher_tts_started)
+	ai_audio.tts_finished.connect(_on_teacher_tts_finished)
 	
 	if teacher_char and _tex_mai_talk_sheet:
 		_teacher_atlas = AtlasTexture.new()
@@ -675,8 +724,9 @@ func _ready():
 		_build_vibrato_sheet_hud()
 	if _is_tremolo_practice():
 		_build_tremolo_sheet_hud()
-	if _is_error_flash_demo():
-		_build_error_flash_overlay()
+	# Build the visual layer for every lesson. Only lesson 99+ drives it from an
+	# automatic timer; real lessons call it after a validated scoring error.
+	_build_error_flash_overlay()
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -751,8 +801,9 @@ func _ready():
 			
 			dialog_box.offset_left = -80
 			dialog_box.offset_right = 560
-			dialog_box.offset_top = -160
-			dialog_box.offset_bottom = 160
+			dialog_box.offset_top = -250
+			dialog_box.offset_bottom = 250
+		speech_text.add_theme_font_size_override("font_size", 32 if vp_size.x >= 1100 else 26)
 			
 	get_viewport().size_changed.connect(update_teacher_layout)
 	update_teacher_layout.call()
@@ -1141,18 +1192,21 @@ func _build_error_flash_overlay() -> void:
 
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	var regular_font := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
-	var title_label := Label.new()
-	title_label.text = "Chưa đúng"
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
-	title_label.add_theme_font_size_override("font_size", 20)
+	error_flash_title_label = Label.new()
+	error_flash_title_label.text = "Chưa đúng"
+	error_flash_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_flash_title_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55, 1.0))
+	error_flash_title_label.add_theme_font_size_override("font_size", 20)
 	if bold_font:
-		title_label.add_theme_font_override("font", bold_font)
-	text_box.add_child(title_label)
+		error_flash_title_label.add_theme_font_override("font", bold_font)
+	text_box.add_child(error_flash_title_label)
 
 	error_flash_detail_label = Label.new()
 	error_flash_detail_label.text = "Cần gảy: Sol₂"
 	error_flash_detail_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	error_flash_detail_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	error_flash_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	error_flash_detail_label.max_lines_visible = 2
 	error_flash_detail_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.91, 1.0))
 	error_flash_detail_label.add_theme_font_size_override("font_size", 15)
 	if regular_font:
@@ -1189,6 +1243,82 @@ func _is_vibrato_practice() -> bool:
 
 func _is_tremolo_practice() -> bool:
 	return current_lesson_id == LEVEL_8_TREMOLO_ID
+
+
+func _is_micro_scoring_blocked() -> bool:
+	if _micro_scoring_locked:
+		return true
+	return analyzer != null and bool(analyzer.get("analysis_suspended"))
+
+
+func _on_teacher_tts_started() -> void:
+	# Invalidate any pending resume from an earlier sentence or interrupted TTS.
+	_tts_resume_token += 1
+	_set_micro_scoring_locked(true)
+
+
+func _on_teacher_tts_finished() -> void:
+	_tts_resume_token += 1
+	var resume_token := _tts_resume_token
+	get_tree().create_timer(TTS_MIC_RESUME_DELAY_SEC).timeout.connect(func() -> void:
+		if not is_inside_tree() or resume_token != _tts_resume_token:
+			return
+		_set_micro_scoring_locked(false)
+	)
+
+
+func _set_micro_scoring_locked(locked: bool) -> void:
+	_micro_scoring_locked = locked
+	if locked:
+		_clear_partial_micro_attempts()
+	if analyzer and analyzer.has_method("set_analysis_suspended"):
+		analyzer.set_analysis_suspended(locked)
+	if mic_status_lbl:
+		if locked:
+			mic_status_lbl.text = "🔇 Tạm dừng nghe khi cô Mai đang nói..."
+			mic_status_lbl.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+		else:
+			mic_status_lbl.text = "🎙️ Đang nghe đàn thật..."
+			mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+
+
+func _clear_partial_micro_attempts() -> void:
+	var interrupted_attack_generation := _get_current_technique_attack_generation()
+	time_correct = 0.0
+	wrong_note_time = 0.0
+	glissando_detected_strings.clear()
+	glissando_detected_times.clear()
+	glissando_detected_generations.clear()
+	glissando_last_detection_time = 0.0
+	press_cents_history.clear()
+	press_sample_accumulator = 0.0
+	press_attempt_elapsed = 0.0
+	press_silence_elapsed = 0.0
+	press_target_hold_elapsed = 0.0
+	press_base_note_heard = false
+	press_max_cents = 0.0
+	press_attack_generation = -1
+	press_consumed_attack_generation = interrupted_attack_generation
+	press_contour_elapsed = 0.0
+	press_min_amplitude_db = 0.0
+	press_added_sound_elapsed = 0.0
+	vibrato_pitch_history.clear()
+	vibrato_sample_accumulator = 0.0
+	vibrato_attempt_elapsed = 0.0
+	vibrato_silence_elapsed = 0.0
+	vibrato_base_note_heard = false
+	vibrato_attack_generation = -1
+	vibrato_consumed_attack_generation = interrupted_attack_generation
+	vibrato_contour_elapsed = 0.0
+	vibrato_min_amplitude_db = 0.0
+	vibrato_added_sound_elapsed = 0.0
+	tremolo_attack_strings.clear()
+	tremolo_attack_times.clear()
+	tremolo_attack_generations.clear()
+	tremolo_attempt_started_at = 0.0
+	tremolo_last_attack_at = 0.0
+	tremolo_last_seen_generation = -1
+	tremolo_wrong_attacks = 0
 
 
 func _is_technique_sample_practice() -> bool:
@@ -1449,7 +1579,7 @@ func _process(delta):
 		else:
 			_process_practice(delta)
 	
-	_update_continuous_pitch_hud()
+	_update_continuous_pitch_hud(delta)
 
 
 func _process_error_flash_demo(delta: float) -> void:
@@ -1477,6 +1607,28 @@ func _process_error_demo_sheet(delta: float) -> void:
 
 
 func _play_error_flash_demo() -> void:
+	error_feedback_target_note = ""
+	error_feedback_title = "Chưa đúng"
+	error_feedback_detail = ""
+	_play_error_flash_effect()
+
+
+func _show_practice_error_feedback(
+	target_note: String,
+	detail: String,
+	title: String = "Chưa đúng"
+) -> void:
+	if _is_error_flash_demo() or current_state == State.COMPLETED:
+		return
+	if error_feedback_showing:
+		return
+	error_feedback_target_note = target_note
+	error_feedback_title = title
+	error_feedback_detail = detail
+	_play_error_flash_effect()
+
+
+func _play_error_flash_effect() -> void:
 	if not error_flash_overlay or not staff_display:
 		return
 	if error_flash_tween and error_flash_tween.is_running():
@@ -1546,6 +1698,9 @@ func _play_error_flash_demo() -> void:
 func _finish_error_flash_demo() -> void:
 	_set_error_demo_note_color(false)
 	error_feedback_showing = false
+	error_feedback_target_note = ""
+	error_feedback_title = "Chưa đúng"
+	error_feedback_detail = ""
 	if error_flash_badge:
 		error_flash_badge.modulate.a = 0.0
 	if error_flash_halo:
@@ -1578,8 +1733,13 @@ func _position_error_flash_feedback() -> void:
 	error_tooltip_final_position = Vector2(badge_x, badge_y)
 	error_flash_badge.position = error_tooltip_final_position
 	error_flash_badge.size = Vector2(300.0, 92.0)
+	if error_flash_title_label:
+		error_flash_title_label.text = error_feedback_title
 	if error_flash_detail_label:
-		error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
+		if not error_feedback_detail.is_empty():
+			error_flash_detail_label.text = error_feedback_detail
+		else:
+			error_flash_detail_label.text = "Cần gảy: " + _format_note_for_feedback(raw_note)
 
 
 func _format_note_for_feedback(raw_note: String) -> String:
@@ -1616,15 +1776,30 @@ func _set_error_demo_note_color(show_error: bool) -> void:
 		staff_display.queue_redraw()
 		return
 
+	var candidate_notes: Array = active_falling_notes
+	if candidate_notes.is_empty() and staff_display.get("notes_to_draw") is Array:
+		candidate_notes = staff_display.get("notes_to_draw")
+	var target_components := error_feedback_target_note.split("+")
 	var closest_note: Dictionary = {}
 	var closest_distance := INF
-	for note in active_falling_notes:
+	for note in candidate_notes:
 		if note.get("hit", false) or note.get("missed", false):
+			continue
+		var clean_note := str(note.get("note", "")).replace("ZT_", "")
+		if not error_feedback_target_note.is_empty() and clean_note not in target_components:
 			continue
 		var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
 		if distance < closest_distance:
 			closest_distance = distance
 			closest_note = note
+	if closest_note.is_empty() and not error_feedback_target_note.is_empty():
+		for note in candidate_notes:
+			if note.get("hit", false) or note.get("missed", false):
+				continue
+			var distance := absf(float(note.get("x", 0.0)) - staff_display.hit_line_x)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_note = note
 	if closest_note.is_empty():
 		return
 	error_flash_note = closest_note
@@ -1648,8 +1823,21 @@ func _update_teacher_frame() -> void:
 	)
 	_teacher_atlas.region = source_rect
 
-func _update_continuous_pitch_hud():
+func _update_continuous_pitch_hud(delta: float = 0.016):
 	if not analyzer:
+		return
+	if _is_micro_scoring_blocked():
+		unrecognized_audio_elapsed = 0.0
+		if volume_bar:
+			volume_bar.value = 0.0
+		if pitch_note_lbl:
+			pitch_note_lbl.text = "🎵 Nốt: ---"
+		if pitch_status_lbl:
+			pitch_status_lbl.text = "🔇 Tạm dừng nghe khi cô Mai đang nói"
+			pitch_status_lbl.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+		if pitch_meter:
+			pitch_meter.is_active = false
+			pitch_meter.queue_redraw()
 		return
 
 	# Cập nhật thanh lực âm thanh (VolumeBar) theo thời gian thực
@@ -1667,17 +1855,39 @@ func _update_continuous_pitch_hud():
 		
 	var db: float = analyzer.current_amplitude_db
 	var pitch: float = analyzer.current_pitch
-	
-	if db <= analyzer.volume_threshold_db or pitch <= 0.0:
+	var has_valid_pluck := true
+	if analyzer.has_method("has_recent_dan_tranh_attack"):
+		has_valid_pluck = analyzer.has_recent_dan_tranh_attack()
+
+	if db <= analyzer.volume_threshold_db:
+		unrecognized_audio_elapsed = 0.0
 		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
 			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🎙️ Đang nghe..."
+				pitch_status_lbl.text = "🎙️ Đang chờ bạn gảy đàn..."
 				pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
 			if pitch_meter:
 				pitch_meter.is_active = false
 				pitch_meter.queue_redraw()
 		return
+
+	if pitch <= 0.0 or not has_valid_pluck:
+		unrecognized_audio_elapsed += maxf(delta, 0.0)
+		if mic_cooldown <= 0.0 and wrong_note_cooldown <= 0.0:
+			if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: ---"
+			if pitch_status_lbl:
+				if unrecognized_audio_elapsed >= UNRECOGNIZED_AUDIO_HINT_DELAY:
+					pitch_status_lbl.text = "🟡 Chưa nghe rõ tiếng đàn · hãy gảy lại gần micro"
+					pitch_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
+				else:
+					pitch_status_lbl.text = "🎙️ Đang nhận diện tiếng đàn..."
+					pitch_status_lbl.add_theme_color_override("font_color", Color(0.9, 0.88, 0.78))
+			if pitch_meter:
+				pitch_meter.is_active = false
+				pitch_meter.queue_redraw()
+		return
+
+	unrecognized_audio_elapsed = 0.0
 
 	# Use the stabilized pitch first; re-analyzing the rolling buffer can report a stale lower octave.
 	var det_name := _get_closest_dan_tranh_note_name(pitch)
@@ -1851,6 +2061,8 @@ func _start_intro():
 		speed_bar_container.visible = false
 	if skip_intro_btn:
 		skip_intro_btn.visible = true
+	if previous_intro_btn:
+		previous_intro_btn.visible = true
 	if pause_btn:
 		pause_btn.visible = false
 	if pause_overlay:
@@ -1860,6 +2072,8 @@ func _start_intro():
 	_play_next_intro_step()
 
 func _play_next_intro_step():
+	intro_playback_token += 1
+	var playback_token := intro_playback_token
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
 		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
@@ -1927,7 +2141,7 @@ func _play_next_intro_step():
 		# Wait for speech to finish then go to next step
 		var wait_time = max(1.5, step_data["text"].length() * 0.1)
 		get_tree().create_timer(wait_time).timeout.connect(func():
-			if current_state == State.INTRO:
+			if current_state == State.INTRO and playback_token == intro_playback_token:
 				_play_next_intro_step()
 		)
 	intro_step += 1
@@ -1945,6 +2159,8 @@ func _start_practice_single():
 	_update_staff_layout()
 	if skip_intro_btn:
 		skip_intro_btn.visible = false
+	if previous_intro_btn:
+		previous_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
 	if pitch_box:
@@ -1996,6 +2212,8 @@ func _schedule_next_single_note():
 	staff_display.set_notes(staff_notes)
 
 func _process_practice_single(delta: float) -> void:
+	if _is_micro_scoring_blocked():
+		return
 	wrong_note_cooldown = max(0.0, wrong_note_cooldown - delta)
 	
 	var target_note := ""
@@ -2037,6 +2255,15 @@ func _process_practice_single(delta: float) -> void:
 			var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 			var det_name = note_info.get("note_name", "None")
 			var det_idx = note_info.get("string_index", -1)
+			var is_partial_polyphonic: bool = "+" in target_note \
+				and det_name in target_note.split("+")
+			if det_name != "None" and det_idx >= 0 and is_partial_polyphonic:
+				wrong_note_time += delta
+				if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+					wrong_note_time = 0.0
+					wrong_note_cooldown = 2.0
+					_show_polyphonic_incomplete(target_note)
+				return
 			var is_wrong = true
 			if det_name == target_note or det_idx == target_string_idx:
 				is_wrong = false
@@ -2064,6 +2291,11 @@ func _process_practice_single(delta: float) -> void:
 
 
 func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note: String, target_idx: int) -> void:
+	_show_practice_error_feedback(
+		target_note,
+		"Cần gảy: " + target_note.replace("+", " + "),
+		"Chưa đúng"
+	)
 	if pitch_note_lbl: pitch_note_lbl.text = "🎵 Nốt: " + detected_note
 	if pitch_status_lbl:
 		pitch_status_lbl.text = "🔴 CHƯA ĐÚNG! (Cần: " + target_note + ")"
@@ -2099,6 +2331,21 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	
 	if ai_audio:
 		ai_audio.speak_vietnamese("Bạn gảy nhầm nốt %s rồi. Hãy gảy nốt %s ở dây số %d nhé!" % [detected_note, target_note, target_idx + 1])
+
+
+func _show_polyphonic_incomplete(target_note: String) -> void:
+	var target_notes := target_note.split("+")
+	var target_label := target_note.replace("+", " và ")
+	var required_count := target_notes.size()
+	var feedback := "Cần gảy đồng thời đủ %d nốt: %s" % [required_count, target_label]
+	var title := "Chưa đủ Song thanh" if required_count == 2 else "Chưa đủ hợp âm"
+	_show_practice_error_feedback(target_note, feedback, title)
+	if pitch_status_lbl:
+		pitch_status_lbl.text = "🟡 CHƯA ĐỦ %d NỐT" % required_count
+		pitch_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
+	if mic_status_lbl:
+		mic_status_lbl.text = feedback
+		mic_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
 
 func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
@@ -2174,8 +2421,14 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 			var target_note = unique_practice_notes[single_practice_idx]
 			var is_correct = false
 			if "+" in target_note:
+				# A virtual single-string click must never complete Song thanh or a
+				# chord. Polyphonic targets are scored only from one microphone window
+				# containing every required fundamental.
 				if note_name in target_note.split("+"):
-					is_correct = true
+					if mic_status_lbl:
+						mic_status_lbl.text = "Hãy gảy đồng thời đủ các nốt: %s" % target_note.replace("+", " và ")
+						mic_status_lbl.add_theme_color_override("font_color", C_GOLD)
+					return
 			else:
 				if note_name == target_note:
 					is_correct = true
@@ -2188,14 +2441,17 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 
 	elif current_state == State.PRACTICE:
 		if _is_glissando_practice():
-			# Keep virtual strings usable for local testing; microphone events from
-			# a real đàn tranh enter through the same sequence scorer below.
-			_append_glissando_detection(idx)
+			# Á is a microphone technique exercise. Virtual clicks have not passed
+			# the đàn-tranh attack classifier and therefore must not enter its chain.
+			if glissando_status_label:
+				glissando_status_label.text = "Hãy thực hiện kỹ thuật Á trên đàn thật để micro nhận chuỗi tiếng gảy."
+				glissando_status_label.add_theme_color_override("font_color", C_GOLD)
 			return
 		if _is_tremolo_practice():
-			# Virtual strings use the same scorer as microphone attacks, which keeps
-			# local testing representative of the real-instrument lesson.
-			_append_tremolo_attack(idx)
+			# Vê is scored only from individually validated microphone attacks.
+			if tremolo_status_label:
+				tremolo_status_label.text = "Hãy thực hiện kỹ thuật Vê trên đàn thật để micro đo từng lần gảy."
+				tremolo_status_label.add_theme_color_override("font_color", C_GOLD)
 			return
 		# Hỗ trợ gảy phím ảo bằng chạm/nhấp chuột trên màn hình đối với nốt khuyết
 		var hit_x = staff_display.hit_line_x
@@ -2210,55 +2466,74 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 						current_speed_multiplier = user_speed_multiplier
 						break
 
-func _on_dan_tranh_note_started(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or is_sample_mode or not _is_glissando_practice():
-		return
-	if not note.get("is_match", false):
-		return
-	var string_idx := int(note.get("string_index", -1))
-	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
-		return
-	_append_glissando_detection(string_idx)
+func _on_dan_tranh_note_started(_note: Dictionary) -> void:
+	# Á is scored from validated rapid-attack events below. Continuous pitch
+	# changes are intentionally ignored so a sung glide cannot create an Á chain.
+	pass
 
 func _on_dan_tranh_rapid_attack(note: Dictionary) -> void:
-	if current_state != State.PRACTICE or is_sample_mode or not _is_tremolo_practice():
+	if _is_micro_scoring_blocked() or current_state != State.PRACTICE or is_sample_mode:
 		return
-	if not note.get("is_match", false):
+	if not _is_validated_dan_tranh_rapid_attack(note):
 		return
 	var string_idx := int(note.get("string_index", -1))
-	if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
-		return
-	_append_tremolo_attack(string_idx)
+	var attack_generation := int(note.get("attack_generation", -1))
+	var attack_time_sec := float(note.get("attack_time_msec", 0)) / 1000.0
+	if _is_glissando_practice():
+		_append_glissando_detection(string_idx, attack_time_sec, attack_generation, true)
+	elif _is_tremolo_practice():
+		_append_tremolo_attack(string_idx, attack_time_sec, attack_generation, true)
 
-func _append_glissando_detection(string_idx: int) -> void:
-	if glissando_round_locked:
+
+func _is_validated_dan_tranh_rapid_attack(note: Dictionary) -> bool:
+	var string_idx := int(note.get("string_index", -1))
+	return bool(note.get("is_match", false)) \
+		and bool(note.get("instrument_validated", false)) \
+		and float(note.get("instrument_confidence", 0.0)) > 0.0 \
+		and int(note.get("attack_generation", -1)) > 0 \
+		and int(note.get("attack_time_msec", 0)) > 0 \
+		and string_idx >= 0 and string_idx < ALL_17_NOTES.size() \
+		and str(note.get("note_name", "")) == ALL_17_NOTES[string_idx]
+
+func _append_glissando_detection(
+	string_idx: int,
+	attack_time_sec: float,
+	attack_generation: int,
+	instrument_validated: bool
+) -> void:
+	if glissando_round_locked or not instrument_validated:
 		return
-	var now_sec := Time.get_ticks_msec() / 1000.0
+	if string_idx < 0 or string_idx >= ALL_17_NOTES.size() \
+			or attack_time_sec <= 0.0 or attack_generation <= 0:
+		return
+	if not glissando_detected_generations.is_empty() \
+			and attack_generation <= glissando_detected_generations.back():
+		return
 	if not glissando_detected_times.is_empty():
-		var gap := now_sec - glissando_detected_times[glissando_detected_times.size() - 1]
+		var gap: float = attack_time_sec - float(glissando_detected_times.back())
 		if gap > GLISSANDO_GAP_TIMEOUT:
 			_evaluate_glissando_gesture()
 			if glissando_round_locked:
 				return
 			glissando_detected_strings.clear()
 			glissando_detected_times.clear()
-
-	if not glissando_detected_strings.is_empty() and glissando_detected_strings.back() == string_idx:
-		glissando_last_detection_time = now_sec
-		return
+			glissando_detected_generations.clear()
 
 	glissando_detected_strings.append(string_idx)
-	glissando_detected_times.append(now_sec)
-	glissando_last_detection_time = now_sec
+	glissando_detected_times.append(attack_time_sec)
+	glissando_detected_generations.append(attack_generation)
+	glissando_last_detection_time = attack_time_sec
 	_update_glissando_detection_feedback()
 
 func _process_glissando_practice() -> void:
-	if glissando_round_locked or glissando_detected_times.is_empty():
+	if _is_micro_scoring_blocked() or glissando_round_locked or glissando_detected_times.is_empty():
 		return
 	var now_sec := Time.get_ticks_msec() / 1000.0
 	var silence_gap := now_sec - glissando_last_detection_time
 	var gesture_duration := now_sec - glissando_detected_times[0]
-	if silence_gap >= GLISSANDO_GAP_TIMEOUT or gesture_duration >= GLISSANDO_MAX_DURATION:
+	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
+	var max_duration := 3.8 if mode == "round" else 2.4
+	if silence_gap >= GLISSANDO_GAP_TIMEOUT or gesture_duration >= max_duration:
 		_evaluate_glissando_gesture()
 
 func _start_glissando_round(round_index: int) -> void:
@@ -2272,12 +2547,15 @@ func _start_glissando_round(round_index: int) -> void:
 	glissando_round_locked = false
 	glissando_detected_strings.clear()
 	glissando_detected_times.clear()
+	glissando_detected_generations.clear()
 	glissando_last_detection_time = 0.0
 	active_falling_notes.clear()
 	staff_display.show_metronome = false
 	staff_display.show_hit_line = false
-	staff_display.show_time_sig = false
+	staff_display.show_time_sig = true
 	staff_display.show_clef = true
+	staff_display.beats_per_measure = 2
+	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = str(GLISSANDO_ROUNDS[round_index]["mode"])
 	_build_glissando_round_notes(str(GLISSANDO_ROUNDS[round_index]["mode"]))
 
@@ -2299,26 +2577,37 @@ func _start_glissando_round(round_index: int) -> void:
 		mic_status_lbl.text = "🎙️ Đang nhận diện chuỗi âm kỹ thuật Á"
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
-func _build_glissando_round_notes(mode: String) -> void:
-	var string_order: Array[int]
-	if mode == "down":
-		string_order = [16, 14, 12, 10, 8, 6, 4, 2, 0]
-	elif mode == "up":
-		string_order = [0, 2, 4, 6, 8, 10, 12, 14, 16]
-	else:
-		string_order = [16, 12, 8, 4, 0, 4, 8, 12, 16]
+func _build_glissando_round_notes(_mode: String) -> void:
+	# Ba bài dùng cùng bảy nốt đi lên như sheet mẫu; hướng kỹ thuật được thể
+	# hiện bằng ký hiệu Á xuống, Á lên hoặc Á vòng đặt trước từng nốt.
+	var string_order: Array[int] = [0, 1, 2, 3, 4, 5, 6]
 
 	var staff_width := maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
-	var start_x := 315.0
-	var end_x := maxf(start_x + 500.0, staff_width - 85.0)
+	var start_x := 285.0
+	var end_x := maxf(start_x + 700.0, staff_width - 70.0)
+	var measure_width := (end_x - start_x) / float(string_order.size())
 	glissando_display_notes.clear()
 	for i in range(string_order.size()):
-		var ratio := float(i) / float(maxi(1, string_order.size() - 1))
+		var measure_start: float = start_x + measure_width * float(i)
+		var cue_ratio: float = 0.18
+		var note_ratio: float = 0.68
+		if _mode == "round":
+			# Á vòng phải đọc từ trái sang phải: mũi tên xuống, mũi tên lên, rồi đến nốt.
+			cue_ratio = 0.10
+			note_ratio = 0.72
+		var cue_x: float = measure_start + measure_width * cue_ratio
+		var second_cue_x: float = measure_start + measure_width * 0.38
+		var note_x: float = measure_start + measure_width * note_ratio
+		var bar_x: float = measure_start + measure_width
 		glissando_display_notes.append({
 			"note": "ZT_" + ALL_17_NOTES[string_order[i]],
-			"x": lerpf(start_x, end_x, ratio),
+			"x": note_x,
+			"glissando_cue_x": cue_x,
+			"glissando_second_cue_x": second_cue_x,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
-			"type": "quarter"
+			"type": "quarter",
+			"bar_after": true,
+			"bar_x": bar_x
 		})
 	staff_display.set_notes(glissando_display_notes)
 	staff_display.queue_redraw()
@@ -2332,10 +2621,14 @@ func _update_glissando_detection_feedback() -> void:
 		min_string = mini(min_string, value)
 		max_string = maxi(max_string, value)
 	var covered_strings := max_string - min_string + 1
+	var distinct := {}
+	for value in glissando_detected_strings:
+		distinct[value] = true
 	if glissando_progress_label:
-		glissando_progress_label.text = "Lượt %d/3 · đã nghe %d âm · phủ %d dây" % [
+		glissando_progress_label.text = "Lượt %d/3 · %d âm hợp lệ · %d dây khác nhau · phủ %d dây" % [
 			glissando_round_idx + 1,
 			glissando_detected_strings.size(),
+			distinct.size(),
 			covered_strings
 		]
 	if glissando_progress_bar:
@@ -2369,43 +2662,113 @@ func _evaluate_glissando_gesture() -> void:
 		return
 
 	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
-	var first: int = glissando_detected_strings.front()
-	var last: int = glissando_detected_strings.back()
-	var min_string: int = first
-	var max_string: int = first
-	for value in glissando_detected_strings:
-		min_string = mini(min_string, value)
-		max_string = maxi(max_string, value)
-	var span: int = max_string - min_string
-	var enough_notes := glissando_detected_strings.size() >= 6
-	var success := false
+	var result := _analyze_glissando_gesture(
+		glissando_detected_strings, glissando_detected_times, mode
+	)
+
+	glissando_round_locked = true
+	if result.get("success", false):
+		_on_glissando_round_success()
+	else:
+		_on_glissando_round_failed(result)
+
+
+func _analyze_glissando_gesture(
+	strings: Array[int],
+	times: Array[float],
+	mode: String
+) -> Dictionary:
+	var result := {
+		"success": false,
+		"event_count": strings.size(),
+		"distinct_count": 0,
+		"span": 0,
+		"duration": 0.0,
+		"max_gap": 0.0,
+		"max_step": 0,
+		"direction_ratio": 0.0,
+		"enough_strings": false,
+		"range_valid": false,
+		"direction_valid": false,
+		"continuous": false
+	}
+	if strings.is_empty() or strings.size() != times.size():
+		return result
+
+	var first: int = strings.front()
+	var last: int = strings.back()
+	var min_string := first
+	var max_string := first
+	var distinct := {}
+	var max_gap := 0.0
+	var max_step := 0
+	var times_increasing := true
+	for i in range(strings.size()):
+		var string_idx := strings[i]
+		if string_idx < 0 or string_idx >= ALL_17_NOTES.size():
+			return result
+		distinct[string_idx] = true
+		min_string = mini(min_string, string_idx)
+		max_string = maxi(max_string, string_idx)
+		if i > 0:
+			var gap := times[i] - times[i - 1]
+			if gap <= 0.0:
+				times_increasing = false
+			max_gap = maxf(max_gap, gap)
+			max_step = maxi(max_step, absi(strings[i] - strings[i - 1]))
+
+	var span := max_string - min_string
+	var duration: float = float(times.back()) - float(times.front())
+	var distinct_count := distinct.size()
+	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
+	var max_duration := 3.8 if mode == "round" else 2.4
+	var continuous: bool = times_increasing \
+		and max_gap <= GLISSANDO_MAX_ATTACK_GAP \
+		and max_step <= GLISSANDO_MAX_STRING_STEP \
+		and duration <= max_duration
+	var enough_strings := distinct_count >= GLISSANDO_MIN_DISTINCT_STRINGS \
+		and strings.size() >= (9 if mode == "round" else 6)
+	var range_valid := false
+	var direction_valid := false
+	var direction_ratio := 0.0
 
 	if mode == "down":
-		success = enough_notes and span >= 10 and first >= 11 and last <= 5 \
-			and _direction_ratio(glissando_detected_strings, false) >= 0.70
+		direction_ratio = _direction_ratio(strings, false)
+		range_valid = span >= 10 and first >= 11 and last <= 5 and coverage_ratio >= 0.45
+		direction_valid = direction_ratio >= 0.75
 	elif mode == "up":
-		success = enough_notes and span >= 10 and first <= 5 and last >= 11 \
-			and _direction_ratio(glissando_detected_strings, true) >= 0.70
-	else:
-		var turn_idx := glissando_detected_strings.find(min_string)
-		if turn_idx >= 3 and turn_idx <= glissando_detected_strings.size() - 4:
+		direction_ratio = _direction_ratio(strings, true)
+		range_valid = span >= 10 and first <= 5 and last >= 11 and coverage_ratio >= 0.45
+		direction_valid = direction_ratio >= 0.75
+	elif mode == "round":
+		var turn_idx := strings.find(min_string)
+		if turn_idx >= 3 and turn_idx <= strings.size() - 4:
 			var down_leg: Array[int] = []
 			var up_leg: Array[int] = []
 			for i in range(turn_idx + 1):
-				down_leg.append(glissando_detected_strings[i])
-			for i in range(turn_idx, glissando_detected_strings.size()):
-				up_leg.append(glissando_detected_strings[i])
-			success = glissando_detected_strings.size() >= 9 and min_string <= 5 \
-				and first >= 11 and last >= 11 \
+				down_leg.append(strings[i])
+			for i in range(turn_idx, strings.size()):
+				up_leg.append(strings[i])
+			var down_ratio := _direction_ratio(down_leg, false)
+			var up_ratio := _direction_ratio(up_leg, true)
+			direction_ratio = minf(down_ratio, up_ratio)
+			range_valid = min_string <= 5 and first >= 11 and last >= 11 \
 				and first - min_string >= 9 and last - min_string >= 9 \
-				and _direction_ratio(down_leg, false) >= 0.65 \
-				and _direction_ratio(up_leg, true) >= 0.65
+				and coverage_ratio >= 0.45
+			direction_valid = down_ratio >= 0.70 and up_ratio >= 0.70
 
-	glissando_round_locked = true
-	if success:
-		_on_glissando_round_success()
-	else:
-		_on_glissando_round_failed(span, glissando_detected_strings.size())
+	result["distinct_count"] = distinct_count
+	result["span"] = span
+	result["duration"] = duration
+	result["max_gap"] = max_gap
+	result["max_step"] = max_step
+	result["direction_ratio"] = direction_ratio
+	result["enough_strings"] = enough_strings
+	result["range_valid"] = range_valid
+	result["direction_valid"] = direction_valid
+	result["continuous"] = continuous
+	result["success"] = enough_strings and range_valid and direction_valid and continuous
+	return result
 
 func _on_glissando_round_success() -> void:
 	for note_data in glissando_display_notes:
@@ -2433,13 +2796,24 @@ func _on_glissando_round_success() -> void:
 			_start_glissando_round(completed_round + 1)
 	)
 
-func _on_glissando_round_failed(span: int, note_count: int) -> void:
+func _on_glissando_round_failed(result: Dictionary) -> void:
+	var feedback := "Chuỗi âm chưa đúng hướng mũi tên. Hãy vuốt lại đúng chiều."
+	var overlay_detail := "Cần vuốt đúng hướng mũi tên"
+	if not result.get("enough_strings", false):
+		feedback = "Chưa đủ số dây. Hãy vuốt qua ít nhất 6 dây khác nhau."
+		overlay_detail = "Cần vuốt qua ít nhất 6 dây"
+	elif not result.get("range_valid", false):
+		feedback = "Phạm vi Á chưa đủ rộng hoặc chưa chạm đúng vùng dây đầu/cuối."
+		overlay_detail = "Cần vuốt phạm vi dây rộng hơn"
+	elif not result.get("continuous", false):
+		feedback = "Chuỗi Á còn ngắt quãng hoặc bỏ cách quá nhiều dây. Hãy vuốt liền tay hơn."
+		overlay_detail = "Cần vuốt liền mạch hơn"
 	if glissando_status_label:
-		if note_count < 6 or span < 10:
-			glissando_status_label.text = "Chưa đủ rộng hoặc còn ngắt quãng. Hãy vuốt qua nhiều dây hơn."
-		else:
-			glissando_status_label.text = "Chuỗi âm chưa đúng hướng mũi tên. Hãy thử lại chậm và liền tay hơn."
+		glissando_status_label.text = feedback
 		glissando_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
+	var anchor_note := "Sol1" if mode == "up" else "La4"
+	_show_practice_error_feedback(anchor_note, overlay_detail, "Chưa đúng kỹ thuật Á")
 	_dan_tranh_attempts.append({
 		"correct_string": false,
 		"cents_error": 50.0,
@@ -2516,6 +2890,12 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_base_note_heard = false
 	press_exercise_locked = false
 	press_max_cents = 0.0
+	press_attack_generation = -1
+	press_contour_elapsed = 0.0
+	press_min_amplitude_db = 0.0
+	press_added_sound_elapsed = 0.0
+	# Never reuse a still-ringing attack from the previous instruction/attempt.
+	press_consumed_attack_generation = _get_current_technique_attack_generation()
 	for pair_idx in range(PRESS_EXERCISES.size()):
 		var color := Color(0.16, 0.14, 0.12, 1.0)
 		if pair_idx < exercise_index:
@@ -2542,7 +2922,7 @@ func _start_press_exercise(exercise_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _process_press_practice(delta: float) -> void:
-	if press_exercise_locked or press_exercise_idx >= PRESS_EXERCISES.size() or not analyzer:
+	if _is_micro_scoring_blocked() or press_exercise_locked or press_exercise_idx >= PRESS_EXERCISES.size() or not analyzer:
 		return
 	press_attempt_elapsed += delta
 	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
@@ -2552,23 +2932,63 @@ func _process_press_practice(delta: float) -> void:
 	var target_interval := float(exercise["interval"])
 	var pitch := float(analyzer.current_pitch)
 	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
+	var attack_identity := _get_technique_attack_identity()
 
 	if signal_active and source_hz > 0.0:
 		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
 		if not press_base_note_heard:
-			if absf(cents) <= 50.0:
+			var generation := int(attack_identity.get("generation", -1))
+			if absf(cents) <= 50.0 \
+					and generation != press_consumed_attack_generation \
+					and _is_press_source_attack_valid(attack_identity, source):
 				press_base_note_heard = true
+				press_attack_generation = generation
+				press_consumed_attack_generation = generation
+				press_contour_elapsed = 0.0
+				press_min_amplitude_db = float(analyzer.current_amplitude_db)
+				press_added_sound_elapsed = 0.0
 				press_silence_elapsed = 0.0
 				press_cents_history.append(cents)
 				if press_status_label:
-					press_status_label.text = "Đã nhận đúng %s. Hãy nhấn dần lên %s..." % [source, target]
+					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
+			elif bool(attack_identity.get("active", false)) \
+					and int(attack_identity.get("string_index", -1)) >= 0 \
+					and press_status_label:
+				var heard_note := str(attack_identity.get("note_name", "âm khác"))
+				press_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi nhấn." % [heard_note, source]
+				press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+				_show_practice_error_feedback(
+					source,
+					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, source],
+					"Sai dây"
+				)
 		else:
+			if not _is_press_contour_session_valid(attack_identity, source, press_attack_generation):
+				_reset_press_attempt_tracking("Âm nhấn không còn thuộc lần gảy dây %s. Hãy gảy lại đúng dây rồi nhấn." % source)
+				return
+			press_contour_elapsed += delta
+			press_min_amplitude_db = minf(press_min_amplitude_db, float(analyzer.current_amplitude_db))
+			if _is_press_added_sound_level(
+					float(analyzer.current_amplitude_db),
+					press_min_amplitude_db,
+					press_contour_elapsed
+			):
+				press_added_sound_elapsed += delta
+			else:
+				press_added_sound_elapsed = maxf(0.0, press_added_sound_elapsed - delta * 2.0)
+			if press_added_sound_elapsed >= PRESS_ADDED_SOUND_HOLD_SEC:
+				_reset_press_attempt_tracking("Phát hiện âm mới chồng lên tiếng đàn. Hãy chỉ gảy dây rồi nhấn bằng tay trái.")
+				return
 			press_silence_elapsed = 0.0
 			if cents >= -60.0 and cents <= target_interval + 110.0:
 				press_max_cents = maxf(press_max_cents, cents)
 				press_sample_accumulator += delta
 				while press_sample_accumulator >= PRESS_SAMPLE_INTERVAL:
 					press_sample_accumulator -= PRESS_SAMPLE_INTERVAL
+					if not press_cents_history.is_empty() \
+							and absf(cents - press_cents_history[-1]) > PRESS_MAX_SAMPLE_JUMP_CENTS:
+						_reset_press_attempt_tracking("Cao độ bị nhảy đột ngột, không giống một lần nhấn dây liên tục. Hãy gảy và nhấn lại.")
+						return
 					press_cents_history.append(cents)
 					if press_cents_history.size() > 180:
 						press_cents_history.pop_front()
@@ -2589,6 +3009,9 @@ func _process_press_practice(delta: float) -> void:
 					press_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
 	else:
 		press_silence_elapsed += delta
+		if press_base_note_heard and press_silence_elapsed >= PRESS_MAX_SIGNAL_GAP:
+			_reset_press_attempt_tracking("Tiếng đàn bị ngắt trước khi tới nốt đích. Hãy gảy lại và nhấn liền mạch.")
+			return
 
 	if press_base_note_heard and press_target_hold_elapsed >= 0.30:
 		var result := _analyze_press_contour(press_cents_history, target_interval)
@@ -2596,8 +3019,68 @@ func _process_press_practice(delta: float) -> void:
 			_on_press_exercise_success(result)
 			return
 
-	if press_attempt_elapsed >= PRESS_ATTEMPT_TIMEOUT or (press_base_note_heard and press_silence_elapsed >= 0.9):
-		_on_press_exercise_failed(target_interval)
+	if press_attempt_elapsed >= PRESS_ATTEMPT_TIMEOUT:
+		if press_base_note_heard:
+			_on_press_exercise_failed(target_interval)
+		else:
+			press_attempt_elapsed = 0.0
+			if press_status_label:
+				press_status_label.text = "Chưa nghe thấy lần gảy đúng dây. Hãy gảy nốt được chỉ dẫn để bắt đầu nhấn."
+				press_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+
+
+func _get_technique_attack_identity() -> Dictionary:
+	if analyzer and analyzer.has_method("get_dan_tranh_attack_identity"):
+		var identity = analyzer.call("get_dan_tranh_attack_identity")
+		if identity is Dictionary:
+			return identity
+	return {}
+
+
+func _get_current_technique_attack_generation() -> int:
+	return int(_get_technique_attack_identity().get("generation", -1))
+
+
+func _is_press_source_attack_valid(identity: Dictionary, source: String) -> bool:
+	return _is_valid_technique_source_attack(identity, source)
+
+
+func _is_press_contour_session_valid(identity: Dictionary, source: String, generation: int) -> bool:
+	return generation > 0 \
+		and int(identity.get("generation", -1)) == generation \
+		and _is_press_source_attack_valid(identity, source)
+
+
+func _is_valid_technique_source_attack(identity: Dictionary, expected_note: String) -> bool:
+	if not bool(identity.get("active", false)) \
+			or int(identity.get("generation", -1)) <= 0 \
+			or float(identity.get("confidence", 0.0)) <= 0.0:
+		return false
+	var expected_string := int(NOTE_TO_STRING.get(expected_note, -1))
+	return expected_string >= 0 \
+		and int(identity.get("string_index", -1)) == expected_string \
+		and str(identity.get("note_name", "")) == expected_note
+
+
+func _is_press_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
+	return contour_elapsed >= 0.12 and current_db >= minimum_db + PRESS_ADDED_SOUND_RISE_DB
+
+
+func _reset_press_attempt_tracking(message: String) -> void:
+	press_cents_history.clear()
+	press_sample_accumulator = 0.0
+	press_attempt_elapsed = 0.0
+	press_silence_elapsed = 0.0
+	press_target_hold_elapsed = 0.0
+	press_base_note_heard = false
+	press_attack_generation = -1
+	press_max_cents = 0.0
+	press_contour_elapsed = 0.0
+	press_min_amplitude_db = 0.0
+	press_added_sound_elapsed = 0.0
+	if press_status_label:
+		press_status_label.text = message
+		press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 
 func _analyze_press_contour(history: Array[float], target_interval: float) -> Dictionary:
 	var result := {
@@ -2605,7 +3088,10 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 		"max_cents": 0.0,
 		"final_cents": 0.0,
 		"rise_time": 0.0,
-		"smoothness": 0.0
+		"rise_delay": 0.0,
+		"smoothness": 0.0,
+		"max_step": 0.0,
+		"reversals": 0
 	}
 	if history.size() < 10 or target_interval <= 0.0:
 		return result
@@ -2623,6 +3109,9 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 	var negative_motion := 0.0
 	var rise_start_idx := -1
 	var target_idx := -1
+	var max_step := 0.0
+	var reversal_count := 0
+	var previous_direction := 0
 	for i in range(smoothed.size()):
 		max_cents = maxf(max_cents, smoothed[i])
 		if rise_start_idx < 0 and smoothed[i] >= target_interval * 0.12:
@@ -2631,10 +3120,16 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 			target_idx = i
 		if i > 0:
 			var movement := smoothed[i] - smoothed[i - 1]
+			max_step = maxf(max_step, absf(movement))
 			if movement >= 0.0:
 				positive_motion += movement
 			elif absf(movement) > 3.0:
 				negative_motion += absf(movement)
+			if target_idx < 0 and absf(movement) > 4.0:
+				var movement_direction := 1 if movement > 0.0 else -1
+				if previous_direction != 0 and movement_direction != previous_direction:
+					reversal_count += 1
+				previous_direction = movement_direction
 	var final_count := mini(8, smoothed.size())
 	var final_sum := 0.0
 	for i in range(smoothed.size() - final_count, smoothed.size()):
@@ -2643,17 +3138,24 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 	var rise_time := 0.0
 	if rise_start_idx >= 0 and target_idx >= rise_start_idx:
 		rise_time = float(target_idx - rise_start_idx) * PRESS_SAMPLE_INTERVAL
+	var rise_delay := float(rise_start_idx) * PRESS_SAMPLE_INTERVAL if rise_start_idx >= 0 else 999.0
 	var smoothness := positive_motion / maxf(positive_motion + negative_motion, 0.001)
 	result["max_cents"] = max_cents
 	result["final_cents"] = final_cents
 	result["rise_time"] = rise_time
+	result["rise_delay"] = rise_delay
 	result["smoothness"] = smoothness
+	result["max_step"] = max_step
+	result["reversals"] = reversal_count
 	result["detected"] = absf(smoothed[0]) <= 55.0 \
 		and max_cents >= target_interval - 38.0 \
 		and max_cents <= target_interval + 62.0 \
 		and absf(final_cents - target_interval) <= 42.0 \
 		and rise_time >= 0.10 and rise_time <= 2.5 \
-		and smoothness >= 0.62
+		and rise_delay <= PRESS_MAX_RISE_DELAY \
+		and max_step <= PRESS_MAX_SAMPLE_JUMP_CENTS \
+		and reversal_count <= 3 \
+		and smoothness >= 0.68
 	return result
 
 func _on_press_exercise_success(result: Dictionary) -> void:
@@ -2695,13 +3197,23 @@ func _on_press_exercise_failed(target_interval: float) -> void:
 	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
 	staff_display.queue_redraw()
 	var feedback := "Chưa nhận đúng nốt gốc. Hãy gảy đúng dây được chỉ dẫn trước."
+	var overlay_detail := "Cần gảy đúng dây trước khi nhấn"
 	if press_base_note_heard:
 		if press_max_cents < target_interval - 38.0:
 			feedback = "Chưa đủ cao. Hãy nhấn thêm một chút và giữ lực tay trái."
+			overlay_detail = "Cần nhấn cao thêm"
 		elif press_max_cents > target_interval + 62.0:
 			feedback = "Cao quá. Hãy giảm lực nhấn để không vượt nốt đích."
+			overlay_detail = "Cần giảm lực nhấn"
 		else:
 			feedback = "Đã gần đúng cao độ nhưng chưa giữ ổn định. Hãy nhấn đều và giữ nốt đích."
+			overlay_detail = "Cần giữ cao độ ổn định"
+	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
+	_show_practice_error_feedback(
+		str(exercise["source"]),
+		overlay_detail,
+		"Chưa đúng kỹ thuật Nhấn"
+	)
 	if press_status_label:
 		press_status_label.text = feedback
 		press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
@@ -2770,6 +3282,12 @@ func _start_vibrato_note(note_index: int) -> void:
 	vibrato_silence_elapsed = 0.0
 	vibrato_base_note_heard = false
 	vibrato_note_locked = false
+	vibrato_attack_generation = -1
+	vibrato_contour_elapsed = 0.0
+	vibrato_min_amplitude_db = 0.0
+	vibrato_added_sound_elapsed = 0.0
+	# A still-ringing note from the sample/instruction must not open a new turn.
+	vibrato_consumed_attack_generation = _get_current_technique_attack_generation()
 	for i in range(vibrato_display_notes.size()):
 		if i < note_index:
 			vibrato_display_notes[i]["color"] = Color(0.12, 0.72, 0.30, 1.0)
@@ -2793,25 +3311,59 @@ func _start_vibrato_note(note_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _process_vibrato_practice(delta: float) -> void:
-	if vibrato_note_locked or vibrato_note_idx >= VIBRATO_NOTES.size() or not analyzer:
+	if _is_micro_scoring_blocked() or vibrato_note_locked or vibrato_note_idx >= VIBRATO_NOTES.size() or not analyzer:
 		return
 	vibrato_attempt_elapsed += delta
 	var target_note := VIBRATO_NOTES[vibrato_note_idx]
 	var target_hz := float(NOTE_FREQS.get(target_note, 0.0))
 	var pitch := float(analyzer.current_pitch)
 	var signal_active: bool = analyzer.current_amplitude_db > analyzer.volume_threshold_db and pitch > 0.0
+	var attack_identity := _get_technique_attack_identity()
 
 	if signal_active and target_hz > 0.0:
 		var cents := 1200.0 * log(pitch / target_hz) / log(2.0)
 		if not vibrato_base_note_heard:
-			# The attack must first identify the requested physical string. Pitch is
-			# allowed to rise afterwards because left-hand rung bends the same string.
-			if absf(cents) <= 55.0:
+			var generation := int(attack_identity.get("generation", -1))
+			if absf(cents) <= 55.0 \
+					and generation != vibrato_consumed_attack_generation \
+					and _is_vibrato_source_attack_valid(attack_identity, target_note):
 				vibrato_base_note_heard = true
+				vibrato_attack_generation = generation
+				vibrato_consumed_attack_generation = generation
+				vibrato_contour_elapsed = 0.0
+				vibrato_min_amplitude_db = float(analyzer.current_amplitude_db)
+				vibrato_added_sound_elapsed = 0.0
 				vibrato_silence_elapsed = 0.0
 				if vibrato_status_label:
-					vibrato_status_label.text = "Đã nhận đúng %s. Tiếp tục rung đều tay trái..." % target_note
+					vibrato_status_label.text = "Đã nhận đúng lần gảy dây %s. Tiếp tục rung đều tay trái..." % target_note
+			elif bool(attack_identity.get("active", false)) \
+					and int(attack_identity.get("string_index", -1)) >= 0 \
+					and vibrato_status_label:
+				var heard_note := str(attack_identity.get("note_name", "âm khác"))
+				vibrato_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi rung." % [heard_note, target_note]
+				vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+				_show_practice_error_feedback(
+					target_note,
+					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, target_note],
+					"Sai dây"
+				)
 		else:
+			if not _is_vibrato_contour_session_valid(attack_identity, target_note, vibrato_attack_generation):
+				_reset_vibrato_attempt_tracking("Tiếng rung không còn thuộc lần gảy dây %s. Hãy gảy lại rồi rung." % target_note)
+				return
+			vibrato_contour_elapsed += delta
+			vibrato_min_amplitude_db = minf(vibrato_min_amplitude_db, float(analyzer.current_amplitude_db))
+			if _is_vibrato_added_sound_level(
+					float(analyzer.current_amplitude_db),
+					vibrato_min_amplitude_db,
+					vibrato_contour_elapsed
+			):
+				vibrato_added_sound_elapsed += delta
+			else:
+				vibrato_added_sound_elapsed = maxf(0.0, vibrato_added_sound_elapsed - delta * 2.0)
+			if vibrato_added_sound_elapsed >= VIBRATO_ADDED_SOUND_HOLD_SEC:
+				_reset_vibrato_attempt_tracking("Phát hiện giọng hoặc âm mới chồng lên tiếng đàn. Hãy chỉ gảy và rung dây bằng tay trái.")
+				return
 			vibrato_silence_elapsed = 0.0
 			if cents >= -70.0 and cents <= 190.0:
 				vibrato_sample_accumulator += delta
@@ -2822,6 +3374,9 @@ func _process_vibrato_practice(delta: float) -> void:
 						vibrato_pitch_history.pop_front()
 	else:
 		vibrato_silence_elapsed += delta
+		if vibrato_base_note_heard and vibrato_silence_elapsed >= VIBRATO_MAX_SIGNAL_GAP:
+			_reset_vibrato_attempt_tracking("Tiếng đàn bị ngắt giữa quá trình rung. Hãy gảy lại và rung liền mạch.")
+			return
 
 	if vibrato_base_note_heard and vibrato_pitch_history.size() >= 24:
 		var result := _analyze_vibrato_cents(vibrato_pitch_history)
@@ -2834,13 +3389,64 @@ func _process_vibrato_practice(delta: float) -> void:
 				float(result.get("rate_hz", 0.0))
 			]
 
-	if vibrato_attempt_elapsed >= VIBRATO_ATTEMPT_TIMEOUT or (vibrato_base_note_heard and vibrato_silence_elapsed >= 0.8):
-		_on_vibrato_note_failed()
+	if vibrato_attempt_elapsed >= VIBRATO_ATTEMPT_TIMEOUT:
+		if vibrato_base_note_heard:
+			_on_vibrato_note_failed()
+		else:
+			vibrato_attempt_elapsed = 0.0
+			if vibrato_status_label:
+				vibrato_status_label.text = "Chưa nghe thấy lần gảy đúng dây. Hãy gảy nốt được chỉ dẫn rồi mới bắt đầu rung."
+				vibrato_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
+
+
+func _is_vibrato_source_attack_valid(identity: Dictionary, target_note: String) -> bool:
+	return _is_valid_technique_source_attack(identity, target_note)
+
+
+func _is_vibrato_contour_session_valid(identity: Dictionary, target_note: String, generation: int) -> bool:
+	return generation > 0 \
+		and int(identity.get("generation", -1)) == generation \
+		and _is_vibrato_source_attack_valid(identity, target_note)
+
+
+func _is_vibrato_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
+	return contour_elapsed >= 0.12 and current_db >= minimum_db + VIBRATO_ADDED_SOUND_RISE_DB
+
+
+func _reset_vibrato_attempt_tracking(message: String) -> void:
+	vibrato_pitch_history.clear()
+	vibrato_sample_accumulator = 0.0
+	vibrato_attempt_elapsed = 0.0
+	vibrato_silence_elapsed = 0.0
+	vibrato_base_note_heard = false
+	vibrato_attack_generation = -1
+	vibrato_contour_elapsed = 0.0
+	vibrato_min_amplitude_db = 0.0
+	vibrato_added_sound_elapsed = 0.0
+	if vibrato_status_label:
+		vibrato_status_label.text = message
+		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 
 func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
-	var result := {"detected": false, "depth_cents": 0.0, "rate_hz": 0.0, "cycles": 0.0}
+	var result := {
+		"detected": false,
+		"depth_cents": 0.0,
+		"rate_hz": 0.0,
+		"cycles": 0.0,
+		"low_cents": 0.0,
+		"high_cents": 0.0,
+		"center_cents": 0.0,
+		"raw_low_cents": 0.0,
+		"raw_high_cents": 0.0,
+		"duration": 0.0
+	}
 	if history.size() < 24:
 		return result
+	var raw_low_cents := float(history[0])
+	var raw_high_cents := float(history[0])
+	for raw_cents in history:
+		raw_low_cents = minf(raw_low_cents, float(raw_cents))
+		raw_high_cents = maxf(raw_high_cents, float(raw_cents))
 	var smoothed: Array[float] = []
 	for i in range(history.size()):
 		var from_idx := maxi(0, i - 1)
@@ -2856,6 +3462,8 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	var high_idx := clampi(int(float(sorted.size() - 1) * 0.90), 0, sorted.size() - 1)
 	var depth: float = sorted[high_idx] - sorted[low_idx]
 	var center: float = (sorted[high_idx] + sorted[low_idx]) * 0.5
+	var low_cents: float = sorted[low_idx]
+	var high_cents: float = sorted[high_idx]
 	var hysteresis := maxf(2.5, depth * 0.10)
 	var state := 0
 	var switches := 0
@@ -2875,7 +3483,24 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	result["depth_cents"] = depth
 	result["rate_hz"] = rate
 	result["cycles"] = cycles
-	result["detected"] = cycles >= 2.0 and rate >= 3.0 and rate <= 9.0 and depth >= 12.0 and depth <= 145.0
+	result["low_cents"] = low_cents
+	result["high_cents"] = high_cents
+	result["center_cents"] = center
+	result["raw_low_cents"] = raw_low_cents
+	result["raw_high_cents"] = raw_high_cents
+	result["duration"] = duration
+	# Left-hand đàn-tranh vibrato bends an open string mainly upward from its
+	# resting pitch. Symmetric modulation around the sung note is typical vocal
+	# vibrato and must not pass even when its rate/depth looks convincing.
+	result["detected"] = duration >= VIBRATO_MIN_DURATION_SEC \
+		and cycles >= 2.5 \
+		and rate >= 3.0 and rate <= 9.0 \
+		and depth >= 12.0 and depth <= 145.0 \
+		and low_cents >= -28.0 \
+		and high_cents >= 14.0 \
+		and raw_low_cents >= VIBRATO_MIN_RAW_CENTS \
+		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS \
+		and center >= maxf(5.0, depth * 0.12)
 	return result
 
 func _on_vibrato_note_success(result: Dictionary) -> void:
@@ -2912,8 +3537,14 @@ func _on_vibrato_note_failed() -> void:
 	vibrato_note_locked = true
 	vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
 	staff_display.queue_redraw()
+	var feedback := "Chưa nhận được rung đều. Hãy gảy lại rồi nhồi dây nhẹ, liên tục bằng tay trái."
+	_show_practice_error_feedback(
+		VIBRATO_NOTES[vibrato_note_idx],
+		"Cần gảy lại và rung đều hơn",
+		"Chưa đúng kỹ thuật Rung"
+	)
 	if vibrato_status_label:
-		vibrato_status_label.text = "Chưa nhận được rung đều. Hãy gảy lại rồi nhồi dây nhẹ, liên tục bằng tay trái."
+		vibrato_status_label.text = feedback
 		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 	_dan_tranh_attempts.append({
 		"correct_string": false,
@@ -2954,8 +3585,10 @@ func _start_tremolo_exercise(exercise_index: int) -> void:
 	tremolo_exercise_idx = exercise_index
 	tremolo_attack_strings.clear()
 	tremolo_attack_times.clear()
+	tremolo_attack_generations.clear()
 	tremolo_attempt_started_at = 0.0
 	tremolo_last_attack_at = 0.0
+	tremolo_last_seen_generation = -1
 	tremolo_exercise_locked = false
 	tremolo_wrong_attacks = 0
 	_build_tremolo_display_notes()
@@ -3011,9 +3644,19 @@ func _build_tremolo_display_notes() -> void:
 	staff_display.set_notes(tremolo_display_notes)
 	staff_display.queue_redraw()
 
-func _append_tremolo_attack(string_idx: int) -> void:
-	if tremolo_exercise_locked or tremolo_exercise_idx >= TREMOLO_EXERCISES.size():
+func _append_tremolo_attack(
+	string_idx: int,
+	attack_time_sec: float,
+	attack_generation: int,
+	instrument_validated: bool
+) -> void:
+	if tremolo_exercise_locked or tremolo_exercise_idx >= TREMOLO_EXERCISES.size() \
+			or not instrument_validated:
 		return
+	if string_idx < 0 or string_idx >= ALL_17_NOTES.size() \
+			or attack_time_sec <= 0.0 or attack_generation <= tremolo_last_seen_generation:
+		return
+	tremolo_last_seen_generation = attack_generation
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var notes: Array = exercise["notes"]
 	var allowed_strings: Array[int] = []
@@ -3021,21 +3664,28 @@ func _append_tremolo_attack(string_idx: int) -> void:
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	if not allowed_strings.has(string_idx):
 		tremolo_wrong_attacks += 1
+		var target_label := str(notes[0])
+		if notes.size() > 1:
+			target_label = "%s – %s" % [notes[0], notes[1]]
 		if tremolo_status_label:
-			var target_label := str(notes[0])
-			if notes.size() > 1:
-				target_label = "%s – %s" % [notes[0], notes[1]]
 			tremolo_status_label.text = "Sai dây. Hãy vê đúng %s." % target_label
 			tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
+		_show_practice_error_feedback(
+			str(notes[0]),
+			"Cần vê đúng: %s" % target_label,
+			"Sai dây"
+		)
 		return
 
-	var now_sec := Time.get_ticks_msec() / 1000.0
+	if not tremolo_attack_times.is_empty() and attack_time_sec <= tremolo_attack_times.back():
+		return
 	if tremolo_attack_times.is_empty():
-		tremolo_attempt_started_at = now_sec
+		tremolo_attempt_started_at = attack_time_sec
 	tremolo_attack_strings.append(string_idx)
-	tremolo_attack_times.append(now_sec)
-	tremolo_last_attack_at = now_sec
-	var duration := now_sec - tremolo_attempt_started_at
+	tremolo_attack_times.append(attack_time_sec)
+	tremolo_attack_generations.append(attack_generation)
+	tremolo_last_attack_at = attack_time_sec
+	var duration := attack_time_sec - tremolo_attempt_started_at
 	var rate := float(tremolo_attack_times.size() - 1) / maxf(duration, 0.25)
 	if tremolo_status_label:
 		tremolo_status_label.text = "Đã nghe %d lần gảy · %.1f lần/giây · tiếp tục giữ đều..." % [
@@ -3044,7 +3694,7 @@ func _append_tremolo_attack(string_idx: int) -> void:
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
 
 func _process_tremolo_practice() -> void:
-	if tremolo_exercise_locked or tremolo_attack_times.is_empty():
+	if _is_micro_scoring_blocked() or tremolo_exercise_locked or tremolo_attack_times.is_empty():
 		return
 	var now_sec := Time.get_ticks_msec() / 1000.0
 	var duration := now_sec - tremolo_attempt_started_at
@@ -3059,13 +3709,80 @@ func _evaluate_tremolo_attempt() -> void:
 	tremolo_exercise_locked = true
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
-	var count := tremolo_attack_times.size()
+	var allowed_strings: Array[int] = []
+	for note_name in exercise["notes"]:
+		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
+	var result := _analyze_tremolo_sequence(
+		tremolo_attack_strings,
+		tremolo_attack_times,
+		tremolo_attack_generations,
+		mode,
+		allowed_strings,
+		tremolo_wrong_attacks
+	)
+	if result.get("success", false):
+		_on_tremolo_success(
+			float(result.get("rate", 0.0)),
+			float(result.get("regularity", 0.0)),
+			float(result.get("alternating_ratio", 1.0))
+		)
+	else:
+		_on_tremolo_failed(result)
+
+
+func _analyze_tremolo_sequence(
+	strings: Array[int],
+	times: Array[float],
+	generations: Array[int],
+	mode: String,
+	allowed_strings: Array[int],
+	wrong_attacks: int
+) -> Dictionary:
+	var count := times.size()
+	var result := {
+		"success": false,
+		"count": count,
+		"duration": 0.0,
+		"rate": 0.0,
+		"max_gap": 99.0,
+		"regularity": 0.0,
+		"alternating_ratio": 1.0,
+		"balance_ok": mode != "octave",
+		"all_attacks_valid": false,
+		"correct_strings": false
+	}
+	if mode not in ["single", "octave"]:
+		return result
+	if (mode == "single" and allowed_strings.size() != 1) \
+			or (mode == "octave" and allowed_strings.size() != 2):
+		return result
+	var unique_allowed_strings: Dictionary = {}
+	for allowed_string in allowed_strings:
+		if allowed_string < 0 or allowed_string >= ALL_17_NOTES.size() \
+				or unique_allowed_strings.has(allowed_string):
+			return result
+		unique_allowed_strings[allowed_string] = true
+	if count == 0 or strings.size() != count or generations.size() != count \
+			or wrong_attacks < 0:
+		return result
+
+	var all_attacks_valid := true
+	var correct_strings := wrong_attacks == 0
+	for i in range(count):
+		if generations[i] <= 0 or (i > 0 and generations[i] <= generations[i - 1]):
+			all_attacks_valid = false
+		if not allowed_strings.has(strings[i]):
+			correct_strings = false
+
 	var duration := 0.0
 	if count >= 2:
-		duration = tremolo_attack_times[count - 1] - tremolo_attack_times[0]
+		duration = times.back() - times.front()
 	var intervals: Array[float] = []
 	for i in range(1, count):
-		intervals.append(tremolo_attack_times[i] - tremolo_attack_times[i - 1])
+		var interval := times[i] - times[i - 1]
+		if interval <= 0.0:
+			all_attacks_valid = false
+		intervals.append(interval)
 	var mean_interval := 0.0
 	var max_gap := 99.0
 	var regularity := 0.0
@@ -3088,26 +3805,36 @@ func _evaluate_tremolo_attempt() -> void:
 		var transitions := 0
 		var first_count := 0
 		var second_count := 0
-		var exercise_notes: Array = exercise["notes"]
-		var first_string := int(NOTE_TO_STRING.get(str(exercise_notes[0]), -1))
+		var first_string := allowed_strings[0]
 		for i in range(count):
-			if tremolo_attack_strings[i] == first_string:
+			if strings[i] == first_string:
 				first_count += 1
 			else:
 				second_count += 1
-			if i > 0 and tremolo_attack_strings[i] != tremolo_attack_strings[i - 1]:
+			if i > 0 and strings[i] != strings[i - 1]:
 				transitions += 1
 		alternating_ratio = float(transitions) / float(maxi(1, count - 1))
 		balance_ok = first_count >= 3 and second_count >= 3
 
-	var success := count >= 8 and duration >= 1.7 and rate >= 3.5 and rate <= 13.0 \
-		and max_gap <= 0.48 and regularity >= 0.42 and tremolo_wrong_attacks <= 1
+	var success := all_attacks_valid and correct_strings \
+		and count >= TREMOLO_MIN_ATTACK_COUNT \
+		and duration >= TREMOLO_MIN_SCORED_DURATION \
+		and rate >= TREMOLO_MIN_RATE and rate <= TREMOLO_MAX_RATE \
+		and max_gap <= TREMOLO_MAX_ATTACK_GAP \
+		and regularity >= TREMOLO_MIN_REGULARITY
 	if mode == "octave":
-		success = success and alternating_ratio >= 0.72 and balance_ok
-	if success:
-		_on_tremolo_success(rate, regularity, alternating_ratio)
-	else:
-		_on_tremolo_failed(count, duration, rate, max_gap, regularity, alternating_ratio)
+		success = success and alternating_ratio >= 0.78 and balance_ok
+
+	result["duration"] = duration
+	result["rate"] = rate
+	result["max_gap"] = max_gap
+	result["regularity"] = regularity
+	result["alternating_ratio"] = alternating_ratio
+	result["balance_ok"] = balance_ok
+	result["all_attacks_valid"] = all_attacks_valid
+	result["correct_strings"] = correct_strings
+	result["success"] = success
+	return result
 
 func _set_tremolo_note_color(color: Color) -> void:
 	for note in tremolo_display_notes:
@@ -3144,26 +3871,43 @@ func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: floa
 			_start_tremolo_exercise(completed_exercise + 1)
 	)
 
-func _on_tremolo_failed(count: int, duration: float, rate: float, max_gap: float, regularity: float, alternating_ratio: float) -> void:
+func _on_tremolo_failed(result: Dictionary) -> void:
 	_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
+	var count := int(result.get("count", 0))
+	var duration := float(result.get("duration", 0.0))
+	var rate := float(result.get("rate", 0.0))
+	var max_gap := float(result.get("max_gap", 99.0))
+	var regularity := float(result.get("regularity", 0.0))
+	var alternating_ratio := float(result.get("alternating_ratio", 1.0))
 	var feedback := "Chưa đủ số lần gảy. Hãy dùng hai ngón gảy liên tục và nhanh hơn."
-	if count >= 8 and duration < 1.7:
+	if not result.get("all_attacks_valid", false):
+		feedback = "Có lần tấn công âm chưa được xác nhận là tiếng dây đàn. Hãy vê rõ từng tiếng trên đàn thật."
+	elif not result.get("correct_strings", false):
+		feedback = "Bạn đã gảy nhầm dây. Hãy nhìn đúng nốt đang được chỉ dẫn trên sheet."
+	elif count >= TREMOLO_MIN_ATTACK_COUNT and duration < TREMOLO_MIN_SCORED_DURATION:
 		feedback = "Bạn đang vê quá ngắn. Hãy duy trì tiếng vê liên tục khoảng 3 giây."
-	elif max_gap > 0.48:
+	elif max_gap > TREMOLO_MAX_ATTACK_GAP:
 		feedback = "Tiếng vê đang bị ngắt quãng. Hãy giữ hai ngón luân phiên liên tục."
-	elif rate > 13.0:
+	elif rate < TREMOLO_MIN_RATE:
+		feedback = "Tốc độ vê còn chậm. Hãy tăng dần tốc độ nhưng vẫn giữ rõ từng tiếng."
+	elif rate > TREMOLO_MAX_RATE:
 		feedback = "Tốc độ quá gấp và chưa rõ tiếng. Hãy giảm nhẹ tốc độ để từng tiếng đều hơn."
-	elif regularity < 0.42:
+	elif regularity < TREMOLO_MIN_REGULARITY:
 		feedback = "Các lần gảy chưa đều. Hãy giữ chuyển động hai ngón ổn định hơn."
-	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" and alternating_ratio < 0.72:
+	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" \
+			and (alternating_ratio < 0.78 or not result.get("balance_ok", false)):
 		feedback = "Hãy gảy luân phiên nốt thấp và nốt cao; không lặp nhiều lần trên cùng một dây."
-	elif tremolo_wrong_attacks > 1:
-		feedback = "Bạn đã gảy nhầm dây. Hãy nhìn đúng hai nốt đang được chỉ dẫn trên sheet."
+	var target_notes: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["notes"]
+	_show_practice_error_feedback(
+		str(target_notes[0]),
+		"Cần vê nhanh, đều và đúng dây",
+		"Chưa đúng kỹ thuật Vê"
+	)
 	if tremolo_status_label:
 		tremolo_status_label.text = feedback
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 	_dan_tranh_attempts.append({
-		"correct_string": tremolo_wrong_attacks <= 1,
+		"correct_string": bool(result.get("correct_strings", false)),
 		"cents_error": 0.0,
 		"timing": regularity * 100.0,
 		"attack_clarity": clampf(rate / 7.0 * 100.0, 0.0, 100.0),
@@ -3442,14 +4186,17 @@ func _is_note_missing(note_idx: int) -> bool:
 func _start_practice():
 	_stop_technique_sample()
 	current_state = State.PRACTICE
-	if _is_error_flash_demo():
-		if error_flash_tween and error_flash_tween.is_running():
-			error_flash_tween.kill()
-		if error_pulse_tween and error_pulse_tween.is_running():
-			error_pulse_tween.kill()
-		if error_shake_tween and error_shake_tween.is_running():
-			error_shake_tween.kill()
-		_set_error_demo_note_color(false)
+	if error_flash_tween and error_flash_tween.is_running():
+		error_flash_tween.kill()
+	if error_pulse_tween and error_pulse_tween.is_running():
+		error_pulse_tween.kill()
+	if error_shake_tween and error_shake_tween.is_running():
+		error_shake_tween.kill()
+	_set_error_demo_note_color(false)
+	error_feedback_showing = false
+	error_feedback_target_note = ""
+	error_feedback_title = "Chưa đúng"
+	error_feedback_detail = ""
 	teacher_area.visible = false
 	feedback_area.visible = true
 	practice_idx = 0
@@ -3458,7 +4205,9 @@ func _start_practice():
 	consecutive_hits = 0
 	consecutive_misses = 0
 	total_misses = 0
-	staff_display.use_note_colors = _is_error_flash_demo() or _is_glissando_practice() or _is_press_practice() or _is_vibrato_practice() or _is_tremolo_practice()
+	# Every real practice can now pulse its exact target note on a validated error.
+	# The 99+ lesson still keeps its separate automatic demo timer below.
+	staff_display.use_note_colors = true
 	if _is_error_flash_demo():
 		error_flash_timer = 0.75
 		error_flash_note = {}
@@ -3474,6 +4223,8 @@ func _start_practice():
 		speed_bar_container.visible = true
 	if skip_intro_btn:
 		skip_intro_btn.visible = false
+	if previous_intro_btn:
+		previous_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = true
 	
@@ -3559,7 +4310,8 @@ func _start_practice():
 			else:
 				n_type = "sixteenth"
 				
-			for single_note in notes_in_chord:
+			for chord_component_index in range(notes_in_chord.size()):
+				var single_note = notes_in_chord[chord_component_index]
 				var string_idx = NOTE_TO_STRING.get(single_note, 0)
 				var final_color = note_color
 						
@@ -3574,6 +4326,7 @@ func _start_practice():
 					"is_missing": missing,
 					"cue": cue_name,
 					"chord_group_id": i,
+					"chord_component_index": chord_component_index,
 					"raw_chord_name": raw_note_name,
 					"type": n_type
 				})
@@ -3586,6 +4339,7 @@ func _process_practice(delta):
 		
 	if mic_cooldown > 0.0:
 		mic_cooldown -= delta
+	wrong_note_cooldown = maxf(0.0, wrong_note_cooldown - delta)
 
 	practice_time += delta
 	var hit_x = staff_display.hit_line_x
@@ -3632,12 +4386,17 @@ func _process_practice(delta):
 		# Active practice note handling
 		if not is_sample_mode and note.get("is_missing", false) and not note.get("hit", false):
 			if abs(note["x"] - hit_x) < 40.0 or (is_wait_mode and note["x"] <= hit_x):
+				var raw_chord_name = note.get("raw_chord_name", clean_note)
+				if not _should_score_polyphonic_component(
+					raw_chord_name,
+					int(note.get("chord_component_index", 0))
+				):
+					continue
+
 				# Highlight target string on zither board
 				zither_board.call("set_lesson_marker", s_idx, "Gảy: " + clean_note, 1)
 				
 				var target_hz = NOTE_FREQS.get(clean_note, 0.0)
-				
-				var raw_chord_name = note.get("raw_chord_name", clean_note)
 				if mic_cooldown <= 0.0 and _check_mic_pitch(target_hz, delta, raw_chord_name):
 					var cents_err = 0.0
 					if analyzer:
@@ -3688,12 +4447,21 @@ func _process_practice(delta):
 					continue
 					
 				# 2. Check if user played WRONG note (requires 0.18s debounce hold time)
-				if analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
+				if not _is_micro_scoring_blocked() and analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
 					var db = analyzer.current_amplitude_db
 					if db > -28.0:
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 						var det_name = note_info.get("note_name", "None")
 						var det_idx = note_info.get("string_index", -1)
+						var is_partial_polyphonic: bool = "+" in raw_chord_name \
+							and det_name in raw_chord_name.split("+")
+						if det_name != "None" and det_idx >= 0 and is_partial_polyphonic:
+							wrong_note_time += delta
+							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+								wrong_note_time = 0.0
+								wrong_note_cooldown = 2.0
+								_show_polyphonic_incomplete(raw_chord_name)
+							continue
 						var is_wrong = true
 						if "+" in raw_chord_name:
 							if det_name in raw_chord_name.split("+"):
@@ -3759,7 +4527,11 @@ func _process_practice(delta):
 			glissando_progress_bar.value = completed
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
-	if not analyzer:
+	if _is_micro_scoring_blocked() or not analyzer:
+		time_correct = 0.0
+		return false
+	if analyzer.has_method("has_recent_dan_tranh_attack") \
+			and not analyzer.has_recent_dan_tranh_attack():
 		time_correct = 0.0
 		return false
 
@@ -3777,33 +4549,9 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 	var is_match = false
 	if is_poly:
-		var notes = _target_note_name.split("+")
-		if analyzer and analyzer.get("_spectrum") != null:
-			var spec = analyzer.get("_spectrum") as AudioEffectSpectrumAnalyzerInstance
-			var all_detected = true
-			for n in notes:
-				var freq = NOTE_FREQS.get(n, 0.0)
-				if freq > 0.0:
-					var mag1 = spec.get_magnitude_for_frequency_range(freq * 0.97, freq * 1.03).length()
-					var mag2 = spec.get_magnitude_for_frequency_range(freq * 1.97, freq * 2.03).length()
-					var max_mag = max(mag1, mag2)
-					var freq_db = 20.0 * log(max_mag) / log(10) if max_mag > 0.0001 else -80.0
-					# Relaxed threshold to -52.0 dB to prevent soft pluck chord recognition failure
-					if freq_db < -52.0:
-						all_detected = false
-						break
-			if all_detected:
-				is_match = true
-		
-		# Fallback to monophonic YIN match of any note in the chord if spectrum analyzer did not match
-		if not is_match:
-			for n in notes:
-				var freq = NOTE_FREQS.get(n, 0.0)
-				if freq > 0.0 and pitch > 0.0:
-					var cents_error = absf(1200.0 * log(pitch / freq) / log(2.0))
-					if cents_error <= 45.0: # Match robust threshold
-						is_match = true
-						break
+		# Every polyphonic target is spectrum-only. YIN returns one fundamental;
+		# falling back to it would allow a single component to complete a chord.
+		is_match = _are_all_chord_fundamentals_present(_target_note_name.split("+"))
 	else:
 		if target_hz > 0.0 and pitch > 0.0:
 			var cents_error = 1200.0 * log(pitch / target_hz) / log(2.0)
@@ -3812,10 +4560,14 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 				pitch_meter.is_active = true
 				pitch_meter.queue_redraw()
 			is_match = _is_pitch_match_robust(target_hz, _target_note_name, pitch)
+
+	if is_poly:
+		return _advance_polyphonic_confirmation(is_match, delta)
+
 	var hold_time_needed = REQUIRED_HOLD_TIME
-	if target_hz > 1000.0:
+	if not is_poly and target_hz > 1000.0:
 		hold_time_needed = 0.08  # ~5 frames for extremely high strings (Đô3, Mi3, Sol4, La4)
-	elif target_hz > 600.0:
+	elif not is_poly and target_hz > 600.0:
 		hold_time_needed = 0.12  # ~7 frames for high strings (Sol3, La3)
 
 	if not is_match:
@@ -3828,6 +4580,101 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 	time_correct = 0.0
 	return true
+
+
+func _should_score_polyphonic_component(raw_chord_name: String, component_index: int) -> bool:
+	if "+" not in raw_chord_name:
+		return true
+	# All visual components belong to one microphone gesture. Only the first may
+	# update the shared confirmation timer in a frame.
+	return component_index == 0
+
+
+func _advance_polyphonic_confirmation(all_fundamentals_present: bool, delta: float) -> bool:
+	if not all_fundamentals_present:
+		# Missing either component breaks simultaneity; do not retain partial time.
+		time_correct = 0.0
+		return false
+
+	time_correct += maxf(delta, 0.0)
+	if time_correct < CHORD_SIMULTANEOUS_HOLD_TIME:
+		return false
+
+	time_correct = 0.0
+	return true
+
+
+func _are_all_chord_fundamentals_present(
+	notes: PackedStringArray,
+	band_db_reader: Callable = Callable()
+) -> bool:
+	if notes.size() < 2:
+		return false
+	if not band_db_reader.is_valid() and (not analyzer or analyzer.get("_spectrum") == null):
+		return false
+
+	var target_names: Dictionary = {}
+	var target_physical_strings: Dictionary = {}
+	var target_frequencies: Array[float] = []
+	var component_levels: Array[float] = []
+	for note_name in notes:
+		var frequency: float = NOTE_FREQS.get(note_name, 0.0)
+		if frequency <= 0.0:
+			return false
+		var physical_string := int(NOTE_TO_STRING.get(note_name, -1))
+		if physical_string < 0 or target_names.has(note_name) \
+				or target_physical_strings.has(physical_string):
+			return false
+		target_names[note_name] = true
+		target_physical_strings[physical_string] = true
+		target_frequencies.append(frequency)
+
+		var fundamental_db: float
+		if band_db_reader.is_valid():
+			fundamental_db = float(band_db_reader.call(frequency))
+		else:
+			fundamental_db = _get_spectrum_band_db(frequency, 0.03)
+
+		if fundamental_db < CHORD_MIN_FUNDAMENTAL_DB:
+			return false
+		component_levels.append(fundamental_db)
+
+	component_levels.sort()
+	var weakest_target_db := float(component_levels[0])
+	var strongest_target_db := float(component_levels[component_levels.size() - 1])
+	if strongest_target_db - weakest_target_db > CHORD_MAX_COMPONENT_SPREAD_DB:
+		return false
+
+	# Reject a clearly played non-target string. Ignore bins that are integer
+	# harmonics of a requested lower string because those naturally belong to its
+	# timbre and are not independent extra notes.
+	for physical_note in ALL_17_NOTES:
+		if target_names.has(physical_note):
+			continue
+		var other_frequency: float = NOTE_FREQS.get(physical_note, 0.0)
+		if other_frequency <= 0.0 or _is_target_harmonic(other_frequency, target_frequencies):
+			continue
+		var other_db: float
+		if band_db_reader.is_valid():
+			other_db = float(band_db_reader.call(other_frequency))
+		else:
+			other_db = _get_spectrum_band_db(other_frequency, 0.03)
+		if other_db >= CHORD_MIN_FUNDAMENTAL_DB \
+				and other_db >= weakest_target_db - CHORD_UNEXPECTED_NOTE_MARGIN_DB:
+			return false
+
+	return true
+
+
+func _is_target_harmonic(frequency: float, target_frequencies: Array[float]) -> bool:
+	for target_frequency in target_frequencies:
+		if target_frequency <= 0.0 or frequency <= target_frequency:
+			continue
+		var ratio := frequency / target_frequency
+		var harmonic := roundf(ratio)
+		if harmonic >= 2.0 and harmonic <= 4.0 and absf(ratio - harmonic) <= 0.03:
+			return true
+	return false
 
 
 
@@ -4150,8 +4997,28 @@ func _generate_pluck_stream(freq: float) -> AudioStreamWAV:
 
 # --- Tạo nút Skip (Bỏ qua hướng dẫn) ---
 var skip_intro_btn: Button = null
+var previous_intro_btn: Button = null
 
 func _create_skip_intro_button():
+	previous_intro_btn = _create_aesthetic_btn(
+		"← TRƯỚC",
+		"res://icons8/icons8-back-100.png",
+		false,
+		C_WOOD,
+		C_WOOD.lightened(0.12),
+		Color.WHITE,
+		C_GOLD,
+		16,
+		Vector2(150, 48)
+	)
+	add_child(previous_intro_btn)
+	previous_intro_btn.anchor_left = 1.0
+	previous_intro_btn.anchor_right = 1.0
+	previous_intro_btn.anchor_top = 1.0
+	previous_intro_btn.anchor_bottom = 1.0
+	previous_intro_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	previous_intro_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
 	skip_intro_btn = _create_aesthetic_btn(
 		"SKIP", 
 		"res://icons8/icons8-play-100.png", 
@@ -4175,6 +5042,10 @@ func _create_skip_intro_button():
 	
 	# Cập nhật vị trí nút theo kích thước viewport (responsive)
 	var update_skip_pos = func():
+		previous_intro_btn.offset_left = -350
+		previous_intro_btn.offset_right = -200
+		previous_intro_btn.offset_top = -85
+		previous_intro_btn.offset_bottom = -40
 		skip_intro_btn.offset_left = -190
 		skip_intro_btn.offset_right = -40
 		skip_intro_btn.offset_top = -85
@@ -4187,6 +5058,18 @@ func _create_skip_intro_button():
 	skip_intro_btn.pressed.connect(func():
 		_start_practice()
 	)
+	previous_intro_btn.pressed.connect(_play_previous_intro_step)
+
+
+func _play_previous_intro_step() -> void:
+	if current_state != State.INTRO:
+		return
+	# intro_step points to the next speech after the one currently on screen.
+	# Move back two positions, then let the regular dialogue renderer replay it.
+	if intro_step <= 1:
+		return
+	intro_step = max(0, intro_step - 2)
+	_play_next_intro_step()
 
 # --- Hệ thống Tạm dừng (Pause) & Nghe mẫu (Sample) ---
 var pause_btn: Button = null
@@ -4451,6 +5334,9 @@ func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Butt
 	_make_btn_bouncy(btn)
 	return btn
 
+
+# Bài 1 có video giới thiệu riêng. Đặt lối vào ngay trong màn luyện để người học
+# không phải quay về danh sách bài mới tìm được nút "Hướng dẫn".
 func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool, bg_color: Color, hover_bg_color: Color, text_color: Color, hover_text_color: Color, radius: int, size: Vector2) -> Button:
 	var btn = Button.new()
 	btn.custom_minimum_size = size

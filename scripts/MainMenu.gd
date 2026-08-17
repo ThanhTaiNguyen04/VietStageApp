@@ -443,6 +443,7 @@ func _draw_roadmap_paths() -> void:
 		_draw_thick_path(p_ess, p_sol_sk)
 		_draw_thick_path(p_sol_sk, p_cho_sk)
 		_draw_thick_path(p_cho_sk, p_pop)
+
 	else:
 		# Draw roadmap line segments connecting cards
 		# Basic Card -> Essentials Card -> Split point
@@ -1093,8 +1094,8 @@ func _style_account_menu() -> void:
 	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 35))
 	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 35))
 
-	var panel_style := _flat(Color(0.93, 0.91, 0.87, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.58), 24)
-	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.34)
+	var panel_style := _flat(Color(0.97, 0.96, 0.93, 0.88), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 24)
+	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
 	panel_style.shadow_size = 22
 	panel_style.shadow_offset = Vector2(0, 10)
 	account_panel.add_theme_stylebox_override("panel", panel_style)
@@ -1188,7 +1189,7 @@ func _confirm_logout() -> void:
 	layer.layer = 100
 
 	var overlay := ColorRect.new()
-	overlay.color = Color(0, 0, 0, 0.4)
+	overlay.color = Color(0.06, 0.04, 0.02, 0.55) # Deep warm backdrop
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(overlay)
 
@@ -1197,41 +1198,48 @@ func _confirm_logout() -> void:
 	layer.add_child(center)
 
 	var panel := PanelContainer.new()
-	# Minimalist white card style with thin border
-	var p_style := _flat(Color.WHITE, Color("#EAEAEA"), 16)
-	p_style.shadow_color = Color(0, 0, 0, 0.05)
-	p_style.shadow_size = 16
-	p_style.shadow_offset = Vector2(0, 4)
+	# Warm lacquer ivory card with gold border and elegant shadow
+	var p_style := StyleBoxFlat.new()
+	p_style.bg_color = Color(0.99, 0.98, 0.96, 0.98) # Warm lacquer ivory #FAF8F5
+	p_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45) # Soft gold border
+	p_style.border_width_left = 2; p_style.border_width_right = 2
+	p_style.border_width_top = 2; p_style.border_width_bottom = 2
+	p_style.corner_radius_top_left = 24; p_style.corner_radius_top_right = 24
+	p_style.corner_radius_bottom_left = 24; p_style.corner_radius_bottom_right = 24
+	p_style.shadow_color = Color(0.13, 0.08, 0.05, 0.18)
+	p_style.shadow_size = 20
+	p_style.shadow_offset = Vector2(0, 6)
 	panel.add_theme_stylebox_override("panel", p_style)
-	panel.custom_minimum_size = Vector2(340, 0)
+	panel.custom_minimum_size = Vector2(440, 0)
 	center.add_child(panel)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 32)
-	margin.add_theme_constant_override("margin_right", 32)
+	margin.add_theme_constant_override("margin_left", 36)
+	margin.add_theme_constant_override("margin_right", 36)
 	margin.add_theme_constant_override("margin_top", 32)
 	margin.add_theme_constant_override("margin_bottom", 32)
 	panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 24)
+	vbox.add_theme_constant_override("separation", 22)
 	margin.add_child(vbox)
-
-	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-
+	var bold_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
+	if not bold_font:
+		bold_font = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var body_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	var title := Label.new()
 	title.text = "Đăng xuất"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if bold_font: title.add_theme_font_override("font", bold_font)
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color("#111111")) # Charcoal black
+	title.add_theme_font_size_override("font_size", 26)
+	title.add_theme_color_override("font_color", C_RED_SON) # Jade Green
 	vbox.add_child(title)
 
 	var msg := Label.new()
 	msg.text = "Kết thúc phiên đăng nhập hiện tại?"
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	msg.add_theme_font_size_override("font_size", 16)
-	msg.add_theme_color_override("font_color", Color("#787774")) # Muted gray
+	msg.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0)) # Muted warm brown
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(msg)
 
@@ -1243,32 +1251,69 @@ func _confirm_logout() -> void:
 	btn_cancel.text = "Ở lại"
 	btn_cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_cancel.custom_minimum_size.y = 48
-	# White button with thin border
-	var cancel_normal := _flat(Color.WHITE, Color("#EAEAEA"), 12)
-	var cancel_hover := _flat(Color("#F7F6F3"), Color("#EAEAEA"), 12)
+	# Outline pill button (Sidebar secondary style)
+	var cancel_normal := StyleBoxFlat.new()
+	cancel_normal.bg_color = Color(0, 0, 0, 0)
+	cancel_normal.border_color = C_RED_SON
+	cancel_normal.border_width_left = 2; cancel_normal.border_width_right = 2
+	cancel_normal.border_width_top = 2; cancel_normal.border_width_bottom = 2
+	cancel_normal.corner_radius_top_left = 24; cancel_normal.corner_radius_top_right = 24
+	cancel_normal.corner_radius_bottom_left = 24; cancel_normal.corner_radius_bottom_right = 24
+	
+	var cancel_hover := cancel_normal.duplicate() as StyleBoxFlat
+	cancel_hover.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
+	cancel_hover.border_color = C_GOLD
+	
+	var cancel_pressed := cancel_normal.duplicate() as StyleBoxFlat
+	cancel_pressed.bg_color = Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15)
+	cancel_pressed.border_color = C_RED_SON
+	
 	btn_cancel.add_theme_stylebox_override("normal", cancel_normal)
 	btn_cancel.add_theme_stylebox_override("hover", cancel_hover)
-	btn_cancel.add_theme_stylebox_override("pressed", cancel_hover)
-	btn_cancel.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12))
-	btn_cancel.add_theme_color_override("font_color", Color("#111111"))
-	btn_cancel.add_theme_color_override("font_hover_color", Color("#111111"))
-	if bold_font: btn_cancel.add_theme_font_override("font", bold_font)
+	btn_cancel.add_theme_stylebox_override("pressed", cancel_pressed)
+	btn_cancel.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn_cancel.add_theme_color_override("font_color", C_RED_SON)
+	btn_cancel.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
+	btn_cancel.add_theme_color_override("font_pressed_color", C_RED_SON)
+	btn_cancel.add_theme_font_size_override("font_size", 16)
+	if body_font: btn_cancel.add_theme_font_override("font", body_font)
+	_make_btn_bouncy(btn_cancel)
 	hbox.add_child(btn_cancel)
 
 	var btn_logout := Button.new()
 	btn_logout.text = "Đăng xuất"
 	btn_logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_logout.custom_minimum_size.y = 48
-	# Solid charcoal button
-	var logout_normal := _flat(Color("#f90606"), Color("#f80707"), 12)
-	var logout_hover := _flat(Color("#f90606").lightened(0.15), Color("#f80707"), 12)
+	# Lacquer Vermilion Red & Gold button
+	var c_red_lacquer := Color(0.82, 0.18, 0.12, 1.0) # Premium Lacquer Vermilion Red
+	var logout_normal := StyleBoxFlat.new()
+	logout_normal.bg_color = c_red_lacquer
+	logout_normal.border_color = C_GOLD
+	logout_normal.border_width_left = 2; logout_normal.border_width_right = 2
+	logout_normal.border_width_top = 2; logout_normal.border_width_bottom = 2
+	logout_normal.corner_radius_top_left = 24; logout_normal.corner_radius_top_right = 24
+	logout_normal.corner_radius_bottom_left = 24; logout_normal.corner_radius_bottom_right = 24
+	logout_normal.shadow_size = 8
+	logout_normal.shadow_color = Color(c_red_lacquer.r, c_red_lacquer.g, c_red_lacquer.b, 0.40)
+	
+	var logout_hover := logout_normal.duplicate() as StyleBoxFlat
+	logout_hover.bg_color = Color(0.92, 0.25, 0.18, 1.0) # Brighter red
+	logout_hover.border_color = C_GOLD_LIGHT
+	
+	var logout_pressed := logout_normal.duplicate() as StyleBoxFlat
+	logout_pressed.bg_color = Color(0.68, 0.12, 0.08, 1.0) # Deeper red
+	logout_pressed.border_color = C_GOLD
+	
 	btn_logout.add_theme_stylebox_override("normal", logout_normal)
 	btn_logout.add_theme_stylebox_override("hover", logout_hover)
-	btn_logout.add_theme_stylebox_override("pressed", logout_hover)
-	btn_logout.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 12))
-	btn_logout.add_theme_color_override("font_color", Color.WHITE)
+	btn_logout.add_theme_stylebox_override("pressed", logout_pressed)
+	btn_logout.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn_logout.add_theme_color_override("font_color", Color(0.99, 0.98, 0.95, 1.0))
 	btn_logout.add_theme_color_override("font_hover_color", Color.WHITE)
-	if bold_font: btn_logout.add_theme_font_override("font", bold_font)
+	btn_logout.add_theme_color_override("font_pressed_color", Color(0.90, 0.88, 0.84, 1.0))
+	btn_logout.add_theme_font_size_override("font_size", 16)
+	if body_font: btn_logout.add_theme_font_override("font", body_font)
+	_make_btn_bouncy(btn_logout)
 	hbox.add_child(btn_logout)
 
 	add_child(layer)
@@ -1444,6 +1489,10 @@ func _build_roadmap_cards() -> void:
 		
 		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
 		basic_desc.text = "Làm quen với đàn tranh, đọc nhạc cơ bản và luyện các ngón gảy đầu tiên."
+		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
+		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
+		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
+		level_7_desc.text = "Mở rộng khả năng diễn tấu với kỹ thuật vê và hợp âm ba âm cơ bản."
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 	elif instrument == "trong_chau":
 		# Lộ trình Trống Chầu
@@ -2380,6 +2429,7 @@ func _on_viewport_size_changed() -> void:
 		var x_ch: float = x_sk + card_w + gap
 		var x_pop: float = x_ch + card_w + gap
 		var x_class: float = x_pop + card_w + gap
+		var x_string_roll: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
 		var total_w: float = x_ch + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
