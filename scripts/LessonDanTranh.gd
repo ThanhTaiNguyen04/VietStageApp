@@ -164,8 +164,8 @@ var press_min_amplitude_db := 0.0
 var press_added_sound_elapsed := 0.0
 const PRESS_SAMPLE_INTERVAL := 0.025
 const PRESS_ATTEMPT_TIMEOUT := 5.5
-const PRESS_MAX_SIGNAL_GAP := 0.16
-const PRESS_MAX_SAMPLE_JUMP_CENTS := 70.0
+const PRESS_MAX_SIGNAL_GAP := 0.45
+const PRESS_MAX_SAMPLE_JUMP_CENTS := 120.0
 const PRESS_MAX_RISE_DELAY := 0.80
 const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
@@ -2938,7 +2938,7 @@ func _process_press_practice(delta: float) -> void:
 		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
 		if not press_base_note_heard:
 			var generation := int(attack_identity.get("generation", -1))
-			if absf(cents) <= 50.0 \
+			if absf(cents) <= 65.0 \
 					and generation != press_consumed_attack_generation \
 					and _is_press_source_attack_valid(attack_identity, source):
 				press_base_note_heard = true
@@ -2992,16 +2992,16 @@ func _process_press_practice(delta: float) -> void:
 					press_cents_history.append(cents)
 					if press_cents_history.size() > 180:
 						press_cents_history.pop_front()
-			if absf(cents - target_interval) <= 38.0:
+			if absf(cents - target_interval) <= 55.0:
 				press_target_hold_elapsed += delta
 			else:
 				press_target_hold_elapsed = maxf(0.0, press_target_hold_elapsed - delta * 1.5)
 
 			if press_status_label:
-				if cents > target_interval + 55.0:
+				if cents > target_interval + 65.0:
 					press_status_label.text = "Cao quá (+%.0f cents). Hãy giảm lực tay trái." % cents
 					press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
-				elif cents < target_interval - 38.0:
+				elif cents < target_interval - 55.0:
 					press_status_label.text = "Đang nhấn: +%.0f/%d cents · cần nhấn thêm." % [cents, int(target_interval)]
 					press_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
 				else:
@@ -3013,7 +3013,7 @@ func _process_press_practice(delta: float) -> void:
 			_reset_press_attempt_tracking("Tiếng đàn bị ngắt trước khi tới nốt đích. Hãy gảy lại và nhấn liền mạch.")
 			return
 
-	if press_base_note_heard and press_target_hold_elapsed >= 0.30:
+	if press_base_note_heard and press_target_hold_elapsed >= 0.20:
 		var result := _analyze_press_contour(press_cents_history, target_interval)
 		if result.get("detected", false):
 			_on_press_exercise_success(result)
