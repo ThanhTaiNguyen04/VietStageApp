@@ -1557,170 +1557,84 @@ func _generate_melody(target_note_key: String) -> Array:
 				time += dur + wait
 			time += 0.5
 	elif target_note_key == "sao_truc_level4_5":
+		# Hoàn chỉnh: toàn bộ bài Inh Lả Ơi (12 measures, 2/4 time)
 		var song_notes = [
-			# === BAR 0 (pickup): "Inh" ===
-			{"note": "REST", "time": 0.0, "duration": 1.5},
-			{"note": "Mi", "time": 1.5, "duration": 0.5},   # "Inh" - móc đơn lấy đà
-			# === CÂU 1: "Inh lả ơi, Sao noọng ơi, Khắp nương" ===
-			# Bar 1 [2.0-4.0]: "lả ơi" - dotted 8th + 16th + quarter
-			{"note": "La", "time": 2.0, "duration": 0.75},  # "lả" - móc đơn chấm
-			{"note": "Sol", "time": 2.75, "duration": 0.25},# "ơi" - móc kép (16th)
-			{"note": "Mi", "time": 3.0, "duration": 1.0},   # nốt đen (quarter)
-			# Bar 2 [4.0-6.0]: "Sao noọng ơi"
-			{"note": "Sol", "time": 4.0, "duration": 0.75}, # "Sao" - móc đơn chấm
-			{"note": "La", "time": 4.75, "duration": 0.25}, # "noọng" - móc kép
-			{"note": "Sol", "time": 5.0, "duration": 1.0},  # "ơi" - nốt đen
-			# Bar 3 [6.0-8.0]: "Khắp nương" - 2 nốt đen
-			{"note": "Mi", "time": 6.0, "duration": 1.0},   # "Khắp" - nốt đen
-			{"note": "Rê", "time": 7.0, "duration": 1.0},   # "nương" - nốt đen
-			# Bar 4 [8.0-10.0]: nốt trắng (held) -> nốt lấy đà câu 2
-			{"note": "Mi", "time": 8.0, "duration": 1.5},   # "rừng" - nốt đen chấm
-			{"note": "Mi", "time": 9.5, "duration": 0.5},   # lấy đà - móc đơn
-			# === CÂU 2: "rừng Tây Bắc sáng ngời, Mùa xuân tới ngàn" ===
-			# Bar 5 [10.0-12.0]: "Tây Bắc sáng" - 4 móc đơn
-			{"note": "Sol", "time": 10.0, "duration": 0.5},
-			{"note": "La", "time": 10.5, "duration": 0.5},
-			{"note": "La", "time": 11.0, "duration": 0.75}, # "sáng" - móc đơn chấm
-			{"note": "Đô2", "time": 11.75, "duration": 0.25},# "ngời" - móc kép
-			# Bar 6 [12.0-14.0]: "ngời" - nốt trắng (half)
-			{"note": "La", "time": 12.0, "duration": 2.0},  # "ngời" - nốt trắng
-			# Bar 7 [14.0-16.0]: nghỉ + lấy đà câu 3
-			{"note": "REST", "time": 14.0, "duration": 1.0},
-			{"note": "Sol", "time": 15.0, "duration": 0.75},
-			{"note": "Fa", "time": 15.75, "duration": 0.25},
-			# Bar 8 [16.0-18.0]: "Mùa xuân tới"
-			{"note": "Mi", "time": 16.0, "duration": 1.0},  # "Mùa" - nốt đen
-			{"note": "Rê", "time": 17.0, "duration": 1.0},  # "xuân" - nốt đen
-			# Bar 9 [18.0-20.0]: "tới ngàn"
-			{"note": "Mi", "time": 18.0, "duration": 0.75}, # "tới" - móc đơn chấm
-			{"note": "Rê", "time": 18.75, "duration": 0.25},# móc kép
-			{"note": "Mi", "time": 19.0, "duration": 1.0},  # "ngàn" - nốt đen
-			# Bar 10 [20.0-22.0]: lấy đà câu 3
-			{"note": "Mi", "time": 20.0, "duration": 1.5},
-			{"note": "Mi", "time": 21.5, "duration": 0.5},
-			# === CÂU 3: "hoa hé cười, Inh lả ơi, Sao noọng ơi" ===
-			# Bar 11 [22.0-24.0]: "hoa hé cười" - ascending beamed group
-			{"note": "Sol", "time": 22.0, "duration": 0.5}, # "hoa"
-			{"note": "La", "time": 22.5, "duration": 0.5},  # "hé"
-			{"note": "Sol", "time": 23.0, "duration": 0.75},# "cười" - móc đơn chấm
-			{"note": "Fa", "time": 23.75, "duration": 0.25},# móc kép
-			# Bar 12 [24.0-26.0]: "cười" tiếp + pickup "Inh"
-			{"note": "Mi", "time": 24.0, "duration": 1.5},  # nốt đen chấm
-			{"note": "Mi", "time": 25.5, "duration": 0.5},  # "Inh" lấy đà
-			# Bar 13 [26.0-28.0]: "lả ơi" - lặp lại câu 1
-			{"note": "La", "time": 26.0, "duration": 0.75},
-			{"note": "Sol", "time": 26.75, "duration": 0.25},
-			{"note": "Mi", "time": 27.0, "duration": 1.0},
-			# Bar 14 [28.0-30.0]: "Sao noọng ơi"
-			{"note": "Sol", "time": 28.0, "duration": 0.75},
-			{"note": "La", "time": 28.75, "duration": 0.25},
-			{"note": "Sol", "time": 29.0, "duration": 1.0},
-			# === CÂU 4: "Khắp nương rừng, kết bài" ===
-			# Bar 15 [30.0-32.0]: "ơi Khắp"
-			{"note": "Mi", "time": 30.0, "duration": 1.0},
-			{"note": "Rê", "time": 31.0, "duration": 1.0},
-			# Bar 16 [32.0-34.0]: "nương" - nốt trắng
-			{"note": "Mi", "time": 32.0, "duration": 2.0},
-			# Bar 17-18 [34.0-38.0]: kết bài
-			{"note": "Rê", "time": 34.0, "duration": 2.0},
-			{"note": "Rê", "time": 36.0, "duration": 2.0},
-		]
-		seq.append_array(song_notes)
-		time = 38.0
-	elif target_note_key.begins_with("sao_truc_level4_"):
-		# =============================================
-		# Câu 1: "Inh lả ơi, Sao noọng ơi, Khắp nương"
-		# Pickup bar: REST(1.5) + Mi(0.5); 4 bars x 2.0 beats = 8 beats → total 10 beats
-		# =============================================
-		var p1 = [
-			# Pickup bar [0.0-2.0]
-			{"note": "REST", "time": 0.0, "duration": 1.5},
-			{"note": "Mi", "time": 1.5, "duration": 0.5},    # "Inh" - móc đơn lấy đà
-			# Bar 1 [2.0-4.0] - "lả ơi"
-			{"note": "La", "time": 2.0, "duration": 0.75},   # "lả" - móc đơn chấm
-			{"note": "Sol", "time": 2.75, "duration": 0.25}, # - móc kép
-			{"note": "Mi", "time": 3.0, "duration": 1.0},    # "ơi" - nốt đen
-			# Bar 2 [4.0-6.0] - "Sao noọng ơi"
-			{"note": "Sol", "time": 4.0, "duration": 0.75},  # "Sao"
-			{"note": "La", "time": 4.75, "duration": 0.25},  # "noọng"
-			{"note": "Sol", "time": 5.0, "duration": 1.0},   # "ơi"
-			# Bar 3 [6.0-8.0] - "Khắp nương"
-			{"note": "Mi", "time": 6.0, "duration": 1.0},    # "Khắp" - nốt đen
-			{"note": "Rê", "time": 7.0, "duration": 1.0},    # "nương" - nốt đen
-			# Bar 4 [8.0-10.0] - nốt trắng
-			{"note": "Mi", "time": 8.0, "duration": 2.0},    # nốt trắng
-		]
-		# =============================================
-		# Câu 2: "rừng Tây Bắc sáng ngời"
-		# Có pickup 8th, 4 bars x 2.0 beats = 8 beats → total 8 beats
-		# =============================================
-		var p2 = [
-			# Bar 0 [0.0-2.0] pickup
-			{"note": "REST", "time": 0.0, "duration": 0.5},
-			{"note": "Mi", "time": 0.5, "duration": 0.5},    # "rừng" pickup
-			{"note": "Sol", "time": 1.0, "duration": 0.5},   # "Tây"
-			{"note": "La", "time": 1.5, "duration": 0.5},    # "Bắc"
-			# Bar 1 [2.0-4.0] "sáng ngời"
-			{"note": "La", "time": 2.0, "duration": 0.75},   # "sáng"
-			{"note": "Đô2", "time": 2.75, "duration": 0.25}, # móc kép
-			{"note": "La", "time": 3.0, "duration": 1.0},    # "ngời"
-			# Bar 2 [4.0-6.0] "ngời" nốt trắng
-			{"note": "La", "time": 4.0, "duration": 2.0},    # nốt trắng
-			# Bar 3 [6.0-8.0] nghỉ + lấy đà câu sau
-			{"note": "REST", "time": 6.0, "duration": 1.0},
-			{"note": "Sol", "time": 7.0, "duration": 0.75},
-			{"note": "Fa", "time": 7.75, "duration": 0.25},
-		]
-		# =============================================
-		# Câu 3: "hoa hé cười, Inh lả ơi"
-		# 6 bars x 2.0 beats = 12 beats
-		# =============================================
-		var p3 = [
-			# Bar 1 [0.0-2.0] "hoa hé cười"
-			{"note": "Sol", "time": 0.0, "duration": 0.5},   # "hoa"
-			{"note": "La", "time": 0.5, "duration": 0.5},    # "hé"
-			{"note": "Sol", "time": 1.0, "duration": 0.75},  # "cười"
-			{"note": "Fa", "time": 1.75, "duration": 0.25},  # móc kép
-			# Bar 2 [2.0-4.0] tiếp + pickup "Inh"
-			{"note": "Mi", "time": 2.0, "duration": 1.5},    # nốt đen chấm
-			{"note": "Mi", "time": 3.5, "duration": 0.5},    # "Inh" pickup
-			# Bar 3 [4.0-6.0] "lả ơi"
-			{"note": "La", "time": 4.0, "duration": 0.75},
-			{"note": "Sol", "time": 4.75, "duration": 0.25},
-			{"note": "Mi", "time": 5.0, "duration": 1.0},
-			# Bar 4 [6.0-8.0] "Sao noọng ơi"
-			{"note": "Sol", "time": 6.0, "duration": 0.75},
-			{"note": "La", "time": 6.75, "duration": 0.25},
-			{"note": "Sol", "time": 7.0, "duration": 1.0},
-			# Bar 5 [8.0-10.0] "ơi Khắp"
-			{"note": "Mi", "time": 8.0, "duration": 1.0},
-			{"note": "Rê", "time": 9.0, "duration": 1.0},
-			# Bar 6 [10.0-12.0] nốt trắng
-			{"note": "Mi", "time": 10.0, "duration": 2.0},
-		]
-		# =============================================
-		# Câu 4: "Sao noọng ơi." - kết bài
-		# 4 bars x 2.0 beats = 8 beats
-		# =============================================
-		var p4 = [
-			# Bar 1 [0.0-2.0] pickup + "Sao"
-			{"note": "REST", "time": 0.0, "duration": 0.5},
-			{"note": "Mi", "time": 0.5, "duration": 0.5},
-			{"note": "Sol", "time": 1.0, "duration": 0.75},
-			{"note": "La", "time": 1.75, "duration": 0.25},
-			# Bar 2 [2.0-4.0] "noọng ơi"
+			# === CÂU 1 (M1-M3) ===
+			# M1
+			{"note": "Rê", "time": 0.0, "duration": 1.0},
+			{"note": "Fa", "time": 1.0, "duration": 1.0},
+			# M2: Nốt móc đơn chấm dôi + móc kép
 			{"note": "Sol", "time": 2.0, "duration": 0.75},
 			{"note": "La", "time": 2.75, "duration": 0.25},
-			{"note": "Sol", "time": 3.0, "duration": 1.0},
-			# Bar 3 [4.0-6.0] "ơi" + "Khắp"
-			{"note": "Mi", "time": 4.0, "duration": 1.0},
+			{"note": "REST", "time": 3.0, "duration": 1.0},
+			# M3
+			{"note": "Fa", "time": 4.0, "duration": 0.5},
+			{"note": "Sol", "time": 4.5, "duration": 0.5},
 			{"note": "Rê", "time": 5.0, "duration": 1.0},
-			# Bar 4 [6.0-8.0] nốt trắng kết bài
-			{"note": "Mi", "time": 6.0, "duration": 1.5},
-			{"note": "Rê", "time": 7.5, "duration": 0.5},
-			# Bar 5 [8.0-10.0] Rê kết
-			{"note": "Rê", "time": 8.0, "duration": 2.0},
-			{"note": "Rê", "time": 10.0, "duration": 2.0},
+			
+			# === CÂU 2 (M4-M6) ===
+			# M4
+			{"note": "REST", "time": 6.0, "duration": 1.0},
+			{"note": "Rê", "time": 7.0, "duration": 0.5},
+			{"note": "Fa", "time": 7.5, "duration": 0.5},
+			# M5
+			{"note": "La", "time": 8.0, "duration": 0.75},
+			{"note": "Sol", "time": 8.75, "duration": 0.25},
+			{"note": "La", "time": 9.0, "duration": 0.5},
+			{"note": "Đô2", "time": 9.5, "duration": 0.5},
+			# M6
+			{"note": "La", "time": 10.0, "duration": 1.0},
+			{"note": "Sol", "time": 11.0, "duration": 1.0},
+			
+			# === CÂU 3 (M7-M9) ===
+			# M7
+			{"note": "Fa", "time": 12.0, "duration": 0.5},
+			{"note": "Sol", "time": 12.5, "duration": 0.5},
+			{"note": "Fa", "time": 13.0, "duration": 0.5},
+			{"note": "Rê", "time": 13.5, "duration": 0.5},
+			# M8
+			{"note": "Đô", "time": 14.0, "duration": 0.5},
+			{"note": "Rê", "time": 14.5, "duration": 0.5},
+			{"note": "Fa", "time": 15.0, "duration": 1.0},
+			# M9
+			{"note": "REST", "time": 16.0, "duration": 1.0},
+			{"note": "Rê", "time": 17.0, "duration": 0.5},
+			{"note": "Fa", "time": 17.5, "duration": 0.5},
+			
+			# === CÂU 4 (M10-M12) ===
+			# M10
+			{"note": "Sol", "time": 18.0, "duration": 0.75},
+			{"note": "La", "time": 18.75, "duration": 0.25},
+			{"note": "REST", "time": 19.0, "duration": 1.0},
+			# M11
+			{"note": "Fa", "time": 20.0, "duration": 0.5},
+			{"note": "Sol", "time": 20.5, "duration": 0.5},
+			{"note": "Rê", "time": 21.0, "duration": 1.0},
+			# M12
+			{"note": "Rê", "time": 22.0, "duration": 2.0}
+		]
+		seq.append_array(song_notes)
+		time = 24.0
+	elif target_note_key.begins_with("sao_truc_level4_"):
+		var p1 = [
+			{"note": "Rê", "time": 0.0, "duration": 1.0}, {"note": "Fa", "time": 1.0, "duration": 1.0},
+			{"note": "Sol", "time": 2.0, "duration": 0.75}, {"note": "La", "time": 2.75, "duration": 0.25}, {"note": "REST", "time": 3.0, "duration": 1.0},
+			{"note": "Fa", "time": 4.0, "duration": 0.5}, {"note": "Sol", "time": 4.5, "duration": 0.5}, {"note": "Rê", "time": 5.0, "duration": 1.0}
+		]
+		var p2 = [
+			{"note": "REST", "time": 0.0, "duration": 1.0}, {"note": "Rê", "time": 1.0, "duration": 0.5}, {"note": "Fa", "time": 1.5, "duration": 0.5},
+			{"note": "La", "time": 2.0, "duration": 0.75}, {"note": "Sol", "time": 2.75, "duration": 0.25}, {"note": "La", "time": 3.0, "duration": 0.5}, {"note": "Đô2", "time": 3.5, "duration": 0.5},
+			{"note": "La", "time": 4.0, "duration": 1.0}, {"note": "Sol", "time": 5.0, "duration": 1.0}
+		]
+		var p3 = [
+			{"note": "Fa", "time": 0.0, "duration": 0.5}, {"note": "Sol", "time": 0.5, "duration": 0.5}, {"note": "Fa", "time": 1.0, "duration": 0.5}, {"note": "Rê", "time": 1.5, "duration": 0.5},
+			{"note": "Đô", "time": 2.0, "duration": 0.5}, {"note": "Rê", "time": 2.5, "duration": 0.5}, {"note": "Fa", "time": 3.0, "duration": 1.0},
+			{"note": "REST", "time": 4.0, "duration": 1.0}, {"note": "Rê", "time": 5.0, "duration": 0.5}, {"note": "Fa", "time": 5.5, "duration": 0.5}
+		]
+		var p4 = [
+			{"note": "Sol", "time": 0.0, "duration": 0.75}, {"note": "La", "time": 0.75, "duration": 0.25}, {"note": "REST", "time": 1.0, "duration": 1.0},
+			{"note": "Fa", "time": 2.0, "duration": 0.5}, {"note": "Sol", "time": 2.5, "duration": 0.5}, {"note": "Rê", "time": 3.0, "duration": 1.0},
+			{"note": "Rê", "time": 4.0, "duration": 2.0}
 		]
 		var parts = [p1, p2, p3, p4]
 		var idx = int(target_note_key.replace("sao_truc_level4_", "")) - 1
