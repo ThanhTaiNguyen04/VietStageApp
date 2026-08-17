@@ -1986,7 +1986,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		return false
 
 	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
-	if cents_error <= 45.0:
+	if cents_error <= 65.0:
 		return true
 
 	# Never accept an octave or harmonic as the requested string. Use the native
@@ -1999,7 +1999,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		var detected_frequency: float = detected_note.get("frequency", 0.0)
 		if detected_note.get("note_name", "None") == target_note_name and detected_frequency > 0.0:
 			var detected_cents := absf(1200.0 * log(detected_frequency / target_hz) / log(2.0))
-			return detected_cents <= 45.0
+			return detected_cents <= 65.0
 
 	return false
 

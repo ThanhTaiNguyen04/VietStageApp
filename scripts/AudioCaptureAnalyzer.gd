@@ -90,13 +90,13 @@ const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
-const INSTRUMENT_MIN_ATTACK_RATIO := 1.18
-const INSTRUMENT_MIN_DECAY_DB := 2.0
-const INSTRUMENT_MIN_LATE_DECAY_DB := 0.75
-const INSTRUMENT_MIN_TAIL_RATIO := 0.04
-const INSTRUMENT_MIN_PERIODICITY := 18.0
-const INSTRUMENT_MIN_STRING_TONALITY := 0.055
-const INSTRUMENT_MIN_CREST_FACTOR := 1.35
+const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
+const INSTRUMENT_MIN_DECAY_DB := 0.2
+const INSTRUMENT_MIN_LATE_DECAY_DB := 0.05
+const INSTRUMENT_MIN_TAIL_RATIO := 0.01
+const INSTRUMENT_MIN_PERIODICITY := 5.0
+const INSTRUMENT_MIN_STRING_TONALITY := 0.005
+const INSTRUMENT_MIN_CREST_FACTOR := 1.02
 const DAN_TRANH_GATE_FREQUENCIES: Array[float] = [
 	196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00,
 	523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66,
@@ -758,7 +758,9 @@ func get_current_dan_tranh_note() -> Dictionary:
 
 
 func has_recent_dan_tranh_attack() -> bool:
-	return instrument_gate_open and not analysis_suspended
+	if analysis_suspended:
+		return false
+	return instrument_gate_open or (current_pitch_is_reliable and current_pitch > 0.0)
 
 
 func get_dan_tranh_attack_identity() -> Dictionary:
@@ -1275,7 +1277,7 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 	if crest_factor < INSTRUMENT_MIN_CREST_FACTOR:
 		result["reason"] = "flat_sustained_tone"
 		return result
-	if peak_position > 0.45:
+	if peak_position > 0.85:
 		result["reason"] = "slow_or_late_attack"
 		return result
 
