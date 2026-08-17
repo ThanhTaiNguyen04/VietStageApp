@@ -878,8 +878,9 @@ func _ready():
 		
 	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
 	if is_challenge_mode:
-		_setup_challenge_ui()
-		call_deferred("_start_rhythm_game")
+		pass
+		# _setup_challenge_ui()
+		# call_deferred("_start_rhythm_game")
 	elif _is_error_flash_demo():
 		# Do not show the shared welcome / audio-calibration lesson screen.
 		# The automatic error demo opens directly into the staff exercise.
