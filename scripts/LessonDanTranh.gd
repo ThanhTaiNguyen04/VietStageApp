@@ -4670,7 +4670,7 @@ func _is_target_harmonic(frequency: float, target_frequencies: Array[float]) -> 
 			continue
 		var ratio := frequency / target_frequency
 		var harmonic := roundf(ratio)
-		if harmonic >= 2.0 and harmonic <= 4.0 and absf(ratio - harmonic) <= 0.03:
+		if harmonic >= 2.0 and harmonic <= 4.0 and absf(ratio - harmonic) <= 0.05:
 			return true
 	return false
 
