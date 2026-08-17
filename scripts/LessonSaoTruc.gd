@@ -575,7 +575,7 @@ func _build_custom_sequence() -> Array:
 func _transition_to_rhythm_game():
 	melody_sequence = _practice_sequence
 	current_state = State.RHYTHM_GAME
-	teacher_area.visible = false
+	_shrink_teacher()
 	feedback_area.visible = true
 	analyzer.visible = true
 	mic_status.text = "Chuẩn bị..."
@@ -602,6 +602,57 @@ func _transition_to_rhythm_game():
 	
 	if analyzer and analyzer.has_method("start_recording"):
 		analyzer.start_recording()
+
+func _shrink_teacher() -> void:
+	if not is_instance_valid(teacher_char) or not is_instance_valid(teacher_area):
+		return
+	
+	teacher_area.visible = true
+	var dialog_box = teacher_area.get_node_or_null("DialogBox")
+	if dialog_box:
+		var dtween = create_tween()
+		dtween.tween_property(dialog_box, "modulate:a", 0.0, 0.2)
+		dtween.tween_callback(func(): dialog_box.visible = false)
+
+	var wrapper = teacher_area.get_node_or_null("AvatarWrapper")
+	if not wrapper:
+		wrapper = Panel.new()
+		wrapper.name = "AvatarWrapper"
+		wrapper.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = Color.WHITE
+		sb.corner_radius_top_left = 500
+		sb.corner_radius_top_right = 500
+		sb.corner_radius_bottom_left = 500
+		sb.corner_radius_bottom_right = 500
+		wrapper.add_theme_stylebox_override("panel", sb)
+		
+		wrapper.size = Vector2(400, 400)
+		wrapper.pivot_offset = wrapper.size / 2.0
+		
+		wrapper.position = teacher_char.position + Vector2(100, 40)
+		
+		teacher_char.get_parent().remove_child(teacher_char)
+		wrapper.add_child(teacher_char)
+		add_child(wrapper)
+		wrapper.z_index = 100
+		
+		teacher_char.position = Vector2(-120, -50)
+		
+		wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
+		if not wrapper.gui_input.is_connected(_on_teacher_clicked):
+			wrapper.gui_input.connect(_on_teacher_clicked)
+			
+	var t = create_tween()
+	t.tween_property(wrapper, "scale", Vector2(0.35, 0.35), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(wrapper, "position", Vector2(-80, get_viewport_rect().size.y - 320), 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func _on_teacher_clicked(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var chat = AIChatPopup.new()
+		add_child(chat)
+		chat.open_chat("sao_truc")
 
 func _setup_premium_practice_ui():
 	var bg_ov = get_node_or_null("BGOverlay")
@@ -829,7 +880,7 @@ func _start_practice():
 		ai.audio_player.stop()
 		
 	current_state = State.PRACTICE
-	teacher_area.visible = false
+	_shrink_teacher()
 	feedback_area.visible = true
 	if intro_overlay: intro_overlay.visible = false
 	
