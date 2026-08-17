@@ -16,16 +16,21 @@ const NOTE_POSITIONS = {
 	"La": 1.5,
 	"Sì": 2.0,
 	"Si": 2.0,
+	"Sib": 2.0,
 	"Đố": 2.5,
 	"Đô2": 2.5,
 	"Rế": 3.0,
 	"Rê2": 3.0,
 	"Mí": 3.5,
 	"Mi2": 3.5,
+	"Fá": 4.0,
+	"Fa2": 4.0,
 	"Sól": 4.5,
 	"Sol2": 4.5,
 	"Lá": 5.0,
 	"La2": 5.0,
+	"Sib2": 5.5,
+	"Si2": 5.5,
 	
 	# Dan Tranh 17 dây - Chuẩn Treble Clef (Khóa Sol chuẩn: E4 = Dòng 1 = 0.0)
 	"Sol_1": -2.5,   # G3: dưới dòng phụ 2 (La_1), cần 2 dòng phụ
@@ -389,7 +394,9 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		var tail_color = note_color
 		tail_color.a = 0.35 # Semi-transparent
 		var tail_h = line_spacing * 0.4
-		draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, tail_w, tail_h), tail_color)
+		var actual_tail_w = maxf(0.0, tail_w - note_width / 2.5) # Rút lại vừa đủ phần dư của đầu nốt để thể hiện chính xác thời gian
+		if actual_tail_w > 0.0:
+			draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, actual_tail_w, tail_h), tail_color)
 			
 	# Draw soft radiating halo around notes removed since notes are now black
 			
