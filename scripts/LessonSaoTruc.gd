@@ -755,19 +755,30 @@ func _start_practice():
 	# Ô 4 (phách 13-16): 2 nốt trắng = 2×2 phách
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		_practice_sequence = [
-			# Ô nhịp 1: Nốt tròn (4 phách)
-			{"note": active_note, "type": "whole",   "duration": 4.0, "time": 0.0},
-			# Ô nhịp 2: Nốt trắng (2 phách) + Dấu lặng trắng (2 phách)
-			{"note": active_note, "type": "half",    "duration": 2.0, "time": 4.0},
-			{"note": "REST",      "type": "half",    "duration": 2.0, "time": 6.0},
-			# Ô nhịp 3: 4 nốt đen (mỗi nốt = 1 phách)
-			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 8.0},
-			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 9.0},
-			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 10.0},
-			{"note": active_note, "type": "quarter", "duration": 1.0, "time": 11.0},
-			# Ô nhịp 4: 2 nốt trắng (mỗi nốt = 2 phách)
-			{"note": active_note, "type": "half",    "duration": 2.0, "time": 12.0},
-			{"note": active_note, "type": "half",    "duration": 2.0, "time": 14.0},
+			# Nốt móc kép (0.25s) và ngắt
+			{"note": active_note, "type": "sixteenth", "duration": 0.25, "time": 0.0},
+			{"note": "REST",      "type": "sixteenth", "duration": 0.25, "time": 0.25},
+			{"note": active_note, "type": "sixteenth", "duration": 0.25, "time": 0.5},
+			{"note": "REST",      "type": "quarter",   "duration": 0.75, "time": 0.75}, # Lấy hơi
+
+			# Nốt móc đơn (0.5s) và ngắt
+			{"note": active_note, "type": "eighth",    "duration": 0.5,  "time": 1.5},
+			{"note": "REST",      "type": "eighth",    "duration": 0.5,  "time": 2.0},
+			{"note": active_note, "type": "eighth",    "duration": 0.5,  "time": 2.5},
+			{"note": "REST",      "type": "quarter",   "duration": 1.0,  "time": 3.0}, # Lấy hơi
+
+			# Nốt đen (1.0s) và ngắt
+			{"note": active_note, "type": "quarter",   "duration": 1.0,  "time": 4.0},
+			{"note": "REST",      "type": "quarter",   "duration": 1.0,  "time": 5.0},
+			{"note": active_note, "type": "quarter",   "duration": 1.0,  "time": 6.0},
+			{"note": "REST",      "type": "quarter",   "duration": 1.0,  "time": 7.0}, # Lấy hơi
+
+			# Nốt trắng (2.0s) và ngắt
+			{"note": active_note, "type": "half",      "duration": 2.0,  "time": 8.0},
+			{"note": "REST",      "type": "half",      "duration": 2.0,  "time": 10.0}, # Lấy hơi
+
+			# Nốt tròn (4.0s)
+			{"note": active_note, "type": "whole",     "duration": 4.0,  "time": 12.0}
 		]
 	else:
 		_practice_sequence = _generate_melody(active_node_id)
@@ -1077,42 +1088,53 @@ func _process_rhythm(delta, rect):
 		if _last_rhythm_note_time != current_overlapping_note["time"]:
 			_last_rhythm_note_time = current_overlapping_note["time"]
 			_idle_note_timer = 0.0
-			_update_fingers_for_note(current_overlapping_note["note_name"])
+			if current_overlapping_note["note_name"] != "REST":
+				_update_fingers_for_note(current_overlapping_note["note_name"])
 			
 		var is_blowing = amp > -35.0 # Lenient volume threshold
 		var is_correct = false
 		
-		if is_blowing and hz > 150.0:
+		if current_overlapping_note["note_name"] == "REST":
+			is_correct = true
+		elif is_blowing and hz > 150.0:
 			var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
 			if target_hz_note > 0.0:
-				var tol = target_hz_note * 0.03 # 3% tolerance (~50 cents) (~1 semitone)
-				if abs(hz - target_hz_note) < tol or abs(hz / 2.0 - target_hz_note) < tol or abs(hz * 2.0 - target_hz_note) < tol:
+				var tol = target_hz_note * 0.06 # match Practice mode
+				if abs(hz - target_hz_note) < tol or abs(hz / 2.0 - target_hz_note) < tol or abs(hz * 2.0 - target_hz_note) < tol or abs(hz * 4.0 - target_hz_note) < (target_hz_note * 0.06) or abs(hz / 4.0 - target_hz_note) < tol:
 					is_correct = true
 					
 		if is_correct:
 			_idle_note_timer = 0.0
 			time_delta = delta
-			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
+			if current_overlapping_note["note_name"] != "REST":
+				current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
+				mic_status.text = "Tuyệt! Giữ nốt..."
+				mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+			else:
+				current_overlapping_note["color"] = Color.BLACK
+				mic_status.text = "Lấy hơi..."
+				mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 			current_overlapping_note["hit_duration"] = current_overlapping_note.get("hit_duration", 0.0) + delta
-			mic_status.text = "Tuyệt! Giữ nốt..."
-			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
 			_idle_note_timer += delta
-			time_delta = 0 # Không trôi qua nếu chưa thổi đúng
 			
 			if _idle_note_timer >= 15.0:
 				current_overlapping_note["flash_trigger"] = Time.get_ticks_msec()
 				_idle_note_timer -= 3.0
 				
 			if is_blowing:
+				time_delta = -delta * 2.5 # Thổi sai -> Lùi lại nhanh (như Practice)
 				wrong_rhythm_duration += delta
 				current_overlapping_note["color"] = Color(1.0, 0.2, 0.2) # Thổi sai -> Màu đỏ
 				mic_status.text = "Sai ngón! Thổi lại..."
 				mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
+				current_overlapping_note["hit_duration"] = max(0.0, current_overlapping_note.get("hit_duration", 0.0) - delta * 2.5)
 			else:
-				current_overlapping_note["color"] = Color.BLACK # Không thổi -> Giữ nguyên màu đen
+				time_delta = -delta * 2.5 # Không thổi -> Lùi lại về đầu nốt
+				current_overlapping_note["color"] = Color.BLACK # Giữ nguyên màu đen
 				mic_status.text = "Đang đợi..."
 				mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+				current_overlapping_note["hit_duration"] = max(0.0, current_overlapping_note.get("hit_duration", 0.0) - delta * 2.5)
 	else:
 		_idle_note_timer = 0.0
 		mic_status.text = "Chuẩn bị..."
@@ -1603,23 +1625,29 @@ func _generate_melody(target_note_key: String) -> Array:
 			seq.append({"note": "Mi", "time": time, "duration": 1.0}); time += 1.5
 			seq.append({"note": "Fa", "time": time, "duration": 1.0}); time += 1.5
 			seq.append({"note": "Sol", "time": time, "duration": 1.0}); time += 1.5
-		elif target_idx == 0:
-			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.5}); time += 2.0
-			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 1.0}); time += 1.5
-			seq.append({"note": LESSON_NOTES["Node2"]["note"], "time": time, "duration": 2.0}); time += 2.5
-		else:
-			for i in range(target_idx + 1):
-				var note_name = LESSON_NOTES[keys_order[i]]["note"]
-				seq.append({"note": note_name, "time": time, "duration": 1.0})
-				time += 1.5
-				
-			var prev_note = LESSON_NOTES[keys_order[target_idx - 1]]["note"]
-			var new_note = LESSON_NOTES[keys_order[target_idx]]["note"]
+		elif target_idx >= 0 and target_idx <= 6:
+			var n_name = LESSON_NOTES[keys_order[target_idx]]["note"]
+			var t = time
 			
-			seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
-			seq.append({"note": new_note,  "time": time, "duration": 0.5}); time += 1.0
-			seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
-			seq.append({"note": new_note,  "time": time, "duration": 2.0}); time += 2.5
+			seq.append({"note": n_name, "type": "sixteenth", "duration": 0.25, "time": t}); t += 0.25
+			seq.append({"note": "REST",   "type": "sixteenth", "duration": 0.25, "time": t}); t += 0.25
+			seq.append({"note": n_name, "type": "sixteenth", "duration": 0.25, "time": t}); t += 0.25
+			seq.append({"note": "REST",   "type": "quarter",   "duration": 0.75, "time": t}); t += 0.75
+
+			seq.append({"note": n_name, "type": "eighth",    "duration": 0.5,  "time": t}); t += 0.5
+			seq.append({"note": "REST",   "type": "eighth",    "duration": 0.5,  "time": t}); t += 0.5
+			seq.append({"note": n_name, "type": "eighth",    "duration": 0.5,  "time": t}); t += 0.5
+			seq.append({"note": "REST",   "type": "quarter",   "duration": 1.0,  "time": t}); t += 1.0
+
+			seq.append({"note": n_name, "type": "quarter",   "duration": 1.0,  "time": t}); t += 1.0
+			seq.append({"note": "REST",   "type": "quarter",   "duration": 1.0,  "time": t}); t += 1.0
+			seq.append({"note": n_name, "type": "quarter",   "duration": 1.0,  "time": t}); t += 1.0
+			seq.append({"note": "REST",   "type": "quarter",   "duration": 1.0,  "time": t}); t += 1.0
+
+			seq.append({"note": n_name, "type": "half",      "duration": 2.0,  "time": t}); t += 2.0
+			seq.append({"note": "REST",   "type": "half",      "duration": 2.0,  "time": t}); t += 2.0
+
+			seq.append({"note": n_name, "type": "whole",     "duration": 4.0,  "time": t})
 			
 	return seq
 
@@ -1815,13 +1843,23 @@ func _start_rhythm_game():
 	active_falling_notes.clear()
 	
 	for note in melody_sequence:
+		var n_dur = note.get("duration", 1.0)
+		var n_type = note.get("type", "")
+		if n_type == "":
+			if n_dur >= 3.0: n_type = "whole"
+			elif n_dur >= 2.0: n_type = "half"
+			elif n_dur >= 1.0: n_type = "quarter"
+			elif n_dur >= 0.5: n_type = "eighth"
+			else: n_type = "sixteenth"
+			
 		active_falling_notes.append({
 			"time": note["time"],
-			"duration": note.get("duration", 1.0),
+			"duration": n_dur,
 			"note_name": note["note"],
 			"color": Color.BLACK,
 			"hit": false,
-			"failed": false
+			"failed": false,
+			"type": n_type
 		})
 		
 	bar_times.clear()

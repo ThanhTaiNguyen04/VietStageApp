@@ -5223,12 +5223,12 @@ func _create_pause_action_btn(text: String, icon_path: String, pressed_callable:
 	# Shader biến đổi màu icon xanh lá tối gốc thành màu Trắng/Vàng kim cực đẹp
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", Color.WHITE)
 	texture_rect.material = mat
@@ -5323,12 +5323,12 @@ func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Butt
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", Color.WHITE) # Màu trắng sáng mặc định
 	texture_rect.material = mat
@@ -5390,12 +5390,12 @@ func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool,
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", text_color)
 	texture_rect.material = mat
