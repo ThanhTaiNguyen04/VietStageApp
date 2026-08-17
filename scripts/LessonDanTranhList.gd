@@ -924,7 +924,98 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 		_fade_to("res://scenes/VideoPlayer.tscn")
 	else:
 		SecureDataManager.active_lesson_id = practice_id
-		_fade_to("res://scenes/LessonDanTranh.tscn")
+		
+		var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_tranh", [])
+		if completed_lessons.has(practice_id):
+			var popup := PanelContainer.new()
+			var s_panel := StyleBoxFlat.new()
+			s_panel.bg_color = Color(1, 1, 1, 0.95)
+			s_panel.corner_radius_top_left = 20; s_panel.corner_radius_top_right = 20
+			s_panel.corner_radius_bottom_left = 20; s_panel.corner_radius_bottom_right = 20
+			s_panel.border_width_left = 2; s_panel.border_width_right = 2
+			s_panel.border_width_top = 2; s_panel.border_width_bottom = 2
+			s_panel.border_color = C_JADE
+			popup.add_theme_stylebox_override("panel", s_panel)
+			popup.custom_minimum_size = Vector2(400, 250)
+			popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+			
+			var m := MarginContainer.new()
+			m.add_theme_constant_override("margin_left", 20); m.add_theme_constant_override("margin_right", 20)
+			m.add_theme_constant_override("margin_top", 20); m.add_theme_constant_override("margin_bottom", 20)
+			popup.add_child(m)
+			
+			var v := VBoxContainer.new()
+			v.add_theme_constant_override("separation", 20)
+			v.alignment = BoxContainer.ALIGNMENT_CENTER
+			m.add_child(v)
+			
+			var lbl := Label.new()
+			lbl.text = "Bạn đã hoàn thành bài học này.\nBạn muốn làm gì tiếp theo?"
+			lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lbl.add_theme_color_override("font_color", C_TEXT)
+			var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+			if f_bold: lbl.add_theme_font_override("font", f_bold)
+			lbl.add_theme_font_size_override("font_size", 18)
+			v.add_child(lbl)
+			
+			var h := HBoxContainer.new()
+			h.add_theme_constant_override("separation", 20)
+			h.alignment = BoxContainer.ALIGNMENT_CENTER
+			v.add_child(h)
+			
+			var btn_learn := Button.new()
+			btn_learn.text = "Học lại"
+			btn_learn.custom_minimum_size = Vector2(140, 50)
+			var s_btn_learn := StyleBoxFlat.new()
+			s_btn_learn.bg_color = C_JADE
+			s_btn_learn.corner_radius_top_left = 12; s_btn_learn.corner_radius_top_right = 12
+			s_btn_learn.corner_radius_bottom_left = 12; s_btn_learn.corner_radius_bottom_right = 12
+			btn_learn.add_theme_stylebox_override("normal", s_btn_learn)
+			btn_learn.add_theme_color_override("font_color", Color.WHITE)
+			h.add_child(btn_learn)
+			
+			var btn_challenge := Button.new()
+			btn_challenge.text = "Thử thách"
+			btn_challenge.custom_minimum_size = Vector2(140, 50)
+			var s_btn_challenge := StyleBoxFlat.new()
+			s_btn_challenge.bg_color = C_GOLD
+			s_btn_challenge.corner_radius_top_left = 12; s_btn_challenge.corner_radius_top_right = 12
+			s_btn_challenge.corner_radius_bottom_left = 12; s_btn_challenge.corner_radius_bottom_right = 12
+			btn_challenge.add_theme_stylebox_override("normal", s_btn_challenge)
+			btn_challenge.add_theme_color_override("font_color", Color.WHITE)
+			h.add_child(btn_challenge)
+			
+			var btn_cancel := Button.new()
+			btn_cancel.text = "Hủy"
+			btn_cancel.flat = true
+			btn_cancel.add_theme_color_override("font_color", C_MUTED)
+			v.add_child(btn_cancel)
+			
+			var bg_dim := ColorRect.new()
+			bg_dim.color = Color(0, 0, 0, 0.5)
+			bg_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			
+			get_tree().current_scene.add_child(bg_dim)
+			get_tree().current_scene.add_child(popup)
+			
+			btn_learn.pressed.connect(func() -> void:
+				bg_dim.queue_free(); popup.queue_free()
+				SecureDataManager.data["is_challenge_mode"] = false
+				_fade_to("res://scenes/LessonDanTranh.tscn")
+			)
+			
+			btn_challenge.pressed.connect(func() -> void:
+				bg_dim.queue_free(); popup.queue_free()
+				SecureDataManager.data["is_challenge_mode"] = true
+				_fade_to("res://scenes/LessonDanTranh.tscn")
+			)
+			
+			btn_cancel.pressed.connect(func() -> void:
+				bg_dim.queue_free(); popup.queue_free()
+			)
+		else:
+			SecureDataManager.data["is_challenge_mode"] = false
+			_fade_to("res://scenes/LessonDanTranh.tscn")
 
 func _lesson_id(lesson_number: int, activity: String) -> String:
 	return "dan_tranh_level_%d_bai_%d_%s" % [selected_level, lesson_number, activity]

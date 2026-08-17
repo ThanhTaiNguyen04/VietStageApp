@@ -6,6 +6,8 @@ class_name LessonSaoTruc
 
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)
+const C_JADE       := Color(0.1, 0.7, 0.3, 1.0)
+const C_ERROR      := Color(0.8, 0.1, 0.1, 1.0)
 
 enum State { INTRO, PRACTICE, MID_INTRO, RHYTHM_GAME, COMPLETED }
 var current_state = State.INTRO
@@ -45,6 +47,10 @@ var staff_card: PanelContainer
 var title_plaque: PanelContainer
 var pill_badge: PanelContainer
 var sub_instr_row: HBoxContainer
+
+var is_challenge_mode := false
+var challenge_total_notes := 0
+var challenge_hit_notes := 0
 
 var active_note := "Si"
 var active_node_id := "Node2"
@@ -274,6 +280,8 @@ const NOTE_FREQS = {
 }
 
 func _ready():
+	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
+	
 	volume_bar.visible = false
 	bgm_player = AudioStreamPlayer.new()
 	bgm_player.volume_db = -5.0
@@ -421,9 +429,10 @@ func _ready():
 	var sb_btn = StyleBoxFlat.new()
 	sb_btn.bg_color = C_GOLD
 	sb_btn.corner_radius_top_left = 15; sb_btn.corner_radius_top_right = 15
-	sb_btn.corner_radius_bottom_left = 15; sb_btn.corner_radius_bottom_right = 15
+	sb_btn.corner_radius_bottom_left = 15; sb_btn.corner_radius_bottom_right = 15	
 	real_mode_btn.text = "  Thực Hành Ngay  "
 	
+
 	complete_btn.add_theme_stylebox_override("normal", sb_btn)
 	complete_btn.add_theme_stylebox_override("hover", sb_btn)
 	real_mode_btn.add_theme_stylebox_override("normal", sb_btn)
@@ -497,17 +506,26 @@ func _ready():
 	else:
 		ai_audio.speak_vietnamese(txt)
 	
-	# Initial UI State
-	teacher_area.visible = true
-	feedback_area.visible = false
-	analyzer.visible = false
-	current_state = State.INTRO
-	
 	# Setup Staff Display
 	# Hide old rhythm UI
 	if rhythm_area: rhythm_area.visible = false
 	
 	_setup_premium_practice_ui()
+	
+	# Initial UI State
+	if is_challenge_mode:
+		teacher_area.visible = false
+		title_plaque.visible = false
+		staff_card.visible = true
+		pill_badge.visible = true
+	else:
+		teacher_area.visible = true
+		staff_card.visible = true
+		pill_badge.visible = false
+		
+	feedback_area.visible = false
+	analyzer.visible = false
+	current_state = State.INTRO
 	
 	intro_overlay = ColorRect.new()
 	intro_overlay.color = Color(0, 0, 0, 0.5)
@@ -636,6 +654,7 @@ func _setup_premium_practice_ui():
 	
 	staff_display = load("res://scripts/StaffDisplay.gd").new()
 	staff_display.name = "StaffDisplay"
+	staff_display.use_note_colors = true
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	# Level 4 lessons use 2/4 time signature
@@ -1036,6 +1055,7 @@ func _process_rhythm(delta, rect):
 			_idle_note_timer = 0.0
 			time_delta = delta
 			current_overlapping_note["color"] = Color(0.2, 1.0, 0.2)
+			current_overlapping_note["hit_duration"] = current_overlapping_note.get("hit_duration", 0.0) + delta
 			mic_status.text = "Tuyệt! Giữ nốt..."
 			mic_status.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
 		else:
@@ -1052,7 +1072,7 @@ func _process_rhythm(delta, rect):
 				mic_status.text = "Sai ngón! Thổi lại..."
 				mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 			else:
-				current_overlapping_note["color"] = Color(0.9, 0.7, 0.2) # Default Yellow
+				current_overlapping_note["color"] = Color.BLACK # Default Black
 				mic_status.text = "Đang đợi..."
 				mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	else:
@@ -1086,9 +1106,12 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
+			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color.BLACK), "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
 		
 		if time_diff < -(duration + 0.1):
+			if is_challenge_mode:
+				if note_data.get("hit_duration", 0.0) > (duration * 0.3) or note_data.get("hit_duration", 0.0) > 0.2:
+					challenge_hit_notes += 1
 			to_remove.append(note_data)
 			
 	if staff_display: 
@@ -1938,6 +1961,17 @@ func _build_complete_overlay():
 	finish_sb.corner_radius_bottom_left = 20; finish_sb.corner_radius_bottom_right = 20
 	finish_sb.content_margin_left = 40; finish_sb.content_margin_right = 40
 	finish_sb.content_margin_top = 15; finish_sb.content_margin_bottom = 15
+	
+	if is_challenge_mode:
+		var acc_lbl = Label.new()
+		var accuracy = 0.0
+		if challenge_total_notes > 0:
+			accuracy = float(challenge_hit_notes) / float(challenge_total_notes) * 100.0
+		acc_lbl.text = "Độ chính xác: %.1f%%\n(%d / %d nốt)" % [accuracy, challenge_hit_notes, challenge_total_notes]
+		acc_lbl.add_theme_font_size_override("font_size", 32)
+		acc_lbl.add_theme_color_override("font_color", C_JADE)
+		acc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(acc_lbl)
 	
 	var finish_btn = Button.new()
 	finish_btn.text = "Hoàn Thành →"

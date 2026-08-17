@@ -15,7 +15,7 @@ const CHORD_MIN_FUNDAMENTAL_DB := -52.0
 const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
 const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
-enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
+enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED, RHYTHM_GAME }
 enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
 var current_state = State.INTRO
 
@@ -248,6 +248,18 @@ var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
 
 var practice_idx: int = 0
+
+var is_challenge_mode := false
+var rhythm_time := 0.0
+var challenge_hit_notes := 0
+var challenge_total_notes := 0
+var bpm_multiplier := 1.0
+var bpm_controls_row: HBoxContainer
+var score_label: Label
+var pill_badge: PanelContainer
+var has_rhythm_completed := false
+var active_rhythm_notes := []
+var notes_judged := {}
 var intro_step: int = 0
 var intro_playback_token: int = 0
 var time_correct: float = 0.0
@@ -860,7 +872,11 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	if _is_error_flash_demo():
+	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
+	if is_challenge_mode:
+		_setup_challenge_ui()
+		call_deferred("_start_rhythm_game")
+	elif _is_error_flash_demo():
 		# Do not show the shared welcome / audio-calibration lesson screen.
 		# The automatic error demo opens directly into the staff exercise.
 		call_deferred("_start_practice")

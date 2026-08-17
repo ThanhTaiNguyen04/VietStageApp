@@ -293,19 +293,14 @@ func _show_mode_selection_menu() -> void:
 	
 	var modes_info = [
 		{
-			"id": "rhythm",
-			"title": "Thử Thách Nhịp Điệu",
-			"desc": rhythm_desc
+			"id": "quiz",
+			"title": "Trắc Nghiệm (Quiz)",
+			"desc": "Tham gia hệ thống câu hỏi trắc nghiệm âm nhạc để kiểm tra kiến thức của bạn."
 		},
 		{
-			"id": "note",
-			"title": "Nhận Diện Nốt Nhạc",
-			"desc": note_desc
-		},
-		{
-			"id": "melody",
-			"title": "Hoàn Thiện Giai Điệu",
-			"desc": melody_desc
+			"id": "practice",
+			"title": "Thực Hành & Thử Thách",
+			"desc": "Vào lộ trình học để thực hành nốt trôi và được chấm điểm trực tiếp qua Microphone."
 		}
 	]
 	
@@ -397,22 +392,19 @@ func _show_mode_selection_menu() -> void:
 	create_tween().tween_property(menu_container, "modulate:a", 1.0, 0.3)
 
 func _start_game_mode(mode: String) -> void:
-	game_mode = mode
-	current_round = 1
-	score = 0
-	correct_answers = 0
-	game_active = true
-	
-	match game_mode:
-		"note":
-			$Root/TopBar/TopM/TopH/Title.text = "THỬ THÁCH NHẬN DIỆN NỐT"
-			_start_note_round()
-		"rhythm":
-			$Root/TopBar/TopM/TopH/Title.text = "THỬ THÁCH NHỊP ĐIỆU"
-			_start_rhythm_round()
-		"melody":
-			$Root/TopBar/TopM/TopH/Title.text = "HOÀN THIỆN GIAI ĐIỆU"
-			_start_melody_round()
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.22)
+	t.tween_callback(func() -> void: 
+		if mode == "quiz":
+			get_tree().change_scene_to_file("res://scenes/QuizScreen.tscn")
+		elif mode == "practice":
+			SecureDataManager.load_data()
+			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "sao_truc":
+				get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
+			else:
+				get_tree().change_scene_to_file("res://scenes/LessonDanTranhList.tscn")
+	)
 
 # ─── Note Game Mode ──────────────────────────────────────────────────────────
 func _start_note_round() -> void:
