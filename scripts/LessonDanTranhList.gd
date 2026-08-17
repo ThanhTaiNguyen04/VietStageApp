@@ -608,7 +608,7 @@ func _create_small_btn(label: String, unlocked: bool) -> Button:
 
 func _create_circle_button(display_number: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
 	var button := Button.new()
-	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.custom_minimum_size = Vector2(250, 250)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -794,7 +794,7 @@ func _create_description(label_text: String, description: String, icon: String) 
 
 func _create_action_button(text_value: String, primary: bool) -> Button:
 	var button := Button.new()
-	button.mouse_filter = Control.MOUSE_FILTER_PASS
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.text = text_value
 	button.custom_minimum_size = Vector2(0, 54)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
