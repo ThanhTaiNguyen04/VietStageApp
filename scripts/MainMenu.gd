@@ -1755,6 +1755,9 @@ func _build_roadmap_cards() -> void:
 	level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
 	_set_details_text(level_7_details, 4, level_3_stats.get("stars", 0), level_3_stats.get("pct", 0), false)
 
+	for c in [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]:
+		_make_card_clickable(c)
+
 func _style_circular_play_btn(btn: Button) -> void:
 	var pb_n := _flat(C_RED_SON, C_GOLD, 32)
 	pb_n.border_width_left = 3; pb_n.border_width_right = 3
@@ -1795,13 +1798,25 @@ func _animate_in() -> void:
 	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
-		item.mouse_filter = Control.MOUSE_FILTER_PASS
+		_make_card_clickable(item)
 		item.modulate.a = 0.0
 		item.position.x += 40.0
 		var t := create_tween().set_parallel(true)
 		t.tween_property(item, "modulate:a", 1.0, 0.45).set_delay(delay)
 		t.tween_property(item, "position:x", item.position.x - 40.0, 0.45).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		delay += 0.08
+
+func _make_card_clickable(card: Control) -> void:
+	if not is_instance_valid(card): return
+	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_set_children_mouse_filter_pass(card)
+
+func _set_children_mouse_filter_pass(node: Node) -> void:
+	for child in node.get_children():
+		if child is Control and not child is Button:
+			child.mouse_filter = Control.MOUSE_FILTER_PASS
+			_set_children_mouse_filter_pass(child)
 
 # ─── Sidebar drawer ───────────────────────────────────────────────────────────
 func _toggle_sidebar() -> void:
@@ -2047,7 +2062,7 @@ func _connect_buttons() -> void:
 	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
 				_fade_to("res://scenes/LessonDanTranhList.tscn")
 	)
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
