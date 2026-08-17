@@ -307,7 +307,6 @@ func _setup_audio_bus() -> void:
 	if spec_idx == -1:
 		var spectrum_effect = AudioEffectSpectrumAnalyzer.new()
 		spectrum_effect.buffer_length = 0.2
-		spectrum_effect.tap_back_pos = 0.05
 		spectrum_effect.fft_size = AudioEffectSpectrumAnalyzer.FFT_SIZE_4096
 		AudioServer.add_bus_effect(_bus_index, spectrum_effect)
 		spec_idx = AudioServer.get_bus_effect_count(_bus_index) - 1

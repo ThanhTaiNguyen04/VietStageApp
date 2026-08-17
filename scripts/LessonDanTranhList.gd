@@ -12,6 +12,7 @@ const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
 const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
 
 static var selected_level: int = 1
@@ -344,6 +345,7 @@ func _ready() -> void:
 	_build_sidebar()
 	_build_lessons()
 	_build_quiz_btn()
+	_build_profile_btn()
 	lessons_hbox.draw.connect(_draw_lesson_path)
 	lessons_hbox.sort_children.connect(func() -> void: lessons_hbox.queue_redraw())
 	_connect_navigation()
@@ -877,7 +879,10 @@ func _connect_navigation() -> void:
 	btn_courses.pressed.connect(_go_to_levels)
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
-	btn_minigame.pressed.connect(func() -> void: _fade_to("res://scenes/MiniGame.tscn"))
+	btn_minigame.pressed.connect(func() -> void:
+		LearningActivityContextScript.configure("dan_tranh", [SecureDataManager.active_lesson_id], "res://scenes/LessonDanTranhList.tscn")
+		_fade_to("res://scenes/LearningActivitiesScreen.tscn")
+	)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	if btn_account:
 		btn_account.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
@@ -948,6 +953,20 @@ func _build_quiz_btn() -> void:
 	_make_bouncy(quiz_btn)
 	toph.add_child(quiz_btn)
 	toph.move_child(quiz_btn, change_course_btn.get_index())
+
+func _build_profile_btn() -> void:
+	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
+	if toph == null:
+		return
+	var spacer := Control.new()
+	spacer.name = "TopSpacerRight"
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toph.add_child(spacer)
+	var pill := DS.build_profile_pill()
+	var trigger := pill.get_node_or_null("TriggerButton") as Button
+	if trigger:
+		trigger.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))
+	toph.add_child(pill)
 
 func _open_quiz() -> void:
 	var ids: Array[String] = []

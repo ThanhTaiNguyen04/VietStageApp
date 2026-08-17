@@ -14,16 +14,24 @@ static var _loaded := false
 static func apply_auth_response(auth_data: Dictionary) -> bool:
 	ensure_loaded()
 	var next_access_token := str(auth_data.get("token", ""))
-	var next_refresh_token := str(auth_data.get("refreshToken", ""))
-	var next_session_id := str(auth_data.get("sessionId", ""))
-	if next_access_token.is_empty() or next_refresh_token.is_empty() or next_session_id.is_empty():
+	if next_access_token.is_empty():
 		return false
 
 	access_token = next_access_token
-	refresh_token = next_refresh_token
-	session_id = next_session_id
-	user_code = str(auth_data.get("userCode", ""))
-	role = str(auth_data.get("role", ""))
+	
+	var next_refresh_token := str(auth_data.get("refreshToken", ""))
+	if not next_refresh_token.is_empty():
+		refresh_token = next_refresh_token
+		
+	var next_session_id := str(auth_data.get("sessionId", ""))
+	if not next_session_id.is_empty():
+		session_id = next_session_id
+		
+	if auth_data.has("userCode"):
+		user_code = str(auth_data.get("userCode", ""))
+	if auth_data.has("role"):
+		role = str(auth_data.get("role", ""))
+		
 	save_session()
 	return true
 
