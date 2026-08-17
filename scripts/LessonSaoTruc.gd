@@ -12,6 +12,12 @@ const C_ERROR      := Color(0.8, 0.1, 0.1, 1.0)
 enum State { INTRO, PRACTICE, MID_INTRO, RHYTHM_GAME, COMPLETED }
 var current_state = State.INTRO
 
+static var is_song_library_mode := false
+static var custom_song_title := ""
+static var custom_song_sheet : Array[String] = []
+static var custom_song_durations : Array[float] = []
+static var custom_song_bpm := 100.0
+
 @onready var root = $Root
 @onready var flute_body = $Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack/FluteBody
 @onready var rhythm_area = $Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack/RhythmArea
@@ -484,6 +490,7 @@ func _ready():
 			txt = LESSON_DIALOGUES[active_node_id]["intro"]
 		else:
 			txt = "Chào mừng bạn đến bài học! Hôm nay chúng ta sẽ làm quen với nốt " + active_note + ", để thổi nốt " + active_note + " bạn " + lesson_info["desc"].to_lower() + ". Nào cùng thử nhé!"
+
 	else:
 		active_note = "Đô"
 		instruction_lbl.visible = false
@@ -547,6 +554,57 @@ func _ready():
 	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
 		staff_display.set_note(active_note)
 
+func _build_custom_sequence() -> Array:
+	var seq = []
+	var time = 1.0
+	for i in range(custom_song_sheet.size()):
+		var n_name = custom_song_sheet[i]
+		var n_dur = 1.0
+		if i < custom_song_durations.size():
+			n_dur = custom_song_durations[i]
+		
+		var n_type = "quarter"
+		if n_dur >= 3.0: n_type = "whole"
+		elif n_dur >= 2.0: n_type = "half"
+		elif n_dur >= 1.0: n_type = "quarter"
+		elif n_dur >= 0.5: n_type = "eighth"
+		else: n_type = "sixteenth"
+		
+		seq.append({"note": n_name, "time": time, "duration": n_dur, "type": n_type})
+		time += n_dur + 0.1 # Small gap
+	return seq
+
+func _transition_to_rhythm_game():
+	melody_sequence = _practice_sequence
+	current_state = State.RHYTHM_GAME
+	teacher_area.visible = false
+	feedback_area.visible = true
+	analyzer.visible = true
+	mic_status.text = "Chuẩn bị..."
+	mic_status.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	
+	rhythm_time = -2.0
+	spawned_notes = 0
+	active_falling_notes.clear()
+	
+	for note in melody_sequence:
+		active_falling_notes.append({
+			"time": note["time"],
+			"duration": note.get("duration", 1.0),
+			"note_name": note["note"],
+			"color": Color.BLACK,
+			"hit": false,
+			"failed": false,
+			"type": note.get("type", "quarter")
+		})
+	
+	total_rhythm_duration = 0.0
+	for note in melody_sequence:
+		total_rhythm_duration += note.get("duration", 1.0)
+	
+	if analyzer and analyzer.has_method("start_recording"):
+		analyzer.start_recording()
+
 func _setup_premium_practice_ui():
 	var bg_ov = get_node_or_null("BGOverlay")
 	if bg_ov and bg_ov is ColorRect:
@@ -606,7 +664,9 @@ func _setup_premium_practice_ui():
 		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
 	else:
 		l_num = "" # Hide BÀI LUYỆN
-		l_title = SecureDataManager.data.get("current_song_title", "BÀI TẬP").to_upper()
+		l_title = custom_song_title.to_upper()
+		if is_song_library_mode:
+			l_title = custom_song_title.to_upper()
 		var s_frame = SecureDataManager.data.get("current_song_frame", "")
 		if s_frame != "":
 			l_pill = s_frame.to_upper()
@@ -727,6 +787,27 @@ func _setup_premium_practice_ui():
 	
 	if sub_instr_row:
 		sub_instr_row.visible = false
+
+	if is_song_library_mode:
+		active_node_id = "CUSTOM_SONG"
+		bpm_multiplier = custom_song_bpm / 60.0
+		_practice_sequence = _build_custom_sequence()
+		
+		# Skip intro and go straight to rhythm game
+		current_state = State.RHYTHM_GAME
+		teacher_area.visible = false
+		sub_instruction_lbl.text = "Thổi đúng nốt khi trùng với vạch màu vàng"
+		_transition_to_rhythm_game()
+	else:
+		if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+			sub_instruction_lbl.text = "Làm theo cô giáo để luyện nốt"
+			# Build dynamic practice sequence for these simple nodes
+			_practice_sequence = []
+			for i in range(5):
+				_practice_sequence.append({"note": LESSON_NOTES[active_node_id]["note"]})
+		else:
+			_practice_sequence = _generate_melody(active_node_id)
+			sub_instruction_lbl.text = "Thổi chuẩn các nốt trong bài hát"
 
 
 func _start_real():
@@ -2198,8 +2279,16 @@ func _play_recording():
 		_playback_player.stream = _recorded_stream
 		_playback_player.play()
 
-func _on_back():
-	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
+func _on_back_pressed():
+	if is_song_library_mode:
+		is_song_library_mode = false
+		var t = create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func(): get_tree().change_scene_to_file("res://scenes/SongScreen.tscn"))
+	else:
+		var t = create_tween()
+		t.tween_property(self, "modulate:a", 0.0, 0.22)
+		t.tween_callback(func(): get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn"))
 
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
