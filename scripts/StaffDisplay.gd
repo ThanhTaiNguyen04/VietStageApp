@@ -1,6 +1,8 @@
 extends Control
 
 const NOTE_POSITIONS = {
+	# Theo GitHub TienFix — ký âm sách VN (Đô=C4 … Si=B4 dòng giữa)
+	# NOTE_FREQS = C5–B5; nhận mic có dung sai quãng 8
 	"Đồ": -1.0,
 	"Đổ": -1.0,
 	"Đô": -1.0,
@@ -16,39 +18,44 @@ const NOTE_POSITIONS = {
 	"La": 1.5,
 	"Sì": 2.0,
 	"Si": 2.0,
+	"Sib": 1.5,
 	"Đố": 2.5,
 	"Đô2": 2.5,
 	"Rế": 3.0,
 	"Rê2": 3.0,
 	"Mí": 3.5,
 	"Mi2": 3.5,
+	"Fá": 4.0,
+	"Fa2": 4.0,
 	"Sól": 4.5,
 	"Sol2": 4.5,
 	"Lá": 5.0,
 	"La2": 5.0,
-	
-	# Dan Tranh 17 dây - Chuẩn Treble Clef (Khóa Sol chuẩn: E4 = Dòng 1 = 0.0)
-	"Sol_1": -2.5,   # G3: dưới dòng phụ 2 (La_1), cần 2 dòng phụ
-	"La_1": -2.0,    # A3: dòng phụ 2 dưới, cần 2 dòng phụ
-	"Đô_2": -1.0,    # C4: dòng phụ 1 dưới (Middle C), cần 1 dòng phụ
-	"Rê_2": -0.5,    # D4: khe dưới dòng 1, không cần dòng phụ
-	"Mi_2": 0.0,     # E4: Dòng 1
-	"Fa_2": 0.5,     # F4: Khe 1
-	"Sol_2": 1.0,    # G4: Dòng 2
-	"La_2": 1.5,     # A4: Khe 2
-	"Si_2": 2.0,     # B4: Dòng 3
-	"Đô_3": 2.5,     # C5: Khe 3
-	"Rê_3": 3.0,     # D5: Dòng 4
-	"Mi_3": 3.5,     # E5: Khe 4
-	"Fa_3": 4.0,     # F5: Dòng 5
-	"Sol_3": 4.5,    # G5: trên dòng 5 (khe trên)
-	"La_3": 5.0,     # A5: dòng phụ 1 trên
-	"Si_3": 5.5,     # B5: Khe trên dòng phụ 1
-	"Đô_4": 6.0,     # C6: dòng phụ 2 trên
-	"Rê_4": 6.5,     # D6: khe trên dòng phụ 2
-	"Mi_4": 7.0,     # E6: dòng phụ 3 trên
-	"Sol_4": 8.0,    # G6: dòng phụ 4 trên
-	"La_4": 8.5      # A6: khe trên dòng phụ 4
+	"Sì2": 5.5,
+	"Si2": 5.5,
+
+	# Đàn Tranh
+	"Sol_1": -2.5,
+	"La_1": -2.0,
+	"Đô_2": -1.0,
+	"Rê_2": -0.5,
+	"Mi_2": 0.0,
+	"Fa_2": 0.5,
+	"Sol_2": 1.0,
+	"La_2": 1.5,
+	"Si_2": 2.0,
+	"Đô_3": 2.5,
+	"Rê_3": 3.0,
+	"Mi_3": 3.5,
+	"Fa_3": 4.0,
+	"Sol_3": 4.5,
+	"La_3": 5.0,
+	"Si_3": 5.5,
+	"Đô_4": 6.0,
+	"Rê_4": 6.5,
+	"Mi_4": 7.0,
+	"Sol_4": 8.0,
+	"La_4": 8.5
 }
 
 var active_note = "Đô"
@@ -93,19 +100,29 @@ func set_notes(notes: Array):
 func _draw():
 	var center_y = size.y / 2.0
 	
-	# Shift staff center downward slightly if zither notes are present
-	# to accommodate the high octave ledger lines (G3-A6 range is shifted upward).
+	# Shift staff center downward when high notes need ledger lines above
+	# (sáo trúc Si/La/Sol2… or zither high range) so they stay visible.
 	var has_zither_notes = false
+	var has_high_flute = false
 	for note_data in notes_to_draw:
-		if note_data.get("note", "").begins_with("ZT_"):
+		var nn = str(note_data.get("note", ""))
+		if nn.begins_with("ZT_"):
 			has_zither_notes = true
-			break
+		else:
+			var pidx = _get_note_position_index(nn)
+			if pidx >= 5.0:
+				has_high_flute = true
 	if has_zither_notes:
 		center_y += line_spacing * 0.45
+	elif has_high_flute:
+		center_y += line_spacing * 0.20
 		
 	var start_x = 35.0
 	var end_x = size.x - 35.0
 	hit_line_x = size.x * 0.25 # Hit line at 25% of screen
+	
+	# Left margin past clef + time signature — do not draw notes over the clef
+	var notes_min_x = 16.0 + line_spacing * clef_scale * 0.55 + line_spacing * 1.8
 	
 	var line_color = Color(0.2, 0.18, 0.15, 0.95)
 	
@@ -147,7 +164,7 @@ func _draw():
 		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_glow_color, 8.0, true)
 		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_color, 3.5, true)
 		
-	# Draw all notes
+	# Draw all notes (skip those still behind the clef/time-sig area)
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x / 2.0)
@@ -158,6 +175,9 @@ func _draw():
 		var flash_t = note_data.get("flash_trigger", 0.0)
 		# REST notes: draw nothing (empty space represents a rest naturally)
 		if n_name == "REST":
+			continue
+		# Do not draw over the clef / time signature
+		if n_x < notes_min_x:
 			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
 		if note_data.has("press_target"):
@@ -369,15 +389,15 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
 	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
 
-	# Draw ledger lines for notes outside the 5-line staff
-	if pos_idx < -0.9: # below first ledger line threshold (pos_idx <= -1.0)
-		var num_ledgers = int(ceil(abs(pos_idx)))
+	# Draw ledger lines — floor() so B (5.5) gets 1 ledger, C (6.0) gets 2
+	if pos_idx <= -1.0:
+		var num_ledgers = int(floor(abs(pos_idx)))
 		for i in range(1, num_ledgers + 1):
 			var ld = -i
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
-	elif pos_idx > 4.9: # above first ledger line threshold (pos_idx >= 5.0)
-		var num_ledgers = int(ceil(pos_idx)) - 4
+	elif pos_idx >= 5.0:
+		var num_ledgers = int(floor(pos_idx)) - 4
 		for i in range(1, num_ledgers + 1):
 			var ld = 4 + i
 			var ly = center_y + (2 - ld) * line_spacing
