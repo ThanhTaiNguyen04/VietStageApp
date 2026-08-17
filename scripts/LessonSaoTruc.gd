@@ -698,7 +698,7 @@ func _setup_premium_practice_ui():
 
 	var lesson_map = {
 		"Node1": {"num": "BÀI 1", "title": "KHẨU HÌNH MÔI"},
-		"Node2": {"num": "BÀI 2", "title": "LUYỆN NỐT SI"},
+		"Node2": {"num": "BÀI 1", "title": "LUYỆN NỐT SI"},
 		"Node3": {"num": "BÀI 2", "title": "LUYỆN NỐT LA"},
 		"Node4": {"num": "BÀI 3", "title": "LUYỆN NỐT SOL"},
 		"Node5": {"num": "BÀI 4", "title": "LUYỆN NỐT FA"},
@@ -715,16 +715,33 @@ func _setup_premium_practice_ui():
 	elif LESSON_NOTES.has(active_node_id) and LESSON_NOTES[active_node_id].has("title"):
 		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
 	else:
-		l_num = "" # Hide BÀI LUYỆN
-		l_title = custom_song_title.to_upper() if custom_song_title != "" else SecureDataManager.data.get("current_song_title", "BÀI TẬP").to_upper()
-		var s_frame = SecureDataManager.data.get("current_song_frame", "")
-		if s_frame != "":
-			l_pill = s_frame.to_upper()
+		# Level 3/4/5 song lessons — build title from SecureDataManager
+		l_num = ""
+		var song_t = str(SecureDataManager.data.get("current_song_title", custom_song_title)).strip_edges()
+		var song_f = str(SecureDataManager.data.get("current_song_frame", "")).strip_edges()
+		if song_t == "" and custom_song_title != "":
+			song_t = custom_song_title
+		if song_t == "":
+			# Fallback from active_node_id
+			if active_node_id.begins_with("sao_truc_level4_"):
+				song_t = "Inh Lả Ơi"
+			elif active_node_id.begins_with("sao_truc_level5_"):
+				song_t = "Futari no Kimochi"
+			elif active_node_id.begins_with("sao_truc_level3_"):
+				song_t = "Khúc Nhạc Vui"
+			else:
+				song_t = "Bài tập"
+		if song_f != "":
+			l_title = (song_t + " - " + song_f).to_upper()
+			l_pill = song_f.to_upper()
+		else:
+			l_title = song_t.to_upper()
+			l_pill = song_t.to_upper()
 		
 	title_plaque = PanelContainer.new()
 	title_plaque.name = "TitlePlaque"
 	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
-	title_plaque.offset_left = -265; title_plaque.offset_right = 265
+	title_plaque.offset_left = -320; title_plaque.offset_right = 320
 	title_plaque.offset_top = 24; title_plaque.offset_bottom = 132
 	var pl_sb = StyleBoxFlat.new()
 	pl_sb.bg_color = Color(0.22, 0.14, 0.08, 0.96)
@@ -1632,191 +1649,261 @@ func _generate_melody(target_note_key: String) -> Array:
 		for n in notes:
 			seq.append({"note": n[0], "time": time, "duration": n[1]}); time += n[1] + n[2]
 	elif target_note_key == "Node18" or target_note_key == "sao_truc_level3_6":
-		# Đàn Gà Con hoàn chỉnh (Khúc Nhạc Vui)
+		# Khúc Nhạc Vui hoàn chỉnh — theo sheet (4/4, C major)
+		# Cụm 1-6 khớp 6 khung level 3
 		var parts = [
-			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
-			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5],
-			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
-			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
-			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
-			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5]
+			# Khung 1: Có nắng ấm trên bầu trời
+			[["Mi", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Đô", 1.0], ["REST", 2.0]],
+			# Khung 2: có tình yêu trong lòng người
+			[["La", 1.0], ["La", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0]],
+			# Khung 3: bên tiếng hát tiếng cười hân hoan
+			[["Rê", 2.0], ["Mi", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Đô", 1.0], ["La", 2.0]],
+			# Khung 4: Có gió mát trên vòm cao
+			[["Rê", 2.0], ["Rê", 1.0], ["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Rê", 1.0]],
+			# Khung 5: có trăng sao trong cuộc đời
+			[["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Rê", 1.0], ["Đô", 1.0], ["La", 1.0], ["Sol", 1.0]],
+			# Khung 6: trao những lời hòa ái tương giao + kết
+			[["Sol", 2.0], ["Rê", 1.0], ["Sol", 1.0], ["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["REST", 1.0],
+			 ["Mi", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Đô", 1.0], ["REST", 2.0]]
 		]
 		for p in parts:
-			for i in range(7):
-				var n = p[i]
-				var dur = p[7] if i == 6 else 0.5
-				seq.append({"note": n, "time": time, "duration": dur}); time += dur + 0.2
+			for n in p:
+				seq.append({"note": n[0], "time": time, "duration": n[1]})
+				time += n[1]
 			time += 0.5
 	elif target_note_key.begins_with("sao_truc_level3_"):
+		# Khúc Nhạc Vui từng khung — theo sheet
 		var parts = [
-			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
-			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5],
-			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
-			["Sol", "Sol", "Fa", "Fa", "Mi", "Mi", "Rê", 1.5],
-			["Đô", "Đô", "Sol", "Sol", "La", "La", "Sol", 1.5],
-			["Fa", "Fa", "Mi", "Mi", "Rê", "Rê", "Đô", 1.5]
+			[["Mi", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Đô", 1.0], ["REST", 2.0]],
+			[["La", 1.0], ["La", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0]],
+			[["Rê", 2.0], ["Mi", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Đô", 1.0], ["La", 2.0]],
+			[["Rê", 2.0], ["Rê", 1.0], ["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Rê", 1.0]],
+			[["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Rê", 1.0], ["Đô", 1.0], ["La", 1.0], ["Sol", 1.0]],
+			[["Sol", 2.0], ["Rê", 1.0], ["Sol", 1.0], ["Đô", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["REST", 1.0],
+			 ["Mi", 1.0], ["Mi", 1.0], ["Sol", 1.0], ["Sol", 1.0], ["Mi", 1.0], ["Đô", 1.0], ["REST", 2.0]]
 		]
 		var idx = int(target_note_key.replace("sao_truc_level3_", "")) - 1
 		if idx >= 0 and idx < parts.size():
 			var p = parts[idx]
-			for i in range(7):
-				var n = p[i]
-				var dur = p[7] if i == 6 else 0.5
-				seq.append({"note": n, "time": time, "duration": dur})
-				time += dur + 0.2
+			for n in p:
+				seq.append({"note": n[0], "time": time, "duration": n[1]})
+				time += n[1]
 			time += 0.5
 
 	elif target_note_key == "sao_truc_level5_7":
-		var parts = [
-			["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
-			["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-			["Mi2", 0.25, 0], ["Sol2", 0.25, 0], ["Mi2", 1.5, 0.2],
-			["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["La", 1.0, 0],
-			["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["La", 1.0, 0],
-			["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Rê2", 1.5, 0.5],
-			["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
-			["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-			["Mi2", 0.25, 0], ["Sol2", 0.25, 0], ["Mi2", 1.5, 0.2],
-			["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["La", 1.0, 0],
-			["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["La", 1.0, 0],
-			["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Đô2", 1.5, 0.5],
-
-			["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-			["Rê2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0.2],
-			["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-			["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["La", 1.0, 0.2],
-			["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-			["Rê2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0.2],
-			["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-			["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Rê2", 1.0, 0.5]
+		# Futari no Kimochi full — theo sheet 4/4 (bỏ dấu thăng, giữ contour + phách)
+		# Sheet: rests | D G G A# | C D | D A# B C | G D | G F | D ... 
+		var full = [
+			# Đoạn 1 P1 (mm 1-8)
+			["REST", 1.0, 0], ["REST", 1.0, 0], ["REST", 1.0, 0], ["Rê", 1.0, 0],
+			["Sol", 1.0, 0], ["Sol", 0.5, 0], ["La", 0.5, 0],
+			["Đô2", 1.0, 0], ["Rê2", 1.0, 0],
+			["Rê2", 1.0, 0], ["La", 0.5, 0], ["Si", 0.5, 0], ["Đô2", 1.0, 0],
+			["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+			["Sol", 1.0, 0], ["Fa", 1.0, 0],
+			["Rê", 2.0, 0], ["REST", 1.0, 0], ["Rê", 1.0, 0],
+			# Đoạn 1 P2 (mm 9-16)
+			["Sol", 1.0, 0], ["Sol", 0.5, 0], ["La", 0.5, 0],
+			["Đô2", 1.0, 0], ["Rê2", 1.0, 0],
+			["Rê2", 1.0, 0], ["La", 0.5, 0], ["Si", 0.5, 0], ["Đô2", 1.0, 0],
+			["Sol", 1.0, 0], ["Rê2", 0.5, 0], ["Đô2", 0.5, 0],
+			["La", 1.0, 0], ["Sol", 1.0, 0],
+			["Sol", 2.0, 0], ["REST", 2.0, 0],
+			# Đoạn 2 P1
+			["Rê2", 1.0, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0],
+			["Sol2", 0.5, 0], ["La2", 0.5, 0], ["Sol2", 1.0, 0],
+			["Sol2", 0.5, 0], ["La2", 0.5, 0], ["Sol2", 0.5, 0], ["Fa2", 0.5, 0],
+			["Rê2", 1.0, 0], ["Fa2", 1.0, 0],
+			["Sol2", 1.0, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0],
+			["Si", 0.5, 0], ["La", 0.5, 0], ["Sol", 1.0, 0],
+			["Rê2", 1.0, 0], ["REST", 1.0, 0], ["Rê2", 1.0, 0], ["Sol2", 1.0, 0],
+			# Đoạn 2 P2 + kết
+			["Sol2", 0.5, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0], ["La2", 0.5, 0],
+			["Sol2", 1.0, 0], ["Sol2", 0.5, 0], ["La2", 0.5, 0],
+			["Sol2", 0.5, 0], ["Fa2", 0.5, 0], ["Rê2", 1.0, 0],
+			["Fa2", 1.0, 0], ["Sol2", 1.0, 0], ["Sol", 1.0, 0],
+			["Rê2", 1.0, 0], ["Đô2", 1.0, 0],
+			["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+			["Sol", 1.0, 0], ["Fa", 1.0, 0],
+			["Rê", 2.0, 0], ["REST", 1.0, 0],
+			["Rê2", 1.0, 0], ["Đô2", 1.0, 0],
+			["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+			["Sol", 1.0, 0], ["Fa", 1.0, 0], ["Rê", 2.0, 0]
 		]
-		for p in parts:
-			seq.append({"note": p[0], "time": time, "duration": p[1] * 2.0})
-			time += p[1] * 2.0 + p[2] * 2.0
+		for p in full:
+			seq.append({"note": p[0], "time": time, "duration": p[1]})
+			time += p[1] + p[2]
 		time += 0.5
 	elif target_note_key.begins_with("sao_truc_level5_"):
+		# Futari no Kimochi từng đoạn — theo sheet 4/4
 		var parts = [
+			# BÀI 1 — Đoạn 1 P1
 			[
-				["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
-				["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-				["Mi2", 0.25, 0], ["Sol2", 0.25, 0], ["Mi2", 1.5, 0.2]
+				["REST", 1.0, 0], ["REST", 1.0, 0], ["REST", 1.0, 0], ["Rê", 1.0, 0],
+				["Sol", 1.0, 0], ["Sol", 0.5, 0], ["La", 0.5, 0],
+				["Đô2", 1.0, 0], ["Rê2", 1.0, 0],
+				["Rê2", 1.0, 0], ["La", 0.5, 0], ["Si", 0.5, 0], ["Đô2", 1.0, 0],
+				["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+				["Sol", 1.0, 0], ["Fa", 1.0, 0],
+				["Rê", 2.0, 0], ["REST", 1.0, 0], ["Rê", 1.0, 0]
 			],
+			# BÀI 2 — Đoạn 1 P2
 			[
-				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["La", 1.0, 0],
-				["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["La", 1.0, 0],
-				["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Rê2", 1.5, 0.5]
+				["Sol", 1.0, 0], ["Sol", 0.5, 0], ["La", 0.5, 0],
+				["Đô2", 1.0, 0], ["Rê2", 1.0, 0],
+				["Rê2", 1.0, 0], ["La", 0.5, 0], ["Si", 0.5, 0], ["Đô2", 1.0, 0],
+				["Sol", 1.0, 0], ["Rê2", 0.5, 0], ["Đô2", 0.5, 0],
+				["La", 1.0, 0], ["Sol", 1.0, 0],
+				["Sol", 2.0, 0], ["REST", 2.0, 0]
 			],
+			# BÀI 3 — Đoạn 1 HC
 			[
-				["Mi", 0.25, 0], ["Sol", 0.25, 0], ["La", 1.0, 0],
-				["La", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-				["Mi2", 0.25, 0], ["Sol2", 0.25, 0], ["Mi2", 1.5, 0.2],
-				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["La", 1.0, 0],
-				["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["La", 1.0, 0],
-				["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Đô2", 1.5, 0.5]
+				["REST", 1.0, 0], ["REST", 1.0, 0], ["REST", 1.0, 0], ["Rê", 1.0, 0],
+				["Sol", 1.0, 0], ["Sol", 0.5, 0], ["La", 0.5, 0],
+				["Đô2", 1.0, 0], ["Rê2", 1.0, 0],
+				["Rê2", 1.0, 0], ["La", 0.5, 0], ["Si", 0.5, 0], ["Đô2", 1.0, 0],
+				["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+				["Sol", 1.0, 0], ["Fa", 1.0, 0],
+				["Rê", 2.0, 0], ["REST", 1.0, 0], ["Rê", 1.0, 0],
+				["Sol", 1.0, 0], ["Sol", 0.5, 0], ["La", 0.5, 0],
+				["Đô2", 1.0, 0], ["Rê2", 1.0, 0],
+				["Rê2", 1.0, 0], ["La", 0.5, 0], ["Si", 0.5, 0], ["Đô2", 1.0, 0],
+				["Sol", 1.0, 0], ["Rê2", 0.5, 0], ["Đô2", 0.5, 0],
+				["La", 1.0, 0], ["Sol", 1.0, 0],
+				["Sol", 2.0, 0], ["REST", 2.0, 0]
 			],
+			# BÀI 4 — Đoạn 2 P1
 			[
-				["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-				["Rê2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0.5]
+				["Rê2", 1.0, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0],
+				["Sol2", 0.5, 0], ["La2", 0.5, 0], ["Sol2", 1.0, 0],
+				["Sol2", 0.5, 0], ["La2", 0.5, 0], ["Sol2", 0.5, 0], ["Fa2", 0.5, 0],
+				["Rê2", 1.0, 0], ["Fa2", 1.0, 0],
+				["Sol2", 1.0, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0],
+				["Si", 0.5, 0], ["La", 0.5, 0], ["Sol", 1.0, 0],
+				["Rê2", 1.0, 0], ["REST", 1.0, 0], ["Rê2", 1.0, 0], ["Sol2", 1.0, 0]
 			],
+			# BÀI 5 — Đoạn 2 P2
 			[
-				["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["La", 1.0, 0.5]
+				["Sol2", 0.5, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0], ["La2", 0.5, 0],
+				["Sol2", 1.0, 0], ["Sol2", 0.5, 0], ["La2", 0.5, 0],
+				["Sol2", 0.5, 0], ["Fa2", 0.5, 0], ["Rê2", 1.0, 0],
+				["Fa2", 1.0, 0], ["Sol2", 1.0, 0], ["Sol", 1.0, 0],
+				["Rê2", 1.0, 0], ["Đô2", 1.0, 0],
+				["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+				["Sol", 1.0, 0], ["Fa", 1.0, 0], ["Rê", 2.0, 0]
 			],
+			# BÀI 6 — Đoạn 2 HC
 			[
-				["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-				["Rê2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0.2],
-				["Si", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 1.0, 0],
-				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Rê2", 0.25, 0], ["Mi2", 0.25, 0], ["Rê2", 0.25, 0], ["Rê2", 1.0, 0.5]
+				["Rê2", 1.0, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0],
+				["Sol2", 0.5, 0], ["La2", 0.5, 0], ["Sol2", 1.0, 0],
+				["Sol2", 0.5, 0], ["La2", 0.5, 0], ["Sol2", 0.5, 0], ["Fa2", 0.5, 0],
+				["Rê2", 1.0, 0], ["Fa2", 1.0, 0],
+				["Sol2", 1.0, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0],
+				["Si", 0.5, 0], ["La", 0.5, 0], ["Sol", 1.0, 0],
+				["Rê2", 1.0, 0], ["REST", 1.0, 0], ["Rê2", 1.0, 0], ["Sol2", 1.0, 0],
+				["Sol2", 0.5, 0], ["Sol2", 0.5, 0], ["Sol2", 0.5, 0], ["La2", 0.5, 0],
+				["Sol2", 1.0, 0], ["Sol2", 0.5, 0], ["La2", 0.5, 0],
+				["Sol2", 0.5, 0], ["Fa2", 0.5, 0], ["Rê2", 1.0, 0],
+				["Fa2", 1.0, 0], ["Sol2", 1.0, 0], ["Sol", 1.0, 0],
+				["Rê2", 1.0, 0], ["Đô2", 1.0, 0],
+				["Sol", 1.0, 0], ["Rê2", 1.0, 0],
+				["Sol", 1.0, 0], ["Fa", 1.0, 0], ["Rê", 2.0, 0]
 			]
 		]
 		var idx = int(target_note_key.replace("sao_truc_level5_", "")) - 1
 		if idx >= 0 and idx < parts.size():
 			var p = parts[idx]
 			for n in p:
-				var dur = n[1] * 2.0
-				var wait = n[2] * 2.0
-				seq.append({"note": n[0], "time": time, "duration": dur})
-				time += dur + wait
+				seq.append({"note": n[0], "time": time, "duration": n[1]})
+				time += n[1] + n[2]
 			time += 0.5
 	elif target_note_key == "sao_truc_level4_5":
-		# Hoàn chỉnh: toàn bộ bài Inh Lả Ơi (12 measures, 2/4 time)
+		# Inh Lả Ơi hoàn chỉnh — sheet 2/4 chính xác
+		# La La | rest | Sol Sol | rest | Rê | rest | La La
+		# La Mi | La Fa Mi | rest | Rê Rê | La La
+		# Sol Sol | rest | La | rest | Sol Sol | rest
 		var song_notes = [
-			# === CÂU 1 (M1-M3) ===
-			# M1
-			{"note": "Rê", "time": 0.0, "duration": 1.0},
-			{"note": "Fa", "time": 1.0, "duration": 1.0},
-			# M2: Nốt móc đơn chấm dôi + móc kép
-			{"note": "Sol", "time": 2.0, "duration": 0.75},
-			{"note": "La", "time": 2.75, "duration": 0.25},
-			{"note": "REST", "time": 3.0, "duration": 1.0},
-			# M3
-			{"note": "Fa", "time": 4.0, "duration": 0.5},
-			{"note": "Sol", "time": 4.5, "duration": 0.5},
-			{"note": "Rê", "time": 5.0, "duration": 1.0},
-			
-			# === CÂU 2 (M4-M6) ===
-			# M4
-			{"note": "REST", "time": 6.0, "duration": 1.0},
-			{"note": "Rê", "time": 7.0, "duration": 0.5},
-			{"note": "Fa", "time": 7.5, "duration": 0.5},
-			# M5
-			{"note": "La", "time": 8.0, "duration": 0.75},
-			{"note": "Sol", "time": 8.75, "duration": 0.25},
-			{"note": "La", "time": 9.0, "duration": 0.5},
-			{"note": "Đô2", "time": 9.5, "duration": 0.5},
-			# M6
+			# Câu 1
+			{"note": "La", "time": 0.0, "duration": 1.0},
+			{"note": "La", "time": 1.0, "duration": 1.0},
+			{"note": "REST", "time": 2.0, "duration": 2.0},
+			{"note": "Sol", "time": 4.0, "duration": 1.0},
+			{"note": "Sol", "time": 5.0, "duration": 1.0},
+			{"note": "REST", "time": 6.0, "duration": 2.0},
+			{"note": "Rê", "time": 8.0, "duration": 1.0},
+			{"note": "REST", "time": 9.0, "duration": 1.0},
 			{"note": "La", "time": 10.0, "duration": 1.0},
-			{"note": "Sol", "time": 11.0, "duration": 1.0},
-			
-			# === CÂU 3 (M7-M9) ===
-			# M7
-			{"note": "Fa", "time": 12.0, "duration": 0.5},
-			{"note": "Sol", "time": 12.5, "duration": 0.5},
-			{"note": "Fa", "time": 13.0, "duration": 0.5},
-			{"note": "Rê", "time": 13.5, "duration": 0.5},
-			# M8
-			{"note": "Đô", "time": 14.0, "duration": 0.5},
-			{"note": "Rê", "time": 14.5, "duration": 0.5},
-			{"note": "Fa", "time": 15.0, "duration": 1.0},
-			# M9
+			{"note": "La", "time": 11.0, "duration": 1.0},
+			# Câu 2
+			{"note": "La", "time": 12.0, "duration": 1.0},
+			{"note": "Mi", "time": 13.0, "duration": 1.0},
+			{"note": "La", "time": 14.0, "duration": 0.5},
+			{"note": "Fa", "time": 14.5, "duration": 0.5},
+			{"note": "Mi", "time": 15.0, "duration": 1.0},
 			{"note": "REST", "time": 16.0, "duration": 1.0},
-			{"note": "Rê", "time": 17.0, "duration": 0.5},
-			{"note": "Fa", "time": 17.5, "duration": 0.5},
-			
-			# === CÂU 4 (M10-M12) ===
-			# M10
-			{"note": "Sol", "time": 18.0, "duration": 0.75},
-			{"note": "La", "time": 18.75, "duration": 0.25},
-			{"note": "REST", "time": 19.0, "duration": 1.0},
-			# M11
-			{"note": "Fa", "time": 20.0, "duration": 0.5},
-			{"note": "Sol", "time": 20.5, "duration": 0.5},
-			{"note": "Rê", "time": 21.0, "duration": 1.0},
-			# M12
-			{"note": "Rê", "time": 22.0, "duration": 2.0}
+			{"note": "Rê", "time": 17.0, "duration": 1.0},
+			{"note": "Rê", "time": 18.0, "duration": 1.0},
+			{"note": "La", "time": 19.0, "duration": 1.0},
+			{"note": "La", "time": 20.0, "duration": 1.0},
+			# Câu 3
+			{"note": "Sol", "time": 21.0, "duration": 1.0},
+			{"note": "Sol", "time": 22.0, "duration": 1.0},
+			{"note": "REST", "time": 23.0, "duration": 1.0},
+			{"note": "La", "time": 24.0, "duration": 2.0},
+			{"note": "REST", "time": 26.0, "duration": 1.0},
+			{"note": "Sol", "time": 27.0, "duration": 1.0},
+			{"note": "Sol", "time": 28.0, "duration": 1.0},
+			{"note": "REST", "time": 29.0, "duration": 1.0}
 		]
 		seq.append_array(song_notes)
-		time = 24.0
+		time = 30.0
 	elif target_note_key.begins_with("sao_truc_level4_"):
+		# Inh Lả Ơi từng câu — sheet 2/4
 		var p1 = [
-			{"note": "Rê", "time": 0.0, "duration": 1.0}, {"note": "Fa", "time": 1.0, "duration": 1.0},
-			{"note": "Sol", "time": 2.0, "duration": 0.75}, {"note": "La", "time": 2.75, "duration": 0.25}, {"note": "REST", "time": 3.0, "duration": 1.0},
-			{"note": "Fa", "time": 4.0, "duration": 0.5}, {"note": "Sol", "time": 4.5, "duration": 0.5}, {"note": "Rê", "time": 5.0, "duration": 1.0}
+			{"note": "La", "time": 0.0, "duration": 1.0},
+			{"note": "La", "time": 1.0, "duration": 1.0},
+			{"note": "REST", "time": 2.0, "duration": 2.0},
+			{"note": "Sol", "time": 4.0, "duration": 1.0},
+			{"note": "Sol", "time": 5.0, "duration": 1.0},
+			{"note": "REST", "time": 6.0, "duration": 2.0},
+			{"note": "Rê", "time": 8.0, "duration": 1.0},
+			{"note": "REST", "time": 9.0, "duration": 1.0},
+			{"note": "La", "time": 10.0, "duration": 1.0},
+			{"note": "La", "time": 11.0, "duration": 1.0}
 		]
 		var p2 = [
-			{"note": "REST", "time": 0.0, "duration": 1.0}, {"note": "Rê", "time": 1.0, "duration": 0.5}, {"note": "Fa", "time": 1.5, "duration": 0.5},
-			{"note": "La", "time": 2.0, "duration": 0.75}, {"note": "Sol", "time": 2.75, "duration": 0.25}, {"note": "La", "time": 3.0, "duration": 0.5}, {"note": "Đô2", "time": 3.5, "duration": 0.5},
-			{"note": "La", "time": 4.0, "duration": 1.0}, {"note": "Sol", "time": 5.0, "duration": 1.0}
+			{"note": "La", "time": 0.0, "duration": 1.0},
+			{"note": "Mi", "time": 1.0, "duration": 1.0},
+			{"note": "La", "time": 2.0, "duration": 0.5},
+			{"note": "Fa", "time": 2.5, "duration": 0.5},
+			{"note": "Mi", "time": 3.0, "duration": 1.0},
+			{"note": "REST", "time": 4.0, "duration": 1.0},
+			{"note": "Rê", "time": 5.0, "duration": 1.0},
+			{"note": "Rê", "time": 6.0, "duration": 1.0},
+			{"note": "La", "time": 7.0, "duration": 1.0},
+			{"note": "La", "time": 8.0, "duration": 1.0}
 		]
 		var p3 = [
-			{"note": "Fa", "time": 0.0, "duration": 0.5}, {"note": "Sol", "time": 0.5, "duration": 0.5}, {"note": "Fa", "time": 1.0, "duration": 0.5}, {"note": "Rê", "time": 1.5, "duration": 0.5},
-			{"note": "Đô", "time": 2.0, "duration": 0.5}, {"note": "Rê", "time": 2.5, "duration": 0.5}, {"note": "Fa", "time": 3.0, "duration": 1.0},
-			{"note": "REST", "time": 4.0, "duration": 1.0}, {"note": "Rê", "time": 5.0, "duration": 0.5}, {"note": "Fa", "time": 5.5, "duration": 0.5}
+			{"note": "Sol", "time": 0.0, "duration": 1.0},
+			{"note": "Sol", "time": 1.0, "duration": 1.0},
+			{"note": "REST", "time": 2.0, "duration": 1.0},
+			{"note": "La", "time": 3.0, "duration": 2.0},
+			{"note": "REST", "time": 5.0, "duration": 1.0},
+			{"note": "Sol", "time": 6.0, "duration": 1.0},
+			{"note": "Sol", "time": 7.0, "duration": 1.0},
+			{"note": "REST", "time": 8.0, "duration": 1.0}
 		]
 		var p4 = [
-			{"note": "Sol", "time": 0.0, "duration": 0.75}, {"note": "La", "time": 0.75, "duration": 0.25}, {"note": "REST", "time": 1.0, "duration": 1.0},
-			{"note": "Fa", "time": 2.0, "duration": 0.5}, {"note": "Sol", "time": 2.5, "duration": 0.5}, {"note": "Rê", "time": 3.0, "duration": 1.0},
-			{"note": "Rê", "time": 4.0, "duration": 2.0}
+			{"note": "La", "time": 0.0, "duration": 1.0},
+			{"note": "La", "time": 1.0, "duration": 1.0},
+			{"note": "REST", "time": 2.0, "duration": 2.0},
+			{"note": "Sol", "time": 4.0, "duration": 1.0},
+			{"note": "Sol", "time": 5.0, "duration": 1.0},
+			{"note": "REST", "time": 6.0, "duration": 2.0},
+			{"note": "Rê", "time": 8.0, "duration": 1.0},
+			{"note": "REST", "time": 9.0, "duration": 1.0},
+			{"note": "La", "time": 10.0, "duration": 1.0},
+			{"note": "La", "time": 11.0, "duration": 1.0}
 		]
 		var parts = [p1, p2, p3, p4]
 		var idx = int(target_note_key.replace("sao_truc_level4_", "")) - 1
