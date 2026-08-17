@@ -134,7 +134,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Thực Hành"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -262,10 +262,10 @@ func _setup_drawing_callbacks() -> void:
 		var pct := 0.0
 		if inst == "dan_tranh":
 			var stats: Dictionary = _get_dan_tranh_level_status(1)
-			pct = stats["pct"]
+			pct = stats.get("pct", 0)
 		elif inst == "dan_bau" or inst == "sao_truc":
 			var stats := _get_dan_bau_card_status("basic") if inst == "dan_bau" else _get_sao_truc_card_status("basic")
-			pct = stats["pct"]
+			pct = stats.get("pct", 0)
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"):
 				pct = 100.0
@@ -292,10 +292,10 @@ func _setup_drawing_callbacks() -> void:
 		var pct := 0.0
 		if inst == "dan_tranh":
 			var stats: Dictionary = _get_dan_tranh_level_status(2)
-			pct = stats["pct"]
+			pct = stats.get("pct", 0)
 		elif inst == "dan_bau" or inst == "sao_truc":
 			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("essentials")
-			pct = stats["pct"]
+			pct = stats.get("pct", 0)
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
@@ -318,7 +318,7 @@ func _setup_drawing_callbacks() -> void:
 		var r := 34.0
 		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
 		var stats: Dictionary = _get_dan_tranh_level_status(7)
-		var pct := float(stats["pct"])
+		var pct := float(stats.get("pct", 0))
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_level_3.draw_arc(Vector2(cx, cy), r, -PI / 2.0, -PI / 2.0 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
@@ -1617,15 +1617,15 @@ func _build_roadmap_cards() -> void:
 	var basic_pct := 0
 	if instrument == "dan_tranh":
 		var stats := _get_dan_tranh_level_status(1)
-		is_basic_completed = stats["completed"]
-		basic_stars = stats["stars"]
-		basic_pct = stats["pct"]
+		is_basic_completed = stats.get("completed", false)
+		basic_stars = stats.get("stars", 0)
+		basic_pct = stats.get("pct", 0)
 	elif instrument == "dan_bau" or instrument == "sao_truc":
 		var card_t = "basic"
 		var stats := _get_dan_bau_card_status(card_t) if instrument == "dan_bau" else _get_sao_truc_card_status(card_t)
-		is_basic_completed = stats["completed"]
-		basic_stars = stats["stars"]
-		basic_pct = stats["pct"]
+		is_basic_completed = stats.get("completed", false)
+		basic_stars = stats.get("stars", 0)
+		basic_pct = stats.get("pct", 0)
 	else:
 		is_basic_completed = SecureDataManager.is_lesson_completed(instrument, "Node1")
 		var stars_dict = SecureDataManager.data.get("stars", {})
@@ -1679,13 +1679,13 @@ func _build_roadmap_cards() -> void:
 		ess_details.add_theme_color_override("font_color", C_GOLD_LIGHT)
 		if instrument == "dan_tranh":
 			var stats := _get_dan_tranh_level_status(2)
-			_set_details_text(ess_details, 8, stats["stars"], stats["pct"], false)
+			_set_details_text(ess_details, 8, stats.get("stars", 0), stats.get("pct", 0), false)
 		elif instrument == "sao_truc":
 			var stats := _get_sao_truc_card_status("essentials")
-			_set_details_text(ess_details, 7, stats["stars"], stats["pct"], false)
+			_set_details_text(ess_details, 7, stats.get("stars", 0), stats.get("pct", 0), false)
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
-			_set_details_text(ess_details, 2, stats["stars"], stats["pct"], false)
+			_set_details_text(ess_details, 2, stats.get("stars", 0), stats.get("pct", 0), false)
 		else:
 			var stars_dict = SecureDataManager.data.get("stars", {})
 			var inst_stars = stars_dict.get(instrument, {})
@@ -1741,7 +1741,7 @@ func _build_roadmap_cards() -> void:
 	# Card Level 3 follows the exact visual language of Levels 1 and 2.
 	var level_3_stats := _get_dan_tranh_level_status(7)
 	var level_2_stats := _get_dan_tranh_level_status(2)
-	var is_level_3_unlocked := bool(level_2_stats["completed"])
+	var is_level_3_unlocked := bool(level_2_stats.get("completed", false))
 	var level_3_sb := _flat(
 		C_CARD_BG_DK if is_level_3_unlocked else Color(1.0, 1.0, 1.0, 0.45),
 		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
@@ -1753,7 +1753,7 @@ func _build_roadmap_cards() -> void:
 	level_7_title.add_theme_color_override("font_color", C_CREAM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
 	level_7_desc.add_theme_color_override("font_color", C_CREAM_DIM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.4))
 	level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
-	_set_details_text(level_7_details, 4, level_3_stats["stars"], level_3_stats["pct"], false)
+	_set_details_text(level_7_details, 4, level_3_stats.get("stars", 0), level_3_stats.get("pct", 0), false)
 
 func _style_circular_play_btn(btn: Button) -> void:
 	var pb_n := _flat(C_RED_SON, C_GOLD, 32)
@@ -1957,7 +1957,8 @@ func _connect_buttons() -> void:
 
 	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(btn)
-		btn.pressed.connect(func() -> void: _set_active_tab(btn))
+		if btn != btn_minigame:
+			btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
@@ -2171,7 +2172,8 @@ func _connect_buttons() -> void:
 
 	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob, btn_leaderboard_mob]:
 		_make_btn_bouncy(btn)
-		btn.pressed.connect(func() -> void: _set_active_tab(btn))
+		if btn != btn_minigame_mob:
+			btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 func _open_learning_activities() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))

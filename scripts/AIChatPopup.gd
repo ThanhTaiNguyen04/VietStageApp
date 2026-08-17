@@ -445,7 +445,7 @@ func open_chat(instrument_context: String) -> void:
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Trọng tâm của bạn là chỉ dạy học viên học chơi Đàn Tranh: hệ thống 16/17/19 dây, thang ngũ âm Hò Xự Xang Xê Cống. Kỹ thuật tay phải đeo móng gảy (ngón 1, 2, 3), lướt ngón á. Kỹ thuật tay trái rung dây, nhấn dây đổi cao độ (tạo điệu oán, điệu xuân). " +
-				"Chỉ trả lời câu hỏi xã giao và câu hỏi về Đàn Tranh/âm nhạc cổ truyền. Từ chối lịch sự mọi chủ đề khác."
+				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
 			)
 			greeting = "[Mai]: Chào bạn! Hôm nay chúng ta cùng học và luyện tập Đàn Tranh nhé. Bạn cần Mai hỗ trợ gì về kỹ thuật gảy hay bấm dây không?"
 			tts_greeting = "Chào bạn! Hôm nay chúng ta cùng học và luyện tập Đàn Tranh nhé. Bạn cần Mai hỗ trợ gì về kỹ thuật gảy hay bấm dây không?"
@@ -455,7 +455,7 @@ func open_chat(instrument_context: String) -> void:
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Trọng tâm của bạn là chỉ dạy thổi Sáo Trúc: kỹ thuật lấy hơi bụng, cách đặt môi góc 45 độ, bấm kín các lỗ ngón. Các kỹ thuật sáo như lưỡi đơn (Tờ), lưỡi kép (Tờ-Cờ), rung hơi bụng, vuốt ngón, gõ ngón láy nhanh. " +
-				"Chỉ trả lời câu hỏi xã giao và câu hỏi về Sáo Trúc/âm nhạc cổ truyền. Từ chối lịch sự mọi chủ đề khác."
+				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
 			)
 			greeting = "[Mai]: Chào bạn! Bạn đang tập thổi Sáo Trúc đúng không? Mai sẵn sàng giải đáp các thắc mắc về thế bấm lỗ sáo và cách lấy hơi bụng nhé!"
 			tts_greeting = "Chào bạn! Bạn đang tập thổi Sáo Trúc đúng không? Mai sẵn sàng giải đáp các thắc mắc về thế bấm lỗ sáo và cách lấy hơi bụng nhé!"
@@ -465,7 +465,7 @@ func open_chat(instrument_context: String) -> void:
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Trọng tâm của bạn là chỉ dạy Đàn Bầu: một dây đồng, thùng tre/gỗ, vòi đàn bằng sừng trâu và quả bầu. Kỹ thuật tay phải dùng que gảy chạm nhẹ cạnh bàn tay vào điểm hài âm (tỷ lệ 1/2, 1/3, 1/4 dây). Kỹ thuật tay trái uốn vòi đàn về trước (giảm cao độ) hoặc kéo ra sau (tăng cao độ) tạo âm rung. " +
-				"Chỉ trả lời câu hỏi xã giao và câu hỏi về Đàn Bầu/âm nhạc cổ truyền. Từ chối lịch sự mọi chủ đề khác."
+				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
 			)
 			greeting = "[Mai]: Chào bạn! Đàn Bầu với một dây duy nhất là nhạc cụ rất đặc sắc. Bạn hãy hỏi Mai bất kỳ điều gì về cách gảy nốt hài âm và rung vòi đàn nhé."
 			tts_greeting = "Chào bạn! Đàn Bầu với một dây duy nhất là nhạc cụ rất đặc sắc. Bạn hãy hỏi Mai bất kỳ điều gì về cách gảy nốt hài âm và rung vòi đàn nhé."
@@ -475,7 +475,7 @@ func open_chat(instrument_context: String) -> void:
 				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
 				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
 				"Bạn hỗ trợ chia sẻ kiến thức về nhạc cụ truyền thống Việt Nam (Đàn Tranh, Sáo Trúc, Đàn Bầu, Trống Chầu) và các bài hát dân ca cổ truyền. " +
-				"Từ chối lịch sự mọi chủ đề ngoài lề."
+				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
 			)
 			greeting = "[Mai]: Chào bạn! Mai có thể giúp gì cho bạn về Đàn Tranh hoặc Sáo Trúc hôm nay?"
 			tts_greeting = "Chào bạn! Mai có thể giúp gì cho bạn về Đàn Tranh hoặc Sáo Trúc hôm nay?"
@@ -485,6 +485,7 @@ func open_chat(instrument_context: String) -> void:
 	var old_model = ai_manager.model_name
 	
 	# Pass customized prompt instruction
+	ai_manager.instrument_context = instrument_context
 	ai_manager.send_prompt("") # Clear states
 	
 	ai_chat_log.clear()

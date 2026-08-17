@@ -38,6 +38,8 @@ const USER_PROGRESS := "/users/me/progress"
 const USER_PROGRESS_SUMMARY := "/users/me/progress/summary"
 const MY_ACHIEVEMENTS := "/users/me/achievements"
 const USER_PASSWORD := "/users/me/password"
+const USER_POINT_TRANSACTIONS := "/users/%s/point-transactions"
+const USER_FCM_TOKEN := "/users/me/fcm-token"
 
 # Daily challenges & configs
 const DAILY_CHALLENGES := "/daily-challenges"

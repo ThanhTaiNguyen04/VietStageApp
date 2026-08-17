@@ -58,7 +58,9 @@ var staff_bg_color := Color("#fdfbf7")
 var number_font: Font = preload("res://assets/fonts/BeVietnamPro-Bold.ttf")
 
 func _ready():
-	if ResourceLoader.exists("res://image/khung nhav.png"):
+	if ResourceLoader.exists("res://assets/textures/treble_clef.svg"):
+		clef_tex = load("res://assets/textures/treble_clef.svg")
+	elif ResourceLoader.exists("res://image/khung nhav.png"):
 		clef_tex = load("res://image/khung nhav.png")
 	resized.connect(queue_redraw)
 
@@ -112,6 +114,11 @@ func _draw():
 		var y = center_y + (2 - i) * line_spacing
 		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.2, true)
 			
+	# Draw the initial vertical bar line connecting all 5 lines
+	var staff_top_y = center_y - 2 * line_spacing
+	var staff_bot_y = center_y + 2 * line_spacing
+	draw_line(Vector2(start_x, staff_top_y), Vector2(start_x, staff_bot_y), line_color, 4.0, true)
+			
 	# Draw Clef and Time signature on the left
 	var font = ThemeDB.fallback_font
 	if font:
@@ -149,6 +156,9 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		var flash_t = note_data.get("flash_trigger", 0.0)
+		# REST notes: draw nothing (empty space represents a rest naturally)
+		if n_name == "REST":
+			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
