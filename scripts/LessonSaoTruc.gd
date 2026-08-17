@@ -1647,9 +1647,9 @@ func _generate_melody(target_note_key: String) -> Array:
 			seq.append({"note": n_name, "type": "half",      "duration": 2.0,  "time": t}); t += 2.0
 			seq.append({"note": "REST",   "type": "half",      "duration": 2.0,  "time": t}); t += 2.0
 
-			seq.append({"note": n_name, "type": "whole",     "duration": 4.0,  "time": t})
-			
-	for n in seq:
+	var final_seq = []
+	for i in range(seq.size()):
+		var n = seq[i]
 		if not n.has("type") or n["type"] == "":
 			var d = n.get("duration", 1.0)
 			if d >= 3.0: n["type"] = "whole"
@@ -1657,8 +1657,22 @@ func _generate_melody(target_note_key: String) -> Array:
 			elif d >= 1.0: n["type"] = "quarter"
 			elif d >= 0.5: n["type"] = "eighth"
 			else: n["type"] = "sixteenth"
-			
-	return seq
+		final_seq.append(n)
+		
+		# Add a REST if there's a gap before the next note
+		if i < seq.size() - 1:
+			var next_n = seq[i+1]
+			var end_time = n["time"] + n.get("duration", 1.0)
+			var gap = next_n["time"] - end_time
+			if gap >= 0.05:
+				var rest_type = "sixteenth"
+				if gap >= 3.0: rest_type = "whole"
+				elif gap >= 2.0: rest_type = "half"
+				elif gap >= 1.0: rest_type = "quarter"
+				elif gap >= 0.5: rest_type = "eighth"
+				final_seq.append({"note": "REST", "time": end_time, "duration": gap, "type": rest_type})
+				
+	return final_seq
 
 func _check_auto_advance():
 	if _current_practice_idx >= _practice_sequence.size(): return
