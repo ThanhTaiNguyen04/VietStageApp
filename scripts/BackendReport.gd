@@ -123,9 +123,10 @@ func ensure_minigame_by_type(lesson_id: int, challenge_type: String) -> Dictiona
 	var expected := challenge_type.to_upper().replace("-", "_").replace(" ", "_")
 	for item: Variant in minigames:
 		if item is Dictionary:
-			var actual := str(item.get("challengeType", "")).to_upper().replace("-", "_").replace(" ", "_")
+			var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
 			var is_note_alias := expected == "NOTE_RECOGNITION" and actual in ["NOTE_IDENTIFICATION", "NOTE_RECOGNITION_QUIZ"]
-			if actual == expected or is_note_alias:
+			var is_melody_alias := (expected in ["MELODY_COMPLETION", "MELODY_COMPLETE"]) and (actual in ["MELODY_COMPLETION", "MELODY_COMPLETE"])
+			if actual == expected or is_note_alias or is_melody_alias:
 				return item
 	return {}
 

@@ -1,6 +1,7 @@
 extends "res://scripts/LearningActivityBase.gd"
 
-var challenge: Dictionary = {}
+var rhythms: Array = []
+var rhythm_index := 0
 var challenge_id := 0
 var beat_times: Array[float] = []
 var judgements: Array[String] = []
@@ -25,42 +26,77 @@ func _ready() -> void:
 
 func _load_challenge() -> void:
 	var report := _report()
+	var target_challenges: Array = []
+	
 	if report != null and report.is_signed_in():
 		result_sync_status = "be"
+		if SecureDataManager.be_catalog.is_empty():
+			await report.fetch_and_install_catalog()
 		for local_id: String in Context.local_lesson_ids:
 			var lesson := SecureDataManager.resolve_be_lesson(Context.instrument, local_id)
 			if lesson.is_empty():
 				continue
-			challenge = await report.ensure_minigame_by_type(int(lesson.get("id", 0)), "RHYTHM_MATCH")
-			if not challenge.is_empty():
-				break
-	if challenge.is_empty():
-		result_sync_status = "offline"
-		var samples: Dictionary = _sample_data()
-		challenge = samples.get("rhythm", {"maxScore": 500, "contentJson": JSON.stringify({"beats": [0.5, 1.0, 1.5, 2.0]})})
-	challenge_id = int(challenge.get("id", 0))
-	_parse_challenge()
+			lesson_id = _safe_int(lesson.get("id", 0))
+			var minigames: Array = await report.ensure_minigame_list(lesson_id)
+			for item: Variant in minigames:
+				if item is Dictionary:
+					var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
+					if actual == "RHYTHM_MATCH":
+						target_challenges.append(item)
+			break
+			
+	target_challenges.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var order_a = _safe_int(a.get("orderIndex", a.get("order_index", 0)))
+		var order_b = _safe_int(b.get("orderIndex", b.get("order_index", 0)))
+		return order_a < order_b
+	)
+	
+	_parse_challenges(target_challenges)
 	_build_intro()
 
-func _parse_challenge() -> void:
-	var parsed: Variant = _extract_json(challenge.get("contentJson", ""))
-	var source: Dictionary = parsed if parsed is Dictionary else {}
-	var beats: Array = source.get("beats", [])
-	var rounds: Variant = source.get("rounds", [])
-	if beats.is_empty() and rounds is Array and not rounds.is_empty():
-		var first: Variant = rounds[0]
-		if first is Dictionary:
-			beats = first.get("beats", [])
-	beat_times.clear()
-	for beat: Variant in beats:
-		beat_times.append(float(beat))
-	if beat_times.is_empty():
-		beat_times = [0.5, 1.0, 1.5, 2.0]
+func _parse_challenges(challenges: Array) -> void:
+	rhythms.clear()
+	for challenge_item: Variant in challenges:
+		if not challenge_item is Dictionary:
+			continue
+		var parsed: Variant = _extract_json(_safe_str(challenge_item.get("contentJson", challenge_item.get("content_json", ""))))
+		var source: Dictionary = parsed if parsed is Dictionary else {}
+		var beats: Array = source.get("beats", [])
+		var rounds: Variant = source.get("rounds", [])
+		if beats.is_empty() and rounds is Array and not rounds.is_empty():
+			var first: Variant = rounds[0]
+			if first is Dictionary:
+				beats = first.get("beats", [])
+				
+		var times: Array[float] = []
+		for beat: Variant in beats:
+			times.append(float(beat))
+		if times.is_empty():
+			times = [0.5, 1.0, 1.5, 2.0]
+			
+		rhythms.append({
+			"beats": times,
+			"challenge_id": _safe_int(challenge_item.get("id", 0)),
+			"max_score": _safe_int(challenge_item.get("maxScore", challenge_item.get("max_score", times.size() * 100)), times.size() * 100)
+		})
+		
+	if rhythms.is_empty():
+		rhythms.append({
+			"beats": [0.5, 1.0, 1.5, 2.0],
+			"challenge_id": 0,
+			"max_score": 500
+		})
+
+func _build_intro() -> void:
+	# Load current rhythm's data
+	var rhythm: Dictionary = rhythms[rhythm_index % rhythms.size()]
+	beat_times = rhythm["beats"]
+	challenge_id = rhythm["challenge_id"]
+	
 	judgements.clear()
 	for _beat in beat_times:
 		judgements.append("")
-
-func _build_intro() -> void:
+		
 	for child in content_box.get_children():
 		child.queue_free()
 	var card := PanelContainer.new()
@@ -204,12 +240,72 @@ func _finish_round() -> void:
 	playing = false
 	if timeline:
 		timeline.set("active", false)
-	var maximum := int(challenge.get("maxScore", beat_times.size() * 100))
-	var stars := _stars(score, maxi(1, maximum))
-	_submit_attempt(stars)
-	_show_result("Nhịp điệu hoàn thành!", "Đúng %d / %d phách · Accuracy %.0f%%" % [hits, beat_times.size(), _accuracy_percent()], score, stars, _start_round, _accuracy_percent())
-
-func _submit_attempt(stars: int) -> void:
+		
+	var current_rhythm: Dictionary = rhythms[rhythm_index % rhythms.size()]
+	var current_id := _safe_int(current_rhythm.get("challenge_id", 0))
+	var current_max := _safe_int(current_rhythm.get("max_score", 100), 100)
+	
+	var round_score := int(float(accuracy_points) / float(maxi(1, beat_times.size() * 100)) * float(current_max))
+	var round_stars := _stars(round_score, current_max)
+	
 	var report := _report()
-	if report != null and challenge_id > 0:
-		await report.report_minigame_by_id(challenge_id, score, stars, started_at, _now_iso())
+	if report != null and current_id > 0:
+		await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		
+	score += round_score
+	
+	for child in content_box.get_children():
+		child.queue_free()
+		
+	var detail_text := "Đúng %d / %d phách · Accuracy %.0f%%" % [hits, beat_times.size(), _accuracy_percent()]
+	
+	if rhythm_index + 1 >= rhythms.size():
+		var total_max := 0
+		for r in rhythms:
+			total_max += _safe_int(r.get("max_score", 100), 100)
+		var final_stars := _stars(score, maxi(1, total_max))
+		_show_result("Nhịp điệu hoàn thành!", detail_text, score, final_stars, _restart, _accuracy_percent())
+		return
+		
+	# Show round result card with a Next Round button
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", _panel(Color.WHITE, C_GREEN, 24, 2))
+	content_box.add_child(card)
+	
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 16)
+	card.add_child(body)
+	
+	var heading := _label("Vòng %d hoàn thành!" % (rhythm_index + 1), 22, C_NAVY)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(heading)
+	
+	var detail_lbl := _label(detail_text, 17, C_MUTED)
+	detail_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(detail_lbl)
+	
+	var next_btn := _button("Vòng tiếp theo →", 220, 54, C_BLUE)
+	next_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	next_btn.pressed.connect(func() -> void:
+		rhythm_index += 1
+		_build_intro()
+	)
+	body.add_child(next_btn)
+
+func _restart() -> void:
+	rhythm_index = 0
+	score = 0
+	_build_intro()
+
+func _safe_int(val: Variant, default: int = 0) -> int:
+	if val == null:
+		return default
+	if val is String and val.is_empty():
+		return default
+	return int(val)
+
+func _safe_str(val: Variant, default: String = "") -> String:
+	if val == null:
+		return default
+	return str(val)
