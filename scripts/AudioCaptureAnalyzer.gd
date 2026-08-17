@@ -160,15 +160,19 @@ func _ready() -> void:
 
 
 func _initialize_microphone_permission() -> void:
-	if not OS.has_feature("android"):
+	if OS.has_feature("android"):
+		var permission_signal := StringName("on_request_permissions_result")
+		var permission_callback := Callable(self, "_on_request_permissions_result")
+		if get_tree() and get_tree().has_signal(permission_signal) \
+				and not get_tree().is_connected(permission_signal, permission_callback):
+			get_tree().connect(permission_signal, permission_callback)
+		request_microphone_permission()
+	elif OS.has_feature("ios"):
+		if OS.has_method("request_permission"):
+			OS.request_permission("RECORD_AUDIO")
 		_set_microphone_permission_state(true)
-		return
-	var permission_signal := StringName("on_request_permissions_result")
-	var permission_callback := Callable(self, "_on_request_permissions_result")
-	if get_tree() and get_tree().has_signal(permission_signal) \
-			and not get_tree().is_connected(permission_signal, permission_callback):
-		get_tree().connect(permission_signal, permission_callback)
-	request_microphone_permission()
+	else:
+		_set_microphone_permission_state(true)
 
 
 func request_microphone_permission() -> bool:
@@ -461,14 +465,15 @@ func _process(delta: float) -> void:
 		_update_reliable_pitch(raw_pitch)
 	if profile_plucked and not instrument_gate_open \
 			and not _instrument_attack_candidate_active:
-		# A final timbre rejection may clear pitch. While a candidate is still
-		# being retried, preserve its stable pitch evidence for the next window.
-		_clear_pitch_detection()
+		# When C++ analyzer is active, perform strict clearing. In pure GDScript fallback (e.g. Xogot/remote debug),
+		# preserve reliable pitch so detection remains active.
+		if _analyzer != null:
+			_clear_pitch_detection()
 	
 	# Step 6: Note Mapping (Standardised core note mapping using InstrumentPitchProfile)
 	var mapped_note := {}
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null \
-			and (not profile_plucked or instrument_gate_open):
+			and (not profile_plucked or instrument_gate_open or _analyzer == null):
 		mapped_note = pitch_profile.match_pitch(current_pitch)
 	if instrument_gate_open and _instrument_gate_string_index < 0 \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
@@ -716,7 +721,7 @@ func _clear_pitch_detection() -> void:
 func _update_reliable_pitch(detected_pitch: float) -> void:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
-	var fast_tracking := rapid_sequence_mode or contour_tracking_mode
+	var fast_tracking := rapid_sequence_mode or contour_tracking_mode or (_analyzer == null)
 	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
 	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
 	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
@@ -1256,28 +1261,36 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 	result["crest_factor"] = crest_factor
 	result["peak_position"] = peak_position
 
-	if attack_ratio < INSTRUMENT_MIN_ATTACK_RATIO:
+	var min_attack := INSTRUMENT_MIN_ATTACK_RATIO if _analyzer != null else 1.01
+	var min_decay := INSTRUMENT_MIN_DECAY_DB if _analyzer != null else 0.05
+	var min_late_decay := INSTRUMENT_MIN_LATE_DECAY_DB if _analyzer != null else 0.01
+	var min_tail := INSTRUMENT_MIN_TAIL_RATIO if _analyzer != null else 0.005
+	var min_periodicity := INSTRUMENT_MIN_PERIODICITY if _analyzer != null else 1.0
+	var min_tonality := INSTRUMENT_MIN_STRING_TONALITY if _analyzer != null else 0.001
+	var min_crest := INSTRUMENT_MIN_CREST_FACTOR if _analyzer != null else 1.01
+
+	if attack_ratio < min_attack:
 		result["reason"] = "no_fast_attack"
 		return result
-	if decay_db < INSTRUMENT_MIN_DECAY_DB:
+	if decay_db < min_decay:
 		result["reason"] = "no_string_decay"
 		return result
-	if late_decay_db < INSTRUMENT_MIN_LATE_DECAY_DB:
+	if late_decay_db < min_late_decay:
 		result["reason"] = "sustained_voice_after_attack"
 		return result
-	if tail_ratio < INSTRUMENT_MIN_TAIL_RATIO:
+	if tail_ratio < min_tail:
 		result["reason"] = "transient_too_short"
 		return result
-	if periodicity < INSTRUMENT_MIN_PERIODICITY:
+	if periodicity < min_periodicity:
 		result["reason"] = "aperiodic_noise_or_tap"
 		return result
-	if string_tonality < INSTRUMENT_MIN_STRING_TONALITY:
+	if string_tonality < min_tonality:
 		result["reason"] = "not_a_dan_tranh_frequency"
 		return result
-	if crest_factor < INSTRUMENT_MIN_CREST_FACTOR:
+	if crest_factor < min_crest:
 		result["reason"] = "flat_sustained_tone"
 		return result
-	if peak_position > 0.85:
+	if peak_position > 0.90:
 		result["reason"] = "slow_or_late_attack"
 		return result
 
