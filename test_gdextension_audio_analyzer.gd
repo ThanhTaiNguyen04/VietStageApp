@@ -2,6 +2,7 @@ extends SceneTree
 
 const SAMPLE_RATE := 44100.0
 const SAMPLE_COUNT := 4096
+const NOISE_SEEDS := [17, 101, 509, 2027, 8191, 32771, 65537, 104729]
 const HIGH_NOTES := {
 	"Sol3": 783.99,
 	"La3": 880.00,
@@ -45,7 +46,25 @@ func _init() -> void:
 			quit(1)
 			return
 
-	print("PASS: Native AudioAnalyzer detected all Sol3-La4 plucked tones")
+	# Aperiodic input has no valid fundamental. The native YIN implementation
+	# must reject it instead of returning the least-bad global minimum.
+	for seed_value in NOISE_SEEDS:
+		var noise_pitch: float = analyzer.analyze_pitch_yin(
+			_make_deterministic_noise(int(seed_value)),
+			SAMPLE_RATE,
+			0.08,
+			180.0,
+			1900.0
+		)
+		if noise_pitch > 0.0:
+			printerr(
+				"FAILED: Native YIN returned false pitch %.2f Hz for aperiodic noise seed %d"
+				% [noise_pitch, seed_value]
+			)
+			quit(1)
+			return
+
+	print("PASS: Native AudioAnalyzer detects plucks and rejects low-confidence aperiodic noise")
 	quit(0)
 
 func _make_plucked_tone(frequency: float) -> PackedFloat32Array:
@@ -59,4 +78,14 @@ func _make_plucked_tone(frequency: float) -> PackedFloat32Array:
 			+ 0.55 * sin(phase * 2.0)
 			+ 0.20 * sin(phase * 3.0)
 		)
+	return samples
+
+
+func _make_deterministic_noise(seed_value: int) -> PackedFloat32Array:
+	var generator := RandomNumberGenerator.new()
+	generator.seed = seed_value
+	var samples := PackedFloat32Array()
+	samples.resize(SAMPLE_COUNT)
+	for index in SAMPLE_COUNT:
+		samples[index] = generator.randf_range(-0.65, 0.65)
 	return samples

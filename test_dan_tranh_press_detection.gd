@@ -25,6 +25,31 @@ func _init() -> void:
 	if lesson._is_press_source_attack_valid(vocal_without_pluck, "Mi2"):
 		failures.append("Sai: giọng hát không có onset tiếng đàn vẫn được mở lượt Nhấn")
 
+	var no_generation := valid_mi_attack.duplicate()
+	no_generation["generation"] = 0
+	if lesson._is_press_source_attack_valid(no_generation, "Mi2"):
+		failures.append("Sai: lần Nhấn được mở khi không có generation tiếng gảy hợp lệ")
+	var no_confidence := valid_mi_attack.duplicate()
+	no_confidence["confidence"] = 0.0
+	if lesson._is_press_source_attack_valid(no_confidence, "Mi2"):
+		failures.append("Sai: lần Nhấn được mở khi bộ lọc tiếng đàn có độ tin cậy bằng 0")
+	var mismatched_name := valid_mi_attack.duplicate()
+	mismatched_name["note_name"] = "Sol2"
+	if lesson._is_press_source_attack_valid(mismatched_name, "Mi2"):
+		failures.append("Sai: tên nốt không khớp vẫn mở lượt Nhấn trên dây Mi2")
+
+	for exercise in lesson.PRESS_EXERCISES:
+		var source := str(exercise["source"])
+		var target_identity := {
+			"active": true,
+			"string_index": int(lesson.NOTE_TO_STRING[source]),
+			"note_name": source,
+			"generation": 24,
+			"confidence": 0.90
+		}
+		if not lesson._is_press_source_attack_valid(target_identity, source):
+			failures.append("Không mở được lượt Nhấn hợp lệ cho dây nguồn %s" % source)
+
 	if not lesson._is_press_contour_session_valid(valid_mi_attack, "Mi2", 12):
 		failures.append("Không giữ được lượt Nhấn thuộc đúng lần gảy ban đầu")
 	if lesson._is_press_contour_session_valid(valid_mi_attack, "Mi2", 11):
@@ -43,6 +68,20 @@ func _init() -> void:
 	var smooth_result: Dictionary = lesson._analyze_press_contour(smooth_press, 100.0)
 	if not smooth_result.get("detected", false):
 		failures.append("Bỏ sót đường Nhấn Mi2 lên Fa2 mượt và giữ đủ lâu")
+
+	var smooth_whole_tone_press: Array[float] = [
+		0.0, 2.0, 8.0, 18.0, 35.0, 55.0, 80.0, 110.0,
+		140.0, 165.0, 185.0, 198.0, 201.0, 200.0, 199.0, 200.0
+	]
+	if not lesson._analyze_press_contour(smooth_whole_tone_press, 200.0).get("detected", false):
+		failures.append("Bỏ sót đường Nhấn La lên Si mượt đủ 200 cents")
+
+	var abrupt_press: Array[float] = [
+		0.0, 0.0, 0.0, 250.0, 250.0, 200.0, 200.0, 200.0,
+		200.0, 200.0, 200.0, 200.0, 200.0, 200.0
+	]
+	if lesson._analyze_press_contour(abrupt_press, 200.0).get("detected", false):
+		failures.append("Sai: cao độ nhảy đột ngột vẫn được tính là Nhấn dây mượt")
 
 	var late_glide: Array[float] = [
 		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,

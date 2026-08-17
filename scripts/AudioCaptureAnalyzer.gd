@@ -8,6 +8,7 @@ signal dan_tranh_note_ended(note: Dictionary)
 # Unlike dan_tranh_note_started, repeated attacks on the same string are kept;
 # technique lessons such as tremolo need their timing information.
 signal dan_tranh_rapid_attack(note: Dictionary)
+signal microphone_permission_changed(granted: bool)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -33,6 +34,11 @@ var current_composite_score := 100.0
 var recent_scores_history : Array[float] = []
 var difficulty_tolerance_scale := 1.0
 var analysis_suspended := false
+var microphone_permission_granted := true
+var microphone_permission_request_pending := false
+var _microphone_permission_poll_elapsed := 0.0
+const ANDROID_MICROPHONE_PERMISSION := "android.permission.RECORD_AUDIO"
+const MICROPHONE_PERMISSION_POLL_SEC := 0.25
 
 var _analyzer: RefCounted = null
 
@@ -73,8 +79,14 @@ var _instrument_gate_silence_elapsed := 0.0
 var _instrument_attack_candidate_active := false
 var _instrument_attack_candidate := PackedFloat32Array()
 var _instrument_last_candidate_msec := -1000
-const INSTRUMENT_ATTACK_MIN_SAMPLES := 1024
-const INSTRUMENT_ATTACK_MAX_SAMPLES := 4096
+var _instrument_timbre_attempts := 0
+var _instrument_next_analysis_size := 4096
+var _instrument_last_rejection_reason := ""
+const INSTRUMENT_ATTACK_ANALYSIS_SAMPLES := 4096
+const INSTRUMENT_TIMBRE_RETRY_SAMPLES := 512
+const INSTRUMENT_TIMBRE_MAX_WINDOWS := 3
+const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
+	+ INSTRUMENT_TIMBRE_RETRY_SAMPLES * (INSTRUMENT_TIMBRE_MAX_WINDOWS - 1)
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
@@ -107,6 +119,22 @@ var pitch_estimation_done := false
 var time_since_onset := 0.0
 var pluck_release_time := 0.0
 
+# Stateful onset detector. AudioEffectCapture returns chunks aligned to render
+# frames, not to the instant a string is plucked. Keep fixed-size energy blocks
+# across calls so an attack can start anywhere inside (or across) a chunk.
+var _onset_sample_buffer := PackedFloat32Array()
+var _onset_previous_rms := 0.0
+var _onset_noise_floor_rms := 0.000001
+var _onset_refractory_remaining := 0.0
+var _onset_state_initialized := false
+var _last_onset_sample_offset := 0
+const ONSET_BLOCK_SAMPLES := 256
+const ONSET_PRE_ROLL_SAMPLES := 128
+const ONSET_MIN_RISE_RATIO := 1.55
+const ONSET_NOISE_FLOOR_RATIO := 2.20
+const ONSET_REFRACTORY_SEC := 0.055
+const ONSET_NOISE_FLOOR_SMOOTHING := 0.08
+
 var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
 var _analysis_buffer := PackedFloat32Array()
@@ -125,9 +153,90 @@ func _ready() -> void:
 		_analyzer = ClassDB.instantiate("AudioAnalyzer")
 		
 	_setup_audio_bus()
+	_initialize_microphone_permission()
 	
 	for i in range(MAX_SAMPLES):
 		_sample_history.append(0.0)
+
+
+func _initialize_microphone_permission() -> void:
+	if not OS.has_feature("android"):
+		_set_microphone_permission_state(true)
+		return
+	var permission_signal := StringName("on_request_permissions_result")
+	var permission_callback := Callable(self, "_on_request_permissions_result")
+	if get_tree() and get_tree().has_signal(permission_signal) \
+			and not get_tree().is_connected(permission_signal, permission_callback):
+		get_tree().connect(permission_signal, permission_callback)
+	request_microphone_permission()
+
+
+func request_microphone_permission() -> bool:
+	if not OS.has_feature("android"):
+		_set_microphone_permission_state(true)
+		return true
+	if _is_android_microphone_permission_granted():
+		microphone_permission_request_pending = false
+		_set_microphone_permission_state(true)
+		return true
+	microphone_permission_request_pending = true
+	var already_granted := OS.request_permission(ANDROID_MICROPHONE_PERMISSION)
+	if already_granted:
+		microphone_permission_request_pending = false
+		_set_microphone_permission_state(true)
+	else:
+		_set_microphone_permission_state(false)
+	return already_granted
+
+
+func has_microphone_permission() -> bool:
+	if OS.has_feature("android"):
+		return _is_android_microphone_permission_granted()
+	return microphone_permission_granted
+
+
+func _is_android_microphone_permission_granted() -> bool:
+	var granted_permissions := OS.get_granted_permissions()
+	return granted_permissions.has(ANDROID_MICROPHONE_PERMISSION) \
+		or granted_permissions.has("RECORD_AUDIO")
+
+
+func _on_request_permissions_result(permission: String, granted: bool) -> void:
+	if permission != ANDROID_MICROPHONE_PERMISSION and permission != "RECORD_AUDIO":
+		return
+	microphone_permission_request_pending = false
+	_set_microphone_permission_state(granted)
+
+
+func _set_microphone_permission_state(granted: bool) -> void:
+	if microphone_permission_granted == granted:
+		return
+	microphone_permission_granted = granted
+	if not granted:
+		if _mic_player and _mic_player.playing:
+			_mic_player.stop()
+		_reset_live_analysis_state()
+	elif _effect:
+		_effect.clear_buffer()
+	microphone_permission_changed.emit(granted)
+
+
+func _refresh_mobile_microphone_permission(delta: float) -> bool:
+	if not OS.has_feature("android"):
+		return true
+	_microphone_permission_poll_elapsed += maxf(delta, 0.0)
+	if _microphone_permission_poll_elapsed >= MICROPHONE_PERMISSION_POLL_SEC:
+		_microphone_permission_poll_elapsed = 0.0
+		var granted := _is_android_microphone_permission_granted()
+		if granted:
+			microphone_permission_request_pending = false
+		_set_microphone_permission_state(granted)
+	return microphone_permission_granted
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED and OS.has_feature("android"):
+		_microphone_permission_poll_elapsed = MICROPHONE_PERMISSION_POLL_SEC
 
 func _setup_audio_bus() -> void:
 	_bus_index = AudioServer.get_bus_index("Record")
@@ -256,6 +365,7 @@ func _reset_live_analysis_state() -> void:
 	_dan_tranh_note_duration = 0.0
 	_dan_tranh_release_elapsed = 0.0
 	current_dan_tranh_note = {}
+	_reset_onset_detector()
 	_close_instrument_gate()
 	for i in range(_sample_history.size()):
 		_sample_history[i] = 0.0
@@ -270,6 +380,9 @@ func _discard_captured_samples() -> void:
 
 # ─── Standardised 7-Step DSP Pipeline ───
 func _process(delta: float) -> void:
+	if not _refresh_mobile_microphone_permission(delta):
+		current_amplitude_db = -80.0
+		return
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 	if not _effect: return
@@ -287,9 +400,19 @@ func _process(delta: float) -> void:
 	current_amplitude_db = _calculate_amplitude_db(samples)
 	if calibration_active:
 		calibration_db_samples.append(current_amplitude_db)
+
+	# Always feed the stateful onset detector, including quiet chunks. Those
+	# chunks establish the live microphone floor and preserve continuity across
+	# AudioEffectCapture frame boundaries.
+	var is_onset := _detect_onset(samples)
+	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	
 	var gate_open = current_amplitude_db > volume_threshold_db
 	if not gate_open:
+		# Once an attack starts, keep its natural decay in the 4096-sample
+		# candidate even when later chunks fall below the live noise gate.
+		if profile_plucked and _instrument_attack_candidate_active:
+			_update_instrument_sound_gate(samples, false, delta)
 		_rapid_attack_pending = false
 		_rapid_attack_pending_elapsed = 0.0
 		_handle_silence(delta)
@@ -297,8 +420,6 @@ func _process(delta: float) -> void:
 		return
 	
 	# Step 3: Onset Detection (plucked instrument logic)
-	var is_onset = _detect_onset(samples)
-	var profile_plucked = pitch_profile != null and pitch_profile.is_plucked_instrument
 	if profile_plucked:
 		_update_instrument_sound_gate(samples, is_onset, delta)
 	if rapid_sequence_mode:
@@ -320,13 +441,15 @@ func _process(delta: float) -> void:
 		if onset_detected:
 			time_since_onset += delta
 	
-	# Step 4: Pitch Estimation (estimate every frame inside the 30-150 ms onset
+	# Step 4: Pitch Estimation (estimate every frame inside the 30-250 ms onset
 	# window so the stability gate can accumulate PITCH_STABILITY_FRAMES candidates)
 	var raw_pitch := 0.0
 	if rapid_sequence_mode or contour_tracking_mode:
 		raw_pitch = _estimate_pitch(samples)
 	elif profile_plucked:
-		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.15:
+		# The timbre gate needs about 4096 samples (92.9 ms at 44.1 kHz).
+		# Keep this open long enough to stabilize after that gate is validated.
+		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.25:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
 				if raw_pitch > 0.0 and current_pitch_is_reliable:
@@ -337,14 +460,16 @@ func _process(delta: float) -> void:
 	# Step 5: Stabilization
 	if raw_pitch > 0.0:
 		_update_reliable_pitch(raw_pitch)
-	if profile_plucked and not instrument_gate_open:
-		# Do not expose stable vocal/noise pitch while no valid đàn-tranh attack
-		# has opened the shared instrument gate.
+	if profile_plucked and not instrument_gate_open \
+			and not _instrument_attack_candidate_active:
+		# A final timbre rejection may clear pitch. While a candidate is still
+		# being retried, preserve its stable pitch evidence for the next window.
 		_clear_pitch_detection()
 	
 	# Step 6: Note Mapping (Standardised core note mapping using InstrumentPitchProfile)
 	var mapped_note := {}
-	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null:
+	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null \
+			and (not profile_plucked or instrument_gate_open):
 		mapped_note = pitch_profile.match_pitch(current_pitch)
 	if instrument_gate_open and _instrument_gate_string_index < 0 \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
@@ -391,8 +516,8 @@ func _capture_samples() -> PackedFloat32Array:
 				
 			for val in mono_samples:
 				_analysis_buffer.append(val)
-			if _analysis_buffer.size() > 2048:
-				var excess = _analysis_buffer.size() - 2048
+			if _analysis_buffer.size() > INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
+				var excess = _analysis_buffer.size() - INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 				_analysis_buffer = _analysis_buffer.slice(excess)
 	return mono_samples
 
@@ -402,12 +527,88 @@ func _calculate_amplitude_db(samples: PackedFloat32Array) -> float:
 	return _calculate_peak_db_gdscript(samples)
 
 func _detect_onset(samples: PackedFloat32Array) -> bool:
-	if _analyzer:
-		var onset_info = _analyzer.detect_note_onset_and_duration(samples, AudioServer.get_mix_rate(), volume_threshold_db)
-		return onset_info.get("is_onset", false)
-	
-	var onset_info = _detect_note_onset_and_duration_gdscript(samples, AudioServer.get_mix_rate(), volume_threshold_db)
-	return onset_info.get("is_onset", false)
+	if samples.is_empty():
+		return false
+
+	var buffered_sample_count := _onset_sample_buffer.size()
+	_onset_sample_buffer.append_array(samples)
+	_last_onset_sample_offset = 0
+	var sample_rate := maxf(AudioServer.get_mix_rate(), 1.0)
+	var threshold_rms := pow(10.0, volume_threshold_db / 20.0) * 0.5
+	var onset_found := false
+	var consumed := 0
+
+	while _onset_sample_buffer.size() - consumed >= ONSET_BLOCK_SAMPLES:
+		var energy := 0.0
+		for i in range(consumed, consumed + ONSET_BLOCK_SAMPLES):
+			var value := float(_onset_sample_buffer[i])
+			energy += value * value
+		var block_rms := sqrt(energy / float(ONSET_BLOCK_SAMPLES))
+		var block_duration := float(ONSET_BLOCK_SAMPLES) / sample_rate
+		_onset_refractory_remaining = maxf(
+			0.0, _onset_refractory_remaining - block_duration
+		)
+
+		if not _onset_state_initialized:
+			# A lesson can start while a pluck is already entering the first capture
+			# chunk. Use the configured gate as a conservative initial reference
+			# instead of discarding that first attack.
+			_onset_noise_floor_rms = maxf(
+				0.000001, minf(block_rms, threshold_rms * 0.5)
+			)
+			_onset_previous_rms = maxf(
+				_onset_noise_floor_rms, threshold_rms * 0.25
+			)
+			_onset_state_initialized = true
+
+		var reference_rms := maxf(
+			_onset_previous_rms,
+			maxf(_onset_noise_floor_rms, threshold_rms * 0.25)
+		)
+		var rise_ratio := block_rms / maxf(reference_rms, 0.000001)
+		var above_input_gate := block_rms >= threshold_rms
+		var above_noise_floor := block_rms >= (
+			_onset_noise_floor_rms * ONSET_NOISE_FLOOR_RATIO
+		)
+
+		if not onset_found \
+				and _onset_refractory_remaining <= 0.0 \
+				and above_input_gate \
+				and above_noise_floor \
+				and rise_ratio >= ONSET_MIN_RISE_RATIO:
+			onset_found = true
+			_onset_refractory_remaining = ONSET_REFRACTORY_SEC
+			# Translate the fixed-block position back to this capture chunk. A
+			# short pre-roll preserves the transient used by the timbre classifier.
+			_last_onset_sample_offset = clampi(
+				consumed - buffered_sample_count - ONSET_PRE_ROLL_SAMPLES,
+				0,
+				samples.size()
+			)
+
+		# Learn only quiet/near-floor blocks. A loud sustained note must not raise
+		# the floor and hide the attack of the next string.
+		if block_rms <= maxf(threshold_rms, _onset_noise_floor_rms * 1.5):
+			_onset_noise_floor_rms = lerpf(
+				_onset_noise_floor_rms,
+				maxf(block_rms, 0.000001),
+				ONSET_NOISE_FLOOR_SMOOTHING
+			)
+		_onset_previous_rms = block_rms
+		consumed += ONSET_BLOCK_SAMPLES
+
+	if consumed > 0:
+		_onset_sample_buffer = _onset_sample_buffer.slice(consumed)
+	return onset_found
+
+
+func _reset_onset_detector() -> void:
+	_onset_sample_buffer.clear()
+	_onset_previous_rms = 0.0
+	_onset_noise_floor_rms = 0.000001
+	_onset_refractory_remaining = 0.0
+	_onset_state_initialized = false
+	_last_onset_sample_offset = 0
 
 func _estimate_pitch(samples: PackedFloat32Array) -> float:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
@@ -419,7 +620,8 @@ func _estimate_pitch(samples: PackedFloat32Array) -> float:
 
 func _handle_silence(delta: float) -> void:
 	_time_since_last_pitch += delta
-	_clear_pitch_detection()
+	if not _instrument_attack_candidate_active:
+		_clear_pitch_detection()
 	current_tone_quality = lerp(current_tone_quality, 100.0, 0.5)
 	current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 	if instrument_gate_open:
@@ -583,7 +785,11 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 	if is_onset and not _instrument_attack_candidate_active \
 			and now_msec - _instrument_last_candidate_msec >= candidate_refractory:
 		_instrument_attack_candidate_active = true
-		_instrument_attack_candidate = samples.duplicate()
+		var candidate_start := clampi(_last_onset_sample_offset, 0, samples.size())
+		_instrument_attack_candidate = samples.slice(candidate_start)
+		_instrument_timbre_attempts = 0
+		_instrument_next_analysis_size = INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
+		_instrument_last_rejection_reason = ""
 		_instrument_last_candidate_msec = now_msec
 		instrument_gate_open = false
 		current_instrument_confidence = 0.0
@@ -598,16 +804,23 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 		_instrument_attack_candidate = _instrument_attack_candidate.slice(
 			0, INSTRUMENT_ATTACK_MAX_SAMPLES
 		)
-	if _instrument_attack_candidate.size() < INSTRUMENT_ATTACK_MIN_SAMPLES:
+	if _instrument_attack_candidate.size() < _instrument_next_analysis_size:
 		return
 
-	var classification := analyze_dan_tranh_sound(
-		_instrument_attack_candidate, AudioServer.get_mix_rate()
+	var analysis_window := _instrument_attack_candidate.slice(
+		0, _instrument_next_analysis_size
 	)
-	_instrument_attack_candidate_active = false
-	_instrument_attack_candidate.clear()
-	current_instrument_confidence = float(classification.get("confidence", 0.0))
+	var classification := analyze_dan_tranh_sound(
+		analysis_window, AudioServer.get_mix_rate()
+	)
+	_instrument_timbre_attempts += 1
+	current_instrument_confidence = maxf(
+		current_instrument_confidence,
+		float(classification.get("confidence", 0.0))
+	)
 	if classification.get("accepted", false):
+		_instrument_attack_candidate_active = false
+		_instrument_attack_candidate.clear()
 		instrument_gate_open = true
 		_instrument_gate_generation += 1
 		_instrument_gate_string_index = -1
@@ -618,6 +831,15 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 			_rapid_attack_pending = true
 			_rapid_attack_pending_elapsed = 0.0
 	else:
+		_instrument_last_rejection_reason = str(classification.get("reason", "unknown"))
+		if _instrument_timbre_attempts < INSTRUMENT_TIMBRE_MAX_WINDOWS:
+			# Keep both pitch evidence and the original transient. The next window
+			# adds more decay samples instead of judging the same 4096 samples again.
+			_instrument_next_analysis_size = mini(
+				INSTRUMENT_ATTACK_MAX_SAMPLES,
+				_instrument_next_analysis_size + INSTRUMENT_TIMBRE_RETRY_SAMPLES
+			)
+			return
 		_close_instrument_gate()
 		_clear_pitch_detection()
 
@@ -631,6 +853,8 @@ func _close_instrument_gate() -> void:
 	_instrument_gate_silence_elapsed = 0.0
 	_instrument_attack_candidate_active = false
 	_instrument_attack_candidate.clear()
+	_instrument_timbre_attempts = 0
+	_instrument_next_analysis_size = INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 	_rapid_attack_pending = false
 	_rapid_attack_pending_elapsed = 0.0
 
@@ -939,6 +1163,11 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 	if analysis_suspended:
 		return {}
 	if pitch_profile:
+		# Reuse the pitch already stabilized for the currently validated attack.
+		# Reclassifying a later rolling buffer can lose the original transient and
+		# incorrectly turn a recognized physical string back into "None".
+		if instrument_gate_open and current_pitch_is_reliable and current_pitch > 0.0:
+			return pitch_profile.match_pitch(current_pitch)
 		var classification := analyze_dan_tranh_sound(samples, sample_rate)
 		if not classification.get("accepted", false):
 			return {}
@@ -966,7 +1195,7 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 		"reason": "too_short"
 	}
 	var size := samples.size()
-	if size < INSTRUMENT_ATTACK_MIN_SAMPLES:
+	if size < INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
 		return result
 
 	var threshold: float = float(pitch_profile.volume_threshold_db) if pitch_profile else volume_threshold_db

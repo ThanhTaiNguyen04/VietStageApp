@@ -189,13 +189,49 @@ func _init() -> void:
 			])
 
 	var pluck := _plucked_tone(440.0)
-	analyzer._update_instrument_sound_gate(pluck.slice(0, 600), true, 0.016)
-	analyzer._update_instrument_sound_gate(pluck.slice(600, 1200), false, 0.016)
+	var candidate_offset := 0
+	while candidate_offset < SAMPLE_COUNT:
+		var candidate_end := mini(candidate_offset + 600, SAMPLE_COUNT)
+		analyzer._update_instrument_sound_gate(
+			pluck.slice(candidate_offset, candidate_end),
+			candidate_offset == 0,
+			0.016
+		)
+		candidate_offset = candidate_end
+		if candidate_offset < SAMPLE_COUNT and analyzer.has_recent_dan_tranh_attack():
+			failures.append("Cổng tiếng đàn mở trước khi thu đủ 4096 mẫu")
+			break
 	if not analyzer.has_recent_dan_tranh_attack():
-		failures.append("Tiếng gảy hợp lệ không mở cổng tiếng đàn dùng chung")
+		failures.append("Tiếng gảy hợp lệ không mở cổng sau khi thu đủ 4096 mẫu")
 	analyzer._handle_silence(0.36)
 	if analyzer.has_recent_dan_tranh_attack():
 		failures.append("Cổng tiếng đàn không đóng sau khi mất tín hiệu")
+
+	# A single rejected timbre window must retain stable pitch and wait for
+	# additional decay samples. Only the final failed retry may clear it.
+	var retry_analyzer = load("res://scripts/AudioCaptureAnalyzer.gd").new()
+	retry_analyzer.volume_threshold_db = -58.0
+	for pitch_frame in 4:
+		retry_analyzer._update_reliable_pitch(440.0)
+	var rejected_voice := _sustained_voice(440.0)
+	retry_analyzer._update_instrument_sound_gate(rejected_voice, true, 0.016)
+	if not retry_analyzer._instrument_attack_candidate_active:
+		failures.append("Cửa sổ âm sắc sai đầu tiên không được giữ lại để thử lại")
+	if not retry_analyzer.current_pitch_is_reliable or retry_analyzer.current_pitch <= 0.0:
+		failures.append("Pitch bị xóa ngay sau cửa sổ âm sắc sai đầu tiên")
+	retry_analyzer._update_instrument_sound_gate(
+		rejected_voice.slice(0, 512), false, 0.016
+	)
+	if not retry_analyzer._instrument_attack_candidate_active:
+		failures.append("Cửa sổ âm sắc sai thứ hai không được giữ cho lần thử cuối")
+	retry_analyzer._update_instrument_sound_gate(
+		rejected_voice.slice(512, 1024), false, 0.016
+	)
+	if retry_analyzer._instrument_attack_candidate_active:
+		failures.append("Ứng viên âm sắc vẫn treo sau ba cửa sổ đều bị từ chối")
+	if retry_analyzer.current_pitch_is_reliable or retry_analyzer.current_pitch > 0.0:
+		failures.append("Pitch không được xóa sau khi cả ba cửa sổ đều bị từ chối")
+	retry_analyzer.free()
 
 	analyzer.free()
 	if failures.is_empty():

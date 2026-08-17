@@ -153,7 +153,9 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 		}
 	}
 
-	// Fallback to global minimum if no values fell below the threshold, but protect against harmonic period multiples
+	// Fallback to a sufficiently periodic global minimum if no local minimum met
+	// the strict threshold. A least-bad minimum above this confidence guard is
+	// still aperiodic input (speech/noise/transient), not a valid pitch.
 	if (best_tau == -1) {
 		if (min_val < 0.35f && global_min_tau > 0) {
 			int candidate_tau = global_min_tau;
@@ -171,7 +173,7 @@ float AudioAnalyzer::analyze_pitch_yin(const PackedFloat32Array &samples, float 
 			}
 			best_tau = candidate_tau;
 		} else {
-			best_tau = global_min_tau;
+			return 0.0f;
 		}
 	}
 
@@ -744,5 +746,4 @@ Dictionary AudioAnalyzer::analyze_pitch_contour(const PackedFloat32Array &pitch_
 
 	return result;
 }
-
 
