@@ -113,10 +113,9 @@ func _build_sticky_progress_bar() -> void:
 	hbox.add_theme_constant_override("separation", 16)
 	progress_container.add_child(hbox)
 
-	# 1. Sticky Back Button
 	# 1. Sticky Back Button (Double size)
 	floating_back_button = Button.new()
-	floating_back_button.custom_minimum_size = Vector2(76, 76)
+	floating_back_button.custom_minimum_size = Vector2(88, 88)
 	floating_back_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	floating_back_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(floating_back_button)
@@ -124,11 +123,11 @@ func _build_sticky_progress_bar() -> void:
 	floating_back_button.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	floating_back_button.expand_icon = true
 	floating_back_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	floating_back_button.add_theme_constant_override("icon_max_width", 38)
+	floating_back_button.add_theme_constant_override("icon_max_width", 44)
 
 	var style_n := StyleBoxFlat.new()
 	style_n.bg_color = Color.WHITE
-	style_n.set_corner_radius_all(38)
+	style_n.set_corner_radius_all(44)
 	style_n.border_width_bottom = 5
 	style_n.border_color = Color("#cbd5e1")
 	style_n.shadow_color = Color(0, 0, 0, 0.05)
@@ -150,7 +149,7 @@ func _build_sticky_progress_bar() -> void:
 
 	floating_back_button.pressed.connect(_go_back)
 
-	floating_back_button.pivot_offset = Vector2(38, 38)
+	floating_back_button.pivot_offset = Vector2(44, 44)
 	floating_back_button.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(floating_back_button, "scale", Vector2(1.08, 1.08), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
