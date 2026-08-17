@@ -17,7 +17,7 @@ const CHORD_MAX_COMPONENT_SPREAD_DB := 20.0
 const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 6.0
 const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
-enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
+enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED, RHYTHM_GAME }
 enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
 var current_state = State.INTRO
 
@@ -252,6 +252,18 @@ var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
 
 var practice_idx: int = 0
+
+var is_challenge_mode := false
+var rhythm_time := 0.0
+var challenge_hit_notes := 0
+var challenge_total_notes := 0
+var bpm_multiplier := 1.0
+var bpm_controls_row: HBoxContainer
+var score_label: Label
+var pill_badge: PanelContainer
+var has_rhythm_completed := false
+var active_rhythm_notes := []
+var notes_judged := {}
 var intro_step: int = 0
 var intro_playback_token: int = 0
 var time_correct: float = 0.0
@@ -864,7 +876,11 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
-	if _is_error_flash_demo():
+	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
+	if is_challenge_mode:
+		_setup_challenge_ui()
+		call_deferred("_start_rhythm_game")
+	elif _is_error_flash_demo():
 		# Do not show the shared welcome / audio-calibration lesson screen.
 		# The automatic error demo opens directly into the staff exercise.
 		call_deferred("_start_practice")
@@ -5207,12 +5223,12 @@ func _create_pause_action_btn(text: String, icon_path: String, pressed_callable:
 	# Shader biến đổi màu icon xanh lá tối gốc thành màu Trắng/Vàng kim cực đẹp
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", Color.WHITE)
 	texture_rect.material = mat
@@ -5307,12 +5323,12 @@ func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Butt
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", Color.WHITE) # Màu trắng sáng mặc định
 	texture_rect.material = mat
@@ -5374,12 +5390,12 @@ func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool,
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", text_color)
 	texture_rect.material = mat

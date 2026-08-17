@@ -134,7 +134,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Thực Hành"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -1957,7 +1957,8 @@ func _connect_buttons() -> void:
 
 	for btn in [btn_courses, btn_room, btn_songs, btn_minigame, btn_account, btn_leaderboard]:
 		_make_btn_bouncy(btn)
-		btn.pressed.connect(func() -> void: _set_active_tab(btn))
+		if btn != btn_minigame:
+			btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 	# Card Clicks
 	card_basic.gui_input.connect(func(e: InputEvent) -> void:
@@ -2171,7 +2172,8 @@ func _connect_buttons() -> void:
 
 	for btn in [btn_courses_mob, btn_room_mob, btn_songs_mob, btn_minigame_mob, btn_account_mob, btn_leaderboard_mob]:
 		_make_btn_bouncy(btn)
-		btn.pressed.connect(func() -> void: _set_active_tab(btn))
+		if btn != btn_minigame_mob:
+			btn.pressed.connect(func() -> void: _set_active_tab(btn))
 
 func _open_learning_activities() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
