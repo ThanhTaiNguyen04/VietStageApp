@@ -1221,9 +1221,18 @@ func _sort_room_elements() -> void:
 	items.sort_custom(func(a, b):
 		return _get_sort_y(a) < _get_sort_y(b)
 	)
-	# FloorCanvas is at index 0, so move other children starting from index 1
+	
+	# Keep HangingScroll at index 0 and FloorCanvas at index 1 (rendering in the background)
+	var scroll = room_content.get_node_or_null("HangingScroll")
+	if scroll:
+		room_content.move_child(scroll, 0)
+	if floor_canvas:
+		room_content.move_child(floor_canvas, 1 if scroll else 0)
+		
+	# Render sorted interactive items above the backgrounds
+	var start_idx := 2 if scroll else 1
 	for i in range(items.size()):
-		room_content.move_child(items[i], i + 1)
+		room_content.move_child(items[i], start_idx + i)
 
 func _draw_instrument_image(c: Button, tex: Texture2D, height_ratio: float = 0.74) -> void:
 	var sz := c.size
@@ -2553,6 +2562,12 @@ func _fetch_cosmetics_data() -> void:
 			var body = my_response.get("body", {}).get("data", {})
 			_cosmetics_owned = body.get("owned", [])
 			_cosmetics_locked = body.get("locked", [])
+			
+			# Respect local active list for equipped states
+			var active = SecureDataManager.data.get("active_decorations", [])
+			for item in _cosmetics_owned:
+				var m_key = _get_draw_key(item)
+				item["isEquipped"] = item.get("isEquipped", item.get("is_equipped", false)) or active.has(m_key)
 		else:
 			_cosmetics_owned = []
 			_cosmetics_locked = []
@@ -2574,6 +2589,14 @@ func _fetch_cosmetics_data() -> void:
 			]
 			var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
 			var active = SecureDataManager.data.get("active_decorations", [])
+			if unlocked.is_empty():
+				# Initialize defaults to avoid an empty room on first launch/offline mode
+				unlocked = ["chausen", "tranh", "quat"]
+				active = ["chausen", "tranh", "quat"]
+				SecureDataManager.data["unlocked_decorations"] = unlocked
+				SecureDataManager.data["active_decorations"] = active
+				SecureDataManager.save_data()
+				
 			for m_item in all_mock:
 				var m_key = _get_draw_key(m_item)
 				if unlocked.has(m_key):
