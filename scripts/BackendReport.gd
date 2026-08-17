@@ -59,7 +59,9 @@ func ensure_quizzes(lesson_id: int) -> Array:
 	if not _is_success(response):
 		return []
 	var quizzes: Array = _extract_array(response)
-	SecureDataManager.cache_be_quizzes(lesson_id, quizzes)
+	# Chỉ cache khi BE thực sự trả dữ liệu; lỗi tạm thời không được biến thành danh sách rỗng vĩnh viễn.
+	if not quizzes.is_empty():
+		SecureDataManager.cache_be_quizzes(lesson_id, quizzes)
 	return quizzes
 
 
@@ -114,7 +116,9 @@ func ensure_minigame_list(lesson_id: int) -> Array:
 	if not _is_success(response):
 		return []
 	var minigames: Array = _extract_array(response)
-	SecureDataManager.cache_be_minigames(lesson_id, minigames)
+	# Chỉ cache khi BE thực sự trả dữ liệu; lỗi tạm thời không được biến thành danh sách rỗng vĩnh viễn.
+	if not minigames.is_empty():
+		SecureDataManager.cache_be_minigames(lesson_id, minigames)
 	return minigames
 
 
@@ -204,7 +208,8 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 
 ## Nộp kết quả khi client đã chọn chính xác challenge từ BE.
 ## Dùng cho các màn chơi có nhiều challenge trong cùng một lesson.
-func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at: String = "", completed_at: String = "") -> Dictionary:
+## `client_attempt_id` là khóa idempotency do client sinh ra để retry không tạo bản ghi trùng.
+func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at: String = "", completed_at: String = "", client_attempt_id: String = "") -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	if minigame_id <= 0:
@@ -212,12 +217,16 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 
 	var start_value := started_at if not started_at.is_empty() else _iso_now()
 	var complete_value := completed_at if not completed_at.is_empty() else _iso_now()
+	var safe_score := clampi(score, 0, 100000)
+	var safe_stars := clampi(stars, 0, 3)
+	var attempt_key := client_attempt_id if not client_attempt_id.is_empty() else _uuid()
 	var response: Dictionary = await _api.submit_minigame_attempt(
 		minigame_id,
-		score,
-		stars,
+		safe_score,
+		safe_stars,
 		start_value,
-		complete_value
+		complete_value,
+		attempt_key
 	)
 	if not _is_success(response):
 		return {
@@ -235,6 +244,7 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 		"minigame_id": minigame_id,
 		"attempt_id": int(attempt_data.get("id", 0)),
 		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
+		"stars_earned": safe_stars,
 	}
 
 
@@ -260,7 +270,7 @@ func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 		"submitted": true,
 		"quiz_id": quiz_id,
 		"is_correct": bool(attempt_data.get("isCorrect", attempt_data.get("is_correct", false))),
-		"points_earned": int(attempt_data.get("points_earned", 0)),
+		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
 		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", "")))
 	}
 

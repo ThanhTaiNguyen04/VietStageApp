@@ -13,7 +13,6 @@ const C_CARD := Color("#fffdf8")
 const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
-const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
 
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
@@ -975,10 +974,8 @@ func _open_quiz() -> void:
 		var number := int(lesson.get("number", 0))
 		if number > 0:
 			ids.append(str(lesson.get("practice_id", _lesson_id(number, "practice"))))
-	QuizScreenScript.quiz_instrument = "dan_tranh"
-	QuizScreenScript.quiz_local_ids = ids
-	QuizScreenScript.quiz_return_scene = "res://scenes/LessonDanTranhList.tscn"
-	_fade_to("res://scenes/QuizScreen.tscn")
+	LearningActivityContextScript.configure("dan_tranh", ids, "res://scenes/LessonDanTranhList.tscn")
+	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _apply_responsive_layout() -> void:
 	var viewport_size: Vector2 = get_viewport_rect().size

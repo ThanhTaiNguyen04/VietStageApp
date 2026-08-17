@@ -138,7 +138,8 @@ func submit_minigame_attempt(
 	score: int,
 	stars_earned: int,
 	started_at: String,
-	completed_at: String
+	completed_at: String,
+	client_attempt_id: String = ""
 ) -> Dictionary:
 	var payload := {
 		"score": score,
@@ -146,6 +147,8 @@ func submit_minigame_attempt(
 		"startedAt": started_at,
 		"completedAt": completed_at,
 	}
+	if not client_attempt_id.is_empty():
+		payload["clientAttemptId"] = client_attempt_id
 	var path := ApiRoutes.build(ApiRoutes.MINIGAME_ATTEMPTS % str(minigame_id))
 	return await request_json(path, HTTPClient.METHOD_POST, payload)
 

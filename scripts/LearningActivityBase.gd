@@ -211,6 +211,12 @@ func _now_iso() -> String:
 func _report() -> Node:
 	return get_node_or_null("/root/BackendReport")
 
+## Sinh khóa idempotency cho một lần nộp kết quả (minigame), để retry không tạo bản ghi trùng.
+func _client_attempt_id(prefix: String = "") -> String:
+	var suffix := "%04x%04x" % [randi_range(0, 0xFFFF), randi_range(0, 0xFFFF)]
+	var base := "%d-%s" % [Time.get_unix_time_from_system(), suffix]
+	return prefix + "-" + base if not prefix.is_empty() else base
+
 func _normalize_type(value: String) -> String:
 	return value.to_upper().replace("-", "_").replace(" ", "_")
 
@@ -308,7 +314,7 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 	metrics.add_child(_metric_card("\u2605", "Stars", "%d / 3" % stars, C_GOLD))
 
 	# Sync status
-	var sync := _label(_sync_status_text(), 13 if mobile else 14, C_OK if result_sync_status == "be" else C_MUTED)
+	var sync := _label(_sync_status_text(), 13 if mobile else 14, C_OK if result_sync_status == "be" else (C_BAD if result_sync_status == "failed" else C_MUTED))
 	sync.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(sync)
 
@@ -362,4 +368,6 @@ func _metric_card(icon: String, label_text: String, value: String, color: Color)
 func _sync_status_text() -> String:
 	if result_sync_status == "be":
 		return "✓ Đã đồng bộ kết quả với BE"
+	if result_sync_status == "failed":
+		return "⚠ Không đồng bộ được · kết quả đã lưu trên thiết bị"
 	return "○ Offline · kết quả mẫu lưu trên thiết bị"

@@ -99,3 +99,30 @@ static func normalize_note(value: String) -> String:
 	prefix.compile("^[a-zA-Z][.)]\\s*")
 	note = prefix.sub(note, "", true).strip_edges()
 	return note
+
+
+## Chuẩn hóa tên nốt để SO SÁNH: bỏ dấu tiếng Việt, lowercase, bỏ octave và khoảng trắng thừa.
+## Dùng cho đối chiếu đáp án trong MelodyCompletion, không dùng để vẽ khuông nhạc.
+static func normalize_note_compare(value: String) -> String:
+	var note := normalize_note(value).to_lower()
+	note = note.replace("đ", "d")
+	note = note.replace("ố", "o").replace("ồ", "o").replace("ổ", "o").replace("ỗ", "o").replace("ộ", "o")
+	note = note.replace("ô", "o")
+	note = note.replace("ế", "e").replace("ề", "e").replace("ể", "e").replace("ễ", "e").replace("ệ", "e")
+	note = note.replace("ê", "e")
+	note = note.replace("ớ", "o").replace("ờ", "o").replace("ở", "o").replace("ỡ", "o").replace("ợ", "o")
+	note = note.replace("ơ", "o")
+	note = note.replace("ứ", "u").replace("ừ", "u").replace("ử", "u").replace("ữ", "u").replace("ự", "u")
+	note = note.replace("ư", "u")
+	note = note.replace("á", "a").replace("à", "a").replace("ả", "a").replace("ã", "a").replace("ạ", "a")
+	note = note.replace("ấ", "a").replace("ầ", "a").replace("ẩ", "a").replace("ẫ", "a").replace("ậ", "a")
+	note = note.replace("ắ", "a").replace("ằ", "a").replace("ẳ", "a").replace("ẵ", "a").replace("ặ", "a")
+	note = note.replace("í", "i").replace("ì", "i").replace("ỉ", "i").replace("ĩ", "i").replace("ị", "i")
+	note = note.replace("ó", "o").replace("ò", "o").replace("ỏ", "o").replace("õ", "o").replace("ọ", "o")
+	note = note.replace("ú", "u").replace("ù", "u").replace("ủ", "u").replace("ũ", "u").replace("ụ", "u")
+	note = note.replace("ý", "y").replace("ỳ", "y").replace("ỷ", "y").replace("ỹ", "y").replace("ỵ", "y")
+	note = note.strip_edges()
+	var octave_re := RegEx.new()
+	octave_re.compile("[0-9]+\\s*$")
+	note = octave_re.sub(note, "", true).strip_edges()
+	return note

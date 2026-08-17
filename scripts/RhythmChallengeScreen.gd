@@ -18,6 +18,7 @@ var timeline: Control
 var tap_button: Button
 var countdown_label: Label
 var round_duration := 1.0
+var _round_generation := 0
 
 func _ready() -> void:
 	super._ready()
@@ -43,7 +44,6 @@ func _load_challenge() -> void:
 					var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
 					if actual == "RHYTHM_MATCH":
 						target_challenges.append(item)
-			break
 			
 	target_challenges.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var order_a = _safe_int(a.get("orderIndex", a.get("order_index", 0)))
@@ -122,15 +122,47 @@ func _build_intro() -> void:
 	body.add_child(start)
 
 func _play_sample() -> void:
+	_round_generation += 1
 	var sample_label := _label("Mẫu nhịp: %s" % ", ".join(PackedStringArray(beat_times.map(func(value: float) -> String: return "%.1f" % value))), 17, C_MUTED)
 	sample_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content_box.add_child(sample_label)
+	var gen := _round_generation
+	for i in beat_times.size():
+		var beat_index := i
+		var delay := maxf(0.15, beat_times[i])
+		get_tree().create_timer(delay).timeout.connect(func() -> void:
+			if not is_instance_valid(self) or gen != _round_generation:
+				return
+			_play_click(beat_index == 0)
+		)
+
+func _play_click(accent: bool) -> void:
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = 44100
+	stream.buffer_length = 0.2
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	add_child(player)
+	player.play()
+	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		return
+	var frequency := 1200.0 if accent else 880.0
+	var frames := PackedVector2Array()
+	for i in range(4410):
+		var t := float(i) / 44100.0
+		var env := exp(-t * 18.0)
+		var sample := sin(TAU * frequency * t) * env * 0.25
+		frames.append(Vector2(sample, sample))
+	playback.push_buffer(frames)
+	get_tree().create_timer(0.12).timeout.connect(player.queue_free)
 
 func _start_round() -> void:
 	if playing or countdown_active:
 		return
+	_round_generation += 1
 	countdown_active = true
-	score = 0
+	# score tích lũy qua các vòng; chỉ reset khi chơi lại toàn bộ (xem _restart)
 	hits = 0
 	accuracy_points = 0
 	for i in judgements.size():
@@ -154,7 +186,13 @@ func _run_countdown() -> void:
 	started_at_ms = Time.get_ticks_msec()
 	_build_game()
 	round_duration = (beat_times[-1] if not beat_times.is_empty() else 2.0) + 1.2
-	get_tree().create_timer(round_duration).timeout.connect(_finish_round)
+	var gen := _round_generation
+	get_tree().create_timer(round_duration).timeout.connect(func() -> void:
+		if not is_instance_valid(self):
+			return
+		if gen == _round_generation and playing:
+			_finish_round()
+	)
 
 func _process(_delta: float) -> void:
 	if not playing:
@@ -211,7 +249,6 @@ func _tap() -> void:
 		var judgement := "PERFECT" if closest_diff <= 0.08 else "GOOD"
 		_set_judgement(closest, judgement)
 		hits += 1
-		score += 100 if judgement == "PERFECT" else 70
 	else:
 		_set_judgement(closest, "MISS")
 
@@ -250,7 +287,10 @@ func _finish_round() -> void:
 	
 	var report := _report()
 	if report != null and current_id > 0:
-		await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		var result: Dictionary = await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso(), _client_attempt_id("rhythm"))
+		result_sync_status = "be" if bool(result.get("submitted", false)) else "failed"
+	else:
+		result_sync_status = "offline"
 		
 	score += round_score
 	
@@ -294,6 +334,7 @@ func _finish_round() -> void:
 	body.add_child(next_btn)
 
 func _restart() -> void:
+	_round_generation += 1
 	rhythm_index = 0
 	score = 0
 	_build_intro()

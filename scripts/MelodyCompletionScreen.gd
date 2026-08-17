@@ -1,8 +1,5 @@
 extends "res://scripts/LearningActivityBase.gd"
 
-var challenge: Dictionary = {}
-var challenge_id := 0
-var lesson_id := 0
 var melodies: Array = []
 var melody_index := 0
 var score := 0
@@ -17,6 +14,8 @@ var audio_player: AudioStreamPlayer
 var progress_bar: ProgressBar
 var score_label: Label
 var floating_back_button: Button
+var answered := false
+var _audio_generation := 0
 
 func _ready() -> void:
 	super._ready()
@@ -33,44 +32,26 @@ func _ready() -> void:
 	_load_challenge()
 
 func _load_challenge() -> void:
-	var debug_lines: Array[String] = []
-	debug_lines.append("=== MINIGAME DEBUG START ===")
-	
 	var report := _report()
-	debug_lines.append("Report node exists: %s" % str(report != null))
-	if report != null:
-		debug_lines.append("Is signed in: %s" % str(report.is_signed_in()))
-		
-	debug_lines.append("Context.instrument: %s" % str(Context.instrument))
-	debug_lines.append("Context.local_lesson_ids: %s" % str(Context.local_lesson_ids))
-	debug_lines.append("be_catalog size: %d" % SecureDataManager.be_catalog.size())
-	
 	var target_challenges: Array = []
 	
 	if report != null and report.is_signed_in():
 		result_sync_status = "be"
 		if SecureDataManager.be_catalog.is_empty():
-			debug_lines.append("be_catalog is empty, fetching...")
 			await report.fetch_and_install_catalog()
-			debug_lines.append("be_catalog size after fetch: %d" % SecureDataManager.be_catalog.size())
 			
 		for local_id: String in Context.local_lesson_ids:
 			var lesson := SecureDataManager.resolve_be_lesson(Context.instrument, local_id)
-			debug_lines.append("Resolved lesson for local_id %s: %s" % [local_id, str(lesson)])
 			if lesson.is_empty():
 				continue
-			lesson_id = _safe_int(lesson.get("id", 0))
-			debug_lines.append("Lesson ID: %d" % lesson_id)
+			var lesson_id := _safe_int(lesson.get("id", 0))
 			
 			var minigames: Array = await report.ensure_minigame_list(lesson_id)
-			debug_lines.append("Raw minigames list for lesson_id %d: %s" % [lesson_id, str(minigames)])
-			
 			for item: Variant in minigames:
 				if item is Dictionary:
 					var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
 					if actual in ["MELODY_COMPLETION", "MELODY_COMPLETE"]:
 						target_challenges.append(item)
-			break
 			
 	target_challenges.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var order_a = _safe_int(a.get("orderIndex", a.get("order_index", 0)))
@@ -78,15 +59,6 @@ func _load_challenge() -> void:
 		return order_a < order_b
 	)
 	
-	debug_lines.append("Target challenges count: %d" % target_challenges.size())
-	debug_lines.append("=== MINIGAME DEBUG END ===")
-	
-	# Write debug log to disk
-	var file := FileAccess.open("user://debug_minigame.txt", FileAccess.WRITE)
-	if file != null:
-		file.store_string("\n".join(debug_lines))
-		file.close()
-
 	_parse_challenges(target_challenges)
 	_show_round()
 
@@ -190,12 +162,16 @@ func _show_round() -> void:
 	for child in content_box.get_children():
 		child.queue_free()
 	
+	_audio_generation += 1
+	answered = false
+	next_button = null
+	
 	var melody: Dictionary = melodies[melody_index % melodies.size()]
 	reference_audio_url = str(melody.get("audio_url", ""))
 	
-	# Update progress bar value (matching Quiz style)
+	# Update progress bar value (matching Quiz style, 1-based)
 	if progress_bar and melodies.size() > 0:
-		progress_bar.value = (float(melody_index) / float(melodies.size())) * 100.0
+		progress_bar.value = (float(melody_index) + 1.0) / float(melodies.size()) * 100.0
 	
 	# 1. Minimalist transparent status bar above the card (identical to Quiz style)
 	var status_bar := PanelContainer.new()
@@ -362,8 +338,9 @@ func _show_round() -> void:
 	started_at = _now_iso()
 
 func _answer(selected_btn: Button, selected_idx: int, selected: String, expected: String, melody: Dictionary, grid: GridContainer) -> void:
-	if next_button != null and is_instance_valid(next_button):
+	if answered or (next_button != null and is_instance_valid(next_button)):
 		return
+	answered = true
 	var correct := _note_equal(selected, expected)
 	var current_max := _safe_int(melody.get("max_score", 100), 100)
 	
@@ -379,7 +356,10 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	if report != null and current_id > 0:
 		var round_score := current_max if correct else 0
 		var round_stars := _stars(round_score, current_max)
-		await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		var result: Dictionary = await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso(), _client_attempt_id("melody"))
+		result_sync_status = "be" if bool(result.get("submitted", false)) else "failed"
+	else:
+		result_sync_status = "offline"
 	
 	# Disable all option buttons and highlight correct/incorrect
 	for child in grid.get_children():
@@ -582,18 +562,14 @@ func _style_option_button_state(button: Button, state: String) -> void:
 			text_label.add_theme_color_override("font_color", Color("#c62828"))
 
 func _note_equal(left: String, right: String) -> bool:
-	return left.to_lower().replace("đ", "d").replace("ô", "o").strip_edges() == right.to_lower().replace("đ", "d").replace("ô", "o").strip_edges()
+	return Context.normalize_note_compare(left) == Context.normalize_note_compare(right)
 
 func _restart() -> void:
+	_audio_generation += 1
 	melody_index = 0
 	score = 0
 	next_button = null
 	_show_round()
-
-func _submit_attempt(stars: int) -> void:
-	var report := _report()
-	if report != null and challenge_id > 0:
-		await report.report_minigame_by_id(challenge_id, score, stars, started_at, _now_iso())
 
 func _play_reference_audio() -> void:
 	if not reference_audio_url.is_empty():
@@ -632,7 +608,10 @@ func _audio_stream_from_buffer(buffer: PackedByteArray, url: String) -> AudioStr
 	return AudioStreamWAV.load_from_buffer(buffer)
 
 func _play_melody_fallback(notes: Array) -> void:
+	var gen := _audio_generation
 	for note: Variant in notes:
+		if not is_instance_valid(self) or gen != _audio_generation:
+			return
 		_play_tone(_frequency(str(note)))
 		await get_tree().create_timer(0.35).timeout
 
