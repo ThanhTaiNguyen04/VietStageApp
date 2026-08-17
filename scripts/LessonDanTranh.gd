@@ -108,10 +108,10 @@ var glissando_detected_generations: Array[int] = []
 var glissando_display_notes: Array = []
 var glissando_last_detection_time := 0.0
 var glissando_round_locked := false
-const GLISSANDO_GAP_TIMEOUT := 0.58
-const GLISSANDO_MAX_ATTACK_GAP := 0.24
-const GLISSANDO_MAX_STRING_STEP := 4
-const GLISSANDO_MIN_DISTINCT_STRINGS := 6
+const GLISSANDO_GAP_TIMEOUT := 0.75
+const GLISSANDO_MAX_ATTACK_GAP := 0.45
+const GLISSANDO_MAX_STRING_STEP := 6
+const GLISSANDO_MIN_DISTINCT_STRINGS := 5
 const GLISSANDO_ROUNDS := [
 	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
 	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
@@ -2721,28 +2721,28 @@ func _analyze_glissando_gesture(
 	var duration: float = float(times.back()) - float(times.front())
 	var distinct_count := distinct.size()
 	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
-	var max_duration := 3.8 if mode == "round" else 2.4
+	var max_duration := 4.5 if mode == "round" else 3.5
 	var continuous: bool = times_increasing \
 		and max_gap <= GLISSANDO_MAX_ATTACK_GAP \
 		and max_step <= GLISSANDO_MAX_STRING_STEP \
 		and duration <= max_duration
 	var enough_strings := distinct_count >= GLISSANDO_MIN_DISTINCT_STRINGS \
-		and strings.size() >= (9 if mode == "round" else 6)
+		and strings.size() >= (7 if mode == "round" else 5)
 	var range_valid := false
 	var direction_valid := false
 	var direction_ratio := 0.0
 
 	if mode == "down":
 		direction_ratio = _direction_ratio(strings, false)
-		range_valid = span >= 10 and first >= 11 and last <= 5 and coverage_ratio >= 0.45
-		direction_valid = direction_ratio >= 0.75
+		range_valid = span >= 6 and first >= 7 and last <= 8 and coverage_ratio >= 0.35
+		direction_valid = direction_ratio >= 0.65
 	elif mode == "up":
 		direction_ratio = _direction_ratio(strings, true)
-		range_valid = span >= 10 and first <= 5 and last >= 11 and coverage_ratio >= 0.45
-		direction_valid = direction_ratio >= 0.75
+		range_valid = span >= 6 and first <= 8 and last >= 7 and coverage_ratio >= 0.35
+		direction_valid = direction_ratio >= 0.65
 	elif mode == "round":
 		var turn_idx := strings.find(min_string)
-		if turn_idx >= 3 and turn_idx <= strings.size() - 4:
+		if turn_idx >= 2 and turn_idx <= strings.size() - 3:
 			var down_leg: Array[int] = []
 			var up_leg: Array[int] = []
 			for i in range(turn_idx + 1):
@@ -2752,10 +2752,10 @@ func _analyze_glissando_gesture(
 			var down_ratio := _direction_ratio(down_leg, false)
 			var up_ratio := _direction_ratio(up_leg, true)
 			direction_ratio = minf(down_ratio, up_ratio)
-			range_valid = min_string <= 5 and first >= 11 and last >= 11 \
-				and first - min_string >= 9 and last - min_string >= 9 \
-				and coverage_ratio >= 0.45
-			direction_valid = down_ratio >= 0.70 and up_ratio >= 0.70
+			range_valid = min_string <= 7 and first >= 7 and last >= 7 \
+				and first - min_string >= 5 and last - min_string >= 5 \
+				and coverage_ratio >= 0.35
+			direction_valid = down_ratio >= 0.60 and up_ratio >= 0.60
 
 	result["distinct_count"] = distinct_count
 	result["span"] = span
