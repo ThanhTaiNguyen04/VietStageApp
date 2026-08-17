@@ -176,168 +176,14 @@ func _build_sticky_progress_bar() -> void:
 	root_box.move_child(progress_container, 1)
 
 func _build_bottom_feedback_panel() -> void:
-	var mobile := get_viewport_rect().size.x < 600.0
-	bottom_feedback_panel = PanelContainer.new()
-	bottom_feedback_panel.name = "QuizBottomFeedbackPanel"
-
-	# Setup bottom drawer flat stylebox
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color.WHITE
-	style.border_color = Color("#cbd5e1")
-	style.border_width_top = 3
-	style.corner_radius_top_left = 24
-	style.corner_radius_top_right = 24
-	style.content_margin_left = 16 if mobile else 42
-	style.content_margin_right = 16 if mobile else 42
-	style.content_margin_top = 16 if mobile else 20
-	style.content_margin_bottom = _bottom_inset(mobile)
-	bottom_feedback_panel.add_theme_stylebox_override("panel", style)
-
-	var margin_container := MarginContainer.new()
-	bottom_feedback_panel.add_child(margin_container)
-
-	feedback_hbox = HBoxContainer.new()
-	feedback_hbox.add_theme_constant_override("separation", 16)
-	margin_container.add_child(feedback_hbox)
-
-	feedback_icon_container = CenterContainer.new()
-	feedback_icon_container.custom_minimum_size = Vector2(48, 48)
-	feedback_hbox.add_child(feedback_icon_container)
-
-	feedback_icon = TextureRect.new()
-	feedback_icon.custom_minimum_size = Vector2(36, 36)
-	feedback_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	feedback_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	feedback_icon_container.add_child(feedback_icon)
-
-	feedback_text_vbox = VBoxContainer.new()
-	feedback_text_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	feedback_text_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	feedback_text_vbox.add_theme_constant_override("separation", 2)
-	feedback_hbox.add_child(feedback_text_vbox)
-
-	feedback_title_label = Label.new()
-	feedback_title_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	feedback_title_label.add_theme_font_size_override("font_size", 15 if mobile else 18)
-	feedback_title_label.add_theme_color_override("font_color", C_TEXT)
-	feedback_text_vbox.add_child(feedback_title_label)
-
-	feedback_desc_label = Label.new()
-	feedback_desc_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font)
-	feedback_desc_label.add_theme_font_size_override("font_size", 13 if mobile else 14)
-	feedback_desc_label.add_theme_color_override("font_color", C_MUTED)
-	feedback_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	feedback_text_vbox.add_child(feedback_desc_label)
-
-	next_button = Button.new()
-	next_button.custom_minimum_size = Vector2(130 if mobile else 185, 52)
-	next_button.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	next_button.add_theme_font_size_override("font_size", 15 if mobile else 16)
-	next_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	next_button.pressed.connect(_next_question)
-	feedback_hbox.add_child(next_button)
-
-	# root_box.add_child(bottom_feedback_panel)
-
-
+	# Card removed per design request
+	pass
 
 func _set_bottom_feedback_waiting() -> void:
-	var style: StyleBoxFlat = bottom_feedback_panel.get_theme_stylebox("panel") as StyleBoxFlat
-	if style:
-		style.bg_color = Color.WHITE
-		style.border_color = Color("#cbd5e1")
-
-	feedback_icon.texture = load("res://assets/textures/lucide/sparkles.svg") as Texture2D
-	feedback_icon.modulate = C_GOLD
-
-	feedback_title_label.text = "CHỌN ĐÁP ÁN"
-	feedback_title_label.add_theme_color_override("font_color", C_MUTED)
-
-	feedback_desc_label.text = "Hãy chọn đáp án đúng ở phía trên."
-	feedback_desc_label.add_theme_color_override("font_color", C_MUTED)
-
-	next_button.text = "Tiếp theo"
-	next_button.disabled = true
-
-	var btn_style_disabled := StyleBoxFlat.new()
-	btn_style_disabled.bg_color = Color("#e2e8f0")
-	btn_style_disabled.border_color = Color("#cbd5e1")
-	btn_style_disabled.set_corner_radius_all(14)
-	btn_style_disabled.content_margin_left = 16
-	btn_style_disabled.content_margin_right = 16
-	next_button.add_theme_stylebox_override("disabled", btn_style_disabled)
-	next_button.add_theme_color_override("font_disabled_color", Color("#94a3b8"))
+	pass
 
 func _set_bottom_feedback_answered(is_correct: bool, feedback_desc: String) -> void:
-	if bottom_feedback_panel and is_instance_valid(bottom_feedback_panel):
-		var style: StyleBoxFlat = bottom_feedback_panel.get_theme_stylebox("panel") as StyleBoxFlat
-		if style:
-			var target_bg := Color("#e8f5e9") if is_correct else Color("#ffebee")
-			var target_border := Color("#81c784") if is_correct else Color("#e57373")
-			var tween := create_tween()
-			tween.tween_property(style, "bg_color", target_bg, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-			tween.parallel().tween_property(style, "border_color", target_border, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-
-	if is_correct:
-		if feedback_icon and is_instance_valid(feedback_icon):
-			feedback_icon.texture = load("res://assets/textures/lucide/check-circle.svg") as Texture2D
-			feedback_icon.modulate = Color("#2e7d32")
-
-		if feedback_title_label and is_instance_valid(feedback_title_label):
-			feedback_title_label.text = "CHÍNH XÁC!"
-			feedback_title_label.add_theme_color_override("font_color", Color("#1b5e20"))
-
-		if feedback_desc_label and is_instance_valid(feedback_desc_label):
-			feedback_desc_label.text = feedback_desc
-			feedback_desc_label.add_theme_color_override("font_color", Color("#2e7d32"))
-
-		if next_button and is_instance_valid(next_button):
-			next_button.text = "Tiếp theo →"
-			if question_index + 1 >= quizzes.size():
-				next_button.text = "Xem kết quả"
-			next_button.disabled = false
-
-			var btn_normal := _panel(C_NAVY, C_NAVY.darkened(0.2), 14, 1)
-			var btn_hover := _panel(C_NAVY.lightened(0.1), C_NAVY.darkened(0.2), 14, 2)
-			var btn_pressed := _panel(C_NAVY.darkened(0.15), C_NAVY.darkened(0.2), 14, 1)
-			next_button.add_theme_stylebox_override("normal", btn_normal)
-			next_button.add_theme_stylebox_override("hover", btn_hover)
-			next_button.add_theme_stylebox_override("pressed", btn_pressed)
-			next_button.add_theme_color_override("font_color", Color.WHITE)
-			next_button.add_theme_color_override("font_hover_color", Color.WHITE)
-	else:
-		if feedback_icon and is_instance_valid(feedback_icon):
-			feedback_icon.texture = load("res://assets/textures/lucide/x.svg") as Texture2D
-			feedback_icon.modulate = Color("#c62828")
-
-		if feedback_title_label and is_instance_valid(feedback_title_label):
-			feedback_title_label.text = "CHƯA ĐÚNG"
-			feedback_title_label.add_theme_color_override("font_color", Color("#b71c1c"))
-
-		if feedback_desc_label and is_instance_valid(feedback_desc_label):
-			feedback_desc_label.text = feedback_desc
-			feedback_desc_label.add_theme_color_override("font_color", Color("#c62828"))
-
-		if next_button and is_instance_valid(next_button):
-			next_button.text = "Tiếp theo →"
-			if question_index + 1 >= quizzes.size():
-				next_button.text = "Xem kết quả"
-			next_button.disabled = false
-
-			var btn_normal := _panel(C_NAVY, C_NAVY.darkened(0.2), 14, 1)
-			var btn_hover := _panel(C_NAVY.lightened(0.1), C_NAVY.darkened(0.2), 14, 2)
-			var btn_pressed := _panel(C_NAVY.darkened(0.15), C_NAVY.darkened(0.2), 14, 1)
-			next_button.add_theme_stylebox_override("normal", btn_normal)
-			next_button.add_theme_stylebox_override("hover", btn_hover)
-			next_button.add_theme_stylebox_override("pressed", btn_pressed)
-			next_button.add_theme_color_override("font_color", Color.WHITE)
-			next_button.add_theme_color_override("font_hover_color", Color.WHITE)
-
-	# Pop animation on the feedback icon
-	feedback_icon.scale = Vector2(0.3, 0.3)
-	feedback_icon.pivot_offset = feedback_icon.custom_minimum_size / 2
-	var pop_tween := create_tween()
-	pop_tween.tween_property(feedback_icon, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pass
 
 func _create_option_button(index: int, text_value: String) -> Button:
 	var v_height := get_viewport_rect().size.y
@@ -569,12 +415,17 @@ func _fetch_from_backend() -> void:
 			_set_source_badge("Dữ liệu mẫu · BE chậm", true)
 	)
 	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids)
-	print("[QuizDebug] Backend returned %d quizzes." % loaded.size())
 	if timed_out:
 		return
+	# Đánh dấu là đã hoàn tất để timer trễ không đổi nhãn thành "BE chậm".
+	timed_out = true
 	var valid: Array = _filter_valid_quizzes(loaded)
 	if valid.is_empty():
 		_set_source_badge("Dữ liệu mẫu · BE chưa có quiz", true)
+		return
+	# Không thay thế quiz khi người dùng đã bắt đầu trả lời — tránh mất tiến độ giữa chừng.
+	if question_index > 0 or answered or score > 0 or correct_count > 0:
+		_set_source_badge("Dữ liệu BE đã tải", false)
 		return
 	quizzes = valid
 	_sort_quizzes()
@@ -1068,15 +919,15 @@ func _filter_valid_quizzes(source: Array) -> Array:
 		if item is Dictionary:
 			var quiz: Dictionary = item
 			var options: Array = _parse_options(quiz.get("options", []))
-			var has_note := not str(quiz.get("note", quiz.get("targetNote", ""))).strip_edges().is_empty()
-			if _resolve_correct_index(quiz, options) >= 0 or has_note:
+			# Yêu cầu tối thiểu 2 option và có đáp án đúng có thể xác định được,
+			# tránh đưa câu không thể trả lời vào gameplay.
+			if options.size() >= 2 and _resolve_correct_index(quiz, options) >= 0:
 				valid.append(quiz)
 			else:
-				print("[QuizDebug] Bỏ qua Quiz id=%s, options=%s, expected=%s, parsed_options=%s" % [
+				print("[QuizDebug] Bỏ qua Quiz id=%s (options=%s, expected=%s)" % [
 					str(quiz.get("id")),
-					str(quiz.get("options")),
-					str(quiz.get("correctAnswer")),
-					str(options)
+					str(options),
+					str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))),
 				])
 	return valid
 
