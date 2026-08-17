@@ -130,8 +130,8 @@ var _onset_state_initialized := false
 var _last_onset_sample_offset := 0
 const ONSET_BLOCK_SAMPLES := 256
 const ONSET_PRE_ROLL_SAMPLES := 128
-const ONSET_MIN_RISE_RATIO := 1.55
-const ONSET_NOISE_FLOOR_RATIO := 2.20
+const ONSET_MIN_RISE_RATIO := 1.15
+const ONSET_NOISE_FLOOR_RATIO := 1.50
 const ONSET_REFRACTORY_SEC := 0.055
 const ONSET_NOISE_FLOOR_SMOOTHING := 0.08
 
