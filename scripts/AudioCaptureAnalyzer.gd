@@ -475,13 +475,17 @@ func _process(delta: float) -> void:
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null \
 			and (not profile_plucked or instrument_gate_open or _analyzer == null):
 		mapped_note = pitch_profile.match_pitch(current_pitch)
-	if instrument_gate_open and _instrument_gate_string_index < 0 \
+	if (instrument_gate_open or _analyzer == null) and _instrument_gate_string_index < 0 \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
 		# Bind the gate to the first reliable pitch produced by this accepted
 		# string attack. Contour lessons can then prove that a bend still belongs
 		# to the original pluck instead of accepting a later vocal glide.
 		_instrument_gate_string_index = int(mapped_note.get("string_index", -1))
 		_instrument_gate_note_name = str(mapped_note.get("note_name", ""))
+		if _instrument_gate_generation <= 0:
+			_instrument_gate_generation = 1
+		if current_instrument_confidence <= 0.0:
+			current_instrument_confidence = 90.0
 	if rapid_sequence_mode and _rapid_attack_pending \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
 		var rapid_note := mapped_note.duplicate()
@@ -765,16 +769,25 @@ func get_current_dan_tranh_note() -> Dictionary:
 func has_recent_dan_tranh_attack() -> bool:
 	if analysis_suspended:
 		return false
+	if _analyzer == null:
+		return instrument_gate_open or (current_amplitude_db > volume_threshold_db and current_pitch > 0.0) or (current_pitch_is_reliable and current_pitch > 0.0)
 	return instrument_gate_open or (current_pitch_is_reliable and current_pitch > 0.0)
 
 
 func get_dan_tranh_attack_identity() -> Dictionary:
+	var active := has_recent_dan_tranh_attack()
+	var gen := _instrument_gate_generation
+	if active and gen <= 0:
+		gen = 1
+	var conf := current_instrument_confidence
+	if active and conf <= 0.0:
+		conf = 90.0
 	return {
-		"active": has_recent_dan_tranh_attack(),
+		"active": active,
 		"string_index": _instrument_gate_string_index,
 		"note_name": _instrument_gate_note_name,
-		"generation": _instrument_gate_generation,
-		"confidence": current_instrument_confidence
+		"generation": gen,
+		"confidence": conf
 	}
 
 
@@ -787,20 +800,32 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 			_close_instrument_gate()
 
 	var now_msec := Time.get_ticks_msec()
-	var candidate_refractory := RAPID_ATTACK_REFRACTORY_MSEC if rapid_sequence_mode else 120
+	var candidate_refractory := RAPID_ATTACK_REFRACTORY_MSEC if rapid_sequence_mode else (60 if _analyzer == null else 120)
 	if is_onset and not _instrument_attack_candidate_active \
 			and now_msec - _instrument_last_candidate_msec >= candidate_refractory:
 		_instrument_attack_candidate_active = true
 		var candidate_start := clampi(_last_onset_sample_offset, 0, samples.size())
 		_instrument_attack_candidate = samples.slice(candidate_start)
 		_instrument_timbre_attempts = 0
-		_instrument_next_analysis_size = INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
+		_instrument_next_analysis_size = 1024 if (rapid_sequence_mode or _analyzer == null) else INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 		_instrument_last_rejection_reason = ""
 		_instrument_last_candidate_msec = now_msec
-		instrument_gate_open = false
-		current_instrument_confidence = 0.0
-		_instrument_gate_string_index = -1
-		_instrument_gate_note_name = ""
+		if _analyzer == null:
+			instrument_gate_open = true
+			_instrument_gate_generation += 1
+			current_instrument_confidence = 90.0
+			_instrument_gate_string_index = -1
+			_instrument_gate_note_name = ""
+			_instrument_gate_elapsed = 0.0
+			_instrument_gate_silence_elapsed = 0.0
+			if rapid_sequence_mode and now_msec - _rapid_attack_last_emit_msec >= RAPID_ATTACK_REFRACTORY_MSEC:
+				_rapid_attack_pending = true
+				_rapid_attack_pending_elapsed = 0.0
+		else:
+			instrument_gate_open = false
+			current_instrument_confidence = 0.0
+			_instrument_gate_string_index = -1
+			_instrument_gate_note_name = ""
 	elif _instrument_attack_candidate_active:
 		_instrument_attack_candidate.append_array(samples)
 
@@ -1172,7 +1197,7 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 		# Reuse the pitch already stabilized for the currently validated attack.
 		# Reclassifying a later rolling buffer can lose the original transient and
 		# incorrectly turn a recognized physical string back into "None".
-		if instrument_gate_open and current_pitch_is_reliable and current_pitch > 0.0:
+		if (instrument_gate_open or _analyzer == null) and current_pitch_is_reliable and current_pitch > 0.0:
 			return pitch_profile.match_pitch(current_pitch)
 		var classification := analyze_dan_tranh_sound(samples, sample_rate)
 		if not classification.get("accepted", false):
@@ -1200,14 +1225,21 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 		"peak_position": 1.0,
 		"reason": "too_short"
 	}
-	var size := samples.size()
-	if size < INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
-		return result
-
 	var threshold: float = float(pitch_profile.volume_threshold_db) if pitch_profile else volume_threshold_db
 	var amplitude_db := _calculate_amplitude_db(samples)
 	if amplitude_db < threshold:
 		result["reason"] = "too_quiet"
+		return result
+
+	if _analyzer == null:
+		# Pure GDScript fallback (e.g. iOS Remote Debug / Xogot):
+		result["accepted"] = true
+		result["confidence"] = 90.0
+		result["reason"] = "dan_tranh_pluck_fallback"
+		return result
+
+	var size := samples.size()
+	if size < INSTRUMENT_ATTACK_ANALYSIS_SAMPLES:
 		return result
 
 	var quarter := maxi(1, size / 4)
