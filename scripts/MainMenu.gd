@@ -1755,6 +1755,11 @@ func _build_roadmap_cards() -> void:
 	level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
 	_set_details_text(level_7_details, 4, level_3_stats.get("stars", 0), level_3_stats.get("pct", 0), false)
 
+	if instrument == "dan_tranh":
+		_connect_dan_tranh_level_card(card_basic, 1)
+		_connect_dan_tranh_level_card(card_essentials, 2)
+		_connect_dan_tranh_level_card(card_level_7, 7)
+
 	for c in [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]:
 		_make_card_clickable(c)
 
@@ -1811,6 +1816,29 @@ func _make_card_clickable(card: Control) -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_set_children_mouse_filter_pass(card)
+
+func _connect_dan_tranh_level_card(card: Control, level_number: int) -> void:
+	# PanelContainer.gui_input chỉ nhận chuột và có thể bị các Control con che mất.
+	# Một Button phủ toàn card hoạt động thống nhất với cả chuột lẫn chạm màn hình.
+	var hit_area := card.get_node_or_null("DanTranhLevelHitArea") as Button
+	if hit_area == null:
+		hit_area = Button.new()
+		hit_area.name = "DanTranhLevelHitArea"
+		hit_area.flat = true
+		hit_area.focus_mode = Control.FOCUS_NONE
+		hit_area.mouse_filter = Control.MOUSE_FILTER_STOP
+		hit_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var empty_style := StyleBoxEmpty.new()
+		hit_area.add_theme_stylebox_override("normal", empty_style)
+		hit_area.add_theme_stylebox_override("hover", empty_style)
+		hit_area.add_theme_stylebox_override("pressed", empty_style)
+		card.add_child(hit_area)
+		hit_area.pressed.connect(_open_dan_tranh_level.bind(level_number))
+	hit_area.tooltip_text = "Xem các bài học Level %d" % (3 if level_number == 7 else level_number)
+
+func _open_dan_tranh_level(level_number: int) -> void:
+	DAN_TRANH_LESSON_SCRIPT.selected_level = level_number
+	_fade_to("res://scenes/LessonDanTranhList.tscn")
 
 func _set_children_mouse_filter_pass(node: Node) -> void:
 	for child in node.get_children():
@@ -2062,7 +2090,7 @@ func _connect_buttons() -> void:
 	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
+				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
 				_fade_to("res://scenes/LessonDanTranhList.tscn")
 	)
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:

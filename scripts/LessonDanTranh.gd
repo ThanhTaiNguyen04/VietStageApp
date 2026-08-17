@@ -260,7 +260,6 @@ var challenge_total_notes := 0
 var bpm_multiplier := 1.0
 var bpm_controls_row: HBoxContainer
 var score_label: Label
-var pill_badge: PanelContainer
 var has_rhythm_completed := false
 var active_rhythm_notes := []
 var notes_judged := {}
