@@ -196,14 +196,14 @@ func _ready() -> void:
 	
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
-	_tex_decor_chausen = _load_decor_texture("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png")
-	_tex_decor_bantra = _load_decor_texture("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png")
-	_tex_decor_tranh = _load_decor_texture("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png")
-	_tex_decor_quat = _load_decor_texture("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png")
-	_tex_decor_denlong = _load_decor_texture("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png")
-	_tex_decor_denda = _load_decor_texture("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png")
-	_tex_decor_chuonggio = _load_decor_texture("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png")
-	_tex_decor_binhsen = _load_decor_texture("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png")
+	_tex_decor_chausen = load("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png") as Texture2D
+	_tex_decor_bantra = load("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png") as Texture2D
+	_tex_decor_tranh = load("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png") as Texture2D
+	_tex_decor_quat = load("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png") as Texture2D
+	_tex_decor_denlong = load("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png") as Texture2D
+	_tex_decor_denda = load("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png") as Texture2D
+	_tex_decor_chuonggio = load("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png") as Texture2D
+	_tex_decor_binhsen = load("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png") as Texture2D
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -303,7 +303,6 @@ func _ready() -> void:
 	
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
-	_setup_hanging_scroll()
 	
 	# Setup Back button to return to Main Menu (Icon button for mobile style)
 	btn_back.show()
@@ -1044,12 +1043,18 @@ func _draw_room_background() -> void:
 	for cx_n in range(start_notch, right_bound, 80.0):
 		bg_canvas.draw_rect(Rect2(cx_n - 2, cornice_y + 10, 4, 16), C_GOLD_LIGHT)
 	
-	# ── 4. Central hanging scroll calligraphy panel rollers and ribbons ───────────
+	# ── 4. Central hanging scroll calligraphy panel (Remains Centered!) ───────────
 	var scroll_w := 160.0 if _is_mobile_layout else 220.0
 	var scroll_h := 160.0 if _is_mobile_layout else 210.0
 	var scroll_x := (sz.x - scroll_w) / 2.0
 	var scroll_y := 12.0
-	
+	# Scroll background (aged silk)
+	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), Color(0.94, 0.89, 0.74))
+	# Decorative inner border
+	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(0.94, 0.89, 0.74), false)
+	bg_canvas.draw_rect(Rect2(scroll_x + 8, scroll_y + 8, scroll_w - 16, scroll_h - 16), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.6), false, 1.5)
+	# Gold outer frame
+	bg_canvas.draw_rect(Rect2(scroll_x, scroll_y, scroll_w, scroll_h), C_GOLD, false, 3.0)
 	# Top & bottom rollers (dark lacquered wood)
 	var roller_col := Color(0.18, 0.10, 0.05)
 	bg_canvas.draw_rect(Rect2(scroll_x - 12, scroll_y - 10, scroll_w + 24, 14), roller_col)
@@ -1065,6 +1070,29 @@ func _draw_room_background() -> void:
 	var rib_x2 := scroll_x + scroll_w * 0.75
 	bg_canvas.draw_line(Vector2(rib_x1, scroll_y - 10), Vector2(rib_x1, 0), C_RED_SON, 3.0)
 	bg_canvas.draw_line(Vector2(rib_x2, scroll_y - 10), Vector2(rib_x2, 0), C_RED_SON, 3.0)
+	# Kanji/Chu Nom style vertical strokes (abstract decorative)
+	var font := _font_title if _font_title else bg_canvas.get_theme_default_font()
+	if font:
+		if _is_mobile_layout:
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 36), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 20, C_RED_SON)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 70), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 12, C_RED_DK)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 92), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 14, C_RED_SON)
+			# Thin horizontal separator lines
+			bg_canvas.draw_line(Vector2(scroll_x + 16, scroll_y + 48), Vector2(scroll_x + scroll_w - 16, scroll_y + 48), C_GOLD, 1.0)
+			bg_canvas.draw_line(Vector2(scroll_x + 16, scroll_y + 104), Vector2(scroll_x + scroll_w - 16, scroll_y + 104), C_GOLD, 1.0)
+		else:
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 40), "ÂM NHẠC", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 24, C_RED_SON)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 76), "TRUYỀN THỐNG", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 15, C_RED_DK)
+			bg_canvas.draw_string(font, Vector2(scroll_x, scroll_y + 118), "VIỆT NAM", HORIZONTAL_ALIGNMENT_CENTER, scroll_w, 18, C_RED_SON)
+			# Thin horizontal separator lines
+			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 54), Vector2(scroll_x + scroll_w - 20, scroll_y + 54), C_GOLD, 1.0)
+			bg_canvas.draw_line(Vector2(scroll_x + 20, scroll_y + 132), Vector2(scroll_x + scroll_w - 20, scroll_y + 132), C_GOLD, 1.0)
+	# Ink-wash lotus / seal decorative motif
+	var seal_radius := 16.0 if _is_mobile_layout else 20.0
+	var seal_pos := Vector2(scroll_x + scroll_w * 0.5, scroll_y + (128 if _is_mobile_layout else 170))
+	bg_canvas.draw_circle(seal_pos, seal_radius, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
+	bg_canvas.draw_arc(seal_pos, seal_radius - 2.0, 0, TAU, 32, C_RED_SON, 1.5)
+	bg_canvas.draw_circle(seal_pos, 6.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
 	
 	# ── 5. Side column pillars (deep jade green wood - Framed to Screen!) ──
 	for col_x in [_left_bound + 60.0, _right_bound - 80.0]:
@@ -1222,18 +1250,9 @@ func _sort_room_elements() -> void:
 	items.sort_custom(func(a, b):
 		return _get_sort_y(a) < _get_sort_y(b)
 	)
-	
-	# Keep HangingScroll at index 0 and FloorCanvas at index 1 (rendering in the background)
-	var scroll = room_content.get_node_or_null("HangingScroll")
-	if scroll:
-		room_content.move_child(scroll, 0)
-	if floor_canvas:
-		room_content.move_child(floor_canvas, 1 if scroll else 0)
-		
-	# Render sorted interactive items above the backgrounds
-	var start_idx := 2 if scroll else 1
+	# FloorCanvas is at index 0, so move other children starting from index 1
 	for i in range(items.size()):
-		room_content.move_child(items[i], start_idx + i)
+		room_content.move_child(items[i], i + 1)
 
 func _draw_instrument_image(c: Button, tex: Texture2D, height_ratio: float = 0.74) -> void:
 	var sz := c.size
@@ -2194,9 +2213,9 @@ func _close_dialogue() -> void:
 # ─── Focus Mode Vector Custom Diagrams ─────────────────────────────────────────
 func _draw_popup_scroll(c: Control) -> void:
 	var sz := c.size
-	# 1. Cream paper scroll body with glassmorphic transparency
+	# 1. Cream paper scroll body
 	var paper_rect := Rect2(40, 30, sz.x - 80, sz.y - 60)
-	c.draw_rect(paper_rect, Color(0.99, 0.98, 0.95, 0.72), true)
+	c.draw_rect(paper_rect, C_CREAM, true)
 	c.draw_rect(paper_rect, C_GOLD, false, 3.5)
 	
 	# Decorative inner border
@@ -2450,7 +2469,6 @@ func _on_viewport_size_changed() -> void:
 	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
 	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
 	_update_hud_hbox_layout(is_mobile)
-	_update_hanging_scroll_layout()
 
 func _apply_popup_layout(target_popup: Control, is_mobile: bool) -> void:
 	target_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2459,10 +2477,8 @@ func _apply_popup_layout(target_popup: Control, is_mobile: bool) -> void:
 	if not panel:
 		return
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	var max_w := 980.0 if target_popup.name == "ShopPopup" else 920.0
-	var max_h := 620.0 if target_popup.name == "ShopPopup" else 580.0
-	var panel_w := minf(max_w, viewport_size.x - (24.0 if is_mobile else 80.0))
-	var panel_h := minf(max_h, viewport_size.y - (24.0 if is_mobile else 80.0))
+	var panel_w := minf(920.0, viewport_size.x - (24.0 if is_mobile else 80.0))
+	var panel_h := minf(580.0, viewport_size.y - (24.0 if is_mobile else 80.0))
 	panel.size = Vector2(maxf(300.0, panel_w), maxf(300.0 if is_mobile else 480.0, panel_h))
 	panel.custom_minimum_size = panel.size
 	panel.position = (viewport_size - panel.size) * 0.5
@@ -2509,7 +2525,7 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 			label.add_theme_font_size_override("font_size", 12 if is_mobile else 15)
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
-		btn_shop.custom_minimum_size = Vector2(100, 42) if is_mobile else Vector2(140, 48)
+		btn_shop.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2551,65 +2567,35 @@ func _fetch_cosmetics_data() -> void:
 	if _api_client == null:
 		return
 	
-	var use_mock := true
-	if BackendReport.is_signed_in():
-		var response = await _api_client.get_all_cosmetics()
-		if _api_client._is_success(response):
-			_cosmetics_all = response.get("body", {}).get("data", [])
-		else:
-			_cosmetics_all = []
+	# BYPASS API FOR LOCAL TEST
+	_cosmetics_all = []
+	_cosmetics_owned = []
+	_cosmetics_locked = []
+	if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
+		var all_mock = [
+			{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
+			{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
+			{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
+			{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
+			{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
+		]
+		var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
+		var active = SecureDataManager.data.get("active_decorations", [])
+		if unlocked.is_empty():
+			# Initialize defaults to avoid an empty room on first launch
+			unlocked = ["chausen", "tranh", "quat"]
+			active = ["chausen", "tranh", "quat"]
+			SecureDataManager.data["unlocked_decorations"] = unlocked
+			SecureDataManager.data["active_decorations"] = active
+			SecureDataManager.save_data()
 			
-		var my_response = await _api_client.get_my_cosmetics()
-		if _api_client._is_success(my_response):
-			var body = my_response.get("body", {}).get("data", {})
-			_cosmetics_owned = body.get("owned", [])
-			_cosmetics_locked = body.get("locked", [])
-			
-			# Respect local active list for equipped states
-			var active = SecureDataManager.data.get("active_decorations", [])
-			for item in _cosmetics_owned:
-				var m_key = _get_draw_key(item)
-				item["isEquipped"] = item.get("isEquipped", item.get("is_equipped", false)) or active.has(m_key)
-				
-			if not _cosmetics_owned.is_empty() or not _cosmetics_locked.is_empty():
-				use_mock = false
-		else:
-			_cosmetics_owned = []
-			_cosmetics_locked = []
-			
-	if use_mock:
-		# BYPASS API FOR LOCAL TEST OR FALLBACK
-		_cosmetics_all = []
-		_cosmetics_owned = []
-		_cosmetics_locked = []
-		if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
-			var all_mock = [
-				{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
-				{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
-				{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
-				{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
-				{"id": 5, "name": "Đèn lồng đỏ", "assetUrl": "denlong", "unlockValue": 75, "description": "Trang trí phòng nhạc."},
-				{"id": 6, "name": "Đèn đá Nhật", "assetUrl": "denda", "unlockValue": 120, "description": "Trang trí phòng nhạc."},
-				{"id": 7, "name": "Chuông gió", "assetUrl": "chuonggio", "unlockValue": 80, "description": "Trang trí phòng nhạc."},
-				{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
-			]
-			var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
-			var active = SecureDataManager.data.get("active_decorations", [])
-			if unlocked.is_empty():
-				# Initialize defaults to avoid an empty room on first launch/offline mode
-				unlocked = ["chausen", "tranh", "quat"]
-				active = ["chausen", "tranh", "quat"]
-				SecureDataManager.data["unlocked_decorations"] = unlocked
-				SecureDataManager.data["active_decorations"] = active
-				SecureDataManager.save_data()
-				
-			for m_item in all_mock:
-				var m_key = _get_draw_key(m_item)
-				if unlocked.has(m_key):
-					m_item["isEquipped"] = active.has(m_key)
-					_cosmetics_owned.append(m_item)
-				else:
-					_cosmetics_locked.append(m_item)
+		for m_item in all_mock:
+			var m_key = _get_draw_key(m_item)
+			if unlocked.has(m_key):
+				m_item["isEquipped"] = active.has(m_key)
+				_cosmetics_owned.append(m_item)
+			else:
+				_cosmetics_locked.append(m_item)
 		
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_spawn_decorations()
@@ -2657,8 +2643,7 @@ func _fetch_instruments_data() -> void:
 			if code != "":
 				_instruments_data[code] = {
 					"name": item.get("name", _instruments_data[code]["name"]),
-					"desc": item.get("description", _instruments_data[code]["desc"]),
-					"fingering": _instruments_data[code].get("fingering", "")
+					"desc": item.get("description", _instruments_data[code]["desc"])
 				}
 
 func _get_instrument_code_mapping(api_code: String) -> String:
@@ -2688,115 +2673,64 @@ func _setup_hud_shop_button() -> void:
 	hud_hbox.offset_bottom = 32 + 48
 	hud_hbox.alignment = BoxContainer.ALIGNMENT_END
 	hud_hbox.add_theme_constant_override("separation", 16)
-
-	var blur_shader := Shader.new()
-	blur_shader.code = """
-	shader_type canvas_item;
-	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-	uniform float lod: hint_range(0.0, 5.0) = 2.0;
-	void fragment() {
-		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
-	}
-	"""
 	
 	# Create Star Badge
 	var star_badge := PanelContainer.new()
 	star_badge.name = "StarBadge"
-	star_badge.custom_minimum_size = Vector2(100, 48)
+	star_badge.custom_minimum_size = Vector2(140, 48)
 	hud_hbox.add_child(star_badge)
 	
-	var badge_blur_rect := ColorRect.new()
-	badge_blur_rect.material = ShaderMaterial.new()
-	badge_blur_rect.material.shader = blur_shader
-	badge_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	badge_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge_blur_rect.show_behind_parent = true
-	star_badge.add_child(badge_blur_rect)
-	
 	var badge_s := StyleBoxFlat.new()
-	badge_s.bg_color = Color(0.95, 0.93, 0.89, 0.65) # Glassmorphic lacquer warm ivory
-	badge_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45) # Soft gold border
+	badge_s.bg_color = Color(0.97, 0.95, 0.91, 0.85) # Elegant warm ivory
+	badge_s.border_color = Color(0.79, 0.60, 0.24, 0.5) # Soft gold border
 	badge_s.border_width_left = 2; badge_s.border_width_right = 2
 	badge_s.border_width_top = 2; badge_s.border_width_bottom = 2
 	badge_s.corner_radius_top_left = 24; badge_s.corner_radius_top_right = 24
 	badge_s.corner_radius_bottom_left = 24; badge_s.corner_radius_bottom_right = 24
-	badge_s.shadow_size = 6
-	badge_s.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
 	star_badge.add_theme_stylebox_override("panel", badge_s)
 	
 	var badge_margin := MarginContainer.new()
 	badge_margin.name = "Margin"
 	badge_margin.add_theme_constant_override("margin_left", 12)
-	badge_margin.add_theme_constant_override("margin_right", 16)
+	badge_margin.add_theme_constant_override("margin_right", 12)
 	star_badge.add_child(badge_margin)
-	
-	var badge_hbox := HBoxContainer.new()
-	badge_hbox.add_theme_constant_override("separation", 6)
-	badge_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	badge_margin.add_child(badge_hbox)
-	
-	var badge_icon := TextureRect.new()
-	badge_icon.texture = load("res://assets/textures/lucide/star.svg") as Texture2D
-	badge_icon.custom_minimum_size = Vector2(20, 20)
-	badge_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	badge_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	badge_icon.modulate = C_GOLD
-	badge_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	badge_hbox.add_child(badge_icon)
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "%d" % SecureDataManager.get_total_stars()
+	badge_label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge_label.add_theme_font_size_override("font_size", 16)
-	badge_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	badge_label.add_theme_font_size_override("font_size", 15)
+	badge_label.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12)) # Deep warm bronze-brown
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
-	badge_hbox.add_child(badge_label)
+	badge_margin.add_child(badge_label)
 
-	# Create Shop Button (Text-only, Frosted Glass)
+	# Create Shop Button
 	var btn_shop := Button.new()
 	btn_shop.name = "BtnShop"
-	btn_shop.text = "Cửa hàng"
-	btn_shop.custom_minimum_size = Vector2(130, 48)
+	btn_shop.text = " Cửa Hàng"
+	btn_shop.icon = load("res://icons8/icons8-store-16.png") as Texture2D
+	btn_shop.expand_icon = false
 	btn_shop.add_theme_font_size_override("font_size", 16)
 	if _font_body_bold:
 		btn_shop.add_theme_font_override("font", _font_body_bold)
-	btn_shop.add_theme_color_override("font_color", C_JADE)
-	btn_shop.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
-	btn_shop.add_theme_color_override("font_pressed_color", C_JADE)
-	
-	var btn_blur_rect := ColorRect.new()
-	btn_blur_rect.material = ShaderMaterial.new()
-	btn_blur_rect.material.shader = blur_shader
-	btn_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	btn_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn_blur_rect.show_behind_parent = true
-	btn_shop.add_child(btn_blur_rect)
+	btn_shop.add_theme_color_override("font_color", Color(0.25, 0.18, 0.12))
+	btn_shop.add_theme_color_override("icon_normal_color", Color(0.25, 0.18, 0.12))
 	
 	var btn_s := StyleBoxFlat.new()
-	btn_s.bg_color = Color(0.95, 0.93, 0.89, 0.65) # Glassmorphic warm ivory
-	btn_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
+	btn_s.bg_color = Color(0.97, 0.95, 0.91, 0.95)
+	btn_s.border_color = Color(0.79, 0.60, 0.24, 0.5)
 	btn_s.border_width_left = 2; btn_s.border_width_right = 2
 	btn_s.border_width_top = 2; btn_s.border_width_bottom = 2
 	btn_s.corner_radius_top_left = 24; btn_s.corner_radius_top_right = 24
 	btn_s.corner_radius_bottom_left = 24; btn_s.corner_radius_bottom_right = 24
-	btn_s.shadow_size = 8
-	btn_s.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
 	btn_shop.add_theme_stylebox_override("normal", btn_s)
 	
-	var btn_h := btn_s.duplicate() as StyleBoxFlat
-	btn_h.bg_color = Color(1.0, 0.98, 0.94, 0.85)
-	btn_h.border_color = C_GOLD
+	var btn_h = btn_s.duplicate()
+	btn_h.bg_color = Color(1.0, 0.98, 0.95, 1.0)
 	btn_shop.add_theme_stylebox_override("hover", btn_h)
-
-	var btn_p := btn_s.duplicate() as StyleBoxFlat
-	btn_p.bg_color = Color(0.90, 0.88, 0.84, 0.85)
-	btn_p.border_color = C_JADE
-	btn_shop.add_theme_stylebox_override("pressed", btn_p)
-	btn_shop.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-
+	btn_shop.custom_minimum_size = Vector2(140, 48) if _is_mobile_layout else Vector2(160, 48)
 	hud_hbox.add_child(btn_shop)
 	hud_hbox.move_child(btn_shop, 0)
 	
@@ -2804,11 +2738,9 @@ func _setup_hud_shop_button() -> void:
 	btn_shop.pressed.connect(_open_shop_popup)
 
 func _update_star_badge() -> void:
-	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/HBoxContainer/Label") as Label
-	if not label:
-		label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
+	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "%d" % SecureDataManager.get_total_stars()
+		label.text = "⭐ %d" % SecureDataManager.get_total_stars()
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
@@ -2950,10 +2882,6 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
 	c.draw_polyline(pts, color, width, true)
 
-func _load_decor_texture(path: String) -> Texture2D:
-	return load(path) as Texture2D
-
-
 func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
 	var sz := c.size
 	var tex: Texture2D = null
@@ -2996,27 +2924,9 @@ func _setup_shop_popup() -> void:
 	
 	var overlay := ColorRect.new()
 	overlay.name = "OverlayBG"
-	overlay.color = Color(0.06, 0.04, 0.02, 0.55) # Lighter overlay for better glass blur visual contrast
+	overlay.color = Color(0.06, 0.04, 0.02, 0.75)
 	shop_popup.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	
-	var blur_shader := Shader.new()
-	blur_shader.code = """
-	shader_type canvas_item;
-	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-	uniform float lod: hint_range(0.0, 5.0) = 2.0;
-	void fragment() {
-		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
-	}
-	"""
-	
-	# Full screen frosted glass behind the scroll panel
-	var popup_blur := ColorRect.new()
-	popup_blur.material = ShaderMaterial.new()
-	popup_blur.material.shader = blur_shader
-	popup_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shop_popup.add_child(popup_blur)
 	
 	var scroll_panel := Control.new()
 	scroll_panel.name = "ScrollPanel"
@@ -3045,51 +2955,24 @@ func _setup_shop_popup() -> void:
 	scroll_content.offset_bottom = -54
 	scroll_content.add_theme_constant_override("separation", 14)
 	
-	var title_hbox := HBoxContainer.new()
-	title_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_hbox.add_theme_constant_override("separation", 10)
-	scroll_content.add_child(title_hbox)
-
 	var title := Label.new()
-	title.text = "CỬA HÀNG TRANG TRÍ"
+	title.text = "🎨 CỬA HÀNG TRANG TRÍ"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", C_JADE)
+	title.add_theme_color_override("font_color", C_RED_SON)
 	if _font_title:
 		title.add_theme_font_override("font", _font_title)
-	title_hbox.add_child(title)
+	scroll_content.add_child(title)
 	
-	var stars_container := HBoxContainer.new()
-	stars_container.name = "StarsContainer"
-	stars_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	stars_container.add_theme_constant_override("separation", 8)
-	scroll_content.add_child(stars_container)
-	
-	var prefix_label := Label.new()
-	prefix_label.text = "Bạn có: "
-	prefix_label.add_theme_font_size_override("font_size", 14)
-	prefix_label.add_theme_color_override("font_color", C_GOLD)
+	var stars_label := Label.new()
+	stars_label.name = "StarsLabel"
+	stars_label.text = "Bạn có: ⭐ %d Sao" % SecureDataManager.get_total_stars()
+	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars_label.add_theme_font_size_override("font_size", 14)
+	stars_label.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
-		prefix_label.add_theme_font_override("font", _font_body_bold)
-	stars_container.add_child(prefix_label)
-	
-	var star_icon := TextureRect.new()
-	star_icon.texture = load("res://assets/textures/lucide/star.svg") as Texture2D
-	star_icon.custom_minimum_size = Vector2(18, 18)
-	star_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	star_icon.modulate = C_GOLD
-	star_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	stars_container.add_child(star_icon)
-	
-	var stars_val_label := Label.new()
-	stars_val_label.name = "StarsValLabel"
-	stars_val_label.text = "%d Sao" % SecureDataManager.get_total_stars()
-	stars_val_label.add_theme_font_size_override("font_size", 14)
-	stars_val_label.add_theme_color_override("font_color", C_GOLD)
-	if _font_body_bold:
-		stars_val_label.add_theme_font_override("font", _font_body_bold)
-	stars_container.add_child(stars_val_label)
+		stars_label.add_theme_font_override("font", _font_body_bold)
+	scroll_content.add_child(stars_label)
 	
 	var shop_scroll := ScrollContainer.new()
 	shop_scroll.name = "ShopScroll"
@@ -3108,11 +2991,9 @@ func _setup_shop_popup() -> void:
 	
 	var btn_close := Button.new()
 	btn_close.text = "ĐÓNG"
-	btn_close.custom_minimum_size = Vector2(180, 44)
+	btn_close.custom_minimum_size = Vector2(180, 46)
 	btn_close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if _font_body_bold:
-		btn_close.add_theme_font_override("font", _font_body_bold)
-	_style_outline_btn(btn_close)
+	_style_popup_button(btn_close, false)
 	_make_btn_bouncy(btn_close)
 	scroll_content.add_child(btn_close)
 	
@@ -3169,9 +3050,9 @@ func _update_shop_items() -> void:
 		SecureDataManager.save_data()
 	
 	var stars = SecureDataManager.get_total_stars()
-	var stars_val_label = shop_popup.get_node_or_null("ScrollPanel/ScrollContent/StarsContainer/StarsValLabel") as Label
-	if stars_val_label:
-		stars_val_label.text = "%d Sao" % stars
+	var stars_label = shop_popup.get_node("ScrollPanel/ScrollContent/StarsLabel") as Label
+	if stars_label:
+		stars_label.text = "Bạn có: ⭐ %d Sao" % stars
 		
 	var grid = shop_popup.get_node("ScrollPanel/ScrollContent/ShopScroll/Grid") as GridContainer
 	if not grid:
@@ -3199,25 +3080,15 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	
 	var card := PanelContainer.new()
 	card.name = "Card_" + str(item.get("id"))
-	card.custom_minimum_size = Vector2(380, 160)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.99, 0.98, 0.96, 0.96) # Clean warm ivory card
-	sb.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40) # Soft refined gold border
-	sb.border_width_left = 2; sb.border_width_right = 2
-	sb.border_width_top = 2; sb.border_width_bottom = 2
-	sb.corner_radius_top_left = 18; sb.corner_radius_top_right = 18
-	sb.corner_radius_bottom_left = 18; sb.corner_radius_bottom_right = 18
-	sb.shadow_size = 8
-	sb.shadow_color = Color(0.13, 0.08, 0.05, 0.08)
-	sb.shadow_offset = Vector2(0, 3)
+	card.custom_minimum_size = Vector2(340, 150)
+	var sb := _flat_sb(Color(0.98, 0.97, 0.94, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 10, true, 1.5)
 	card.add_theme_stylebox_override("panel", sb)
 	
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
 	card.add_child(margin)
 	
 	var hbox := HBoxContainer.new()
@@ -3254,61 +3125,38 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	
 	var name_lbl := Label.new()
 	name_lbl.text = name
-	name_lbl.add_theme_font_size_override("font_size", 17)
-	name_lbl.add_theme_color_override("font_color", C_JADE)
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", C_RED_DK)
 	if _font_body_bold:
 		name_lbl.add_theme_font_override("font", _font_body_bold)
 	vbox.add_child(name_lbl)
 	
-	var cost_hbox := HBoxContainer.new()
-	cost_hbox.add_theme_constant_override("separation", 6)
-	vbox.add_child(cost_hbox)
-	
-	var req_lbl := Label.new()
-	req_lbl.text = "Yêu cầu: "
-	req_lbl.add_theme_font_size_override("font_size", 13)
-	req_lbl.add_theme_color_override("font_color", C_GOLD)
-	if _font_body_bold:
-		req_lbl.add_theme_font_override("font", _font_body_bold)
-	cost_hbox.add_child(req_lbl)
-	
-	var req_star_icon := TextureRect.new()
-	req_star_icon.texture = load("res://assets/textures/lucide/star.svg") as Texture2D
-	req_star_icon.custom_minimum_size = Vector2(16, 16)
-	req_star_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	req_star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	req_star_icon.modulate = C_GOLD
-	req_star_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	cost_hbox.add_child(req_star_icon)
-	
 	var cost_lbl := Label.new()
-	cost_lbl.text = "%d Sao" % cost
+	cost_lbl.text = "Yêu cầu: ⭐ %d Sao" % cost
 	cost_lbl.add_theme_font_size_override("font_size", 13)
 	cost_lbl.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
 		cost_lbl.add_theme_font_override("font", _font_body_bold)
-	cost_hbox.add_child(cost_lbl)
+	vbox.add_child(cost_lbl)
 	
 	var desc_lbl := Label.new()
 	desc_lbl.text = desc
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	desc_lbl.add_theme_font_size_override("font_size", 12)
-	desc_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.9))
+	desc_lbl.add_theme_color_override("font_color", C_TEXT_MUTED)
 	if _font_body:
 		desc_lbl.add_theme_font_override("font", _font_body)
 	vbox.add_child(desc_lbl)
 	
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, 38)
-	if _font_body_bold:
-		btn.add_theme_font_override("font", _font_body_bold)
+	btn.custom_minimum_size = Vector2(0, 36)
 	vbox.add_child(btn)
 	_make_btn_bouncy(btn)
 	
 	if not owned:
 		btn.text = "MỞ KHÓA"
 		if stars >= cost:
-			_style_primary_btn(btn)
+			_style_popup_button(btn, true)
 			btn.disabled = false
 		else:
 			_style_disabled_button(btn)
@@ -3317,91 +3165,25 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		btn.disabled = false
 		var active = item.get("isEquipped", false)
 		if active:
-			btn.text = "CẤT ĐI"
-			_style_outline_btn(btn)
+			btn.text = "CẤT ĐI 📦"
+			_style_popup_button(btn, false)
 		else:
-			btn.text = "TRƯNG BÀY"
-			_style_primary_btn(btn)
+			btn.text = "TRƯNG BÀY ✨"
+			_style_popup_button(btn, true)
 			
-		# Clean extra emojis from equipped button texts and add style box customization if needed
 	btn.pressed.connect(_on_shop_action_pressed.bind(item, owned))
 	return card
 
-func _style_primary_btn(btn: Button) -> void:
-	var s_norm := StyleBoxFlat.new()
-	s_norm.bg_color = C_JADE
-	s_norm.border_color = C_GOLD
-	s_norm.border_width_left = 2; s_norm.border_width_right = 2
-	s_norm.border_width_top = 2; s_norm.border_width_bottom = 2
-	s_norm.corner_radius_top_left = 20; s_norm.corner_radius_top_right = 20
-	s_norm.corner_radius_bottom_left = 20; s_norm.corner_radius_bottom_right = 20
-	s_norm.shadow_size = 6
-	s_norm.shadow_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.35)
-	
-	var s_hov := s_norm.duplicate() as StyleBoxFlat
-	s_hov.bg_color = Color(0.18, 0.48, 0.32, 1.0)
-	s_hov.border_color = C_GOLD_LIGHT
-	
-	var s_prs := s_norm.duplicate() as StyleBoxFlat
-	s_prs.bg_color = Color(0.08, 0.25, 0.16, 1.0)
-	s_prs.border_color = C_GOLD
-	
-	btn.add_theme_stylebox_override("normal", s_norm)
-	btn.add_theme_stylebox_override("hover", s_hov)
-	btn.add_theme_stylebox_override("pressed", s_prs)
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	btn.add_theme_color_override("font_color", Color(0.99, 0.98, 0.95, 1.0))
-	btn.add_theme_color_override("font_hover_color", Color(1.0, 1.0, 1.0, 1.0))
-	btn.add_theme_color_override("font_pressed_color", Color(0.90, 0.88, 0.84, 1.0))
-	btn.add_theme_font_size_override("font_size", 14)
-	if _font_body_bold:
-		btn.add_theme_font_override("font", _font_body_bold)
-	btn.remove_theme_stylebox_override("disabled")
-	btn.remove_theme_color_override("font_disabled_color")
-
-func _style_outline_btn(btn: Button) -> void:
-	var s_norm := StyleBoxFlat.new()
-	s_norm.bg_color = Color(0, 0, 0, 0)
-	s_norm.border_color = C_JADE
-	s_norm.border_width_left = 2; s_norm.border_width_right = 2
-	s_norm.border_width_top = 2; s_norm.border_width_bottom = 2
-	s_norm.corner_radius_top_left = 20; s_norm.corner_radius_top_right = 20
-	s_norm.corner_radius_bottom_left = 20; s_norm.corner_radius_bottom_right = 20
-	
-	var s_hov := s_norm.duplicate() as StyleBoxFlat
-	s_hov.bg_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
-	s_hov.border_color = C_GOLD
-	
-	var s_prs := s_norm.duplicate() as StyleBoxFlat
-	s_prs.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.15)
-	s_prs.border_color = C_JADE
-	
-	btn.add_theme_stylebox_override("normal", s_norm)
-	btn.add_theme_stylebox_override("hover", s_hov)
-	btn.add_theme_stylebox_override("pressed", s_prs)
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	btn.add_theme_color_override("font_color", C_JADE)
-	btn.add_theme_color_override("font_hover_color", Color(0.13, 0.08, 0.05, 1.0))
-	btn.add_theme_color_override("font_pressed_color", C_JADE)
-	btn.add_theme_font_size_override("font_size", 14)
-	if _font_body_bold:
-		btn.add_theme_font_override("font", _font_body_bold)
-	btn.remove_theme_stylebox_override("disabled")
-	btn.remove_theme_color_override("font_disabled_color")
-
 func _style_disabled_button(btn: Button) -> void:
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.92, 0.90, 0.86, 0.70) # Warm muted soft beige
-	s.border_color = Color(0.78, 0.75, 0.70, 0.50)
+	s.bg_color = Color(0.16, 0.14, 0.12, 0.7) # Dark warm grey/brown
+	s.border_color = Color(0.30, 0.26, 0.22, 0.4) # Subtle dark brown border
 	s.border_width_left = 2; s.border_width_right = 2
 	s.border_width_top = 2; s.border_width_bottom = 2
 	s.corner_radius_top_left = 20; s.corner_radius_top_right = 20
 	s.corner_radius_bottom_left = 20; s.corner_radius_bottom_right = 20
 	btn.add_theme_stylebox_override("disabled", s)
-	btn.add_theme_color_override("font_disabled_color", Color(0.55, 0.50, 0.45, 0.7))
-	btn.add_theme_font_size_override("font_size", 14)
-	if _font_body_bold:
-		btn.add_theme_font_override("font", _font_body_bold)
+	btn.add_theme_color_override("font_disabled_color", Color(0.43, 0.38, 0.33, 0.8)) # Grey text
 
 func _make_texture_transparent(tex: Texture2D) -> Texture2D:
 	if not tex: return null
@@ -3576,140 +3358,5 @@ func _skip_intro_cinematic() -> void:
 		_audio_manager.audio_player.stop()
 	_end_intro_cinematic()
 
-func _setup_hanging_scroll() -> void:
-	var scroll = room_content.get_node_or_null("HangingScroll")
-	if scroll:
-		return
-		
-	scroll = PanelContainer.new()
-	scroll.name = "HangingScroll"
-	room_content.add_child(scroll)
-	room_content.move_child(scroll, 0) # Keep it in background
-	
-	# Frosted Glass Shader for Hanging Scroll
-	var blur_shader := Shader.new()
-	blur_shader.code = """
-	shader_type canvas_item;
-	uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-	uniform float lod: hint_range(0.0, 5.0) = 2.0;
-	void fragment() {
-		COLOR = textureLod(screen_texture, SCREEN_UV, lod);
-	}
-	"""
-	
-	var blur_rect := ColorRect.new()
-	blur_rect.name = "BlurBG"
-	blur_rect.material = ShaderMaterial.new()
-	blur_rect.material.shader = blur_shader
-	blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	blur_rect.show_behind_parent = true
-	scroll.add_child(blur_rect)
-	
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.99, 0.98, 0.96, 0.65) # Warm cream glass
-	sb.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65)
-	sb.border_width_left = 3
-	sb.border_width_right = 3
-	sb.border_width_top = 3
-	sb.border_width_bottom = 3
-	sb.corner_radius_top_left = 6
-	sb.corner_radius_top_right = 6
-	sb.corner_radius_bottom_left = 6
-	sb.corner_radius_bottom_right = 6
-	scroll.add_theme_stylebox_override("panel", sb)
-	
-	var margin := MarginContainer.new()
-	margin.name = "Margin"
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	scroll.add_child(margin)
-	
-	var vbox := VBoxContainer.new()
-	vbox.name = "VBox"
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 2)
-	margin.add_child(vbox)
-	
-	var lbl_music := Label.new()
-	lbl_music.name = "LblMusic"
-	lbl_music.text = "ÂM NHẠC"
-	lbl_music.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_music.add_theme_color_override("font_color", C_JADE)
-	if _font_title:
-		lbl_music.add_theme_font_override("font", _font_title)
-	vbox.add_child(lbl_music)
-	
-	var sep1 := HSeparator.new()
-	sep1.name = "Sep1"
-	sep1.modulate = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
-	vbox.add_child(sep1)
-	
-	var lbl_trad := Label.new()
-	lbl_trad.name = "LblTrad"
-	lbl_trad.text = "TRUYỀN THỐNG"
-	lbl_trad.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_trad.add_theme_color_override("font_color", C_GOLD)
-	if _font_body_bold:
-		lbl_trad.add_theme_font_override("font", _font_body_bold)
-	vbox.add_child(lbl_trad)
-	
-	var lbl_viet := Label.new()
-	lbl_viet.name = "LblViet"
-	lbl_viet.text = "VIỆT NAM"
-	lbl_viet.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_viet.add_theme_color_override("font_color", C_JADE)
-	if _font_title:
-		lbl_viet.add_theme_font_override("font", _font_title)
-	vbox.add_child(lbl_viet)
-	
-	var sep2 := HSeparator.new()
-	sep2.name = "Sep2"
-	sep2.modulate = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
-	vbox.add_child(sep2)
-	
-	var seal_ctrl := Control.new()
-	seal_ctrl.name = "Seal"
-	seal_ctrl.custom_minimum_size = Vector2(32, 32)
-	seal_ctrl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	seal_ctrl.draw.connect(func() -> void:
-		var seal_r := seal_ctrl.size.x / 2.0
-		var seal_pos := Vector2(seal_r, seal_r)
-		seal_ctrl.draw_circle(seal_pos, seal_r, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15))
-		seal_ctrl.draw_arc(seal_pos, seal_r - 2.0, 0, TAU, 32, C_RED_SON, 1.5)
-		seal_ctrl.draw_circle(seal_pos, 4.0, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.5))
-	)
-	vbox.add_child(seal_ctrl)
 
-func _update_hanging_scroll_layout() -> void:
-	var scroll = room_content.get_node_or_null("HangingScroll")
-	if not scroll:
-		return
-	
-	var scroll_w := 160.0 if _is_mobile_layout else 220.0
-	var scroll_h := 160.0 if _is_mobile_layout else 210.0
-	var scroll_x := (1200.0 - scroll_w) / 2.0
-	var scroll_y := 12.0
-	
-	scroll.position = Vector2(scroll_x, scroll_y)
-	scroll.size = Vector2(scroll_w, scroll_h)
-	scroll.custom_minimum_size = Vector2(scroll_w, scroll_h)
-	
-	var vbox = scroll.get_node("Margin/VBox")
-	var lbl_music = vbox.get_node("LblMusic") as Label
-	var lbl_trad = vbox.get_node("LblTrad") as Label
-	var lbl_viet = vbox.get_node("LblViet") as Label
-	var seal = vbox.get_node("Seal") as Control
-	
-	if _is_mobile_layout:
-		lbl_music.add_theme_font_size_override("font_size", 16)
-		lbl_trad.add_theme_font_size_override("font_size", 11)
-		lbl_viet.add_theme_font_size_override("font_size", 14)
-		seal.custom_minimum_size = Vector2(28, 28)
-	else:
-		lbl_music.add_theme_font_size_override("font_size", 22)
-		lbl_trad.add_theme_font_size_override("font_size", 13)
-		lbl_viet.add_theme_font_size_override("font_size", 17)
-		seal.custom_minimum_size = Vector2(34, 34)
+
