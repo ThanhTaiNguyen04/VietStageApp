@@ -980,6 +980,9 @@ func _on_guest_pressed() -> void:
 	AuthSessionStore.clear_session()
 	SecureDataManager.data["user_name"] = "Khách"
 	SecureDataManager.data["user_email"] = "khach@vietstage.vn"
+	# Xóa trang trí khỏi phòng nhạc để tài khoản khách luôn bắt đầu sạch
+	SecureDataManager.data["active_decorations"] = []
+	SecureDataManager.data.erase("active_decorations_synced")
 	SecureDataManager.save_data()
 	_go_main()
 

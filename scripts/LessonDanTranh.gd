@@ -2088,6 +2088,16 @@ func _play_next_intro_step():
 	var playback_token := intro_playback_token
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
+		# Bài 1 (bai_1), 2 (bai_5), 3 (bai_4) là lý thuyết thuần – khi hết dialogue
+		# thì hoàn thành bài luôn, không hiện khuôn nhạc thực hành.
+		const THEORY_ONLY_IDS := [
+			"dan_tranh_level_1_bai_1_practice",
+			"dan_tranh_level_1_bai_5_practice",
+			"dan_tranh_level_1_bai_4_practice"
+		]
+		if current_lesson_id in THEORY_ONLY_IDS:
+			_finish_practice()
+			return
 		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 			_start_practice_single()
 		else:
@@ -4289,7 +4299,8 @@ func _start_practice():
 	
 	var scroll_speed = 350.0
 	var distance_per_beat = (scroll_speed * 60.0) / lesson_bpm
-	var start_x = staff_display.size.x + 100.0
+	var _staff_w := staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
+	var start_x = _staff_w + 100.0
 	
 	var cur_beat: float = 0.0
 	for i in range(lesson_sheet.size()):
