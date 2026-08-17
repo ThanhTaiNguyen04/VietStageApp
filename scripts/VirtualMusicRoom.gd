@@ -2551,6 +2551,7 @@ func _fetch_cosmetics_data() -> void:
 	if _api_client == null:
 		return
 	
+	var use_mock := true
 	if BackendReport.is_signed_in():
 		var response = await _api_client.get_all_cosmetics()
 		if _api_client._is_success(response):
@@ -2569,11 +2570,15 @@ func _fetch_cosmetics_data() -> void:
 			for item in _cosmetics_owned:
 				var m_key = _get_draw_key(item)
 				item["isEquipped"] = item.get("isEquipped", item.get("is_equipped", false)) or active.has(m_key)
+				
+			if not _cosmetics_owned.is_empty() or not _cosmetics_locked.is_empty():
+				use_mock = false
 		else:
 			_cosmetics_owned = []
 			_cosmetics_locked = []
-	else:
-		# BYPASS API FOR LOCAL TEST
+			
+	if use_mock:
+		# BYPASS API FOR LOCAL TEST OR FALLBACK
 		_cosmetics_all = []
 		_cosmetics_owned = []
 		_cosmetics_locked = []
