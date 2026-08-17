@@ -137,10 +137,10 @@ var vibrato_added_sound_elapsed := 0.0
 const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
-const VIBRATO_MAX_SIGNAL_GAP := 0.16
+const VIBRATO_MAX_SIGNAL_GAP := 0.45
 const VIBRATO_ADDED_SOUND_RISE_DB := 8.0
 const VIBRATO_ADDED_SOUND_HOLD_SEC := 0.10
-const VIBRATO_MIN_DURATION_SEC := 0.85
+const VIBRATO_MIN_DURATION_SEC := 0.50
 const VIBRATO_MAX_RAW_UPWARD_CENTS := 150.0
 const VIBRATO_MIN_RAW_CENTS := -40.0
 var press_sheet_hud: Control
@@ -3324,7 +3324,7 @@ func _process_vibrato_practice(delta: float) -> void:
 		var cents := 1200.0 * log(pitch / target_hz) / log(2.0)
 		if not vibrato_base_note_heard:
 			var generation := int(attack_identity.get("generation", -1))
-			if absf(cents) <= 55.0 \
+			if absf(cents) <= 65.0 \
 					and generation != vibrato_consumed_attack_generation \
 					and _is_vibrato_source_attack_valid(attack_identity, target_note):
 				vibrato_base_note_heard = true
@@ -3493,14 +3493,13 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	# resting pitch. Symmetric modulation around the sung note is typical vocal
 	# vibrato and must not pass even when its rate/depth looks convincing.
 	result["detected"] = duration >= VIBRATO_MIN_DURATION_SEC \
-		and cycles >= 2.5 \
-		and rate >= 3.0 and rate <= 9.0 \
-		and depth >= 12.0 and depth <= 145.0 \
-		and low_cents >= -28.0 \
-		and high_cents >= 14.0 \
+		and cycles >= 1.5 \
+		and rate >= 2.5 and rate <= 10.0 \
+		and depth >= 8.0 and depth <= 160.0 \
+		and low_cents >= -35.0 \
+		and high_cents >= 8.0 \
 		and raw_low_cents >= VIBRATO_MIN_RAW_CENTS \
-		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS \
-		and center >= maxf(5.0, depth * 0.12)
+		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS
 	return result
 
 func _on_vibrato_note_success(result: Dictionary) -> void:
