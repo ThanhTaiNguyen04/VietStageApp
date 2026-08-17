@@ -164,6 +164,11 @@ func get_learner_lesson_progress(lesson_id: int, learner_id: int) -> Dictionary:
 func start_practice_session() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.PRACTICE_SESSIONS), HTTPClient.METHOD_POST, {})
 
+## Lấy lịch sử các phiên tập luyện
+func get_practice_sessions(page: int = 0, size: int = 20) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.PRACTICE_SESSIONS) + "?page=" + str(page) + "&size=" + str(size)
+	return await request_json(path, HTTPClient.METHOD_GET)
+
 ## Kết thúc phiên tập luyện
 func end_practice_session(session_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.PRACTICE_SESSIONS) + "/" + str(session_id)
@@ -198,6 +203,10 @@ func submit_practice_attempt(
 	if not created_at.is_empty():
 		payload["created_at"] = created_at
 	return await request_json(ApiRoutes.build(ApiRoutes.PRACTICE_ATTEMPTS), HTTPClient.METHOD_POST, payload)
+
+## Gửi kết quả luyện tập theo lô (bulk)
+func submit_practice_attempt_bulk(attempts: Array) -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.PRACTICE_ATTEMPTS_BULK), HTTPClient.METHOD_POST, attempts)
 
 ## Lấy lịch sử lượt tập (hỗ trợ adaptive difficulty — 10 lượt gần nhất)
 func get_practice_attempts(exercise_id: int = 0, page: int = 0, size: int = 10) -> Dictionary:
@@ -234,6 +243,11 @@ func get_my_progress(instrument_id: int = 0, skill_level_id: int = 0) -> Diction
 ## Lấy tổng quan tiến độ (Streak, XP, ...)
 func get_my_progress_summary() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USER_PROGRESS_SUMMARY), HTTPClient.METHOD_GET)
+
+## Lấy lịch sử biến động điểm/xu
+func get_point_transactions(user_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.USER_POINT_TRANSACTIONS % str(user_id))
+	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Lấy thành tựu đã đạt
 func get_all_achievements() -> Dictionary:
@@ -389,6 +403,13 @@ func update_profile(full_name: String, avatar_url: String = "") -> Dictionary:
 	}
 	return await request_json(ApiRoutes.build(ApiRoutes.USERS_ME), HTTPClient.METHOD_PUT, payload)
 
+## Cập nhật FCM Token (nhận Push Notification)
+func update_fcm_token(token: String) -> Dictionary:
+	var payload = {
+		"token": token
+	}
+	return await request_json(ApiRoutes.build(ApiRoutes.USER_FCM_TOKEN), HTTPClient.METHOD_PUT, payload)
+
 
 func upload_file(file_bytes: PackedByteArray, file_name: String, mime_type: String) -> Dictionary:
 	var response := await _request_multipart_file(file_bytes, file_name, mime_type)
@@ -415,7 +436,7 @@ func logout() -> Dictionary:
 func request_json(
 	path: String,
 	method: HTTPClient.Method = HTTPClient.METHOD_GET,
-	payload: Dictionary = {},
+	payload: Variant = {},
 	retry_after_refresh: bool = true
 ) -> Dictionary:
 	var response := await _request_raw(path, method, payload, true)
@@ -493,7 +514,7 @@ func _write_cache(path: String, body: Dictionary) -> void:
 	if file_out:
 		file_out.store_string(JSON.stringify(json))
 
-func _add_to_sync_queue(path: String, method: HTTPClient.Method, payload: Dictionary) -> void:
+func _add_to_sync_queue(path: String, method: HTTPClient.Method, payload: Variant) -> void:
 	var sync_file = _get_sync_queue_path()
 	var queue = []
 	if FileAccess.file_exists(sync_file):
@@ -598,7 +619,7 @@ func error_message(response: Dictionary, fallback: String) -> String:
 func _request_raw(
 	path: String,
 	method: HTTPClient.Method,
-	payload: Dictionary = {},
+	payload: Variant = {},
 	with_auth: bool = false
 ) -> Dictionary:
 	var configuration_error := AppConfig.get_api_configuration_error()

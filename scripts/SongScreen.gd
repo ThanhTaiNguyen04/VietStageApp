@@ -882,14 +882,17 @@ func _on_play_song(song: Dictionary) -> void:
 			pr_script.current_song_sheet = sheet_typed
 		_fade_to("res://scenes/PracticeDanBau.tscn")
 	else:
-		var pr_script = load("res://scripts/PracticeSaoTruc.gd")
+		var pr_script = load("res://scripts/LessonSaoTruc.gd")
 		if pr_script:
-			pr_script.current_song_title = song.title
-			pr_script.current_song_sheet = sheet_typed
-			pr_script.current_song_durations = durations_typed
+			pr_script.is_song_library_mode = true
+			pr_script.custom_song_title = song.title
+			pr_script.custom_song_sheet = sheet_typed
+			pr_script.custom_song_durations = durations_typed
 			if song.has("bpm"):
-				pr_script.current_song_bpm = float(song.bpm)
-		_fade_to("res://scenes/PracticeSaoTruc.tscn")
+				pr_script.custom_song_bpm = float(song.bpm)
+			else:
+				pr_script.custom_song_bpm = 100.0
+		_fade_to("res://scenes/LessonSaoTruc.tscn")
 
 func _go_back() -> void:
 	_fade_to("res://scenes/MainMenu.tscn")

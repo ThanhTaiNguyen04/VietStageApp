@@ -2565,6 +2565,11 @@ func _fetch_cosmetics_data() -> void:
 			_cosmetics_owned = body.get("owned", [])
 			_cosmetics_locked = body.get("locked", [])
 			
+			# Filter out items not present in sample list
+			var allowed_keys := ["chausen", "bantra", "tranh", "quat", "binhsen"]
+			_cosmetics_owned = _cosmetics_owned.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
+			_cosmetics_locked = _cosmetics_locked.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
+			
 			# Respect local active list for equipped states
 			var active = SecureDataManager.data.get("active_decorations", [])
 			for item in _cosmetics_owned:
@@ -2588,9 +2593,6 @@ func _fetch_cosmetics_data() -> void:
 				{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
 				{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
 				{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
-				{"id": 5, "name": "Đèn lồng đỏ", "assetUrl": "denlong", "unlockValue": 75, "description": "Trang trí phòng nhạc."},
-				{"id": 6, "name": "Đèn đá Nhật", "assetUrl": "denda", "unlockValue": 120, "description": "Trang trí phòng nhạc."},
-				{"id": 7, "name": "Chuông gió", "assetUrl": "chuonggio", "unlockValue": 80, "description": "Trang trí phòng nhạc."},
 				{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
 			]
 			var unlocked = SecureDataManager.data.get("unlocked_decorations", [])

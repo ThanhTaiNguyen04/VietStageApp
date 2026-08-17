@@ -18,6 +18,3 @@ bin/*.TMP
 .env
 .env.*
 !.env.example
-
-# Godot editor backup files
-*.bak

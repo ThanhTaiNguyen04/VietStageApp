@@ -11,13 +11,13 @@ const LEVEL_7_SONG_THANH_ID := "dan_tranh_level_7_bai_20_practice"
 const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
 const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
-const CHORD_MIN_FUNDAMENTAL_DB := -52.0
-const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
-const CHORD_MAX_COMPONENT_SPREAD_DB := 20.0
-const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 6.0
+const CHORD_MIN_FUNDAMENTAL_DB := -55.0
+const CHORD_SIMULTANEOUS_HOLD_TIME := 0.05
+const CHORD_MAX_COMPONENT_SPREAD_DB := 28.0
+const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 2.0
 const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
-enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
+enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED, RHYTHM_GAME }
 enum TechniqueSampleKind { NONE, GLISSANDO, PRESS, VIBRATO, TREMOLO }
 var current_state = State.INTRO
 
@@ -108,10 +108,10 @@ var glissando_detected_generations: Array[int] = []
 var glissando_display_notes: Array = []
 var glissando_last_detection_time := 0.0
 var glissando_round_locked := false
-const GLISSANDO_GAP_TIMEOUT := 0.58
-const GLISSANDO_MAX_ATTACK_GAP := 0.24
-const GLISSANDO_MAX_STRING_STEP := 4
-const GLISSANDO_MIN_DISTINCT_STRINGS := 6
+const GLISSANDO_GAP_TIMEOUT := 0.75
+const GLISSANDO_MAX_ATTACK_GAP := 0.45
+const GLISSANDO_MAX_STRING_STEP := 6
+const GLISSANDO_MIN_DISTINCT_STRINGS := 5
 const GLISSANDO_ROUNDS := [
 	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
 	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
@@ -137,10 +137,10 @@ var vibrato_added_sound_elapsed := 0.0
 const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
-const VIBRATO_MAX_SIGNAL_GAP := 0.16
+const VIBRATO_MAX_SIGNAL_GAP := 0.45
 const VIBRATO_ADDED_SOUND_RISE_DB := 8.0
 const VIBRATO_ADDED_SOUND_HOLD_SEC := 0.10
-const VIBRATO_MIN_DURATION_SEC := 0.85
+const VIBRATO_MIN_DURATION_SEC := 0.50
 const VIBRATO_MAX_RAW_UPWARD_CENTS := 150.0
 const VIBRATO_MIN_RAW_CENTS := -40.0
 var press_sheet_hud: Control
@@ -164,8 +164,8 @@ var press_min_amplitude_db := 0.0
 var press_added_sound_elapsed := 0.0
 const PRESS_SAMPLE_INTERVAL := 0.025
 const PRESS_ATTEMPT_TIMEOUT := 5.5
-const PRESS_MAX_SIGNAL_GAP := 0.16
-const PRESS_MAX_SAMPLE_JUMP_CENTS := 70.0
+const PRESS_MAX_SIGNAL_GAP := 0.45
+const PRESS_MAX_SAMPLE_JUMP_CENTS := 120.0
 const PRESS_MAX_RISE_DELAY := 0.80
 const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
@@ -189,15 +189,15 @@ var tremolo_last_attack_at := 0.0
 var tremolo_last_seen_generation := -1
 var tremolo_exercise_locked := false
 var tremolo_wrong_attacks := 0
-const TREMOLO_REQUIRED_DURATION := 2.4
-const TREMOLO_GAP_TIMEOUT := 0.42
+const TREMOLO_REQUIRED_DURATION := 1.2
+const TREMOLO_GAP_TIMEOUT := 0.60
 const TREMOLO_EXERCISE_TIMEOUT := 6.5
-const TREMOLO_MIN_SCORED_DURATION := 2.10
-const TREMOLO_MIN_ATTACK_COUNT := 9
-const TREMOLO_MIN_RATE := 3.5
-const TREMOLO_MAX_RATE := 13.0
-const TREMOLO_MAX_ATTACK_GAP := 0.34
-const TREMOLO_MIN_REGULARITY := 0.62
+const TREMOLO_MIN_SCORED_DURATION := 0.90
+const TREMOLO_MIN_ATTACK_COUNT := 5
+const TREMOLO_MIN_RATE := 2.5
+const TREMOLO_MAX_RATE := 14.0
+const TREMOLO_MAX_ATTACK_GAP := 0.50
+const TREMOLO_MIN_REGULARITY := 0.35
 const TREMOLO_EXERCISES := [
 	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
 	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
@@ -252,6 +252,17 @@ var lesson_sheet: Array[String] = []
 var lesson_durations: Array[float] = []
 
 var practice_idx: int = 0
+
+var is_challenge_mode := false
+var rhythm_time := 0.0
+var challenge_hit_notes := 0
+var challenge_total_notes := 0
+var bpm_multiplier := 1.0
+var bpm_controls_row: HBoxContainer
+var score_label: Label
+var has_rhythm_completed := false
+var active_rhythm_notes := []
+var notes_judged := {}
 var intro_step: int = 0
 var intro_playback_token: int = 0
 var time_correct: float = 0.0
@@ -864,6 +875,7 @@ func _ready():
 	if _should_have_speed_control():
 		_create_speed_control_bar()
 		
+	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
 	if _is_error_flash_demo():
 		# Do not show the shared welcome / audio-calibration lesson screen.
 		# The automatic error demo opens directly into the staff exercise.
@@ -1986,7 +1998,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		return false
 
 	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
-	if cents_error <= 45.0:
+	if cents_error <= 65.0:
 		return true
 
 	# Never accept an octave or harmonic as the requested string. Use the native
@@ -1999,7 +2011,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		var detected_frequency: float = detected_note.get("frequency", 0.0)
 		if detected_note.get("note_name", "None") == target_note_name and detected_frequency > 0.0:
 			var detected_cents := absf(1200.0 * log(detected_frequency / target_hz) / log(2.0))
-			return detected_cents <= 45.0
+			return detected_cents <= 65.0
 
 	return false
 
@@ -2721,28 +2733,28 @@ func _analyze_glissando_gesture(
 	var duration: float = float(times.back()) - float(times.front())
 	var distinct_count := distinct.size()
 	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
-	var max_duration := 3.8 if mode == "round" else 2.4
+	var max_duration := 4.5 if mode == "round" else 3.5
 	var continuous: bool = times_increasing \
 		and max_gap <= GLISSANDO_MAX_ATTACK_GAP \
 		and max_step <= GLISSANDO_MAX_STRING_STEP \
 		and duration <= max_duration
 	var enough_strings := distinct_count >= GLISSANDO_MIN_DISTINCT_STRINGS \
-		and strings.size() >= (9 if mode == "round" else 6)
+		and strings.size() >= (7 if mode == "round" else 5)
 	var range_valid := false
 	var direction_valid := false
 	var direction_ratio := 0.0
 
 	if mode == "down":
 		direction_ratio = _direction_ratio(strings, false)
-		range_valid = span >= 10 and first >= 11 and last <= 5 and coverage_ratio >= 0.45
-		direction_valid = direction_ratio >= 0.75
+		range_valid = span >= 6 and first >= 7 and last <= 8 and coverage_ratio >= 0.35
+		direction_valid = direction_ratio >= 0.65
 	elif mode == "up":
 		direction_ratio = _direction_ratio(strings, true)
-		range_valid = span >= 10 and first <= 5 and last >= 11 and coverage_ratio >= 0.45
-		direction_valid = direction_ratio >= 0.75
+		range_valid = span >= 6 and first <= 8 and last >= 7 and coverage_ratio >= 0.35
+		direction_valid = direction_ratio >= 0.65
 	elif mode == "round":
 		var turn_idx := strings.find(min_string)
-		if turn_idx >= 3 and turn_idx <= strings.size() - 4:
+		if turn_idx >= 2 and turn_idx <= strings.size() - 3:
 			var down_leg: Array[int] = []
 			var up_leg: Array[int] = []
 			for i in range(turn_idx + 1):
@@ -2752,10 +2764,10 @@ func _analyze_glissando_gesture(
 			var down_ratio := _direction_ratio(down_leg, false)
 			var up_ratio := _direction_ratio(up_leg, true)
 			direction_ratio = minf(down_ratio, up_ratio)
-			range_valid = min_string <= 5 and first >= 11 and last >= 11 \
-				and first - min_string >= 9 and last - min_string >= 9 \
-				and coverage_ratio >= 0.45
-			direction_valid = down_ratio >= 0.70 and up_ratio >= 0.70
+			range_valid = min_string <= 7 and first >= 7 and last >= 7 \
+				and first - min_string >= 5 and last - min_string >= 5 \
+				and coverage_ratio >= 0.35
+			direction_valid = down_ratio >= 0.60 and up_ratio >= 0.60
 
 	result["distinct_count"] = distinct_count
 	result["span"] = span
@@ -2938,7 +2950,7 @@ func _process_press_practice(delta: float) -> void:
 		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
 		if not press_base_note_heard:
 			var generation := int(attack_identity.get("generation", -1))
-			if absf(cents) <= 50.0 \
+			if absf(cents) <= 65.0 \
 					and generation != press_consumed_attack_generation \
 					and _is_press_source_attack_valid(attack_identity, source):
 				press_base_note_heard = true
@@ -2992,16 +3004,16 @@ func _process_press_practice(delta: float) -> void:
 					press_cents_history.append(cents)
 					if press_cents_history.size() > 180:
 						press_cents_history.pop_front()
-			if absf(cents - target_interval) <= 38.0:
+			if absf(cents - target_interval) <= 55.0:
 				press_target_hold_elapsed += delta
 			else:
 				press_target_hold_elapsed = maxf(0.0, press_target_hold_elapsed - delta * 1.5)
 
 			if press_status_label:
-				if cents > target_interval + 55.0:
+				if cents > target_interval + 65.0:
 					press_status_label.text = "Cao quá (+%.0f cents). Hãy giảm lực tay trái." % cents
 					press_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
-				elif cents < target_interval - 38.0:
+				elif cents < target_interval - 55.0:
 					press_status_label.text = "Đang nhấn: +%.0f/%d cents · cần nhấn thêm." % [cents, int(target_interval)]
 					press_status_label.add_theme_color_override("font_color", Color(0.70, 0.45, 0.08, 1.0))
 				else:
@@ -3013,7 +3025,7 @@ func _process_press_practice(delta: float) -> void:
 			_reset_press_attempt_tracking("Tiếng đàn bị ngắt trước khi tới nốt đích. Hãy gảy lại và nhấn liền mạch.")
 			return
 
-	if press_base_note_heard and press_target_hold_elapsed >= 0.30:
+	if press_base_note_heard and press_target_hold_elapsed >= 0.20:
 		var result := _analyze_press_contour(press_cents_history, target_interval)
 		if result.get("detected", false):
 			_on_press_exercise_success(result)
@@ -3324,7 +3336,7 @@ func _process_vibrato_practice(delta: float) -> void:
 		var cents := 1200.0 * log(pitch / target_hz) / log(2.0)
 		if not vibrato_base_note_heard:
 			var generation := int(attack_identity.get("generation", -1))
-			if absf(cents) <= 55.0 \
+			if absf(cents) <= 65.0 \
 					and generation != vibrato_consumed_attack_generation \
 					and _is_vibrato_source_attack_valid(attack_identity, target_note):
 				vibrato_base_note_heard = true
@@ -3493,14 +3505,13 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	# resting pitch. Symmetric modulation around the sung note is typical vocal
 	# vibrato and must not pass even when its rate/depth looks convincing.
 	result["detected"] = duration >= VIBRATO_MIN_DURATION_SEC \
-		and cycles >= 2.5 \
-		and rate >= 3.0 and rate <= 9.0 \
-		and depth >= 12.0 and depth <= 145.0 \
-		and low_cents >= -28.0 \
-		and high_cents >= 14.0 \
+		and cycles >= 1.5 \
+		and rate >= 2.5 and rate <= 10.0 \
+		and depth >= 8.0 and depth <= 160.0 \
+		and low_cents >= -35.0 \
+		and high_cents >= 8.0 \
 		and raw_low_cents >= VIBRATO_MIN_RAW_CENTS \
-		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS \
-		and center >= maxf(5.0, depth * 0.12)
+		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS
 	return result
 
 func _on_vibrato_note_success(result: Dictionary) -> void:
@@ -3814,7 +3825,7 @@ func _analyze_tremolo_sequence(
 			if i > 0 and strings[i] != strings[i - 1]:
 				transitions += 1
 		alternating_ratio = float(transitions) / float(maxi(1, count - 1))
-		balance_ok = first_count >= 3 and second_count >= 3
+		balance_ok = first_count >= 2 and second_count >= 2
 
 	var success := all_attacks_valid and correct_strings \
 		and count >= TREMOLO_MIN_ATTACK_COUNT \
@@ -3823,7 +3834,7 @@ func _analyze_tremolo_sequence(
 		and max_gap <= TREMOLO_MAX_ATTACK_GAP \
 		and regularity >= TREMOLO_MIN_REGULARITY
 	if mode == "octave":
-		success = success and alternating_ratio >= 0.78 and balance_ok
+		success = success and alternating_ratio >= 0.50 and balance_ok
 
 	result["duration"] = duration
 	result["rate"] = rate
@@ -4592,8 +4603,7 @@ func _should_score_polyphonic_component(raw_chord_name: String, component_index:
 
 func _advance_polyphonic_confirmation(all_fundamentals_present: bool, delta: float) -> bool:
 	if not all_fundamentals_present:
-		# Missing either component breaks simultaneity; do not retain partial time.
-		time_correct = 0.0
+		time_correct = maxf(0.0, time_correct - delta * 2.0)
 		return false
 
 	time_correct += maxf(delta, 0.0)
@@ -4633,7 +4643,7 @@ func _are_all_chord_fundamentals_present(
 		if band_db_reader.is_valid():
 			fundamental_db = float(band_db_reader.call(frequency))
 		else:
-			fundamental_db = _get_spectrum_band_db(frequency, 0.03)
+			fundamental_db = _get_spectrum_band_db(frequency, 0.05)
 
 		if fundamental_db < CHORD_MIN_FUNDAMENTAL_DB:
 			return false
@@ -4658,7 +4668,7 @@ func _are_all_chord_fundamentals_present(
 		if band_db_reader.is_valid():
 			other_db = float(band_db_reader.call(other_frequency))
 		else:
-			other_db = _get_spectrum_band_db(other_frequency, 0.03)
+			other_db = _get_spectrum_band_db(other_frequency, 0.05)
 		if other_db >= CHORD_MIN_FUNDAMENTAL_DB \
 				and other_db >= weakest_target_db - CHORD_UNEXPECTED_NOTE_MARGIN_DB:
 			return false
@@ -4672,7 +4682,7 @@ func _is_target_harmonic(frequency: float, target_frequencies: Array[float]) -> 
 			continue
 		var ratio := frequency / target_frequency
 		var harmonic := roundf(ratio)
-		if harmonic >= 2.0 and harmonic <= 4.0 and absf(ratio - harmonic) <= 0.03:
+		if harmonic >= 2.0 and harmonic <= 4.0 and absf(ratio - harmonic) <= 0.05:
 			return true
 	return false
 
@@ -5207,12 +5217,12 @@ func _create_pause_action_btn(text: String, icon_path: String, pressed_callable:
 	# Shader biến đổi màu icon xanh lá tối gốc thành màu Trắng/Vàng kim cực đẹp
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", Color.WHITE)
 	texture_rect.material = mat
@@ -5307,12 +5317,12 @@ func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Butt
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", Color.WHITE) # Màu trắng sáng mặc định
 	texture_rect.material = mat
@@ -5374,12 +5384,12 @@ func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool,
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
-	shader.code = "shader_type canvas_item;
+	shader.code = """shader_type canvas_item;
 	uniform vec4 modulate_color : source_color = vec4(1.0);
 	void fragment() {
 		vec4 tex = texture(TEXTURE, UV);
 		COLOR = vec4(modulate_color.rgb, tex.a * modulate_color.a);
-	}"
+	}"""
 	mat.shader = shader
 	mat.set_shader_parameter("modulate_color", text_color)
 	texture_rect.material = mat
