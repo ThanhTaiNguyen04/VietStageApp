@@ -1649,6 +1649,15 @@ func _generate_melody(target_note_key: String) -> Array:
 
 			seq.append({"note": n_name, "type": "whole",     "duration": 4.0,  "time": t})
 			
+	for n in seq:
+		if not n.has("type") or n["type"] == "":
+			var d = n.get("duration", 1.0)
+			if d >= 3.0: n["type"] = "whole"
+			elif d >= 2.0: n["type"] = "half"
+			elif d >= 1.0: n["type"] = "quarter"
+			elif d >= 0.5: n["type"] = "eighth"
+			else: n["type"] = "sixteenth"
+			
 	return seq
 
 func _check_auto_advance():
