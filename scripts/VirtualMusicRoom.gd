@@ -196,11 +196,6 @@ func _ready() -> void:
 	
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
-	_fetch_cosmetics_data()
-	_fetch_instruments_data()
-	
-	_spawn_decorations()
-	_setup_hud_shop_button()
 	_tex_decor_chausen = _load_decor_texture("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png")
 	_tex_decor_bantra = _load_decor_texture("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png")
 	_tex_decor_tranh = _load_decor_texture("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png")
@@ -225,6 +220,12 @@ func _ready() -> void:
 	_tex_linh_walk_up_right = load("res://assets/textures/coMai/mai_walk_up_right_sheet.png") as Texture2D
 	_tex_player = load("res://assets/textures/default_avatar.png") as Texture2D
 	_tex_wall = load("res://assets/textures/backgroundphonghocao.png") as Texture2D
+
+	_fetch_cosmetics_data()
+	_fetch_instruments_data()
+	
+	_spawn_decorations()
+	_setup_hud_shop_button()
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
@@ -2945,9 +2946,7 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 	c.draw_polyline(pts, color, width, true)
 
 func _load_decor_texture(path: String) -> Texture2D:
-	if ResourceLoader.exists(path):
-		return load(path) as Texture2D
-	return null
+	return load(path) as Texture2D
 
 
 func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
