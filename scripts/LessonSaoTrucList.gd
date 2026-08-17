@@ -47,31 +47,31 @@ const ALL_LESSONS = [
 		"video": "Cách lấy hơi bụng.", "practice": "Luyện thở hơi dài.", "subtitles": []
 	},
 	{
-		"id": "Node2", "level": 2, "title": "BÀI 1", "note": "Nốt Si (B4)",
+		"id": "Node2", "level": 2, "title": "BÀI 1", "note": "Nốt Si (B5)",
 		"video": "Hướng dẫn thổi nốt Si.", "practice": "Thực hành nốt Si.", "subtitles": []
 	},
 	{
-		"id": "Node3", "level": 2, "title": "BÀI 2", "note": "Nốt La (A4)",
+		"id": "Node3", "level": 2, "title": "BÀI 2", "note": "Nốt La (A5)",
 		"video": "Hướng dẫn thổi nốt La.", "practice": "Thực hành nốt La.", "subtitles": []
 	},
 	{
-		"id": "Node4", "level": 2, "title": "BÀI 3", "note": "Nốt Sol (G4)",
+		"id": "Node4", "level": 2, "title": "BÀI 3", "note": "Nốt Sol (G5)",
 		"video": "Hướng dẫn thổi nốt Sol.", "practice": "Thực hành nốt Sol.", "subtitles": []
 	},
 	{
-		"id": "Node5", "level": 2, "title": "BÀI 4", "note": "Nốt Fa (F4)",
+		"id": "Node5", "level": 2, "title": "BÀI 4", "note": "Nốt Fa (F5)",
 		"video": "Hướng dẫn thổi nốt Fa.", "practice": "Thực hành nốt Fa.", "subtitles": []
 	},
 	{
-		"id": "Node6", "level": 2, "title": "BÀI 5", "note": "Nốt Mi (E4)",
+		"id": "Node6", "level": 2, "title": "BÀI 5", "note": "Nốt Mi (E5)",
 		"video": "Hướng dẫn thổi nốt Mi.", "practice": "Thực hành nốt Mi.", "subtitles": []
 	},
 	{
-		"id": "Node7", "level": 2, "title": "BÀI 6", "note": "Nốt Rê (D4)",
+		"id": "Node7", "level": 2, "title": "BÀI 6", "note": "Nốt Rê (D5)",
 		"video": "Hướng dẫn thổi nốt Rê.", "practice": "Thực hành nốt Rê.", "subtitles": []
 	},
 	{
-		"id": "Node8", "level": 2, "title": "BÀI 7", "note": "Nốt Đô (C4)",
+		"id": "Node8", "level": 2, "title": "BÀI 7", "note": "Nốt Đô (C5)",
 		"video": "Hướng dẫn thổi nốt Đô.", "practice": "Thực hành nốt Đô.", "subtitles": []
 	},
 	{

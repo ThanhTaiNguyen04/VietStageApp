@@ -72,21 +72,21 @@ func _ready():
 	resized.connect(queue_redraw)
 
 var notes_to_draw: Array = []
-var hit_line_x: float = 300.0 # Will be updated in _draw
+var hit_line_x: float = 300.0
 var beats_per_measure: int = 4
 var show_metronome: bool = true
 var show_hit_line: bool = true
-var show_clef: bool = true          # set false to hide the treble clef
-var show_time_sig: bool = true      # set false to hide the time signature
-var clef_highlight: bool = false    # draw clef in gold when teaching it
-var time_sig_highlight: bool = false # draw time signature in gold when teaching it
-var time_sig_denominator: int = 4   # bottom number of the time signature
-var clef_scale: float = 6.5         # clef glyph size relative to line_spacing
-var use_note_colors: bool = false   # set true to use per-note colors from set_notes
+var show_clef: bool = true
+var show_time_sig: bool = true
+var clef_highlight: bool = false
+var time_sig_highlight: bool = false
+var time_sig_denominator: int = 4
+var clef_scale: float = 5.6         # ← đã giảm từ 6.5
+var use_note_colors: bool = false
 var hit_line_color := Color(0.2, 0.85, 0.3, 0.95)
 var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
 var glissando_arrow_mode := ""
-var current_bpm: float = 60.0  # Updated by LessonSaoTruc to match bpm_multiplier
+var current_bpm: float = 60.0
 var bar_lines: Array = []
 
 func set_note(note_name: String):
@@ -100,8 +100,6 @@ func set_notes(notes: Array):
 func _draw():
 	var center_y = size.y / 2.0
 	
-	# Shift staff center downward when high notes need ledger lines above
-	# (sáo trúc Si/La/Sol2… or zither high range) so they stay visible.
 	var has_zither_notes = false
 	var has_high_flute = false
 	for note_data in notes_to_draw:
@@ -119,52 +117,44 @@ func _draw():
 		
 	var start_x = 35.0
 	var end_x = size.x - 35.0
-	hit_line_x = size.x * 0.25 # Hit line at 25% of screen
+	hit_line_x = size.x * 0.25
 	
-	# Left margin past clef + time signature — do not draw notes over the clef
 	var notes_min_x = 16.0 + line_spacing * clef_scale * 0.55 + line_spacing * 1.8
 	
 	var line_color = Color(0.2, 0.18, 0.15, 0.95)
 	
-	# Draw 5 lines (0 is bottom line, 4 is top line)
+	# 5 dòng khuông
 	for i in range(5):
 		var y = center_y + (2 - i) * line_spacing
 		draw_line(Vector2(start_x, y), Vector2(end_x, y), line_color, 3.2, true)
 			
-	# Draw the initial vertical bar line connecting all 5 lines
 	var staff_top_y = center_y - 2 * line_spacing
 	var staff_bot_y = center_y + 2 * line_spacing
 	draw_line(Vector2(start_x, staff_top_y), Vector2(start_x, staff_bot_y), line_color, 4.0, true)
 			
-	# Draw Clef and Time signature on the left
+	# Khóa Sol + nhịp
 	var font = ThemeDB.fallback_font
 	if font:
 		if show_clef:
 			var clef_col := Color(0.9, 0.55, 0.1, 1.0) if clef_highlight else Color.BLACK
 			var font_size := int(line_spacing * clef_scale)
-			var y_offset := font_size * 0.20
-			draw_string(font, Vector2(8, center_y + y_offset), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, clef_col)
+			# ★ SỬA: baseline neo gần dòng dưới → vòng xoắn đúng dòng Sol
+			var clef_baseline: float = float(center_y) + float(line_spacing) * 2.45
+			draw_string(font, Vector2(10, clef_baseline), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, clef_col)
 		
 		if show_time_sig:
-			# Time signature dynamic
 			var ts = str(beats_per_measure)
 			var ts_size = int(line_spacing * 2.3)
 			var ts_color := Color(0.9, 0.55, 0.1, 0.95) if time_sig_highlight else Color(0.15, 0.15, 0.15, 0.95)
 			var ts_x = 16.0 + line_spacing * clef_scale * 0.55
-			
 			var num_font = number_font if number_font else font
-			# The standard time signature uses numbers that fill exactly two staff spaces each.
-			# Top digit: occupies top two spaces (between line 3 and line 5). Baseline sits near the middle line.
 			draw_string(num_font, Vector2(ts_x, center_y + line_spacing * 0.05), ts, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
-			# Bottom digit: occupies bottom two spaces (between line 1 and line 3). Baseline sits near the bottom line.
 			draw_string(num_font, Vector2(ts_x, center_y + line_spacing * 2.05), str(time_sig_denominator), HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, ts_color)
 			
-	# Draw hit line with modern glowing effect (kept as it is for timing)
 	if show_hit_line:
 		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_glow_color, 8.0, true)
 		draw_line(Vector2(hit_line_x, center_y - 3.2 * line_spacing), Vector2(hit_line_x, center_y + 3.2 * line_spacing), hit_line_color, 3.5, true)
 		
-	# Draw all notes (skip those still behind the clef/time-sig area)
 	for note_data in notes_to_draw:
 		var n_name = note_data.get("note", "Đô")
 		var n_x = note_data.get("x", size.x / 2.0)
@@ -173,10 +163,8 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		var flash_t = note_data.get("flash_trigger", 0.0)
-		# REST notes: draw nothing (empty space represents a rest naturally)
 		if n_name == "REST":
 			continue
-		# Do not draw over the clef / time signature
 		if n_x < notes_min_x:
 			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
@@ -191,9 +179,7 @@ func _draw():
 			draw_line(
 				Vector2(bar_x, center_y - 2.0 * line_spacing),
 				Vector2(bar_x, center_y + 2.0 * line_spacing),
-				line_color,
-				3.0,
-				true
+				line_color, 3.0, true
 			)
 
 	for bx in bar_lines:
@@ -204,12 +190,10 @@ func _draw():
 	if glissando_arrow_mode != "":
 		_draw_glissando_arrow(center_y)
 		
-	# Draw 4-beat Metronome above the hit line
 	if show_metronome:
 		var beat_time_total = Time.get_ticks_msec() / 1000.0 * (current_bpm / 60.0)
 		var current_beat = int(floor(beat_time_total)) % beats_per_measure
 		var beat_fraction = fmod(beat_time_total, 1.0)
-		
 		var metro_start_x = hit_line_x - 60.0
 		var metro_y = center_y - 3.8 * line_spacing
 		for b in range(beats_per_measure):
@@ -220,7 +204,7 @@ func _draw():
 				c = Color(0.9, 0.2, 0.2, 1.0 - beat_fraction * 0.3)
 				r = 12.0 + sin(beat_fraction * PI) * 4.0
 			elif b == 0:
-				c = Color(0.9, 0.5, 0.2, 0.6) # Highlight the first beat of the measure
+				c = Color(0.9, 0.5, 0.2, 0.6)
 			draw_circle(Vector2(bx, metro_y), r, c)
 			if b == current_beat:
 				draw_arc(Vector2(bx, metro_y), r + 4.0, 0, TAU, 32, Color(0.9, 0.2, 0.2, 0.5), 2.0, true)
@@ -248,7 +232,6 @@ func _draw_glissando_arrow(center_y: float) -> void:
 	var stem_bottom: float = center_y + 2.0 * float(line_spacing)
 	for note_data in notes_to_draw:
 		var note_x := float(note_data.get("x", size.x / 2.0))
-		# Ký hiệu Á nằm trước từng nốt như sheet mẫu, không nối các nốt với nhau.
 		var cue_x := float(note_data.get("glissando_cue_x", note_x - maxf(20.0, line_spacing * 0.72)))
 		if glissando_arrow_mode == "up":
 			var up_tip := Vector2(cue_x, stem_top)
@@ -264,19 +247,15 @@ func _draw_glissando_arrow(center_y: float) -> void:
 			draw_line(down_from, down_tip - Vector2(0, 12.0), arrow_color, 3.2, true)
 			_draw_glissando_arrow_head(down_from, down_tip, arrow_color, 15.0, 8.0)
 
-
 func _draw_glissando_round_mark(down_x: float, up_x: float, top_y: float, bottom_y: float, color: Color) -> void:
 	var top_left := Vector2(down_x, top_y)
 	var bottom_left := Vector2(down_x, bottom_y)
 	var top_right := Vector2(up_x, top_y)
 	var bottom_right := Vector2(up_x, bottom_y)
-
-	# Á vòng: mũi tên xuống ở bên trái, mũi tên lên ở bên phải.
 	draw_line(top_left, bottom_left - Vector2(0, 12.0), color, 3.0, true)
 	_draw_glissando_arrow_head(top_left, bottom_left, color, 14.0, 7.0)
 	draw_line(bottom_right, top_right + Vector2(0, 12.0), color, 3.0, true)
 	_draw_glissando_arrow_head(bottom_right, top_right, color, 14.0, 7.0)
-
 
 func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color, head_length: float = 24.0, head_width: float = 13.0) -> void:
 	var direction := (tip - from_point).normalized()
@@ -332,8 +311,6 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var is_zither = note_name.begins_with("ZT_")
 	var mapped_name = clean_name
 	
-	# For zither notes, prioritize the underscore mapping (e.g. "Đô_2" over "Đô2")
-	# to avoid colliding with old non-zither keys in NOTE_POSITIONS.
 	if is_zither:
 		for i in range(clean_name.length() - 1, -1, -1):
 			if clean_name[i].is_valid_int():
@@ -360,7 +337,6 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	
 	var display_name = clean_name
 	if is_zither:
-		# Use unicode subscripts for octave registers on zither notes
 		if display_name.ends_with("1"):
 			display_name = display_name.left(-1) + "₁"
 		elif display_name.ends_with("2"):
@@ -370,7 +346,6 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		elif display_name.ends_with("4"):
 			display_name = display_name.left(-1) + "₄"
 	else:
-		# Standard layout cleans up numbers entirely
 		for i in range(display_name.length() - 1, -1, -1):
 			var char_val = display_name[i]
 			if char_val.is_valid_int() or char_val == "_":
@@ -381,15 +356,15 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	var scale_mod = 1.0
 	if flash_t > 0.0:
 		var elapsed = Time.get_ticks_msec() - flash_t
-		if elapsed < 400: # 400ms flash
+		if elapsed < 400:
 			var progress = elapsed / 400.0
-			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
+			scale_mod = 1.0 + sin(progress * PI) * 0.6
 			note_color = Color(1.0, 0.3, 0.3).lerp(note_color, progress)
 			
-	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
-	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
+	# Head size: 1.12 × 0.78 spacing (đã giảm để Sol/La không lệch)
+	var note_width = line_spacing * (1.05 if is_zither else 1.12) * scale_mod
+	var note_height = line_spacing * (0.72 if is_zither else 0.78) * scale_mod
 
-	# Draw ledger lines — floor() so B (5.5) gets 1 ledger, C (6.0) gets 2
 	if pos_idx <= -1.0:
 		var num_ledgers = int(floor(abs(pos_idx)))
 		for i in range(1, num_ledgers + 1):
@@ -403,28 +378,21 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			var ly = center_y + (2 - ld) * line_spacing
 			draw_line(Vector2(note_x - note_width * 0.8, ly), Vector2(note_x + note_width * 0.8, ly), line_color, 3.0, true)
 			
-	# Draw duration tail
 	if tail_w > 0.0:
 		var tail_y = note_y
 		var tail_color = note_color
-		tail_color.a = 0.35 # Semi-transparent
+		tail_color.a = 0.35
 		var tail_h = line_spacing * 0.4
 		draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, tail_w, tail_h), tail_color)
 			
-	# Draw soft radiating halo around notes removed since notes are now black
-			
-	# Draw note head (rotated ellipse)
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
 	if note_type == "whole" or note_type == "half":
 		_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
-		# Make it hollow
 		var inner_rect = Rect2(note_x - note_width/2.5, note_y - note_height/2.5, note_width * 0.8, note_height * 0.8)
-		var bg_color = staff_bg_color
-		_draw_rotated_ellipse(inner_rect, deg_to_rad(-18), bg_color)
+		_draw_rotated_ellipse(inner_rect, deg_to_rad(-18), staff_bg_color)
 	else:
 		_draw_rotated_ellipse(note_rect, deg_to_rad(-18), note_color)
 	
-	# Draw stem and flags
 	if note_type != "whole":
 		var stem_len = line_spacing * 2.2
 		var stem_w = max(2.5, line_spacing * 0.08)
@@ -441,17 +409,12 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 			stem_end_y = note_y + stem_len
 			draw_line(Vector2(stem_x, note_y), Vector2(stem_x, stem_end_y), note_color, stem_w, true)
 			
-		# Draw flags (móc)
 		if note_type == "eighth" or note_type == "sixteenth":
 			var flag_w = note_width * 0.8
 			var flag_h = stem_len * 0.42
 			var hook_dir = 1.0 if is_stem_up else -1.0
-			
-			# Flag 1
 			var f1_start = Vector2(stem_x, stem_end_y)
 			_draw_flag(f1_start, hook_dir, flag_w, flag_h, note_color, stem_w)
-			
-			# Flag 2
 			if note_type == "sixteenth":
 				var f2_start = Vector2(stem_x, stem_end_y + stem_len * 0.22 * hook_dir)
 				_draw_flag(f2_start, hook_dir, flag_w, flag_h, note_color, stem_w)
@@ -520,17 +483,13 @@ func _draw_rotated_ellipse(rect: Rect2, angle: float, color: Color):
 	var rx = rect.size.x / 2.0
 	var ry = rect.size.y / 2.0
 	var segments = 32
-	
 	for i in range(segments):
 		var t = i * TAU / segments
 		var px = rx * cos(t)
 		var py = ry * sin(t)
-		
 		var rx_rot = px * cos(angle) - py * sin(angle)
 		var ry_rot = px * sin(angle) + py * cos(angle)
-		
 		points.append(center + Vector2(rx_rot, ry_rot))
-		
 	draw_colored_polygon(points, color)
 
 func _draw_flag(start_pos: Vector2, hook_dir: float, flag_w: float, flag_h: float, color: Color, width: float) -> void:
@@ -538,7 +497,6 @@ func _draw_flag(start_pos: Vector2, hook_dir: float, flag_w: float, flag_h: floa
 	var p1 := start_pos + Vector2(flag_w * 0.45, flag_h * 0.05 * hook_dir)
 	var p2 := start_pos + Vector2(flag_w * 1.05, flag_h * 0.45 * hook_dir)
 	var p3 := start_pos + Vector2(flag_w * 0.65, flag_h * 1.0 * hook_dir)
-	
 	var points := PackedVector2Array()
 	var steps := 16
 	for i in range(steps + 1):

@@ -271,25 +271,26 @@ const LESSON_DIALOGUES = {
 }
 
 const NOTE_FREQS = {
-	# Octave 5 (Vietnamese bamboo flute in C - primary range)
-	"Đô": 523.25,
-	"Rê": 587.33,
-	"Mi": 659.25,
-	"Fa": 698.46,
-	"Sol": 783.99,
-	"La": 880.00,
-	"Sib": 932.33,
-	"Si": 987.77,
-	# Octave 6 (high register)
-	"Đô2": 1046.50,
-	"Rê2": 1174.66,
-	"Mi2": 1318.51,
-	"Fa2": 1396.91,
-	"Sol2": 1567.98,
-	"La2": 1760.00,
-	"Sib2": 1864.66,
-	"Si2": 1975.53,
-	# Octave 4 aliases (some flutes produce one octave lower)
+	# Primary mic targets for sáo trúc Đô (C): written pedagogically as C4–B4 on staff
+	# but physical fundamental is C5–B5. Matching accepts ±1/±2 octaves.
+	"Đô": 523.25,   # C5
+	"Rê": 587.33,   # D5
+	"Mi": 659.25,   # E5
+	"Fa": 698.46,   # F5
+	"Sol": 783.99,  # G5
+	"La": 880.00,   # A5
+	"Sib": 932.33,  # Bb5
+	"Si": 987.77,   # B5
+	# High register (overblow / Đô2…)
+	"Đô2": 1046.50, # C6
+	"Rê2": 1174.66, # D6
+	"Mi2": 1318.51, # E6
+	"Fa2": 1396.91, # F6
+	"Sol2": 1567.98,# G6
+	"La2": 1760.00, # A6
+	"Sib2": 1864.66,# Bb6
+	"Si2": 1975.53, # B6
+	# Explicit low-octave aliases (some student flutes / soft breath)
 	"Đô_low": 261.63,
 	"Rê_low": 293.66,
 	"Mi_low": 329.63,
@@ -1257,8 +1258,14 @@ func _process_rhythm(delta, rect):
 		elif is_blowing and hz > 150.0:
 			var target_hz_note = NOTE_FREQS.get(current_overlapping_note["note_name"], 0.0)
 			if target_hz_note > 0.0:
-				var tol = target_hz_note * 0.08 # match Practice mode
-				if abs(hz - target_hz_note) < tol or abs(hz / 2.0 - target_hz_note) < tol or abs(hz * 2.0 - target_hz_note) < tol or abs(hz * 4.0 - target_hz_note) < (target_hz_note * 0.08) or abs(hz / 4.0 - target_hz_note) < tol:
+				# ±50 cents ≈ 2.9% relative; keep 10% window + full octave aliases
+				# (sáo trúc pedagogic staff is written 1 octave lower than mic target)
+				var tol = target_hz_note * 0.10
+				if abs(hz - target_hz_note) < tol \
+						or abs(hz / 2.0 - target_hz_note) < tol \
+						or abs(hz * 2.0 - target_hz_note) < tol \
+						or abs(hz * 4.0 - target_hz_note) < tol \
+						or abs(hz / 4.0 - target_hz_note) < tol:
 					is_correct = true
 					
 		if is_correct:
@@ -1649,14 +1656,26 @@ func _generate_melody(target_note_key: String) -> Array:
 		for n in notes:
 			seq.append({"note": n[0], "time": time, "duration": n[1]}); time += n[1] + n[2]
 	elif target_note_key == "Node18" or target_note_key == "sao_truc_level3_6":
-		# Khúc Nhạc Vui (Twinkle) hoàn chỉnh — khớp giáo trình + sheet đơn giản 4/4
+		# Khúc Nhạc Vui — khớp sheet Ngô Đạo (C major, 4/4)
+		# Có nắng ấm trên bầu trời, có tình yêu trong lòng người…
 		var parts = [
-			[["Đô", 0.5], ["Đô", 0.5], ["Sol", 0.5], ["Sol", 0.5], ["La", 0.5], ["La", 0.5], ["Sol", 1.0]],
-			[["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 0.5], ["Rê", 0.5], ["Đô", 1.0]],
-			[["Sol", 0.5], ["Sol", 0.5], ["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 1.0]],
-			[["Sol", 0.5], ["Sol", 0.5], ["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 1.0]],
-			[["Đô", 0.5], ["Đô", 0.5], ["Sol", 0.5], ["Sol", 0.5], ["La", 0.5], ["La", 0.5], ["Sol", 1.0]],
-			[["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 0.5], ["Rê", 0.5], ["Đô", 1.0]]
+			# Khung 1: Có nắng ấm trên bầu trời, có tình
+			[["Mi", 0.5], ["Mi", 0.5], ["Đô", 0.5], ["Rê", 0.5], ["Si", 1.0], ["La", 1.0]],
+			# Khung 2: yêu trong lòng người, bên tiếng hát tiếng cười hân
+			[["Đô", 0.5], ["La", 0.5], ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5], ["Mi", 1.0],
+			 ["Đô", 0.5], ["Đô", 0.5], ["Sol", 0.5], ["Rê", 0.5]],
+			# Khung 3: hoan. Có gió mát trên vòm cao, có trăng
+			[["Rê", 0.5], ["Mi", 0.5], ["Mi", 1.0], ["Đô", 0.5], ["La", 0.5],
+			 ["Rê", 0.5], ["Rê", 0.5], ["Đô", 1.0]],
+			# Khung 4: sao trong cuộc đời, trao những lời hòa ái tương
+			[["Đô", 0.5], ["La", 0.5], ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5], ["Rê", 0.5], ["Si", 0.5],
+			 ["Sol", 0.5], ["Sol", 0.5], ["La", 0.5], ["Sol", 0.5]],
+			# Khung 5: giao. Nhạc quay cuồng xôn xao. Đàn
+			[["Đô", 2.0], ["Rê", 0.5], ["Sol", 0.5], ["Đô", 0.5], ["Sol", 0.5],
+			 ["Sol", 0.5], ["REST", 0.5], ["Mi", 1.0]],
+			# Khung 6 (cuối): reo trống vang kèn họp tấu. Ánh đèn màu rực
+			[["La", 0.5], ["Si", 0.5], ["La", 0.5], ["Sol", 0.5],
+			 ["Rê", 1.0], ["REST", 0.5], ["Rê", 0.5], ["Sol", 0.5], ["Rê", 0.5], ["Đô", 1.0]]
 		]
 		for p in parts:
 			for n in p:
@@ -1664,13 +1683,19 @@ func _generate_melody(target_note_key: String) -> Array:
 				time += n[1]
 			time += 0.25
 	elif target_note_key.begins_with("sao_truc_level3_"):
+		# Từng khung Khúc Nhạc Vui theo sheet
 		var parts = [
-			[["Đô", 0.5], ["Đô", 0.5], ["Sol", 0.5], ["Sol", 0.5], ["La", 0.5], ["La", 0.5], ["Sol", 1.0]],
-			[["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 0.5], ["Rê", 0.5], ["Đô", 1.0]],
-			[["Sol", 0.5], ["Sol", 0.5], ["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 1.0]],
-			[["Sol", 0.5], ["Sol", 0.5], ["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 1.0]],
-			[["Đô", 0.5], ["Đô", 0.5], ["Sol", 0.5], ["Sol", 0.5], ["La", 0.5], ["La", 0.5], ["Sol", 1.0]],
-			[["Fa", 0.5], ["Fa", 0.5], ["Mi", 0.5], ["Mi", 0.5], ["Rê", 0.5], ["Rê", 0.5], ["Đô", 1.0]]
+			[["Mi", 0.5], ["Mi", 0.5], ["Đô", 0.5], ["Rê", 0.5], ["Si", 1.0], ["La", 1.0]],
+			[["Đô", 0.5], ["La", 0.5], ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5], ["Mi", 1.0],
+			 ["Đô", 0.5], ["Đô", 0.5], ["Sol", 0.5], ["Rê", 0.5]],
+			[["Rê", 0.5], ["Mi", 0.5], ["Mi", 1.0], ["Đô", 0.5], ["La", 0.5],
+			 ["Rê", 0.5], ["Rê", 0.5], ["Đô", 1.0]],
+			[["Đô", 0.5], ["La", 0.5], ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5], ["Rê", 0.5], ["Si", 0.5],
+			 ["Sol", 0.5], ["Sol", 0.5], ["La", 0.5], ["Sol", 0.5]],
+			[["Đô", 2.0], ["Rê", 0.5], ["Sol", 0.5], ["Đô", 0.5], ["Sol", 0.5],
+			 ["Sol", 0.5], ["REST", 0.5], ["Mi", 1.0]],
+			[["La", 0.5], ["Si", 0.5], ["La", 0.5], ["Sol", 0.5],
+			 ["Rê", 1.0], ["REST", 0.5], ["Rê", 0.5], ["Sol", 0.5], ["Rê", 0.5], ["Đô", 1.0]]
 		]
 		var idx = int(target_note_key.replace("sao_truc_level3_", "")) - 1
 		if idx >= 0 and idx < parts.size():
@@ -1680,20 +1705,22 @@ func _generate_melody(target_note_key: String) -> Array:
 			time += 0.25
 
 	elif target_note_key == "sao_truc_level5_7":
-		# Futari no Kimochi full — sheet 4/4, bỏ #, giữ contour
+		# Futari no Kimochi (To Love's End) — sheet 4/4, 1 giáng (Bb)
+		# Bỏ #/b cho sáo 6 lỗ; giữ contour sheet: D | G A# C | D C# | G D C …
 		var full = [
 			["REST", 1.0], ["REST", 1.0], ["REST", 1.0], ["Rê", 1.0],
-			["Sol", 1.0], ["Sol", 0.5], ["La", 0.5],
-			["Đô2", 1.0], ["Rê2", 1.0],
-			["Rê2", 1.0], ["La", 0.5], ["Si", 0.5], ["Đô2", 1.0],
-			["Sol", 1.0], ["Rê2", 1.0],
-			["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0],
-			["REST", 1.0], ["Rê", 1.0],
-			["Sol", 1.0], ["Sol", 0.5], ["La", 0.5],
-			["Đô2", 1.0], ["Rê2", 1.0],
-			["Rê2", 1.0], ["La", 0.5], ["Si", 0.5], ["Đô2", 1.0],
+			["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
+			["Rê2", 1.0], ["Đô2", 1.0],
+			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
+			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
+			["Sol", 1.0], ["Fa", 1.0],
+			["Rê", 2.0], ["Rê", 1.0],
+			["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
+			["Rê2", 1.0], ["Đô2", 1.0],
+			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			["La", 1.0], ["Sol", 1.0], ["Sol", 2.0],
+			# Đoạn cao (chorus sheet mm.22+)
 			["REST", 1.0], ["Rê2", 1.0],
 			["Sol2", 0.5], ["Sol2", 0.5], ["Sol2", 0.5], ["La2", 0.5],
 			["Sol2", 1.0], ["Sol2", 0.5], ["La2", 0.5],
@@ -1709,46 +1736,47 @@ func _generate_melody(target_note_key: String) -> Array:
 			time += n[1]
 		time += 0.5
 	elif target_note_key.begins_with("sao_truc_level5_"):
+		# Chia đoạn theo sheet Futari no Kimochi
 		var parts = [
-			# Đoạn 1 P1
+			# BÀI 1 — Đoạn 1 P1 (mm.1–10)
 			[["REST", 1.0], ["REST", 1.0], ["REST", 1.0], ["Rê", 1.0],
-			 ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5],
-			 ["Đô2", 1.0], ["Rê2", 1.0],
-			 ["Rê2", 1.0], ["La", 0.5], ["Si", 0.5], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 1.0],
+			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
+			 ["Rê2", 1.0], ["Đô2", 1.0],
+			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
+			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0]],
-			# Đoạn 1 P2
+			# BÀI 2 — Đoạn 1 P2 (mm.11–21)
 			[["Rê", 1.0],
-			 ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5],
-			 ["Đô2", 1.0], ["Rê2", 1.0],
-			 ["Rê2", 1.0], ["La", 0.5], ["Si", 0.5], ["Đô2", 1.0],
+			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
+			 ["Rê2", 1.0], ["Đô2", 1.0],
+			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			 ["La", 1.0], ["Sol", 1.0], ["Sol", 2.0]],
-			# Đoạn 1 HC
+			# BÀI 3 — Đoạn 1 HC
 			[["REST", 1.0], ["REST", 1.0], ["REST", 1.0], ["Rê", 1.0],
-			 ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5],
-			 ["Đô2", 1.0], ["Rê2", 1.0],
-			 ["Rê2", 1.0], ["La", 0.5], ["Si", 0.5], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 1.0],
+			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
+			 ["Rê2", 1.0], ["Đô2", 1.0],
+			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
+			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0],
-			 ["REST", 1.0], ["Rê", 1.0],
-			 ["Sol", 1.0], ["Sol", 0.5], ["La", 0.5],
-			 ["Đô2", 1.0], ["Rê2", 1.0],
-			 ["Rê2", 1.0], ["La", 0.5], ["Si", 0.5], ["Đô2", 1.0],
+			 ["Rê", 1.0],
+			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
+			 ["Rê2", 1.0], ["Đô2", 1.0],
+			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
 			 ["La", 1.0], ["Sol", 1.0], ["Sol", 2.0]],
-			# Đoạn 2 P1
+			# BÀI 4 — Đoạn 2 P1 (chorus cao)
 			[["Rê2", 1.0],
 			 ["Sol2", 0.5], ["Sol2", 0.5], ["Sol2", 0.5], ["La2", 0.5],
 			 ["Sol2", 1.0], ["Sol2", 0.5], ["La2", 0.5],
 			 ["Sol2", 0.5], ["Fa2", 0.5], ["Rê2", 1.0], ["Fa2", 1.0],
 			 ["Sol2", 1.0], ["Sol2", 0.5], ["Sol2", 0.5],
 			 ["Si", 0.5], ["La", 0.5], ["Sol", 1.0]],
-			# Đoạn 2 P2
+			# BÀI 5 — Đoạn 2 P2
 			[["Rê2", 1.0], ["Đô2", 1.0],
 			 ["Sol", 1.0], ["Rê2", 1.0],
 			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0]],
-			# Đoạn 2 HC
+			# BÀI 6 — Đoạn 2 HC
 			[["Rê2", 1.0],
 			 ["Sol2", 0.5], ["Sol2", 0.5], ["Sol2", 0.5], ["La2", 0.5],
 			 ["Sol2", 1.0], ["Sol2", 0.5], ["La2", 0.5],
@@ -1766,85 +1794,87 @@ func _generate_melody(target_note_key: String) -> Array:
 				time += n[1]
 			time += 0.5
 	elif target_note_key == "sao_truc_level4_5":
-		# Inh Lả Ơi hoàn chỉnh — sheet 2/4
+		# Inh Lả Ơi hoàn chỉnh — khớp sheet 2/4 (Am, Jiangnan)
+		# A E A | G | D | A E | D E | A F E | D E | A E | G G | A E | A E
 		var song_notes = [
-			{"note": "La", "time": 0.0, "duration": 1.0},
-			{"note": "La", "time": 1.0, "duration": 1.0},
-			{"note": "REST", "time": 2.0, "duration": 2.0},
-			{"note": "Sol", "time": 4.0, "duration": 1.0},
-			{"note": "Sol", "time": 5.0, "duration": 1.0},
-			{"note": "REST", "time": 6.0, "duration": 2.0},
-			{"note": "Rê", "time": 8.0, "duration": 1.0},
-			{"note": "REST", "time": 9.0, "duration": 1.0},
-			{"note": "La", "time": 10.0, "duration": 1.0},
-			{"note": "La", "time": 11.0, "duration": 1.0},
-			{"note": "La", "time": 12.0, "duration": 1.0},
-			{"note": "Mi", "time": 13.0, "duration": 1.0},
-			{"note": "La", "time": 14.0, "duration": 0.5},
-			{"note": "Fa", "time": 14.5, "duration": 0.5},
-			{"note": "Mi", "time": 15.0, "duration": 1.0},
-			{"note": "REST", "time": 16.0, "duration": 1.0},
-			{"note": "Rê", "time": 17.0, "duration": 1.0},
-			{"note": "Rê", "time": 18.0, "duration": 1.0},
-			{"note": "La", "time": 19.0, "duration": 1.0},
-			{"note": "La", "time": 20.0, "duration": 1.0},
-			{"note": "Sol", "time": 21.0, "duration": 1.0},
-			{"note": "Sol", "time": 22.0, "duration": 1.0},
-			{"note": "REST", "time": 23.0, "duration": 1.0},
-			{"note": "La", "time": 24.0, "duration": 2.0},
-			{"note": "REST", "time": 26.0, "duration": 1.0},
-			{"note": "Sol", "time": 27.0, "duration": 1.0},
-			{"note": "Sol", "time": 28.0, "duration": 1.0},
-			{"note": "REST", "time": 29.0, "duration": 1.0}
+			{"note": "La", "time": 0.0, "duration": 0.5},
+			{"note": "Mi", "time": 0.5, "duration": 0.5},
+			{"note": "La", "time": 1.0, "duration": 0.5},
+			{"note": "REST", "time": 1.5, "duration": 0.5},
+			{"note": "Sol", "time": 2.0, "duration": 0.5},
+			{"note": "REST", "time": 2.5, "duration": 0.5},
+			{"note": "Rê", "time": 3.0, "duration": 0.5},
+			{"note": "REST", "time": 3.5, "duration": 0.5},
+			{"note": "La", "time": 4.0, "duration": 0.5},
+			{"note": "Mi", "time": 4.5, "duration": 0.5},
+			{"note": "Rê", "time": 5.0, "duration": 0.5},
+			{"note": "Mi", "time": 5.5, "duration": 0.5},
+			{"note": "La", "time": 6.0, "duration": 0.5},
+			{"note": "Fa", "time": 6.5, "duration": 0.5},
+			{"note": "Mi", "time": 7.0, "duration": 0.5},
+			{"note": "REST", "time": 7.5, "duration": 0.5},
+			{"note": "Rê", "time": 8.0, "duration": 0.5},
+			{"note": "Mi", "time": 8.5, "duration": 0.5},
+			{"note": "La", "time": 9.0, "duration": 0.5},
+			{"note": "Mi", "time": 9.5, "duration": 0.5},
+			{"note": "Sol", "time": 10.0, "duration": 0.5},
+			{"note": "Sol", "time": 10.5, "duration": 0.5},
+			{"note": "REST", "time": 11.0, "duration": 0.5},
+			{"note": "La", "time": 11.5, "duration": 0.5},
+			{"note": "Mi", "time": 12.0, "duration": 0.5},
+			{"note": "REST", "time": 12.5, "duration": 0.5},
+			{"note": "La", "time": 13.0, "duration": 0.5},
+			{"note": "Mi", "time": 13.5, "duration": 0.5}
 		]
 		seq.append_array(song_notes)
-		time = 30.0
+		time = 14.5
 	elif target_note_key.begins_with("sao_truc_level4_"):
+		# Câu 1–4 theo sheet Inh Lả Ơi
 		var p1 = [
-			{"note": "La", "time": 0.0, "duration": 1.0},
-			{"note": "La", "time": 1.0, "duration": 1.0},
-			{"note": "REST", "time": 2.0, "duration": 2.0},
-			{"note": "Sol", "time": 4.0, "duration": 1.0},
-			{"note": "Sol", "time": 5.0, "duration": 1.0},
-			{"note": "REST", "time": 6.0, "duration": 2.0},
-			{"note": "Rê", "time": 8.0, "duration": 1.0},
-			{"note": "REST", "time": 9.0, "duration": 1.0},
-			{"note": "La", "time": 10.0, "duration": 1.0},
-			{"note": "La", "time": 11.0, "duration": 1.0}
+			{"note": "La", "time": 0.0, "duration": 0.5},
+			{"note": "Mi", "time": 0.5, "duration": 0.5},
+			{"note": "La", "time": 1.0, "duration": 0.5},
+			{"note": "REST", "time": 1.5, "duration": 0.5},
+			{"note": "Sol", "time": 2.0, "duration": 0.5},
+			{"note": "REST", "time": 2.5, "duration": 0.5},
+			{"note": "Rê", "time": 3.0, "duration": 0.5},
+			{"note": "REST", "time": 3.5, "duration": 0.5},
+			{"note": "La", "time": 4.0, "duration": 0.5},
+			{"note": "Mi", "time": 4.5, "duration": 0.5}
 		]
 		var p2 = [
-			{"note": "La", "time": 0.0, "duration": 1.0},
-			{"note": "Mi", "time": 1.0, "duration": 1.0},
-			{"note": "La", "time": 2.0, "duration": 0.5},
-			{"note": "Fa", "time": 2.5, "duration": 0.5},
-			{"note": "Mi", "time": 3.0, "duration": 1.0},
-			{"note": "REST", "time": 4.0, "duration": 1.0},
-			{"note": "Rê", "time": 5.0, "duration": 1.0},
-			{"note": "Rê", "time": 6.0, "duration": 1.0},
-			{"note": "La", "time": 7.0, "duration": 1.0},
-			{"note": "La", "time": 8.0, "duration": 1.0}
+			{"note": "Rê", "time": 0.0, "duration": 0.5},
+			{"note": "Mi", "time": 0.5, "duration": 0.5},
+			{"note": "La", "time": 1.0, "duration": 0.5},
+			{"note": "Fa", "time": 1.5, "duration": 0.5},
+			{"note": "Mi", "time": 2.0, "duration": 0.5},
+			{"note": "REST", "time": 2.5, "duration": 0.5},
+			{"note": "Rê", "time": 3.0, "duration": 0.5},
+			{"note": "Mi", "time": 3.5, "duration": 0.5},
+			{"note": "La", "time": 4.0, "duration": 0.5},
+			{"note": "Mi", "time": 4.5, "duration": 0.5}
 		]
 		var p3 = [
-			{"note": "Sol", "time": 0.0, "duration": 1.0},
-			{"note": "Sol", "time": 1.0, "duration": 1.0},
-			{"note": "REST", "time": 2.0, "duration": 1.0},
-			{"note": "La", "time": 3.0, "duration": 2.0},
-			{"note": "REST", "time": 5.0, "duration": 1.0},
-			{"note": "Sol", "time": 6.0, "duration": 1.0},
-			{"note": "Sol", "time": 7.0, "duration": 1.0},
-			{"note": "REST", "time": 8.0, "duration": 1.0}
+			{"note": "Sol", "time": 0.0, "duration": 0.5},
+			{"note": "Sol", "time": 0.5, "duration": 0.5},
+			{"note": "REST", "time": 1.0, "duration": 0.5},
+			{"note": "La", "time": 1.5, "duration": 0.5},
+			{"note": "Mi", "time": 2.0, "duration": 0.5},
+			{"note": "REST", "time": 2.5, "duration": 0.5},
+			{"note": "La", "time": 3.0, "duration": 0.5},
+			{"note": "Mi", "time": 3.5, "duration": 0.5}
 		]
 		var p4 = [
-			{"note": "La", "time": 0.0, "duration": 1.0},
-			{"note": "La", "time": 1.0, "duration": 1.0},
-			{"note": "REST", "time": 2.0, "duration": 2.0},
-			{"note": "Sol", "time": 4.0, "duration": 1.0},
-			{"note": "Sol", "time": 5.0, "duration": 1.0},
-			{"note": "REST", "time": 6.0, "duration": 2.0},
-			{"note": "Rê", "time": 8.0, "duration": 1.0},
-			{"note": "REST", "time": 9.0, "duration": 1.0},
-			{"note": "La", "time": 10.0, "duration": 1.0},
-			{"note": "La", "time": 11.0, "duration": 1.0}
+			{"note": "La", "time": 0.0, "duration": 0.5},
+			{"note": "Mi", "time": 0.5, "duration": 0.5},
+			{"note": "La", "time": 1.0, "duration": 0.5},
+			{"note": "REST", "time": 1.5, "duration": 0.5},
+			{"note": "Sol", "time": 2.0, "duration": 0.5},
+			{"note": "REST", "time": 2.5, "duration": 0.5},
+			{"note": "Rê", "time": 3.0, "duration": 0.5},
+			{"note": "REST", "time": 3.5, "duration": 0.5},
+			{"note": "La", "time": 4.0, "duration": 0.5},
+			{"note": "Mi", "time": 4.5, "duration": 0.5}
 		]
 		var parts = [p1, p2, p3, p4]
 		var idx = int(target_note_key.replace("sao_truc_level4_", "")) - 1
@@ -1994,12 +2024,13 @@ func _process_real(delta):
 		if hz > 150.0:
 			var target_hz_r = NOTE_FREQS.get(current_note_name, 0.0)
 			if target_hz_r > 0.0:
-				var tol = target_hz_r * 0.08
+				# ±50 cents ≈ 2.9%; 10% window + octave aliases for pedagogic writing
+				var tol = target_hz_r * 0.10
 				var matched = (
 					abs(hz - target_hz_r) < tol or
-					abs(hz * 2.0 - target_hz_r) < (target_hz_r * 0.08) or
+					abs(hz * 2.0 - target_hz_r) < tol or
 					abs(hz / 2.0 - target_hz_r) < tol or
-					abs(hz * 4.0 - target_hz_r) < (target_hz_r * 0.08) or
+					abs(hz * 4.0 - target_hz_r) < tol or
 					abs(hz / 4.0 - target_hz_r) < tol
 				)
 				if matched:
