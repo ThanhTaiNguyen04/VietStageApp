@@ -438,7 +438,7 @@ func _ready():
 	)
 
 
-	back_btn.pressed.connect(_on_back)
+	back_btn.pressed.connect(_on_back_pressed)
 	complete_btn.pressed.connect(_on_complete)
 	real_mode_btn.pressed.connect(_start_real)
 	
