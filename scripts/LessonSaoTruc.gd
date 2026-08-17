@@ -550,9 +550,7 @@ func _ready():
 	add_child(intro_overlay)
 	move_child(intro_overlay, get_node("Root").get_index())
 	
-	staff_display.visible = true
-	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
-		staff_display.set_note(active_note)
+
 
 func _build_custom_sequence() -> Array:
 	var seq = []
@@ -734,6 +732,10 @@ func _setup_premium_practice_ui():
 		staff_display.show_metronome = false
 	staff_card.add_child(staff_display)
 	
+	staff_display.visible = true
+	if active_node_id in ["Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
+		staff_display.set_note(active_note)
+		
 	pill_badge = PanelContainer.new()
 	pill_badge.name = "NotePillBadge"
 	pill_badge.anchor_left = 0.5; pill_badge.anchor_right = 0.5
@@ -794,6 +796,12 @@ func _setup_premium_practice_ui():
 		_practice_sequence = _build_custom_sequence()
 		
 		# Skip intro and go straight to rhythm game
+		var ai = get_node_or_null("AIAudio")
+		if ai and ai.has_method("speak_vietnamese"):
+			ai.audio_player.stop()
+		if intro_overlay:
+			intro_overlay.visible = false
+			
 		current_state = State.RHYTHM_GAME
 		teacher_area.visible = false
 		sub_instruction_lbl.text = "Thổi đúng nốt khi trùng với vạch màu vàng"
