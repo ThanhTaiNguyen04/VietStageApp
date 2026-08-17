@@ -2001,8 +2001,15 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 	if cents_error <= 65.0:
 		return true
 
-	# Never accept an octave or harmonic as the requested string. Use the native
-	# detector only as a second exact-frequency measurement of the same note.
+	# Dây thấp (Sol1=196Hz, La1=220Hz): YIN thường bắt harmonic thứ 2 (×2 freq).
+	# Khi pitch ≈ 2×target và target < 260Hz, chấp nhận là đúng dây vì context bài
+	# học luôn chỉ yêu cầu 1 dây cụ thể tại một thời điểm.
+	if target_hz < 260.0 and pitch > 0.0:
+		var octave_cents := absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
+		if octave_cents <= 65.0:
+			return true
+
+	# Dùng native detector như phép đo tần số thứ 2 cho cùng nốt đó.
 	if analyzer and target_note_name != "":
 		var detected_note: Dictionary = analyzer.detect_dan_tranh_note(
 			analyzer._analysis_buffer,
