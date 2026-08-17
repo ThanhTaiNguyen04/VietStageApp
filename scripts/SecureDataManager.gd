@@ -260,9 +260,9 @@ static func is_lesson_completed(instrument: String, lesson_id: String) -> bool:
 
 static func is_lesson_unlocked(instrument: String, lesson_id: String) -> bool:
 	return true # UNLOCKED ALL FOR TESTING
-	if data.unlocked_lessons.has(instrument):
-		return data.unlocked_lessons[instrument].has(lesson_id)
-	return false
+	#if data.unlocked_lessons.has(instrument):
+	#	return data.unlocked_lessons[instrument].has(lesson_id)
+	#return false
 
 static func complete_lesson(instrument: String, lesson_id: String, stars: int) -> void:
 	if not data.completed_lessons.has(instrument):
