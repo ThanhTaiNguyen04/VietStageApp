@@ -189,15 +189,15 @@ var tremolo_last_attack_at := 0.0
 var tremolo_last_seen_generation := -1
 var tremolo_exercise_locked := false
 var tremolo_wrong_attacks := 0
-const TREMOLO_REQUIRED_DURATION := 2.4
-const TREMOLO_GAP_TIMEOUT := 0.42
+const TREMOLO_REQUIRED_DURATION := 1.2
+const TREMOLO_GAP_TIMEOUT := 0.60
 const TREMOLO_EXERCISE_TIMEOUT := 6.5
-const TREMOLO_MIN_SCORED_DURATION := 2.10
-const TREMOLO_MIN_ATTACK_COUNT := 9
-const TREMOLO_MIN_RATE := 3.5
-const TREMOLO_MAX_RATE := 13.0
-const TREMOLO_MAX_ATTACK_GAP := 0.34
-const TREMOLO_MIN_REGULARITY := 0.62
+const TREMOLO_MIN_SCORED_DURATION := 0.90
+const TREMOLO_MIN_ATTACK_COUNT := 5
+const TREMOLO_MIN_RATE := 2.5
+const TREMOLO_MAX_RATE := 14.0
+const TREMOLO_MAX_ATTACK_GAP := 0.50
+const TREMOLO_MIN_REGULARITY := 0.35
 const TREMOLO_EXERCISES := [
 	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
 	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
@@ -3813,7 +3813,7 @@ func _analyze_tremolo_sequence(
 			if i > 0 and strings[i] != strings[i - 1]:
 				transitions += 1
 		alternating_ratio = float(transitions) / float(maxi(1, count - 1))
-		balance_ok = first_count >= 3 and second_count >= 3
+		balance_ok = first_count >= 2 and second_count >= 2
 
 	var success := all_attacks_valid and correct_strings \
 		and count >= TREMOLO_MIN_ATTACK_COUNT \
@@ -3822,7 +3822,7 @@ func _analyze_tremolo_sequence(
 		and max_gap <= TREMOLO_MAX_ATTACK_GAP \
 		and regularity >= TREMOLO_MIN_REGULARITY
 	if mode == "octave":
-		success = success and alternating_ratio >= 0.78 and balance_ok
+		success = success and alternating_ratio >= 0.50 and balance_ok
 
 	result["duration"] = duration
 	result["rate"] = rate
