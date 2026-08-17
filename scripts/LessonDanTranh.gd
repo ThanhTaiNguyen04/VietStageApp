@@ -11,10 +11,10 @@ const LEVEL_7_SONG_THANH_ID := "dan_tranh_level_7_bai_20_practice"
 const LEVEL_7_VIBRATO_ID := "dan_tranh_level_7_bai_21_practice"
 const LEVEL_8_TREMOLO_ID := "dan_tranh_level_8_bai_30_practice"
 const ERROR_FLASH_DEMO_ID := "dan_tranh_level_7_bai_22_practice"
-const CHORD_MIN_FUNDAMENTAL_DB := -52.0
-const CHORD_SIMULTANEOUS_HOLD_TIME := 0.10
-const CHORD_MAX_COMPONENT_SPREAD_DB := 20.0
-const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 6.0
+const CHORD_MIN_FUNDAMENTAL_DB := -55.0
+const CHORD_SIMULTANEOUS_HOLD_TIME := 0.05
+const CHORD_MAX_COMPONENT_SPREAD_DB := 28.0
+const CHORD_UNEXPECTED_NOTE_MARGIN_DB := 2.0
 const TTS_MIC_RESUME_DELAY_SEC := 0.40
 
 enum State { CALIBRATION, INTRO, PRACTICE_SINGLE, PRACTICE, COMPLETED }
@@ -4592,8 +4592,7 @@ func _should_score_polyphonic_component(raw_chord_name: String, component_index:
 
 func _advance_polyphonic_confirmation(all_fundamentals_present: bool, delta: float) -> bool:
 	if not all_fundamentals_present:
-		# Missing either component breaks simultaneity; do not retain partial time.
-		time_correct = 0.0
+		time_correct = maxf(0.0, time_correct - delta * 2.0)
 		return false
 
 	time_correct += maxf(delta, 0.0)
@@ -4633,7 +4632,7 @@ func _are_all_chord_fundamentals_present(
 		if band_db_reader.is_valid():
 			fundamental_db = float(band_db_reader.call(frequency))
 		else:
-			fundamental_db = _get_spectrum_band_db(frequency, 0.03)
+			fundamental_db = _get_spectrum_band_db(frequency, 0.05)
 
 		if fundamental_db < CHORD_MIN_FUNDAMENTAL_DB:
 			return false
@@ -4658,7 +4657,7 @@ func _are_all_chord_fundamentals_present(
 		if band_db_reader.is_valid():
 			other_db = float(band_db_reader.call(other_frequency))
 		else:
-			other_db = _get_spectrum_band_db(other_frequency, 0.03)
+			other_db = _get_spectrum_band_db(other_frequency, 0.05)
 		if other_db >= CHORD_MIN_FUNDAMENTAL_DB \
 				and other_db >= weakest_target_db - CHORD_UNEXPECTED_NOTE_MARGIN_DB:
 			return false
