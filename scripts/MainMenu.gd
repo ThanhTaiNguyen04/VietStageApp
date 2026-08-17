@@ -443,6 +443,8 @@ func _draw_roadmap_paths() -> void:
 		_draw_thick_path(p_ess, p_sol_sk)
 		_draw_thick_path(p_sol_sk, p_cho_sk)
 		_draw_thick_path(p_cho_sk, p_pop)
+		if inst == "sao_truc":
+			_draw_thick_path(p_pop, p_class)
 
 	else:
 		# Draw roadmap line segments connecting cards
@@ -1585,7 +1587,7 @@ func _build_roadmap_cards() -> void:
 		# Lộ trình Sáo Trúc (Tuyến tính giống Đàn Bầu)
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
-		card_classical.hide()
+		card_classical.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 
@@ -1593,6 +1595,7 @@ func _build_roadmap_cards() -> void:
 		card_soloist_skills.position = Vector2(1060, 275)
 		card_chords_skills.position = Vector2(1570, 275)
 		card_pop_chords.position = Vector2(2080, 275)
+		card_classical.position = Vector2(2590, 275)
 
 		basic_title.text = "LEVEL 1: KHẨU HÌNH MÔI & TẠO ÂM"
 		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
@@ -1610,6 +1613,9 @@ func _build_roadmap_cards() -> void:
 
 		pop_chords_title.text = "LEVEL 5: FUTARI NO KIMOCHI"
 		pop_chords_desc.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
+
+		classical_title.text = "LEVEL 6: GẶP MẸ TRONG MƠ"
+		classical_desc.text = "✓ Thực hành giai điệu\n✓ Chơi cùng Backing Track\n✓ Hoàn thiện toàn bài"
 
 	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
 	var is_basic_completed := false
@@ -2084,7 +2090,7 @@ func _connect_buttons() -> void:
 				_fade_to("res://scenes/LessonDanTranhList.tscn")
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
-				if script: script.selected_level = 5
+				if script: script.selected_level = 6
 				_fade_to("res://scenes/LessonSaoTrucList.tscn")
 	)
 	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
@@ -2160,7 +2166,7 @@ func _connect_buttons() -> void:
 			_fade_to("res://scenes/LessonTrongChau.tscn")
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
-			if script: script.selected_level = 5
+			if script: script.selected_level = 6
 			_fade_to("res://scenes/LessonSaoTrucList.tscn")
 		else:
 			_go_practice()
@@ -2477,7 +2483,7 @@ func _on_viewport_size_changed() -> void:
 		var x_string_roll: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var total_w: float = x_ch + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		var total_w: float = x_ch + card_w + 40.0 if instrument == "dan_tranh" else (x_class + card_w + 40.0 if instrument == "sao_truc" else x_pop + card_w + 40.0)
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 
 		card_basic.position = Vector2(x_basic, y_mid)
@@ -2740,8 +2746,10 @@ func _get_sao_truc_card_status(card_type: String) -> Dictionary:
 		steps_to_check = ["sao_truc_level3_1", "sao_truc_level3_2"]
 	elif card_type == "chords":
 		steps_to_check = ["sao_truc_level4_1", "sao_truc_level4_2"]
-	elif card_type == "classical" or card_type == "pop_chords":
+	elif card_type == "classical":
 		steps_to_check = ["sao_truc_level5_1", "sao_truc_level5_2"]
+	elif card_type == "pop_chords":
+		steps_to_check = ["Node35", "Node36"]
 
 	total_count = steps_to_check.size()
 	if total_count == 0: total_count = 1

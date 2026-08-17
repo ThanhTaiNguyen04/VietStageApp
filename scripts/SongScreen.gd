@@ -4,8 +4,8 @@ extends Control
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)
 const C_GOLD_LIGHT := Color(0.95, 0.82, 0.45, 1.0)
 const C_GOLD_DARK  := Color(0.06, 0.02, 0.00, 1.0)
-const C_RED_SON    := Color(0.09, 0.27, 0.18, 1.0)
-const C_RED_DK     := Color(0.05, 0.16, 0.11, 0.96)
+const C_RED_SON    := Color(0.75, 0.15, 0.20, 1.0)
+const C_RED_DK     := Color(0.40, 0.08, 0.10, 0.96)
 const C_BG_DARK    := Color(0.98, 0.97, 0.94, 1.0)
 const C_BG_BAR     := Color(0.95, 0.93, 0.89, 1.0)
 const C_TEXT       := Color(0.13, 0.08, 0.05, 1.0)
@@ -168,10 +168,14 @@ const SONGS_DATA := [
 		"genre_label": "Trữ tình",
 		"xp": 200,
 		"sheet": [
-			"Mi", "Sol", "La", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "Mi",
-			"Mi", "Sol", "La", "La", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "La", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "La",
-			"Mi2", "Sol2", "La2", "Sol2", "La2", "Si2", "Sol2", "La2", "Sol2", "Rê2", "Mi2", "Mi2", "Sol2", "La2", "Sol2", "La2", "Đô3", "Si2", "Sol2", "Mi2",
-			"Mi2", "Sol2", "La2", "Sol2", "La2", "Si2", "Sol2", "La2", "Sol2", "Rê2", "Mi2", "Mi2", "Rê2", "La", "Mi2", "Rê2", "La", "Sol", "La"
+			"Rê", "Fa", "Sol", "Sol", "Sib", "Đô2", "Rê2", "Fa2", "Rê2", "Đô2", "Sib", "Sol",
+			"Rê2", "Đô2", "Sol", "Rê2", "Đô2", "Sol", "Fa", "Rê",
+			"Rê", "Fa", "Sol", "Sol", "Sib", "Đô2", "Rê2", "Fa2", "Rê2", "Đô2", "Sib", "Sol",
+			"Rê2", "Đô2", "Sol", "Rê2", "Đô2", "Sol", "Fa", "Sol",
+			"Rê2", "Fa2", "Sol2", "Fa2", "Sol2", "La2", "Fa2", "Sol2", "Fa2", "Đô2", "Rê2",
+			"Rê2", "Fa2", "Sol2", "Fa2", "Sol2", "Sib2", "La2", "Fa2", "Rê2",
+			"Rê2", "Fa2", "Sol2", "Fa2", "Sol2", "La2", "Fa2", "Sol2", "Fa2", "Đô2", "Rê2",
+			"Rê2", "Đô2", "Sol", "Rê2", "Đô2", "Sol", "Fa", "Sol"
 		]
 	},
 	{
