@@ -12,7 +12,7 @@ const C_TEXT_MUTED   := Color(0.13, 0.08, 0.05, 0.35)
 const C_MUTED        := Color("#6f6257")
 const C_CARD         := Color("#fffdf8")
 
-const QuizScreenScript := preload("res://scripts/QuizScreen.gd")
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 var selected_level: int = 1
 var is_unlocked: bool = true
@@ -265,10 +265,8 @@ func _open_quiz() -> void:
 		var lid := str(lesson.get("id", ""))
 		if not lid.is_empty():
 			ids.append(lid)
-	QuizScreenScript.quiz_instrument = "trong_chau"
-	QuizScreenScript.quiz_local_ids = ids
-	QuizScreenScript.quiz_return_scene = "res://scenes/LessonTrongChau.tscn"
-	_fade_to_scene("res://scenes/QuizScreen.tscn")
+	LearningActivityContextScript.configure("trong_chau", ids, "res://scenes/LessonTrongChau.tscn")
+	_fade_to_scene("res://scenes/LearningActivitiesScreen.tscn")
 
 func _build_sidebar() -> void:
 	var side_s := StyleBoxFlat.new()
@@ -328,7 +326,8 @@ func _build_sidebar() -> void:
 		_fade_to_scene("res://scenes/SongScreen.tscn")
 	)
 	btn_minigame.pressed.connect(func() -> void:
-		_fade_to_scene("res://scenes/MiniGame.tscn")
+		LearningActivityContextScript.configure("trong_chau", [SecureDataManager.active_lesson_id], "res://scenes/LessonTrongChau.tscn")
+		_fade_to_scene("res://scenes/LearningActivitiesScreen.tscn")
 	)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
 	btn_account.pressed.connect(func() -> void:

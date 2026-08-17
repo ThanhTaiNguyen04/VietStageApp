@@ -7,6 +7,8 @@ class_name LessonSaoTruc
 const C_GOLD       := Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD       := Color(0.18, 0.13, 0.08, 1.0)
 
+const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
+
 enum State { INTRO, PRACTICE, MID_INTRO, RHYTHM_GAME, COMPLETED }
 var current_state = State.INTRO
 
@@ -101,6 +103,8 @@ var _current_note_color: Color = Color(0.96, 0.75, 0.25)
 const HIT_WINDOW := 0.5 # Nới lỏng thời gian chấm điểm thêm nữa
 
 var melody_sequence = []
+
+var _lesson_accuracy := 100.0
 
 const HOLES = 6
 
@@ -570,7 +574,6 @@ func _setup_premium_practice_ui():
 	var l_num = "BÀI LUYỆN"
 	var l_title = "LUYỆN NỐT " + active_note.to_upper()
 	var l_pill = active_note.to_upper()
-	
 	if lesson_map.has(active_node_id):
 		l_num = lesson_map[active_node_id]["num"]
 		l_title = lesson_map[active_node_id]["title"]
@@ -579,9 +582,9 @@ func _setup_premium_practice_ui():
 	else:
 		l_num = "" # Hide BÀI LUYỆN
 		l_title = SecureDataManager.data.get("current_song_title", "BÀI TẬP").to_upper()
-		var s_frame = SecureDataManager.data.get("current_song_frame", "")
-		if s_frame != "":
-			l_pill = s_frame.to_upper()
+		var song_frame = SecureDataManager.data.get("current_song_frame", "")
+		if song_frame != "":
+			l_pill = song_frame.to_upper()
 		
 	title_plaque = PanelContainer.new()
 	title_plaque.name = "TitlePlaque"
@@ -609,7 +612,6 @@ func _setup_premium_practice_ui():
 		lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
 		lbl_num.add_theme_font_size_override("font_size", 20)
 		pl_vbox.add_child(lbl_num)
-		
 	var lbl_main = Label.new()
 	lbl_main.text = "🌿   " + l_title + "   🌿"
 	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -638,7 +640,6 @@ func _setup_premium_practice_ui():
 	staff_display.name = "StaffDisplay"
 	staff_display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	# Level 4 lessons use 2/4 time signature
 	if active_node_id.begins_with("sao_truc_level4_"):
 		staff_display.beats_per_measure = 2
 	if active_node_id in ["sao_truc_level3_6", "sao_truc_level4_5"] or active_node_id.begins_with("sao_truc_level5_"):
@@ -692,6 +693,8 @@ func _setup_premium_practice_ui():
 	line_right_cont.add_child(line_r)
 	sub_instr_row.add_child(line_right_cont)
 	add_child(sub_instr_row)
+	if sub_instr_row:
+		sub_instr_row.visible = false
 	
 	_update_staff_layout()
 	get_viewport().size_changed.connect(_update_staff_layout)
@@ -1086,7 +1089,14 @@ func _process_rhythm(delta, rect):
 		var tail_w = duration * BASE_SCROLL_SPEED * bpm_multiplier
 		
 		if note_x < get_viewport_rect().size.x + 200 and note_x > -200 - tail_w:
-			notes_for_staff.append({"note": note_data["note_name"], "x": note_x, "color": note_data.get("color", Color(0.96, 0.75, 0.25)), "tail": tail_w, "type": note_data.get("type", "quarter"), "flash_trigger": note_data.get("flash_trigger", 0.0)})
+			notes_for_staff.append({
+				"note": note_data["note_name"],
+				"x": note_x,
+				"color": note_data.get("color", Color(0.96, 0.75, 0.25)),
+				"tail": tail_w,
+				"type": note_data.get("type", "quarter"),
+				"flash_trigger": note_data.get("flash_trigger", 0.0)
+			})
 		
 		if time_diff < -(duration + 0.1):
 			to_remove.append(note_data)
@@ -1559,6 +1569,15 @@ func _generate_melody(target_note_key: String) -> Array:
 			seq.append({"note": prev_note, "time": time, "duration": 0.5}); time += 1.0
 			seq.append({"note": new_note,  "time": time, "duration": 2.0}); time += 2.5
 			
+	for item in seq:
+		var dur = float(item.get("duration", 1.0))
+		var n_type = "quarter"
+		if dur >= 3.0: n_type = "whole"
+		elif dur >= 2.0: n_type = "half"
+		elif dur >= 1.0: n_type = "quarter"
+		elif dur >= 0.5: n_type = "eighth"
+		else: n_type = "sixteenth"
+		item["type"] = n_type
 	return seq
 
 func _check_auto_advance():
@@ -1738,6 +1757,7 @@ func _start_rhythm_game():
 		active_falling_notes.append({
 			"time": note["time"],
 			"duration": note.get("duration", 1.0),
+			"type": note.get("type", "quarter"),
 			"note_name": note["note"],
 			"color": Color(0.96, 0.75, 0.25),
 			"hit": false,
@@ -1794,6 +1814,7 @@ func _show_completion_modal():
 	var acc = 1.0
 	if total_rhythm_duration > 0.0:
 		acc = clamp(1.0 - (wrong_rhythm_duration / (total_rhythm_duration * 3.0)), 0.0, 1.0)
+	_lesson_accuracy = acc * 100.0
 		
 	if complete_overlay:
 		complete_overlay.visible = true
@@ -1950,6 +1971,27 @@ func _build_complete_overlay():
 	hbox.add_child(finish_btn)
 	
 	vbox.add_child(hbox)
+
+	var quiz_sb := StyleBoxFlat.new()
+	quiz_sb.bg_color = Color(0.09, 0.27, 0.18, 0.25)
+	quiz_sb.border_width_left = 2; quiz_sb.border_width_top = 2
+	quiz_sb.border_width_right = 2; quiz_sb.border_width_bottom = 2
+	quiz_sb.border_color = C_GOLD
+	quiz_sb.corner_radius_top_left = 20; quiz_sb.corner_radius_top_right = 20
+	quiz_sb.corner_radius_bottom_left = 20; quiz_sb.corner_radius_bottom_right = 20
+	quiz_sb.content_margin_left = 40; quiz_sb.content_margin_right = 40
+	quiz_sb.content_margin_top = 14; quiz_sb.content_margin_bottom = 14
+
+	var quiz_btn := Button.new()
+	quiz_btn.text = "📝 Kiểm Tra Kiến Thức"
+	quiz_btn.add_theme_stylebox_override("normal", quiz_sb)
+	quiz_btn.add_theme_stylebox_override("hover", quiz_sb)
+	quiz_btn.add_theme_stylebox_override("pressed", quiz_sb)
+	quiz_btn.add_theme_font_size_override("font_size", 22)
+	quiz_btn.add_theme_color_override("font_color", C_GOLD)
+	quiz_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	quiz_btn.pressed.connect(_open_quiz)
+	vbox.add_child(quiz_btn)
 	
 	add_child(complete_overlay)
 
@@ -2049,10 +2091,32 @@ func _play_recording():
 func _on_back():
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
+func _open_quiz() -> void:
+	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
+	LearningActivityContextScript.configure(inst, [active_node_id], "res://scenes/LessonSaoTruc.tscn")
+	var tw := create_tween()
+	tw.tween_property(self, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/LearningActivitiesScreen.tscn"))
+
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
 	SecureDataManager.complete_lesson(inst, active_node_id, 3)
+	_sync_practice_to_backend(inst, active_node_id)
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
+
+func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
+	if not BackendReport.is_signed_in():
+		return
+	var acc := _lesson_accuracy
+	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+		"pitch": acc,
+		"rhythm": acc,
+		"dynamics": 0.0,
+		"tonal_quality": 0.0,
+		"breath": acc,
+	})
+	if not result.get("submitted", false):
+		push_warning("[LessonSaoTruc] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
 
 func _on_retry():
 	get_tree().reload_current_scene()

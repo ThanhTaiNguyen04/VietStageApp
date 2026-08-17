@@ -1,0 +1,118 @@
+{
+  "dan_tranh": {
+    "quiz": [
+      {
+        "id": 0,
+        "question": "Nốt nhạc trên khuông dưới đây là nốt nào?",
+        "questionType": "NOTE_IDENTIFICATION",
+        "note": "Sol",
+        "options": ["Đô", "Rê", "Mi", "Sol"],
+        "correctAnswer": "Sol"
+      },
+      {
+        "id": 0,
+        "question": "Đàn Tranh có dây đầu tiên mang nốt nào trong ví dụ này?",
+        "questionType": "NOTE_IDENTIFICATION",
+        "note": "Sol1",
+        "options": ["Sol1", "La1", "Đô2", "Mi2"],
+        "correctAnswer": "Sol1"
+      },
+      {
+        "id": 0,
+        "question": "Hãy chọn nốt còn thiếu: Đô - Rê - ? - Sol",
+        "questionType": "NOTE_IDENTIFICATION",
+        "note": "Mi",
+        "options": ["Mi", "Fa", "La", "Si"],
+        "correctAnswer": "Mi"
+      }
+    ],
+    "rhythm": {
+      "maxScore": 500,
+      "contentJson": "{\"tempoBpm\":90,\"beats\":[0.5,1.0,1.5,2.0,2.5]}"
+    },
+    "melody": {
+      "maxScore": 500,
+      "contentJson": "{\"melodies\":[{\"notes\":[\"Đô\",\"Rê\",\"Mi\",\"Sol\",\"La\"],\"missingIndex\":2,\"options\":[\"Đô\",\"Mi\",\"Sol\",\"La\"]}]}"
+    }
+  },
+  "dan_bau": {
+    "quiz": [
+      {
+        "id": 0,
+        "question": "Âm bồi nào được tạo ra khi chọn dây giữa của Đàn Bầu?",
+        "questionType": "NOTE_IDENTIFICATION",
+        "note": "Mi",
+        "options": ["Đố", "Sol", "Mi", "Đô"],
+        "correctAnswer": "Mi"
+      },
+      {
+        "id": 0,
+        "question": "Kỹ thuật nào giúp Đàn Bầu tạo ra độ luyến?",
+        "questionType": "GENERAL",
+        "options": ["Uốn cần", "Gõ mặt đàn", "Bấm phím", "Rung dây bằng cung"],
+        "correctAnswer": "Uốn cần"
+      }
+    ],
+    "rhythm": {
+      "maxScore": 500,
+      "contentJson": "{\"tempoBpm\":72,\"beats\":[0.6,1.2,1.8,2.4,3.0]}"
+    },
+    "melody": {
+      "maxScore": 500,
+      "contentJson": "{\"melodies\":[{\"notes\":[\"Đố\",\"Sol\",\"Mi\",\"Đô\",\"Sol\"],\"missingIndex\":3,\"options\":[\"Đố\",\"Mi\",\"Đô\",\"Sol\"]}]}"
+    }
+  },
+  "sao_truc": {
+    "quiz": [
+      {
+        "id": 0,
+        "question": "Khi thổi Sáo Trúc, hơi thổi ổn định giúp âm thanh như thế nào?",
+        "questionType": "GENERAL",
+        "options": ["Đều và vang", "Ngắt quãng", "Không có cao độ", "Chỉ tạo tiếng ồn"],
+        "correctAnswer": "Đều và vang"
+      },
+      {
+        "id": 0,
+        "question": "Nốt nào đứng sau nốt Sol trong chuỗi Sol - La - Đô?",
+        "questionType": "NOTE_IDENTIFICATION",
+        "note": "La",
+        "options": ["Sol", "La", "Đô", "Mi"],
+        "correctAnswer": "La"
+      }
+    ],
+    "rhythm": {
+      "maxScore": 500,
+      "contentJson": "{\"tempoBpm\":80,\"beats\":[0.5,1.0,1.75,2.25,3.0]}"
+    },
+    "melody": {
+      "maxScore": 500,
+      "contentJson": "{\"melodies\":[{\"notes\":[\"Đô\",\"Rê\",\"Mi\",\"Sol\",\"La\"],\"missingIndex\":4,\"options\":[\"Đô\",\"Mi\",\"Sol\",\"La\"]}]}"
+    }
+  },
+  "trong_chau": {
+    "quiz": [
+      {
+        "id": 0,
+        "question": "Âm thanh gõ vào mặt trống Trống Chầu được gọi là gì?",
+        "questionType": "GENERAL",
+        "options": ["Tịch", "Cắc", "Sol", "Rê"],
+        "correctAnswer": "Tịch"
+      },
+      {
+        "id": 0,
+        "question": "Để tạo âm Cắc, người học nên gõ vào đâu?",
+        "questionType": "GENERAL",
+        "options": ["Mặt trống", "Vành trống", "Dây đàn", "Ống sáo"],
+        "correctAnswer": "Vành trống"
+      }
+    ],
+    "rhythm": {
+      "maxScore": 500,
+      "contentJson": "{\"tempoBpm\":96,\"beats\":[0.4,0.8,1.4,1.8,2.4,2.8]}"
+    },
+    "melody": {
+      "maxScore": 500,
+      "contentJson": "{\"melodies\":[{\"notes\":[\"Tịch\",\"Cắc\",\"Tịch\",\"Tịch\"],\"missingIndex\":1,\"options\":[\"Tịch\",\"Cắc\"]}]}"
+    }
+  }
+}

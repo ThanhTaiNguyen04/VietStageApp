@@ -17,7 +17,7 @@ const SUPPORTED_INSTRUMENTS := ["dan_tranh", "sao_truc", "dan_bau", "trong_chau"
 
 # Progression session state (migrated from CourseMap)
 static var video_completed := false
-static var active_lesson_id := "Node2"
+static var active_lesson_id := "Node1"
 static var active_course_title := ""
 static var active_course_start_node := 1
 static var active_course_node_count := 7
@@ -113,6 +113,18 @@ static func sync_backend_progress(progress_list: Array) -> void:
 			maxi(0, int(item.get("stars", 0)))
 		)
 
+	save_data()
+
+
+static func sync_backend_summary(summary_data: Dictionary) -> void:
+	if not data.has("xp"):
+		data["xp"] = 0
+	if not data.has("stars_total"):
+		data["stars_total"] = 0
+	
+	data["daily_streak"] = int(summary_data.get("current_streak", summary_data.get("currentStreak", data.get("daily_streak", 1))))
+	data["xp"] = int(summary_data.get("total_points", summary_data.get("totalPoints", data.get("xp", 0))))
+	data["stars_total"] = int(summary_data.get("total_stars", summary_data.get("totalStars", data.get("stars_total", 0))))
 	save_data()
 
 
@@ -451,15 +463,66 @@ static func resolve_be_lesson(instrument_key: String, local_lesson_id: String) -
 		if _lesson_matches_instrument(lesson, inst):
 			candidates.append(lesson)
 	if candidates.is_empty():
-		return {}
+		for lesson: Dictionary in be_catalog:
+			var id := int(lesson.get("id", 0))
+			if LEGACY_BACKEND_LESSON_MAP.has(id):
+				var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[id]
+				if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
+					return lesson
+		if local_number > 0:
+			for lesson: Dictionary in be_catalog:
+				if int(lesson.get("orderIndex", lesson.get("order_index", 0))) == local_number:
+					return lesson
+		return be_catalog[0] if be_catalog.size() > 0 else {}
+		
 	if local_number > 0:
 		for lesson: Dictionary in candidates:
-			if int(lesson.get("orderIndex", 0)) == local_number:
+			if int(lesson.get("orderIndex", lesson.get("order_index", 0))) == local_number:
 				return lesson
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return int(a.get("orderIndex", 0)) < int(b.get("orderIndex", 0))
+		var order_a = int(a.get("orderIndex", a.get("order_index", 0)))
+		var order_b = int(b.get("orderIndex", b.get("order_index", 0)))
+		return order_a < order_b
 	)
 	return candidates[0]
+
+
+## Chỉ trả lesson khi KHỚP CHÍNH XÁC (orderIndex == số bài local, hoặc legacy map).
+## Trả {} nếu chỉ có fallback candidates[0] — dùng cho report_practice để
+## tránh gửi điểm nhầm sang lesson khác khi BE chưa có bài tương ứng.
+static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: String) -> Dictionary:
+	if be_catalog.is_empty():
+		return {}
+	var inst := _normalize_instrument_key(instrument_key)
+	var local_number := local_lesson_number(local_lesson_id)
+
+	if local_number > 0:
+		for lesson: Dictionary in be_catalog:
+			if not _lesson_matches_instrument(lesson, inst):
+				continue
+			if int(lesson.get("orderIndex", lesson.get("order_index", 0))) == local_number:
+				return lesson
+	# Legacy map: khớp đúng id lesson BE
+	for lesson: Dictionary in be_catalog:
+		var id := int(lesson.get("id", 0))
+		if LEGACY_BACKEND_LESSON_MAP.has(id):
+			var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[id]
+			if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
+				return lesson
+	return {}
+
+
+## Trả về danh sách lessonId của một nhạc cụ trong catalog (dùng để bỏ ràng buộc lesson khi test).
+static func be_lesson_ids_for_instrument(instrument_key: String) -> Array[int]:
+	var inst := _normalize_instrument_key(instrument_key)
+	var ids: Array[int] = []
+	for item: Variant in be_catalog:
+		if not item is Dictionary:
+			continue
+		var lesson: Dictionary = item
+		if _lesson_matches_instrument(lesson, inst):
+			ids.append(int(lesson.get("id", 0)))
+	return ids
 
 
 ## Tra exercise (ưu tiên orderIndex trùng với local_number, rồi exercise đầu tiên).
@@ -492,7 +555,12 @@ static func _lesson_matches_instrument(lesson: Dictionary, inst: String) -> bool
 		code = _normalize_instrument_key(str(instrument_value.get("instrumentCode", instrument_value.get("name", ""))))
 	if code.is_empty():
 		code = _normalize_instrument_key(str(lesson.get("instrumentKey", "")))
-	return not code.is_empty() and code == inst
+	if not code.is_empty() and code == inst:
+		return true
+	var inst_id := int(lesson.get("instrumentId", lesson.get("instrument_id", 0)))
+	if inst_id > 0 and inst_id == be_instrument_id(inst):
+		return true
+	return false
 
 # ── Adaptive Difficulty (FE) ──────────────────────────────────────────────────
 # Keeps a rolling history of the last 10 practice scores per lesson and suggests
