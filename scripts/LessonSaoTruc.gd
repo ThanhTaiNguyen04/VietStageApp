@@ -716,9 +716,7 @@ func _setup_premium_practice_ui():
 		l_title = LESSON_NOTES[active_node_id]["title"].to_upper()
 	else:
 		l_num = "" # Hide BÀI LUYỆN
-		l_title = custom_song_title.to_upper()
-		if is_song_library_mode:
-			l_title = custom_song_title.to_upper()
+		l_title = custom_song_title.to_upper() if custom_song_title != "" else SecureDataManager.data.get("current_song_title", "BÀI TẬP").to_upper()
 		var s_frame = SecureDataManager.data.get("current_song_frame", "")
 		if s_frame != "":
 			l_pill = s_frame.to_upper()

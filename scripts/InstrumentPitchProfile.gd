@@ -7,7 +7,7 @@ class_name InstrumentPitchProfile
 @export var min_frequency: float = 100.0
 @export var max_frequency: float = 4200.0
 @export var volume_threshold_db: float = -50.0
-@export var cents_tolerance: float = 50.0
+@export var cents_tolerance: float = 75.0
 @export var hold_time_sec: float = 0.2
 @export var is_plucked_instrument: bool = false
 
