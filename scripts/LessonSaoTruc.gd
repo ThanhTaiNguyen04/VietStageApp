@@ -517,16 +517,7 @@ func _ready():
 	ai_audio.name = "AIAudio"
 	add_child(ai_audio)
 	
-	var stream = null
-	if active_node_id == "Node2":
-		stream = load("res://audio/introSi.mp3")
-	elif active_node_id in ["Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
-		stream = load("res://audio/intro" + active_node_id + ".mp3")
-	if stream and is_instance_valid(ai_audio.audio_player):
-		ai_audio.audio_player.stream = stream
-		ai_audio.audio_player.play()
-	else:
-		ai_audio.speak_vietnamese(txt)
+	ai_audio.speak_vietnamese(txt)
 	
 	# Setup Staff Display
 	# Hide old rhythm UI
@@ -558,6 +549,21 @@ func _ready():
 
 
 func _build_custom_sequence() -> Array:
+	var seq = _build_custom_sequence_raw()
+	for i in range(seq.size() - 1):
+		var n1 = seq[i]
+		var n2 = seq[i+1]
+		if n1.get("note", "") != "REST" and n2.get("note", "") != "REST":
+			var n1_time = n1.get("time", 0.0)
+			var n1_dur = n1.get("duration", 1.0)
+			var n2_time = n2.get("time", 0.0)
+			# Nếu nốt 1 ngân dài sát hoặc lấn qua nốt 2, buộc phải rút ngắn để lấy hơi
+			if n1_time + n1_dur >= n2_time - 0.05:
+				var gap = 0.15 if n1_dur > 0.3 else 0.08
+				n1["duration"] = maxf(0.1, n2_time - n1_time - gap)
+	return seq
+
+func _build_custom_sequence_raw() -> Array:
 	var seq = []
 	var time = 1.0
 	for i in range(custom_song_sheet.size()):
@@ -590,10 +596,23 @@ func _transition_to_rhythm_game():
 	spawned_notes = 0
 	active_falling_notes.clear()
 	
-	for note in melody_sequence:
+	for i in range(melody_sequence.size()):
+		var note = melody_sequence[i]
+		var n_time = note["time"]
+		var n_dur = note.get("duration", 1.0)
+		
+		# Create a breathing gap for flute (Sáo Trúc) if notes are adjacent
+		if i < melody_sequence.size() - 1:
+			var next_time = melody_sequence[i+1]["time"]
+			if n_time + n_dur >= next_time - 0.05:
+				var gap = 0.15
+				if n_dur <= 0.3:
+					gap = 0.08
+				n_dur = maxf(0.1, next_time - n_time - gap)
+				
 		active_falling_notes.append({
-			"time": note["time"],
-			"duration": note.get("duration", 1.0),
+			"time": n_time,
+			"duration": n_dur,
 			"note_name": note["note"],
 			"color": Color.BLACK,
 			"hit": false,
@@ -796,7 +815,7 @@ func _setup_premium_practice_ui():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if active_node_id.begins_with("sao_truc_level4_"):
 		staff_display.beats_per_measure = 2
-	if active_node_id in ["sao_truc_level3_6", "sao_truc_level4_5"] or active_node_id.begins_with("sao_truc_level5_"):
+	if active_node_id in ["sao_truc_level3_6", "sao_truc_level4_5"] or active_node_id.begins_with("sao_truc_level5_") or active_node_id in ["Node35", "Node36", "Node37", "Node38", "Node39", "Node40", "Node41", "Node42"]:
 		staff_display.show_metronome = false
 	staff_card.add_child(staff_display)
 	
@@ -1291,7 +1310,20 @@ func _process_rhythm(delta, rect):
 				time_delta = -delta * 2.5 # Thổi sai -> Lùi lại nhanh (như Practice)
 				wrong_rhythm_duration += delta
 				current_overlapping_note["color"] = Color(1.0, 0.2, 0.2) # Thổi sai -> Màu đỏ
-				mic_status.text = "Sai ngón! Thổi lại..."
+				var played_note = "Không rõ"
+				var min_d = 9999.0
+				for n_name in NOTE_FREQS.keys():
+					var expected_hz = NOTE_FREQS[n_name]
+					if expected_hz <= 0.0: continue
+					for oct in [0.25, 0.5, 1.0, 2.0, 4.0]:
+						var d = abs(hz - expected_hz * oct)
+						if d < min_d:
+							min_d = d
+							played_note = n_name
+				if min_d < hz * 0.15:
+					mic_status.text = "Sai ngón! Bạn đang thổi nốt " + played_note
+				else:
+					mic_status.text = "Sai ngón! Thổi lại..."
 				mic_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 				current_overlapping_note["hit_duration"] = max(0.0, current_overlapping_note.get("hit_duration", 0.0) - delta * 2.5)
 			else:
@@ -1366,6 +1398,24 @@ func _process_rhythm(delta, rect):
 
 
 func _generate_melody(target_note_key: String) -> Array:
+	var seq = _generate_melody_raw(target_note_key)
+	for i in range(seq.size() - 1):
+		var n1 = seq[i]
+		var n2 = seq[i+1]
+		if n1.get("note", "") != "REST" and n2.get("note", "") != "REST":
+			var n1_time = n1.get("time", 0.0)
+			var n1_dur = n1.get("duration", 1.0)
+			var n2_time = n2.get("time", 0.0)
+			# Nếu nốt 1 ngân dài sát hoặc lấn qua nốt 2, buộc phải rút ngắn để lấy hơi
+			if n1_time + n1_dur >= n2_time - 0.05:
+				var gap = 0.15 if n1_dur > 0.3 else 0.08
+				n1["duration"] = maxf(0.1, n2_time - n1_time - gap)
+	return seq
+
+func _generate_melody_raw(target_note_key: String) -> Array:
+	if target_note_key == "CUSTOM_SONG":
+		return _build_custom_sequence_raw()
+		
 	var seq = []
 	var time = 1.0
 	
@@ -1705,31 +1755,36 @@ func _generate_melody(target_note_key: String) -> Array:
 			time += 0.25
 
 	elif target_note_key == "sao_truc_level5_7":
-		# Futari no Kimochi (To Love's End) — sheet 4/4, 1 giáng (Bb)
-		# Bỏ #/b cho sáo 6 lỗ; giữ contour sheet: D | G A# C | D C# | G D C …
-		var full = [
-			["REST", 1.0], ["REST", 1.0], ["REST", 1.0], ["Rê", 1.0],
-			["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
-			["Rê2", 1.0], ["Đô2", 1.0],
-			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			["Sol", 1.0], ["Fa", 1.0],
-			["Rê", 2.0], ["Rê", 1.0],
-			["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
-			["Rê2", 1.0], ["Đô2", 1.0],
-			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			["La", 1.0], ["Sol", 1.0], ["Sol", 2.0],
-			# Đoạn cao (chorus sheet mm.22+)
-			["REST", 1.0], ["Rê2", 1.0],
-			["Sol2", 0.5], ["Sol2", 0.5], ["Sol2", 0.5], ["La2", 0.5],
-			["Sol2", 1.0], ["Sol2", 0.5], ["La2", 0.5],
-			["Sol2", 0.5], ["Fa2", 0.5], ["Rê2", 1.0], ["Fa2", 1.0],
-			["Sol2", 1.0], ["Sol2", 0.5], ["Sol2", 0.5],
-			["Si", 0.5], ["La", 0.5], ["Sol", 1.0],
-			["Rê2", 1.0], ["Đô2", 1.0],
-			["Sol", 1.0], ["Rê2", 1.0],
-			["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0]
+		var parts = [
+			["Rê", 0.25, 0], ["Fa", 0.25, 0],
+				["Sol", 0.5, 0], ["Sol", 0.25, 0], ["Sib", 0.25, 0],
+				["Đô2", 0.5, 0], ["Rê2", 0.25, 0], ["Fa2", 0.25, 0],
+				["Rê2", 0.5, 0], ["Đô2", 0.25, 0], ["Sib", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Rê", 1.0, 0] ,
+				["Rê", 0.25, 0], ["Fa", 0.25, 0],
+				["Sol", 0.5, 0], ["Sol", 0.25, 0], ["Sib", 0.25, 0],
+				["Đô2", 0.5, 0], ["Rê2", 0.25, 0], ["Fa2", 0.25, 0],
+				["Rê2", 0.5, 0], ["Đô2", 0.25, 0], ["Sib", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Sol", 1.0, 0],
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.75, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["La2", 0.25, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["Fa2", 0.25, 0], ["Đô2", 0.25, 0],
+				["Rê2", 0.5, 0],
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.75, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.25, 0], ["Sib2", 0.25, 0],
+				["La2", 0.25, 0], ["Fa2", 0.25, 0], ["Rê2", 1.0, 0],
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.5, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["La2", 0.25, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["Fa2", 0.25, 0], ["Đô2", 0.25, 0],
+				["Rê2", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Sol", 1.0, 0]
+				
 		]
 		for n in full:
 			seq.append({"note": n[0], "time": time, "duration": n[1]})
@@ -1738,54 +1793,74 @@ func _generate_melody(target_note_key: String) -> Array:
 	elif target_note_key.begins_with("sao_truc_level5_"):
 		# Chia đoạn theo sheet Futari no Kimochi
 		var parts = [
-			# BÀI 1 — Đoạn 1 P1 (mm.1–10)
-			[["REST", 1.0], ["REST", 1.0], ["REST", 1.0], ["Rê", 1.0],
-			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
-			 ["Rê2", 1.0], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0]],
-			# BÀI 2 — Đoạn 1 P2 (mm.11–21)
-			[["Rê", 1.0],
-			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
-			 ["Rê2", 1.0], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["La", 1.0], ["Sol", 1.0], ["Sol", 2.0]],
-			# BÀI 3 — Đoạn 1 HC
-			[["REST", 1.0], ["REST", 1.0], ["REST", 1.0], ["Rê", 1.0],
-			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
-			 ["Rê2", 1.0], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0],
-			 ["Rê", 1.0],
-			 ["Sol", 1.0], ["La", 0.5], ["Đô2", 0.5],
-			 ["Rê2", 1.0], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["Sol", 1.0], ["Rê2", 0.5], ["Đô2", 0.5],
-			 ["La", 1.0], ["Sol", 1.0], ["Sol", 2.0]],
-			# BÀI 4 — Đoạn 2 P1 (chorus cao)
-			[["Rê2", 1.0],
-			 ["Sol2", 0.5], ["Sol2", 0.5], ["Sol2", 0.5], ["La2", 0.5],
-			 ["Sol2", 1.0], ["Sol2", 0.5], ["La2", 0.5],
-			 ["Sol2", 0.5], ["Fa2", 0.5], ["Rê2", 1.0], ["Fa2", 1.0],
-			 ["Sol2", 1.0], ["Sol2", 0.5], ["Sol2", 0.5],
-			 ["Si", 0.5], ["La", 0.5], ["Sol", 1.0]],
-			# BÀI 5 — Đoạn 2 P2
-			[["Rê2", 1.0], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 1.0],
-			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0]],
-			# BÀI 6 — Đoạn 2 HC
-			[["Rê2", 1.0],
-			 ["Sol2", 0.5], ["Sol2", 0.5], ["Sol2", 0.5], ["La2", 0.5],
-			 ["Sol2", 1.0], ["Sol2", 0.5], ["La2", 0.5],
-			 ["Sol2", 0.5], ["Fa2", 0.5], ["Rê2", 1.0], ["Fa2", 1.0],
-			 ["Sol2", 1.0], ["Sol2", 0.5], ["Sol2", 0.5],
-			 ["Si", 0.5], ["La", 0.5], ["Sol", 1.0],
-			 ["Rê2", 1.0], ["Đô2", 1.0],
-			 ["Sol", 1.0], ["Rê2", 1.0],
-			 ["Sol", 1.0], ["Fa", 1.0], ["Rê", 2.0]]
+			[
+				["Rê", 0.25, 0], ["Fa", 0.25, 0],
+				["Sol", 0.5, 0], ["Sol", 0.25, 0], ["Sib", 0.25, 0],
+				["Đô2", 0.5, 0], ["Rê2", 0.25, 0], ["Fa2", 0.25, 0],
+				["Rê2", 0.5, 0], ["Đô2", 0.25, 0], ["Sib", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Rê", 1.0, 0]
+			],
+			[
+				["Rê", 0.25, 0], ["Fa", 0.25, 0],
+				["Sol", 0.5, 0], ["Sol", 0.25, 0], ["Sib", 0.25, 0],
+				["Đô2", 0.5, 0], ["Rê2", 0.25, 0], ["Fa2", 0.25, 0],
+				["Rê2", 0.5, 0], ["Đô2", 0.25, 0], ["Sib", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Sol", 1.0, 0]
+			],
+			[
+				["Rê", 0.25, 0], ["Fa", 0.25, 0],
+				["Sol", 0.5, 0], ["Sol", 0.25, 0], ["Sib", 0.25, 0],
+				["Đô2", 0.5, 0], ["Rê2", 0.25, 0], ["Fa2", 0.25, 0],
+				["Rê2", 0.5, 0], ["Đô2", 0.25, 0], ["Sib", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Rê", 1.0, 0] ,
+				["Rê", 0.25, 0], ["Fa", 0.25, 0],
+				["Sol", 0.5, 0], ["Sol", 0.25, 0], ["Sib", 0.25, 0],
+				["Đô2", 0.5, 0], ["Rê2", 0.25, 0], ["Fa2", 0.25, 0],
+				["Rê2", 0.5, 0], ["Đô2", 0.25, 0], ["Sib", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Sol", 1.0, 0]
+			],
+			[
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.75, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["La2", 0.25, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["Fa2", 0.25, 0], ["Đô2", 0.25, 0],
+				["Rê2", 0.5, 0],
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.75, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.25, 0], ["Sib2", 0.25, 0],
+				["La2", 0.25, 0], ["Fa2", 0.25, 0], ["Rê2", 1.0, 0]
+			],
+			[
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.5, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["La2", 0.25, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["Fa2", 0.25, 0], ["Đô2", 0.25, 0],
+				["Rê2", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Sol", 1.0, 0]
+			],
+			[
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.75, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["La2", 0.25, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["Fa2", 0.25, 0], ["Đô2", 0.25, 0],
+				["Rê2", 0.5, 0],
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.75, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.25, 0], ["Sib2", 0.25, 0],
+				["La2", 0.25, 0], ["Fa2", 0.25, 0], ["Rê2", 1.0, 0],
+				["Rê2", 0.25, 0], ["Fa2", 0.25, 0], ["Sol2", 0.5, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["La2", 0.25, 0],
+				["Fa2", 0.25, 0], ["Sol2", 0.5, 0], ["Fa2", 0.25, 0], ["Đô2", 0.25, 0],
+				["Rê2", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Rê2", 0.25, 0], ["Đô2", 0.25, 0], ["Sol", 0.5, 0],
+				["Fa", 0.5, 0], ["Sol", 1.0, 0]
+			]
 		]
 		var idx = int(target_note_key.replace("sao_truc_level5_", "")) - 1
 		if idx >= 0 and idx < parts.size():
@@ -1794,53 +1869,20 @@ func _generate_melody(target_note_key: String) -> Array:
 				time += n[1]
 			time += 0.5
 	elif target_note_key == "sao_truc_level4_5":
-		# Inh Lả Ơi hoàn chỉnh — khớp sheet 2/4 (Am, Jiangnan)
-		# A E A | G | D | A E | D E | A F E | D E | A E | G G | A E | A E
-		var song_notes = [
-			{"note": "La", "time": 0.0, "duration": 0.5},
-			{"note": "Mi", "time": 0.5, "duration": 0.5},
-			{"note": "La", "time": 1.0, "duration": 0.5},
-			{"note": "REST", "time": 1.5, "duration": 0.5},
-			{"note": "Sol", "time": 2.0, "duration": 0.5},
-			{"note": "REST", "time": 2.5, "duration": 0.5},
-			{"note": "Rê", "time": 3.0, "duration": 0.5},
-			{"note": "REST", "time": 3.5, "duration": 0.5},
-			{"note": "La", "time": 4.0, "duration": 0.5},
-			{"note": "Mi", "time": 4.5, "duration": 0.5},
-			{"note": "Rê", "time": 5.0, "duration": 0.5},
-			{"note": "Mi", "time": 5.5, "duration": 0.5},
-			{"note": "La", "time": 6.0, "duration": 0.5},
-			{"note": "Fa", "time": 6.5, "duration": 0.5},
-			{"note": "Mi", "time": 7.0, "duration": 0.5},
-			{"note": "REST", "time": 7.5, "duration": 0.5},
-			{"note": "Rê", "time": 8.0, "duration": 0.5},
-			{"note": "Mi", "time": 8.5, "duration": 0.5},
-			{"note": "La", "time": 9.0, "duration": 0.5},
-			{"note": "Mi", "time": 9.5, "duration": 0.5},
-			{"note": "Sol", "time": 10.0, "duration": 0.5},
-			{"note": "Sol", "time": 10.5, "duration": 0.5},
-			{"note": "REST", "time": 11.0, "duration": 0.5},
-			{"note": "La", "time": 11.5, "duration": 0.5},
-			{"note": "Mi", "time": 12.0, "duration": 0.5},
-			{"note": "REST", "time": 12.5, "duration": 0.5},
-			{"note": "La", "time": 13.0, "duration": 0.5},
-			{"note": "Mi", "time": 13.5, "duration": 0.5}
+		var parts = [
+			["La", 0.5, 0], ["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.5, 0.5], ["Đố2", 0.5, 0], ["Rế2", 0.5, 0], ["Đố2", 0.5, 1.0],
+			["La", 0.25, 0], ["Đố2", 0.25, 0], ["Rế2", 0.5, 0], ["La", 0.5, 0], ["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.25, 0], ["Mi", 0.25, 0], ["Rê", 0.5, 0.25],
+			["La", 0.25, 0], ["Đố2", 0.5, 0], ["Rế2", 0.5, 0], ["Đố2", 0.5, 0.5], ["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.5, 0], ["La", 1.0, 0],
+			["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.25, 0], ["Mi", 0.25, 0], ["Rê", 0.5, 0.5], ["Đố2", 0.5, 0], ["Rế2", 0.5, 0], ["Đố2", 0.5, 0.5]
 		]
 		seq.append_array(song_notes)
 		time = 14.5
 	elif target_note_key.begins_with("sao_truc_level4_"):
-		# Câu 1–4 theo sheet Inh Lả Ơi
-		var p1 = [
-			{"note": "La", "time": 0.0, "duration": 0.5},
-			{"note": "Mi", "time": 0.5, "duration": 0.5},
-			{"note": "La", "time": 1.0, "duration": 0.5},
-			{"note": "REST", "time": 1.5, "duration": 0.5},
-			{"note": "Sol", "time": 2.0, "duration": 0.5},
-			{"note": "REST", "time": 2.5, "duration": 0.5},
-			{"note": "Rê", "time": 3.0, "duration": 0.5},
-			{"note": "REST", "time": 3.5, "duration": 0.5},
-			{"note": "La", "time": 4.0, "duration": 0.5},
-			{"note": "Mi", "time": 4.5, "duration": 0.5}
+		var parts = [
+			[["La", 0.5, 0], ["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.5, 0.5], ["Đố2", 0.5, 0], ["Rế2", 0.5, 0], ["Đố2", 0.5, 1.0]],
+			[["La", 0.25, 0], ["Đố2", 0.25, 0], ["Rế2", 0.5, 0], ["La", 0.5, 0], ["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.25, 0], ["Mi", 0.25, 0], ["Rê", 0.5, 0.25]],
+			[["La", 0.25, 0], ["Đố2", 0.5, 0], ["Rế2", 0.5, 0], ["Đố2", 0.5, 0.5], ["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.5, 0], ["La", 1.0, 0]],
+			[["Đố2", 0.25, 0], ["La", 0.25, 0], ["Sol", 0.25, 0], ["Mi", 0.25, 0], ["Rê", 0.5, 0.5], ["Đố2", 0.5, 0], ["Rế2", 0.5, 0], ["Đố2", 0.5, 0.5]]
 		]
 		var p2 = [
 			{"note": "Rê", "time": 0.0, "duration": 0.5},
@@ -2068,6 +2110,14 @@ func _hit_note():
 		current_state = State.MID_INTRO
 		feedback_area.visible = false
 		teacher_area.visible = true
+		
+		# Khôi phục hiển thị cho DialogBox vì đã bị _shrink_teacher ẩn đi
+		var dialog_box = teacher_area.get_node_or_null("DialogBox")
+		if dialog_box:
+			dialog_box.visible = true
+			var dtween = create_tween()
+			dtween.tween_property(dialog_box, "modulate:a", 1.0, 0.2)
+			
 		real_mode_btn.visible = false
 		
 		# Clear old layout to add new button
@@ -2090,6 +2140,8 @@ func _hit_note():
 		var txt = ""
 		if LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["mid"]
+		elif active_node_id.begins_with("sao_truc_level5_") or active_node_id in ["Node35", "Node36", "Node37", "Node38", "Node39", "Node40", "Node41", "Node42"]:
+			txt = "Tốt lắm! Bạn đã làm quen với các nốt nhạc. Bây giờ chúng ta cùng thổi theo nhịp điệu của bài nhé!"
 		else:
 			txt = "Tốt lắm! Bạn đã biết cách thổi nốt " + active_note + ". Bây giờ chúng ta cùng thử thổi một đoạn nhạc kết hợp nhé!"
 			
@@ -2097,16 +2149,7 @@ func _hit_note():
 		
 		var ai = get_node_or_null("AIAudio")
 		if ai and ai.has_method("speak_vietnamese"):
-			var stream = null
-			if active_node_id == "Node2":
-				stream = load("res://audio/practiceSi.mp3")
-			elif active_node_id in ["Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]:
-				stream = load("res://audio/practice" + active_node_id + ".mp3")
-			if stream and is_instance_valid(ai.audio_player):
-				ai.audio_player.stream = stream
-				ai.audio_player.play()
-			else:
-				ai.speak_vietnamese(txt)
+			ai.speak_vietnamese(txt)
 
 func _start_rhythm_game():
 	var ai = get_node_or_null("AIAudio")
@@ -2132,8 +2175,10 @@ func _start_rhythm_game():
 	spawned_notes = 0
 	active_falling_notes.clear()
 	
-	for note in melody_sequence:
+	for i in range(melody_sequence.size()):
+		var note = melody_sequence[i]
 		var n_dur = note.get("duration", 1.0)
+		var n_time = note["time"]
 		var n_type = note.get("type", "")
 		if n_type == "":
 			if n_dur >= 3.0: n_type = "whole"
@@ -2143,7 +2188,7 @@ func _start_rhythm_game():
 			else: n_type = "sixteenth"
 			
 		active_falling_notes.append({
-			"time": note["time"],
+			"time": n_time,
 			"duration": n_dur,
 			"note_name": note["note"],
 			"color": Color.BLACK,

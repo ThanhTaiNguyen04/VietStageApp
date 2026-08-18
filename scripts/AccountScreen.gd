@@ -518,8 +518,8 @@ func _set_icon_button(button: Button, icon_name: String, color: Color) -> void:
 	button.add_theme_stylebox_override("focus", normal_style)
 
 
-func _icon(name: String) -> Texture2D:
-	return load("res://assets/textures/lucide/%s.svg" % name) as Texture2D
+func _icon(icon_name: String) -> Texture2D:
+	return load("res://assets/textures/lucide/%s.svg" % icon_name) as Texture2D
 
 
 func _font_display() -> Font:

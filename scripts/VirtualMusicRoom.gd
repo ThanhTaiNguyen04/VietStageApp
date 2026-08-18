@@ -2571,10 +2571,19 @@ func _fetch_cosmetics_data() -> void:
 			_cosmetics_locked = _cosmetics_locked.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
 			
 			# Respect local active list for equipped states
+			if not SecureDataManager.data.has("active_decorations_synced"):
+				var active = []
+				for item in _cosmetics_owned:
+					if item.get("isEquipped", item.get("is_equipped", false)):
+						active.append(_get_draw_key(item))
+				SecureDataManager.data["active_decorations"] = active
+				SecureDataManager.data["active_decorations_synced"] = true
+				SecureDataManager.save_data()
+			
 			var active = SecureDataManager.data.get("active_decorations", [])
 			for item in _cosmetics_owned:
 				var m_key = _get_draw_key(item)
-				item["isEquipped"] = item.get("isEquipped", item.get("is_equipped", false)) or active.has(m_key)
+				item["isEquipped"] = active.has(m_key)
 				
 			if not _cosmetics_owned.is_empty() or not _cosmetics_locked.is_empty():
 				use_mock = false
@@ -2813,8 +2822,9 @@ func _update_star_badge() -> void:
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
-	for c in room_content.get_children():
-		if "Decor_" in c.name:
+	var children = room_content.get_children()
+	for c in children:
+		if str(c.name).begins_with("Decor_"):
 			room_content.remove_child(c)
 			c.queue_free()
 			

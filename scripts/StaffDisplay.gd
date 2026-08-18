@@ -18,7 +18,7 @@ const NOTE_POSITIONS = {
 	"La": 1.5,
 	"Sì": 2.0,
 	"Si": 2.0,
-	"Sib": 1.5,
+	"Sib": 2.0,
 	"Đố": 2.5,
 	"Đô2": 2.5,
 	"Rế": 3.0,
@@ -31,31 +31,31 @@ const NOTE_POSITIONS = {
 	"Sol2": 4.5,
 	"Lá": 5.0,
 	"La2": 5.0,
-	"Sì2": 5.5,
+	"Sib2": 5.5,
 	"Si2": 5.5,
-
-	# Đàn Tranh
-	"Sol_1": -2.5,
-	"La_1": -2.0,
-	"Đô_2": -1.0,
-	"Rê_2": -0.5,
-	"Mi_2": 0.0,
-	"Fa_2": 0.5,
-	"Sol_2": 1.0,
-	"La_2": 1.5,
-	"Si_2": 2.0,
-	"Đô_3": 2.5,
-	"Rê_3": 3.0,
-	"Mi_3": 3.5,
-	"Fa_3": 4.0,
-	"Sol_3": 4.5,
-	"La_3": 5.0,
-	"Si_3": 5.5,
-	"Đô_4": 6.0,
-	"Rê_4": 6.5,
-	"Mi_4": 7.0,
-	"Sol_4": 8.0,
-	"La_4": 8.5
+	
+	# Dan Tranh 17 dây - Chuẩn Treble Clef (Khóa Sol chuẩn: E4 = Dòng 1 = 0.0)
+	"Sol_1": -2.5,   # G3: dưới dòng phụ 2 (La_1), cần 2 dòng phụ
+	"La_1": -2.0,    # A3: dòng phụ 2 dưới, cần 2 dòng phụ
+	"Đô_2": -1.0,    # C4: dòng phụ 1 dưới (Middle C), cần 1 dòng phụ
+	"Rê_2": -0.5,    # D4: khe dưới dòng 1, không cần dòng phụ
+	"Mi_2": 0.0,     # E4: Dòng 1
+	"Fa_2": 0.5,     # F4: Khe 1
+	"Sol_2": 1.0,    # G4: Dòng 2
+	"La_2": 1.5,     # A4: Khe 2
+	"Si_2": 2.0,     # B4: Dòng 3
+	"Đô_3": 2.5,     # C5: Khe 3
+	"Rê_3": 3.0,     # D5: Dòng 4
+	"Mi_3": 3.5,     # E5: Khe 4
+	"Fa_3": 4.0,     # F5: Dòng 5
+	"Sol_3": 4.5,    # G5: trên dòng 5 (khe trên)
+	"La_3": 5.0,     # A5: dòng phụ 1 trên
+	"Si_3": 5.5,     # B5: Khe trên dòng phụ 1
+	"Đô_4": 6.0,     # C6: dòng phụ 2 trên
+	"Rê_4": 6.5,     # D6: khe trên dòng phụ 2
+	"Mi_4": 7.0,     # E6: dòng phụ 3 trên
+	"Sol_4": 8.0,    # G6: dòng phụ 4 trên
+	"La_4": 8.5      # A6: khe trên dòng phụ 4
 }
 
 var active_note = "Đô"
@@ -383,7 +383,9 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		var tail_color = note_color
 		tail_color.a = 0.35
 		var tail_h = line_spacing * 0.4
-		draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, tail_w, tail_h), tail_color)
+		var actual_tail_w = maxf(0.0, tail_w - note_width / 2.5) # Rút lại vừa đủ phần dư của đầu nốt để thể hiện chính xác thời gian
+		if actual_tail_w > 0.0:
+			draw_rect(Rect2(note_x + note_width / 2.5, tail_y - tail_h / 2.0, actual_tail_w, tail_h), tail_color)
 			
 	var note_rect = Rect2(note_x - note_width/2.0, note_y - note_height/2.0, note_width, note_height)
 	if note_type == "whole" or note_type == "half":

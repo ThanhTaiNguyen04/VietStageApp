@@ -536,8 +536,8 @@ func _set_icon_button(button: Button, icon_name: String, color: Color, backgroun
 	button.add_theme_stylebox_override("pressed", _flat(bg.darkened(0.08), color, 15, 1))
 
 
-func _icon(name: String) -> Texture2D:
-	return load("res://assets/textures/lucide/%s.svg" % name) as Texture2D
+func _icon(icon_name: String) -> Texture2D:
+	return load("res://assets/textures/lucide/%s.svg" % icon_name) as Texture2D
 
 
 func _font_display() -> Font:

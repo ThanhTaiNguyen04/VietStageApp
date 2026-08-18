@@ -2001,8 +2001,15 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 	if cents_error <= 65.0:
 		return true
 
-	# Never accept an octave or harmonic as the requested string. Use the native
-	# detector only as a second exact-frequency measurement of the same note.
+	# Dây thấp (Sol1=196Hz, La1=220Hz): YIN thường bắt harmonic thứ 2 (×2 freq).
+	# Khi pitch ≈ 2×target và target < 260Hz, chấp nhận là đúng dây vì context bài
+	# học luôn chỉ yêu cầu 1 dây cụ thể tại một thời điểm.
+	if target_hz < 260.0 and pitch > 0.0:
+		var octave_cents := absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
+		if octave_cents <= 65.0:
+			return true
+
+	# Dùng native detector như phép đo tần số thứ 2 cho cùng nốt đó.
 	if analyzer and target_note_name != "":
 		var detected_note: Dictionary = analyzer.detect_dan_tranh_note(
 			analyzer._analysis_buffer,
@@ -2088,6 +2095,16 @@ func _play_next_intro_step():
 	var playback_token := intro_playback_token
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
+		# Bài 1 (bai_1), 2 (bai_5), 3 (bai_4) là lý thuyết thuần – khi hết dialogue
+		# thì hoàn thành bài luôn, không hiện khuôn nhạc thực hành.
+		const THEORY_ONLY_IDS := [
+			"dan_tranh_level_1_bai_1_practice",
+			"dan_tranh_level_1_bai_5_practice",
+			"dan_tranh_level_1_bai_4_practice"
+		]
+		if current_lesson_id in THEORY_ONLY_IDS:
+			_finish_practice()
+			return
 		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 			_start_practice_single()
 		else:
@@ -4208,58 +4225,7 @@ func _start_practice():
 	error_feedback_target_note = ""
 	error_feedback_title = "Chưa đúng"
 	error_feedback_detail = ""
-	_shrink_teacher()
-
-func _shrink_teacher() -> void:
-	if not is_instance_valid(teacher_char) or not is_instance_valid(teacher_area):
-		return
-	
-	teacher_area.visible = true
-	var dialog_box = teacher_area.get_node_or_null("DialogBox")
-	if dialog_box:
-		var dtween = create_tween()
-		dtween.tween_property(dialog_box, "modulate:a", 0.0, 0.2)
-		dtween.tween_callback(func(): dialog_box.visible = false)
-
-	var wrapper = teacher_area.get_node_or_null("AvatarWrapper")
-	if not wrapper:
-		wrapper = Panel.new()
-		wrapper.name = "AvatarWrapper"
-		wrapper.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
-		
-		var sb = StyleBoxFlat.new()
-		sb.bg_color = Color.WHITE
-		sb.corner_radius_top_left = 500
-		sb.corner_radius_top_right = 500
-		sb.corner_radius_bottom_left = 500
-		sb.corner_radius_bottom_right = 500
-		wrapper.add_theme_stylebox_override("panel", sb)
-		
-		wrapper.size = Vector2(400, 400)
-		wrapper.pivot_offset = wrapper.size / 2.0
-		
-		wrapper.position = teacher_char.position + Vector2(100, 40)
-		
-		teacher_char.get_parent().remove_child(teacher_char)
-		wrapper.add_child(teacher_char)
-		add_child(wrapper)
-		wrapper.z_index = 100
-		
-		teacher_char.position = Vector2(-120, -50)
-		
-		wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
-		if not wrapper.gui_input.is_connected(_on_teacher_clicked):
-			wrapper.gui_input.connect(_on_teacher_clicked)
-			
-	var t = create_tween()
-	t.tween_property(wrapper, "scale", Vector2(0.35, 0.35), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.parallel().tween_property(wrapper, "position", Vector2(-80, get_viewport_rect().size.y - 320), 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-
-func _on_teacher_clicked(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var chat = AIChatPopup.new()
-		add_child(chat)
-		chat.open_chat("dan_tranh")
+	teacher_area.visible = false
 	feedback_area.visible = true
 	practice_idx = 0
 	practice_time = 0.0
@@ -4340,7 +4306,8 @@ func _on_teacher_clicked(event: InputEvent) -> void:
 	
 	var scroll_speed = 350.0
 	var distance_per_beat = (scroll_speed * 60.0) / lesson_bpm
-	var start_x = staff_display.size.x + 100.0
+	var _staff_w := staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
+	var start_x = _staff_w + 100.0
 	
 	var cur_beat: float = 0.0
 	for i in range(lesson_sheet.size()):

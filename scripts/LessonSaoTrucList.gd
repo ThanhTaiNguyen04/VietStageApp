@@ -127,7 +127,15 @@ const ALL_LESSONS = [
 	},
 	{
 		"id": "sao_truc_level5_7", "level": 5, "title": "BÀI 7", "note": "Futari no Kimochi (Hoàn chỉnh toàn bài)"
-	}
+	},
+	{ "id": "Node35", "level": 6, "title": "BÀI 1", "note": "Gặp Mẹ Trong Mơ (Khung 1)" },
+	{ "id": "Node36", "level": 6, "title": "BÀI 2", "note": "Gặp Mẹ Trong Mơ (Khung 2)" },
+	{ "id": "Node37", "level": 6, "title": "BÀI 3", "note": "Gặp Mẹ Trong Mơ (Khung 3)" },
+	{ "id": "Node38", "level": 6, "title": "BÀI 4", "note": "Gặp Mẹ Trong Mơ (Khung 4)" },
+	{ "id": "Node39", "level": 6, "title": "BÀI 5", "note": "Gặp Mẹ Trong Mơ (Khung 5)" },
+	{ "id": "Node40", "level": 6, "title": "BÀI 6", "note": "Gặp Mẹ Trong Mơ (Khung 6)" },
+	{ "id": "Node41", "level": 6, "title": "BÀI 7", "note": "Gặp Mẹ Trong Mơ (Khung 7)" },
+	{ "id": "Node42", "level": 6, "title": "BÀI 8", "note": "Gặp Mẹ Trong Mơ (Hoàn chỉnh)" }
 ]
 var LESSONS: Array = []
 
