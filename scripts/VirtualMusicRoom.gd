@@ -2551,24 +2551,20 @@ func _fetch_cosmetics_data() -> void:
 	if _api_client == null:
 		return
 	
-	var use_mock := true
+	_cosmetics_all = []
+	_cosmetics_owned = []
+	_cosmetics_locked = []
+	
 	if BackendReport.is_signed_in():
 		var response = await _api_client.get_all_cosmetics()
 		if _api_client._is_success(response):
 			_cosmetics_all = response.get("body", {}).get("data", [])
-		else:
-			_cosmetics_all = []
 			
 		var my_response = await _api_client.get_my_cosmetics()
 		if _api_client._is_success(my_response):
 			var body = my_response.get("body", {}).get("data", {})
 			_cosmetics_owned = body.get("owned", [])
 			_cosmetics_locked = body.get("locked", [])
-			
-			# Filter out items not present in sample list
-			var allowed_keys := ["chausen", "bantra", "tranh", "quat", "binhsen"]
-			_cosmetics_owned = _cosmetics_owned.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
-			_cosmetics_locked = _cosmetics_locked.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
 			
 			# Respect local active list for equipped states
 			if not SecureDataManager.data.has("active_decorations_synced"):
@@ -2584,44 +2580,14 @@ func _fetch_cosmetics_data() -> void:
 			for item in _cosmetics_owned:
 				var m_key = _get_draw_key(item)
 				item["isEquipped"] = active.has(m_key)
-				
-			if not _cosmetics_owned.is_empty() or not _cosmetics_locked.is_empty():
-				use_mock = false
-		else:
-			_cosmetics_owned = []
-			_cosmetics_locked = []
+	else:
+		# Chưa đăng nhập: Tải danh sách vật phẩm công khai từ GET /api/cosmetics
+		var response = await _api_client.get_all_cosmetics()
+		if _api_client._is_success(response):
+			var all_items = response.get("body", {}).get("data", [])
+			_cosmetics_all = all_items
+			_cosmetics_locked = all_items
 			
-	if use_mock:
-		# BYPASS API FOR LOCAL TEST OR FALLBACK
-		_cosmetics_all = []
-		_cosmetics_owned = []
-		_cosmetics_locked = []
-		if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
-			var all_mock = [
-				{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
-				{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
-				{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
-				{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
-				{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
-			]
-			var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
-			var active = SecureDataManager.data.get("active_decorations", [])
-			if unlocked.is_empty():
-				# Initialize defaults to avoid an empty room on first launch/offline mode
-				unlocked = ["chausen", "tranh", "quat"]
-				active = ["chausen", "tranh", "quat"]
-				SecureDataManager.data["unlocked_decorations"] = unlocked
-				SecureDataManager.data["active_decorations"] = active
-				SecureDataManager.save_data()
-				
-			for m_item in all_mock:
-				var m_key = _get_draw_key(m_item)
-				if unlocked.has(m_key):
-					m_item["isEquipped"] = active.has(m_key)
-					_cosmetics_owned.append(m_item)
-				else:
-					_cosmetics_locked.append(m_item)
-		
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_spawn_decorations()
 	if shop_popup and shop_popup.visible:
