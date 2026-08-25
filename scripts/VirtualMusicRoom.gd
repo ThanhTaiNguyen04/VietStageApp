@@ -2594,33 +2594,48 @@ func _fetch_cosmetics_data() -> void:
 		_update_shop_items()
 
 func _get_draw_key(item: Dictionary) -> String:
-	var asset_url := str(item.get("assetUrl", "")).to_lower()
-	var item_name := str(item.get("name", "")).to_lower()
+	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).to_lower()
+	var raw_name := str(item.get("name", ""))
+	var item_name := raw_name.to_lower()
 	
+	# Match theo UUID hash filenames
+	if "277822b0" in asset_url: return "chausen"
+	elif "53b2828a" in asset_url: return "bantra"
+	elif "6a00c552" in asset_url: return "tranh"
+	elif "70833c90" in asset_url: return "quat"
+	elif "7f2fca74" in asset_url or "denlong" in asset_url: return "denlong"
+	elif "98fada3c" in asset_url or "denda" in asset_url: return "denda"
+	elif "a39c0e84" in asset_url or "chuonggio" in asset_url: return "chuonggio"
+	elif "a5f93c96" in asset_url or "binhsen" in asset_url: return "binhsen"
+	
+	# Match theo keyword trong assetUrl
 	if "chausen" in asset_url: return "chausen"
 	elif "bantra" in asset_url: return "bantra"
 	elif "tranh" in asset_url: return "tranh"
 	elif "quat" in asset_url: return "quat"
-	elif "denlong" in asset_url: return "denlong"
 	elif "denda" in asset_url: return "denda"
 	elif "chuonggio" in asset_url: return "chuonggio"
 	elif "binhsen" in asset_url: return "binhsen"
 	
-	if "chau sen" in item_name or "chậu sen" in item_name: return "chausen"
-	elif "ban tra" in item_name or "bàn trà" in item_name: return "bantra"
-	elif "quat" in item_name or "quạt" in item_name: return "quat"
-	elif "den long" in item_name or "đèn lồng" in item_name: return "denlong"
-	elif "den da" in item_name or "đèn đá" in item_name: return "denda"
-	elif "chuong gio" in item_name or "chuông gió" in item_name: return "chuonggio"
-	elif "binh sen" in item_name or "bình sen" in item_name: return "binhsen"
-	elif "painting" in asset_url or "painting" in item_name or "tranh" in item_name:
-		return "tranh"
-	elif "vase" in asset_url or "vase" in item_name or "bình" in item_name or "hoa" in item_name:
-		return "binhsen"
-	elif "bamboo" in asset_url or "bamboo" in item_name or "trúc" in item_name:
+	# Match theo tên tiếng Việt (cả hoa, thường, có dấu hoặc không dấu)
+	if "sen" in item_name and ("chậu" in item_name or "chau" in item_name or "nhỏ" in item_name or "nho" in item_name or "chậu sen" in raw_name.to_lower()):
 		return "chausen"
-	elif "drum" in asset_url or "drum" in item_name or "trống" in item_name:
+	elif "bàn trà" in item_name or "ban tra" in item_name or "trà" in item_name or "tra" in item_name:
 		return "bantra"
+	elif "quạt" in item_name or "quat" in item_name:
+		return "quat"
+	elif "lồng" in item_name or "long" in item_name or "đèn lồng" in item_name or "den long" in item_name or "đèn" in item_name or "den" in item_name:
+		if "đá" in item_name or "da" in item_name:
+			return "denda"
+		return "denlong"
+	elif "đá" in item_name or "da" in item_name:
+		return "denda"
+	elif "chuông" in item_name or "chuong" in item_name or "gió" in item_name or "gio" in item_name:
+		return "chuonggio"
+	elif "bình sen" in item_name or "binh sen" in item_name or "bình" in item_name or "binh" in item_name:
+		return "binhsen"
+	elif "tranh" in item_name or "painting" in item_name:
+		return "tranh"
 	return "tranh"
 
 func _fetch_instruments_data() -> void:
