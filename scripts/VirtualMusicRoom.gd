@@ -2570,6 +2570,8 @@ func _fetch_cosmetics_data() -> void:
 		var my_response = await _api_client.get_my_cosmetics()
 		if _api_client._is_success(my_response):
 			var body = my_response.get("body", {}).get("data", {})
+			if body is Dictionary:
+				SecureDataManager.apply_backend_reward(body)
 			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []))
 			_cosmetics_locked = _filter_room_decor_items(body.get("locked", []))
 
@@ -2873,7 +2875,7 @@ func _setup_hud_shop_button() -> void:
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "%d" % SecureDataManager.get_total_stars()
+	badge_label.text = "%d" % SecureDataManager.get_spendable_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
@@ -2935,7 +2937,7 @@ func _update_star_badge() -> void:
 	if not label:
 		label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "%d" % SecureDataManager.get_total_stars()
+		label.text = "%d" % SecureDataManager.get_spendable_stars()
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
@@ -3211,7 +3213,7 @@ func _setup_shop_popup() -> void:
 	
 	var stars_val_label := Label.new()
 	stars_val_label.name = "StarsValLabel"
-	stars_val_label.text = "%d Sao" % SecureDataManager.get_total_stars()
+	stars_val_label.text = "%d Sao" % SecureDataManager.get_spendable_stars()
 	stars_val_label.add_theme_font_size_override("font_size", 14)
 	stars_val_label.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
@@ -3280,11 +3282,14 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 		var purchase_response = await _api_client.purchase_cosmetic(cosmetic_id)
 		if _api_client._is_success(purchase_response):
 			var purchase_data = purchase_response.get("body", {}).get("data", {})
+			# OpenAPI hiện bọc kết quả mua trong PurchaseCosmeticResponse.data.
+			if purchase_data is Dictionary and purchase_data.get("data") is Dictionary:
+				purchase_data = purchase_data.get("data")
 			if purchase_data is Dictionary:
 				if purchase_data.has("remainingStars"):
-					SecureDataManager.data["stars_total"] = int(purchase_data.get("remainingStars", 0))
+					SecureDataManager.data["spendable_stars"] = int(purchase_data.get("remainingStars", 0))
 				elif purchase_data.has("remaining_stars"):
-					SecureDataManager.data["stars_total"] = int(purchase_data.get("remaining_stars", 0))
+					SecureDataManager.data["spendable_stars"] = int(purchase_data.get("remaining_stars", 0))
 				SecureDataManager.save_data()
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
@@ -3309,7 +3314,7 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 	_update_shop_items()
 
 func _update_shop_items() -> void:
-	var stars = SecureDataManager.get_total_stars()
+	var stars = SecureDataManager.get_spendable_stars()
 	var stars_val_label = shop_popup.get_node_or_null("ScrollPanel/ScrollContent/StarsContainer/StarsValLabel") as Label
 	if stars_val_label:
 		stars_val_label.text = "%d Sao" % stars

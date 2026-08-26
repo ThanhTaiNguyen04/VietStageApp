@@ -402,6 +402,14 @@ static func get_total_stars() -> int:
 				total += int(data.stars[inst][lesson_id])
 	return total
 
+
+## Số sao hiện còn có thể dùng để mua vật phẩm. Khi backend chưa từng trả
+## spendableStars, dùng tổng sao làm fallback để tương thích dữ liệu cũ.
+static func get_spendable_stars() -> int:
+	if data.has("spendable_stars"):
+		return maxi(0, int(data.get("spendable_stars", 0)))
+	return get_total_stars()
+
 static func unlock_decoration(decor_id: String, cost: int) -> bool:
 	if not data.has("unlocked_decorations"):
 		data["unlocked_decorations"] = []
