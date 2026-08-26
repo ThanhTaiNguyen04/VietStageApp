@@ -31,6 +31,7 @@ const PRACTICE_ATTEMPT_FEEDBACK := "/practice/attempts/%s/feedback"
 # Cosmetics
 const COSMETICS := "/cosmetics"
 const MY_COSMETICS := "/users/me/cosmetics"
+const COSMETICS_LAYOUT := "/users/me/cosmetics/layout"
 
 # Profile Progress & Achievements
 const ACHIEVEMENTS := "/achievements"

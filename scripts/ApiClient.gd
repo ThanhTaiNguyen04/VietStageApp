@@ -386,9 +386,23 @@ func get_my_cosmetics() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.MY_COSMETICS), HTTPClient.METHOD_GET)
 
 ## Mua vật phẩm. Backend cần triển khai contract này; OpenAPI hiện tại chưa có endpoint mua.
-func purchase_cosmetic(cosmetic_id: int) -> Dictionary:
+func purchase_cosmetic(cosmetic_id: int, client_request_id: String) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS) + "/" + str(cosmetic_id) + "/purchase"
-	return await request_json(path, HTTPClient.METHOD_POST, {})
+	return await request_json(path, HTTPClient.METHOD_POST, {
+		"clientRequestId": client_request_id
+	})
+
+## Lấy và lưu cách bố trí vật phẩm để đồng bộ giữa các thiết bị.
+func get_cosmetic_layout() -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.COSMETICS_LAYOUT), HTTPClient.METHOD_GET)
+
+
+func save_cosmetic_layout(items: Array) -> Dictionary:
+	return await request_json(
+		ApiRoutes.build(ApiRoutes.COSMETICS_LAYOUT),
+		HTTPClient.METHOD_PUT,
+		{"items": items}
+	)
 
 ## Trang bị / Tháo bỏ vật phẩm trang trí
 func equip_cosmetic(cosmetic_id: int, is_equipped: bool) -> Dictionary:

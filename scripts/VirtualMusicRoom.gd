@@ -2582,6 +2582,10 @@ func _fetch_cosmetics_data() -> void:
 					active.append(_get_cosmetic_key(item))
 			SecureDataManager.data["active_decorations"] = active
 			SecureDataManager.save_data()
+
+			var layout_response = await _api_client.get_cosmetic_layout()
+			if _api_client._is_success(layout_response):
+				_apply_backend_cosmetic_layout(layout_response.get("body", {}).get("data", {}))
 		else:
 			_set_shop_status(_api_client.error_message(my_response, "Không thể tải vật phẩm đã sở hữu."), true)
 	else:
@@ -2601,6 +2605,58 @@ func _fetch_cosmetics_data() -> void:
 	_spawn_decorations()
 	if shop_popup and shop_popup.visible:
 		_update_shop_items()
+
+
+func _apply_backend_cosmetic_layout(value: Variant) -> void:
+	if not value is Dictionary:
+		return
+	var items: Variant = value.get("items", [])
+	if not items is Array:
+		return
+	var positions: Dictionary = SecureDataManager.data.get("decor_positions", {})
+	for raw_item: Variant in items:
+		if not raw_item is Dictionary:
+			continue
+		var layout_item: Dictionary = raw_item
+		var cosmetic_id := int(layout_item.get("cosmeticId", 0))
+		if cosmetic_id <= 0:
+			continue
+		positions["cosmetic_%d" % cosmetic_id] = {
+			"x": float(layout_item.get("x", 0.0)),
+			"y": float(layout_item.get("y", 0.0)),
+			"scale": float(layout_item.get("scale", 1.0)),
+			"zindex": int(layout_item.get("zindex", layout_item.get("zIndex", 0))),
+		}
+	SecureDataManager.data["decor_positions"] = positions
+	SecureDataManager.save_data()
+
+
+func _save_cosmetic_layout_to_backend() -> void:
+	if not BackendReport.is_signed_in() or _api_client == null:
+		return
+	var items: Array = []
+	for child: Node in room_content.get_children():
+		if not child is Control or not str(child.name).begins_with("Decor_"):
+			continue
+		var cosmetic_id := int(str(child.name).trim_prefix("Decor_"))
+		if cosmetic_id <= 0:
+			continue
+		var decor := child as Control
+		items.append({
+			"cosmeticId": cosmetic_id,
+			"x": decor.position.x,
+			"y": decor.position.y,
+			"scale": 1.0,
+			"zindex": decor.z_index,
+		})
+	var response = await _api_client.save_cosmetic_layout(items)
+	if not _api_client._is_success(response):
+		_set_shop_status(_api_client.error_message(response, "Chưa thể đồng bộ vị trí trang trí."), true)
+
+
+func _new_client_request_id() -> String:
+	var random_bytes := Crypto.new().generate_random_bytes(16)
+	return random_bytes.hex_encode()
 
 func _filter_room_decor_items(value: Variant) -> Array:
 	var source: Array = []
@@ -2998,6 +3054,9 @@ func _spawn_decorations() -> void:
 				var pos = saved_positions[item_key]
 				if pos is Dictionary:
 					ctrl.position = Vector2(float(pos.get("x", ctrl.position.x)), float(pos.get("y", ctrl.position.y)))
+					var saved_scale := float(pos.get("scale", 1.0))
+					ctrl.scale = Vector2(saved_scale, saved_scale)
+					ctrl.z_index = int(pos.get("zindex", pos.get("zIndex", ctrl.z_index)))
 				elif pos is Vector2:
 					ctrl.position = pos
 				
@@ -3039,8 +3098,14 @@ func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> v
 					t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BOUNCE)
 					if not SecureDataManager.data.has("decor_positions"):
 						SecureDataManager.data["decor_positions"] = {}
-					SecureDataManager.data["decor_positions"][item_id] = {"x": ctrl.position.x, "y": ctrl.position.y}
+					SecureDataManager.data["decor_positions"][item_id] = {
+						"x": ctrl.position.x,
+						"y": ctrl.position.y,
+						"scale": 1.0,
+						"zindex": ctrl.z_index,
+					}
 					SecureDataManager.save_data()
+					_save_cosmetic_layout_to_backend()
 				elif _pressed_decor == ctrl:
 					var t = create_tween()
 					t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.1)
@@ -3279,18 +3344,14 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 	_update_shop_items()
 
 	if not owned:
-		var purchase_response = await _api_client.purchase_cosmetic(cosmetic_id)
+		var purchase_response = await _api_client.purchase_cosmetic(cosmetic_id, _new_client_request_id())
 		if _api_client._is_success(purchase_response):
-			var purchase_data = purchase_response.get("body", {}).get("data", {})
-			# OpenAPI hiện bọc kết quả mua trong PurchaseCosmeticResponse.data.
-			if purchase_data is Dictionary and purchase_data.get("data") is Dictionary:
-				purchase_data = purchase_data.get("data")
+			var purchase_body: Variant = purchase_response.get("body", {})
+			var purchase_data: Variant = purchase_body
+			if purchase_body is Dictionary and purchase_body.get("data") is Dictionary:
+				purchase_data = purchase_body.get("data")
 			if purchase_data is Dictionary:
-				if purchase_data.has("remainingStars"):
-					SecureDataManager.data["spendable_stars"] = int(purchase_data.get("remainingStars", 0))
-				elif purchase_data.has("remaining_stars"):
-					SecureDataManager.data["spendable_stars"] = int(purchase_data.get("remaining_stars", 0))
-				SecureDataManager.save_data()
+				SecureDataManager.apply_backend_reward(purchase_data)
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
