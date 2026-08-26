@@ -38,6 +38,7 @@ var _quizzes: Array = []
 var _index: int = 0
 var _score: int = 0
 var _correct_count: int = 0
+var _api_stars_earned: int = 0
 var _answered: bool = false
 var _busy: bool = false
 
@@ -200,6 +201,7 @@ func _on_option(_btn: Button, idx: int, selected: String) -> void:
 	var earned := int(result.get("points_earned", 0))
 	if result.get("submitted", false):
 		is_correct = bool(result.get("is_correct", fallback_correct))
+		_api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
 		if earned > 0:
 			_score += earned
 	elif fallback_correct:
@@ -233,6 +235,8 @@ func _next() -> void:
 		_show_question()
 
 func _show_summary() -> void:
+	if BackendReport.is_signed_in():
+		await BackendReport.refresh_progress_from_backend()
 	_answered = true
 	question_lbl.visible = false
 	options_vbox.visible = false
@@ -249,7 +253,7 @@ func _show_summary() -> void:
 	question_lbl.add_theme_font_size_override("font_size", 28)
 
 	var sub := Label.new()
-	sub.text = "Tổng điểm nhận được: +%d điểm" % _score
+	sub.text = "Phần thưởng từ hệ thống: +%d điểm · +%d sao" % [_score, _api_stars_earned]
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 18)
 	sub.add_theme_color_override("font_color", C_TEXT_MUT)

@@ -6,6 +6,7 @@ var lesson_id := 0
 var melodies: Array = []
 var melody_index := 0
 var score := 0
+var api_stars_earned := 0
 var started_at := ""
 var melody_staff: Control
 var options_box: Container
@@ -379,7 +380,9 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	if report != null and current_id > 0:
 		var round_score := current_max if correct else 0
 		var round_stars := _stars(round_score, current_max)
-		await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		var result: Dictionary = await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		if bool(result.get("submitted", false)):
+			api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
 	
 	# Disable all option buttons and highlight correct/incorrect
 	for child in grid.get_children():
@@ -402,10 +405,9 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	if melody_index + 1 >= melodies.size():
 		if progress_bar:
 			progress_bar.value = 100.0
-		var total_max := 0
-		for m in melodies:
-			total_max += _safe_int(m.get("max_score", 100), 100)
-		var stars := _stars(score, maxi(1, total_max))
+		if report != null and report.is_signed_in():
+			await report.refresh_progress_from_backend()
+		var stars := clampi(api_stars_earned, 0, 3)
 		_show_result("Giai điệu hoàn thành!", "Đáp án của bạn: %s · Đáp án đúng: %s" % [selected, expected], score, stars, _restart, 100.0 if correct else 0.0)
 		return
 		
@@ -587,6 +589,7 @@ func _note_equal(left: String, right: String) -> bool:
 func _restart() -> void:
 	melody_index = 0
 	score = 0
+	api_stars_earned = 0
 	next_button = null
 	_show_round()
 

@@ -589,9 +589,9 @@ func _va_success_prompt() -> void:
 
 func _on_complete() -> void:
 	video_stream_player.stop()
-	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
 	var lesson_id := SecureDataManager.active_lesson_id
-	SecureDataManager.complete_lesson(inst, lesson_id, 3) # Mark Intro completed with 3 stars securely!
+	# Xem video không tự hoàn thành bài và không tự cộng sao.
+	# Sao chỉ được ghi khi học viên hoàn thành toàn bộ bài và backend xác nhận.
 	SecureDataManager.video_completed = true
 	custom_video_path = ""
 	custom_subtitles = []
@@ -617,8 +617,6 @@ func _go_back() -> void:
 	video_stream_player.stop()
 	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
 	var lesson_id := SecureDataManager.active_lesson_id
-	if inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
-		SecureDataManager.complete_lesson("dan_bau", lesson_id, 3)
 	custom_video_path = ""
 	custom_subtitles = []
 	custom_video_sequence = []

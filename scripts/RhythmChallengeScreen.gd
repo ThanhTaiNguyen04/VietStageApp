@@ -10,6 +10,7 @@ var started_at_ms := 0
 var playing := false
 var countdown_active := false
 var score := 0
+var api_stars_earned := 0
 var hits := 0
 var accuracy_points := 0
 var status_label: Label
@@ -250,7 +251,9 @@ func _finish_round() -> void:
 	
 	var report := _report()
 	if report != null and current_id > 0:
-		await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		var result: Dictionary = await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		if bool(result.get("submitted", false)):
+			api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
 		
 	score += round_score
 	
@@ -260,10 +263,9 @@ func _finish_round() -> void:
 	var detail_text := "Đúng %d / %d phách · Accuracy %.0f%%" % [hits, beat_times.size(), _accuracy_percent()]
 	
 	if rhythm_index + 1 >= rhythms.size():
-		var total_max := 0
-		for r in rhythms:
-			total_max += _safe_int(r.get("max_score", 100), 100)
-		var final_stars := _stars(score, maxi(1, total_max))
+		if report != null and report.is_signed_in():
+			await report.refresh_progress_from_backend()
+		var final_stars := clampi(api_stars_earned, 0, 3)
 		_show_result("Nhịp điệu hoàn thành!", detail_text, score, final_stars, _restart, _accuracy_percent())
 		return
 		
@@ -296,6 +298,7 @@ func _finish_round() -> void:
 func _restart() -> void:
 	rhythm_index = 0
 	score = 0
+	api_stars_earned = 0
 	_build_intro()
 
 func _safe_int(val: Variant, default: int = 0) -> int:

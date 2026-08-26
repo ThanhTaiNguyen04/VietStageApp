@@ -91,7 +91,6 @@ static func load_data() -> void:
 
 static func sync_backend_progress(progress_list: Array) -> void:
 	_ensure_progress_containers()
-	_reset_backend_progress_cache()
 
 	for raw_item: Variant in progress_list:
 		if not raw_item is Dictionary:
@@ -105,14 +104,53 @@ static func sync_backend_progress(progress_list: Array) -> void:
 				str(item.get("title", "")),
 			])
 			continue
-		if not bool(item.get("completed", false)):
-			continue
-		_apply_backend_completion(
-			str(resolved["instrument"]),
-			str(resolved["node_id"]),
-			maxi(0, int(item.get("stars", 0)))
-		)
+		var instrument := str(resolved["instrument"])
+		var node_id := str(resolved["node_id"])
+		if bool(item.get("completed", false)):
+			_apply_backend_completion(instrument, node_id, maxi(0, int(item.get("stars", 0))))
+		else:
+			_remove_backend_completion(instrument, node_id)
 
+	save_data()
+
+
+## Chỉ gọi sau khi backend xác nhận hoàn thành bài.
+static func apply_confirmed_lesson_completion(
+	instrument: String,
+	local_lesson_id: String,
+	stars: int
+) -> void:
+	_ensure_progress_containers()
+	var normalized := _normalize_instrument_key(instrument)
+	if normalized.is_empty():
+		normalized = instrument
+	if not data["completed_lessons"].has(normalized):
+		data["completed_lessons"][normalized] = []
+	if not data["stars"].has(normalized):
+		data["stars"][normalized] = {}
+	if not data["unlocked_lessons"].has(normalized):
+		data["unlocked_lessons"][normalized] = ["Node1"]
+	_record_completed(normalized, local_lesson_id, maxi(0, stars))
+	var lesson_number := local_lesson_number(local_lesson_id)
+	if lesson_number > 0:
+		_unlock_lesson(normalized, "Node%d" % (lesson_number + 1))
+	save_data()
+
+
+## Đồng bộ ví sao/điểm từ response thưởng của backend.
+static func apply_backend_reward(reward_data: Dictionary) -> void:
+	if reward_data.has("totalStars"):
+		data["stars_total"] = maxi(0, int(reward_data.get("totalStars", 0)))
+	elif reward_data.has("total_stars"):
+		data["stars_total"] = maxi(0, int(reward_data.get("total_stars", 0)))
+	if reward_data.has("spendableStars"):
+		data["spendable_stars"] = maxi(0, int(reward_data.get("spendableStars", 0)))
+	elif reward_data.has("spendable_stars"):
+		data["spendable_stars"] = maxi(0, int(reward_data.get("spendable_stars", 0)))
+	if reward_data.has("totalPoints"):
+		data["xp"] = maxi(0, int(reward_data.get("totalPoints", 0)))
+	elif reward_data.has("total_points"):
+		data["xp"] = maxi(0, int(reward_data.get("total_points", 0)))
 	save_data()
 
 
@@ -205,6 +243,21 @@ static func _apply_backend_completion(instrument: String, node_id: String, stars
 	var node_number := int(node_id.trim_prefix("Node"))
 	if node_number >= 1 and node_number < 5:
 		_unlock_lesson(instrument, "Node%d" % (node_number + 1))
+
+
+static func _remove_backend_completion(instrument: String, node_id: String) -> void:
+	var local_ids: Array[String] = [node_id]
+	if instrument == "trong_chau":
+		var lesson_number := clampi(int(node_id.trim_prefix("Node")), 1, 3)
+		local_ids = [
+			"trong_chau_coban_%d_video" % lesson_number,
+			"trong_chau_coban_%d_practice" % lesson_number,
+		]
+	for local_id in local_ids:
+		if data["completed_lessons"].has(instrument):
+			data["completed_lessons"][instrument].erase(local_id)
+		if data["stars"].has(instrument):
+			data["stars"][instrument].erase(local_id)
 
 
 static func _record_completed(instrument: String, lesson_id: String, stars: int) -> void:
@@ -443,7 +496,7 @@ static func be_instrument_id(instrument_key: String) -> int:
 ## Số bài nội bộ từ local_lesson_id (NodeN, dan_*_bai_N_*, …) hoặc 0.
 static func local_lesson_number(local_lesson_id: String) -> int:
 	var matcher := RegEx.new()
-	matcher.compile("(?:Node|bai|bài|lesson)[ _-]*(\\d+)")
+	matcher.compile("(?:Node|bai|bài|lesson|coban|co_ban|cơ_bản)[ _-]*(\\d+)")
 	var result := matcher.search(str(local_lesson_id))
 	if result:
 		return int(result.get_string(1))

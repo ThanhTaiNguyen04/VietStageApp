@@ -1135,7 +1135,7 @@ func _finish_level1_lesson1_exercise() -> void:
 		record_btn.disabled = true
 	_set_level1_status("Hoàn thành 15 lượt! Nút 1 ngón cái, nút 2 ngón trỏ và nút 3 ngón giữa đều chính xác.", C_BLUE_OK)
 	SecureDataManager.record_practice_result(LEVEL1_LESSON1_ID, _score)
-	SecureDataManager.complete_lesson("dan_tranh", LEVEL1_LESSON1_ID, 3)
+	_sync_practice_to_backend("dan_tranh", LEVEL1_LESSON1_ID, {})
 	_speak_level1_prompt("Xuất sắc! Các bạn đã hoàn thành năm nốt bằng ngón cái, ngón trỏ và ngón giữa.", false)
 	_lesson1_focus_state = Lesson1FocusState.COMPLETED
 
@@ -2745,7 +2745,6 @@ func _finish_level1_sequence() -> void:
 	var passed := _score >= float(_level1_config["pass_score"])
 	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	if passed:
-		SecureDataManager.complete_lesson("dan_tranh", SecureDataManager.active_lesson_id, 3 if _score >= 90.0 else 2)
 		_sync_practice_to_backend("dan_tranh", SecureDataManager.active_lesson_id, _level1_config)
 	if _board:
 		_board.set_target(-1)
@@ -2767,7 +2766,7 @@ func _show_level1_result(passed: bool) -> void:
 	add_child(popup)
 	var pitch_accuracy := float(_level1_correct_count) / float(maxi(1, _level1_total_attempts)) * 100.0
 	var timing := _get_average_score(_level1_timing_scores, pitch_accuracy)
-	popup.setup_result(_score, pitch_accuracy, timing, 100.0 if passed else 70.0, 30 if passed else 0, "Bài tiếp theo" if passed else "Luyện lại")
+	popup.setup_result(_score, pitch_accuracy, timing, 100.0 if passed else 70.0, 0, "Sao và tiến trình đang chờ hệ thống xác nhận" if passed else "Chưa đạt yêu cầu")
 	var action := popup.get_node_or_null("CardContainer/MarginContainer/Content/ActionBtn") as Button
 	if action:
 		action.text = "Bài tiếp theo" if passed else "Luyện lại"
@@ -4024,7 +4023,6 @@ func _show_custom_result() -> void:
 	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	
 	if _score >= 70.0:
-		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id, {})
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
@@ -4032,13 +4030,7 @@ func _show_custom_result() -> void:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
 		
-		var next_lesson_name := "Khóa Học Tiếp"
-		if SecureDataManager.active_lesson_id == "Node2":
-			next_lesson_name = "Nhấn & Rung"
-		elif SecureDataManager.active_lesson_id == "Node3":
-			next_lesson_name = "Song Thanh"
-			
-		popup.setup_result(_score, 82.0, 71.0, 79.0, 80, "Đã mở khóa: " + next_lesson_name)
+		popup.setup_result(_score, 82.0, 71.0, 79.0, 0, "Sao và tiến trình đang chờ hệ thống xác nhận")
 
 func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_config: Dictionary) -> void:
 	if not BackendReport.is_signed_in():
@@ -4055,9 +4047,7 @@ func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_con
 		scores["pitch"] = accuracy
 		scores["rhythm"] = _get_average_score(_level1_timing_scores, accuracy)
 		scores["tonal_quality"] = 0.0
-	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, scores)
-	if not result.get("submitted", false):
-		push_warning("[PracticeRoom] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
+	BackendReport.report_practice_and_complete(inst, local_lesson_id, scores, _score)
 
 func _go_back() -> void:
 	var t := create_tween()

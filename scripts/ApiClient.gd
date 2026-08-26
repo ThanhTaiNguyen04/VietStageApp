@@ -241,6 +241,22 @@ func get_my_progress(instrument_id: int = 0, skill_level_id: int = 0) -> Diction
 func get_my_progress_summary() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USER_PROGRESS_SUMMARY), HTTPClient.METHOD_GET)
 
+## Hoàn thành một bài trong giáo trình. Backend quyết định sao và tiến trình.
+func complete_lesson_progress(
+	lesson_id: int,
+	client_attempt_id: String,
+	completed_at: String,
+	score: float = -1.0
+) -> Dictionary:
+	var payload := {
+		"clientAttemptId": client_attempt_id,
+		"completedAt": completed_at,
+	}
+	if score >= 0.0:
+		payload["score"] = score
+	var path := ApiRoutes.build(ApiRoutes.COMPLETE_LESSON % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_POST, payload)
+
 ## Lấy lịch sử biến động điểm/xu
 func get_point_transactions(user_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.USER_POINT_TRANSACTIONS % str(user_id))

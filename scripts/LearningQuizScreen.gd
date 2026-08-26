@@ -6,6 +6,7 @@ var quizzes: Array = []
 var question_index := 0
 var score := 0
 var correct_count := 0
+var api_stars_earned := 0
 var answered := false
 var question_card: PanelContainer # Reserved for compatibility, though we don't use it directly now
 var options_box: GridContainer
@@ -832,6 +833,7 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 	if bool(result.get("submitted", false)):
 		is_correct = bool(result.get("is_correct", fallback_correct))
 		earned_points = int(result.get("points_earned", 0))
+		api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
 		be_correct_answer = str(result.get("correct_answer", ""))
 
 	if is_correct:
@@ -890,7 +892,10 @@ func _show_quiz_result() -> void:
 	if floating_back_button:
 		floating_back_button.visible = false
 
-	var stars := _stars(score, maxi(1, quizzes.size() * 10))
+	var report := _report()
+	if report != null and report.is_signed_in():
+		await report.refresh_progress_from_backend()
+	var stars := clampi(api_stars_earned, 0, 3)
 	_show_result("Quiz hoàn thành!", "Bạn trả lời đúng %d / %d câu." % [correct_count, quizzes.size()], score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0)
 
 func _restart() -> void:
@@ -904,6 +909,7 @@ func _restart() -> void:
 	question_index = 0
 	score = 0
 	correct_count = 0
+	api_stars_earned = 0
 	_show_question()
 
 func _parse_options(raw: Variant) -> Array:

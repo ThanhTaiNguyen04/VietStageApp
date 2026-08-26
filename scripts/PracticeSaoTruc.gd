@@ -2141,7 +2141,6 @@ func _show_custom_result() -> void:
 	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	
 	if _score >= 70.0:
-		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id, stars)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
@@ -2152,26 +2151,18 @@ func _show_custom_result() -> void:
 		var r := randf_range(65, 90)
 		var t := clampf((_score * 3.0 - p - r), 60, 95)
 		
-		var next_lesson_name := "Khóa Học Tiếp"
-		if SecureDataManager.active_lesson_id == "Node2":
-			next_lesson_name = "Luyện Ngón"
-		elif SecureDataManager.active_lesson_id == "Node3":
-			next_lesson_name = "Nhấp Ngón"
-			
-		popup.setup_result(_score, p, r, t, 80, "Đã mở khóa: " + next_lesson_name)
+		popup.setup_result(_score, p, r, t, 0, "Sao và tiến trình đang chờ hệ thống xác nhận")
 
 func _sync_practice_to_backend(inst: String, local_lesson_id: String, _stars: int) -> void:
 	if not BackendReport.is_signed_in():
 		return
-	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+	BackendReport.report_practice_and_complete(inst, local_lesson_id, {
 		"pitch": _get_average_score(_pitch_scores, 80.0),
 		"rhythm": _last_rhythm_score,
 		"dynamics": 0.0,
 		"tonal_quality": 0.0,
 		"breath": _get_average_score(_breath_scores, 80.0),
-	})
-	if not result.get("submitted", false):
-		push_warning("[PracticeSaoTruc] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
+	}, _score)
 
 func _reset() -> void:
 	_note_idx = 0

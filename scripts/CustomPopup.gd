@@ -192,7 +192,7 @@ func setup_hint(title: String, body_text: String) -> void:
 	
 	action_btn.text = "Đã hiểu"
 
-func setup_result(score: float, pitch: float, rhythm: float, tech: float, reward_xp: int, next_lesson: String) -> void:
+func setup_result(score: float, pitch: float, rhythm: float, tech: float, _reward_xp: int, next_lesson: String) -> void:
 	title_lbl.text = "KẾT QUẢ LUYỆN TẬP"
 	
 	hint_scroll.visible = false
@@ -221,7 +221,7 @@ func setup_result(score: float, pitch: float, rhythm: float, tech: float, reward
 	rating_lbl.add_theme_color_override("font_color", rating_color)
 	
 	# Rewards text
-	rewards_lbl.text = "💎 +%d XP  ·  🔓 %s" % [reward_xp, next_lesson]
+	rewards_lbl.text = "☁ %s" % next_lesson
 	
 	# Progress Bars
 	pitch_bar.value = pitch

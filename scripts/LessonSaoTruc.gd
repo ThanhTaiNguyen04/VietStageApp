@@ -2485,7 +2485,6 @@ func _open_quiz() -> void:
 
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
-	SecureDataManager.complete_lesson(inst, active_node_id, 3)
 	_sync_practice_to_backend(inst, active_node_id)
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
@@ -2493,15 +2492,13 @@ func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
 	if not BackendReport.is_signed_in():
 		return
 	var acc := _lesson_accuracy
-	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+	BackendReport.report_practice_and_complete(inst, local_lesson_id, {
 		"pitch": acc,
 		"rhythm": acc,
 		"dynamics": 0.0,
 		"tonal_quality": 0.0,
 		"breath": acc,
-	})
-	if not result.get("submitted", false):
-		push_warning("[LessonSaoTruc] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
+	}, acc)
 
 func _on_retry():
 	get_tree().reload_current_scene()
