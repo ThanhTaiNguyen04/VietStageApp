@@ -163,6 +163,10 @@ static func sync_backend_summary(summary_data: Dictionary) -> void:
 	data["daily_streak"] = int(summary_data.get("current_streak", summary_data.get("currentStreak", data.get("daily_streak", 1))))
 	data["xp"] = int(summary_data.get("total_points", summary_data.get("totalPoints", data.get("xp", 0))))
 	data["stars_total"] = int(summary_data.get("total_stars", summary_data.get("totalStars", data.get("stars_total", 0))))
+	data["spendable_stars"] = int(summary_data.get(
+		"spendable_stars",
+		summary_data.get("spendableStars", data.get("spendable_stars", data.get("stars_total", 0)))
+	))
 	save_data()
 
 

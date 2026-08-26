@@ -286,7 +286,7 @@ func report_practice_and_complete(
 
 ## Nộp kết quả khi client đã chọn chính xác challenge từ BE.
 ## Dùng cho các màn chơi có nhiều challenge trong cùng một lesson.
-func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at: String = "", completed_at: String = "") -> Dictionary:
+func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: int, started_at: String = "", completed_at: String = "") -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	if minigame_id <= 0:
@@ -297,7 +297,7 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 	var response: Dictionary = await _api.submit_minigame_attempt(
 		minigame_id,
 		score,
-		stars,
+		_uuid(),
 		start_value,
 		complete_value
 	)
@@ -328,8 +328,7 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
-	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer)
-	print("[QuizSubmitRawDebug] raw response: ", response)
+	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer, _uuid())
 	if not _is_success(response):
 		return {
 			"submitted": false,

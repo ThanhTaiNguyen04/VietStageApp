@@ -121,10 +121,11 @@ func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Nộp đáp án câu hỏi trắc nghiệm
-func submit_quiz_attempt(quiz_id: int, selected_answer: String) -> Dictionary:
+func submit_quiz_attempt(quiz_id: int, selected_answer: String, client_attempt_id: String) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.QUIZ_ATTEMPTS % str(quiz_id))
 	return await request_json(path, HTTPClient.METHOD_POST, {
-		"selectedAnswer": selected_answer
+		"selectedAnswer": selected_answer,
+		"clientAttemptId": client_attempt_id,
 	})
 
 ## Lấy danh sách minigame của bài học
@@ -136,13 +137,13 @@ func get_lesson_minigames(lesson_id: int) -> Dictionary:
 func submit_minigame_attempt(
 	minigame_id: int,
 	score: int,
-	stars_earned: int,
+	client_attempt_id: String,
 	started_at: String,
 	completed_at: String
 ) -> Dictionary:
 	var payload := {
 		"score": score,
-		"starsEarned": stars_earned,
+		"clientAttemptId": client_attempt_id,
 		"startedAt": started_at,
 		"completedAt": completed_at,
 	}
