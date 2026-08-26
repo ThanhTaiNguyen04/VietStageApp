@@ -359,20 +359,20 @@ func admin_update_config(config_key: String, value: String) -> Dictionary:
 # ── COSMETICS APIs ────────────────────────────────────────────────────
 
 ## Lấy danh sách trang bị trong cửa hàng
-func get_all_cosmetics() -> Dictionary:
-	return await request_json(ApiRoutes.build(ApiRoutes.COSMETICS), HTTPClient.METHOD_GET)
+func get_all_cosmetics(item_type: String = "ROOM_DECOR") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.COSMETICS)
+	if not item_type.is_empty():
+		path += "?item_type=" + item_type.uri_encode()
+	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Lấy danh sách trang bị sở hữu
 func get_my_cosmetics() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.MY_COSMETICS), HTTPClient.METHOD_GET)
 
-## Mua vật phẩm (Unlock)
-func unlock_cosmetic(cosmetic_id: int) -> Dictionary:
-	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS)
-	var payload = {
-		"cosmeticId": cosmetic_id
-	}
-	return await request_json(path, HTTPClient.METHOD_POST, payload)
+## Mua vật phẩm. Backend cần triển khai contract này; OpenAPI hiện tại chưa có endpoint mua.
+func purchase_cosmetic(cosmetic_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS) + "/" + str(cosmetic_id) + "/purchase"
+	return await request_json(path, HTTPClient.METHOD_POST, {})
 
 ## Trang bị / Tháo bỏ vật phẩm trang trí
 func equip_cosmetic(cosmetic_id: int, is_equipped: bool) -> Dictionary:

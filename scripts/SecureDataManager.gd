@@ -338,9 +338,10 @@ static func is_instrument_unlocked(instrument: String) -> bool:
 	return false
 
 static func get_total_stars() -> int:
-	if data.get("user_email", "").to_lower() == "student1@fpt.edu.vn":
-		return 9999
-
+	# Dùng tổng sao do backend đồng bộ làm nguồn chính. Chỉ cộng dữ liệu bài học
+	# cục bộ khi chưa từng nhận được summary (chế độ offline).
+	if data.has("stars_total"):
+		return maxi(0, int(data.get("stars_total", 0)))
 	var total := 0
 	if data.has("stars"):
 		for inst in data.stars.keys():

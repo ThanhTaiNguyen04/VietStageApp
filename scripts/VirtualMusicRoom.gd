@@ -1,5 +1,7 @@
 extends Control
 
+const AppConfig = preload("res://scripts/AppConfig.gd")
+
 # ─── Color Palette (Traditional Vietnamese Jade Green & Gold Theme) ───────────
 const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige for sidebar
 const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
@@ -135,6 +137,11 @@ var _api_client = null
 var _cosmetics_all: Array = []
 var _cosmetics_owned: Array = []
 var _cosmetics_locked: Array = []
+var _cosmetic_textures: Dictionary = {}
+var _cosmetic_texture_requests: Dictionary = {}
+var _cosmetic_actions_pending: Dictionary = {}
+var _shop_status_message: String = ""
+var _shop_status_is_error: bool = false
 var _instruments_data: Dictionary = {
 	"tranh": {
 		"name": "Đàn Tranh",
@@ -2556,44 +2563,69 @@ func _fetch_cosmetics_data() -> void:
 	_cosmetics_locked = []
 	
 	if BackendReport.is_signed_in():
-		var response = await _api_client.get_all_cosmetics()
+		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
 		if _api_client._is_success(response):
-			_cosmetics_all = response.get("body", {}).get("data", [])
+			_cosmetics_all = _filter_room_decor_items(response.get("body", {}).get("data", []))
 			
 		var my_response = await _api_client.get_my_cosmetics()
 		if _api_client._is_success(my_response):
 			var body = my_response.get("body", {}).get("data", {})
-			_cosmetics_owned = body.get("owned", [])
-			_cosmetics_locked = body.get("locked", [])
-			
-			# Respect local active list for equipped states
-			if not SecureDataManager.data.has("active_decorations_synced"):
-				var active = []
-				for item in _cosmetics_owned:
-					if item.get("isEquipped", item.get("is_equipped", false)):
-						active.append(_get_draw_key(item))
-				SecureDataManager.data["active_decorations"] = active
-				SecureDataManager.data["active_decorations_synced"] = true
-				SecureDataManager.save_data()
-			
-			var active = SecureDataManager.data.get("active_decorations", [])
+			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []))
+			_cosmetics_locked = _filter_room_decor_items(body.get("locked", []))
+
+			# Backend là nguồn chính cho trạng thái trang bị; local chỉ là cache offline.
+			var active: Array = []
 			for item in _cosmetics_owned:
-				var m_key = _get_draw_key(item)
-				item["isEquipped"] = active.has(m_key)
+				if bool(item.get("isEquipped", item.get("is_equipped", false))):
+					active.append(_get_cosmetic_key(item))
+			SecureDataManager.data["active_decorations"] = active
+			SecureDataManager.save_data()
+		else:
+			_set_shop_status(_api_client.error_message(my_response, "Không thể tải vật phẩm đã sở hữu."), true)
 	else:
-		# Chưa đăng nhập: Tải danh sách vật phẩm công khai từ GET /api/cosmetics
-		var response = await _api_client.get_all_cosmetics()
+		# Nếu backend bảo vệ catalog bằng Bearer token, người chưa đăng nhập sẽ thấy yêu cầu đăng nhập.
+		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
 		if _api_client._is_success(response):
-			var all_items = response.get("body", {}).get("data", [])
+			var all_items = _filter_room_decor_items(response.get("body", {}).get("data", []))
 			_cosmetics_all = all_items
 			_cosmetics_locked = all_items
+		else:
+			_set_shop_status("Đăng nhập để xem và sử dụng cửa hàng trang trí.", true)
+
+	for cosmetic in _cosmetics_all + _cosmetics_owned + _cosmetics_locked:
+		_queue_cosmetic_texture(cosmetic)
 			
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_spawn_decorations()
 	if shop_popup and shop_popup.visible:
 		_update_shop_items()
 
-func _get_draw_key(item: Dictionary) -> String:
+func _filter_room_decor_items(value: Variant) -> Array:
+	var source: Array = []
+	if value is Array:
+		source = value
+	elif value is Dictionary:
+		var nested = value.get("content", value.get("items", []))
+		if nested is Array:
+			source = nested
+	var result: Array = []
+	for entry in source:
+		if not entry is Dictionary:
+			continue
+		var item := entry as Dictionary
+		var item_type := str(item.get("itemType", item.get("item_type", "ROOM_DECOR")))
+		var status := str(item.get("status", "ACTIVE"))
+		if item_type == "ROOM_DECOR" and status != "INACTIVE":
+			result.append(item)
+	return result
+
+func _get_cosmetic_key(item: Dictionary) -> String:
+	var cosmetic_id := int(item.get("id", 0))
+	if cosmetic_id > 0:
+		return "cosmetic_%d" % cosmetic_id
+	return "cosmetic_%d" % str(item.get("assetUrl", item.get("name", "unknown"))).hash()
+
+func _get_legacy_decor_key(item: Dictionary) -> String:
 	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).to_lower()
 	var raw_name := str(item.get("name", ""))
 	var item_name := raw_name.to_lower()
@@ -2636,7 +2668,111 @@ func _get_draw_key(item: Dictionary) -> String:
 		return "binhsen"
 	elif "tranh" in item_name or "painting" in item_name:
 		return "tranh"
-	return "tranh"
+	return ""
+
+func _get_cosmetic_asset_url(item: Dictionary) -> String:
+	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).strip_edges()
+	if asset_url.is_empty() or asset_url.begins_with("res://") or asset_url.begins_with("user://"):
+		return asset_url
+	if asset_url.begins_with("http://") or asset_url.begins_with("https://"):
+		return asset_url
+	var base_url := AppConfig.get_api_base_url().trim_suffix("/")
+	if not asset_url.begins_with("/"):
+		asset_url = "/" + asset_url
+	return base_url + asset_url
+
+func _queue_cosmetic_texture(item: Dictionary) -> void:
+	var key := _get_cosmetic_key(item)
+	if _cosmetic_textures.has(key) or _cosmetic_texture_requests.has(key):
+		return
+	var asset_url := _get_cosmetic_asset_url(item)
+	if asset_url.is_empty():
+		return
+	if asset_url.begins_with("res://") or asset_url.begins_with("user://"):
+		if ResourceLoader.exists(asset_url):
+			var texture := load(asset_url) as Texture2D
+			if texture:
+				_cosmetic_textures[key] = texture
+		return
+	if not asset_url.begins_with("http://") and not asset_url.begins_with("https://"):
+		return
+
+	var request := HTTPRequest.new()
+	request.timeout = AppConfig.get_api_timeout_seconds()
+	add_child(request)
+	_cosmetic_texture_requests[key] = request
+	request.request_completed.connect(_on_cosmetic_texture_loaded.bind(key, asset_url, request))
+	var request_error := request.request(asset_url)
+	if request_error != OK:
+		_cosmetic_texture_requests.erase(key)
+		request.queue_free()
+
+func _on_cosmetic_texture_loaded(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+	key: String,
+	asset_url: String,
+	request: HTTPRequest
+) -> void:
+	_cosmetic_texture_requests.erase(key)
+	if is_instance_valid(request):
+		request.queue_free()
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
+		return
+
+	var image := Image.new()
+	var extension := asset_url.get_slice("?", 0).get_extension().to_lower()
+	var load_error := ERR_FILE_UNRECOGNIZED
+	match extension:
+		"png": load_error = image.load_png_from_buffer(body)
+		"jpg", "jpeg": load_error = image.load_jpg_from_buffer(body)
+		"webp": load_error = image.load_webp_from_buffer(body)
+	if load_error != OK:
+		load_error = image.load_png_from_buffer(body)
+	if load_error != OK:
+		load_error = image.load_jpg_from_buffer(body)
+	if load_error != OK:
+		load_error = image.load_webp_from_buffer(body)
+	if load_error != OK or image.is_empty():
+		return
+
+	_cosmetic_textures[key] = ImageTexture.create_from_image(image)
+	for child in room_content.get_children():
+		if str(child.name).begins_with("Decor_"):
+			child.queue_redraw()
+	if shop_popup and shop_popup.visible:
+		_update_shop_items()
+
+func _get_legacy_decor_texture(legacy_key: String) -> Texture2D:
+	match legacy_key:
+		"chausen": return _tex_decor_chausen
+		"bantra": return _tex_decor_bantra
+		"tranh": return _tex_decor_tranh
+		"quat": return _tex_decor_quat
+		"denlong": return _tex_decor_denlong
+		"denda": return _tex_decor_denda
+		"chuonggio": return _tex_decor_chuonggio
+		"binhsen": return _tex_decor_binhsen
+	return null
+
+func _get_cosmetic_texture(item: Dictionary) -> Texture2D:
+	var key := _get_cosmetic_key(item)
+	if _cosmetic_textures.has(key):
+		return _cosmetic_textures[key] as Texture2D
+	return _get_legacy_decor_texture(_get_legacy_decor_key(item))
+
+func _set_shop_status(message: String, is_error: bool = false) -> void:
+	_shop_status_message = message
+	_shop_status_is_error = is_error
+	if not shop_popup:
+		return
+	var label := shop_popup.get_node_or_null("ScrollPanel/ScrollContent/ShopStatusLabel") as Label
+	if label:
+		label.text = message
+		label.visible = not message.is_empty()
+		label.add_theme_color_override("font_color", Color(0.75, 0.16, 0.12) if is_error else C_JADE)
 
 func _fetch_instruments_data() -> void:
 	if _api_client == null:
@@ -2810,18 +2946,23 @@ func _spawn_decorations() -> void:
 			c.queue_free()
 			
 	for item in _cosmetics_owned:
-		if item.get("isEquipped", false):
-			var item_id = _get_draw_key(item)
+		if bool(item.get("isEquipped", item.get("is_equipped", false))):
+			var item_key := _get_cosmetic_key(item)
+			var legacy_key := _get_legacy_decor_key(item)
 			var ctrl := Control.new()
 			ctrl.name = "Decor_" + str(item.get("id"))
 			ctrl.mouse_filter = Control.MOUSE_FILTER_STOP
-			ctrl.gui_input.connect(_on_decor_gui_input.bind(ctrl, item_id))
+			ctrl.gui_input.connect(_on_decor_gui_input.bind(ctrl, item_key))
 			
 			var saved_positions = SecureDataManager.data.get("decor_positions", {})
-			var has_saved = saved_positions.has(item_id)
+			var has_saved = saved_positions.has(item_key)
+			# Một lần tương thích với dữ liệu vị trí cũ từng lưu bằng tên hard-code.
+			if not has_saved and not legacy_key.is_empty() and saved_positions.has(legacy_key):
+				saved_positions[item_key] = saved_positions[legacy_key]
+				has_saved = true
 			
 			# Define sizes and positions for room layout
-			match item_id:
+			match legacy_key:
 				"chausen":
 					ctrl.position = Vector2(65, 469)
 					ctrl.size = Vector2(200, 200)
@@ -2847,16 +2988,20 @@ func _spawn_decorations() -> void:
 					ctrl.position = Vector2(1080, 400)
 					ctrl.size = Vector2(120, 250)
 				_:
-					ctrl.position = Vector2(0, 0)
-					ctrl.size = Vector2(100, 100)
+					var slot := maxi(0, int(item.get("id", 0)))
+					ctrl.position = Vector2(90 + (slot % 4) * 250, 165 + (int(slot / 4) % 2) * 300)
+					ctrl.size = Vector2(180, 180)
 					
 			if has_saved:
-				var pos = saved_positions[item_id]
-				ctrl.position = Vector2(pos.x, pos.y)
+				var pos = saved_positions[item_key]
+				if pos is Dictionary:
+					ctrl.position = Vector2(float(pos.get("x", ctrl.position.x)), float(pos.get("y", ctrl.position.y)))
+				elif pos is Vector2:
+					ctrl.position = pos
 				
 			ctrl.pivot_offset = ctrl.size / 2.0
 			room_content.add_child(ctrl)
-			ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id, false))
+			ctrl.draw.connect(_draw_decor_node.bind(ctrl, item, false))
 	
 	_sort_room_elements()
 
@@ -2920,11 +3065,8 @@ func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> v
 				var t = create_tween()
 				t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.1)
 
-func _draw_decor_node(c: Control, item_id: String, in_shop: bool = false) -> void:
-	var scale := 1.0
-	if item_id == "bronze_drum" and not in_shop:
-		scale = 3.5
-	_draw_decor_item(c, item_id, scale)
+func _draw_decor_node(c: Control, item: Dictionary, _in_shop: bool = false) -> void:
+	_draw_decor_item(c, item)
 
 func _draw_ellipse_poly(c: Control, center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:
 	var pts := PackedVector2Array()
@@ -2943,21 +3085,14 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 	c.draw_polyline(pts, color, width, true)
 
 func _load_decor_texture(path: String) -> Texture2D:
+	if not ResourceLoader.exists(path):
+		return null
 	return load(path) as Texture2D
 
 
-func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
+func _draw_decor_item(c: Control, item: Dictionary, size_scale: float = 1.0) -> void:
 	var sz := c.size
-	var tex: Texture2D = null
-	match item_id:
-		"chausen": tex = _tex_decor_chausen
-		"bantra": tex = _tex_decor_bantra
-		"tranh": tex = _tex_decor_tranh
-		"quat": tex = _tex_decor_quat
-		"denlong": tex = _tex_decor_denlong
-		"denda": tex = _tex_decor_denda
-		"chuonggio": tex = _tex_decor_chuonggio
-		"binhsen": tex = _tex_decor_binhsen
+	var tex := _get_cosmetic_texture(item)
 	if tex:
 		var tex_size = tex.get_size()
 		var scale_x = sz.x / tex_size.x
@@ -3082,6 +3217,18 @@ func _setup_shop_popup() -> void:
 	if _font_body_bold:
 		stars_val_label.add_theme_font_override("font", _font_body_bold)
 	stars_container.add_child(stars_val_label)
+
+	var status_label := Label.new()
+	status_label.name = "ShopStatusLabel"
+	status_label.text = _shop_status_message
+	status_label.visible = not _shop_status_message.is_empty()
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	status_label.add_theme_font_size_override("font_size", 13)
+	status_label.add_theme_color_override("font_color", Color(0.75, 0.16, 0.12) if _shop_status_is_error else C_JADE)
+	if _font_body_bold:
+		status_label.add_theme_font_override("font", _font_body_bold)
+	scroll_content.add_child(status_label)
 	
 	var shop_scroll := ScrollContainer.new()
 	shop_scroll.name = "ShopScroll"
@@ -3116,50 +3263,52 @@ func _setup_shop_popup() -> void:
 	)
 
 func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
-	var cosmetic_id = int(item.get("id", 0))
+	var cosmetic_id := int(item.get("id", 0))
 	if cosmetic_id == 0:
 		return
-	
+	if not BackendReport.is_signed_in():
+		_set_shop_status("Bạn cần đăng nhập để mua hoặc trang bị vật phẩm.", true)
+		return
+	if _cosmetic_actions_pending.has(cosmetic_id):
+		return
+
+	_cosmetic_actions_pending[cosmetic_id] = true
+	_set_shop_status("Đang cập nhật vật phẩm...", false)
+	_update_shop_items()
+
 	if not owned:
-		var success = false
-		var cost = int(item.get("unlockValue", 0))
-		var item_key = _get_draw_key(item)
-		if SecureDataManager.unlock_decoration(item_key, cost):
-			if SecureDataManager.data.has("stars") and SecureDataManager.data["stars"].has("test"):
-				SecureDataManager.data["stars"]["test"]["free"] = max(0, SecureDataManager.data["stars"]["test"]["free"] - cost)
+		var purchase_response = await _api_client.purchase_cosmetic(cosmetic_id)
+		if _api_client._is_success(purchase_response):
+			var purchase_data = purchase_response.get("body", {}).get("data", {})
+			if purchase_data is Dictionary:
+				if purchase_data.has("remainingStars"):
+					SecureDataManager.data["stars_total"] = int(purchase_data.get("remainingStars", 0))
+				elif purchase_data.has("remaining_stars"):
+					SecureDataManager.data["stars_total"] = int(purchase_data.get("remaining_stars", 0))
 				SecureDataManager.save_data()
-			success = true
-		if success:
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
+			_set_shop_status("Đã mở khóa %s." % str(item.get("name", "vật phẩm")), false)
 			_update_star_badge()
-			_fetch_cosmetics_data()
-			_update_shop_items()
-	else:
-		var is_equipped = item.get("isEquipped", false)
-		var item_key = _get_draw_key(item)
-		if not is_equipped:
-			if not SecureDataManager.data.has("active_decorations"):
-				SecureDataManager.data["active_decorations"] = []
-			if not SecureDataManager.data["active_decorations"].has(item_key):
-				SecureDataManager.data["active_decorations"].append(item_key)
+			await _fetch_cosmetics_data()
 		else:
-			if SecureDataManager.data.has("active_decorations"):
-				SecureDataManager.data["active_decorations"].erase(item_key)
-		SecureDataManager.save_data()
-		_fetch_cosmetics_data()
-		_update_shop_items()
+			var status := int(purchase_response.get("status", 0))
+			var fallback := "Máy chủ chưa hỗ trợ mua vật phẩm." if status == 404 or status == 405 else "Không thể mở khóa vật phẩm."
+			_set_shop_status(_api_client.error_message(purchase_response, fallback), true)
+	else:
+		var is_equipped := bool(item.get("isEquipped", item.get("is_equipped", false)))
+		var equip_response = await _api_client.equip_cosmetic(cosmetic_id, not is_equipped)
+		if _api_client._is_success(equip_response):
+			_set_shop_status("Đã %s %s." % ["cất" if is_equipped else "trưng bày", str(item.get("name", "vật phẩm"))], false)
+			await _fetch_cosmetics_data()
+		else:
+			_set_shop_status(_api_client.error_message(equip_response, "Không thể cập nhật trạng thái trang bị."), true)
+
+	_cosmetic_actions_pending.erase(cosmetic_id)
+	_update_shop_items()
 
 func _update_shop_items() -> void:
-	if SecureDataManager.get_total_stars() < 9999:
-		if not SecureDataManager.data.has("stars"):
-			SecureDataManager.data["stars"] = {}
-		if not SecureDataManager.data["stars"].has("test"):
-			SecureDataManager.data["stars"]["test"] = {}
-		SecureDataManager.data["stars"]["test"]["free"] = 9999
-		SecureDataManager.save_data()
-	
 	var stars = SecureDataManager.get_total_stars()
 	var stars_val_label = shop_popup.get_node_or_null("ScrollPanel/ScrollContent/StarsContainer/StarsValLabel") as Label
 	if stars_val_label:
@@ -3184,7 +3333,6 @@ func _update_shop_items() -> void:
 		grid.add_child(card)
 
 func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContainer:
-	var item_id = _get_draw_key(item)
 	var name = item.get("name", "Vật phẩm")
 	var cost = int(item.get("unlockValue", 3))
 	var desc = item.get("description", "Vật phẩm trang trí cho phòng nhạc.")
@@ -3223,21 +3371,12 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(preview)
 	
-	var tex: Texture2D = null
-	match item_id:
-		"chausen": tex = _tex_decor_chausen
-		"bantra": tex = _tex_decor_bantra
-		"tranh": tex = _tex_decor_tranh
-		"quat": tex = _tex_decor_quat
-		"denlong": tex = _tex_decor_denlong
-		"denda": tex = _tex_decor_denda
-		"chuonggio": tex = _tex_decor_chuonggio
-		"binhsen": tex = _tex_decor_binhsen
+	var tex := _get_cosmetic_texture(item)
 		
 	if tex != null:
 		preview.texture = tex
 	else:
-		preview.draw.connect(_draw_decor_node.bind(preview, item_id, true))
+		preview.draw.connect(_draw_decor_node.bind(preview, item, true))
 	
 	var vbox := VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3297,7 +3436,17 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	vbox.add_child(btn)
 	_make_btn_bouncy(btn)
 	
-	if not owned:
+	var cosmetic_id := int(item.get("id", 0))
+	var is_pending := _cosmetic_actions_pending.has(cosmetic_id)
+	if is_pending:
+		btn.text = "ĐANG XỬ LÝ..."
+		_style_disabled_button(btn)
+		btn.disabled = true
+	elif not BackendReport.is_signed_in():
+		btn.text = "ĐĂNG NHẬP ĐỂ MỞ KHÓA"
+		_style_disabled_button(btn)
+		btn.disabled = true
+	elif not owned:
 		btn.text = "MỞ KHÓA"
 		if stars >= cost:
 			_style_primary_btn(btn)
