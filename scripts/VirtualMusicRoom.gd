@@ -87,14 +87,6 @@ var _tex_linh_walk_up_left : Texture2D
 var _tex_linh_walk_up_right : Texture2D
 var _tex_player : Texture2D
 var _tex_wall : Texture2D
-var _tex_decor_chausen : Texture2D
-var _tex_decor_bantra : Texture2D
-var _tex_decor_tranh : Texture2D
-var _tex_decor_quat : Texture2D
-var _tex_decor_denlong : Texture2D
-var _tex_decor_denda : Texture2D
-var _tex_decor_chuonggio : Texture2D
-var _tex_decor_binhsen : Texture2D
 var _linh_walk_direction : String = "down"
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
@@ -203,14 +195,6 @@ func _ready() -> void:
 	
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
-	_tex_decor_chausen = _load_decor_texture("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png")
-	_tex_decor_bantra = _load_decor_texture("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png")
-	_tex_decor_tranh = _load_decor_texture("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png")
-	_tex_decor_quat = _load_decor_texture("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png")
-	_tex_decor_denlong = _load_decor_texture("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png")
-	_tex_decor_denda = _load_decor_texture("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png")
-	_tex_decor_chuonggio = _load_decor_texture("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png")
-	_tex_decor_binhsen = _load_decor_texture("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png")
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -2683,61 +2667,11 @@ func _get_cosmetic_key(item: Dictionary) -> String:
 		return "cosmetic_%d" % cosmetic_id
 	return "cosmetic_%d" % str(item.get("assetUrl", item.get("name", "unknown"))).hash()
 
-func _get_legacy_decor_key(item: Dictionary) -> String:
-	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).to_lower()
-	var raw_name := str(item.get("name", ""))
-	var item_name := raw_name.to_lower()
-	
-	# Match theo UUID hash filenames
-	if "277822b0" in asset_url: return "chausen"
-	elif "53b2828a" in asset_url: return "bantra"
-	elif "6a00c552" in asset_url: return "tranh"
-	elif "70833c90" in asset_url: return "quat"
-	elif "7f2fca74" in asset_url or "denlong" in asset_url: return "denlong"
-	elif "98fada3c" in asset_url or "denda" in asset_url: return "denda"
-	elif "a39c0e84" in asset_url or "chuonggio" in asset_url: return "chuonggio"
-	elif "a5f93c96" in asset_url or "binhsen" in asset_url: return "binhsen"
-	
-	# Match theo keyword trong assetUrl
-	if "chausen" in asset_url: return "chausen"
-	elif "bantra" in asset_url: return "bantra"
-	elif "tranh" in asset_url: return "tranh"
-	elif "quat" in asset_url: return "quat"
-	elif "denda" in asset_url: return "denda"
-	elif "chuonggio" in asset_url: return "chuonggio"
-	elif "binhsen" in asset_url: return "binhsen"
-	
-	# Match theo tên tiếng Việt (cả hoa, thường, có dấu hoặc không dấu)
-	if "sen" in item_name and ("chậu" in item_name or "chau" in item_name or "nhỏ" in item_name or "nho" in item_name or "chậu sen" in raw_name.to_lower()):
-		return "chausen"
-	elif "bàn trà" in item_name or "ban tra" in item_name or "trà" in item_name or "tra" in item_name:
-		return "bantra"
-	elif "quạt" in item_name or "quat" in item_name:
-		return "quat"
-	elif "lồng" in item_name or "long" in item_name or "đèn lồng" in item_name or "den long" in item_name or "đèn" in item_name or "den" in item_name:
-		if "đá" in item_name or "da" in item_name:
-			return "denda"
-		return "denlong"
-	elif "đá" in item_name or "da" in item_name:
-		return "denda"
-	elif "chuông" in item_name or "chuong" in item_name or "gió" in item_name or "gio" in item_name:
-		return "chuonggio"
-	elif "bình sen" in item_name or "binh sen" in item_name or "bình" in item_name or "binh" in item_name:
-		return "binhsen"
-	elif "tranh" in item_name or "painting" in item_name:
-		return "tranh"
-	return ""
-
 func _get_cosmetic_asset_url(item: Dictionary) -> String:
 	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).strip_edges()
-	if asset_url.is_empty() or asset_url.begins_with("res://") or asset_url.begins_with("user://"):
-		return asset_url
 	if asset_url.begins_with("http://") or asset_url.begins_with("https://"):
 		return asset_url
-	var base_url := AppConfig.get_api_base_url().trim_suffix("/")
-	if not asset_url.begins_with("/"):
-		asset_url = "/" + asset_url
-	return base_url + asset_url
+	return ""
 
 func _queue_cosmetic_texture(item: Dictionary) -> void:
 	var key := _get_cosmetic_key(item)
@@ -2745,12 +2679,6 @@ func _queue_cosmetic_texture(item: Dictionary) -> void:
 		return
 	var asset_url := _get_cosmetic_asset_url(item)
 	if asset_url.is_empty():
-		return
-	if asset_url.begins_with("res://") or asset_url.begins_with("user://"):
-		if ResourceLoader.exists(asset_url):
-			var texture := load(asset_url) as Texture2D
-			if texture:
-				_cosmetic_textures[key] = texture
 		return
 	if not asset_url.begins_with("http://") and not asset_url.begins_with("https://"):
 		return
@@ -2803,23 +2731,11 @@ func _on_cosmetic_texture_loaded(
 	if shop_popup and shop_popup.visible:
 		_update_shop_items()
 
-func _get_legacy_decor_texture(legacy_key: String) -> Texture2D:
-	match legacy_key:
-		"chausen": return _tex_decor_chausen
-		"bantra": return _tex_decor_bantra
-		"tranh": return _tex_decor_tranh
-		"quat": return _tex_decor_quat
-		"denlong": return _tex_decor_denlong
-		"denda": return _tex_decor_denda
-		"chuonggio": return _tex_decor_chuonggio
-		"binhsen": return _tex_decor_binhsen
-	return null
-
 func _get_cosmetic_texture(item: Dictionary) -> Texture2D:
 	var key := _get_cosmetic_key(item)
 	if _cosmetic_textures.has(key):
 		return _cosmetic_textures[key] as Texture2D
-	return _get_legacy_decor_texture(_get_legacy_decor_key(item))
+	return null
 
 func _set_shop_status(message: String, is_error: bool = false) -> void:
 	_shop_status_message = message
@@ -2995,6 +2911,29 @@ func _update_star_badge() -> void:
 	if label:
 		label.text = "%d" % SecureDataManager.get_spendable_stars()
 
+
+func _default_cosmetic_size(item: Dictionary) -> Vector2:
+	var max_side := minf(room_content.size.x, room_content.size.y) * 0.22
+	var texture := _get_cosmetic_texture(item)
+	if texture == null or texture.get_height() <= 0:
+		return Vector2(max_side, max_side)
+	var aspect := float(texture.get_width()) / float(texture.get_height())
+	if aspect >= 1.0:
+		return Vector2(max_side, max_side / aspect)
+	return Vector2(max_side * aspect, max_side)
+
+
+func _default_cosmetic_position(index: int, decor_size: Vector2) -> Vector2:
+	var margin := minf(room_content.size.x, room_content.size.y) * 0.08
+	var cell_size := minf(room_content.size.x, room_content.size.y) * 0.28
+	var columns := maxi(1, int((room_content.size.x - margin * 2.0) / cell_size))
+	var column := index % columns
+	var row := int(index / columns)
+	return Vector2(
+		margin + column * cell_size + (cell_size - decor_size.x) * 0.5,
+		margin + row * cell_size + (cell_size - decor_size.y) * 0.5
+	)
+
 func _spawn_decorations() -> void:
 	# Clear old decorations first
 	var children = room_content.get_children()
@@ -3003,10 +2942,10 @@ func _spawn_decorations() -> void:
 			room_content.remove_child(c)
 			c.queue_free()
 			
+	var equipped_index := 0
 	for item in _cosmetics_owned:
 		if bool(item.get("isEquipped", item.get("is_equipped", false))):
 			var item_key := _get_cosmetic_key(item)
-			var legacy_key := _get_legacy_decor_key(item)
 			var ctrl := Control.new()
 			ctrl.name = "Decor_" + str(item.get("id"))
 			ctrl.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -3014,41 +2953,9 @@ func _spawn_decorations() -> void:
 			
 			var saved_positions = SecureDataManager.data.get("decor_positions", {})
 			var has_saved = saved_positions.has(item_key)
-			# Một lần tương thích với dữ liệu vị trí cũ từng lưu bằng tên hard-code.
-			if not has_saved and not legacy_key.is_empty() and saved_positions.has(legacy_key):
-				saved_positions[item_key] = saved_positions[legacy_key]
-				has_saved = true
-			
-			# Define sizes and positions for room layout
-			match legacy_key:
-				"chausen":
-					ctrl.position = Vector2(65, 469)
-					ctrl.size = Vector2(200, 200)
-				"bantra":
-					ctrl.position = Vector2(899, 512)
-					ctrl.size = Vector2(250, 200)
-				"tranh":
-					ctrl.position = Vector2(60, 180)
-					ctrl.size = Vector2(300, 200)
-				"quat":
-					ctrl.position = Vector2(850, 180)
-					ctrl.size = Vector2(300, 200)
-				"denlong":
-					ctrl.position = Vector2(130, -20)
-					ctrl.size = Vector2(150, 250)
-				"denda":
-					ctrl.position = Vector2(40, 610)
-					ctrl.size = Vector2(120, 200)
-				"chuonggio":
-					ctrl.position = Vector2(920, -20)
-					ctrl.size = Vector2(150, 250)
-				"binhsen":
-					ctrl.position = Vector2(1080, 400)
-					ctrl.size = Vector2(120, 250)
-				_:
-					var slot := maxi(0, int(item.get("id", 0)))
-					ctrl.position = Vector2(90 + (slot % 4) * 250, 165 + (int(slot / 4) % 2) * 300)
-					ctrl.size = Vector2(180, 180)
+			ctrl.size = _default_cosmetic_size(item)
+			ctrl.position = _default_cosmetic_position(equipped_index, ctrl.size)
+			equipped_index += 1
 					
 			if has_saved:
 				var pos = saved_positions[item_key]
@@ -3150,12 +3057,6 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 		var angle = float(i) * TAU / steps
 		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
 	c.draw_polyline(pts, color, width, true)
-
-func _load_decor_texture(path: String) -> Texture2D:
-	if not ResourceLoader.exists(path):
-		return null
-	return load(path) as Texture2D
-
 
 func _draw_decor_item(c: Control, item: Dictionary, size_scale: float = 1.0) -> void:
 	var sz := c.size
