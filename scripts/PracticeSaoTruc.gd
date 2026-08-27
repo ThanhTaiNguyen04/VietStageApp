@@ -720,7 +720,7 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed:
 			var chat = AIChatPopup.new()
 			add_child(chat)
-			chat.open_chat("sao_truc")
+			chat.open_chat("sao_truc", {"screenContext": "lesson_practice"})
 	)
 	
 	# Introduction overlay bypassed per user request to start clean practice instantly

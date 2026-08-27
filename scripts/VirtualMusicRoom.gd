@@ -856,7 +856,7 @@ func _on_char_linh_gui_input(e: InputEvent) -> void:
 			_audio_manager.audio_player.stop()
 		var chat = AIChatPopup.new()
 		$HUD.add_child(chat)
-		chat.open_chat("general")
+		chat.open_chat("general", {"screenContext": "virtual_music_room", "lessonCode": "", "levelCode": ""})
 
 
 

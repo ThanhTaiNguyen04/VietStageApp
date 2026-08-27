@@ -643,7 +643,7 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed:
 			var chat = AIChatPopup.new()
 			add_child(chat)
-			chat.open_chat("dan_tranh")
+			chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
 	)
 	
 	# Add Layout toggle button

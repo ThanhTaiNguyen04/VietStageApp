@@ -293,7 +293,7 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed:
 			var chat = AIChatPopup.new()
 			add_child(chat)
-			chat.open_chat("dan_bau")
+			chat.open_chat("dan_bau", {"screenContext": "lesson_practice"})
 	)
 
 func _process(delta: float) -> void:
@@ -1433,7 +1433,7 @@ func _setup_collapsible_linh() -> void:
 	linh_mini_btn.pressed.connect(func():
 		var chat = AIChatPopup.new()
 		add_child(chat)
-		chat.open_chat("dan_bau")
+		chat.open_chat("dan_bau", {"screenContext": "lesson_practice"})
 	)
 	_make_button_bouncy(linh_mini_btn)
 	_update_linh_visibility()

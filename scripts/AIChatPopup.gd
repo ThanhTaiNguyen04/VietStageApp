@@ -28,6 +28,7 @@ var ai_status_lbl : Label
 var settings_panel : Control
 var api_url_input : LineEdit
 var model_name_input : LineEdit
+var api_key_input : LineEdit
 var stt_url_input : LineEdit
 
 # Textures
@@ -338,7 +339,7 @@ func _build_ui() -> void:
 	settings_panel.offset_top = -180; settings_panel.offset_bottom = 180
 	settings_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	settings_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	settings_panel.custom_minimum_size = Vector2(400, 360)
+	settings_panel.custom_minimum_size = Vector2(400, 430)
 	settings_panel.add_theme_stylebox_override("panel", _flat_sb(C_BG_DARKER, C_GOLD, 16, true, 3))
 	ai_chat_popup_root.add_child(settings_panel)
 	
@@ -361,7 +362,7 @@ func _build_ui() -> void:
 	set_vbox.add_child(set_title)
 	
 	var url_label = Label.new()
-	url_label.text = "Ollama / OpenAI API URL:"
+	url_label.text = "MaiBrain API URL:"
 	url_label.add_theme_font_override("font", _font_body_bold)
 	url_label.add_theme_font_size_override("font_size", 12)
 	url_label.add_theme_color_override("font_color", C_TEXT_MUTED)
@@ -373,7 +374,7 @@ func _build_ui() -> void:
 	set_vbox.add_child(api_url_input)
 	
 	var model_label = Label.new()
-	model_label.text = "Tên Model (Ollama):"
+	model_label.text = "Tên model dự phòng:"
 	model_label.add_theme_font_override("font", _font_body_bold)
 	model_label.add_theme_font_size_override("font_size", 12)
 	model_label.add_theme_color_override("font_color", C_TEXT_MUTED)
@@ -383,6 +384,20 @@ func _build_ui() -> void:
 	model_name_input.add_theme_font_override("font", _font_body)
 	model_name_input.add_theme_stylebox_override("normal", le_style)
 	set_vbox.add_child(model_name_input)
+
+	var api_key_label = Label.new()
+	api_key_label.text = "MaiBrain API Key (để trống khi phát triển):"
+	api_key_label.add_theme_font_override("font", _font_body_bold)
+	api_key_label.add_theme_font_size_override("font_size", 12)
+	api_key_label.add_theme_color_override("font_color", C_TEXT_MUTED)
+	set_vbox.add_child(api_key_label)
+
+	api_key_input = LineEdit.new()
+	api_key_input.secret = true
+	api_key_input.placeholder_text = "X-MaiBrain-Key"
+	api_key_input.add_theme_font_override("font", _font_body)
+	api_key_input.add_theme_stylebox_override("normal", le_style)
+	set_vbox.add_child(api_key_input)
 	
 	var stt_url_label = Label.new()
 	stt_url_label.text = "STT/TTS Server URL:"
@@ -407,6 +422,7 @@ func _build_ui() -> void:
 	save_btn.pressed.connect(func():
 		ai_manager.api_url = api_url_input.text.strip_edges()
 		ai_manager.model_name = model_name_input.text.strip_edges()
+		ai_manager.api_key = api_key_input.text.strip_edges()
 		stt_manager.stt_url = stt_url_input.text.strip_edges() + "/stt"
 		_toggle_ai_settings()
 	)
@@ -422,7 +438,7 @@ func _build_ui() -> void:
 	_style_ai_button(cancel_btn, false)
 	_make_btn_bouncy(cancel_btn)
 
-func open_chat(instrument_context: String) -> void:
+func open_chat(instrument_context: String, supplied_context: Dictionary = {}) -> void:
 	_instrument_context = instrument_context
 	visible = true
 	ai_chat_popup_root.modulate.a = 0.0
@@ -432,67 +448,63 @@ func open_chat(instrument_context: String) -> void:
 	# Load settings defaults
 	api_url_input.text = ai_manager.api_url
 	model_name_input.text = ai_manager.model_name
+	api_key_input.text = ai_manager.api_key
 	
-	# Customize system instructions & greeting based on instrument
-	var sys_instr = ""
+	# Lời chào thuộc giao diện; system prompt và giới hạn kiến thức do MaiBrain quản lý.
 	var greeting = ""
 	var tts_greeting = ""
 	
 	match instrument_context:
 		"dan_tranh":
-			sys_instr = (
-				"Bạn là Mai - giáo viên ảo dạy Đàn Tranh Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
-				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
-				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
-				"Trọng tâm của bạn là chỉ dạy học viên học chơi Đàn Tranh: hệ thống 16/17/19 dây, thang ngũ âm Hò Xự Xang Xê Cống. Kỹ thuật tay phải đeo móng gảy (ngón 1, 2, 3), lướt ngón á. Kỹ thuật tay trái rung dây, nhấn dây đổi cao độ (tạo điệu oán, điệu xuân). " +
-				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
-			)
 			greeting = "[Mai]: Chào bạn! Hôm nay chúng ta cùng học và luyện tập Đàn Tranh nhé. Bạn cần Mai hỗ trợ gì về kỹ thuật gảy hay bấm dây không?"
 			tts_greeting = "Chào bạn! Hôm nay chúng ta cùng học và luyện tập Đàn Tranh nhé. Bạn cần Mai hỗ trợ gì về kỹ thuật gảy hay bấm dây không?"
 		"sao_truc":
-			sys_instr = (
-				"Bạn là Mai - giáo viên ảo dạy Sáo Trúc Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
-				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
-				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
-				"Trọng tâm của bạn là chỉ dạy thổi Sáo Trúc: kỹ thuật lấy hơi bụng, cách đặt môi góc 45 độ, bấm kín các lỗ ngón. Các kỹ thuật sáo như lưỡi đơn (Tờ), lưỡi kép (Tờ-Cờ), rung hơi bụng, vuốt ngón, gõ ngón láy nhanh. " +
-				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
-			)
 			greeting = "[Mai]: Chào bạn! Bạn đang tập thổi Sáo Trúc đúng không? Mai sẵn sàng giải đáp các thắc mắc về thế bấm lỗ sáo và cách lấy hơi bụng nhé!"
 			tts_greeting = "Chào bạn! Bạn đang tập thổi Sáo Trúc đúng không? Mai sẵn sàng giải đáp các thắc mắc về thế bấm lỗ sáo và cách lấy hơi bụng nhé!"
 		"dan_bau":
-			sys_instr = (
-				"Bạn là Mai - giáo viên ảo dạy Đàn Bầu (Độc Huyền Cầm) Việt Nam dịu dàng, giao tiếp tự nhiên và ấm áp. " +
-				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
-				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
-				"Trọng tâm của bạn là chỉ dạy Đàn Bầu: một dây đồng, thùng tre/gỗ, vòi đàn bằng sừng trâu và quả bầu. Kỹ thuật tay phải dùng que gảy chạm nhẹ cạnh bàn tay vào điểm hài âm (tỷ lệ 1/2, 1/3, 1/4 dây). Kỹ thuật tay trái uốn vòi đàn về trước (giảm cao độ) hoặc kéo ra sau (tăng cao độ) tạo âm rung. " +
-				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
-			)
 			greeting = "[Mai]: Chào bạn! Đàn Bầu với một dây duy nhất là nhạc cụ rất đặc sắc. Bạn hãy hỏi Mai bất kỳ điều gì về cách gảy nốt hài âm và rung vòi đàn nhé."
 			tts_greeting = "Chào bạn! Đàn Bầu với một dây duy nhất là nhạc cụ rất đặc sắc. Bạn hãy hỏi Mai bất kỳ điều gì về cách gảy nốt hài âm và rung vòi đàn nhé."
 		_:
-			sys_instr = (
-				"Bạn là Mai - nghệ sĩ ảo dịu dàng, chuyên dạy Đàn Tranh và Sáo Trúc Việt Nam. " +
-				"Bạn xưng 'Mai', gọi người dùng là 'bạn' hoặc 'học viên'. " +
-				"BẮT BUỘC bắt đầu câu trả lời bằng một thẻ cảm xúc duy nhất: [joy], [sad], [angry], [surprised], [neutral]. " +
-				"Bạn hỗ trợ chia sẻ kiến thức về nhạc cụ truyền thống Việt Nam (Đàn Tranh, Sáo Trúc, Đàn Bầu, Trống Chầu) và các bài hát dân ca cổ truyền. " +
-				"TUYỆT ĐỐI KHÔNG trả lời bất kỳ câu hỏi nào ngoài luồng, không liên quan đến ứng dụng này hoặc kiến thức âm nhạc dân tộc. Khi gặp câu hỏi ngoài luồng, hãy từ chối dứt khoát và lịch sự."
-			)
-			greeting = "[Mai]: Chào bạn! Mai có thể giúp gì cho bạn về Đàn Tranh hoặc Sáo Trúc hôm nay?"
-			tts_greeting = "Chào bạn! Mai có thể giúp gì cho bạn về Đàn Tranh hoặc Sáo Trúc hôm nay?"
-
-	# Apply instruction
-	var old_api = ai_manager.api_url
-	var old_model = ai_manager.model_name
+			greeting = "[Mai]: Chào bạn! Mai có thể hỗ trợ bạn về VietStage và các nhạc cụ truyền thống Việt Nam hôm nay."
+			tts_greeting = "Chào bạn! Mai có thể hỗ trợ bạn về VietStage và các nhạc cụ truyền thống Việt Nam hôm nay."
 	
-	# Pass customized prompt instruction
-	ai_manager.instrument_context = instrument_context
-	ai_manager.send_prompt("") # Clear states
+	# MaiBrain là nơi duy nhất quản lý phạm vi và system prompt. Godot chỉ gửi
+	# ngữ cảnh màn hình để RAG tìm đúng bài học.
+	ai_manager.reset_conversation()
+	ai_manager.configure_context(_build_chat_context(instrument_context, supplied_context))
 	
 	ai_chat_log.clear()
 	_log_to_ui(greeting)
 	audio_manager.speak_vietnamese(tts_greeting)
 	
 	_start_waking_loop()
+
+func _build_chat_context(instrument: String, supplied_context: Dictionary) -> Dictionary:
+	var local_lesson_id := str(supplied_context.get("lessonCode", SecureDataManager.active_lesson_id))
+	var resolved_lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
+	var resolved_code := str(resolved_lesson.get("lessonCode", resolved_lesson.get("code", "")))
+	var resolved_level := str(resolved_lesson.get("levelCode", ""))
+	if resolved_code.is_empty():
+		resolved_code = local_lesson_id.to_upper()
+	if resolved_level.is_empty():
+		resolved_level = _infer_level_code(local_lesson_id)
+	return {
+		"instrumentContext": instrument,
+		"lessonCode": str(supplied_context.get("lessonCode", resolved_code)),
+		"levelCode": str(supplied_context.get("levelCode", resolved_level)),
+		"screenContext": str(supplied_context.get(
+			"screenContext",
+			"virtual_music_room" if instrument == "general" else "lesson_practice"
+		))
+	}
+
+func _infer_level_code(local_lesson_id: String) -> String:
+	var matcher := RegEx.new()
+	matcher.compile("level[_ -]?(\\d+)")
+	var result := matcher.search(local_lesson_id.to_lower())
+	if result:
+		return "LEVEL_" + result.get_string(1)
+	return ""
 
 func _close_ai_chat() -> void:
 	_stop_all_voice_activities()

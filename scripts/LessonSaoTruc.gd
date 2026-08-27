@@ -675,7 +675,7 @@ func _on_teacher_clicked(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var chat = AIChatPopup.new()
 		add_child(chat)
-		chat.open_chat("sao_truc")
+		chat.open_chat("sao_truc", {"screenContext": "lesson_theory"})
 
 func _setup_premium_practice_ui():
 	var bg_ov = get_node_or_null("BGOverlay")
