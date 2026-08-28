@@ -476,19 +476,9 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Bạn cần gảy nhanh, dứt khoát và di chuyển ngón tay linh hoạt qua các quãng xa.", "highlight": -1}
 	],
 
-	"dan_tranh_level_3_bai_8_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ tập bài dân ca Quan họ Bắc Ninh nổi tiếng: Lý Cây Đa.", "highlight": -1},
-		{"action": "speak", "text": "Giai điệu cần sự lả lướt, duyên dáng và đúng nhịp điệu.", "highlight": -1}
-	],
-
 	"dan_tranh_level_4_bai_9_practice": [
 		{"action": "speak", "text": "Hôm nay chúng ta sẽ học kỹ thuật nhấn Rung tay trái đặc trưng của Đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Sau khi tay phải gảy nốt, hãy dùng các ngón tay trái nhấn nhẹ liên tục lên phần dây bên trái nhạn đàn.", "highlight": -1}
-	],
-
-	"dan_tranh_level_4_bai_10_practice": [
-		{"action": "speak", "text": "Chúng ta sẽ làm quen với Song âm và Hợp âm Đô Trưởng.", "highlight": -1},
-		{"action": "speak", "text": "Đặt ngón cái, ngón trỏ và ngón giữa để gảy vang đồng thời cả ba nốt Đô, Mi và Sol cùng một lúc.", "highlight": -1}
 	],
 
 	"dan_tranh_level_7_bai_19_practice": [
@@ -537,11 +527,6 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm La thứ.", "highlight": -1},
 		{"action": "speak", "text": "Hợp âm La thứ gồm ba nốt: La, Đô và Mi.", "highlight": -1},
 		{"action": "speak", "text": "Hợp âm này có màu sắc nhẹ nhàng và trầm hơn hợp âm Đô trưởng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_5_bai_11_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với cấp độ Master. Chúng ta bắt đầu chinh phục đoạn nhạc mở đầu của tác phẩm Sứ Thanh Hoa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy tập trung gảy đúng giai điệu dạo đầu với các quãng nhảy nốt rộng.", "highlight": -1}
 	],
 
 	"dan_tranh_level_5_bai_12_practice": [
@@ -1344,7 +1329,6 @@ func _is_error_flash_demo() -> bool:
 func _uses_chord_lesson_flow() -> bool:
 	# Các bài kỹ thuật kế thừa cùng luồng: tập từng hợp âm trước, rồi vào khuông nhạc.
 	return current_lesson_id in [
-		"dan_tranh_level_6_bai_14_practice",
 		"dan_tranh_level_7_bai_20_practice",
 		"dan_tranh_level_8_bai_31_practice",
 		"dan_tranh_level_8_bai_32_practice",
@@ -1353,8 +1337,7 @@ func _uses_chord_lesson_flow() -> bool:
 
 
 func _uses_chord_basics_lesson_flow() -> bool:
-	# Bài 31 Level 8 kế thừa cả nhịp luyện nốt đơn của Bài 13 Level 6.
-	return current_lesson_id in ["dan_tranh_level_6_bai_13_practice", "dan_tranh_level_8_bai_31_practice"]
+	return current_lesson_id == "dan_tranh_level_8_bai_31_practice"
 
 
 func _setup_top_pitch_box():
@@ -4298,8 +4281,6 @@ func _start_practice():
 	# Determine BPM based on current lesson
 	var lesson_bpm: float = 60.0
 	if current_lesson_id == "dan_tranh_level_3_bai_7_practice": lesson_bpm = 80.0
-	elif current_lesson_id == "dan_tranh_level_3_bai_8_practice": lesson_bpm = 85.0
-	elif current_lesson_id == "dan_tranh_level_5_bai_11_practice": lesson_bpm = 85.0
 	elif current_lesson_id.begins_with("dan_tranh_level_3"): lesson_bpm = 80.0
 	elif current_lesson_id.begins_with("dan_tranh_level_4"): lesson_bpm = 85.0
 	elif current_lesson_id.begins_with("dan_tranh_level_5"): lesson_bpm = 90.0

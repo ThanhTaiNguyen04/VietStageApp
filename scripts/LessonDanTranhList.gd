@@ -78,8 +78,8 @@ const LEVELS := [
 	{
 		"level": 3,
 		"title": "LUYỆN NGÓN VÀ DÂN CA CỔ TRUYỀN",
-		"sessions": "Bài 7–8",
-		"objective": "Luyện ngón tay linh hoạt qua các bài tập dân ca cổ truyền có tốc độ cao.",
+		"sessions": "Bài 7",
+		"objective": "Luyện ngón tay linh hoạt qua bài tập có tốc độ cao.",
 		"lessons": [
 			{
 				"number": 7,
@@ -89,23 +89,14 @@ const LEVELS := [
 				"practice_title": "Luyện ngón: Mã Vũ",
 				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
 				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0]
-			},
-			{
-				"number": 8,
-				"title": "Dân ca Quan họ – Lý Cây Đa",
-				"video": "Kỹ thuật luyến láy và giữ nhịp lả lướt đặc trưng của dân ca Quan họ Bắc Ninh.",
-				"practice": "Thực hành chơi bài dân ca Lý Cây Đa đạt độ chính xác cao.",
-				"practice_title": "Lý Cây Đa",
-				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"],
-				"durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0]
 			}
 		]
 	},
 	{
 		"level": 4,
 		"title": "KỸ THUẬT TAY TRÁI & HỢP ÂM",
-		"sessions": "Bài 9–10",
-		"objective": "Làm chủ kỹ thuật nhấn rung tay trái và gảy song âm, hợp âm trên Đàn Tranh.",
+		"sessions": "Bài 9",
+		"objective": "Làm chủ kỹ thuật nhấn rung tay trái trên Đàn Tranh.",
 		"lessons": [
 			{
 				"number": 9,
@@ -115,47 +106,15 @@ const LEVELS := [
 				"practice_title": "Rung dây Đàn Tranh",
 				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"],
 				"durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
-			},
-			{
-				"number": 10,
-				"title": "Học Song âm & Hợp âm Đô Trưởng",
-				"video": "Kỹ thuật gảy đồng thời hai hoặc ba dây đàn cùng lúc để tạo thành hợp âm Đô trưởng (C) vang rền.",
-				"practice": "Thực hành gảy song âm và hợp âm Đô trưởng đúng kỹ thuật tay phải.",
-				"practice_title": "Hợp âm Đô trưởng",
-				"sheet": ["Đô2+Mi2", "Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"],
-				"durations": [2.0, 2.0, 4.0, 4.0]
 			}
 		]
 	},
 	{
 		"level": 5,
 		"title": "MASTER – NHẠC HIỆN ĐẠI",
-		"sessions": "Session 28–30",
-		"objective": "Ứng dụng kỹ năng Đàn Tranh vào nhạc hiện đại và thử thách tổng hợp.",
+		"sessions": "Bài 12",
+		"objective": "Thử thách tổng hợp khả năng nhận diện và gảy đủ 17 dây Đàn Tranh.",
 		"lessons": [
-			{
-				"number": 11,
-				"title": "Nhạc hiện đại – Sứ Thanh Hoa",
-				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
-				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 with các quãng rộng.",
-				"practice_title": "Sứ Thanh Hoa",
-				"sheet": [
-					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
-				],
-				"durations": [
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
-					0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
-					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
-				]
-			},
 			{
 				"number": 12,
 				"title": "Boss Stage – Thử thách sinh tồn",
@@ -169,58 +128,9 @@ const LEVELS := [
 	{
 		"level": 6,
 		"title": "HỢP ÂM CƠ BẢN",
-		"sessions": "Bài 1-5",
-		"objective": "Làm quen với khái niệm hợp âm, thực hành gảy song âm, hợp âm Đô trưởng, La thứ và chuyển hợp âm.",
+		"sessions": "Bài 5",
+		"objective": "Luyện chuyển mượt mà giữa hợp âm Đô trưởng và La thứ.",
 		"lessons": [
-			{
-				"number": 13,
-				"title": "Bài 1: Hợp âm là gì?",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
-				"practice_title": "Luyện tập: Hợp âm là gì",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
-			},
-			{
-				"number": 14,
-				"title": "Bài 2: Song âm (2 dây)",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
-				"practice_title": "Luyện tập: Song âm",
-				"sheet": [
-					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
-					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
-					"La1+Đô2", "La1+Đô2", "La1+Đô2",
-					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
-				],
-				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
-			},
-			{
-				"number": 15,
-				"title": "Bài 3: Hợp âm Đô trưởng (C)",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
-				"practice_title": "Luyện tập: Đô trưởng",
-				"sheet": [
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
-				],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
-			},
-			{
-				"number": 16,
-				"title": "Bài 4: Hợp âm La thứ (Am)",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
-				"practice_title": "Luyện tập: La thứ",
-				"sheet": [
-					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
-					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
-					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
-				],
-				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
-			},
 			{
 				"number": 17,
 				"title": "Bài 5: Chuyển hợp âm",
