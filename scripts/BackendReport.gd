@@ -19,8 +19,7 @@ func _ready() -> void:
 
 
 func is_signed_in() -> bool:
-	return AuthSessionStore.has_access_token()
-
+	return _api != null and AuthSessionStore.has_access_token()
 
 # ── Catalog bootstrap ──────────────────────────────────────────────────
 
