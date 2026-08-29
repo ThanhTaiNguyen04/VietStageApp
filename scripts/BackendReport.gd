@@ -173,8 +173,8 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Arr
 	return result
 
 
-func ensure_minigame_list(lesson_id: int) -> Array:
-	if SecureDataManager.be_minigames.has(lesson_id):
+func ensure_minigame_list(lesson_id: int, force_refresh: bool = false) -> Array:
+	if not force_refresh and SecureDataManager.be_minigames.has(lesson_id):
 		return SecureDataManager.be_minigames[lesson_id]
 	var response: Dictionary = await _api.get_lesson_minigames(lesson_id)
 	if not _is_success(response):
@@ -182,6 +182,126 @@ func ensure_minigame_list(lesson_id: int) -> Array:
 	var minigames: Array = _extract_array(response)
 	SecureDataManager.cache_be_minigames(lesson_id, minigames)
 	return minigames
+
+
+func fetch_minigames_for_level(instrument: String, local_lesson_ids: Array, expected_challenge_type: String = "", force_refresh: bool = true) -> Array:
+	if SecureDataManager.be_catalog.is_empty():
+		await fetch_and_install_catalog()
+	var result: Array = []
+	var bound_ids: Array[int] = []
+	var seen_ids: Dictionary = {}
+	var normalized_expected := expected_challenge_type.to_upper().replace("-", "_").replace(" ", "_")
+
+	# 1. Quét theo các local lesson ID được truyền vào từ Context
+	for lesson_position in local_lesson_ids.size():
+		var local_id: Variant = local_lesson_ids[lesson_position]
+		var lesson: Dictionary = SecureDataManager.resolve_be_lesson(instrument, str(local_id))
+		if lesson.is_empty():
+			continue
+		var lesson_id := int(lesson.get("id", 0))
+		if lesson_id <= 0:
+			continue
+		bound_ids.append(lesson_id)
+		var minigames: Array = await ensure_minigame_list(lesson_id, force_refresh)
+		for item_value: Variant in minigames:
+			if not item_value is Dictionary:
+				continue
+			var item: Dictionary = item_value
+			var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
+			if not normalized_expected.is_empty():
+				var matches := false
+				if normalized_expected == "RHYTHM_MATCH" and actual in ["RHYTHM_MATCH", "RHYTHM_MATCHING", "RHYTHM"]:
+					matches = true
+				elif normalized_expected in ["MELODY_COMPLETION", "MELODY_COMPLETE"] and actual in ["MELODY_COMPLETION", "MELODY_COMPLETE", "MELODY"]:
+					matches = true
+				elif actual == normalized_expected:
+					matches = true
+				if not matches:
+					continue
+			var item_id := int(item.get("id", 0))
+			if item_id > 0 and seen_ids.has(item_id):
+				continue
+			if item_id > 0:
+				seen_ids[item_id] = true
+			var enriched := item.duplicate(true)
+			enriched["lesson_id"] = lesson_id
+			enriched["_lesson_position"] = lesson_position
+			result.append(enriched)
+
+	# 2. Nếu chưa tìm thấy minigame nào, tự động quét toàn bộ bài học của nhạc cụ đó
+	if result.is_empty():
+		var instrument_lesson_ids := SecureDataManager.be_lesson_ids_for_instrument(instrument)
+		for lesson_id: int in instrument_lesson_ids:
+			if bound_ids.has(lesson_id):
+				continue
+			var minigames: Array = await ensure_minigame_list(lesson_id, force_refresh)
+			for item_value: Variant in minigames:
+				if not item_value is Dictionary:
+					continue
+				var item: Dictionary = item_value
+				var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
+				if not normalized_expected.is_empty():
+					var matches := false
+					if normalized_expected == "RHYTHM_MATCH" and actual in ["RHYTHM_MATCH", "RHYTHM_MATCHING", "RHYTHM"]:
+						matches = true
+					elif normalized_expected in ["MELODY_COMPLETION", "MELODY_COMPLETE"] and actual in ["MELODY_COMPLETION", "MELODY_COMPLETE", "MELODY"]:
+						matches = true
+					elif actual == normalized_expected:
+						matches = true
+					if not matches:
+						continue
+				var item_id := int(item.get("id", 0))
+				if item_id > 0 and seen_ids.has(item_id):
+					continue
+				if item_id > 0:
+					seen_ids[item_id] = true
+				var enriched := item.duplicate(true)
+				enriched["lesson_id"] = lesson_id
+				result.append(enriched)
+
+	# 3. Nếu vẫn rỗng, quét toàn bộ catalog bài học để tránh miss bài mới
+	if result.is_empty() and not SecureDataManager.be_catalog.is_empty():
+		for lesson_value: Variant in SecureDataManager.be_catalog:
+			if not lesson_value is Dictionary:
+				continue
+			var lesson: Dictionary = lesson_value
+			var lesson_id := int(lesson.get("id", 0))
+			if lesson_id <= 0 or bound_ids.has(lesson_id):
+				continue
+			var minigames: Array = await ensure_minigame_list(lesson_id, force_refresh)
+			for item_value: Variant in minigames:
+				if not item_value is Dictionary:
+					continue
+				var item: Dictionary = item_value
+				var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
+				if not normalized_expected.is_empty():
+					var matches := false
+					if normalized_expected == "RHYTHM_MATCH" and actual in ["RHYTHM_MATCH", "RHYTHM_MATCHING", "RHYTHM"]:
+						matches = true
+					elif normalized_expected in ["MELODY_COMPLETION", "MELODY_COMPLETE"] and actual in ["MELODY_COMPLETION", "MELODY_COMPLETE", "MELODY"]:
+						matches = true
+					elif actual == normalized_expected:
+						matches = true
+					if not matches:
+						continue
+				var item_id := int(item.get("id", 0))
+				if item_id > 0 and seen_ids.has(item_id):
+					continue
+				if item_id > 0:
+					seen_ids[item_id] = true
+				var enriched := item.duplicate(true)
+				enriched["lesson_id"] = lesson_id
+				result.append(enriched)
+
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var lesson_a := int(a.get("_lesson_position", 0))
+		var lesson_b := int(b.get("_lesson_position", 0))
+		if lesson_a != lesson_b:
+			return lesson_a < lesson_b
+		return int(a.get("orderIndex", a.get("order_index", 0))) < int(b.get("orderIndex", b.get("order_index", 0)))
+	)
+
+	return result
 
 
 func ensure_minigame_by_type(lesson_id: int, challenge_type: String) -> Dictionary:
@@ -285,7 +405,7 @@ func report_practice_and_complete(
 
 ## Nộp kết quả khi client đã chọn chính xác challenge từ BE.
 ## Dùng cho các màn chơi có nhiều challenge trong cùng một lesson.
-func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: int, started_at: String = "", completed_at: String = "") -> Dictionary:
+func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: int, started_at: String = "", completed_at: String = "", client_attempt_id: String = "") -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	if minigame_id <= 0:
@@ -293,10 +413,11 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 
 	var start_value := started_at if not started_at.is_empty() else _iso_now()
 	var complete_value := completed_at if not completed_at.is_empty() else _iso_now()
+	var attempt_id := client_attempt_id if not client_attempt_id.is_empty() else _uuid()
 	var response: Dictionary = await _api.submit_minigame_attempt(
 		minigame_id,
 		score,
-		_uuid(),
+		attempt_id,
 		start_value,
 		complete_value
 	)

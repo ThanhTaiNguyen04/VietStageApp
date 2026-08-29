@@ -7,7 +7,10 @@ var melodies: Array = []
 var melody_index := 0
 var score := 0
 var api_stars_earned := 0
+var correct_rounds := 0
 var started_at := ""
+var challenge_scores: Dictionary = {}
+var challenge_started_at: Dictionary = {}
 var melody_staff: Control
 var options_box: Container
 var feedback_label: Label
@@ -36,62 +39,127 @@ func _ready() -> void:
 	_load_challenge()
 
 func _load_challenge() -> void:
-	var debug_lines: Array[String] = []
-	debug_lines.append("=== MINIGAME DEBUG START ===")
-	
 	var report := _report()
-	debug_lines.append("Report node exists: %s" % str(report != null))
-	if report != null:
-		debug_lines.append("Is signed in: %s" % str(report.is_signed_in()))
-		
-	debug_lines.append("Context.instrument: %s" % str(Context.instrument))
-	debug_lines.append("Context.local_lesson_ids: %s" % str(Context.local_lesson_ids))
-	debug_lines.append("be_catalog size: %d" % SecureDataManager.be_catalog.size())
-	
-	var target_challenges: Array = []
 	
 	if report != null and report.is_signed_in():
 		result_sync_status = "be"
 		if SecureDataManager.be_catalog.is_empty():
-			debug_lines.append("be_catalog is empty, fetching...")
 			await report.fetch_and_install_catalog()
-			debug_lines.append("be_catalog size after fetch: %d" % SecureDataManager.be_catalog.size())
-			
-		for local_id: String in Context.local_lesson_ids:
-			var lesson := SecureDataManager.resolve_be_lesson(Context.instrument, local_id)
-			debug_lines.append("Resolved lesson for local_id %s: %s" % [local_id, str(lesson)])
-			if lesson.is_empty():
-				continue
-			lesson_id = _safe_int(lesson.get("id", 0))
-			debug_lines.append("Lesson ID: %d" % lesson_id)
-			
-			var minigames: Array = await report.ensure_minigame_list(lesson_id)
-			debug_lines.append("Raw minigames list for lesson_id %d: %s" % [lesson_id, str(minigames)])
-			
-			for item: Variant in minigames:
-				if item is Dictionary:
-					var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
-					if actual in ["MELODY_COMPLETION", "MELODY_COMPLETE"]:
-						target_challenges.append(item)
-			break
-			
-	target_challenges.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var order_a = _safe_int(a.get("orderIndex", a.get("order_index", 0)))
-		var order_b = _safe_int(b.get("orderIndex", b.get("order_index", 0)))
-		return order_a < order_b
-	)
-	
-	debug_lines.append("Target challenges count: %d" % target_challenges.size())
-	debug_lines.append("=== MINIGAME DEBUG END ===")
-	
-	# Write debug log to disk
-	var file := FileAccess.open("user://debug_minigame.txt", FileAccess.WRITE)
-	if file != null:
-		file.store_string("\n".join(debug_lines))
-		file.close()
+		var target_challenges: Array = await report.fetch_minigames_for_level(Context.instrument, Context.local_lesson_ids, "MELODY_COMPLETE", true)
+		if not is_inside_tree():
+			return
+		
+		_parse_challenges(target_challenges)
+		if melodies.is_empty():
+			_build_load_error(
+				"Chưa tìm thấy thử thách MELODY_COMPLETE cho bài học này.",
+				"Cấu hình giai điệu trên hệ thống chưa đầy đủ hoặc không hợp lệ."
+			)
+			return
+		_show_round()
+	else:
+		_use_offline_data()
 
-	_parse_challenges(target_challenges)
+func _use_offline_data() -> void:
+	result_sync_status = "offline"
+	melodies.clear()
+	melodies.append({
+		"notes": ["Đô", "Rê", "Mi", "Sol", "La"],
+		"missing": 2,
+		"options": ["Đô", "Mi", "Sol", "La"],
+		"challenge_id": 0,
+		"max_score": 100,
+		"audio_url": ""
+	})
+	melodies.append({
+		"notes": ["Sol", "La", "Đô", "Rê", "Mi"],
+		"missing": 1,
+		"options": ["Sol", "La", "Rê", "Mi"],
+		"challenge_id": 0,
+		"max_score": 100,
+		"audio_url": ""
+	})
+	melodies.append({
+		"notes": ["Mi", "Rê", "Đô", "La", "Sol"],
+		"missing": 3,
+		"options": ["Đô", "Rê", "La", "Sol"],
+		"challenge_id": 0,
+		"max_score": 100,
+		"audio_url": ""
+	})
+	_finalize_challenge_rounds()
 	_show_round()
+
+func _build_load_error(title: String, description: String, allow_retry: bool = true) -> void:
+	for child in content_box.get_children():
+		child.queue_free()
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	var card_panel := PanelContainer.new()
+	card_panel.custom_minimum_size = Vector2(minf(840.0, get_viewport_rect().size.x - 32.0), 0)
+	card_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color.WHITE
+	panel_style.border_color = Color("#f87171")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(24)
+	panel_style.shadow_color = Color(0.9, 0.2, 0.2, 0.12)
+	panel_style.shadow_size = 18
+	panel_style.shadow_offset = Vector2(0, 6)
+	panel_style.content_margin_left = 28
+	panel_style.content_margin_right = 28
+	panel_style.content_margin_top = 28
+	panel_style.content_margin_bottom = 28
+	card_panel.add_theme_stylebox_override("panel", panel_style)
+	content_box.add_child(card_panel)
+
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 16)
+	card_panel.add_child(body)
+
+	var icon_lbl := Label.new()
+	icon_lbl.text = "!"
+	if ResourceLoader.exists("res://assets/fonts/Lora-Bold.ttf"):
+		icon_lbl.add_theme_font_override("font", load("res://assets/fonts/Lora-Bold.ttf") as Font)
+	icon_lbl.add_theme_font_size_override("font_size", 48)
+	icon_lbl.add_theme_color_override("font_color", Color("#dc2626"))
+	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(icon_lbl)
+
+	var heading := Label.new()
+	heading.text = title
+	if ResourceLoader.exists("res://assets/fonts/Lora-Bold.ttf"):
+		heading.add_theme_font_override("font", load("res://assets/fonts/Lora-Bold.ttf") as Font)
+	heading.add_theme_font_size_override("font_size", 22)
+	heading.add_theme_color_override("font_color", C_NAVY)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(heading)
+
+	var detail := Label.new()
+	detail.text = description
+	if ResourceLoader.exists("res://assets/fonts/BeVietnamPro-Regular.ttf"):
+		detail.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font)
+	detail.add_theme_font_size_override("font_size", 15)
+	detail.add_theme_color_override("font_color", C_MUTED)
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(detail)
+
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 14)
+	body.add_child(actions)
+
+	if allow_retry:
+		var retry_btn := _button("Thử tải lại", 160, 48, C_NAVY)
+		retry_btn.pressed.connect(func() -> void: _load_challenge())
+		actions.add_child(retry_btn)
+
+	var sample_btn := _button("Chơi bằng dữ liệu mẫu", 200, 48, Color("#6b21a8"))
+	sample_btn.pressed.connect(func() -> void: _use_offline_data())
+	actions.add_child(sample_btn)
 
 func _parse_challenges(challenges: Array) -> void:
 	melodies.clear()
@@ -102,12 +170,13 @@ func _parse_challenges(challenges: Array) -> void:
 		var source: Dictionary = parsed if parsed is Dictionary else {}
 		
 		# 1. Parse standard single round layout at root
-		if source.has("melody") and source.get("melody") is Array:
+		if source.has("melody") and source.get("melody") is Array and not source.get("melody", []).is_empty():
 			var notes: Array = source.get("melody", []).duplicate()
-			var missing_positions: Variant = source.get("missing_positions", source.get("missing_positions", [2]))
+			var missing_positions: Variant = source.get("missing_positions", source.get("missingPositions", [2]))
 			var missing := 2
 			if missing_positions is Array and not missing_positions.is_empty():
 				missing = _safe_int(missing_positions[0], 2)
+			missing = clampi(missing, 0, notes.size() - 1)
 				
 			var correct_ans := ""
 			var correct_answers = source.get("correct_answers", source.get("correctAnswers", {}))
@@ -115,6 +184,8 @@ func _parse_challenges(challenges: Array) -> void:
 				var key_str := str(missing)
 				if correct_answers.has(key_str):
 					correct_ans = str(correct_answers[key_str]).strip_edges()
+			if correct_ans.is_empty():
+				correct_ans = _safe_str(source.get("correctAnswer", source.get("correct_answer", ""))).strip_edges()
 					
 			if not correct_ans.is_empty() and missing >= 0 and missing < notes.size():
 				notes[missing] = correct_ans
@@ -149,52 +220,60 @@ func _parse_challenges(challenges: Array) -> void:
 			var raw_melodies: Array = source.get("melodies", source.get("rounds", []))
 			for item: Variant in raw_melodies:
 				if item is Dictionary:
-					var notes: Array = item.get("notes", item.get("sequence", []))
+					var notes_value: Variant = item.get("notes", item.get("sequence", []))
+					var notes: Array = notes_value.duplicate() if notes_value is Array else []
 					if not notes.is_empty():
-						var raw_missing = item.get("missingIndex")
-						if raw_missing == null: raw_missing = item.get("missing_idx")
+						var raw_missing = item.get("missingIndex", item.get("missing_index", item.get("missing_idx")))
 						var missing := _safe_int(raw_missing, -1)
 						if missing < 0:
 							missing = maxi(0, int(notes.size() / 2))
+						missing = clampi(missing, 0, notes.size() - 1)
+						var correct_ans := _safe_str(item.get("correctAnswer", item.get("correct_answer", ""))).strip_edges()
+						if not correct_ans.is_empty():
+							notes[missing] = correct_ans
+						var options_value: Variant = item.get("options", item.get("noteOptions", item.get("note_options", [])))
+						var options: Array = options_value if options_value is Array else []
 							
 						var audio_url := _get_challenge_audio(challenge_item, item)
 						
 						melodies.append({
 							"notes": notes,
 							"missing": missing,
-							"options": item.get("options", []),
+							"options": options,
 							"challenge_id": _safe_int(challenge_item.get("id", 0)),
 							"max_score": _safe_int(challenge_item.get("maxScore", challenge_item.get("max_score", 100)), 100),
 							"audio_url": audio_url
 						})
 						
-	if melodies.is_empty():
-		# Fallback rich sample melodies for comprehensive gameplay
-		melodies.append({
-			"notes": ["Đô", "Rê", "Mi", "Sol", "La"],
-			"missing": 2,
-			"options": ["Đô", "Mi", "Sol", "La"],
-			"challenge_id": 0,
-			"max_score": 100,
-			"audio_url": ""
-		})
-		melodies.append({
-			"notes": ["Sol", "La", "Đô", "Rê", "Mi"],
-			"missing": 1,
-			"options": ["Sol", "La", "Rê", "Mi"],
-			"challenge_id": 0,
-			"max_score": 100,
-			"audio_url": ""
-		})
-		melodies.append({
-			"notes": ["Mi", "Rê", "Đô", "La", "Sol"],
-			"missing": 3,
-			"options": ["Đô", "Rê", "La", "Sol"],
-			"challenge_id": 0,
-			"max_score": 100,
-			"audio_url": ""
-		})
+	_finalize_challenge_rounds()
 
+func _finalize_challenge_rounds() -> void:
+	var round_counts: Dictionary = {}
+	var max_scores: Dictionary = {}
+	for melody_value: Variant in melodies:
+		if not melody_value is Dictionary:
+			continue
+		var melody: Dictionary = melody_value
+		var challenge_id := _safe_int(melody.get("challenge_id", 0))
+		if challenge_id <= 0:
+			continue
+		round_counts[challenge_id] = int(round_counts.get(challenge_id, 0)) + 1
+		max_scores[challenge_id] = _safe_int(melody.get("max_score", 100), 100)
+	var round_indices: Dictionary = {}
+	for index in melodies.size():
+		var melody: Dictionary = melodies[index]
+		var challenge_id := _safe_int(melody.get("challenge_id", 0))
+		if challenge_id <= 0:
+			continue
+		var count := int(round_counts[challenge_id])
+		var round_index := int(round_indices.get(challenge_id, 0))
+		var challenge_max := int(max_scores[challenge_id])
+		var base_score := challenge_max / count
+		var remainder := challenge_max % count
+		melody["max_score"] = base_score + (1 if round_index < remainder else 0)
+		melody["submit_after"] = round_index == count - 1
+		melodies[index] = melody
+		round_indices[challenge_id] = round_index + 1
 func _get_challenge_audio(challenge_item: Dictionary, source: Dictionary) -> String:
 	var raw_url = challenge_item.get("referenceAudioUrl")
 	if raw_url == null: raw_url = challenge_item.get("reference_audio_url")
@@ -214,12 +293,19 @@ func _show_round() -> void:
 		child.queue_free()
 	
 	_audio_generation += 1
+	if audio_player and is_instance_valid(audio_player):
+		audio_player.stop()
+		audio_player.queue_free()
+		audio_player = null
 	answered = false
 	next_button = null
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var melody: Dictionary = melodies[melody_index % melodies.size()]
 	reference_audio_url = str(melody.get("audio_url", ""))
+	var active_challenge_id := _safe_int(melody.get("challenge_id", 0))
+	if active_challenge_id > 0 and not challenge_started_at.has(active_challenge_id):
+		challenge_started_at[active_challenge_id] = _now_iso()
 	
 	# Update progress bar value (matching Quiz style)
 	if progress_bar and melodies.size() > 0:
@@ -393,22 +479,35 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	
 	if correct:
 		score += current_max
+		correct_rounds += 1
 		if score_label and is_instance_valid(score_label):
 			score_label.text = str(score)
 	melody_staff.call("show_answer", correct, selected)
 	
-	# Submit attempt for current minigame challenge ID
+	# Aggregate all rounds of a minigame and submit one final attempt per challenge.
 	var current_id := _safe_int(melody.get("challenge_id", 0))
 	var report := _report()
-	if report != null and current_id > 0:
-		var round_score := current_max if correct else 0
-		var round_stars := _stars(round_score, current_max)
-		var result: Dictionary = await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
-		result_sync_status = "be" if bool(result.get("submitted", false)) else "failed"
-		if bool(result.get("submitted", false)):
-			api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
-	else:
+	if current_id <= 0:
 		result_sync_status = "offline"
+	else:
+		challenge_scores[current_id] = int(challenge_scores.get(current_id, 0)) + (current_max if correct else 0)
+		if bool(melody.get("submit_after", true)):
+			var challenge_score := int(challenge_scores[current_id])
+			var challenge_max := 0
+			for melody_value: Variant in melodies:
+				if melody_value is Dictionary and _safe_int(melody_value.get("challenge_id", 0)) == current_id:
+					challenge_max += _safe_int(melody_value.get("max_score", 0), 0)
+			var challenge_stars := _stars(challenge_score, challenge_max)
+			if report != null:
+				var challenge_start := str(challenge_started_at.get(current_id, started_at))
+				var result: Dictionary = await report.report_minigame_by_id(current_id, challenge_score, challenge_stars, challenge_start, _now_iso())
+				result_sync_status = "be" if bool(result.get("submitted", false)) else "failed"
+				if bool(result.get("submitted", false)):
+					api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
+			else:
+				result_sync_status = "offline"
+		else:
+			result_sync_status = "pending"
 	
 	# Disable buttons and highlight states
 	for child in grid.get_children():
@@ -470,7 +569,8 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 		next_button = _button("Xem kết quả →", 240, 48, Color("#15803d") if correct else C_NAVY)
 		next_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		next_button.pressed.connect(func() -> void:
-			_show_result("Giai điệu hoàn thành!", "Bạn đã hoàn thành tất cả %d giai điệu." % melodies.size(), score, stars, _restart, 100.0 if correct else 0.0)
+			var accuracy := 100.0 * float(correct_rounds) / float(maxi(1, melodies.size()))
+			_show_result("Giai điệu hoàn thành!", "Bạn đã hoàn thành tất cả %d giai điệu." % melodies.size(), score, stars, _restart, accuracy)
 		)
 		action_box.add_child(next_button)
 		return
@@ -649,6 +749,9 @@ func _restart() -> void:
 	melody_index = 0
 	score = 0
 	api_stars_earned = 0
+	correct_rounds = 0
+	challenge_scores.clear()
+	challenge_started_at.clear()
 	next_button = null
 	_show_round()
 
@@ -664,18 +767,22 @@ func _play_reference_audio() -> void:
 		_play_melody_fallback(melodies[melody_index % melodies.size()]["notes"])
 
 func _download_and_play_reference() -> void:
+	var generation := _audio_generation
+	var requested_url := reference_audio_url
 	var request := HTTPRequest.new()
 	add_child(request)
-	var error := request.request(reference_audio_url)
+	var error := request.request(requested_url)
 	if error != OK:
 		request.queue_free()
 		return
 	var response: Array = await request.request_completed
 	request.queue_free()
+	if not is_inside_tree() or generation != _audio_generation or requested_url != reference_audio_url:
+		return
 	if response.size() < 4 or int(response[1]) < 200 or int(response[1]) >= 300:
 		return
 	var body: PackedByteArray = response[3]
-	var stream: AudioStream = _audio_stream_from_buffer(body, reference_audio_url)
+	var stream: AudioStream = _audio_stream_from_buffer(body, requested_url)
 	if stream == null:
 		return
 	if audio_player and is_instance_valid(audio_player):

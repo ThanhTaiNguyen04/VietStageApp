@@ -81,7 +81,7 @@ func _exit_tree() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if flow_state == FlowState.PLAYING and event.is_action_pressed("ui_accept"):
+	if flow_state == FlowState.PLAYING and event.is_action_pressed("ui_accept") and not event.is_echo():
 		_tap()
 		get_viewport().set_input_as_handled()
 
@@ -115,42 +115,13 @@ func _load_challenges() -> void:
 		await report.fetch_and_install_catalog()
 	if generation != load_generation or not is_inside_tree():
 		return
+	if SecureDataManager.be_catalog.is_empty():
+		_use_offline_data()
+		return
 
-	var seen_ids: Dictionary = {}
-	for lesson_position in Context.local_lesson_ids.size():
-		var local_id := Context.local_lesson_ids[lesson_position]
-		var lesson := SecureDataManager.resolve_be_lesson(Context.instrument, local_id)
-		if lesson.is_empty():
-			continue
-		var lesson_id := _safe_int(lesson.get("id", 0))
-		if lesson_id <= 0:
-			continue
-		var minigames: Array = await report.ensure_minigame_list(lesson_id)
-		if generation != load_generation or not is_inside_tree():
-			return
-		for item_value: Variant in minigames:
-			if not item_value is Dictionary:
-				continue
-			var item: Dictionary = item_value
-			if _normalize_type(str(item.get("challengeType", item.get("challenge_type", "")))) != "RHYTHM_MATCH":
-				continue
-			var item_id := _safe_int(item.get("id", 0))
-			if item_id > 0 and seen_ids.has(item_id):
-				continue
-			if item_id > 0:
-				seen_ids[item_id] = true
-			var enriched := item.duplicate(true)
-			enriched["lesson_id"] = lesson_id
-			enriched["_lesson_position"] = lesson_position
-			target_challenges.append(enriched)
-
-	target_challenges.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		var lesson_a := _safe_int(a.get("_lesson_position", 0))
-		var lesson_b := _safe_int(b.get("_lesson_position", 0))
-		if lesson_a != lesson_b:
-			return lesson_a < lesson_b
-		return _safe_int(a.get("orderIndex", a.get("order_index", 0))) < _safe_int(b.get("orderIndex", b.get("order_index", 0)))
-	)
+	target_challenges = await report.fetch_minigames_for_level(Context.instrument, Context.local_lesson_ids, "RHYTHM_MATCH", true)
+	if generation != load_generation or not is_inside_tree():
+		return
 
 	rhythms = RhythmModel.parse_challenges(target_challenges)
 	if rhythms.is_empty():
@@ -332,6 +303,8 @@ func _start_round() -> void:
 	if flow_state not in [FlowState.INTRO, FlowState.PREVIEW]:
 		return
 	preview_generation += 1
+	if is_instance_valid(click_player):
+		click_player.stop()
 	session_generation += 1
 	var generation := session_generation
 	playing = false
@@ -543,7 +516,8 @@ func _submit_payload(payload: Dictionary) -> bool:
 		int(payload.get("score", 0)),
 		int(payload.get("stars", 0)),
 		str(payload.get("started_at", "")),
-		str(payload.get("completed_at", ""))
+		str(payload.get("completed_at", "")),
+		str(payload.get("client_attempt_id", ""))
 	)
 	if not bool(response.get("submitted", false)):
 		payload["error"] = str(response.get("message", "Không thể đồng bộ kết quả."))
@@ -616,12 +590,16 @@ func _build_final_result() -> void:
 
 	var sync_text := "○ Offline · kết quả chưa gửi lên hệ thống"
 	var sync_color := C_MUTED
-	if online_session and sync_failures.is_empty():
+	if online_session and sync_failures.is_empty() and submitted_count > 0:
 		sync_text = "✓ Đã đồng bộ %d kết quả · nhận %d sao" % [submitted_count, backend_stars_earned]
 		sync_color = C_OK
 	elif online_session:
-		sync_text = "⚠ Còn %d kết quả chưa đồng bộ" % sync_failures.size()
-		sync_color = C_BAD
+		if sync_failures.is_empty():
+			sync_text = "○ Chưa có kết quả hợp lệ để đồng bộ"
+			sync_color = C_MUTED
+		else:
+			sync_text = "⚠ Còn %d kết quả chưa đồng bộ" % sync_failures.size()
+			sync_color = C_BAD
 	var sync := _label(sync_text, 13 if _is_mobile() else 14, sync_color)
 	sync.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(sync)

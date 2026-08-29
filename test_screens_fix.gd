@@ -47,3 +47,4 @@ func _run_tests() -> void:
 	print("Saved captured_mainmenu_profile.png")
 
 	get_tree().quit(0)
+
