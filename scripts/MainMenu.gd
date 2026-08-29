@@ -1514,7 +1514,7 @@ func _build_roadmap_cards() -> void:
 		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
 		
 		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
-		soloist_skills_bullets.text = "✓ Luyện ngón tốc độ cao – Mã Vũ\n✓ Dân ca Quan họ – Lý Cây Đa\n✓ Làm quen mật độ nốt dày hơn"
+		soloist_skills_bullets.text = "✓ Luyện ngón tốc độ cao – Mã Vũ\n✓ Làm quen mật độ nốt dày hơn"
 		
 		chords_skills_title.text = "LEVEL 4: KỸ THUẬT NÂNG CAO"
 		chords_skills_bullets.text = "✓ Mô phỏng kỹ thuật rung tay trái\n✓ Hòa tấu cùng nhạc cụ khác\n✓ Đánh đàn theo beat"

@@ -31,11 +31,13 @@ const PRACTICE_ATTEMPT_FEEDBACK := "/practice/attempts/%s/feedback"
 # Cosmetics
 const COSMETICS := "/cosmetics"
 const MY_COSMETICS := "/users/me/cosmetics"
+const COSMETICS_LAYOUT := "/users/me/cosmetics/layout"
 
 # Profile Progress & Achievements
 const ACHIEVEMENTS := "/achievements"
 const USER_PROGRESS := "/users/me/progress"
 const USER_PROGRESS_SUMMARY := "/users/me/progress/summary"
+const COMPLETE_LESSON := "/users/me/lessons/%s/complete"
 const MY_ACHIEVEMENTS := "/users/me/achievements"
 const USER_PASSWORD := "/users/me/password"
 const USER_POINT_TRANSACTIONS := "/users/%s/point-transactions"

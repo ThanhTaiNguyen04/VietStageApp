@@ -476,19 +476,9 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Bạn cần gảy nhanh, dứt khoát và di chuyển ngón tay linh hoạt qua các quãng xa.", "highlight": -1}
 	],
 
-	"dan_tranh_level_3_bai_8_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ tập bài dân ca Quan họ Bắc Ninh nổi tiếng: Lý Cây Đa.", "highlight": -1},
-		{"action": "speak", "text": "Giai điệu cần sự lả lướt, duyên dáng và đúng nhịp điệu.", "highlight": -1}
-	],
-
 	"dan_tranh_level_4_bai_9_practice": [
 		{"action": "speak", "text": "Hôm nay chúng ta sẽ học kỹ thuật nhấn Rung tay trái đặc trưng của Đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Sau khi tay phải gảy nốt, hãy dùng các ngón tay trái nhấn nhẹ liên tục lên phần dây bên trái nhạn đàn.", "highlight": -1}
-	],
-
-	"dan_tranh_level_4_bai_10_practice": [
-		{"action": "speak", "text": "Chúng ta sẽ làm quen với Song âm và Hợp âm Đô Trưởng.", "highlight": -1},
-		{"action": "speak", "text": "Đặt ngón cái, ngón trỏ và ngón giữa để gảy vang đồng thời cả ba nốt Đô, Mi và Sol cùng một lúc.", "highlight": -1}
 	],
 
 	"dan_tranh_level_7_bai_19_practice": [
@@ -537,11 +527,6 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm La thứ.", "highlight": -1},
 		{"action": "speak", "text": "Hợp âm La thứ gồm ba nốt: La, Đô và Mi.", "highlight": -1},
 		{"action": "speak", "text": "Hợp âm này có màu sắc nhẹ nhàng và trầm hơn hợp âm Đô trưởng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_5_bai_11_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với cấp độ Master. Chúng ta bắt đầu chinh phục đoạn nhạc mở đầu của tác phẩm Sứ Thanh Hoa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy tập trung gảy đúng giai điệu dạo đầu với các quãng nhảy nốt rộng.", "highlight": -1}
 	],
 
 	"dan_tranh_level_5_bai_12_practice": [
@@ -1344,7 +1329,6 @@ func _is_error_flash_demo() -> bool:
 func _uses_chord_lesson_flow() -> bool:
 	# Các bài kỹ thuật kế thừa cùng luồng: tập từng hợp âm trước, rồi vào khuông nhạc.
 	return current_lesson_id in [
-		"dan_tranh_level_6_bai_14_practice",
 		"dan_tranh_level_7_bai_20_practice",
 		"dan_tranh_level_8_bai_31_practice",
 		"dan_tranh_level_8_bai_32_practice",
@@ -1353,8 +1337,7 @@ func _uses_chord_lesson_flow() -> bool:
 
 
 func _uses_chord_basics_lesson_flow() -> bool:
-	# Bài 31 Level 8 kế thừa cả nhịp luyện nốt đơn của Bài 13 Level 6.
-	return current_lesson_id in ["dan_tranh_level_6_bai_13_practice", "dan_tranh_level_8_bai_31_practice"]
+	return current_lesson_id == "dan_tranh_level_8_bai_31_practice"
 
 
 func _setup_top_pitch_box():
@@ -2001,8 +1984,15 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 	if cents_error <= 65.0:
 		return true
 
-	# Never accept an octave or harmonic as the requested string. Use the native
-	# detector only as a second exact-frequency measurement of the same note.
+	# Dây thấp (Sol1=196Hz, La1=220Hz): YIN thường bắt harmonic thứ 2 (×2 freq).
+	# Khi pitch ≈ 2×target và target < 260Hz, chấp nhận là đúng dây vì context bài
+	# học luôn chỉ yêu cầu 1 dây cụ thể tại một thời điểm.
+	if target_hz < 260.0 and pitch > 0.0:
+		var octave_cents := absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
+		if octave_cents <= 65.0:
+			return true
+
+	# Dùng native detector như phép đo tần số thứ 2 cho cùng nốt đó.
 	if analyzer and target_note_name != "":
 		var detected_note: Dictionary = analyzer.detect_dan_tranh_note(
 			analyzer._analysis_buffer,
@@ -2088,6 +2078,16 @@ func _play_next_intro_step():
 	var playback_token := intro_playback_token
 	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 	if intro_step >= dialogues.size():
+		# Bài 1 (bai_1), 2 (bai_5), 3 (bai_4) là lý thuyết thuần – khi hết dialogue
+		# thì hoàn thành bài luôn, không hiện khuôn nhạc thực hành.
+		const THEORY_ONLY_IDS := [
+			"dan_tranh_level_1_bai_1_practice",
+			"dan_tranh_level_1_bai_5_practice",
+			"dan_tranh_level_1_bai_4_practice"
+		]
+		if current_lesson_id in THEORY_ONLY_IDS:
+			_finish_practice()
+			return
 		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 			_start_practice_single()
 		else:
@@ -4281,15 +4281,14 @@ func _start_practice():
 	# Determine BPM based on current lesson
 	var lesson_bpm: float = 60.0
 	if current_lesson_id == "dan_tranh_level_3_bai_7_practice": lesson_bpm = 80.0
-	elif current_lesson_id == "dan_tranh_level_3_bai_8_practice": lesson_bpm = 85.0
-	elif current_lesson_id == "dan_tranh_level_5_bai_11_practice": lesson_bpm = 85.0
 	elif current_lesson_id.begins_with("dan_tranh_level_3"): lesson_bpm = 80.0
 	elif current_lesson_id.begins_with("dan_tranh_level_4"): lesson_bpm = 85.0
 	elif current_lesson_id.begins_with("dan_tranh_level_5"): lesson_bpm = 90.0
 	
 	var scroll_speed = 350.0
 	var distance_per_beat = (scroll_speed * 60.0) / lesson_bpm
-	var start_x = staff_display.size.x + 100.0
+	var _staff_w := staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
+	var start_x = _staff_w + 100.0
 	
 	var cur_beat: float = 0.0
 	for i in range(lesson_sheet.size()):

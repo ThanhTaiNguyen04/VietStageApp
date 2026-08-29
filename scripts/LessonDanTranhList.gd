@@ -32,9 +32,9 @@ const LEVELS := [
 			{"number": 1, "display_number": "1", "title": "Tìm hiểu nhạc cụ Đàn tranh", "type": "both", "video": "Xem video hướng dẫn lý thuyết nhạc lý, cấu tạo đàn tranh và tư thế ngồi, tư thế tay chuẩn.", "practice": "Nhận biết âm sắc dây đàn và làm quen tư thế tay gảy.", "practice_title": "Làm quen âm sắc & tư thế", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.5, 1.5, 1.5, 1.5, 2.0]},
 			{"number": 5, "display_number": "2", "title": "Nhịp điệu cơ bản", "type": "practice", "video": "Tìm hiểu về trường độ nốt nhạc: nốt trắng, nốt đen, nốt móc đơn, nốt móc kép.", "practice": "Luyện tập nhận diện và gảy phân biệt các nốt có trường độ khác nhau trên khuông nhạc.", "practice_title": "Trường độ nốt nhạc", "sheet": ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"], "durations": [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]},
 			{"number": 4, "display_number": "3", "title": "Đọc bản nhạc cơ bản", "type": "practice", "video": "Tìm hiểu định nghĩa Tempo (tốc độ bài nhạc), Khóa Sol, Nhịp 4/4 và Nhịp 2/4 — cách đếm phách và giữ nhịp đều khi chơi.", "practice": "Luyện tập giữ nhịp độ đều đặn theo máy đếm nhịp: gảy nốt đen theo nhịp 4/4 rồi nhịp 2/4.", "practice_title": "Tempo, Khóa Sol & Số chỉ nhịp", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "Rê3", "Đô3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
-			{"number": 7, "display_number": "4.1", "title": "Kỹ thuật gảy ngón 1", "type": "both", "video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.", "practice": "Luyện tập tư thế tay phối hợp cơ bản.", "practice_title": "Kỹ thuật hai tay & Số ngón", "sheet": ["Đô2", "Rê2", "Mi2", "Sol2", "La2"], "durations": [1.0, 1.0, 1.0, 1.0, 2.0]},
-			{"number": 8, "display_number": "4.2", "title": "Kỹ thuật gảy ngón 2", "type": "both", "video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.", "practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.", "practice_title": "Tư thế đặt đàn & Tay gảy", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.0, 1.0, 1.0, 1.0, 2.0]},
-			{"number": 9, "display_number": "4.3", "title": "Kỹ thuật gảy ngón 3", "type": "practice", "video": "Bài tập luyện ngón chạy dây cơ bản sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải.", "practice": "Thực hành gảy chuỗi nốt chạy đều sử dụng kỹ thuật luyện ngón phối hợp.", "practice_title": "Chạy ngón phối hợp", "sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 7, "display_number": "4.1", "title": "Kỹ thuật gảy ngón 1", "type": "both", "video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.", "practice": "Luyện tập tư thế tay phối hợp cơ bản.", "practice_title": "Kỹ thuật hai tay & Số ngón", "sheet": ["La4", "Sol4", "Mi4", "Rê4", "Đô4", "La3", "Sol3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 8, "display_number": "4.2", "title": "Kỹ thuật gảy ngón 2", "type": "both", "video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.", "practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.", "practice_title": "Tư thế đặt đàn & Tay gảy", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 9, "display_number": "4.3", "title": "Kỹ thuật gảy ngón 3", "type": "practice", "video": "Bài tập luyện ngón chạy dây cơ bản sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải.", "practice": "Thực hành gảy chuỗi nốt chạy đều sử dụng kỹ thuật luyện ngón phối hợp.", "practice_title": "Chạy ngón phối hợp", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
 			{"number": 2, "display_number": "5", "title": "Luyện gảy các nốt cơ bản – Phần 1", "type": "practice", "video": "Cách nhận diện cao độ 10 nốt nhạc cơ bản ở quãng thấp và trung trên Đàn Tranh.", "practice": "Gảy lần lượt từng nốt: Sol1, La1, Đô2, Rê2, Mi2, Sol2, La2, Đô3, Rê3, Mi3.", "practice_title": "Luyện tập 10 nốt cơ bản", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"], "durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]},
 			{"number": 6, "display_number": "5.1", "title": "Cấu tạo quãng thấp, cao, trầm", "type": "both", "video": "Tìm hiểu về cấu tạo các quãng âm trên Đàn Tranh và cách nhận biết các quãng trầm, trung, cao.", "practice": "Nhận biết âm vực quãng bằng cách gảy các dây tương ứng trên đàn.", "practice_title": "Cấu tạo quãng âm", "sheet": ["Sol1", "Sol2", "Sol3", "La1", "La2", "La3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
 			{"number": 3, "display_number": "6", "title": "Luyện gảy các nốt cơ bản – Phần 2", "type": "practice", "video": "Cách nhận diện cao độ 7 nốt nhạc ở quãng cao trên khuông nhạc.", "practice": "Gảy lần lượt từng nốt: Sol3, La3, Đô4, Rê4, Mi4, Sol4, La4.", "practice_title": "Luyện tập 7 nốt quãng cao", "sheet": ["Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]},
@@ -77,8 +77,8 @@ const LEVELS := [
 	{
 		"level": 3,
 		"title": "LUYỆN NGÓN VÀ DÂN CA CỔ TRUYỀN",
-		"sessions": "Bài 7–8",
-		"objective": "Luyện ngón tay linh hoạt qua các bài tập dân ca cổ truyền có tốc độ cao.",
+		"sessions": "Bài 7",
+		"objective": "Luyện ngón tay linh hoạt qua bài tập có tốc độ cao.",
 		"lessons": [
 			{
 				"number": 7,
@@ -88,23 +88,14 @@ const LEVELS := [
 				"practice_title": "Luyện ngón: Mã Vũ",
 				"sheet": ["Đô2", "Rê2", "Mi2", "Rê2", "Đô2", "La2", "Sol2", "Sol2", "Đô2", "Rê2", "Mi2", "Sol2", "Mi2", "Rê2", "Đô2", "Đô2", "La2", "Sol2", "Sol2", "Sol2", "Đô2", "Rê2", "Đô2", "Sol2"],
 				"durations": [0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0]
-			},
-			{
-				"number": 8,
-				"title": "Dân ca Quan họ – Lý Cây Đa",
-				"video": "Kỹ thuật luyến láy và giữ nhịp lả lướt đặc trưng của dân ca Quan họ Bắc Ninh.",
-				"practice": "Thực hành chơi bài dân ca Lý Cây Đa đạt độ chính xác cao.",
-				"practice_title": "Lý Cây Đa",
-				"sheet": ["Sol2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Sol2"],
-				"durations": [1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0]
 			}
 		]
 	},
 	{
 		"level": 4,
 		"title": "KỸ THUẬT TAY TRÁI & HỢP ÂM",
-		"sessions": "Bài 9–10",
-		"objective": "Làm chủ kỹ thuật nhấn rung tay trái và gảy song âm, hợp âm trên Đàn Tranh.",
+		"sessions": "Bài 9",
+		"objective": "Làm chủ kỹ thuật nhấn rung tay trái trên Đàn Tranh.",
 		"lessons": [
 			{
 				"number": 9,
@@ -114,47 +105,15 @@ const LEVELS := [
 				"practice_title": "Rung dây Đàn Tranh",
 				"sheet": ["Đô2", "Đô2", "Rê2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2"],
 				"durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
-			},
-			{
-				"number": 10,
-				"title": "Học Song âm & Hợp âm Đô Trưởng",
-				"video": "Kỹ thuật gảy đồng thời hai hoặc ba dây đàn cùng lúc để tạo thành hợp âm Đô trưởng (C) vang rền.",
-				"practice": "Thực hành gảy song âm và hợp âm Đô trưởng đúng kỹ thuật tay phải.",
-				"practice_title": "Hợp âm Đô trưởng",
-				"sheet": ["Đô2+Mi2", "Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"],
-				"durations": [2.0, 2.0, 4.0, 4.0]
 			}
 		]
 	},
 	{
 		"level": 5,
 		"title": "MASTER – NHẠC HIỆN ĐẠI",
-		"sessions": "Session 28–30",
-		"objective": "Ứng dụng kỹ năng Đàn Tranh vào nhạc hiện đại và thử thách tổng hợp.",
+		"sessions": "Bài 12",
+		"objective": "Thử thách tổng hợp khả năng nhận diện và gảy đủ 17 dây Đàn Tranh.",
 		"lessons": [
-			{
-				"number": 11,
-				"title": "Nhạc hiện đại – Sứ Thanh Hoa",
-				"video": "Chuyển quãng, nhấn nhả nốt và giữ âm hưởng dân tộc trong bản nhạc hiện đại.",
-				"practice": "Luyện sheet Sứ Thanh Hoa ở BPM 80 with các quãng rộng.",
-				"practice_title": "Sứ Thanh Hoa",
-				"sheet": [
-					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-					"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-					"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-					"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-					"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-					"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
-				],
-				"durations": [
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
-					0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
-					1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-					0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
-				]
-			},
 			{
 				"number": 12,
 				"title": "Boss Stage – Thử thách sinh tồn",
@@ -168,58 +127,9 @@ const LEVELS := [
 	{
 		"level": 6,
 		"title": "HỢP ÂM CƠ BẢN",
-		"sessions": "Bài 1-5",
-		"objective": "Làm quen với khái niệm hợp âm, thực hành gảy song âm, hợp âm Đô trưởng, La thứ và chuyển hợp âm.",
+		"sessions": "Bài 5",
+		"objective": "Luyện chuyển mượt mà giữa hợp âm Đô trưởng và La thứ.",
 		"lessons": [
-			{
-				"number": 13,
-				"title": "Bài 1: Hợp âm là gì?",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
-				"practice_title": "Luyện tập: Hợp âm là gì",
-				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
-			},
-			{
-				"number": 14,
-				"title": "Bài 2: Song âm (2 dây)",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
-				"practice_title": "Luyện tập: Song âm",
-				"sheet": [
-					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
-					"Mi2+Sol2", "Mi2+Sol2", "Mi2+Sol2",
-					"La1+Đô2", "La1+Đô2", "La1+Đô2",
-					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
-				],
-				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
-			},
-			{
-				"number": 15,
-				"title": "Bài 3: Hợp âm Đô trưởng (C)",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Hợp âm 3 nốt: Đô, Mi và Sol.",
-				"practice_title": "Luyện tập: Đô trưởng",
-				"sheet": [
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", 
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
-					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
-				],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
-			},
-			{
-				"number": 16,
-				"title": "Bài 4: Hợp âm La thứ (Am)",
-				"video": "res://Video/DanBauDoan12Bai1.ogv",
-				"practice": "Hợp âm 3 nốt: La, Đô và Mi.",
-				"practice_title": "Luyện tập: La thứ",
-				"sheet": [
-					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2",
-					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
-					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
-				],
-				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
-			},
 			{
 				"number": 17,
 				"title": "Bài 5: Chuyển hợp âm",

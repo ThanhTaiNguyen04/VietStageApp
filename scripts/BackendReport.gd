@@ -37,6 +37,73 @@ func fetch_and_install_catalog() -> void:
 	SecureDataManager.install_be_catalog(instruments, lessons)
 
 
+## Làm mới lộ trình và tổng sao từ backend.
+func refresh_progress_from_backend() -> Dictionary:
+	if not is_signed_in():
+		return {"synced": false, "reason": "not_signed_in"}
+	var progress_response: Dictionary = await _api.get_my_progress()
+	var summary_response: Dictionary = await _api.get_my_progress_summary()
+	var progress_synced := false
+	var summary_synced := false
+	if _is_success(progress_response):
+		var progress_data: Variant = progress_response.get("body", {}).get("data", [])
+		if progress_data is Array:
+			SecureDataManager.sync_backend_progress(progress_data)
+			progress_synced = true
+	if _is_success(summary_response):
+		var summary_data: Variant = summary_response.get("body", {}).get("data", {})
+		if summary_data is Dictionary:
+			SecureDataManager.sync_backend_summary(summary_data)
+			summary_synced = true
+	return {"synced": progress_synced and summary_synced}
+
+
+## Hoàn thành một bài giáo trình hard-code bằng lessonId backend.
+## Chỉ response thành công mới được ghi sao và mở khóa bài tiếp theo ở local cache.
+func report_lesson_completion(
+	instrument: String,
+	local_lesson_id: String,
+	score: float = -1.0
+) -> Dictionary:
+	if not is_signed_in():
+		return {"submitted": false, "reason": "not_signed_in"}
+	if SecureDataManager.be_catalog.is_empty():
+		await fetch_and_install_catalog()
+	var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
+	if lesson.is_empty():
+		return {"submitted": false, "reason": "lesson_binding_mismatch"}
+	var lesson_id := int(lesson.get("id", 0))
+	var response: Dictionary = await _api.complete_lesson_progress(
+		lesson_id,
+		_uuid(),
+		_iso_now(),
+		score
+	)
+	if not _is_success(response):
+		return {
+			"submitted": false,
+			"reason": "completion_failed",
+			"status": int(response.get("status", 0)),
+			"message": _api.error_message(response, "Không thể ghi nhận hoàn thành bài học."),
+		}
+	var completion_data: Variant = response.get("body", {}).get("data", {})
+	if not completion_data is Dictionary:
+		completion_data = {}
+	var lesson_stars := int(completion_data.get(
+		"lessonStars",
+		completion_data.get("stars", completion_data.get("starsEarned", 0))
+	))
+	SecureDataManager.apply_confirmed_lesson_completion(instrument, local_lesson_id, lesson_stars)
+	SecureDataManager.apply_backend_reward(completion_data)
+	await refresh_progress_from_backend()
+	return {
+		"submitted": true,
+		"lesson_id": lesson_id,
+		"stars_earned": int(completion_data.get("starsEarned", completion_data.get("stars_earned", 0))),
+		"lesson_stars": lesson_stars,
+	}
+
+
 ## Đảm bảo exercises của một lesson được cache vào SecureDataManager.
 func ensure_exercises(lesson_id: int) -> Dictionary:
 	if SecureDataManager.be_exercises.has(lesson_id):
@@ -58,9 +125,7 @@ func ensure_quizzes(lesson_id: int) -> Array:
 	if not _is_success(response):
 		return []
 	var quizzes: Array = _extract_array(response)
-	# Chỉ cache khi BE thực sự trả dữ liệu; lỗi tạm thời không được biến thành danh sách rỗng vĩnh viễn.
-	if not quizzes.is_empty():
-		SecureDataManager.cache_be_quizzes(lesson_id, quizzes)
+	SecureDataManager.cache_be_quizzes(lesson_id, quizzes)
 	return quizzes
 
 
@@ -115,9 +180,7 @@ func ensure_minigame_list(lesson_id: int) -> Array:
 	if not _is_success(response):
 		return []
 	var minigames: Array = _extract_array(response)
-	# Chỉ cache khi BE thực sự trả dữ liệu; lỗi tạm thời không được biến thành danh sách rỗng vĩnh viễn.
-	if not minigames.is_empty():
-		SecureDataManager.cache_be_minigames(lesson_id, minigames)
+	SecureDataManager.cache_be_minigames(lesson_id, minigames)
 	return minigames
 
 
@@ -191,6 +254,7 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 	var attempt_data: Dictionary = attempt_response.get("body", {}).get("data", {})
 	if not attempt_data is Dictionary:
 		attempt_data = {}
+	SecureDataManager.apply_backend_reward(attempt_data)
 	return {
 		"submitted": true,
 		"lesson_id": lesson_id,
@@ -203,12 +267,25 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 	}
 
 
+## Luồng trọn vẹn cho một bài thực hành: lưu attempt trước, sau đó mới hoàn thành bài.
+## Hàm nằm trong autoload để tiếp tục đồng bộ dù scene bài học đã chuyển đi.
+func report_practice_and_complete(
+	instrument: String,
+	local_lesson_id: String,
+	scores: Dictionary,
+	completion_score: float
+) -> Dictionary:
+	var practice_result := await report_practice(instrument, local_lesson_id, scores)
+	if not bool(practice_result.get("submitted", false)):
+		return practice_result
+	return await report_lesson_completion(instrument, local_lesson_id, completion_score)
+
+
 # ── Minigame attempts ──────────────────────────────────────────────────
 
 ## Nộp kết quả khi client đã chọn chính xác challenge từ BE.
 ## Dùng cho các màn chơi có nhiều challenge trong cùng một lesson.
-## `client_attempt_id` là khóa idempotency do client sinh ra để retry không tạo bản ghi trùng.
-func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at: String = "", completed_at: String = "", client_attempt_id: String = "") -> Dictionary:
+func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: int, started_at: String = "", completed_at: String = "") -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	if minigame_id <= 0:
@@ -216,16 +293,12 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 
 	var start_value := started_at if not started_at.is_empty() else _iso_now()
 	var complete_value := completed_at if not completed_at.is_empty() else _iso_now()
-	var safe_score := clampi(score, 0, 100000)
-	var safe_stars := clampi(stars, 0, 3)
-	var attempt_key := client_attempt_id if not client_attempt_id.is_empty() else _uuid()
 	var response: Dictionary = await _api.submit_minigame_attempt(
 		minigame_id,
-		safe_score,
-		safe_stars,
+		score,
+		_uuid(),
 		start_value,
-		complete_value,
-		attempt_key
+		complete_value
 	)
 	if not _is_success(response):
 		return {
@@ -238,12 +311,13 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 	var attempt_data: Dictionary = response.get("body", {}).get("data", {})
 	if not attempt_data is Dictionary:
 		attempt_data = {}
+	SecureDataManager.apply_backend_reward(attempt_data)
 	return {
 		"submitted": true,
 		"minigame_id": minigame_id,
 		"attempt_id": int(attempt_data.get("id", 0)),
 		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
-		"stars_earned": safe_stars,
+		"stars_earned": int(attempt_data.get("starsEarned", attempt_data.get("stars_earned", 0))),
 	}
 
 
@@ -253,8 +327,7 @@ func report_minigame_by_id(minigame_id: int, score: int, stars: int, started_at:
 func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
-	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer)
-	print("[QuizSubmitRawDebug] raw response: ", response)
+	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer, _uuid())
 	if not _is_success(response):
 		return {
 			"submitted": false,
@@ -265,11 +338,13 @@ func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	var attempt_data: Dictionary = response.get("body", {}).get("data", {})
 	if not attempt_data is Dictionary:
 		attempt_data = {}
+	SecureDataManager.apply_backend_reward(attempt_data)
 	return {
 		"submitted": true,
 		"quiz_id": quiz_id,
 		"is_correct": bool(attempt_data.get("isCorrect", attempt_data.get("is_correct", false))),
 		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
+		"stars_earned": int(attempt_data.get("starsEarned", attempt_data.get("stars_earned", 0))),
 		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", "")))
 	}
 
