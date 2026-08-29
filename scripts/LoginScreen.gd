@@ -108,8 +108,8 @@ func _setup_extra_ui() -> void:
 	_welcome_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if font_title:
 		_welcome_lbl.add_theme_font_override("font", font_title)
-	_welcome_lbl.add_theme_font_size_override("font_size", 28)
-	_welcome_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	_welcome_lbl.add_theme_font_size_override("font_size", 24)
+	_welcome_lbl.add_theme_color_override("font_color", Color("#0f172a")) # Slate-900
 	var logo_vbox := get_node(FP + "LogoVBox")
 	var logo_vbox_idx := logo_vbox.get_index()
 	vbox.add_child(_welcome_lbl)
@@ -124,12 +124,12 @@ func _setup_extra_ui() -> void:
 	if font_body:
 		_welcome_sub.add_theme_font_override("font", font_body)
 	_welcome_sub.add_theme_font_size_override("font_size", 14)
-	_welcome_sub.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.85))
+	_welcome_sub.add_theme_color_override("font_color", Color("#64748b")) # Slate-500
 	vbox.add_child(_welcome_sub)
 	vbox.move_child(_welcome_sub, _welcome_lbl.get_index() + 1)
 
 	# Spacing sau welcome sub
-	var gap_w := Control.new(); gap_w.custom_minimum_size = Vector2(0, 16)
+	var gap_w := Control.new(); gap_w.custom_minimum_size = Vector2(0, 14)
 	vbox.add_child(gap_w); vbox.move_child(gap_w, _welcome_sub.get_index() + 1)
 
 	# — Label “Tên hiển thị” trước name_edit —
@@ -139,7 +139,7 @@ func _setup_extra_ui() -> void:
 	if font_body:
 		_name_lbl.add_theme_font_override("font", font_body)
 	_name_lbl.add_theme_font_size_override("font_size", 13)
-	_name_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	_name_lbl.add_theme_color_override("font_color", Color("#334155")) # Slate-700
 	var name_idx := name_edit.get_index()
 	vbox.add_child(_name_lbl)
 	vbox.move_child(_name_lbl, name_idx)
@@ -150,7 +150,7 @@ func _setup_extra_ui() -> void:
 	if font_body:
 		_email_lbl.add_theme_font_override("font", font_body)
 	_email_lbl.add_theme_font_size_override("font_size", 13)
-	_email_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	_email_lbl.add_theme_color_override("font_color", Color("#334155")) # Slate-700
 	var email_idx := email_edit.get_index()
 	vbox.add_child(_email_lbl)
 	vbox.move_child(_email_lbl, email_idx)
@@ -164,7 +164,7 @@ func _setup_extra_ui() -> void:
 	if font_body:
 		_pass_lbl.add_theme_font_override("font", font_body)
 	_pass_lbl.add_theme_font_size_override("font_size", 13)
-	_pass_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	_pass_lbl.add_theme_color_override("font_color", Color("#334155")) # Slate-700
 
 	_forgot_btn = Button.new()
 	_forgot_btn.text = "Quên mật khẩu?"
@@ -172,12 +172,13 @@ func _setup_extra_ui() -> void:
 	if font_body:
 		_forgot_btn.add_theme_font_override("font", font_body)
 	_forgot_btn.add_theme_font_size_override("font_size", 13)
-	_forgot_btn.add_theme_color_override("font_color", C_PRIMARY)
-	_forgot_btn.add_theme_color_override("font_hover_color", C_PRIMARY_LT)
-	_forgot_btn.add_theme_stylebox_override("normal", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	_forgot_btn.add_theme_stylebox_override("hover",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	_forgot_btn.add_theme_stylebox_override("disabled", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	_forgot_btn.add_theme_stylebox_override("focus",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	_forgot_btn.add_theme_color_override("font_color", Color("#d97706")) # Amber-600
+	_forgot_btn.add_theme_color_override("font_hover_color", Color("#b45309"))
+	_forgot_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_forgot_btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	_forgot_btn.add_theme_stylebox_override("hover",  StyleBoxEmpty.new())
+	_forgot_btn.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+	_forgot_btn.add_theme_stylebox_override("focus",  StyleBoxEmpty.new())
 	_forgot_btn.add_theme_color_override("font_disabled_color", Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.45))
 	_forgot_btn.pressed.connect(_on_forgot_password_pressed)
 	_pass_row.add_child(_pass_lbl)
@@ -492,14 +493,14 @@ func _animate_particle(p: Panel, sx: float, sy: float, dur: float, delay: float,
 # ── Card kính sáng Alabaster Glass ───────────────────────────────────────────
 func _style_card() -> void:
 	var cs := StyleBoxFlat.new()
-	cs.bg_color              = Color(0.98, 0.97, 0.94, 0.88)
-	cs.border_color          = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
-	cs.border_width_left     = 1; cs.border_width_right  = 1
-	cs.border_width_top      = 1; cs.border_width_bottom = 1
-	cs.corner_radius_top_left     = 32; cs.corner_radius_top_right    = 32
-	cs.corner_radius_bottom_left  = 32; cs.corner_radius_bottom_right = 32
+	cs.bg_color              = Color(0.995, 0.99, 0.985, 0.98) # High-opacity warm ivory
+	cs.border_color          = Color("#e2d8c9")
+	cs.border_width_left     = 2; cs.border_width_right  = 2
+	cs.border_width_top      = 2; cs.border_width_bottom = 2
+	cs.corner_radius_top_left     = 28; cs.corner_radius_top_right    = 28
+	cs.corner_radius_bottom_left  = 28; cs.corner_radius_bottom_right = 28
 	cs.shadow_size   = 24
-	cs.shadow_color  = Color(0.09, 0.25, 0.18, 0.10)
+	cs.shadow_color  = Color(0.08, 0.07, 0.05, 0.14)
 	cs.shadow_offset = Vector2(0, 8)
 	card.add_theme_stylebox_override("panel", cs)
 	card.pivot_offset = card.size / 2.0
@@ -512,19 +513,24 @@ func _style_card() -> void:
 
 # ── Tô màu toàn bộ UI theo Cream/Espresso ─────────────────────────────────────
 func _style_all() -> void:
-	# Hide App Name text ("VietStage"), the original App Sub, and the footer text completely
-	app_name.visible = false
-	app_sub.visible = false
-	footer_lbl.visible = false
+	# Show App Name and Sub with clean styling
+	app_name.visible = true
+	app_sub.visible = true
+	footer_lbl.visible = true
+	
+	var title_font := load("res://assets/fonts/Lora-Bold.ttf") as Font
+	var font_reg := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
+	var font_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	
+	if title_font:
+		app_name.add_theme_font_override("font", title_font)
+	app_name.add_theme_color_override("font_color", Color("#0f172a")) # Slate-900 (High contrast)
+	app_sub.add_theme_color_override("font_color", Color("#64748b")) # Slate-500
 
 	# Hide Google login VBox
 	var google_vbox := get_node_or_null(FP + "SocialRow/GoogleVBox")
 	if google_vbox:
 		google_vbox.visible = false
-
-	# Apply sans-serif font (BeVietnamPro) to match the web's Montserrat style
-	var font_reg := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
-	var font_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	
 	if font_reg:
 		email_edit.add_theme_font_override("font", font_reg)
@@ -535,89 +541,130 @@ func _style_all() -> void:
 		guest_lbl.add_theme_font_override("font", font_reg)
 		google_lbl.add_theme_font_override("font", font_reg)
 		error_label.add_theme_font_override("font", font_reg)
+		footer_lbl.add_theme_font_override("font", font_reg)
 	if font_bold:
 		sign_in_btn.add_theme_font_override("font", font_bold)
 
-	or_label.add_theme_color_override("font_color",    Color(0.43, 0.38, 0.33, 1.0))
-	error_label.add_theme_color_override("font_color", C_ERR)
+	or_label.add_theme_color_override("font_color",    Color("#64748b"))
+	error_label.add_theme_color_override("font_color", Color("#dc2626"))
 	error_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	guest_lbl.add_theme_color_override("font_color",   Color(0.43, 0.38, 0.33, 1.0))
+	guest_lbl.add_theme_color_override("font_color",   Color("#475569"))
+	footer_lbl.add_theme_color_override("font_color",  Color("#94a3b8"))
 
-	# Name & Email: Light warm glass pill
-	var ei_n := _pill(Color(0.95, 0.93, 0.89, 0.60),  Color(0.13, 0.08, 0.05, 0.15), 28)
-	var ei_f := _pill(Color(1.00, 1.00, 1.00, 1.00),  Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
-	var ei_ro := _pill(Color(1.00, 1.00, 1.00, 0.76), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 28)
-	ei_f.shadow_size = 12; ei_f.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	# Name, Email, Password: Solid White 3D input box for high contrast
+	var ei_n := StyleBoxFlat.new()
+	ei_n.bg_color = Color.WHITE
+	ei_n.border_color = Color("#cbd5e1")
+	ei_n.set_border_width_all(2)
+	ei_n.set_corner_radius_all(16)
+	ei_n.content_margin_left = 48
+	ei_n.content_margin_right = 44
+	ei_n.content_margin_top = 8
+	ei_n.content_margin_bottom = 8
 	
-	# Add left content padding to line edits to fit the 👤 / 🔒 icons beautifully
-	ei_n.content_margin_left = 46
-	ei_f.content_margin_left = 46
-	ei_ro.content_margin_left = 46
+	var ei_f := ei_n.duplicate() as StyleBoxFlat
+	ei_f.border_color = Color("#d97706") # Amber on focus
+	ei_f.shadow_size = 8
+	ei_f.shadow_color = Color(0.85, 0.55, 0.1, 0.15)
+	
+	var ei_ro := ei_n.duplicate() as StyleBoxFlat
+	ei_ro.bg_color = Color("#f8fafc")
 	
 	email_edit.add_theme_stylebox_override("normal", ei_n)
 	email_edit.add_theme_stylebox_override("focus",  ei_f)
 	email_edit.add_theme_stylebox_override("read_only", ei_ro)
-	email_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
-	email_edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
-	email_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
-	email_edit.add_theme_color_override("caret_color",       C_GOLD)
-	email_edit.add_theme_font_size_override("font_size", 20)
+	email_edit.add_theme_color_override("font_color",        Color("#0f172a"))
+	email_edit.add_theme_color_override("font_uneditable_color", Color("#64748b"))
+	email_edit.add_theme_color_override("font_placeholder_color", Color("#94a3b8"))
+	email_edit.add_theme_color_override("caret_color",       Color("#d97706"))
+	email_edit.add_theme_font_size_override("font_size", 16)
 
 	name_edit.add_theme_stylebox_override("normal", ei_n)
 	name_edit.add_theme_stylebox_override("focus",  ei_f)
 	name_edit.add_theme_stylebox_override("read_only", ei_ro)
-	name_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
-	name_edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
-	name_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
-	name_edit.add_theme_color_override("caret_color",       C_GOLD)
-	name_edit.add_theme_font_size_override("font_size", 20)
+	name_edit.add_theme_color_override("font_color",        Color("#0f172a"))
+	name_edit.add_theme_color_override("font_uneditable_color", Color("#64748b"))
+	name_edit.add_theme_color_override("font_placeholder_color", Color("#94a3b8"))
+	name_edit.add_theme_color_override("caret_color",       Color("#d97706"))
+	name_edit.add_theme_font_size_override("font_size", 16)
 
 	password_edit.add_theme_stylebox_override("normal", ei_n)
 	password_edit.add_theme_stylebox_override("focus",  ei_f)
 	password_edit.add_theme_stylebox_override("read_only", ei_ro)
-	password_edit.add_theme_color_override("font_color",        Color(0.13, 0.08, 0.05, 1.0))
-	password_edit.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
-	password_edit.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
-	password_edit.add_theme_color_override("caret_color",       C_GOLD)
-	password_edit.add_theme_font_size_override("font_size", 20)
+	password_edit.add_theme_color_override("font_color",        Color("#0f172a"))
+	password_edit.add_theme_color_override("font_uneditable_color", Color("#64748b"))
+	password_edit.add_theme_color_override("font_placeholder_color", Color("#94a3b8"))
+	password_edit.add_theme_color_override("caret_color",       Color("#d97706"))
+	password_edit.add_theme_font_size_override("font_size", 16)
 
-	# Nút Đăng nhập: Đỏ Crimson — đồng bộ màu primary với web (#610000)
-	var si_n := _pill(C_PRIMARY,    Color(1.0, 1.0, 1.0, 1.0), 28)
-	si_n.border_width_left = 2; si_n.border_width_right = 2; si_n.border_width_top = 2; si_n.border_width_bottom = 2
-	var si_h := _pill(C_PRIMARY_LT, Color(1.0, 1.0, 1.0, 1.0), 28)
-	si_h.border_width_left = 2; si_h.border_width_right = 2; si_h.border_width_top = 2; si_h.border_width_bottom = 2
-	var si_p := _pill(C_PRIMARY_DK, Color(1.0, 1.0, 1.0, 1.0), 28)
-	si_p.border_width_left = 2; si_p.border_width_right = 2; si_p.border_width_top = 2; si_p.border_width_bottom = 2
-	var si_d := _pill(Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.78), Color(1.0, 1.0, 1.0, 0.72), 28)
-	si_d.border_width_left = 2; si_d.border_width_right = 2; si_d.border_width_top = 2; si_d.border_width_bottom = 2
+	# Nút Đăng nhập: 3D Navy button matching taste skill
+	var si_n := StyleBoxFlat.new()
+	si_n.bg_color = Color("#0f172a") # Slate-900
+	si_n.border_color = Color("#020617")
+	si_n.set_border_width_all(2)
+	si_n.border_width_bottom = 4
+	si_n.set_corner_radius_all(16)
+	si_n.shadow_size = 12
+	si_n.shadow_color = Color(0.06, 0.09, 0.16, 0.20)
 	
-	si_n.shadow_size = 16; si_n.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.35)
-	si_h.shadow_size = 22; si_h.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.48)
+	var si_h := si_n.duplicate() as StyleBoxFlat
+	si_h.bg_color = Color("#1e293b")
+	si_h.border_color = Color("#d97706")
+	
+	var si_p := si_n.duplicate() as StyleBoxFlat
+	si_p.bg_color = Color("#020617")
+	si_p.border_width_top = 3
+	si_p.border_width_bottom = 1
+	
+	var si_d := si_n.duplicate() as StyleBoxFlat
+	si_d.bg_color = Color("#64748b")
+	si_d.border_color = Color("#475569")
+	
 	sign_in_btn.add_theme_stylebox_override("normal",  si_n)
 	sign_in_btn.add_theme_stylebox_override("hover",   si_h)
 	sign_in_btn.add_theme_stylebox_override("pressed", si_p)
 	sign_in_btn.add_theme_stylebox_override("disabled", si_d)
-	sign_in_btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
-	sign_in_btn.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.9, 1.0))
-	sign_in_btn.add_theme_color_override("font_disabled_color", Color(1.0, 1.0, 1.0, 0.88))
-	
-	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	if bold_font:
-		sign_in_btn.add_theme_font_override("font", bold_font)
-	sign_in_btn.add_theme_font_size_override("font_size", 24)
-	sign_in_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	sign_in_btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.8, 1.0))
+	sign_in_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	sign_in_btn.add_theme_color_override("font_color", Color.WHITE)
+	sign_in_btn.add_theme_color_override("font_hover_color", Color("#fef3c7"))
+	sign_in_btn.add_theme_color_override("font_disabled_color", Color(1.0, 1.0, 1.0, 0.6))
+	sign_in_btn.add_theme_font_size_override("font_size", 18)
+	sign_in_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	# Nút Chuyển chế độ: Flat link button
-	toggle_mode_btn.add_theme_color_override("font_color",         Color(0.43, 0.38, 0.33, 1.0))
-	toggle_mode_btn.add_theme_color_override("font_hover_color",   C_PETAL_1)
-	toggle_mode_btn.add_theme_color_override("font_pressed_color", C_PETAL_2)
-	toggle_mode_btn.add_theme_color_override("font_disabled_color", Color(0.43, 0.38, 0.33, 0.48))
-	toggle_mode_btn.add_theme_stylebox_override("normal",  _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	toggle_mode_btn.add_theme_stylebox_override("hover",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	toggle_mode_btn.add_theme_stylebox_override("pressed", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	toggle_mode_btn.add_theme_stylebox_override("disabled", _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
-	toggle_mode_btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
+	toggle_mode_btn.add_theme_color_override("font_color",         Color("#d97706"))
+	toggle_mode_btn.add_theme_color_override("font_hover_color",   Color("#b45309"))
+	toggle_mode_btn.add_theme_color_override("font_pressed_color", Color("#92400e"))
+	toggle_mode_btn.add_theme_color_override("font_disabled_color", Color("#94a3b8"))
+	toggle_mode_btn.add_theme_stylebox_override("normal",  StyleBoxEmpty.new())
+	toggle_mode_btn.add_theme_stylebox_override("hover",   StyleBoxEmpty.new())
+	toggle_mode_btn.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	toggle_mode_btn.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
+	toggle_mode_btn.add_theme_stylebox_override("focus",   StyleBoxEmpty.new())
+	toggle_mode_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+	# Guest button
+	var g_n := StyleBoxFlat.new()
+	g_n.bg_color = Color.WHITE
+	g_n.border_color = Color("#cbd5e1")
+	g_n.set_border_width_all(2)
+	g_n.border_width_bottom = 4
+	g_n.set_corner_radius_all(16)
+	
+	var g_h := g_n.duplicate() as StyleBoxFlat
+	g_h.bg_color = Color("#f8fafc")
+	g_h.border_color = Color("#d97706")
+	
+	var g_p := g_n.duplicate() as StyleBoxFlat
+	g_p.bg_color = Color("#f1f5f9")
+	g_p.border_width_top = 3
+	g_p.border_width_bottom = 1
+	
+	guest_btn.add_theme_stylebox_override("normal", g_n)
+	guest_btn.add_theme_stylebox_override("hover", g_h)
+	guest_btn.add_theme_stylebox_override("pressed", g_p)
+	guest_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	guest_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	# Social buttons: Social pills sáng màu
 	_style_social(google_btn)

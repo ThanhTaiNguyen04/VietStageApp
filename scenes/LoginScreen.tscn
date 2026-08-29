@@ -6,6 +6,51 @@
 [ext_resource type="FontFile" uid="uid://dm1siqu17a31w" path="res://assets/fonts/BeVietnamPro-Regular.ttf" id="4_font"]
 [ext_resource type="FontFile" uid="uid://d30eoe2n7si46" path="res://assets/fonts/Lora-Bold.ttf" id="5_font_title"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.995, 0.99, 0.985, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.886275, 0.847059, 0.788235, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.08, 0.07, 0.05, 0.14)
+shadow_size = 24
+shadow_offset = Vector2(0, 8)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_input"]
+content_margin_left = 48.0
+content_margin_top = 8.0
+content_margin_right = 44.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.796078, 0.835294, 0.882353, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+bg_color = Color(0.0588235, 0.0901961, 0.164706, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 4
+border_color = Color(0.00784314, 0.0235294, 0.0901961, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.06, 0.09, 0.16, 0.2)
+shadow_size = 12
+
 [node name="LoginScreen" type="Control" unique_id=816420152]
 layout_mode = 3
 anchors_preset = 15
@@ -79,6 +124,7 @@ grow_vertical = 2
 
 [node name="Card" type="PanelContainer" parent="Center" unique_id=1880082799]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
 [node name="CardMargin" type="MarginContainer" parent="Center/Card" unique_id=88047472]
 layout_mode = 2
@@ -108,27 +154,32 @@ stretch_mode = 5
 
 [node name="AppName" type="Label" parent="Center/Card/CardMargin/ContentVBox/LogoVBox" unique_id=878524736]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.0588235, 0.0901961, 0.164706, 1)
 theme_override_fonts/font = ExtResource("5_font_title")
-theme_override_font_sizes/font_size = 58
+theme_override_font_sizes/font_size = 48
 text = "VietStage"
 horizontal_alignment = 1
 
 [node name="AppSub" type="Label" parent="Center/Card/CardMargin/ContentVBox/LogoVBox" unique_id=1060902385]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.392157, 0.454902, 0.545098, 1)
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "Học nhạc cụ dân tộc Việt Nam"
 horizontal_alignment = 1
 
 [node name="Gap1" type="Control" parent="Center/Card/CardMargin/ContentVBox" unique_id=534043494]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 
 [node name="NameEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox" unique_id=280758326]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.0588235, 0.0901961, 0.164706, 1)
+theme_override_colors/font_placeholder_color = Color(0.580392, 0.639216, 0.721569, 1)
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_input")
 placeholder_text = "Tên hiển thị của bạn"
 
 [node name="GapName" type="Control" parent="Center/Card/CardMargin/ContentVBox" unique_id=9358139]
@@ -136,10 +187,13 @@ custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="EmailEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox" unique_id=1643914071]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.0588235, 0.0901961, 0.164706, 1)
+theme_override_colors/font_placeholder_color = Color(0.580392, 0.639216, 0.721569, 1)
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_input")
 placeholder_text = "Email của bạn"
 
 [node name="Gap2" type="Control" parent="Center/Card/CardMargin/ContentVBox" unique_id=288114247]
@@ -147,10 +201,13 @@ custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="PasswordEdit" type="LineEdit" parent="Center/Card/CardMargin/ContentVBox" unique_id=1663855606]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.0588235, 0.0901961, 0.164706, 1)
+theme_override_colors/font_placeholder_color = Color(0.580392, 0.639216, 0.721569, 1)
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_input")
 placeholder_text = "Mật khẩu của bạn"
 secret = true
 
@@ -161,6 +218,7 @@ layout_mode = 2
 [node name="ErrorLabel" type="Label" parent="Center/Card/CardMargin/ContentVBox" unique_id=1870897281]
 custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.862745, 0.14902, 0.14902, 1)
 theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
@@ -170,10 +228,12 @@ custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="SignInBtn" type="Button" parent="Center/Card/CardMargin/ContentVBox" unique_id=2119747493]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 text = "ĐĂNG NHẬP"
 
 [node name="GapToggle" type="Control" parent="Center/Card/CardMargin/ContentVBox" unique_id=937715211]

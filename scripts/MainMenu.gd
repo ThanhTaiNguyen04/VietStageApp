@@ -781,14 +781,36 @@ func _build_top_bar() -> void:
 	)
 	avatar_circle.add_child(ring_draw)
 
-	var sp_s := _flat(Color(0.13, 0.08, 0.05, 0.9), Color(0.9, 0.42, 0.08, 0.4), 22)
+	var bold_f := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	
+	# Streak Pill (Warm ivory with soft orange border & vibrant amber text)
+	var sp_s := StyleBoxFlat.new()
+	sp_s.bg_color = Color(0.995, 0.99, 0.985, 0.95)
+	sp_s.border_color = Color("#fed7aa")
+	sp_s.set_border_width_all(1)
+	sp_s.set_corner_radius_all(20)
+	sp_s.shadow_color = Color(0, 0, 0, 0.06)
+	sp_s.shadow_size = 6
+	sp_s.shadow_offset = Vector2(0, 2)
 	streak_pill.add_theme_stylebox_override("panel", sp_s)
-	sp_label.add_theme_color_override("font_color", Color(1.0, 0.70, 0.22, 1.0))
+	sp_label.add_theme_color_override("font_color", Color("#c2410c"))
+	if bold_f:
+		sp_label.add_theme_font_override("font", bold_f)
 	sp_label.text = str(SecureDataManager.data.daily_streak) + " ngày"
 
-	var xp_s := _flat(Color(0.13, 0.08, 0.05, 0.9), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 22)
+	# XP Pill (Warm ivory with soft emerald border & vibrant green text)
+	var xp_s := StyleBoxFlat.new()
+	xp_s.bg_color = Color(0.995, 0.99, 0.985, 0.95)
+	xp_s.border_color = Color("#bbf7d0")
+	xp_s.set_border_width_all(1)
+	xp_s.set_corner_radius_all(20)
+	xp_s.shadow_color = Color(0, 0, 0, 0.06)
+	xp_s.shadow_size = 6
+	xp_s.shadow_offset = Vector2(0, 2)
 	xp_pill.add_theme_stylebox_override("panel", xp_s)
-	xp_label.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	xp_label.add_theme_color_override("font_color", Color("#15803d"))
+	if bold_f:
+		xp_label.add_theme_font_override("font", bold_f)
 
 	var local_xp : int = int(SecureDataManager.data.get("total_points", 0)) + int(int(SecureDataManager.data.practice_time_seconds) / 6.0)
 	xp_label.text = str(local_xp) + " XP"
@@ -1075,60 +1097,102 @@ func _instrument_display_name(instrument: String) -> String:
 
 func _style_account_menu() -> void:
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var reg_font := load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	if bold_font:
 		trigger_name.add_theme_font_override("font", bold_font)
 		header_name.add_theme_font_override("font", bold_font)
+		online_label.add_theme_font_override("font", bold_font)
 		for button: Button in [profile_action, achievement_action, settings_action, logout_action]:
 			button.add_theme_font_override("font", bold_font)
-	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), 35)
-	trigger_style.shadow_color = Color(0.04, 0.10, 0.06, 0.18)
-	trigger_style.shadow_size = 10
-	trigger_style.shadow_offset = Vector2(0, 4)
+	if reg_font:
+		header_meta.add_theme_font_override("font", reg_font)
+		trigger_level.add_theme_font_override("font", reg_font)
+
+	# Trigger button on topbar
+	var trigger_style := _flat(Color(1.0, 1.0, 1.0, 0.92), Color("#e2d8c9"), 24)
+	trigger_style.shadow_color = Color(0.0, 0.0, 0.0, 0.08)
+	trigger_style.shadow_size = 8
+	trigger_style.shadow_offset = Vector2(0, 2)
 	profile_menu.add_theme_stylebox_override("panel", trigger_style)
-	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(35, 0, Color.TRANSPARENT))
-	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(36, 3, Color.WHITE))
-	trigger_name.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92, 1.0))
-	trigger_level.add_theme_color_override("font_color", C_GOLD_LIGHT)
-	trigger_chevron.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	mini_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(24, 0, Color.TRANSPARENT))
+	large_avatar_frame.add_theme_stylebox_override("panel", _avatar_menu_style(24, 2, Color("#e2d8c9")))
+	trigger_name.add_theme_color_override("font_color", Color("#0f172a"))
+	trigger_level.add_theme_color_override("font_color", Color("#d97706"))
+	trigger_chevron.add_theme_color_override("font_color", Color("#64748b"))
 
-	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 35))
-	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.08), Color.TRANSPARENT, 35))
-	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 35))
-	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 35))
+	profile_trigger.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 24))
+	profile_trigger.add_theme_stylebox_override("hover", _flat(Color(0.85, 0.7, 0.35, 0.12), Color.TRANSPARENT, 24))
+	profile_trigger.add_theme_stylebox_override("pressed", _flat(Color(0.85, 0.7, 0.35, 0.20), Color.TRANSPARENT, 24))
+	profile_trigger.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, Color("#d97706"), 24))
 
-	var panel_style := _flat(Color(0.97, 0.96, 0.93, 0.88), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65), 24)
-	panel_style.shadow_color = Color(0.02, 0.06, 0.035, 0.28)
-	panel_style.shadow_size = 22
-	panel_style.shadow_offset = Vector2(0, 10)
+	# Dropdown Panel (High-opacity Frosted Ivory Card for pristine contrast)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.995, 0.99, 0.985, 0.98)
+	panel_style.border_color = Color("#e2d8c9")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(20)
+	panel_style.shadow_color = Color(0.08, 0.07, 0.05, 0.16)
+	panel_style.shadow_size = 20
+	panel_style.shadow_offset = Vector2(0, 8)
 	account_panel.add_theme_stylebox_override("panel", panel_style)
-	header_name.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	header_meta.add_theme_color_override("font_color", Color(0.36, 0.31, 0.27, 1.0))
-	online_dot.add_theme_stylebox_override("panel", _flat(Color(0.22, 0.72, 0.36, 1.0), Color.WHITE, 4))
-	online_label.add_theme_color_override("font_color", C_RED_SON)
-	_style_account_action(profile_action, "user")
-	_style_account_action(achievement_action, "trophy")
-	_style_account_action(settings_action, "settings")
-	_style_account_action(logout_action, "log-out")
-	logout_action.add_theme_color_override("font_color", C_TERRACOTTA)
-	logout_action.add_theme_color_override("icon_normal_color", C_TERRACOTTA)
+	
+	header_name.add_theme_color_override("font_color", Color("#0f172a")) # Slate-900 (High contrast)
+	header_meta.add_theme_color_override("font_color", Color("#64748b")) # Slate-500
+	online_dot.add_theme_stylebox_override("panel", _flat(Color("#22c55e"), Color.WHITE, 4))
+	online_label.add_theme_color_override("font_color", Color("#16a34a")) # Emerald-600
+	
+	_style_account_action(profile_action, "user", false)
+	_style_account_action(achievement_action, "trophy", false)
+	_style_account_action(settings_action, "settings", false)
+	_style_account_action(logout_action, "log-out", true)
 
-	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.01, 0.04, 0.025, 0.10), Color.TRANSPARENT, 0))
-	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.01, 0.04, 0.025, 0.13), Color.TRANSPARENT, 0))
-	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.02, 0.05, 0.03, 0.12), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.0, 0.0, 0.0, 0.08), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("hover", _flat(Color(0.0, 0.0, 0.0, 0.10), Color.TRANSPARENT, 0))
+	dismiss_button.add_theme_stylebox_override("pressed", _flat(Color(0.0, 0.0, 0.0, 0.12), Color.TRANSPARENT, 0))
 
-func _style_account_action(button: Button, icon_name: String) -> void:
+func _style_account_action(button: Button, icon_name: String, is_danger: bool) -> void:
 	button.icon = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
 	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 23)
+	button.add_theme_constant_override("icon_max_width", 22)
 	button.add_theme_constant_override("h_separation", 14)
-	button.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
-	button.add_theme_color_override("font_hover_color", C_TERRACOTTA)
-	button.add_theme_color_override("icon_normal_color", C_RED_SON)
-	button.add_theme_color_override("icon_hover_color", C_TERRACOTTA)
-	button.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, Color.TRANSPARENT, 14))
-	button.add_theme_stylebox_override("hover", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.11), Color.TRANSPARENT, 14))
-	button.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18), Color.TRANSPARENT, 14))
-	button.add_theme_stylebox_override("focus", _flat(Color.TRANSPARENT, C_GOLD, 14))
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	
+	var text_col := Color("#dc2626") if is_danger else Color("#1e293b")
+	var text_h_col := Color("#b91c1c") if is_danger else Color("#0f172a")
+	var icon_col := Color("#ef4444") if is_danger else Color("#d97706")
+	var icon_h_col := Color("#dc2626") if is_danger else Color("#b45309")
+	var hover_bg := Color("#fef2f2") if is_danger else Color("#f8fafc")
+	var pressed_bg := Color("#fee2e2") if is_danger else Color("#f1f5f9")
+	
+	button.add_theme_color_override("font_color", text_col)
+	button.add_theme_color_override("font_hover_color", text_h_col)
+	button.add_theme_color_override("font_pressed_color", text_h_col)
+	button.add_theme_color_override("icon_normal_color", icon_col)
+	button.add_theme_color_override("icon_hover_color", icon_h_col)
+	button.add_theme_color_override("icon_pressed_color", icon_h_col)
+	
+	var style_n := StyleBoxFlat.new()
+	style_n.bg_color = Color.WHITE
+	style_n.border_color = Color("#f1f5f9")
+	style_n.set_border_width_all(1)
+	style_n.set_corner_radius_all(14)
+	style_n.content_margin_left = 14
+	style_n.content_margin_right = 14
+	style_n.content_margin_top = 8
+	style_n.content_margin_bottom = 8
+	
+	var style_h := style_n.duplicate() as StyleBoxFlat
+	style_h.bg_color = hover_bg
+	style_h.border_color = Color("#ef4444") if is_danger else Color("#e2d8c9")
+	
+	var style_p := style_n.duplicate() as StyleBoxFlat
+	style_p.bg_color = pressed_bg
+	style_p.border_color = Color("#dc2626") if is_danger else Color("#cbd5e1")
+	
+	button.add_theme_stylebox_override("normal", style_n)
+	button.add_theme_stylebox_override("hover", style_h)
+	button.add_theme_stylebox_override("pressed", style_p)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 func _avatar_menu_style(radius: int, border_width: int, bg_color := Color.WHITE) -> StyleBoxFlat:
 	var style := _flat(bg_color, C_GOLD, radius)
