@@ -18,6 +18,8 @@ var audio_player: AudioStreamPlayer
 var progress_bar: ProgressBar
 var score_label: Label
 var floating_back_button: Button
+var answered := false
+var _audio_generation := 0
 
 func _ready() -> void:
 	super._ready()
@@ -221,7 +223,7 @@ func _show_round() -> void:
 	
 	# Update progress bar value (matching Quiz style)
 	if progress_bar and melodies.size() > 0:
-		progress_bar.value = (float(melody_index) / float(melodies.size())) * 100.0
+		progress_bar.value = (float(melody_index) + 1.0) / float(melodies.size()) * 100.0
 	
 	var mobile := get_viewport_rect().size.x < 600.0
 
@@ -383,8 +385,9 @@ func _to_vietnamese_solfege(raw: String) -> String:
 	return s
 
 func _answer(selected_btn: Button, selected_idx: int, selected: String, expected: String, melody: Dictionary, grid: GridContainer) -> void:
-	if next_button != null and is_instance_valid(next_button):
+	if answered or (next_button != null and is_instance_valid(next_button)):
 		return
+	answered = true
 	var correct := _note_equal(selected, expected)
 	var current_max := _safe_int(melody.get("max_score", 100), 100)
 	
@@ -401,8 +404,11 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 		var round_score := current_max if correct else 0
 		var round_stars := _stars(round_score, current_max)
 		var result: Dictionary = await report.report_minigame_by_id(current_id, round_score, round_stars, started_at, _now_iso())
+		result_sync_status = "be" if bool(result.get("submitted", false)) else "failed"
 		if bool(result.get("submitted", false)):
 			api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
+	else:
+		result_sync_status = "offline"
 	
 	# Disable buttons and highlight states
 	for child in grid.get_children():
@@ -639,6 +645,7 @@ func _note_equal(left: String, right: String) -> bool:
 	return _to_vietnamese_solfege(left) == _to_vietnamese_solfege(right)
 
 func _restart() -> void:
+	_audio_generation += 1
 	melody_index = 0
 	score = 0
 	api_stars_earned = 0
@@ -687,7 +694,10 @@ func _audio_stream_from_buffer(buffer: PackedByteArray, url: String) -> AudioStr
 	return AudioStreamWAV.load_from_buffer(buffer)
 
 func _play_melody_fallback(notes: Array) -> void:
+	var generation := _audio_generation
 	for note: Variant in notes:
+		if not is_instance_valid(self) or generation != _audio_generation:
+			return
 		_play_tone(_frequency(str(note)))
 		await get_tree().create_timer(0.35).timeout
 
