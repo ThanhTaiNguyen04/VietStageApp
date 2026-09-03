@@ -35,7 +35,7 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 	var card := PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if not mobile:
-		card.custom_minimum_size = Vector2(0, 354)
+		card.custom_minimum_size = Vector2(0, 378)
 
 	# Premium glassmorphism card style
 	var card_style := StyleBoxFlat.new()
@@ -76,27 +76,27 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 	badge_style.content_margin_top = 5
 	badge_style.content_margin_bottom = 5
 	badge_wrap.add_theme_stylebox_override("panel", badge_style)
-	var badge := _label(kicker, 12, color)
+	var badge := _label(kicker, 14 if mobile else 15, color)
 	badge.autowrap_mode = TextServer.AUTOWRAP_OFF
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_wrap.add_child(badge)
 	body.add_child(badge_wrap)
 
 	# Large icon
-	var icon_lbl := _label("?" if activity_id == "quiz" else ("\u266b" if activity_id == "rhythm" else "\u266a"), 48 if mobile else 56, color)
+	var icon_lbl := _label("?" if activity_id == "quiz" else ("\u266b" if activity_id == "rhythm" else "\u266a"), 54 if mobile else 62, color)
 	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
 	body.add_child(icon_lbl)
 
 	# Heading
-	var title := _label(heading, 18 if mobile else 21, C_NAVY)
+	var title := _label(heading, 22 if mobile else 26, C_NAVY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(title)
-	var detail := _label(description, 14 if mobile else 15, C_MUTED)
+	var detail := _label(description, 16 if mobile else 18, C_MUTED)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	detail.custom_minimum_size.y = 42 if mobile else 46
+	detail.custom_minimum_size.y = 48 if mobile else 54
 	body.add_child(detail)
-	var meta := _label(metadata, 12 if mobile else 13, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.95))
+	var meta := _label(metadata, 14 if mobile else 16, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.95))
 	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(meta)
 
@@ -109,6 +109,7 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 
 	# Full-width start button
 	var button := _button("Bắt đầu luyện", 0, 52 if mobile else 56, C_NAVY)
+	button.add_theme_font_size_override("font_size", 18 if mobile else 20)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(func() -> void: _open_activity(activity_id))
 	body.add_child(button)

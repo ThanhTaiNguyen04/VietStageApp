@@ -116,7 +116,7 @@ func _build_shell() -> void:
 	top_row.add_child(back)
 	var header_label := Label.new()
 	header_label.text = "Luyện tập"
-	header_label.add_theme_font_size_override("font_size", 19 if mobile else 22)
+	header_label.add_theme_font_size_override("font_size", 24 if mobile else 28)
 	header_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
 	header_label.add_theme_color_override("font_color", C_NAVY)
 	header_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
