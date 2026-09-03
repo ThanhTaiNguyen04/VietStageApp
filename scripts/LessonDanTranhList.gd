@@ -437,9 +437,7 @@ func _build_lessons() -> void:
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 	var level_data := get_level_data(selected_level)
-	var display_level := 3 if selected_level == 7 else selected_level
-	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % display_level
-	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
+	objective_label.hide()
 	page_title.text = "GIÁO TRÌNH ĐÀN TRANH - LEVEL %d" % selected_level
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
@@ -481,7 +479,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	var opens_video_first := selected_level == 1 and lesson_number == 1
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "video" if opens_video_first else "practice"))
 	column.add_child(lesson_button)
-	if lesson_type == "both" and not opens_video_first:
+	var opens_directly := selected_level == 1 and str(lesson.get("display_number", "")) in ["4.1", "4.2"]
+	if lesson_type == "both" and not opens_video_first and not opens_directly:
 		var video_button := _create_small_btn("Hướng dẫn", practice_unlocked)
 		video_button.name = "VideoBtn"
 		video_button.pressed.connect(_open_lesson.bind(lesson, "video"))
@@ -990,7 +989,7 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_top", 16 if mobile else 24)
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 19 if mobile else 25)
-	objective_label.visible = not mobile
+	objective_label.visible = false
 	if change_course_btn:
 		change_course_btn.custom_minimum_size.x = 108 if mobile else 164
 		change_course_btn.text = "Levels" if mobile else "Đổi khóa học"
