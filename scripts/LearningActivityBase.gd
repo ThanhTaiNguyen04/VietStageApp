@@ -1,17 +1,17 @@
 extends Control
 
 const Context = preload("res://scripts/LearningActivityContext.gd")
-const C_BG := Color("#f7f5ef")
-const C_NAVY := Color("#172f75")
-const C_BLUE := Color("#2d76df")
-const C_GREEN := Color("#4b9c55")
-const C_PURPLE := Color("#6852d9")
-const C_GOLD := Color("#e7ae22")
-const C_TEXT := Color("#182449")
-const C_MUTED := Color("#66708b")
-const C_CARD := Color("#ffffff")
-const C_OK := Color("#239653")
-const C_BAD := Color("#e04a43")
+const C_BG := Color("#faf8f5")
+const C_NAVY := Color("#173f2d") # Kept for compatibility; this is VietStage jade.
+const C_BLUE := Color("#b88322") # Quiz accent: antique gold.
+const C_GREEN := Color("#245f43") # Rhythm accent: jade.
+const C_PURPLE := Color("#75533a") # Melody accent: lacquer wood.
+const C_GOLD := Color("#c59626")
+const C_TEXT := Color("#21140d")
+const C_MUTED := Color("#6f6257")
+const C_CARD := Color("#fffdf8")
+const C_OK := Color("#24734d")
+const C_BAD := Color("#b83b2d")
 
 var root_box: VBoxContainer
 var content_box: VBoxContainer
@@ -36,14 +36,19 @@ func _build_shell() -> void:
 	if not background_path.is_empty():
 		background.texture = load(background_path)
 	add_child(background)
+	var background_wash := ColorRect.new()
+	background_wash.color = Color(0.10, 0.16, 0.11, 0.18)
+	background_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background_wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(background_wash)
 	root_box = VBoxContainer.new()
 	root_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_box.add_theme_constant_override("separation", 0)
 	add_child(root_box)
 
 	var top := PanelContainer.new()
-	top.custom_minimum_size = Vector2(0, 84 if mobile else 96)
-	top.add_theme_stylebox_override("panel", _panel(Color(0.98, 0.96, 0.90, 0.90), C_GOLD, 0, 1))
+	top.custom_minimum_size = Vector2(0, 78 if mobile else 86)
+	top.add_theme_stylebox_override("panel", _panel(Color(0.98, 0.97, 0.94, 0.94), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 0, 1))
 	root_box.add_child(top)
 	var top_margin := MarginContainer.new()
 	top_margin.add_theme_constant_override("margin_left", 12 if mobile else 28)
@@ -52,12 +57,11 @@ func _build_shell() -> void:
 	top_margin.add_theme_constant_override("margin_bottom", 10 if mobile else 16)
 	top.add_child(top_margin)
 	var top_row := HBoxContainer.new()
-	top_row.add_theme_constant_override("separation", 18)
+	top_row.add_theme_constant_override("separation", 14)
 	top_margin.add_child(top_row)
 	
-	# Game-style: large filled back button, jade accent, white arrow icon
 	var back := Button.new()
-	back.custom_minimum_size = Vector2(56 if mobile else 64, 56 if mobile else 64)
+	back.custom_minimum_size = Vector2(48 if mobile else 54, 48 if mobile else 54)
 	back.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back.expand_icon = true
 	back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -65,13 +69,13 @@ func _build_shell() -> void:
 	back.add_theme_color_override("icon_hover_color", C_NAVY.darkened(0.15))
 	back.add_theme_color_override("icon_pressed_color", C_NAVY.darkened(0.3))
 	back.add_theme_color_override("icon_focus_color", C_NAVY)
-	back.add_theme_constant_override("icon_max_width", 28 if mobile else 32)
+	back.add_theme_constant_override("icon_max_width", 24 if mobile else 28)
 
 	var sb_n := StyleBoxFlat.new()
 	sb_n.bg_color = Color.WHITE
-	sb_n.set_corner_radius_all(32)
-	sb_n.border_width_bottom = 4
-	sb_n.border_color = Color("#EBE5D8")
+	sb_n.set_corner_radius_all(27)
+	sb_n.border_width_bottom = 2
+	sb_n.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
 	
 	var sb_h := sb_n.duplicate()
 	sb_h.bg_color = Color("#FDFCF9")
@@ -87,7 +91,7 @@ func _build_shell() -> void:
 	back.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 	# Bouncy hover/press micro-interactions
-	back.pivot_offset = Vector2(28 if mobile else 32, 28 if mobile else 32)
+	back.pivot_offset = Vector2(24 if mobile else 27, 24 if mobile else 27)
 	back.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(back, "scale", Vector2(1.15, 1.15), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
@@ -104,20 +108,30 @@ func _build_shell() -> void:
 
 	back.pressed.connect(_go_back)
 	top_row.add_child(back)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_row.add_child(spacer)
+	var context_box := VBoxContainer.new()
+	context_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	context_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	context_box.add_theme_constant_override("separation", 1)
+	top_row.add_child(context_box)
+	var breadcrumb := Label.new()
+	breadcrumb.text = "%s · LUYỆN TẬP" % _instrument_title()
+	breadcrumb.add_theme_font_size_override("font_size", 11 if mobile else 12)
+	breadcrumb.add_theme_color_override("font_color", C_GOLD)
+	context_box.add_child(breadcrumb)
 	title_label = Label.new()
 	title_label.text = "HOẠT ĐỘNG HỌC TẬP"
-	title_label.add_theme_font_size_override("font_size", 22 if mobile else 26)
+	title_label.add_theme_font_size_override("font_size", 18 if mobile else 22)
 	title_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
 	title_label.add_theme_color_override("font_color", C_NAVY)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	top_row.add_child(title_label)
-	var spacer_right := Control.new()
-	spacer_right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_row.add_child(spacer_right)
+	context_box.add_child(title_label)
+	var status_chip := Label.new()
+	status_chip.text = "THỰC HÀNH"
+	status_chip.add_theme_font_size_override("font_size", 11 if mobile else 12)
+	status_chip.add_theme_color_override("font_color", C_NAVY)
+	status_chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top_row.add_child(status_chip)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
