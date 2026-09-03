@@ -1,5 +1,7 @@
 extends Node
 ## BackendReport autoload — reports learner results to the VietStage backend.
+
+signal activity_history_changed
 ##
 ## Owns a single ApiClient and routes practice/minigame/quiz/daily-challenge
 ## submissions. All submission methods are best-effort: when the learner is
@@ -16,6 +18,7 @@ var _api: Node = null
 func _ready() -> void:
 	_api = ApiClientScript.new()
 	add_child(_api)
+	call_deferred("retry_pending_game_attempts")
 
 
 func is_signed_in() -> bool:
@@ -28,6 +31,7 @@ func is_signed_in() -> bool:
 func fetch_and_install_catalog() -> void:
 	if not is_signed_in():
 		return
+	await retry_pending_game_attempts()
 	var instruments_response: Dictionary = await _api.get_instruments()
 	var lessons_response: Dictionary = await _api.get_lessons()
 	var instruments: Array = _extract_array(instruments_response)
@@ -259,39 +263,6 @@ func fetch_minigames_for_level(instrument: String, local_lesson_ids: Array, expe
 				enriched["lesson_id"] = lesson_id
 				result.append(enriched)
 
-	# 3. Nếu vẫn rỗng, quét toàn bộ catalog bài học để tránh miss bài mới
-	if result.is_empty() and not SecureDataManager.be_catalog.is_empty():
-		for lesson_value: Variant in SecureDataManager.be_catalog:
-			if not lesson_value is Dictionary:
-				continue
-			var lesson: Dictionary = lesson_value
-			var lesson_id := int(lesson.get("id", 0))
-			if lesson_id <= 0 or bound_ids.has(lesson_id):
-				continue
-			var minigames: Array = await ensure_minigame_list(lesson_id, force_refresh)
-			for item_value: Variant in minigames:
-				if not item_value is Dictionary:
-					continue
-				var item: Dictionary = item_value
-				var actual := str(item.get("challengeType", item.get("challenge_type", ""))).to_upper().replace("-", "_").replace(" ", "_")
-				if not normalized_expected.is_empty():
-					var matches := false
-					if normalized_expected == "RHYTHM_MATCH" and actual in ["RHYTHM_MATCH", "RHYTHM_MATCHING", "RHYTHM"]:
-						matches = true
-					elif normalized_expected in ["MELODY_COMPLETION", "MELODY_COMPLETE"] and actual in ["MELODY_COMPLETION", "MELODY_COMPLETE", "MELODY"]:
-						matches = true
-					elif actual == normalized_expected:
-						matches = true
-					if not matches:
-						continue
-				var item_id := int(item.get("id", 0))
-				if item_id > 0 and seen_ids.has(item_id):
-					continue
-				if item_id > 0:
-					seen_ids[item_id] = true
-				var enriched := item.duplicate(true)
-				enriched["lesson_id"] = lesson_id
-				result.append(enriched)
 
 	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var lesson_a := int(a.get("_lesson_position", 0))
@@ -375,6 +346,7 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 	if not attempt_data is Dictionary:
 		attempt_data = {}
 	SecureDataManager.apply_backend_reward(attempt_data)
+	activity_history_changed.emit()
 	return {
 		"submitted": true,
 		"lesson_id": lesson_id,
@@ -422,8 +394,13 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 		complete_value
 	)
 	if not _is_success(response):
+		SecureDataManager.enqueue_pending_game_attempt({
+			"kind": "minigame", "minigame_id": minigame_id, "score": score,
+			"started_at": start_value, "completed_at": complete_value, "client_attempt_id": attempt_id,
+		})
 		return {
 			"submitted": false,
+			"queued": true,
 			"reason": "attempt_failed",
 			"status": int(response.get("status", 0)),
 			"message": _api.error_message(response, "Không thể đồng bộ điểm minigame."),
@@ -433,6 +410,7 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 	if not attempt_data is Dictionary:
 		attempt_data = {}
 	SecureDataManager.apply_backend_reward(attempt_data)
+	activity_history_changed.emit()
 	return {
 		"submitted": true,
 		"minigame_id": minigame_id,
@@ -448,10 +426,16 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
-	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer, _uuid())
+	var attempt_id := _uuid()
+	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer, attempt_id)
 	if not _is_success(response):
+		SecureDataManager.enqueue_pending_game_attempt({
+			"kind": "quiz", "quiz_id": quiz_id, "selected_answer": selected_answer,
+			"client_attempt_id": attempt_id,
+		})
 		return {
 			"submitted": false,
+			"queued": true,
 			"reason": "attempt_failed",
 			"status": int(response.get("status", 0)),
 			"message": _api.error_message(response, "Không thể nộp câu trắc nghiệm."),
@@ -460,6 +444,7 @@ func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 	if not attempt_data is Dictionary:
 		attempt_data = {}
 	SecureDataManager.apply_backend_reward(attempt_data)
+	activity_history_changed.emit()
 	return {
 		"submitted": true,
 		"quiz_id": quiz_id,
@@ -468,6 +453,42 @@ func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
 		"stars_earned": int(attempt_data.get("starsEarned", attempt_data.get("stars_earned", 0))),
 		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", "")))
 	}
+
+
+## Retries persisted game attempts after startup/login. Rewards are applied only
+## once this API acknowledgement succeeds, then the queue entry is deleted.
+func retry_pending_game_attempts() -> void:
+	if not is_signed_in():
+		return
+	for value: Variant in SecureDataManager.get_pending_game_attempts():
+		if not value is Dictionary:
+			continue
+		var item: Dictionary = value
+		var response: Dictionary = {}
+		if str(item.get("kind", "")) == "quiz":
+			response = await _api.submit_quiz_attempt(int(item.get("quiz_id", 0)), str(item.get("selected_answer", "")), str(item.get("client_attempt_id", "")))
+		elif str(item.get("kind", "")) == "minigame":
+			response = await _api.submit_minigame_attempt(int(item.get("minigame_id", 0)), int(item.get("score", 0)), str(item.get("client_attempt_id", "")), str(item.get("started_at", "")), str(item.get("completed_at", "")))
+		else:
+			continue
+		if _is_success(response):
+			var reward: Variant = response.get("body", {}).get("data", {})
+			if reward is Dictionary:
+				SecureDataManager.apply_backend_reward(reward)
+			SecureDataManager.remove_pending_game_attempt(str(item.get("client_attempt_id", "")))
+			activity_history_changed.emit()
+
+
+func get_activity_history(page: int = 0, size: int = 20, activity_type: String = "") -> Dictionary:
+	if not is_signed_in():
+		return {}
+	return await _api.get_activity_history(page, size, activity_type)
+
+
+func get_activity_history_detail(event_id: String) -> Dictionary:
+	if not is_signed_in():
+		return {}
+	return await _api.get_activity_history_detail(event_id)
 
 
 # ── Daily challenges ───────────────────────────────────────────────────

@@ -821,38 +821,35 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 			(child as Button).disabled = true
 	var quiz: Dictionary = quizzes[question_index]
 
-	var fallback_correct := _is_correct(selected_index, selected_text, quiz)
 	var report := _report()
 	var result: Dictionary = {}
 	if report != null and report.is_signed_in() and int(quiz.get("id", 0)) > 0:
 		result = await report.report_quiz(int(quiz.get("id", 0)), selected_text)
 
-	var is_correct := fallback_correct
+	# The learner payload intentionally excludes correctAnswer. Only the server
+	# response is authoritative for grading and rewards.
+	var is_correct := false
 	var earned_points := 0
 	var be_correct_answer := ""
 	if bool(result.get("submitted", false)):
-		is_correct = bool(result.get("is_correct", fallback_correct))
+		is_correct = bool(result.get("is_correct", false))
 		earned_points = int(result.get("points_earned", 0))
 		api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
 		be_correct_answer = str(result.get("correct_answer", ""))
 
 	if is_correct:
 		correct_count += 1
-		score += earned_points if earned_points > 0 else 10
+		score += earned_points
 		_style_option_button_state(button, "correct")
 	else:
 		_style_option_button_state(button, "incorrect")
 
-	var quiz_options: Array = _parse_options(quiz.get("options", []))
-	var correct_index := _resolve_correct_index(quiz, quiz_options)
-	if not is_correct and correct_index >= 0 and correct_index < options_box.get_child_count():
-		var correct_btn = options_box.get_child(correct_index)
-		if correct_btn is Button:
-			_style_option_button_state(correct_btn, "correct")
-
-	var correct_text := str(quiz_options[correct_index]) if correct_index >= 0 else str(quiz.get("correctAnswer", quiz.get("correct_answer", "")))
-	if correct_text.is_empty() and not be_correct_answer.is_empty():
-		correct_text = be_correct_answer
+	var correct_text := be_correct_answer
+	if not is_correct and not correct_text.is_empty():
+		for child: Node in options_box.get_children():
+			if child is Button and _normalize_answer(str((child as Button).text)).contains(_normalize_answer(correct_text)):
+				_style_option_button_state(child as Button, "correct")
+				break
 
 	var feedback_text := "Bạn đã trả lời chính xác! +%d điểm" % (earned_points if earned_points > 0 else 10) if is_correct else "Chưa chính xác."
 	if not is_correct and not correct_text.is_empty():

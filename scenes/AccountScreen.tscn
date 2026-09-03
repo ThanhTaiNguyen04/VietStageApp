@@ -234,5 +234,12 @@ text = "Đang tải chỉ số học tập..."
 horizontal_alignment = 1
 autowrap_mode = 2
 
+[node name="ActivityHistoryButton" type="Button" parent="Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Lịch sử hoạt động"
+tooltip_text = "Xem lại Quiz, Mini Game và luyện tập đã hoàn thành"
+
 [node name="AvatarRequest" type="HTTPRequest" parent="."]
 timeout = 12.0

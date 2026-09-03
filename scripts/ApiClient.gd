@@ -53,6 +53,17 @@ func get_me() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USERS_ME), HTTPClient.METHOD_GET)
 
 
+func get_activity_history(page: int = 0, size: int = 20, activity_type: String = "") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.ACTIVITY_HISTORY) + "?page=" + str(maxi(page, 0)) + "&size=" + str(clampi(size, 1, 50))
+	if not activity_type.is_empty():
+		path += "&type=" + activity_type.uri_encode()
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+
+func get_activity_history_detail(event_id: String) -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.ACTIVITY_HISTORY) + "/" + event_id.uri_encode(), HTTPClient.METHOD_GET)
+
+
 # ── LEADERBOARD APIs ──────────────────────────────────────────────────
 
 ## Lấy danh sách Top bảng xếp hạng

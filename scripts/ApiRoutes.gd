@@ -10,6 +10,7 @@ const AUTH_RESET_PASSWORD := "/auth/reset-password"
 const AUTH_REFRESH := "/auth/refresh"
 const AUTH_LOGOUT := "/auth/logout"
 const USERS_ME := "/users/me"
+const ACTIVITY_HISTORY := "/users/me/activity-history"
 const UPLOAD := "/upload"
 
 # Leaderboards

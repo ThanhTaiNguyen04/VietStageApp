@@ -50,7 +50,8 @@ static var data := {
 	"last_practice_date": "",
 	"practice_time_seconds": 0,
 	"unlocked_decorations": [],
-	"active_decorations": []
+	"active_decorations": [],
+	"pending_game_attempts": []
 }
 
 static func save_data() -> void:
@@ -151,6 +152,34 @@ static func apply_backend_reward(reward_data: Dictionary) -> void:
 		data["xp"] = maxi(0, int(reward_data.get("totalPoints", 0)))
 	elif reward_data.has("total_points"):
 		data["xp"] = maxi(0, int(reward_data.get("total_points", 0)))
+	save_data()
+
+
+## Persist attempts until the authoritative backend has acknowledged them.
+static func enqueue_pending_game_attempt(attempt: Dictionary) -> void:
+	if not data.has("pending_game_attempts") or not (data["pending_game_attempts"] is Array):
+		data["pending_game_attempts"] = []
+	var attempt_id := str(attempt.get("client_attempt_id", ""))
+	if attempt_id.is_empty():
+		return
+	for existing: Variant in data["pending_game_attempts"]:
+		if existing is Dictionary and str(existing.get("client_attempt_id", "")) == attempt_id:
+			return
+	data["pending_game_attempts"].append(attempt.duplicate(true))
+	save_data()
+
+
+static func get_pending_game_attempts() -> Array:
+	var value: Variant = data.get("pending_game_attempts", [])
+	return value.duplicate(true) if value is Array else []
+
+
+static func remove_pending_game_attempt(client_attempt_id: String) -> void:
+	if not data.has("pending_game_attempts") or not (data["pending_game_attempts"] is Array):
+		return
+	data["pending_game_attempts"] = (data["pending_game_attempts"] as Array).filter(func(item: Variant) -> bool:
+		return not (item is Dictionary and str(item.get("client_attempt_id", "")) == client_attempt_id)
+	)
 	save_data()
 
 
@@ -535,11 +564,7 @@ static func resolve_be_lesson(instrument_key: String, local_lesson_id: String) -
 				var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[id]
 				if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
 					return lesson
-		if local_number > 0:
-			for lesson: Dictionary in be_catalog:
-				if int(lesson.get("orderIndex", lesson.get("order_index", 0))) == local_number:
-					return lesson
-		return be_catalog[0] if be_catalog.size() > 0 else {}
+		return {}
 		
 	if local_number > 0:
 		for lesson: Dictionary in candidates:

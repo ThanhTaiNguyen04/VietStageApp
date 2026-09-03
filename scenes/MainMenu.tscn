@@ -782,10 +782,16 @@ text = "Cài đặt tài khoản"
 theme_override_font_sizes/font_size = 15
 alignment = 0
 
+[node name="ActivityHistoryAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Lịch sử hoạt động"
+theme_override_font_sizes/font_size = 15
+alignment = 0
+
 [node name="LogoutAction" type="Button" parent="AccountMenuLayer/AccountPanel/MenuM/MenuV"]
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 text = "Đăng xuất"
 theme_override_font_sizes/font_size = 15
 alignment = 0
-

@@ -39,6 +39,7 @@ var _index: int = 0
 var _score: int = 0
 var _correct_count: int = 0
 var _api_stars_earned: int = 0
+var _submitted_correct_answer: String = ""
 var _answered: bool = false
 var _busy: bool = false
 
@@ -147,6 +148,7 @@ func _begin_quiz() -> void:
 
 func _show_question() -> void:
 	_answered = false
+	_submitted_correct_answer = ""
 	question_lbl.visible = true
 	options_vbox.visible = true
 	feedback_pan.visible = false
@@ -191,22 +193,18 @@ func _on_option(_btn: Button, idx: int, selected: String) -> void:
 			(child as Button).disabled = true
 
 	var selected_index := idx
-	var fallback_correct := _is_correct(selected_index, selected, quiz)
 
 	_busy = true
 	var result: Dictionary = await BackendReport.report_quiz(int(quiz.get("id", 0)), selected)
 	_busy = false
 
-	var is_correct := fallback_correct
+	var is_correct := false
 	var earned := int(result.get("points_earned", 0))
 	if result.get("submitted", false):
-		is_correct = bool(result.get("is_correct", fallback_correct))
+		is_correct = bool(result.get("is_correct", false))
+		_submitted_correct_answer = str(result.get("correct_answer", ""))
 		_api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
-		if earned > 0:
-			_score += earned
-	elif fallback_correct:
-		is_correct = true
-		_score += 10
+		_score += earned
 
 	if is_correct:
 		_correct_count += 1
@@ -318,10 +316,12 @@ func _style_option_feedback(selected_index: int, is_correct: bool) -> void:
 		i += 1
 
 func _option_is_correct_index(i: int) -> bool:
+	if _submitted_correct_answer.is_empty():
+		return false
 	var quiz: Dictionary = _quizzes[_index]
 	var options := _parse_options(quiz.get("options", ""))
 	if i < options.size():
-		return _is_correct(i, str(options[i]), quiz)
+		return _normalize_option(str(options[i])) == _normalize_option(_submitted_correct_answer)
 	return false
 
 func _show_feedback(is_correct: bool, quiz: Dictionary) -> void:

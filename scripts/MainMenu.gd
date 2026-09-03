@@ -90,6 +90,7 @@ var _daily_overlay: ColorRect = null
 @onready var profile_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/ProfileAction
 @onready var achievement_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/AchievementAction
 @onready var settings_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/SettingsAction
+@onready var activity_history_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/ActivityHistoryAction
 @onready var logout_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/LogoutAction
 
 @onready var streak_pill   : PanelContainer  = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill
@@ -1029,6 +1030,7 @@ func _build_profile_menu() -> void:
 	profile_action.pressed.connect(func() -> void: _open_account_destination("profile"))
 	achievement_action.pressed.connect(func() -> void: _open_account_destination("achievements"))
 	settings_action.pressed.connect(func() -> void: _open_account_destination("settings"))
+	activity_history_action.pressed.connect(func() -> void: _open_account_destination("activity_history"))
 	logout_action.pressed.connect(func() -> void: _open_account_destination("logout"))
 
 func _update_profile_menu_data() -> void:
@@ -1144,6 +1146,7 @@ func _style_account_menu() -> void:
 	_style_account_action(profile_action, "user", false)
 	_style_account_action(achievement_action, "trophy", false)
 	_style_account_action(settings_action, "settings", false)
+	_style_account_action(activity_history_action, "calendar-days", false)
 	_style_account_action(logout_action, "log-out", true)
 
 	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.0, 0.0, 0.0, 0.08), Color.TRANSPARENT, 0))
@@ -1245,6 +1248,8 @@ func _open_account_destination(destination: String) -> void:
 		_go_progress()
 	elif destination == "settings":
 		_go_settings()
+	elif destination == "activity_history":
+		get_tree().change_scene_to_file("res://scenes/ActivityHistoryScreen.tscn")
 	elif destination == "logout":
 		_confirm_logout()
 	else:

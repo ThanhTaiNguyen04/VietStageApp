@@ -64,6 +64,7 @@ const STAT_FIELDS := [
 @onready var info_grid: GridContainer = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/InfoGrid
 @onready var stats_grid: GridContainer = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/StatsGrid
 @onready var progress_state: Label = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/ProgressState
+@onready var activity_history_button: Button = $Root/ContentMargin/Scroll/Center/Content/ProfileCard/CardMargin/Card/ActivityHistoryButton
 @onready var avatar_request: HTTPRequest = $AvatarRequest
 
 var _api_client: Node
@@ -82,6 +83,7 @@ func _ready() -> void:
 	
 	back_button.pressed.connect(_go_back)
 	retry_button.pressed.connect(_refresh_from_api)
+	activity_history_button.pressed.connect(_open_activity_history)
 	avatar_request.request_completed.connect(_on_avatar_loaded)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
@@ -409,6 +411,10 @@ func _animate_profile() -> void:
 
 func _go_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+
+func _open_activity_history() -> void:
+	get_tree().change_scene_to_file("res://scenes/ActivityHistoryScreen.tscn")
 
 
 func _extract_data(response: Dictionary) -> Dictionary:
