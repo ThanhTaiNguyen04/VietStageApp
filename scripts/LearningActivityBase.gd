@@ -48,8 +48,14 @@ func _build_shell() -> void:
 
 	var top := PanelContainer.new()
 	top.custom_minimum_size = Vector2(0, 78 if mobile else 86)
-	top.add_theme_stylebox_override("panel", _panel(Color(0.98, 0.97, 0.94, 0.94), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 0, 1))
+	top.add_theme_stylebox_override("panel", _panel(Color(1.0, 0.99, 0.97, 0.66), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.34), 0, 1))
 	root_box.add_child(top)
+	var top_blur := ColorRect.new()
+	top_blur.material = _glass_material()
+	top_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_blur.show_behind_parent = true
+	top_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top.add_child(top_blur)
 	var top_margin := MarginContainer.new()
 	top_margin.add_theme_constant_override("margin_left", 12 if mobile else 28)
 	top_margin.add_theme_constant_override("margin_right", 12 if mobile else 28)
@@ -108,7 +114,15 @@ func _build_shell() -> void:
 
 	back.pressed.connect(_go_back)
 	top_row.add_child(back)
+	var header_label := Label.new()
+	header_label.text = "Luyện tập"
+	header_label.add_theme_font_size_override("font_size", 19 if mobile else 22)
+	header_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
+	header_label.add_theme_color_override("font_color", C_NAVY)
+	header_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	top_row.add_child(header_label)
 	var context_box := VBoxContainer.new()
+	context_box.visible = false
 	context_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	context_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	context_box.add_theme_constant_override("separation", 1)
@@ -131,6 +145,7 @@ func _build_shell() -> void:
 	status_chip.add_theme_font_size_override("font_size", 11 if mobile else 12)
 	status_chip.add_theme_color_override("font_color", C_NAVY)
 	status_chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status_chip.visible = false
 	top_row.add_child(status_chip)
 
 	var scroll := ScrollContainer.new()
@@ -208,6 +223,15 @@ func _panel(bg: Color, border: Color, radius: int, border_width: int) -> StyleBo
 	style.content_margin_top = 12
 	style.content_margin_bottom = 12
 	return style
+
+func _glass_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = "shader_type canvas_item;\n" + \
+		"uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;\n" + \
+		"void fragment() { COLOR = textureLod(screen_texture, SCREEN_UV, 2.0); }"
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
 
 func _instrument_title() -> String:
 	match Context.instrument:

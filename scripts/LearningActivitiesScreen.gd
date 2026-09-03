@@ -25,14 +25,8 @@ func _ready() -> void:
 
 
 func _style_activities_header() -> void:
-	var top := root_box.get_child(0) as PanelContainer
-	if top == null:
-		return
-	top.add_theme_stylebox_override("panel", _panel(Color(0.98, 0.97, 0.94, 0.94), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55), 0, 1))
-	var mobile := get_viewport_rect().size.x < 600.0
-	title_label.add_theme_color_override("font_color", C_NAVY)
-	title_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	title_label.add_theme_font_size_override("font_size", 18 if mobile else 22)
+	# The compact glass header is supplied by the shared activity shell.
+	title_label.hide()
 
 
 func _activity_card(kicker: String, heading: String, description: String, metadata: String, color: Color, activity_id: String) -> PanelContainer:
@@ -45,8 +39,8 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 
 	# Premium glassmorphism card style
 	var card_style := StyleBoxFlat.new()
-	card_style.bg_color = Color(1.0, 0.99, 0.97, 0.95)
-	card_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.40)
+	card_style.bg_color = Color(1.0, 0.99, 0.97, 0.68)
+	card_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.34)
 	card_style.set_border_width_all(1)
 	card_style.set_corner_radius_all(24)
 	card_style.shadow_color = Color(0.09, 0.25, 0.18, 0.14)
@@ -57,6 +51,12 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 	card_style.content_margin_top = 22 if mobile else 26
 	card_style.content_margin_bottom = 22 if mobile else 26
 	card.add_theme_stylebox_override("panel", card_style)
+	var card_blur := ColorRect.new()
+	card_blur.material = _glass_material()
+	card_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_blur.show_behind_parent = true
+	card_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	card.add_child(card_blur)
 
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 10 if mobile else 12)

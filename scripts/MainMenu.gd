@@ -134,7 +134,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Thực Hành"
+	btn_minigame.text = "Luyện tập"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -143,7 +143,7 @@ func _ready() -> void:
 	var bottom_h := $Root/RightContent/BottomBar/BottomM/BottomH as HBoxContainer
 	btn_minigame_mob = Button.new()
 	btn_minigame_mob.name = "BtnMiniGameMobile"
-	btn_minigame_mob.text = "Mini-game"
+	btn_minigame_mob.text = "Luyện tập"
 	btn_minigame_mob.flat = true
 	btn_minigame_mob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom_h.add_child(btn_minigame_mob)

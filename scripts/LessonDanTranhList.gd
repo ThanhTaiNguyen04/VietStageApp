@@ -236,7 +236,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Luyện tập"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
