@@ -79,6 +79,7 @@ func _ready() -> void:
 	_style_card()
 	_style_all()
 	_setup_extra_ui()   # thêm welcome header, input labels, forgot, eye toggle
+	_restore_legacy_form_visuals()
 	_connect_all()
 	_set_auth_mode(AuthMode.LOGIN)
 	_spawn_bg_particles()
@@ -691,6 +692,85 @@ func _style_social(btn: Button) -> void:
 	btn.add_theme_stylebox_override("disabled", d)
 	btn.add_theme_stylebox_override("focus",   _pill(Color(0,0,0,0), Color(0,0,0,0), 0))
 	btn.add_theme_color_override("font_disabled_color", Color(0.13, 0.08, 0.05, 0.38))
+
+
+# Giữ giao diện đăng nhập nguyên bản trước bản redesign 29/08.
+# Phần này chỉ hoàn nguyên trình bày; luồng xác thực/API hiện tại không thay đổi.
+func _restore_legacy_form_visuals() -> void:
+	app_name.hide()
+	app_sub.hide()
+	footer_lbl.hide()
+
+	if _welcome_lbl:
+		_welcome_lbl.add_theme_font_size_override("font_size", 28)
+		_welcome_lbl.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	if _welcome_sub:
+		_welcome_sub.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.85))
+	if _email_lbl:
+		_email_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	if _name_lbl:
+		_name_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	if _pass_lbl:
+		_pass_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	if _forgot_btn:
+		_forgot_btn.add_theme_color_override("font_color", C_PRIMARY)
+		_forgot_btn.add_theme_color_override("font_hover_color", C_PRIMARY_LT)
+
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = Color(0.98, 0.97, 0.94, 0.88)
+	card_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.22)
+	card_style.set_border_width_all(1)
+	card_style.set_corner_radius_all(32)
+	card_style.shadow_size = 24
+	card_style.shadow_color = Color(0.09, 0.25, 0.18, 0.10)
+	card_style.shadow_offset = Vector2(0, 8)
+	card.add_theme_stylebox_override("panel", card_style)
+
+	var input_normal := _pill(Color(0.95, 0.93, 0.89, 0.60), Color(0.13, 0.08, 0.05, 0.15), 28)
+	var input_focus := _pill(Color.WHITE, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.88), 28)
+	var input_read_only := _pill(Color(1.0, 1.0, 1.0, 0.76), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 28)
+	input_normal.content_margin_left = 46
+	input_focus.content_margin_left = 46
+	input_read_only.content_margin_left = 46
+	input_focus.shadow_size = 12
+	input_focus.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.18)
+	for input: LineEdit in [email_edit, name_edit, password_edit]:
+		input.custom_minimum_size.y = 58
+		input.add_theme_stylebox_override("normal", input_normal)
+		input.add_theme_stylebox_override("focus", input_focus)
+		input.add_theme_stylebox_override("read_only", input_read_only)
+		input.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+		input.add_theme_color_override("font_uneditable_color", Color(0.13, 0.08, 0.05, 0.72))
+		input.add_theme_color_override("font_placeholder_color", Color(0.13, 0.08, 0.05, 0.7))
+		input.add_theme_color_override("caret_color", C_GOLD)
+		input.add_theme_font_size_override("font_size", 20)
+
+	var sign_in_normal := _pill(C_PRIMARY, Color.WHITE, 28)
+	var sign_in_hover := _pill(C_PRIMARY_LT, Color.WHITE, 28)
+	var sign_in_pressed := _pill(C_PRIMARY_DK, Color.WHITE, 28)
+	var sign_in_disabled := _pill(Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.78), Color(1, 1, 1, 0.72), 28)
+	for style: StyleBoxFlat in [sign_in_normal, sign_in_hover, sign_in_pressed, sign_in_disabled]:
+		style.set_border_width_all(2)
+	sign_in_normal.shadow_size = 16
+	sign_in_normal.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.35)
+	sign_in_hover.shadow_size = 22
+	sign_in_hover.shadow_color = Color(C_PRIMARY.r, C_PRIMARY.g, C_PRIMARY.b, 0.48)
+	sign_in_btn.custom_minimum_size.y = 58
+	sign_in_btn.add_theme_stylebox_override("normal", sign_in_normal)
+	sign_in_btn.add_theme_stylebox_override("hover", sign_in_hover)
+	sign_in_btn.add_theme_stylebox_override("pressed", sign_in_pressed)
+	sign_in_btn.add_theme_stylebox_override("disabled", sign_in_disabled)
+	sign_in_btn.add_theme_color_override("font_color", Color.WHITE)
+	sign_in_btn.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.9, 1.0))
+	sign_in_btn.add_theme_font_size_override("font_size", 24)
+
+	toggle_mode_btn.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	toggle_mode_btn.add_theme_color_override("font_hover_color", C_PETAL_1)
+	toggle_mode_btn.add_theme_color_override("font_pressed_color", C_PETAL_2)
+	or_label.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	guest_lbl.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 1.0))
+	_style_social(google_btn)
+	_style_social(guest_btn)
 
 # ── Kết nối sự kiện ──────────────────────────────────────────────────────────
 func _connect_all() -> void:
