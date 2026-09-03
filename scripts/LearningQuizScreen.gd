@@ -7,6 +7,8 @@ var question_index := 0
 var score := 0
 var correct_count := 0
 var api_stars_earned := 0
+var submitted_attempt_count := 0
+var unsynced_attempt_count := 0
 var answered := false
 var question_card: PanelContainer # Reserved for compatibility, though we don't use it directly now
 var options_box: GridContainer
@@ -390,6 +392,9 @@ func _load_sample_quizzes(fetching_be: bool) -> void:
 	question_index = 0
 	score = 0
 	correct_count = 0
+	api_stars_earned = 0
+	submitted_attempt_count = 0
+	unsynced_attempt_count = 0
 	if quizzes.is_empty():
 		_show_message("Bài học này chưa có câu hỏi trắc nghiệm.")
 		return
@@ -434,6 +439,9 @@ func _fetch_from_backend() -> void:
 	question_index = 0
 	score = 0
 	correct_count = 0
+	api_stars_earned = 0
+	submitted_attempt_count = 0
+	unsynced_attempt_count = 0
 	_set_source_badge("Dữ liệu BE", false)
 	_show_question()
 
@@ -825,17 +833,19 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 	var result: Dictionary = {}
 	if report != null and report.is_signed_in() and int(quiz.get("id", 0)) > 0:
 		result = await report.report_quiz(int(quiz.get("id", 0)), selected_text)
+		_record_quiz_submission(result)
 
-	# The learner payload intentionally excludes correctAnswer. Only the server
-	# response is authoritative for grading and rewards.
-	var is_correct := false
+	# The server response is authoritative when it arrives. Sample/offline quizzes
+	# have no server attempt, so grade them locally instead of marking every choice
+	# as incorrect.
+	var grading := _grade_answer(quiz, selected_index, selected_text, result)
+	var is_correct := bool(grading.get("is_correct", false))
+	var graded_locally := str(grading.get("source", "")) == "local"
 	var earned_points := 0
-	var be_correct_answer := ""
+	var correct_text := str(grading.get("correct_answer", ""))
 	if bool(result.get("submitted", false)):
-		is_correct = bool(result.get("is_correct", false))
 		earned_points = int(result.get("points_earned", 0))
 		api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
-		be_correct_answer = str(result.get("correct_answer", ""))
 
 	if is_correct:
 		correct_count += 1
@@ -844,16 +854,20 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 	else:
 		_style_option_button_state(button, "incorrect")
 
-	var correct_text := be_correct_answer
 	if not is_correct and not correct_text.is_empty():
 		for child: Node in options_box.get_children():
 			if child is Button and _normalize_answer(str((child as Button).text)).contains(_normalize_answer(correct_text)):
 				_style_option_button_state(child as Button, "correct")
 				break
 
-	var feedback_text := "Bạn đã trả lời chính xác! +%d điểm" % (earned_points if earned_points > 0 else 10) if is_correct else "Chưa chính xác."
-	if not is_correct and not correct_text.is_empty():
-		feedback_text = "Đáp án đúng là: %s" % correct_text
+	var feedback_text := ""
+	if is_correct:
+		if graded_locally:
+			feedback_text = "Bạn đã trả lời chính xác! Kết quả sẽ được đồng bộ khi có mạng." if int(quiz.get("id", 0)) > 0 else "Bạn đã trả lời chính xác! Đây là câu hỏi mẫu."
+		else:
+			feedback_text = "Bạn đã trả lời chính xác! +%d điểm" % (earned_points if earned_points > 0 else 10)
+	else:
+		feedback_text = "Chưa chính xác. Đáp án đúng là: %s" % correct_text if not correct_text.is_empty() else "Chưa thể chấm câu trả lời này. Hãy thử lại khi có mạng."
 
 	# Update score pill label immediately
 	if score_label and is_instance_valid(score_label):
@@ -895,6 +909,18 @@ func _show_quiz_result() -> void:
 	var stars := clampi(api_stars_earned, 0, 3)
 	_show_result("Quiz hoàn thành!", "Bạn trả lời đúng %d / %d câu." % [correct_count, quizzes.size()], score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0)
 
+
+## Trạng thái đồng bộ ở trang kết quả phải phản ánh attempt đã nộp, không chỉ
+## phản ánh việc câu hỏi được tải từ backend.
+func _record_quiz_submission(result: Dictionary) -> void:
+	if bool(result.get("submitted", false)):
+		submitted_attempt_count += 1
+		if unsynced_attempt_count == 0:
+			result_sync_status = "be"
+		return
+	unsynced_attempt_count += 1
+	result_sync_status = "failed"
+
 func _restart() -> void:
 	if progress_bar:
 		progress_bar.get_parent().visible = true
@@ -907,6 +933,8 @@ func _restart() -> void:
 	score = 0
 	correct_count = 0
 	api_stars_earned = 0
+	submitted_attempt_count = 0
+	unsynced_attempt_count = 0
 	_show_question()
 
 func _parse_options(raw: Variant) -> Array:
@@ -915,6 +943,20 @@ func _parse_options(raw: Variant) -> Array:
 func _is_correct(index: int, selected: String, quiz: Dictionary) -> bool:
 	var options: Array = _parse_options(quiz.get("options", []))
 	return _resolve_correct_index(quiz, options) == index or _normalize_answer(selected) == _normalize_answer(str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))))
+
+
+func _grade_answer(quiz: Dictionary, selected_index: int, selected_text: String, result: Dictionary) -> Dictionary:
+	if bool(result.get("submitted", false)):
+		return {
+			"is_correct": bool(result.get("is_correct", false)),
+			"correct_answer": str(result.get("correct_answer", "")),
+			"source": "server"
+		}
+	return {
+		"is_correct": _is_correct(selected_index, selected_text, quiz),
+		"correct_answer": str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))),
+		"source": "local"
+	}
 
 func _filter_valid_quizzes(source: Array) -> Array:
 	var valid: Array = []

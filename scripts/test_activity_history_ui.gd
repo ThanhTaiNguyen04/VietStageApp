@@ -57,15 +57,36 @@ func _run() -> void:
 	assert(screen_instance._type_name("QUIZ") == "Câu hỏi")
 	assert(screen_instance._accuracy_text(mock_items[0]) == "100%")
 	assert(screen_instance._sync_status_text({"status": "PENDING_SYNC"}) == "Chờ đồng bộ")
+	assert(screen_instance._sync_status_text({"status": "FAILED_SYNC"}) == "Đồng bộ lỗi")
 	assert(screen_instance._connection_label != null)
 	print("[Check 3] Compact stats and Vietnamese activity labels are present.")
 
+	var long_item := {
+		"type": "MINIGAME",
+		"title": "Thử thách nhịp điệu ngũ cung với một tên bài học rất dài để kiểm tra ellipsis trên màn hình ngang",
+		"score": null,
+		"status": "FAILED_SYNC"
+	}
+	var compact_card := screen_instance._make_3d_activity_card(long_item)
+	assert(compact_card.custom_minimum_size.y == 72)
+	assert(screen_instance._score_text(long_item) == "—")
+	assert(screen_instance._accuracy_text(long_item) == "—")
+	assert(screen_instance._activity_time_text(long_item) == "—")
+	assert(screen_instance._is_compact_landscape_size(Vector2(640, 360)))
+	assert(screen_instance._is_compact_landscape_size(Vector2(932, 430)))
+	assert(not screen_instance._is_compact_landscape_size(Vector2(430, 932)))
+	print("[Check 4] Compact card handles long and missing content.")
+
+	screen_instance._render_loading_skeleton()
+	assert(screen_instance._list_container.get_child_count() == 3)
+	print("[Check 5] Loading skeleton renders three lightweight rows.")
+
 	# Check detail modal open
 	screen_instance._open_detail(mock_items[0])
-	print("[Check 4] _open_detail executed successfully.")
+	print("[Check 6] _open_detail executed successfully.")
 
 	screen_instance._close_detail_sheet()
-	print("[Check 5] _close_detail_sheet executed successfully.")
+	print("[Check 7] _close_detail_sheet executed successfully.")
 
 	print("========================================")
 	print("ACTIVITY HISTORY SCREEN TEST PASSED!")

@@ -125,11 +125,11 @@ func _load_challenges() -> void:
 
 	rhythms = RhythmModel.parse_challenges(target_challenges)
 	if rhythms.is_empty():
-		_set_flow_state(FlowState.ERROR)
-		_build_load_error(
-			"Chưa tìm thấy thử thách RHYTHM_MATCH cho bài học này.",
-			"Bạn có thể thử tải lại hoặc chơi bằng dữ liệu mẫu trên thiết bị."
-		)
+		# A signed-in learner can reach this branch when the lesson has not been
+		# authored with a rhythm challenge yet. Keep the game playable, but make
+		# the run explicitly offline so it is never presented as backend content
+		# or submitted as a real attempt.
+		_use_offline_data()
 		return
 
 	result_sync_status = "pending"

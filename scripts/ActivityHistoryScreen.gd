@@ -44,6 +44,8 @@ var _list_container: VBoxContainer
 var _load_more_btn: Button
 var _filters_container: HBoxContainer
 var _stats_container: HBoxContainer
+var _list_scroll: ScrollContainer
+var _last_rendered_items: Array = []
 
 # Bottom Sheet Modal refs
 var _modal_overlay: Control
@@ -58,6 +60,7 @@ func _ready() -> void:
 	_load_fonts()
 	_build_ui()
 	_build_detail_sheet()
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	var backend_report := get_node_or_null("/root/BackendReport")
 	if backend_report != null and backend_report.has_signal("activity_history_changed"):
@@ -93,14 +96,14 @@ func _build_ui() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var is_mobile := _is_mobile()
-	margin.add_theme_constant_override("margin_left", 16 if is_mobile else 32)
-	margin.add_theme_constant_override("margin_right", 16 if is_mobile else 32)
-	margin.add_theme_constant_override("margin_top", 16 if is_mobile else 24)
-	margin.add_theme_constant_override("margin_bottom", 16 if is_mobile else 24)
+	margin.add_theme_constant_override("margin_left", _horizontal_inset())
+	margin.add_theme_constant_override("margin_right", _horizontal_inset())
+	margin.add_theme_constant_override("margin_top", _vertical_inset())
+	margin.add_theme_constant_override("margin_bottom", _vertical_inset())
 	add_child(margin)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10 if is_mobile else 12)
+	root.add_theme_constant_override("separation", 7 if _is_compact_landscape() else 10)
 	margin.add_child(root)
 
 	# 1. Top Bar Header
@@ -108,7 +111,7 @@ func _build_ui() -> void:
 
 	# 2. Bento Quick Stats Strip
 	_stats_container = HBoxContainer.new()
-	_stats_container.add_theme_constant_override("separation", 10 if is_mobile else 14)
+	_stats_container.add_theme_constant_override("separation", 8 if is_mobile else 10)
 	_stats_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.add_child(_stats_container)
 	_render_stats_strip(0, 0, 0, 0)
@@ -128,7 +131,7 @@ func _build_ui() -> void:
 	# 4. Offline banner
 	_connection_banner = PanelContainer.new()
 	_connection_banner.visible = false
-	_connection_banner.custom_minimum_size = Vector2(0, 48)
+	_connection_banner.custom_minimum_size = Vector2(0, 44)
 	var banner_style := StyleBoxFlat.new()
 	banner_style.bg_color = C_AMBER_BG
 	banner_style.border_color = Color(C_AMBER.r, C_AMBER.g, C_AMBER.b, 0.35)
@@ -152,7 +155,7 @@ func _build_ui() -> void:
 	banner_row.add_child(_connection_label)
 	var retry_connection_btn := Button.new()
 	retry_connection_btn.text = "Thử lại"
-	retry_connection_btn.custom_minimum_size = Vector2(84, 40)
+	retry_connection_btn.custom_minimum_size = Vector2(88, 44)
 	retry_connection_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if _font_bold:
 		retry_connection_btn.add_theme_font_override("font", _font_bold)
@@ -162,18 +165,17 @@ func _build_ui() -> void:
 	root.add_child(_connection_banner)
 
 	# 5. Scrollable Activity Stream
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	root.add_child(scroll)
+	_list_scroll = ScrollContainer.new()
+	_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_list_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_list_scroll.scroll_deadzone = 8
+	root.add_child(_list_scroll)
 
-	var list_center := CenterContainer.new()
-	list_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list_center)
 	_list_container = VBoxContainer.new()
-	_list_container.custom_minimum_size = Vector2(_content_width(), 0)
-	_list_container.add_theme_constant_override("separation", 12)
-	list_center.add_child(_list_container)
+	_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list_container.add_theme_constant_override("separation", 8)
+	_list_scroll.add_child(_list_container)
 
 	# 6. Load More Button
 	_load_more_btn = Button.new()
@@ -193,11 +195,13 @@ func _build_top_bar() -> HBoxContainer:
 
 	# 3D Back Button
 	var back_btn := Button.new()
-	back_btn.text = "‹"
+	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
+	back_btn.expand_icon = true
+	back_btn.add_theme_constant_override("icon_max_width", 24)
 	back_btn.tooltip_text = "Quay lại tài khoản"
-	back_btn.custom_minimum_size = Vector2(46, 46)
+	back_btn.custom_minimum_size = Vector2(44, 44)
 	back_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	back_btn.add_theme_font_size_override("font_size", 28)
+	back_btn.add_theme_color_override("icon_normal_color", C_JADE)
 	if _font_bold:
 		back_btn.add_theme_font_override("font", _font_bold)
 	_style_3d_button(back_btn, Color.WHITE, C_JADE, 23, 4)
@@ -212,7 +216,7 @@ func _build_top_bar() -> HBoxContainer:
 
 	_title_lbl = Label.new()
 	_title_lbl.text = "LỊCH SỬ HOẠT ĐỘNG"
-	_title_lbl.add_theme_font_size_override("font_size", 20 if _is_mobile() else 24)
+	_title_lbl.add_theme_font_size_override("font_size", 22 if _is_compact_landscape() else (26 if _is_mobile() else 30))
 	_title_lbl.add_theme_color_override("font_color", C_JADE)
 	if _font_title:
 		_title_lbl.add_theme_font_override("font", _font_title)
@@ -220,7 +224,8 @@ func _build_top_bar() -> HBoxContainer:
 
 	_summary_lbl = Label.new()
 	_summary_lbl.text = "Đang tải dữ liệu luyện tập..."
-	_summary_lbl.add_theme_font_size_override("font_size", 13)
+	_summary_lbl.add_theme_font_size_override("font_size", 12 if _is_compact_landscape() else 14)
+	_summary_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_summary_lbl.add_theme_color_override("font_color", C_MUTED)
 	if _font_regular:
 		_summary_lbl.add_theme_font_override("font", _font_regular)
@@ -228,11 +233,13 @@ func _build_top_bar() -> HBoxContainer:
 
 	# Refresh 3D Button
 	var refresh_btn := Button.new()
-	refresh_btn.text = "↻"
+	refresh_btn.icon = load("res://assets/textures/lucide/rotate-cw.svg") as Texture2D
+	refresh_btn.expand_icon = true
+	refresh_btn.add_theme_constant_override("icon_max_width", 22)
 	refresh_btn.tooltip_text = "Làm mới lịch sử"
-	refresh_btn.custom_minimum_size = Vector2(46, 46)
+	refresh_btn.custom_minimum_size = Vector2(44, 44)
 	refresh_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	refresh_btn.add_theme_font_size_override("font_size", 22)
+	refresh_btn.add_theme_color_override("icon_normal_color", C_JADE)
 	if _font_bold:
 		refresh_btn.add_theme_font_override("font", _font_bold)
 	_style_3d_button(refresh_btn, Color.WHITE, C_JADE, 23, 4)
@@ -248,16 +255,16 @@ func _render_stats_strip(total_xp: int, avg_accuracy: int, total_stars: int, tot
 	_clear(_stats_container)
 
 	# Four compact, equal cards are deliberately retained in landscape.
-	_stats_container.add_child(_make_bento_item("⚡", "%d" % total_xp, "Tổng XP", C_BLUE, C_BLUE_BG))
-	_stats_container.add_child(_make_bento_item("🎯", "%d%%" % avg_accuracy if avg_accuracy > 0 else "—", "Độ chính xác", C_GREEN, C_GREEN_BG))
-	_stats_container.add_child(_make_bento_item("★", "%d" % total_stars, "Tổng sao", C_GOLD, C_GOLD_BG))
-	_stats_container.add_child(_make_bento_item("📚", "%d" % total_count, "Bài hoàn thành", C_PURPLE, C_PURPLE_BG))
+	_stats_container.add_child(_make_bento_item("flame.svg", "%d" % total_xp, "Tổng XP", C_BLUE, C_BLUE_BG))
+	_stats_container.add_child(_make_bento_item("gauge.svg", "%d%%" % avg_accuracy if avg_accuracy > 0 else "—", "Độ chính xác", C_GREEN, C_GREEN_BG))
+	_stats_container.add_child(_make_bento_item("star.svg", "%d" % total_stars, "Tổng sao", C_GOLD, C_GOLD_BG))
+	_stats_container.add_child(_make_bento_item("book-open.svg", "%d" % total_count, "Bài hoàn thành", C_PURPLE, C_PURPLE_BG))
 
 
-func _make_bento_item(icon: String, val_text: String, label_text: String, accent_color: Color, bg_color: Color) -> PanelContainer:
+func _make_bento_item(icon_name: String, val_text: String, label_text: String, accent_color: Color, bg_color: Color) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	p.custom_minimum_size = Vector2(0, 62)
+	p.custom_minimum_size = Vector2(0, 60 if _is_compact_landscape() else 66)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color.WHITE
@@ -275,7 +282,7 @@ func _make_bento_item(icon: String, val_text: String, label_text: String, accent
 	p.add_theme_stylebox_override("panel", style)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 10)
+	hbox.add_theme_constant_override("separation", 8)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	p.add_child(hbox)
 
@@ -286,13 +293,7 @@ func _make_bento_item(icon: String, val_text: String, label_text: String, accent
 	icon_style.bg_color = bg_color
 	icon_style.set_corner_radius_all(17)
 	icon_panel.add_theme_stylebox_override("panel", icon_style)
-	var icon_lbl := Label.new()
-	icon_lbl.text = icon
-	icon_lbl.add_theme_font_size_override("font_size", 18)
-	icon_lbl.add_theme_color_override("font_color", accent_color)
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	icon_panel.add_child(icon_lbl)
+	icon_panel.add_child(_lucide_icon(icon_name, 19, accent_color))
 	hbox.add_child(icon_panel)
 
 	# Texts
@@ -303,7 +304,7 @@ func _make_bento_item(icon: String, val_text: String, label_text: String, accent
 
 	var val_lbl := Label.new()
 	val_lbl.text = val_text
-	val_lbl.add_theme_font_size_override("font_size", 15)
+	val_lbl.add_theme_font_size_override("font_size", 22 if not _is_compact_landscape() else 19)
 	val_lbl.add_theme_color_override("font_color", C_TEXT)
 	if _font_bold:
 		val_lbl.add_theme_font_override("font", _font_bold)
@@ -311,7 +312,7 @@ func _make_bento_item(icon: String, val_text: String, label_text: String, accent
 
 	var lbl := Label.new()
 	lbl.text = label_text
-	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_font_size_override("font_size", 11)
 	lbl.add_theme_color_override("font_color", C_MUTED)
 	if _font_regular:
 		lbl.add_theme_font_override("font", _font_regular)
@@ -322,32 +323,39 @@ func _make_bento_item(icon: String, val_text: String, label_text: String, accent
 
 # ── Filter Segmented Pills ─────────────────────────────────────────────────
 
-func _render_filter_pills() -> void:
+func _render_filter_pills(items: Array = _last_rendered_items) -> void:
 	_clear(_filters_container)
 	var filter_options := [
-		{"label": "Tất cả", "value": "", "icon": "★"},
-		{"label": "Câu hỏi", "value": "QUIZ", "icon": "🎯"},
-		{"label": "Nhịp điệu", "value": "MINIGAME", "icon": "🥁"},
-		{"label": "Luyện tập", "value": "PRACTICE", "icon": "🎻"}
+		{"label": "Tất cả", "value": "", "icon": "circle.svg"},
+		{"label": "Câu hỏi", "value": "QUIZ", "icon": "gauge.svg"},
+		{"label": "Nhịp điệu", "value": "MINIGAME", "icon": "music.svg"},
+		{"label": "Luyện tập", "value": "PRACTICE", "icon": "play-circle.svg"}
 	]
 
 	for opt: Dictionary in filter_options:
 		var val := str(opt["value"])
 		var is_active := val == _filter
 		var btn := Button.new()
-		btn.text = "%s  %s" % [str(opt["icon"]), str(opt["label"])]
+		var count := items.size() if val.is_empty() else items.filter(func(item: Variant) -> bool: return item is Dictionary and str((item as Dictionary).get("type", "")).to_upper() == val).size()
+		btn.text = "%s  %d" % [str(opt["label"]), count]
+		btn.icon = load("res://assets/textures/lucide/%s" % str(opt["icon"])) as Texture2D
+		btn.expand_icon = true
+		btn.add_theme_constant_override("icon_max_width", 18)
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.toggle_mode = true
 		btn.button_pressed = is_active
-		btn.custom_minimum_size = Vector2(0, 40)
+		btn.custom_minimum_size = Vector2(0, 44)
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		btn.add_theme_font_size_override("font_size", 13)
+		btn.add_theme_font_size_override("font_size", 14)
 		if _font_bold:
 			btn.add_theme_font_override("font", _font_bold)
 
 		if is_active:
 			_style_3d_button(btn, C_JADE, Color.WHITE, 20, 3, C_JADE_DARK)
+			btn.add_theme_color_override("icon_normal_color", Color.WHITE)
 		else:
 			_style_3d_button(btn, Color("#F2EDE2"), C_MUTED, 20, 2, Color("#DCD5C5"))
+			btn.add_theme_color_override("icon_normal_color", C_MUTED)
 
 		btn.pressed.connect(_set_filter.bind(val))
 		_filters_container.add_child(btn)
@@ -368,6 +376,7 @@ func refresh_history() -> void:
 	_page = 0
 	_items.clear()
 	_connection_banner.visible = false
+	_render_loading_skeleton()
 
 	var backend_report := get_node_or_null("/root/BackendReport")
 	if backend_report != null and backend_report.has_method("retry_pending_game_attempts"):
@@ -389,7 +398,7 @@ func _load_next_page() -> void:
 func _fetch_page(replace: bool) -> void:
 	var response: Dictionary = await _api.get_activity_history(_page, PAGE_SIZE, _filter)
 	if not _api._is_success(response):
-		_connection_label.text = "Chưa có kết nối — dữ liệu sẽ tự đồng bộ khi có mạng"
+		_connection_label.text = "Chưa có kết nối — dữ liệu vẫn được lưu trên thiết bị"
 		_connection_banner.visible = true
 		_render(merge_pending_items([]))
 		return
@@ -407,8 +416,14 @@ func _fetch_page(replace: bool) -> void:
 		_items.append_array(mapped)
 
 	_total_pages = int(page_data.get("totalPages", 0))
-	_connection_banner.visible = false
-	_render(merge_pending_items(_items))
+	var merged := merge_pending_items(_items)
+	var pending_count := _pending_count(merged)
+	if pending_count > 0:
+		_connection_label.text = "%d hoạt động chờ đồng bộ — dữ liệu vẫn được lưu trên thiết bị" % pending_count
+		_connection_banner.visible = true
+	else:
+		_connection_banner.visible = false
+	_render(merged)
 
 
 func merge_pending_items(confirmed: Array) -> Array:
@@ -431,8 +446,8 @@ func _map_pending(pending: Dictionary) -> Dictionary:
 	return {
 		"eventId": "PENDING:" + str(pending.get("client_attempt_id", "local")),
 		"type": activity_type,
-		"title": "Câu hỏi đang chờ đồng bộ" if activity_type == "QUIZ" else "Mini Game đang chờ đồng bộ",
-		"lessonTitle": "Chưa xác nhận từ máy chủ",
+		"title": "Câu hỏi" if activity_type == "QUIZ" else "Mini Game",
+		"lessonTitle": "",
 		"score": pending.get("score", null),
 		"completedAt": completed_at,
 		"status": "PENDING_SYNC",
@@ -444,6 +459,8 @@ func _map_pending(pending: Dictionary) -> Dictionary:
 
 func _render(items: Array) -> void:
 	_clear(_list_container)
+	_last_rendered_items = items.duplicate(true)
+	_render_filter_pills(items)
 
 	# Calculate Stats
 	var total_xp := 0
@@ -464,12 +481,12 @@ func _render(items: Array) -> void:
 				accuracy_count += 1
 
 	var avg_acc := int(round(accuracy_sum / float(maxi(1, accuracy_count)))) if accuracy_count > 0 else 0
-	_render_stats_strip(total_xp, avg_acc, total_stars, items.size())
-
-	var pending_count := maxi(items.size() - _items.size(), 0)
+	var pending_count := _pending_count(items)
+	var completed_count := maxi(items.size() - pending_count, 0)
+	_render_stats_strip(total_xp, avg_acc, total_stars, completed_count)
 	_summary_lbl.text = "%d hoạt động đã ghi nhận%s" % [
-		_items.size(),
-		" · %d đang chờ đồng bộ" % pending_count if pending_count > 0 else ""
+		completed_count,
+		" · %d chờ đồng bộ" % pending_count if pending_count > 0 else ""
 	]
 
 	if items.is_empty():
@@ -487,7 +504,7 @@ func _render(items: Array) -> void:
 		# Section Header
 		var section_lbl := Label.new()
 		section_lbl.text = group_title.to_upper()
-		section_lbl.add_theme_font_size_override("font_size", 12)
+		section_lbl.add_theme_font_size_override("font_size", 11)
 		section_lbl.add_theme_color_override("font_color", C_MUTED)
 		if _font_bold:
 			section_lbl.add_theme_font_override("font", _font_bold)
@@ -499,6 +516,51 @@ func _render(items: Array) -> void:
 				_list_container.add_child(_make_3d_activity_card(item_val as Dictionary))
 
 	_load_more_btn.visible = _total_pages > 0 and _page + 1 < _total_pages
+
+
+func _render_loading_skeleton() -> void:
+	_clear(_list_container)
+	_last_rendered_items = []
+	_render_filter_pills([])
+	_render_stats_strip(0, 0, 0, 0)
+	_summary_lbl.text = "Đang tải lịch sử hoạt động…"
+	_load_more_btn.visible = false
+	for _index in 3:
+		_list_container.add_child(_make_loading_skeleton())
+
+
+func _make_loading_skeleton() -> PanelContainer:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 72)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#F1EEE7")
+	style.set_corner_radius_all(16)
+	card.add_theme_stylebox_override("panel", style)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	card.add_child(row)
+	var dot := ColorRect.new()
+	dot.color = Color("#E2DDD2")
+	dot.custom_minimum_size = Vector2(36, 36)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(dot)
+	for width in [0.46, 0.12, 0.12, 0.12, 0.13]:
+		var bar := ColorRect.new()
+		bar.color = Color("#E2DDD2")
+		bar.custom_minimum_size = Vector2(0, 16)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_stretch_ratio = width
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(bar)
+	return card
+
+
+func _pending_count(items: Array) -> int:
+	var count := 0
+	for item: Variant in items:
+		if item is Dictionary and str((item as Dictionary).get("status", "")).to_upper() in ["PENDING_SYNC", "SYNCING", "FAILED_SYNC"]:
+			count += 1
+	return count
 
 
 func _group_items_by_date(items: Array) -> Dictionary:
@@ -558,52 +620,48 @@ func _make_3d_activity_card(item: Dictionary) -> Button:
 	var bg_accent := _bg_color_for_type(type_code)
 
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(0, 94)
+	card.custom_minimum_size = Vector2(0, 72)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	# 3D Card Styling
-	_style_3d_card(card, Color.WHITE, C_BORDER, 20, 4)
+	_style_3d_card(card, Color.WHITE, C_BORDER, 16, 3)
 
 	# Content layout
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 6)
 	card.add_child(margin)
 
 	var hbox := HBoxContainer.new()
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_theme_constant_override("separation", 12)
+	hbox.add_theme_constant_override("separation", 10)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(hbox)
 
 	# 1. Left Round Icon Box
 	var icon_panel := PanelContainer.new()
-	icon_panel.custom_minimum_size = Vector2(48, 48)
+	icon_panel.custom_minimum_size = Vector2(44, 44)
 	icon_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var icon_box_style := StyleBoxFlat.new()
 	icon_box_style.bg_color = bg_accent
-	icon_box_style.set_corner_radius_all(24)
+	icon_box_style.set_corner_radius_all(22)
 	icon_box_style.set_border_width_all(1)
 	icon_box_style.border_color = Color(accent.r, accent.g, accent.b, 0.4)
 	icon_panel.add_theme_stylebox_override("panel", icon_box_style)
 
-	var icon_lbl := Label.new()
-	icon_lbl.text = _icon_for_type(type_code)
-	icon_lbl.add_theme_font_size_override("font_size", 22)
-	icon_lbl.add_theme_color_override("font_color", accent)
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	icon_panel.add_child(icon_lbl)
+	icon_panel.add_child(_lucide_icon(_icon_name_for_type(type_code), 22, accent))
 	hbox.add_child(icon_panel)
 
 	# 2. Name and mode. It is kept compact so the result columns remain readable.
 	var content_vbox := VBoxContainer.new()
-	content_vbox.custom_minimum_size = Vector2(260, 0)
+	content_vbox.custom_minimum_size = Vector2(0, 0)
+	content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_vbox.size_flags_stretch_ratio = 1.0
 	content_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_vbox.add_theme_constant_override("separation", 2)
 	hbox.add_child(content_vbox)
@@ -611,52 +669,42 @@ func _make_3d_activity_card(item: Dictionary) -> Button:
 	# Title Row
 	var title_lbl := Label.new()
 	title_lbl.text = str(item.get("title", item.get("lessonTitle", "Hoạt động")))
-	title_lbl.add_theme_font_size_override("font_size", 15)
+	title_lbl.add_theme_font_size_override("font_size", 16 if _is_compact_landscape() else 17)
 	title_lbl.add_theme_color_override("font_color", C_JADE)
 	title_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
 	if _font_bold:
 		title_lbl.add_theme_font_override("font", _font_bold)
 	content_vbox.add_child(title_lbl)
 
-	# Subtitle Row: type and lesson / mini-game context.
-	var sub_hbox := HBoxContainer.new()
-	sub_hbox.add_theme_constant_override("separation", 6)
-	content_vbox.add_child(sub_hbox)
-
-	var type_pill := Label.new()
-	type_pill.text = _type_name(type_code)
-	type_pill.add_theme_font_size_override("font_size", 12)
-	type_pill.add_theme_color_override("font_color", accent)
-	if _font_bold:
-		type_pill.add_theme_font_override("font", _font_bold)
-	sub_hbox.add_child(type_pill)
-
-	var lesson_lbl := Label.new()
-	lesson_lbl.text = str(item.get("lessonTitle", ""))
-	lesson_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lesson_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	lesson_lbl.add_theme_font_size_override("font_size", 12)
-	lesson_lbl.add_theme_color_override("font_color", C_MUTED)
+	# Chế độ chơi và thời điểm là metadata chính; lesson dài chỉ xuất hiện ở chi tiết.
+	var subtitle := Label.new()
+	subtitle.text = "%s · %s" % [_type_name(type_code), _relative_time(str(item.get("completedAt", item.get("startedAt", ""))))]
+	subtitle.add_theme_font_size_override("font_size", 12)
+	subtitle.add_theme_color_override("font_color", accent)
+	subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
 	if _font_regular:
-		lesson_lbl.add_theme_font_override("font", _font_regular)
-	sub_hbox.add_child(lesson_lbl)
+		subtitle.add_theme_font_override("font", _font_regular)
+	content_vbox.add_child(subtitle)
 
 	# 3. Landscape result columns: score, accuracy, time, and sync state.
 	var metrics := HBoxContainer.new()
 	metrics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	metrics.add_theme_constant_override("separation", 8)
+	metrics.add_theme_constant_override("separation", 4)
 	metrics.alignment = BoxContainer.ALIGNMENT_END
+	metrics.size_flags_stretch_ratio = 1.0
 	hbox.add_child(metrics)
-	metrics.add_child(_make_activity_metric("Điểm số", _score_text(item), C_BLUE, 100))
-	metrics.add_child(_make_activity_metric("Độ chính xác", _accuracy_text(item), C_GREEN, 112))
-	metrics.add_child(_make_activity_metric("Thời gian", _activity_time_text(item), C_MUTED, 120))
-	var is_pending := str(item.get("status", "")) == "PENDING_SYNC"
-	metrics.add_child(_make_activity_metric("Đồng bộ", _sync_status_text(item), C_AMBER if is_pending else C_GREEN, 118))
+	metrics.add_child(_make_activity_metric("Điểm", _score_text(item), C_BLUE, 64))
+	metrics.add_child(_make_activity_metric("Chính xác", _accuracy_text(item), C_GREEN, 70))
+	metrics.add_child(_make_activity_metric("Thời lượng", _activity_time_text(item), C_MUTED, 76))
+	var sync_color := _sync_color(item)
+	metrics.add_child(_make_activity_metric("Đồng bộ", _sync_status_text(item), sync_color, 92))
 
 	# Chevron
 	var chevron := Label.new()
 	chevron.text = "›"
-	chevron.add_theme_font_size_override("font_size", 22)
+	chevron.add_theme_font_size_override("font_size", 20)
 	chevron.add_theme_color_override("font_color", Color("#cbd5e1"))
 	hbox.add_child(chevron)
 
@@ -687,7 +735,7 @@ func _make_activity_metric(label_text: String, value_text: String, value_color: 
 
 	var value := Label.new()
 	value.text = value_text
-	value.add_theme_font_size_override("font_size", 12)
+	value.add_theme_font_size_override("font_size", 13)
 	value.add_theme_color_override("font_color", value_color)
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -699,7 +747,7 @@ func _make_activity_metric(label_text: String, value_text: String, value_color: 
 
 func _build_empty_state() -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 132)
+	panel.custom_minimum_size = Vector2(0, 116)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color.WHITE
 	style.set_corner_radius_all(20)
@@ -712,15 +760,13 @@ func _build_empty_state() -> PanelContainer:
 	vbox.add_theme_constant_override("separation", 8)
 	panel.add_child(vbox)
 
-	var icon := Label.new()
-	icon.text = "🎵"
-	icon.add_theme_font_size_override("font_size", 30)
-	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var icon := _lucide_icon("music.svg", 32, C_PURPLE)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vbox.add_child(icon)
 
 	var title := Label.new()
 	title.text = "Chưa có hoạt động phù hợp"
-	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", C_JADE)
 	if _font_bold:
 		title.add_theme_font_override("font", _font_bold)
@@ -729,7 +775,7 @@ func _build_empty_state() -> PanelContainer:
 
 	var desc := Label.new()
 	desc.text = "Hoàn thành Câu hỏi, Mini Game hoặc Luyện tập để ghi dấu hành trình âm nhạc của bạn ở đây."
-	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_font_size_override("font_size", 14)
 	desc.add_theme_color_override("font_color", C_MUTED)
 	if _font_regular:
 		desc.add_theme_font_override("font", _font_regular)
@@ -808,8 +854,8 @@ func _open_detail(item: Dictionary) -> void:
 	header_hbox.add_child(title_vbox)
 
 	var act_type := Label.new()
-	act_type.text = "%s %s" % [_icon_for_type(type_code), _type_name(type_code).to_upper()]
-	act_type.add_theme_font_size_override("font_size", 12)
+	act_type.text = _type_name(type_code).to_upper()
+	act_type.add_theme_font_size_override("font_size", 14)
 	act_type.add_theme_color_override("font_color", accent)
 	if _font_bold:
 		act_type.add_theme_font_override("font", _font_bold)
@@ -983,7 +1029,10 @@ func _style_3d_button(btn: Button, bg: Color, text_color: Color, radius: int = 1
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var focus := normal.duplicate() as StyleBoxFlat
+	focus.set_border_width_all(2)
+	focus.border_color = C_GOLD
+	btn.add_theme_stylebox_override("focus", focus)
 	btn.add_theme_color_override("font_color", text_color)
 	btn.add_theme_color_override("font_hover_color", text_color)
 	btn.add_theme_color_override("font_pressed_color", text_color)
@@ -1013,7 +1062,10 @@ func _style_3d_card(btn: Button, bg: Color, border_c: Color, radius: int = 18, b
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
 	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var focus := normal.duplicate() as StyleBoxFlat
+	focus.set_border_width_all(2)
+	focus.border_color = C_GOLD
+	btn.add_theme_stylebox_override("focus", focus)
 
 
 func _color_for_type(type_code: String) -> Color:
@@ -1030,6 +1082,24 @@ func _bg_color_for_type(type_code: String) -> Color:
 		"MINIGAME": return C_GREEN_BG
 		"PRACTICE": return C_AMBER_BG
 		_: return C_PURPLE_BG
+
+
+func _lucide_icon(icon_name: String, icon_size: int, color: Color) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.texture = load("res://assets/textures/lucide/%s" % icon_name) as Texture2D
+	icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.modulate = color
+	return icon
+
+
+func _icon_name_for_type(type_code: String) -> String:
+	match type_code:
+		"QUIZ": return "gauge.svg"
+		"MINIGAME": return "music.svg"
+		"PRACTICE": return "play-circle.svg"
+		_: return "music.svg"
 
 
 func _icon_for_type(type_code: String) -> String:
@@ -1050,7 +1120,7 @@ func _type_name(type_code: String) -> String:
 
 func _score_text(item: Dictionary) -> String:
 	if item.get("score", null) == null:
-		return ""
+		return "—"
 	var max_score: Variant = item.get("maxScore", null)
 	return "%s/%s điểm" % [str(item.get("score")), str(max_score)] if max_score != null else "%s điểm" % str(item.get("score"))
 
@@ -1069,11 +1139,21 @@ func _activity_time_text(item: Dictionary) -> String:
 		var duration := _parse_iso_to_unix(completed) - _parse_iso_to_unix(started)
 		if duration > 0 and duration < 3600:
 			return "%d phút" % maxi(1, int(round(float(duration) / 60.0)))
-	return _relative_time(completed if not completed.is_empty() else started)
+	return "—"
 
 
 func _sync_status_text(item: Dictionary) -> String:
-	return "Chờ đồng bộ" if str(item.get("status", "")) == "PENDING_SYNC" else "Đã đồng bộ"
+	match str(item.get("status", "")).to_upper():
+		"PENDING_SYNC", "SYNCING": return "Chờ đồng bộ"
+		"FAILED_SYNC", "SYNC_FAILED", "FAILED": return "Đồng bộ lỗi"
+		_: return "Đã đồng bộ"
+
+
+func _sync_color(item: Dictionary) -> Color:
+	match str(item.get("status", "")).to_upper():
+		"PENDING_SYNC", "SYNCING": return C_AMBER
+		"FAILED_SYNC", "SYNC_FAILED", "FAILED": return Color("#C2410C")
+		_: return C_GREEN
 
 
 func _filter_label(value: String) -> String:
@@ -1086,7 +1166,7 @@ func _stars_display(value: int) -> String:
 
 func _relative_time(value: String) -> String:
 	if value.is_empty():
-		return "Đang chờ đồng bộ"
+		return "—"
 	return value.replace("T", " ").left(16)
 
 
@@ -1109,6 +1189,32 @@ func _is_mobile() -> bool:
 	return get_viewport_rect().size.x < 640.0
 
 
-func _content_width() -> float:
-	var available := get_viewport_rect().size.x - (32.0 if _is_mobile() else 64.0)
-	return clampf(available, 0.0, 1360.0)
+func _is_compact_landscape() -> bool:
+	return _is_compact_landscape_size(get_viewport_rect().size)
+
+
+func _is_compact_landscape_size(viewport: Vector2) -> bool:
+	return viewport.x >= viewport.y and viewport.y <= 430.0
+
+
+func _horizontal_inset() -> int:
+	var safe := DisplayServer.get_display_safe_area()
+	var viewport := get_viewport_rect().size
+	var safe_left := maxi(0, int(safe.position.x))
+	var safe_right := maxi(0, int(viewport.x - (safe.position.x + safe.size.x)))
+	return maxi(12 if _is_compact_landscape() else 16, maxi(safe_left, safe_right) + 8)
+
+
+func _vertical_inset() -> int:
+	var safe := DisplayServer.get_display_safe_area()
+	var viewport := get_viewport_rect().size
+	var safe_top := maxi(0, int(safe.position.y))
+	var safe_bottom := maxi(0, int(viewport.y - (safe.position.y + safe.size.y)))
+	return maxi(8 if _is_compact_landscape() else 16, maxi(safe_top, safe_bottom) + 6)
+
+
+func _on_viewport_size_changed() -> void:
+	# The scene is landscape-first; a full reconstruction on resize would reset
+	# scroll position. Re-render only data-dependent widths and keep navigation stable.
+	if not _last_rendered_items.is_empty() and not _loading:
+		call_deferred("_render", _last_rendered_items)
