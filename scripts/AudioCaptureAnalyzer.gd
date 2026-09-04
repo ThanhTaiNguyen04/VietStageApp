@@ -9,6 +9,7 @@ signal dan_tranh_note_ended(note: Dictionary)
 # technique lessons such as tremolo need their timing information.
 signal dan_tranh_rapid_attack(note: Dictionary)
 signal microphone_permission_changed(granted: bool)
+signal microphone_capture_status_changed(status: String)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -37,8 +38,16 @@ var analysis_suspended := false
 var microphone_permission_granted := true
 var microphone_permission_request_pending := false
 var _microphone_permission_poll_elapsed := 0.0
+var microphone_capture_status := "starting"
+var microphone_frames_received := 0
+var microphone_last_frame_count := 0
+var microphone_no_frame_elapsed := 0.0
+var microphone_silent_stream_elapsed := 0.0
+var microphone_restart_attempts := 0
 const ANDROID_MICROPHONE_PERMISSION := "android.permission.RECORD_AUDIO"
 const MICROPHONE_PERMISSION_POLL_SEC := 0.25
+const MICROPHONE_NO_FRAME_WARNING_SEC := 2.0
+const MICROPHONE_MAX_AUTO_RESTARTS := 1
 
 var _analyzer: RefCounted = null
 
@@ -90,6 +99,7 @@ const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
+const INSTRUMENT_GATE_CONTOUR_SILENCE_SEC := 0.60
 const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
 const INSTRUMENT_MIN_DECAY_DB := 0.2
 const INSTRUMENT_MIN_LATE_DECAY_DB := 0.05
@@ -154,6 +164,7 @@ func _ready() -> void:
 		
 	_setup_audio_bus()
 	_initialize_microphone_permission()
+	call_deferred("start_microphone_capture")
 	
 	for i in range(MAX_SAMPLES):
 		_sample_history.append(0.0)
@@ -168,6 +179,8 @@ func _initialize_microphone_permission() -> void:
 			get_tree().connect(permission_signal, permission_callback)
 		request_microphone_permission()
 	elif OS.has_feature("ios"):
+		# iOS/Xogot does not expose a portable permission-result API. Request when
+		# available, but regard actual captured frames as the source of truth.
 		if OS.has_method("request_permission"):
 			OS.request_permission("RECORD_AUDIO")
 		_set_microphone_permission_state(true)
@@ -239,8 +252,12 @@ func _refresh_mobile_microphone_permission(delta: float) -> bool:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_RESUMED and OS.has_feature("android"):
+	if what != NOTIFICATION_APPLICATION_RESUMED:
+		return
+	if OS.has_feature("android"):
 		_microphone_permission_poll_elapsed = MICROPHONE_PERMISSION_POLL_SEC
+	if OS.has_feature("ios"):
+		call_deferred("start_microphone_capture")
 
 func _setup_audio_bus() -> void:
 	_bus_index = AudioServer.get_bus_index("Record")
@@ -249,8 +266,10 @@ func _setup_audio_bus() -> void:
 		AudioServer.add_bus(_bus_index)
 		AudioServer.set_bus_name(_bus_index, "Record")
 	
-	AudioServer.set_bus_mute(_bus_index, false)
-	AudioServer.set_bus_volume_db(_bus_index, -80.0)
+	# Capture the microphone at unity gain. Muting the bus prevents feedback but
+	# still lets AudioEffectCapture process it, matching Godot's microphone demo.
+	AudioServer.set_bus_volume_db(_bus_index, 0.0)
+	AudioServer.set_bus_mute(_bus_index, true)
 	
 	# 1. Thêm bộ lọc tần số thấp (HighPassFilter) để cắt tạp âm quạt/gió/hơi thở
 	var hp_idx := -1
@@ -321,6 +340,47 @@ func _setup_audio_bus() -> void:
 	_mic_player.stream = AudioStreamMicrophone.new()
 	_mic_player.bus = "Record"
 	add_child(_mic_player)
+
+
+func start_microphone_capture() -> void:
+	if not _mic_player:
+		return
+	if _effect:
+		_effect.clear_buffer()
+	_mic_player.stop()
+	# Recreating the stream forces CoreAudio to reopen the input route after an
+	# iOS permission prompt, route change, or application resume.
+	_mic_player.stream = AudioStreamMicrophone.new()
+	_mic_player.bus = "Record"
+	_mic_player.play()
+	microphone_no_frame_elapsed = 0.0
+	microphone_silent_stream_elapsed = 0.0
+	microphone_last_frame_count = 0
+	_set_microphone_capture_status("starting")
+
+
+func _set_microphone_capture_status(status: String) -> void:
+	if microphone_capture_status == status:
+		return
+	microphone_capture_status = status
+	microphone_capture_status_changed.emit(status)
+
+
+func get_microphone_diagnostics() -> Dictionary:
+	return {
+		"status": microphone_capture_status,
+		"player_playing": _mic_player != null and _mic_player.playing,
+		"frames_received": microphone_frames_received,
+		"last_frame_count": microphone_last_frame_count,
+		"amplitude_db": current_amplitude_db,
+		"pitch_hz": current_pitch,
+		"native_analyzer": _analyzer != null,
+		"platform": OS.get_name()
+	}
+
+
+func is_mobile_fallback() -> bool:
+	return _analyzer == null and (OS.has_feature("ios") or OS.has_feature("android"))
 
 # Start / Stop noise calibration
 func start_calibration() -> void:
@@ -397,10 +457,30 @@ func _process(delta: float) -> void:
 	
 	# Step 1: Capture
 	var samples = _capture_samples()
-	if samples.is_empty(): return
-	
+	if samples.is_empty():
+		microphone_last_frame_count = 0
+		microphone_no_frame_elapsed += maxf(delta, 0.0)
+		if microphone_no_frame_elapsed >= MICROPHONE_NO_FRAME_WARNING_SEC:
+			if microphone_restart_attempts < MICROPHONE_MAX_AUTO_RESTARTS:
+				microphone_restart_attempts += 1
+				start_microphone_capture()
+			else:
+				_set_microphone_capture_status("no_frames")
+		return
+	microphone_no_frame_elapsed = 0.0
+	microphone_restart_attempts = 0
+
 	# Step 2: Noise Gate (with calibration monitoring)
 	current_amplitude_db = _calculate_amplitude_db(samples)
+	if current_amplitude_db <= -79.0:
+		microphone_silent_stream_elapsed += maxf(delta, 0.0)
+		if microphone_silent_stream_elapsed >= MICROPHONE_NO_FRAME_WARNING_SEC:
+			_set_microphone_capture_status("silent_stream")
+		else:
+			_set_microphone_capture_status("receiving")
+	else:
+		microphone_silent_stream_elapsed = 0.0
+		_set_microphone_capture_status("receiving")
 	if calibration_active:
 		calibration_db_samples.append(current_amplitude_db)
 
@@ -518,6 +598,8 @@ func _capture_samples() -> PackedFloat32Array:
 	if samples_available > 0:
 		var frames = _effect.get_buffer(samples_available)
 		if frames.size() > 0:
+			microphone_last_frame_count = frames.size()
+			microphone_frames_received += frames.size()
 			mono_samples.resize(frames.size())
 			for i in range(frames.size()):
 				mono_samples[i] = (frames[i].x + frames[i].y) * 0.5
@@ -634,7 +716,9 @@ func _handle_silence(delta: float) -> void:
 	current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 	if instrument_gate_open:
 		_instrument_gate_silence_elapsed += delta
-		if _instrument_gate_silence_elapsed >= INSTRUMENT_GATE_SILENCE_SEC:
+		var silence_limit := INSTRUMENT_GATE_CONTOUR_SILENCE_SEC \
+			if contour_tracking_mode else INSTRUMENT_GATE_SILENCE_SEC
+		if _instrument_gate_silence_elapsed >= silence_limit:
 			_close_instrument_gate()
 	
 	# Release pluck lock when signal level is silent (Phase 2)
@@ -727,8 +811,8 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
 	var fast_tracking := rapid_sequence_mode or contour_tracking_mode or (_analyzer == null)
 	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
-	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
-	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
+	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else (180.0 if _analyzer == null else PITCH_JUMP_CENTS))
+	var stability_limit := 65.0 if _analyzer == null else (55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS))
 	
 	if detected_pitch < min_f or detected_pitch > max_f:
 		_clear_pitch_detection()

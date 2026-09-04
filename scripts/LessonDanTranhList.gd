@@ -32,8 +32,8 @@ const LEVELS := [
 			{"number": 1, "display_number": "1", "title": "Tìm hiểu nhạc cụ Đàn tranh", "type": "both", "video": "Xem video hướng dẫn lý thuyết nhạc lý, cấu tạo đàn tranh và tư thế ngồi, tư thế tay chuẩn.", "practice": "Nhận biết âm sắc dây đàn và làm quen tư thế tay gảy.", "practice_title": "Làm quen âm sắc & tư thế", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.5, 1.5, 1.5, 1.5, 2.0]},
 			{"number": 5, "display_number": "2", "title": "Nhịp điệu cơ bản", "type": "practice", "video": "Tìm hiểu về trường độ nốt nhạc: nốt trắng, nốt đen, nốt móc đơn, nốt móc kép.", "practice": "Luyện tập nhận diện và gảy phân biệt các nốt có trường độ khác nhau trên khuông nhạc.", "practice_title": "Trường độ nốt nhạc", "sheet": ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"], "durations": [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]},
 			{"number": 4, "display_number": "3", "title": "Đọc bản nhạc cơ bản", "type": "practice", "video": "Tìm hiểu định nghĩa Tempo (tốc độ bài nhạc), Khóa Sol, Nhịp 4/4 và Nhịp 2/4 — cách đếm phách và giữ nhịp đều khi chơi.", "practice": "Luyện tập giữ nhịp độ đều đặn theo máy đếm nhịp: gảy nốt đen theo nhịp 4/4 rồi nhịp 2/4.", "practice_title": "Tempo, Khóa Sol & Số chỉ nhịp", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "Rê3", "Đô3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
-			{"number": 7, "display_number": "4.1", "title": "Kỹ thuật gảy ngón 1", "type": "both", "video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.", "practice": "Luyện tập tư thế tay phối hợp cơ bản.", "practice_title": "Kỹ thuật hai tay & Số ngón", "sheet": ["La4", "Sol4", "Mi4", "Rê4", "Đô4", "La3", "Sol3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
-			{"number": 8, "display_number": "4.2", "title": "Kỹ thuật gảy ngón 2", "type": "both", "video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.", "practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.", "practice_title": "Tư thế đặt đàn & Tay gảy", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 8, "display_number": "4.1", "title": "Kỹ thuật gảy ngón 2", "type": "both", "video": "Hướng dẫn chi tiết tư thế ngồi khum tay gảy đàn chuẩn xác và tư thế đặt đàn.", "practice": "Luyện tập tư thế ngồi thẳng lưng và khum tay gảy thả lỏng.", "practice_title": "Tư thế đặt đàn & Tay gảy", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 7, "display_number": "4.2", "title": "Kỹ thuật gảy ngón 1", "type": "both", "video": "Tìm hiểu vai trò tay phải gảy đàn, tay trái nhấn rung và quy ước số ngón tay trên đàn Tranh.", "practice": "Luyện tập tư thế tay phối hợp cơ bản.", "practice_title": "Kỹ thuật hai tay & Số ngón", "sheet": ["La4", "Sol4", "Mi4", "Rê4", "Đô4", "La3", "Sol3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "Mi2", "Rê2", "Đô2", "La1", "Sol1"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
 			{"number": 9, "display_number": "4.3", "title": "Kỹ thuật gảy ngón 3", "type": "practice", "video": "Bài tập luyện ngón chạy dây cơ bản sử dụng lần lượt 1 ngón, 2 ngón và 3 ngón tay phải.", "practice": "Thực hành gảy chuỗi nốt chạy đều sử dụng kỹ thuật luyện ngón phối hợp.", "practice_title": "Chạy ngón phối hợp", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
 			{"number": 2, "display_number": "5", "title": "Luyện gảy các nốt cơ bản – Phần 1", "type": "practice", "video": "Cách nhận diện cao độ 10 nốt nhạc cơ bản ở quãng thấp và trung trên Đàn Tranh.", "practice": "Gảy lần lượt từng nốt: Sol1, La1, Đô2, Rê2, Mi2, Sol2, La2, Đô3, Rê3, Mi3.", "practice_title": "Luyện tập 10 nốt cơ bản", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3"], "durations": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0]},
 			{"number": 6, "display_number": "5.1", "title": "Cấu tạo quãng thấp, cao, trầm", "type": "both", "video": "Tìm hiểu về cấu tạo các quãng âm trên Đàn Tranh và cách nhận biết các quãng trầm, trung, cao.", "practice": "Nhận biết âm vực quãng bằng cách gảy các dây tương ứng trên đàn.", "practice_title": "Cấu tạo quãng âm", "sheet": ["Sol1", "Sol2", "Sol3", "La1", "La2", "La3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
@@ -236,7 +236,7 @@ func _ready() -> void:
 	var side_v := $Root/Sidebar/SideM/SideV as VBoxContainer
 	btn_minigame = Button.new()
 	btn_minigame.name = "BtnMiniGame"
-	btn_minigame.text = "Mini-game"
+	btn_minigame.text = "Luyện tập"
 	btn_minigame.flat = true
 	btn_minigame.custom_minimum_size = Vector2(220, 100)
 	side_v.add_child(btn_minigame)
@@ -437,9 +437,7 @@ func _build_lessons() -> void:
 	for child in lessons_hbox.get_children():
 		child.queue_free()
 	var level_data := get_level_data(selected_level)
-	var display_level := 3 if selected_level == 7 else selected_level
-	page_title.text = "GIÁO TRÌNH ĐÀN TRANH · LEVEL %d" % display_level
-	objective_label.text = "%s · %s · %s" % [level_data["title"], level_data["sessions"], level_data["objective"]]
+	objective_label.hide()
 	page_title.text = "GIÁO TRÌNH ĐÀN TRANH - LEVEL %d" % selected_level
 	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	var lessons: Array = level_data["lessons"]
@@ -481,7 +479,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	var opens_video_first := selected_level == 1 and lesson_number == 1
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "video" if opens_video_first else "practice"))
 	column.add_child(lesson_button)
-	if lesson_type == "both" and not opens_video_first:
+	var opens_directly := selected_level == 1 and str(lesson.get("display_number", "")) in ["4.1", "4.2", "5.1"]
+	if lesson_type == "both" and not opens_video_first and not opens_directly:
 		var video_button := _create_small_btn("Hướng dẫn", practice_unlocked)
 		video_button.name = "VideoBtn"
 		video_button.pressed.connect(_open_lesson.bind(lesson, "video"))
@@ -990,7 +989,7 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_top", 16 if mobile else 24)
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 19 if mobile else 25)
-	objective_label.visible = not mobile
+	objective_label.visible = false
 	if change_course_btn:
 		change_course_btn.custom_minimum_size.x = 108 if mobile else 164
 		change_course_btn.text = "Levels" if mobile else "Đổi khóa học"
