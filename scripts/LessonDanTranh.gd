@@ -1485,6 +1485,9 @@ func _setup_top_pitch_box():
 func _setup_pitch_hud_box():
 	# 1. Position and resize the FeedbackArea container to dock in the empty top-left space (next to the Back button)
 	if feedback_area:
+		# Đây là HUD nổi: luôn nằm trên staff_card để nội dung micro không bị
+		# đường viền/nền sheet che mất khi hai vùng giao nhau trên màn hình thấp.
+		feedback_area.z_index = 35
 		feedback_area.custom_minimum_size = Vector2(320, 160)
 		feedback_area.offset_left = 200
 		feedback_area.offset_right = 520
@@ -5262,8 +5265,8 @@ var previous_intro_btn: Button = null
 
 func _create_skip_intro_button():
 	previous_intro_btn = _create_aesthetic_btn(
-		"← TRƯỚC",
-		"res://icons8/icons8-back-100.png",
+		"TRỞ LẠI",
+		"res://icons8/icons8-play-100.png",
 		false,
 		C_WOOD,
 		C_WOOD.lightened(0.12),
@@ -5281,7 +5284,7 @@ func _create_skip_intro_button():
 	previous_intro_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 	skip_intro_btn = _create_aesthetic_btn(
-		"SKIP", 
+		"BỎ QUA",
 		"res://icons8/icons8-play-100.png", 
 		true, 
 		C_WOOD, 
@@ -5632,6 +5635,8 @@ func _create_aesthetic_btn(text: String, icon_path: String, is_icon_right: bool,
 	texture_rect.custom_minimum_size = Vector2(24, 24)
 	texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	texture_rect.stretch_mode = 5 # Keep aspect centered
+	# Hai nút điều hướng dùng cùng icon; nút bên trái lật hướng ngược lại.
+	texture_rect.flip_h = not is_icon_right
 	
 	var mat = ShaderMaterial.new()
 	var shader = Shader.new()
