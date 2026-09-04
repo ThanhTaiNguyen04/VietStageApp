@@ -17,6 +17,12 @@ func _init() -> void:
 	actual_notes.assign(lesson_4_2.get("sheet", []))
 	if actual_notes != expected_notes:
 		failures.append("Bài 4.2 phải thực hành đúng 5 nốt Sol2, La2, Đô3, Rê3, Mi3")
+	var fingerings: Array = lesson_4_2.get("fingerings", [])
+	if fingerings.size() != expected_notes.size():
+		failures.append("Bài 4.2 phải có một số ngón cho mỗi nốt")
+	for fingering in fingerings:
+		if str(fingering) != "1":
+			failures.append("Mỗi nốt bài 4.2 phải hiển thị ngón 1")
 	if int(lesson_4_2.get("number", 0)) != 7:
 		failures.append("ID tương thích của bài 4.2 đã bị thay đổi")
 	var expected_frequencies := {
