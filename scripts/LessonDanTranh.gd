@@ -1835,6 +1835,35 @@ func _update_continuous_pitch_hud(delta: float = 0.016):
 			pitch_meter.queue_redraw()
 		return
 
+	# Do not describe an empty iOS/Xogot capture stream as an unclear musical
+	# note. This status tells testers that the failure happens before pitch or
+	# đàn-tranh timbre recognition.
+	var microphone_capture_status := str(analyzer.get("microphone_capture_status"))
+	if microphone_capture_status in ["no_frames", "silent_stream"]:
+		unrecognized_audio_elapsed = 0.0
+		if volume_bar:
+			volume_bar.value = 0.0
+		if pitch_note_lbl:
+			pitch_note_lbl.text = "🎵 Nốt: ---"
+		if pitch_status_lbl:
+			pitch_status_lbl.text = (
+				"🔴 Luồng micro đang im lặng trên iOS/Xogot"
+				if microphone_capture_status == "silent_stream"
+				else "🔴 Không nhận được dữ liệu micro từ iOS/Xogot"
+			)
+			pitch_status_lbl.add_theme_color_override("font_color", Color(0.90, 0.22, 0.18, 1.0))
+		if mic_status_lbl:
+			mic_status_lbl.text = (
+				"Có frame nhưng không có tín hiệu · kiểm tra audio session của Xogot"
+				if microphone_capture_status == "silent_stream"
+				else "Micro không có frame âm thanh · hãy đóng/mở lại Xogot"
+			)
+			mic_status_lbl.add_theme_color_override("font_color", Color(0.90, 0.22, 0.18, 1.0))
+		if pitch_meter:
+			pitch_meter.is_active = false
+			pitch_meter.queue_redraw()
+		return
+
 	# Cập nhật thanh lực âm thanh (VolumeBar) theo thời gian thực
 	if volume_bar:
 		var db : float = analyzer.current_amplitude_db
