@@ -390,9 +390,9 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_9_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta tiếp tục kỹ thuật tay cơ bản với ngón gảy số ba.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật gảy ngón ba sử dụng ngón giữa của tay phải để gảy dây đàn.", "highlight": -1},
-		{"action": "speak", "text": "Các ngón còn lại khum tự nhiên và bàn tay giữ thả lỏng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số ba trên bảy dây cao của đàn Tranh.", "highlight": -1},
+		{"action": "speak", "text": "Ngón số ba là ngón giữa của tay phải. Hãy giữ bàn tay khum tự nhiên, cổ tay thả lỏng và dùng ngón giữa để gảy từng dây rõ tiếng.", "highlight": -1},
+		{"action": "speak", "text": "Phần thực hành gồm bảy nốt: Sol ba ở dây mười một, La ba ở dây mười hai, Đô bốn ở dây mười ba, Rê bốn ở dây mười bốn, Mi bốn ở dây mười lăm, Sol bốn ở dây mười sáu và La bốn ở dây mười bảy. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_4_practice": [
