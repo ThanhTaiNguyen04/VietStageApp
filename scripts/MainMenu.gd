@@ -1495,6 +1495,14 @@ func _build_roadmap_cards() -> void:
 		level_7_desc.text = "Mở rộng khả năng diễn tấu với kỹ thuật vê và hợp âm ba âm cơ bản."
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 	elif instrument == "trong_chau":
+		card_soloist_unlock.hide()
+		card_chords_unlock.hide()
+		card_classical.hide()
+		card_chords_skills.hide()
+		card_pop_chords.hide()
+		path_soloist_title.hide()
+		path_chords_title.hide()
+		card_soloist_skills.position = Vector2(1060, 275)
 		# Lộ trình Trống Chầu
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🥁 ĐƯỜNG ĐỆM HÁT (RHYTHM PATH)"
@@ -1545,6 +1553,8 @@ func _build_roadmap_cards() -> void:
 		card_classical.hide()
 		path_soloist_title.hide()
 		path_chords_title.hide()
+		card_chords_skills.hide()
+		card_pop_chords.hide()
 
 		# BẮT BUỘC ĐƯA CÁC THẺ VỀ CÙNG 1 ĐƯỜNG THẲNG NGANG (Y = 275)
 		card_soloist_skills.position = Vector2(1060, 275)
