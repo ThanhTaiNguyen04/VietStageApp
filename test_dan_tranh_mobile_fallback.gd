@@ -30,7 +30,7 @@ func _init() -> void:
 
 	var short_vibrato: Array[float] = []
 	for i in 24:
-		var time := float(i) * lesson.VIBRATO_SAMPLE_INTERVAL
+		var time: float = float(i) * float(lesson.VIBRATO_SAMPLE_INTERVAL)
 		short_vibrato.append(22.0 + 20.0 * sin(TAU * 5.0 * time))
 	_fail_unless(
 		lesson._analyze_vibrato_cents(short_vibrato).get("detected", false),

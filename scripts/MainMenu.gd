@@ -25,6 +25,7 @@ const SIDEBAR_COLLAPSED_WIDTH := 64.0
 const DAN_TRANH_COURSE_DATA = preload("res://scripts/DanTranhCourseData.gd")
 const DAN_BAU_COURSE_DATA = preload("res://scripts/DanBauCourseData.gd")
 const TRONG_CHAU_COURSE_DATA = preload("res://scripts/TrongChauCourseData.gd")
+const SAO_TRUC_COURSE_DATA = preload("res://scripts/SaoTrucCourseData.gd")
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 var _active_side_btn : Button = null
@@ -1649,10 +1650,11 @@ func _build_roadmap_cards() -> void:
 		pop_chords_title.text = str(dan_bau_roadmap["master_title"])
 		pop_chords_desc.text = str(dan_bau_roadmap["pop_description"])
 	elif instrument == "sao_truc":
-		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Sáo Trúc")
+		var sao_truc_roadmap := SAO_TRUC_COURSE_DATA.get_roadmap_configuration()
+		_set_title_with_icon(roadmap_guide, "map", str(sao_truc_roadmap["guide"]))
 		# Lộ trình Sáo Trúc
-		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
-		path_chords_title.text = "🎷 ĐƯỜNG HÒA TẤU (ENSEMBLE PATH)"
+		path_soloist_title.text = str(sao_truc_roadmap["soloist_path"])
+		path_chords_title.text = str(sao_truc_roadmap["ensemble_path"])
 		# Lộ trình Sáo Trúc (Tuyến tính giống Đàn Bầu)
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
@@ -1666,25 +1668,25 @@ func _build_roadmap_cards() -> void:
 		card_pop_chords.position = Vector2(2080, 275)
 		card_classical.position = Vector2(2590, 275)
 
-		basic_title.text = "LEVEL 1: KHẨU HÌNH MÔI & TẠO ÂM"
-		basic_desc.text = "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa."
+		basic_title.text = str(sao_truc_roadmap["basic_title"])
+		basic_desc.text = str(sao_truc_roadmap["basic_description"])
 		# basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 
-		ess_title.text = "LEVEL 2: BẤM NGÓN & LẤY HƠI"
-		ess_desc.text = "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định."
+		ess_title.text = str(sao_truc_roadmap["essentials_title"])
+		ess_desc.text = str(sao_truc_roadmap["essentials_description"])
 		# ess_details.text = "📖 7 Bài Học | 🔒 Cần hoàn thành bài trước"
 
-		soloist_skills_title.text = "LEVEL 3: KHÚC NHẠC VUI"
-		soloist_skills_bullets.text = "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui"
+		soloist_skills_title.text = str(sao_truc_roadmap["soloist_title"])
+		soloist_skills_bullets.text = str(sao_truc_roadmap["soloist_description"])
 
-		chords_skills_title.text = "LEVEL 4: INH LẢ ƠI"
-		chords_skills_bullets.text = "✓ Thực hành từng câu\n✓ Luyện tập chuyển ngón\n✓ Hoàn thiện bài Inh Lả Ơi"
+		chords_skills_title.text = str(sao_truc_roadmap["chords_title"])
+		chords_skills_bullets.text = str(sao_truc_roadmap["chords_description"])
 
-		pop_chords_title.text = "LEVEL 5: FUTARI NO KIMOCHI"
-		pop_chords_desc.text = "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi"
+		pop_chords_title.text = str(sao_truc_roadmap["pop_title"])
+		pop_chords_desc.text = str(sao_truc_roadmap["pop_description"])
 
-		classical_title.text = "LEVEL 6: GẶP MẸ TRONG MƠ"
-		classical_desc.text = "✓ Thực hành giai điệu\n✓ Chơi cùng Backing Track\n✓ Hoàn thiện toàn bài"
+		classical_title.text = str(sao_truc_roadmap["classical_title"])
+		classical_desc.text = str(sao_truc_roadmap["classical_description"])
 
 	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
 	var is_basic_completed := false
@@ -1932,6 +1934,9 @@ func _open_dan_bau_level(level_number: int) -> void:
 func _open_trong_chau_course() -> void:
 	_fade_to(TRONG_CHAU_COURSE_DATA.get_lesson_scene())
 
+func _open_sao_truc_level(level_number: int) -> void:
+	_fade_to(SAO_TRUC_COURSE_DATA.select_level(level_number))
+
 func _set_children_mouse_filter_pass(node: Node) -> void:
 	for child in node.get_children():
 		if child is Control and not child is Button:
@@ -2106,9 +2111,8 @@ func _connect_buttons() -> void:
 			elif inst == "trong_chau":
 				_open_trong_chau_course()
 			elif inst == "sao_truc":
-				SecureDataManager.active_lesson_id = "sao_truc_level1_1_video"
-				SecureDataManager.data["custom_video_sequence"] = ["res://nvaore/intro1.ogv", "res://nvaore/intro2.ogv", "res://nvaore/intro3.ogv"]
-				SecureDataManager.data["current_sequence_index"] = 0
+				SecureDataManager.active_lesson_id = SAO_TRUC_COURSE_DATA.INTRO_LESSON_ID
+				SAO_TRUC_COURSE_DATA.configure_intro(SecureDataManager.data)
 				_fade_to("res://scenes/VideoPlayer.tscn")
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
@@ -2124,9 +2128,7 @@ func _connect_buttons() -> void:
 			elif inst == "trong_chau":
 				_open_trong_chau_course()
 			elif inst == "sao_truc":
-				var script = load("res://scripts/LessonSaoTrucList.gd")
-				if script: script.selected_level = 2
-				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+				_open_sao_truc_level(2)
 			else:
 				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
 				if not is_ess_unlocked:
@@ -2146,9 +2148,7 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(3)
 			elif inst == "sao_truc":
-				var script = load("res://scripts/LessonSaoTrucList.gd")
-				if script: script.selected_level = 3
-				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+				_open_sao_truc_level(3)
 	)
 
 	card_chords_skills.gui_input.connect(func(e: InputEvent) -> void:
@@ -2157,9 +2157,7 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(4)
 			elif inst == "sao_truc":
-				var script = load("res://scripts/LessonSaoTrucList.gd")
-				if script: script.selected_level = 4
-				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+				_open_sao_truc_level(4)
 	)
 
 	card_classical.gui_input.connect(func(e: InputEvent) -> void:
@@ -2168,9 +2166,7 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(6)
 			elif inst == "sao_truc":
-				var script = load("res://scripts/LessonSaoTrucList.gd")
-				if script: script.selected_level = 6
-				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+				_open_sao_truc_level(6)
 	)
 	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
@@ -2183,9 +2179,7 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(5)
 			elif inst == "sao_truc":
-				var script = load("res://scripts/LessonSaoTrucList.gd")
-				if script: script.selected_level = 5
-				_fade_to("res://scenes/LessonSaoTrucList.tscn")
+				_open_sao_truc_level(5)
 	)
 
 	# Play Buttons -> Practice Room
@@ -2199,9 +2193,7 @@ func _connect_buttons() -> void:
 		elif inst == "trong_chau":
 			_open_trong_chau_course()
 		elif inst == "sao_truc":
-			var script = load("res://scripts/LessonSaoTrucList.gd")
-			if script: script.selected_level = 3
-			_fade_to("res://scenes/LessonSaoTrucList.tscn")
+			_open_sao_truc_level(3)
 		else:
 			SecureDataManager.active_lesson_id = "Node4"
 			_go_practice_room_for_node(4)
@@ -2218,9 +2210,7 @@ func _connect_buttons() -> void:
 		elif inst == "trong_chau":
 			_open_trong_chau_course()
 		elif inst == "sao_truc":
-			var script = load("res://scripts/LessonSaoTrucList.gd")
-			if script: script.selected_level = 4
-			_fade_to("res://scenes/LessonSaoTrucList.tscn")
+			_open_sao_truc_level(4)
 		else:
 			_go_practice()
 	)
@@ -2236,9 +2226,7 @@ func _connect_buttons() -> void:
 		elif inst == "trong_chau":
 			_open_trong_chau_course()
 		elif inst == "sao_truc":
-			var script = load("res://scripts/LessonSaoTrucList.gd")
-			if script: script.selected_level = 6
-			_fade_to("res://scenes/LessonSaoTrucList.tscn")
+			_open_sao_truc_level(6)
 		else:
 			_go_practice()
 	)
@@ -2254,9 +2242,7 @@ func _connect_buttons() -> void:
 		elif inst == "trong_chau":
 			_open_trong_chau_course()
 		elif inst == "sao_truc":
-			var script = load("res://scripts/LessonSaoTrucList.gd")
-			if script: script.selected_level = 5
-			_fade_to("res://scenes/LessonSaoTrucList.tscn")
+			_open_sao_truc_level(5)
 		else:
 			_go_practice()
 	)
@@ -2747,39 +2733,7 @@ func _set_title_with_icon(lbl: Label, icon_name: String, text: String) -> void:
 	lbl.add_child(hbox)
 # ─── Sáo Trúc Custom Progression ──────────────────────────────────────────────────
 func _get_sao_truc_card_status(card_type: String) -> Dictionary:
-	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("sao_truc", [])
-	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("sao_truc", {})
-
-	var total_stars := 0
-	var completed_count := 0
-	var total_count := 2
-
-	var steps_to_check := []
-	if card_type == "basic":
-		steps_to_check = ["sao_truc_level1_1_video"]
-	elif card_type == "essentials":
-		steps_to_check = ["Node1", "Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"]
-	elif card_type == "soloist":
-		steps_to_check = ["sao_truc_level3_1", "sao_truc_level3_2"]
-	elif card_type == "chords":
-		steps_to_check = ["sao_truc_level4_1", "sao_truc_level4_2"]
-	elif card_type == "classical":
-		steps_to_check = ["sao_truc_level5_1", "sao_truc_level5_2"]
-	elif card_type == "pop_chords":
-		steps_to_check = ["Node35", "Node36"]
-
-	total_count = steps_to_check.size()
-	if total_count == 0: total_count = 1
-
-	for step in steps_to_check:
-		if completed.has(step):
-			completed_count += 1
-		total_stars += stars_dict.get(step, 0)
-
-	var pct := 0
-	if total_count > 0:
-		pct = int((float(completed_count) / float(total_count)) * 100.0)
-	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+	return SAO_TRUC_COURSE_DATA.get_card_status(card_type, SecureDataManager.data)
 
 func _on_btn_leaderboard_pressed() -> void:
 	_fade_to("res://scenes/LeaderboardScreen.tscn")
