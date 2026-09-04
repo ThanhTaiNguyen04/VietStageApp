@@ -429,7 +429,7 @@ func _draw_roadmap_paths() -> void:
 		_draw_card_connector(card_basic, card_essentials)
 		_draw_card_connector(card_essentials, card_level_7)
 		return
-	if inst == "dan_bau" or inst == "sao_truc":
+	if inst == "dan_bau" or inst == "sao_truc" or inst == "trong_chau":
 		# Ép tọa độ Y của các điểm neo bằng nhau để đường vàng vẽ thẳng tắp 100%
 		var straight_y = p_basic.y
 		p_ess.y = straight_y
@@ -439,10 +439,14 @@ func _draw_roadmap_paths() -> void:
 		p_class.y = straight_y
 		
 		# Đường thẳng duy nhất nằm ngang
-		_draw_thick_path(p_basic, p_ess)
-		_draw_thick_path(p_ess, p_sol_sk)
-		_draw_thick_path(p_sol_sk, p_cho_sk)
-		_draw_thick_path(p_cho_sk, p_pop)
+		if card_basic.visible and card_essentials.visible:
+			_draw_thick_path(p_basic, p_ess)
+		if card_essentials.visible and card_soloist_skills.visible:
+			_draw_thick_path(p_ess, p_sol_sk)
+		if card_soloist_skills.visible and card_chords_skills.visible:
+			_draw_thick_path(p_sol_sk, p_cho_sk)
+		if card_chords_skills.visible and card_pop_chords.visible:
+			_draw_thick_path(p_cho_sk, p_pop)
 
 	else:
 		# Draw roadmap line segments connecting cards
