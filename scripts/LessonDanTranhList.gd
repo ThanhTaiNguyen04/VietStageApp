@@ -961,7 +961,9 @@ func _build_profile_btn() -> void:
 	spacer.name = "TopSpacerRight"
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	toph.add_child(spacer)
-	var pill := DS.build_profile_pill()
+	# build_profile_pill() là static của DS.gd; gọi qua preload thay vì autoload
+	# identifier để script còn compile được trong test `godot -s` (autoload chỉ tồn tại khi chạy app).
+	var pill := preload("res://scripts/DS.gd").build_profile_pill()
 	var trigger := pill.get_node_or_null("TriggerButton") as Button
 	if trigger:
 		trigger.pressed.connect(func() -> void: _fade_to("res://scenes/AccountScreen.tscn"))

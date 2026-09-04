@@ -21,7 +21,8 @@ func _init() -> void:
 	var visible: Array[Dictionary] = contract.visible_lessons(lessons)
 	if visible.size() != 2 or int(visible[0]["orderIndex"]) != 2:
 		failures.append("Lọc hoặc sắp xếp bài hiển thị không đúng")
-	var content := contract.decode_lesson_content({
+	# Không dùng `:=` vì decode_lesson_content trả về Dictionary từ một tham chiếu Variant
+	var content: Dictionary = contract.decode_lesson_content({
 		"content_text": JSON.stringify({"schema_version": 1, "blocks": [{"type": "TEACHER_SPEECH", "text": "Xin chào"}]})
 	})
 	if not contract.validate_content_document(content).is_empty():

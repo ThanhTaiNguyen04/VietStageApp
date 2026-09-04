@@ -4033,7 +4033,10 @@ func _show_custom_result() -> void:
 		popup.setup_result(_score, 82.0, 71.0, 79.0, 0, "Sao và tiến trình đang chờ hệ thống xác nhận")
 
 func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_config: Dictionary) -> void:
-	if not BackendReport.is_signed_in():
+	# Tra cứu autoload qua /root để script vẫn compile được trong chạy test `godot -s`
+	# (autoload identifier chỉ tồn tại lúc chạy app); hành vi runtime không đổi.
+	var backend_report := get_node_or_null("/root/BackendReport")
+	if backend_report == null or not backend_report.is_signed_in():
 		return
 	var scores := {
 		"pitch": _get_average_score(_pitch_scores, 80.0),
@@ -4047,7 +4050,7 @@ func _sync_practice_to_backend(inst: String, local_lesson_id: String, level1_con
 		scores["pitch"] = accuracy
 		scores["rhythm"] = _get_average_score(_level1_timing_scores, accuracy)
 		scores["tonal_quality"] = 0.0
-	BackendReport.report_practice_and_complete(inst, local_lesson_id, scores, _score)
+	backend_report.report_practice_and_complete(inst, local_lesson_id, scores, _score)
 
 func _go_back() -> void:
 	var t := create_tween()
