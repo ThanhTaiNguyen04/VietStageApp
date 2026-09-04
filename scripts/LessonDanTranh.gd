@@ -344,7 +344,15 @@ const LESSON_DIALOGUES = {
 	"dan_tranh_level_1_bai_3_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần hai.", "highlight": -1},
 		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol ba, La ba, Đô bốn, Rê bốn, Mi bốn, Sol bốn và La bốn.", "highlight": -1},
-		{"action": "speak", "text": "Phần này chúng ta tiếp tục luyện các nốt từ Sol ba đến La bốn. Hãy gảy từng nốt đều nhịp và chú ý không nhầm vị trí các dây cao. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
+		{"action": "speak", "text": "Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy gảy rõ tiếng và chú ý không nhầm vị trí các dây cao. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
+		{"action": "speak", "text": "Dây 11: Nốt Sol3. Hãy gảy dây 11.", "highlight": 10, "note": "Sol3"},
+		{"action": "speak", "text": "Dây 12: Nốt La3. Hãy gảy dây 12.", "highlight": 11, "note": "La3"},
+		{"action": "speak", "text": "Dây 13: Nốt Đô4. Hãy gảy dây 13.", "highlight": 12, "note": "Đô4"},
+		{"action": "speak", "text": "Dây 14: Nốt Rê4. Hãy gảy dây 14.", "highlight": 13, "note": "Rê4"},
+		{"action": "speak", "text": "Dây 15: Nốt Mi4. Hãy gảy dây 15.", "highlight": 14, "note": "Mi4"},
+		{"action": "speak", "text": "Dây 16: Nốt Sol4. Hãy gảy dây 16.", "highlight": 15, "note": "Sol4"},
+		{"action": "speak", "text": "Dây 17: Nốt La4. Hãy gảy dây 17.", "highlight": 16, "note": "La4"},
+		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 7 nốt ở âm vực cao!", "highlight": -1}
 	],
 
 	"dan_tranh_level_2_bai_10_practice": [
@@ -2171,7 +2179,7 @@ func _play_next_intro_step():
 			zither_board.call("set_lesson_marker", highlight_idx, "Gảy", 1)
 			
 			# Redesign lesson 1 level 1, lesson 2 level 1 and lesson 5 level 2 to wait for player input on note introduction steps!
-			if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+			if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 				current_state = State.PRACTICE_SINGLE
 				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
 				staff_display.visible = true
@@ -2273,7 +2281,7 @@ func _process_practice_single(delta: float) -> void:
 	var target_note := ""
 	var target_string_idx := 0
 	
-	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx < 0 or prev_step_idx >= dialogues.size():
@@ -2296,7 +2304,7 @@ func _process_practice_single(delta: float) -> void:
 	# 1. Check if user played correct pitch
 	if _check_mic_pitch(target_hz, delta, target_note):
 
-		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			_on_intro_note_correct(target_note)
 		else:
 			_on_single_note_correct(target_note)
@@ -2376,7 +2384,7 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	# Red staff highlight for wrong note attempt (only in intro/explore static mode)
 	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
 		var note_type = "quarter"
-		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
@@ -2404,7 +2412,7 @@ func _show_polyphonic_incomplete(target_note: String) -> void:
 func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
 	var note_type = "quarter"
-	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
@@ -2459,7 +2467,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 	if is_sample_mode and _is_technique_sample_practice():
 		return
 	if current_state == State.PRACTICE_SINGLE:
-		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
