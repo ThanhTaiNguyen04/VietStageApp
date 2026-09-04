@@ -22,7 +22,7 @@ const C_CREAM_DIM   := Color(0.80, 0.76, 0.66, 1.0)
 const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer red
 const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
-const DAN_TRANH_LESSON_SCRIPT = preload("res://scripts/LessonDanTranhList.gd")
+const DAN_TRANH_COURSE_DATA = preload("res://scripts/DanTranhCourseData.gd")
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 var _active_side_btn : Button = null
@@ -1539,6 +1539,8 @@ func _build_roadmap_cards() -> void:
 	card_pop_chords.position = Vector2(1930, 455)
 
 	if instrument == "dan_tranh":
+		var dan_tranh_roadmap: Dictionary = DAN_TRANH_COURSE_DATA.get_roadmap_configuration()
+		var dan_tranh_levels: Dictionary = dan_tranh_roadmap["levels"]
 		# Chỉ giữ lại các Level đang dùng trên lộ trình Đàn Tranh.
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
@@ -1551,14 +1553,14 @@ func _build_roadmap_cards() -> void:
 		path_chords_title.hide()
 		
 		card_level_7.position = Vector2(1060, 275)
-		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Tranh")
+		_set_title_with_icon(roadmap_guide, "map", str(dan_tranh_roadmap["guide"]))
 		
-		basic_title.text = "LEVEL 1: NHẬP MÔN & LÀM QUEN"
-		basic_desc.text = "Làm quen với đàn tranh, đọc nhạc cơ bản và luyện các ngón gảy đầu tiên."
-		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
-		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
-		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
-		level_7_desc.text = "Mở rộng khả năng diễn tấu với kỹ thuật vê và hợp âm ba âm cơ bản."
+		basic_title.text = str(dan_tranh_levels[1]["title"])
+		basic_desc.text = str(dan_tranh_levels[1]["description"])
+		ess_title.text = str(dan_tranh_levels[2]["title"])
+		ess_desc.text = str(dan_tranh_levels[2]["description"])
+		level_7_title.text = str(dan_tranh_levels[7]["title"])
+		level_7_desc.text = str(dan_tranh_levels[7]["description"])
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 	elif instrument == "trong_chau":
 		# Lộ trình Trống Chầu
@@ -1907,8 +1909,7 @@ func _connect_dan_tranh_level_card(card: Control, level_number: int) -> void:
 	hit_area.tooltip_text = "Xem các bài học Level %d" % (3 if level_number == 7 else level_number)
 
 func _open_dan_tranh_level(level_number: int) -> void:
-	DAN_TRANH_LESSON_SCRIPT.selected_level = level_number
-	_fade_to("res://scenes/LessonDanTranhList.tscn")
+	_fade_to(DAN_TRANH_COURSE_DATA.select_level(level_number))
 
 func _set_children_mouse_filter_pass(node: Node) -> void:
 	for child in node.get_children():
@@ -2078,8 +2079,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 1
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(1)
 			elif inst == "dan_bau":
 				LESSON_SCRIPT.selected_level = 1
 				_fade_to("res://scenes/LessonDanBau.tscn")
@@ -2098,8 +2098,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 2
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(2)
 			elif inst == "dan_bau":
 				LESSON_SCRIPT.selected_level = 2
 				_fade_to("res://scenes/LessonDanBau.tscn")
@@ -2126,8 +2125,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 3
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(3)
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 3
@@ -2138,8 +2136,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 4
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(4)
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 4
@@ -2150,8 +2147,7 @@ func _connect_buttons() -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 6
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(6)
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 6
@@ -2160,15 +2156,13 @@ func _connect_buttons() -> void:
 	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(7)
 	)
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 			if inst == "dan_tranh":
-				DAN_TRANH_LESSON_SCRIPT.selected_level = 5
-				_fade_to("res://scenes/LessonDanTranhList.tscn")
+				_open_dan_tranh_level(5)
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 5
@@ -2180,8 +2174,7 @@ func _connect_buttons() -> void:
 	play_soloist.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
-			DAN_TRANH_LESSON_SCRIPT.selected_level = 3
-			_fade_to("res://scenes/LessonDanTranhList.tscn")
+			_open_dan_tranh_level(3)
 		elif inst == "dan_bau":
 			LESSON_SCRIPT.selected_level = 3
 			_fade_to("res://scenes/LessonDanBau.tscn")
@@ -2201,8 +2194,7 @@ func _connect_buttons() -> void:
 	play_chords.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
-			DAN_TRANH_LESSON_SCRIPT.selected_level = 4
-			_fade_to("res://scenes/LessonDanTranhList.tscn")
+			_open_dan_tranh_level(4)
 		elif inst == "dan_bau":
 			LESSON_SCRIPT.selected_level = 4
 			_fade_to("res://scenes/LessonDanBau.tscn")
@@ -2221,8 +2213,7 @@ func _connect_buttons() -> void:
 	play_classical.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
-			DAN_TRANH_LESSON_SCRIPT.selected_level = 6
-			_fade_to("res://scenes/LessonDanTranhList.tscn")
+			_open_dan_tranh_level(6)
 		elif inst == "dan_bau":
 			LESSON_SCRIPT.selected_level = 5
 			_fade_to("res://scenes/LessonDanBau.tscn")
@@ -2241,8 +2232,7 @@ func _connect_buttons() -> void:
 	play_pop.pressed.connect(func() -> void:
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		if inst == "dan_tranh":
-			DAN_TRANH_LESSON_SCRIPT.selected_level = 5
-			_fade_to("res://scenes/LessonDanTranhList.tscn")
+			_open_dan_tranh_level(5)
 		elif inst == "dan_bau":
 			LESSON_SCRIPT.selected_level = 5
 			_fade_to("res://scenes/LessonDanBau.tscn")
@@ -2621,31 +2611,7 @@ func _relayout_open_account_menu() -> void:
 
 # ─── Dan Tranh Level Progress ─────────────────────────────────────────────────
 func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
-	var completed: Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_tranh", [])
-	var stars: Dictionary = SecureDataManager.data.get("stars", {}).get("dan_tranh", {})
-	var level_data: Dictionary = DAN_TRANH_LESSON_SCRIPT.get_level_data(level_number)
-	var step_ids: Array[String] = []
-	for lesson_value in level_data["lessons"]:
-		var lesson: Dictionary = lesson_value
-		var lesson_number := int(lesson["number"])
-		var prefix := "dan_tranh_level_%d_bai_%d_" % [level_number, lesson_number]
-		if str(lesson["video"]) != "":
-			step_ids.append(str(lesson.get("video_id", prefix + "video")))
-		step_ids.append(str(lesson.get("practice_id", prefix + "practice")))
-	var completed_count := 0
-	var total_stars := 0
-	for step_id in step_ids:
-		if completed.has(step_id):
-			completed_count += 1
-			total_stars += int(stars.get(step_id, 0))
-	var pct := 0
-	if not step_ids.is_empty():
-		pct = int(float(completed_count) / float(step_ids.size()) * 100.0)
-	return {
-		"completed": completed_count == step_ids.size(),
-		"stars": total_stars,
-		"pct": pct
-	}
+	return DAN_TRANH_COURSE_DATA.get_level_status(level_number, SecureDataManager.data)
 
 # ─── Dan Bau Custom Progression & Content Handling ─────────────────────────────
 const LESSON_SCRIPT = preload("res://scripts/LessonDanBau.gd")
