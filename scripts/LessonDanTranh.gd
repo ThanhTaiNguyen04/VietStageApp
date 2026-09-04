@@ -45,6 +45,7 @@ var _teacher_atlas : AtlasTexture
 var _portrait_is_talking := false
 var _portrait_frame := 0
 var _portrait_frame_elapsed := 0.0
+var _teacher_avatar_wrapper: Panel
 const PORTRAIT_FRAME_DURATION := 0.08
 const PORTRAIT_FRAME_COUNT := 16
 const PORTRAIT_SHEET_COLUMNS := 4
@@ -2213,7 +2214,7 @@ func _play_next_intro_step():
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
 	_apply_adaptive_speed()
-	teacher_area.visible = true
+	_shrink_teacher()
 	feedback_area.visible = true
 	staff_display.visible = true
 	if staff_card: staff_card.visible = true
@@ -2241,6 +2242,61 @@ func _start_practice_single():
 			
 	single_practice_idx = 0
 	_schedule_next_single_note()
+
+func _shrink_teacher() -> void:
+	if not is_instance_valid(teacher_char) or not is_instance_valid(teacher_area):
+		return
+
+	teacher_area.visible = true
+	var dialog_box := teacher_area.get_node_or_null("DialogBox")
+	if dialog_box and dialog_box.visible:
+		var dialog_tween := create_tween()
+		dialog_tween.tween_property(dialog_box, "modulate:a", 0.0, 0.2)
+		dialog_tween.tween_callback(func(): dialog_box.visible = false)
+
+	if not is_instance_valid(_teacher_avatar_wrapper):
+		_teacher_avatar_wrapper = Panel.new()
+		_teacher_avatar_wrapper.name = "TeacherAvatarWrapper"
+		_teacher_avatar_wrapper.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+
+		var avatar_style := StyleBoxFlat.new()
+		avatar_style.bg_color = Color.WHITE
+		avatar_style.corner_radius_top_left = 500
+		avatar_style.corner_radius_top_right = 500
+		avatar_style.corner_radius_bottom_left = 500
+		avatar_style.corner_radius_bottom_right = 500
+		_teacher_avatar_wrapper.add_theme_stylebox_override("panel", avatar_style)
+		_teacher_avatar_wrapper.size = Vector2(400.0, 400.0)
+		_teacher_avatar_wrapper.pivot_offset = _teacher_avatar_wrapper.size * 0.5
+		_teacher_avatar_wrapper.position = teacher_char.global_position + Vector2(100.0, 40.0)
+
+		teacher_char.get_parent().remove_child(teacher_char)
+		_teacher_avatar_wrapper.add_child(teacher_char)
+		add_child(_teacher_avatar_wrapper)
+		_teacher_avatar_wrapper.z_index = 100
+		teacher_char.position = Vector2(-120.0, -50.0)
+
+		_teacher_avatar_wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
+		_teacher_avatar_wrapper.gui_input.connect(_on_compact_teacher_clicked)
+
+	var target_position := Vector2(-80.0, get_viewport_rect().size.y - 320.0)
+	var teacher_tween := create_tween()
+	teacher_tween.tween_property(_teacher_avatar_wrapper, "scale", Vector2(0.35, 0.35), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	teacher_tween.parallel().tween_property(_teacher_avatar_wrapper, "position", target_position, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func _on_compact_teacher_clicked(event: InputEvent) -> void:
+	var activated: bool = false
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		activated = mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT
+	elif event is InputEventScreenTouch:
+		var touch_event := event as InputEventScreenTouch
+		activated = touch_event.pressed
+	if not activated:
+		return
+	var chat := AIChatPopup.new()
+	add_child(chat)
+	chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
 
 func _schedule_next_single_note():
 	if single_practice_idx >= unique_practice_notes.size():
@@ -4303,7 +4359,7 @@ func _start_practice():
 	error_feedback_target_note = ""
 	error_feedback_title = "Chưa đúng"
 	error_feedback_detail = ""
-	teacher_area.visible = false
+	_shrink_teacher()
 	feedback_area.visible = true
 	practice_idx = 0
 	practice_time = 0.0
@@ -5557,6 +5613,8 @@ func _update_staff_layout() -> void:
 	var max_spacing = (card_height - 90.0) / 11.0
 	var spacing = 32.0 if _is_glissando_practice() else clampf(max_spacing, 46.0, 78.0)
 	staff_display.line_spacing = spacing
+	if is_instance_valid(_teacher_avatar_wrapper):
+		_teacher_avatar_wrapper.position = Vector2(-80.0, v_height - 320.0)
 	if _is_glissando_practice() and current_state == State.PRACTICE and not glissando_round_locked:
 		_build_glissando_round_notes(str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"]))
 	staff_display.queue_redraw()
