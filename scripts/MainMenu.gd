@@ -23,6 +23,8 @@ const C_TERRACOTTA  := Color(0.753, 0.329, 0.102, 1.0) # #C0541A brand lacquer r
 const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const DAN_TRANH_COURSE_DATA = preload("res://scripts/DanTranhCourseData.gd")
+const DAN_BAU_COURSE_DATA = preload("res://scripts/DanBauCourseData.gd")
+const TRONG_CHAU_COURSE_DATA = preload("res://scripts/TrongChauCourseData.gd")
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
 
 var _active_side_btn : Button = null
@@ -266,6 +268,8 @@ func _setup_drawing_callbacks() -> void:
 		elif inst == "dan_bau" or inst == "sao_truc":
 			var stats := _get_dan_bau_card_status("basic") if inst == "dan_bau" else _get_sao_truc_card_status("basic")
 			pct = stats.get("pct", 0)
+		elif inst == "trong_chau":
+			pct = _get_trong_chau_card_status("basic").get("pct", 0)
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"):
 				pct = 100.0
@@ -296,6 +300,8 @@ func _setup_drawing_callbacks() -> void:
 		elif inst == "dan_bau" or inst == "sao_truc":
 			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("essentials")
 			pct = stats.get("pct", 0)
+		elif inst == "trong_chau":
+			pct = _get_trong_chau_card_status("essentials").get("pct", 0)
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
@@ -1563,35 +1569,33 @@ func _build_roadmap_cards() -> void:
 		level_7_desc.text = str(dan_tranh_levels[7]["description"])
 		# basic_details.text = "📖 3 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
 	elif instrument == "trong_chau":
+		var trong_chau_roadmap := TRONG_CHAU_COURSE_DATA.get_roadmap_configuration()
 		# Lộ trình Trống Chầu
+		_set_title_with_icon(roadmap_guide, "map", str(trong_chau_roadmap["guide"]))
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🥁 ĐƯỜNG ĐỆM HÁT (RHYTHM PATH)"
 		
-		basic_title.text = "Nhập Môn Trống Chầu"
-		basic_desc.text = "Học tư thế cầm dùi, vị trí mặt da, vành trống và các âm Tịch, Cắc cơ bản."
+		basic_title.text = str(trong_chau_roadmap["basic_title"])
+		basic_desc.text = str(trong_chau_roadmap["basic_description"])
 		# basic_details.text = "📖 5 Bài Học | 🔒 Mở khoá ngay"
 		
-		ess_title.text = "Kỹ Thuật Gõ Nâng Cao"
-		ess_desc.text = "Luyện kỹ thuật đập Vành, trống cuộn (Roll) và nhịp Múa Lân."
+		ess_title.text = str(trong_chau_roadmap["essentials_title"])
+		ess_desc.text = str(trong_chau_roadmap["essentials_description"])
 		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
 		
-		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
-		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
-		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
+		soloist_skills_title.text = str(trong_chau_roadmap["soloist_title"])
+		soloist_skills_bullets.text = str(trong_chau_roadmap["soloist_description"])
 		
-		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
-		soloist_skills_bullets.text = "✓ Luyện ngón tốc độ cao – Mã Vũ\n✓ Làm quen mật độ nốt dày hơn"
+		chords_skills_title.text = str(trong_chau_roadmap["chords_title"])
+		chords_skills_bullets.text = str(trong_chau_roadmap["chords_description"])
 		
-		chords_skills_title.text = "LEVEL 4: KỸ THUẬT NÂNG CAO"
-		chords_skills_bullets.text = "✓ Mô phỏng kỹ thuật rung tay trái\n✓ Hòa tấu cùng nhạc cụ khác\n✓ Đánh đàn theo beat"
+		pop_chords_title.text = str(trong_chau_roadmap["pop_title"])
+		pop_chords_desc.text = str(trong_chau_roadmap["pop_description"])
 		
-		pop_chords_title.text = "LEVEL 5: MASTER – NHẠC HIỆN ĐẠI"
-		pop_chords_desc.text = "✓ Nhạc hiện đại: Sứ Thanh Hoa\n✓ Boss Stage sinh tồn\n✓ Biểu diễn không gợi ý"
-		
-		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
-		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
-		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
-		level_7_desc.text = "Mở rộng khả năng diễn tấu với các kỹ thuật nâng cao."
+		classical_title.text = str(trong_chau_roadmap["classical_title"])
+		classical_desc.text = str(trong_chau_roadmap["classical_description"])
+		level_7_title.text = str(trong_chau_roadmap["extended_title"])
+		level_7_desc.text = str(trong_chau_roadmap["extended_description"])
 
 		# Chuẩn hóa typography và khoảng nội dung để ba card luôn bằng nhau,
 		# kể cả khi tiêu đề Level 3 dài hơn và phải xuống dòng.
@@ -1607,6 +1611,7 @@ func _build_roadmap_cards() -> void:
 			details.add_theme_font_size_override("font_size", 15)
 			details.custom_minimum_size = Vector2(310, 24)
 	elif instrument == "dan_bau":
+		var dan_bau_roadmap := DAN_BAU_COURSE_DATA.get_roadmap_configuration()
 		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
@@ -1620,31 +1625,29 @@ func _build_roadmap_cards() -> void:
 		card_pop_chords.position = Vector2(2080, 275)
 
 		# Lộ trình Đàn Bầu
-		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
-		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
-		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
+		_set_title_with_icon(roadmap_guide, "map", str(dan_bau_roadmap["guide"]))
+		basic_title.text = str(dan_bau_roadmap["basic_title"])
+		basic_desc.text = str(dan_bau_roadmap["basic_description"])
 		# basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
 
-		ess_title.text = "LEVEL 2: LINH HỒN CỦA ĐÀN"
-		ess_desc.text = "Dùng cần đàn (tay trái) để thay đổi cao độ và kỹ thuật căng dây."
+		ess_title.text = str(dan_bau_roadmap["essentials_title"])
+		ess_desc.text = str(dan_bau_roadmap["essentials_description"])
 		# ess_details.text = "📖 2 Bài Học | 🔒 Cần hoàn thành bài trước"
 
 		soloist_unlock_title.text = "LEVEL 3"
 		chords_unlock_title.text = "LEVEL 4"
 
-		soloist_skills_title.text = "LEVEL 3: UYỂN CHUYỂN"
-		soloist_skills_bullets.text = "✓ Làm chủ kỹ thuật chùng dây\n✓ Đẩy cần đàn về phía thân người\n✓ Bài hát: Lý Cây Đa"
+		soloist_skills_title.text = str(dan_bau_roadmap["soloist_title"])
+		soloist_skills_bullets.text = str(dan_bau_roadmap["soloist_description"])
 
-		chords_skills_title.text = "LEVEL 4: KỸ THUẬT LUYẾN ÂM"
-		chords_skills_bullets.text = "✓ Đánh các nốt luyến dài\n✓ Kỹ thuật Luyến 2 chiều\n✓ Bài hát: Cò Lả & Auld Lang Syne"
+		chords_skills_title.text = str(dan_bau_roadmap["chords_title"])
+		chords_skills_bullets.text = str(dan_bau_roadmap["chords_description"])
 
-		classical_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
-		classical_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Nghệ thuật Hòa tấu (Ensemble)\n✓ Boss Stage: Biểu diễn bằng tai"
+		classical_title.text = str(dan_bau_roadmap["master_title"])
+		classical_desc.text = str(dan_bau_roadmap["classical_description"])
 
-		pop_chords_title.text = "LEVEL 5: HÒA TẤU & THỬ THÁCH MASTER"
-		pop_chords_desc.text = "✓ Biểu diễn như nghệ sĩ thực thụ\n✓ Chơi Lead cùng Backing Track\n✓ Boss Stage: Chứng nhận ảo"
-	elif instrument == "trong_chau":
-		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Trống Chầu")
+		pop_chords_title.text = str(dan_bau_roadmap["master_title"])
+		pop_chords_desc.text = str(dan_bau_roadmap["pop_description"])
 	elif instrument == "sao_truc":
 		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Sáo Trúc")
 		# Lộ trình Sáo Trúc
@@ -1698,6 +1701,11 @@ func _build_roadmap_cards() -> void:
 		is_basic_completed = stats.get("completed", false)
 		basic_stars = stats.get("stars", 0)
 		basic_pct = stats.get("pct", 0)
+	elif instrument == "trong_chau":
+		var stats := _get_trong_chau_card_status("basic")
+		is_basic_completed = stats.get("completed", false)
+		basic_stars = stats.get("stars", 0)
+		basic_pct = stats.get("pct", 0)
 	else:
 		is_basic_completed = SecureDataManager.is_lesson_completed(instrument, "Node1")
 		var stars_dict = SecureDataManager.data.get("stars", {})
@@ -1719,6 +1727,8 @@ func _build_roadmap_cards() -> void:
 		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
 	elif instrument == "dan_bau":
 		_set_details_text(basic_details, 2, basic_stars, basic_pct, false)
+	elif instrument == "trong_chau":
+		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
 	else:
 		if is_basic_completed:
 			_set_details_text(basic_details, 2, basic_stars, 100, false)
@@ -1739,6 +1749,8 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(ess_details, 2, 0, 0, false)
 		elif instrument == "sao_truc":
 			_set_details_text(ess_details, 7, 0, 0, false)
+		elif instrument == "trong_chau":
+			_set_details_text(ess_details, 2, 0, 0, false)
 		else:
 			_set_details_text(ess_details, 8 if instrument == "dan_tranh" else 3, 0, 0, false)
 	else:
@@ -1757,6 +1769,9 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(ess_details, 7, stats.get("stars", 0), stats.get("pct", 0), false)
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
+			_set_details_text(ess_details, 2, stats.get("stars", 0), stats.get("pct", 0), false)
+		elif instrument == "trong_chau":
+			var stats := _get_trong_chau_card_status("essentials")
 			_set_details_text(ess_details, 2, stats.get("stars", 0), stats.get("pct", 0), false)
 		else:
 			var stars_dict = SecureDataManager.data.get("stars", {})
@@ -1910,6 +1925,12 @@ func _connect_dan_tranh_level_card(card: Control, level_number: int) -> void:
 
 func _open_dan_tranh_level(level_number: int) -> void:
 	_fade_to(DAN_TRANH_COURSE_DATA.select_level(level_number))
+
+func _open_dan_bau_level(level_number: int) -> void:
+	_fade_to(DAN_BAU_COURSE_DATA.select_level(level_number))
+
+func _open_trong_chau_course() -> void:
+	_fade_to(TRONG_CHAU_COURSE_DATA.get_lesson_scene())
 
 func _set_children_mouse_filter_pass(node: Node) -> void:
 	for child in node.get_children():
@@ -2081,10 +2102,9 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(1)
 			elif inst == "dan_bau":
-				LESSON_SCRIPT.selected_level = 1
-				_fade_to("res://scenes/LessonDanBau.tscn")
+				_open_dan_bau_level(1)
 			elif inst == "trong_chau":
-				_fade_to("res://scenes/LessonTrongChau.tscn")
+				_open_trong_chau_course()
 			elif inst == "sao_truc":
 				SecureDataManager.active_lesson_id = "sao_truc_level1_1_video"
 				SecureDataManager.data["custom_video_sequence"] = ["res://nvaore/intro1.ogv", "res://nvaore/intro2.ogv", "res://nvaore/intro3.ogv"]
@@ -2100,10 +2120,9 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(2)
 			elif inst == "dan_bau":
-				LESSON_SCRIPT.selected_level = 2
-				_fade_to("res://scenes/LessonDanBau.tscn")
+				_open_dan_bau_level(2)
 			elif inst == "trong_chau":
-				_fade_to("res://scenes/LessonTrongChau.tscn")
+				_open_trong_chau_course()
 			elif inst == "sao_truc":
 				var script = load("res://scripts/LessonSaoTrucList.gd")
 				if script: script.selected_level = 2
@@ -2176,10 +2195,9 @@ func _connect_buttons() -> void:
 		if inst == "dan_tranh":
 			_open_dan_tranh_level(3)
 		elif inst == "dan_bau":
-			LESSON_SCRIPT.selected_level = 3
-			_fade_to("res://scenes/LessonDanBau.tscn")
+			_open_dan_bau_level(3)
 		elif inst == "trong_chau":
-			_fade_to("res://scenes/LessonTrongChau.tscn")
+			_open_trong_chau_course()
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 3
@@ -2196,10 +2214,9 @@ func _connect_buttons() -> void:
 		if inst == "dan_tranh":
 			_open_dan_tranh_level(4)
 		elif inst == "dan_bau":
-			LESSON_SCRIPT.selected_level = 4
-			_fade_to("res://scenes/LessonDanBau.tscn")
+			_open_dan_bau_level(4)
 		elif inst == "trong_chau":
-			_fade_to("res://scenes/LessonTrongChau.tscn")
+			_open_trong_chau_course()
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 4
@@ -2215,10 +2232,9 @@ func _connect_buttons() -> void:
 		if inst == "dan_tranh":
 			_open_dan_tranh_level(6)
 		elif inst == "dan_bau":
-			LESSON_SCRIPT.selected_level = 5
-			_fade_to("res://scenes/LessonDanBau.tscn")
+			_open_dan_bau_level(5)
 		elif inst == "trong_chau":
-			_fade_to("res://scenes/LessonTrongChau.tscn")
+			_open_trong_chau_course()
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 6
@@ -2234,10 +2250,9 @@ func _connect_buttons() -> void:
 		if inst == "dan_tranh":
 			_open_dan_tranh_level(5)
 		elif inst == "dan_bau":
-			LESSON_SCRIPT.selected_level = 5
-			_fade_to("res://scenes/LessonDanBau.tscn")
+			_open_dan_bau_level(5)
 		elif inst == "trong_chau":
-			_fade_to("res://scenes/LessonTrongChau.tscn")
+			_open_trong_chau_course()
 		elif inst == "sao_truc":
 			var script = load("res://scripts/LessonSaoTrucList.gd")
 			if script: script.selected_level = 5
@@ -2613,42 +2628,14 @@ func _relayout_open_account_menu() -> void:
 func _get_dan_tranh_level_status(level_number: int) -> Dictionary:
 	return DAN_TRANH_COURSE_DATA.get_level_status(level_number, SecureDataManager.data)
 
-# ─── Dan Bau Custom Progression & Content Handling ─────────────────────────────
-const LESSON_SCRIPT = preload("res://scripts/LessonDanBau.gd")
-
 func _get_dan_bau_card_status(card_type: String) -> Dictionary:
-	var completed : Array = SecureDataManager.data.get("completed_lessons", {}).get("dan_bau", [])
-	var stars_dict : Dictionary = SecureDataManager.data.get("stars", {}).get("dan_bau", {})
+	return DAN_BAU_COURSE_DATA.get_card_status(card_type, SecureDataManager.data)
 
-	var total_stars := 0
-	var completed_count := 0
-	var total_count := 2
-
-	var steps_to_check := []
-	if card_type == "basic":
-		steps_to_check = ["dan_bau_level1_bai1_video"]
-	elif card_type == "essentials":
-		steps_to_check = ["dan_bau_level2_bai1_practice", "dan_bau_level2_bai2_practice", "dan_bau_level2_bai3_practice", "dan_bau_level2_bai4_practice", "dan_bau_level2_bai5_practice"]
-	elif card_type == "soloist":
-		steps_to_check = ["dan_bau_level3_bai1_practice", "dan_bau_level3_bai2_practice", "dan_bau_level3_bai3_practice", "dan_bau_level3_bai4_practice", "dan_bau_level3_bai5_practice"]
-	elif card_type == "chords":
-		steps_to_check = ["dan_bau_level4_bai1_practice", "dan_bau_level4_bai2_practice", "dan_bau_level4_bai3_practice", "dan_bau_level4_bai4_practice", "dan_bau_level4_bai5_practice"]
-	elif card_type == "classical" or card_type == "pop_chords":
-		steps_to_check = ["dan_bau_level5_bai1_practice", "dan_bau_level5_bai2_practice", "dan_bau_level5_bai3_practice", "dan_bau_level5_bai4_practice", "dan_bau_level5_bai5_practice"]
-
-	for step in steps_to_check:
-		if completed.has(step):
-			completed_count += 1
-		total_stars += stars_dict.get(step, 0)
-
-	total_count = steps_to_check.size()
-	var pct = 0
-	if total_count > 0:
-		pct = int((float(completed_count) / float(total_count)) * 100.0)
-	return {"stars": total_stars, "pct": pct, "completed": completed_count == total_count}
+func _get_trong_chau_card_status(card_type: String) -> Dictionary:
+	return TRONG_CHAU_COURSE_DATA.get_card_status(card_type, SecureDataManager.data)
 
 func _play_dan_bau_video(lesson_idx: int) -> void:
-	var lessons_data = LESSON_SCRIPT.LEVELS[0]["lessons"]
+	var lessons_data := DAN_BAU_COURSE_DATA.get_level_lessons(1)
 	if lesson_idx >= 0 and lesson_idx < lessons_data.size():
 		var ldata = lessons_data[lesson_idx]
 		SecureDataManager.active_lesson_id = ldata["id"]
