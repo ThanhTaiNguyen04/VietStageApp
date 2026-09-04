@@ -165,6 +165,8 @@ func _draw():
 		if n_name == "REST":
 			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
+		if not str(note_data.get("fingering", "")).is_empty():
+			_draw_fingering_number(note_data, center_y, n_color)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
 		if n_cue == "tremolo_single":
@@ -446,6 +448,28 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	if cue == "vibrato":
 		var mark_y: float = note_y - line_spacing * (2.65 if pos_idx < 2.0 else 1.25)
 		_draw_vibrato_mark(Vector2(note_x, mark_y), note_color, line_spacing)
+
+func _draw_fingering_number(note_data: Dictionary, center_y: float, color: Color) -> void:
+	var fingering := str(note_data.get("fingering", ""))
+	if fingering.is_empty():
+		return
+	var note_name := str(note_data.get("note", "ZT_Đô2"))
+	var note_x := float(note_data.get("x", size.x * 0.5))
+	var note_y: float = center_y + (2.0 - _get_note_position_index(note_name)) * line_spacing
+	# Đặt số dưới đầu nốt và dưới cả dòng phụ của các nốt trầm.
+	var baseline_y := maxf(center_y + 3.15 * line_spacing, note_y + 0.95 * line_spacing)
+	var font := number_font if number_font else ThemeDB.fallback_font
+	if font:
+		var font_size := maxi(16, int(line_spacing * 0.42))
+		draw_string(
+			font,
+			Vector2(note_x - line_spacing * 0.4, baseline_y),
+			fingering,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			line_spacing * 0.8,
+			font_size,
+			color
+		)
 
 func _draw_vibrato_mark(center: Vector2, color: Color, spacing: float) -> void:
 	var points := PackedVector2Array()

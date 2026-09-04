@@ -245,6 +245,7 @@ var current_lesson_id: String
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
 static var current_song_cues: Array[String] = []
+static var current_song_fingerings: Array[String] = []
 # Set by the Level 7 lesson selector immediately before the scene is opened.
 # This does not rely on any persisted lesson/session value.
 static var force_glissando_start := false
@@ -4400,6 +4401,7 @@ func _start_practice():
 				note_color = Color(0.6, 0.6, 0.6, 0.9) if missing else Color(0.1, 0.1, 0.1, 1.0)
 				
 			var cue_name = current_song_cues[i] if i < current_song_cues.size() else ""
+			var fingering = current_song_fingerings[i] if i < current_song_fingerings.size() else ""
 			
 			var n_type = "quarter"
 			if dur >= 3.5:
@@ -4428,6 +4430,7 @@ func _start_practice():
 					"tail": tail_len,
 					"is_missing": missing,
 					"cue": cue_name,
+					"fingering": fingering,
 					"chord_group_id": i,
 					"chord_component_index": chord_component_index,
 					"raw_chord_name": raw_note_name,
