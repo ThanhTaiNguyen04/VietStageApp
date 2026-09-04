@@ -2274,6 +2274,10 @@ func _shrink_teacher() -> void:
 		_teacher_avatar_wrapper.add_child(teacher_char)
 		add_child(_teacher_avatar_wrapper)
 		_teacher_avatar_wrapper.z_index = 100
+		# Khung thu nhỏ của Sáo được căn theo ảnh cô Mai 500×850. Scene Đàn
+		# Tranh ban đầu chỉ dùng 300×500 nên phải chuẩn hóa trước khi cắt tròn.
+		teacher_char.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		teacher_char.size = Vector2(500.0, 850.0)
 		teacher_char.position = Vector2(-120.0, -50.0)
 
 		_teacher_avatar_wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
