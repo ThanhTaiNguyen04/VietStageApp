@@ -423,16 +423,19 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 # ── Quiz attempts ──────────────────────────────────────────────────────
 
 ## Nộp đáp án trắc nghiệm. Returns Dictionary { submitted, ... }.
-func report_quiz(quiz_id: int, selected_answer: String) -> Dictionary:
+func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Dictionary = {}) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	var attempt_id := _uuid()
 	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer, attempt_id)
 	if not _is_success(response):
-		SecureDataManager.enqueue_pending_game_attempt({
+		_log_quiz_sync_failure("submit", quiz_id, response)
+		var pending_attempt := pending_preview.duplicate(true)
+		pending_attempt.merge({
 			"kind": "quiz", "quiz_id": quiz_id, "selected_answer": selected_answer,
 			"client_attempt_id": attempt_id,
-		})
+		}, true)
+		SecureDataManager.enqueue_pending_game_attempt(pending_attempt)
 		return {
 			"submitted": false,
 			"queued": true,
@@ -477,6 +480,17 @@ func retry_pending_game_attempts() -> void:
 				SecureDataManager.apply_backend_reward(reward)
 			SecureDataManager.remove_pending_game_attempt(str(item.get("client_attempt_id", "")))
 			activity_history_changed.emit()
+		else:
+			_log_quiz_sync_failure("retry", int(item.get("quiz_id", 0)), response)
+
+
+## Log ở cả Output và Debugger/Warnings. Không in access token hay đáp án.
+func _log_quiz_sync_failure(action: String, quiz_id: int, response: Dictionary) -> void:
+	var status := int(response.get("status", 0))
+	var message: String = str(_api.error_message(response, "Không có thông tin lỗi từ máy chủ."))
+	var log_line := "[QuizSync] %s quiz_id=%d | HTTP=%d | %s" % [action, quiz_id, status, message]
+	print(log_line)
+	push_warning(log_line)
 
 
 func get_activity_history(page: int = 0, size: int = 20, activity_type: String = "") -> Dictionary:

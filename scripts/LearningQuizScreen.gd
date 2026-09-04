@@ -828,11 +828,13 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 		if child is Button:
 			(child as Button).disabled = true
 	var quiz: Dictionary = quizzes[question_index]
+	# Preserve locally known grading for offline history; the server remains authoritative.
+	var pending_preview := _pending_quiz_preview(quiz, selected_index)
 
 	var report := _report()
 	var result: Dictionary = {}
 	if report != null and report.is_signed_in() and int(quiz.get("id", 0)) > 0:
-		result = await report.report_quiz(int(quiz.get("id", 0)), selected_text)
+		result = await report.report_quiz(int(quiz.get("id", 0)), selected_text, pending_preview)
 		_record_quiz_submission(result)
 
 	# The server response is authoritative when it arrives. Sample/offline quizzes
@@ -958,15 +960,34 @@ func _grade_answer(quiz: Dictionary, selected_index: int, selected_text: String,
 		"source": "local"
 	}
 
+
+## Do not invent a score when the learner did not receive the correct answer.
+func _pending_quiz_preview(quiz: Dictionary, selected_index: int) -> Dictionary:
+	var options: Array = _parse_options(quiz.get("options", []))
+	var correct_index := _resolve_correct_index(quiz, options)
+	if correct_index < 0:
+		return {}
+	var is_correct := selected_index == correct_index
+	return {
+		"title": str(quiz.get("title", "Câu hỏi")),
+		"score": 100 if is_correct else 0,
+		"maxScore": 100,
+		"isCorrect": is_correct,
+		"completedAt": Time.get_datetime_string_from_system(true),
+	}
+
 func _filter_valid_quizzes(source: Array) -> Array:
 	var valid: Array = []
 	for item: Variant in source:
 		if item is Dictionary:
 			var quiz: Dictionary = item
 			var options: Array = _parse_options(quiz.get("options", []))
-			# Yêu cầu tối thiểu 2 option và có đáp án đúng có thể xác định được,
-			# tránh đưa câu không thể trả lời vào gameplay.
-			if options.size() >= 2 and _resolve_correct_index(quiz, options) >= 0:
+			# Quiz BE không gửi correctAnswer cho LEARNER trước khi nộp bài. Chỉ
+			# cần options hợp lệ; backend là nơi chấm điểm sau khi người dùng chọn.
+			# Quiz mẫu (id <= 0) phải giữ đáp án để có thể chấm offline.
+			var is_backend_quiz := int(quiz.get("id", 0)) > 0
+			var has_local_answer := _resolve_correct_index(quiz, options) >= 0
+			if options.size() >= 2 and (is_backend_quiz or has_local_answer):
 				valid.append(quiz)
 			else:
 				print("[QuizDebug] Bỏ qua Quiz id=%s (options=%s, expected=%s)" % [

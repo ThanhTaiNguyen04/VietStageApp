@@ -18,6 +18,22 @@ func _init() -> void:
 	assert(local_wrong.get("is_correct") == false)
 	assert(local_wrong.get("correct_answer") == "Đô")
 
+	# LEARNER không nhận correctAnswer từ BE trước khi nộp. Quiz thật vẫn
+	# phải được hiển thị để backend chấm đáp án ở POST /quizzes/{id}/attempts.
+	var backend_quiz_without_answer := {
+		"id": 42,
+		"options": ["Đô", "Rê", "Mi", "Fa"],
+	}
+	assert(screen._filter_valid_quizzes([backend_quiz_without_answer]).size() == 1)
+	assert(screen._filter_valid_quizzes([{
+		"id": 0,
+		"options": ["Đô", "Rê"],
+	}]).is_empty())
+	assert(screen._filter_valid_quizzes([{
+		"id": 43,
+		"options": ["Đô"],
+	}]).is_empty())
+
 	var server_result := screen._grade_answer(quiz, 0, "Đô", {
 		"submitted": true,
 		"is_correct": false,

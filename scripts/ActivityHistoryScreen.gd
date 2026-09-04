@@ -449,7 +449,8 @@ func _map_pending(pending: Dictionary) -> Dictionary:
 		"title": "Câu hỏi" if activity_type == "QUIZ" else "Mini Game",
 		"lessonTitle": "",
 		"score": pending.get("score", null),
-		"completedAt": completed_at,
+		"maxScore": pending.get("maxScore", pending.get("max_score", 100)) if pending.get("score", null) != null else null,
+		"completedAt": str(pending.get("completedAt", completed_at)),
 		"status": "PENDING_SYNC",
 		"pendingPayload": pending
 	}
