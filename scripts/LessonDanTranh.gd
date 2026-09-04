@@ -62,6 +62,7 @@ var staff_card: PanelContainer
 var title_plaque: PanelContainer
 var pill_badge: PanelContainer
 var sub_instr_row: HBoxContainer
+var intro_overlay: ColorRect
 
 class PitchMeterDraw extends Control:
 	var current_cents: float = 0.0
@@ -886,6 +887,7 @@ func _ready():
 	
 	_create_pause_system()
 	_create_skip_intro_button()
+	_create_intro_sheet_overlay()
 	
 	if _should_have_speed_control():
 		_create_speed_control_bar()
@@ -2119,9 +2121,9 @@ func _start_intro():
 	teacher_area.visible = true
 	feedback_area.visible = false
 	complete_btn.visible = false
-	staff_display.visible = false
-	if staff_card: staff_card.visible = false
-	if title_plaque: title_plaque.visible = false
+	staff_display.visible = true
+	if staff_card: staff_card.visible = true
+	if title_plaque: title_plaque.visible = true
 	if pill_badge: pill_badge.visible = false
 	if sub_instr_row: sub_instr_row.visible = false
 	if speed_bar_container:
@@ -2136,7 +2138,67 @@ func _start_intro():
 		pause_overlay.visible = false
 	if pitch_box:
 		pitch_box.visible = false
+	if intro_overlay:
+		intro_overlay.visible = true
+	_update_staff_layout()
+	_show_intro_sheet_preview()
 	_play_next_intro_step()
+
+func _create_intro_sheet_overlay() -> void:
+	intro_overlay = ColorRect.new()
+	intro_overlay.name = "IntroSheetDimOverlay"
+	intro_overlay.color = Color(0.0, 0.0, 0.0, 0.48)
+	intro_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_overlay.z_index = 20
+	intro_overlay.visible = false
+	add_child(intro_overlay)
+	staff_card.z_index = 5
+	if title_plaque:
+		title_plaque.z_index = 30
+	teacher_area.z_index = 40
+	back_btn.z_index = 50
+	if previous_intro_btn:
+		previous_intro_btn.z_index = 50
+	if skip_intro_btn:
+		skip_intro_btn.z_index = 50
+
+func _show_intro_sheet_preview() -> void:
+	if not staff_display or lesson_sheet.is_empty():
+		return
+	var preview_notes: Array = []
+	var staff_width := staff_display.size.x
+	if staff_width < 100.0:
+		staff_width = maxf(600.0, get_viewport_rect().size.x - 110.0)
+	var first_x := maxf(190.0, staff_width * 0.18)
+	var last_x := maxf(first_x, staff_width - 70.0)
+	# Chỉ xem trước một câu đầu để sheet dài không chồng hàng chục nốt lên nhau.
+	var preview_count := mini(lesson_sheet.size(), 12)
+	var step_x := (last_x - first_x) / maxf(1.0, float(preview_count - 1))
+	for index in range(preview_count):
+		var note_name := lesson_sheet[index]
+		if note_name == "Rest" or note_name == "-":
+			continue
+		var duration := lesson_durations[index] if index < lesson_durations.size() else 1.0
+		var note_type := "quarter"
+		if duration >= 3.5:
+			note_type = "whole"
+		elif duration >= 1.5:
+			note_type = "half"
+		elif duration < 0.35:
+			note_type = "sixteenth"
+		elif duration < 0.75:
+			note_type = "eighth"
+		var fingering := current_song_fingerings[index] if index < current_song_fingerings.size() else ""
+		for chord_note in note_name.split("+"):
+			preview_notes.append({
+				"note": "ZT_" + chord_note,
+				"x": first_x + step_x * index,
+				"color": Color.BLACK,
+				"type": note_type,
+				"fingering": fingering
+			})
+	staff_display.set_notes(preview_notes)
 
 func _on_practice_now_pressed() -> void:
 	# Dừng lời đang phát và vô hiệu callback tự chuyển bước trước khi vào tập.
@@ -2223,7 +2285,10 @@ func _play_next_intro_step():
 			staff_display.set_notes([])
 			staff_display.queue_redraw()
 		else:
-			staff_display.visible = false
+			# Các bài có thực hành luôn giữ sheet làm nền trong lúc cô Mai nói.
+			staff_display.visible = true
+			if staff_card: staff_card.visible = true
+			_show_intro_sheet_preview()
 			
 		# Wait for speech to finish then go to next step
 		var wait_time = max(1.5, step_data["text"].length() * 0.1)
@@ -2236,6 +2301,8 @@ func _play_next_intro_step():
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
 	_apply_adaptive_speed()
+	if intro_overlay:
+		intro_overlay.visible = false
 	_shrink_teacher()
 	feedback_area.visible = true
 	staff_display.visible = true
@@ -4374,6 +4441,8 @@ func _is_note_missing(note_idx: int) -> bool:
 func _start_practice():
 	_stop_technique_sample()
 	current_state = State.PRACTICE
+	if intro_overlay:
+		intro_overlay.visible = false
 	if error_flash_tween and error_flash_tween.is_running():
 		error_flash_tween.kill()
 	if error_pulse_tween and error_pulse_tween.is_running():
