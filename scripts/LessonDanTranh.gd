@@ -761,16 +761,16 @@ func _ready():
 	add_child(technique_sample_player)
 	zither_board.visible = false
 	
-	# Hide redundant mode selection buttons (e.g. "Dùng Đàn Thật")
+	# Giữ form và nút thực hành giống màn hướng dẫn của Sáo.
 	var mode_buttons = teacher_area.get_node_or_null("DialogBox/M/V/ModeButtons")
 	if mode_buttons:
-		mode_buttons.visible = false
+		mode_buttons.visible = true
 		
 	# Style và định vị Giảng viên cùng Khung chat ở giữa màn hình (Lớn hơn)
 	var dialog_sb = StyleBoxFlat.new()
-	dialog_sb.bg_color = Color(0.98, 0.97, 0.94, 0.96) # Cream sang trọng
-	dialog_sb.corner_radius_top_left = 24; dialog_sb.corner_radius_top_right = 24
-	dialog_sb.corner_radius_bottom_left = 24; dialog_sb.corner_radius_bottom_right = 24
+	dialog_sb.bg_color = Color(0.95, 0.95, 0.95, 0.95)
+	dialog_sb.corner_radius_top_left = 30; dialog_sb.corner_radius_top_right = 30
+	dialog_sb.corner_radius_bottom_left = 30; dialog_sb.corner_radius_bottom_right = 30
 	dialog_sb.border_width_top = 4; dialog_sb.border_width_bottom = 4
 	dialog_sb.border_width_left = 4; dialog_sb.border_width_right = 4
 	dialog_sb.border_color = C_GOLD
@@ -784,39 +784,51 @@ func _ready():
 	var dialog_box = $TeacherArea/DialogBox
 	dialog_box.add_theme_stylebox_override("panel", dialog_sb)
 	speech_text.add_theme_color_override("font_color", Color(0.1, 0.1, 0.1, 1.0))
+	var practice_button_style := StyleBoxFlat.new()
+	practice_button_style.bg_color = C_GOLD
+	practice_button_style.corner_radius_top_left = 15
+	practice_button_style.corner_radius_top_right = 15
+	practice_button_style.corner_radius_bottom_left = 15
+	practice_button_style.corner_radius_bottom_right = 15
+	real_mode_btn.text = "  Thực Hành Ngay  "
+	real_mode_btn.add_theme_stylebox_override("normal", practice_button_style)
+	real_mode_btn.add_theme_stylebox_override("hover", practice_button_style)
+	real_mode_btn.add_theme_stylebox_override("pressed", practice_button_style)
+	if not real_mode_btn.pressed.is_connected(_on_practice_now_pressed):
+		real_mode_btn.pressed.connect(_on_practice_now_pressed)
 	
 	var teacher_char = $TeacherArea/TeacherChar
-	
-	# Đặt lại chế độ neo (anchor) căn giữa cho cả nhân vật và khung chat
-	teacher_char.anchor_left = 0.5; teacher_char.anchor_right = 0.5
-	teacher_char.anchor_top = 0.5; teacher_char.anchor_bottom = 0.5
-	dialog_box.anchor_left = 0.5; dialog_box.anchor_right = 0.5
-	dialog_box.anchor_top = 0.5; dialog_box.anchor_bottom = 0.5
 	
 	var update_teacher_layout = func():
 		var vp_size = get_viewport().get_visible_rect().size
 		if vp_size.x < 1100:
 			# Dành cho màn hình hẹp (mobile dọc): xếp dọc, phóng lớn
+			teacher_char.anchor_left = 0.5; teacher_char.anchor_right = 0.5
+			teacher_char.anchor_top = 0.5; teacher_char.anchor_bottom = 0.5
 			teacher_char.offset_left = -180
 			teacher_char.offset_right = 180
 			teacher_char.offset_top = -340
 			teacher_char.offset_bottom = 0
-			
+			dialog_box.anchor_left = 0.5; dialog_box.anchor_right = 0.5
+			dialog_box.anchor_top = 0.5; dialog_box.anchor_bottom = 0.5
 			dialog_box.offset_left = -300
 			dialog_box.offset_right = 300
 			dialog_box.offset_top = 20
 			dialog_box.offset_bottom = 260
 		else:
-			# Dành cho màn hình rộng (desktop/landscape): xếp song song, giảng viên bên trái, khung chat bên phải
-			teacher_char.offset_left = -500
-			teacher_char.offset_right = -100
-			teacher_char.offset_top = -300
-			teacher_char.offset_bottom = 300
-			
-			dialog_box.offset_left = -80
-			dialog_box.offset_right = 560
-			dialog_box.offset_top = -250
-			dialog_box.offset_bottom = 250
+			# Sao chép đúng bố cục desktop/landscape của màn Sáo.
+			teacher_char.anchor_left = 0.0; teacher_char.anchor_right = 0.0
+			teacher_char.anchor_top = 1.0; teacher_char.anchor_bottom = 1.0
+			teacher_char.offset_left = 20
+			teacher_char.offset_right = 520
+			teacher_char.offset_top = -800
+			teacher_char.offset_bottom = 50
+			dialog_box.anchor_left = 0.0; dialog_box.anchor_right = 0.0
+			dialog_box.anchor_top = 1.0; dialog_box.anchor_bottom = 1.0
+			dialog_box.offset_left = 460
+			dialog_box.offset_right = 1400
+			dialog_box.offset_top = -650
+			dialog_box.offset_bottom = -250
 		speech_text.add_theme_font_size_override("font_size", 32 if vp_size.x >= 1100 else 26)
 			
 	get_viewport().size_changed.connect(update_teacher_layout)
@@ -2125,6 +2137,16 @@ func _start_intro():
 	if pitch_box:
 		pitch_box.visible = false
 	_play_next_intro_step()
+
+func _on_practice_now_pressed() -> void:
+	# Dừng lời đang phát và vô hiệu callback tự chuyển bước trước khi vào tập.
+	intro_playback_token += 1
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stop()
+	if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
+		_start_practice_single()
+	else:
+		_start_practice()
 
 func _play_next_intro_step():
 	intro_playback_token += 1
