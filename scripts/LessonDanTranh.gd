@@ -2159,6 +2159,10 @@ func _create_intro_sheet_overlay() -> void:
 	staff_card.z_index = 5
 	if title_plaque:
 		title_plaque.z_index = 30
+	if pill_badge:
+		pill_badge.z_index = 30
+	if sub_instr_row:
+		sub_instr_row.z_index = 30
 	teacher_area.z_index = 40
 	back_btn.z_index = 50
 	if previous_intro_btn:
@@ -5276,11 +5280,11 @@ func _create_skip_intro_button():
 		Vector2(150, 48)
 	)
 	add_child(previous_intro_btn)
-	previous_intro_btn.anchor_left = 1.0
-	previous_intro_btn.anchor_right = 1.0
+	previous_intro_btn.anchor_left = 0.0
+	previous_intro_btn.anchor_right = 0.0
 	previous_intro_btn.anchor_top = 1.0
 	previous_intro_btn.anchor_bottom = 1.0
-	previous_intro_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	previous_intro_btn.grow_horizontal = Control.GROW_DIRECTION_END
 	previous_intro_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 	skip_intro_btn = _create_aesthetic_btn(
@@ -5306,8 +5310,8 @@ func _create_skip_intro_button():
 	
 	# Cập nhật vị trí nút theo kích thước viewport (responsive)
 	var update_skip_pos = func():
-		previous_intro_btn.offset_left = -350
-		previous_intro_btn.offset_right = -200
+		previous_intro_btn.offset_left = 40
+		previous_intro_btn.offset_right = 190
 		previous_intro_btn.offset_top = -85
 		previous_intro_btn.offset_bottom = -40
 		skip_intro_btn.offset_left = -190
