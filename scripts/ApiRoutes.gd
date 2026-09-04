@@ -50,6 +50,10 @@ const CONFIGS := "/configs"
 
 # Lesson content subsets
 const LESSON_ASSETS := "/lessons/%s/assets"
+const LESSON_ASSET := "/lessons/%s/assets/%s"
+const LESSON_CONTENTS := "/lessons/%s/contents"
+const LESSON_CONTENT := "/lessons/%s/contents/%s"
+const LESSON_STATUS := "/lessons/%s/status"
 const LESSON_EXERCISES := "/lessons/%s/exercises"
 const LESSON_QUIZZES := "/lessons/%s/quizzes"
 const QUIZ_ATTEMPTS := "/quizzes/%s/attempts"

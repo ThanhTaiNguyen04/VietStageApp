@@ -82,15 +82,24 @@ func get_techniques(instrument_id: int = 0) -> Dictionary:
 		path += "?instrument_id=" + str(instrument_id)
 	return await request_json(path, HTTPClient.METHOD_GET)
 
-## Lấy danh sách bài học (Lọc theo nhạc cụ / kỹ thuật / trình độ)
-func get_lessons(instrument_id: int = 0, skill_level_id: int = 0, technique_id: int = 0) -> Dictionary:
+## Lấy danh sách bài học theo contract OpenAPI 3.1 hiện tại.
+## Giáo trình trong app vẫn dùng dữ liệu cứng; catalog backend chỉ phục vụ bridge.
+func get_lessons(
+	instrument_id: int = 0,
+	skill_level_id: int = 0,
+	status: String = "",
+	page: int = 1,
+	size: int = 10
+) -> Dictionary:
 	var query_params := []
 	if instrument_id > 0:
-		query_params.append("instrumentId=" + str(instrument_id))
+		query_params.append("instrument_id=" + str(instrument_id))
 	if skill_level_id > 0:
-		query_params.append("skillLevelId=" + str(skill_level_id))
-	if technique_id > 0:
-		query_params.append("techniqueId=" + str(technique_id))
+		query_params.append("skill_level_id=" + str(skill_level_id))
+	if not status.is_empty():
+		query_params.append("status=" + status.uri_encode())
+	query_params.append("page=" + str(maxi(1, page)))
+	query_params.append("size=" + str(maxi(1, size)))
 	
 	var path := ApiRoutes.build(ApiRoutes.LESSONS)
 	if query_params.size() > 0:
@@ -108,6 +117,12 @@ func get_lesson_assets(lesson_id: int, asset_type: String = "") -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.LESSON_ASSETS % str(lesson_id))
 	if not asset_type.is_empty():
 		path += "?type=" + asset_type
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+## Lấy các khối nội dung/lời hướng dẫn của bài học.
+## Chỉ chuẩn bị cho adapter giáo trình web; runtime hiện chưa gọi hàm này.
+func get_lesson_contents(lesson_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_CONTENTS % str(lesson_id))
 	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Lấy danh sách bài tập (exercises) của bài học
