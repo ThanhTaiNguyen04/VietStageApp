@@ -99,6 +99,7 @@ const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
+const INSTRUMENT_GATE_CONTOUR_SILENCE_SEC := 0.60
 const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
 const INSTRUMENT_MIN_DECAY_DB := 0.2
 const INSTRUMENT_MIN_LATE_DECAY_DB := 0.05
@@ -376,6 +377,10 @@ func get_microphone_diagnostics() -> Dictionary:
 		"native_analyzer": _analyzer != null,
 		"platform": OS.get_name()
 	}
+
+
+func is_mobile_fallback() -> bool:
+	return _analyzer == null and (OS.has_feature("ios") or OS.has_feature("android"))
 
 # Start / Stop noise calibration
 func start_calibration() -> void:
@@ -711,7 +716,9 @@ func _handle_silence(delta: float) -> void:
 	current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 	if instrument_gate_open:
 		_instrument_gate_silence_elapsed += delta
-		if _instrument_gate_silence_elapsed >= INSTRUMENT_GATE_SILENCE_SEC:
+		var silence_limit := INSTRUMENT_GATE_CONTOUR_SILENCE_SEC \
+			if contour_tracking_mode else INSTRUMENT_GATE_SILENCE_SEC
+		if _instrument_gate_silence_elapsed >= silence_limit:
 			_close_instrument_gate()
 	
 	# Release pluck lock when signal level is silent (Phase 2)
@@ -804,8 +811,8 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
 	var fast_tracking := rapid_sequence_mode or contour_tracking_mode or (_analyzer == null)
 	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
-	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
-	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
+	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else (180.0 if _analyzer == null else PITCH_JUMP_CENTS))
+	var stability_limit := 65.0 if _analyzer == null else (55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS))
 	
 	if detected_pitch < min_f or detected_pitch > max_f:
 		_clear_pitch_detection()

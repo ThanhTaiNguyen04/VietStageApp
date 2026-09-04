@@ -56,6 +56,7 @@ var pitch_note_lbl: Label
 var pitch_status_lbl: Label
 var mic_status_lbl: Label
 var pitch_meter: Control
+var force_mobile_audio_fallback_for_tests := false
 var staff_card: PanelContainer
 var title_plaque: PanelContainer
 var pill_badge: PanelContainer
@@ -590,7 +591,9 @@ func _ready():
 	profile.min_frequency = 180.0
 	profile.max_frequency = 1900.0
 	profile.volume_threshold_db = -58.0
-	profile.cents_tolerance = 45.0 # robust pitch tolerance
+	# A phone microphone and a real đàn tranh can drift more than a synthesized
+	# reference. ±60 cents still keeps adjacent pentatonic strings well apart.
+	profile.cents_tolerance = 60.0
 	profile.hold_time_sec = 0.20
 	profile.is_plucked_instrument = true
 	
@@ -1246,6 +1249,12 @@ func _is_micro_scoring_blocked() -> bool:
 	if _micro_scoring_locked:
 		return true
 	return analyzer != null and bool(analyzer.get("analysis_suspended"))
+
+
+func _uses_mobile_audio_fallback() -> bool:
+	return force_mobile_audio_fallback_for_tests \
+		or (analyzer != null and analyzer.has_method("is_mobile_fallback") \
+		and bool(analyzer.call("is_mobile_fallback")))
 
 
 func _on_teacher_tts_started() -> void:
@@ -2762,28 +2771,36 @@ func _analyze_glissando_gesture(
 	var duration: float = float(times.back()) - float(times.front())
 	var distinct_count := distinct.size()
 	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
+	var mobile_fallback := _uses_mobile_audio_fallback()
 	var max_duration := 4.5 if mode == "round" else 3.5
 	var continuous: bool = times_increasing \
-		and max_gap <= GLISSANDO_MAX_ATTACK_GAP \
-		and max_step <= GLISSANDO_MAX_STRING_STEP \
+		and max_gap <= (0.60 if mobile_fallback else GLISSANDO_MAX_ATTACK_GAP) \
+		and max_step <= (8 if mobile_fallback else GLISSANDO_MAX_STRING_STEP) \
 		and duration <= max_duration
-	var enough_strings := distinct_count >= GLISSANDO_MIN_DISTINCT_STRINGS \
-		and strings.size() >= (7 if mode == "round" else 5)
+	var minimum_distinct := 4 if mobile_fallback else GLISSANDO_MIN_DISTINCT_STRINGS
+	var minimum_events := 7 if mode == "round" else 5
+	if mobile_fallback:
+		minimum_events = 6 if mode == "round" else 4
+	var enough_strings := distinct_count >= minimum_distinct \
+		and strings.size() >= minimum_events
 	var range_valid := false
 	var direction_valid := false
 	var direction_ratio := 0.0
 
 	if mode == "down":
 		direction_ratio = _direction_ratio(strings, false)
-		range_valid = span >= 6 and first >= 7 and last <= 8 and coverage_ratio >= 0.35
-		direction_valid = direction_ratio >= 0.65
+		range_valid = span >= (5 if mobile_fallback else 6) and first >= 7 and last <= 8 \
+			and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
+		direction_valid = direction_ratio >= (0.55 if mobile_fallback else 0.65)
 	elif mode == "up":
 		direction_ratio = _direction_ratio(strings, true)
-		range_valid = span >= 6 and first <= 8 and last >= 7 and coverage_ratio >= 0.35
-		direction_valid = direction_ratio >= 0.65
+		range_valid = span >= (5 if mobile_fallback else 6) and first <= 8 and last >= 7 \
+			and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
+		direction_valid = direction_ratio >= (0.55 if mobile_fallback else 0.65)
 	elif mode == "round":
 		var turn_idx := strings.find(min_string)
-		if turn_idx >= 2 and turn_idx <= strings.size() - 3:
+		var minimum_leg_events := 1 if mobile_fallback else 2
+		if turn_idx >= minimum_leg_events and turn_idx <= strings.size() - minimum_leg_events - 1:
 			var down_leg: Array[int] = []
 			var up_leg: Array[int] = []
 			for i in range(turn_idx + 1):
@@ -2793,10 +2810,12 @@ func _analyze_glissando_gesture(
 			var down_ratio := _direction_ratio(down_leg, false)
 			var up_ratio := _direction_ratio(up_leg, true)
 			direction_ratio = minf(down_ratio, up_ratio)
+			var minimum_leg_span := 4 if mobile_fallback else 5
 			range_valid = min_string <= 7 and first >= 7 and last >= 7 \
-				and first - min_string >= 5 and last - min_string >= 5 \
-				and coverage_ratio >= 0.35
-			direction_valid = down_ratio >= 0.60 and up_ratio >= 0.60
+				and first - min_string >= minimum_leg_span and last - min_string >= minimum_leg_span \
+				and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
+			var minimum_direction_ratio := 0.52 if mobile_fallback else 0.60
+			direction_valid = down_ratio >= minimum_direction_ratio and up_ratio >= minimum_direction_ratio
 
 	result["distinct_count"] = distinct_count
 	result["span"] = span
@@ -3054,7 +3073,8 @@ func _process_press_practice(delta: float) -> void:
 			_reset_press_attempt_tracking("Tiếng đàn bị ngắt trước khi tới nốt đích. Hãy gảy lại và nhấn liền mạch.")
 			return
 
-	if press_base_note_heard and press_target_hold_elapsed >= 0.20:
+	var target_hold_needed := 0.12 if _uses_mobile_audio_fallback() else 0.20
+	if press_base_note_heard and press_target_hold_elapsed >= target_hold_needed:
 		var result := _analyze_press_contour(press_cents_history, target_interval)
 		if result.get("detected", false):
 			_on_press_exercise_success(result)
@@ -3089,7 +3109,7 @@ func _is_press_source_attack_valid(identity: Dictionary, source: String) -> bool
 func _is_press_contour_session_valid(identity: Dictionary, source: String, generation: int) -> bool:
 	return generation > 0 \
 		and int(identity.get("generation", -1)) == generation \
-		and _is_press_source_attack_valid(identity, source)
+		and (_uses_mobile_audio_fallback() or _is_press_source_attack_valid(identity, source))
 
 
 func _is_valid_technique_source_attack(identity: Dictionary, expected_note: String) -> bool:
@@ -3098,13 +3118,26 @@ func _is_valid_technique_source_attack(identity: Dictionary, expected_note: Stri
 			or float(identity.get("confidence", 0.0)) <= 0.0:
 		return false
 	var expected_string := int(NOTE_TO_STRING.get(expected_note, -1))
-	return expected_string >= 0 \
+	var identity_matches := expected_string >= 0 \
 		and int(identity.get("string_index", -1)) == expected_string \
 		and str(identity.get("note_name", "")) == expected_note
+	if identity_matches:
+		return true
+	# Xogot has no native GDExtension. Its first short YIN window can map a
+	# harmonic before the following contour stabilizes, so verify the expected
+	# source directly from the live pitch instead of rejecting the whole gesture.
+	if _uses_mobile_audio_fallback() and analyzer:
+		var expected_hz := float(NOTE_FREQS.get(expected_note, 0.0))
+		var live_pitch := float(analyzer.current_pitch)
+		if expected_hz > 0.0 and live_pitch > 0.0:
+			var cents := absf(1200.0 * log(live_pitch / expected_hz) / log(2.0))
+			return cents <= 70.0
+	return false
 
 
 func _is_press_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
-	return contour_elapsed >= 0.12 and current_db >= minimum_db + PRESS_ADDED_SOUND_RISE_DB
+	var rise_db := 16.0 if _uses_mobile_audio_fallback() else PRESS_ADDED_SOUND_RISE_DB
+	return contour_elapsed >= 0.12 and current_db >= minimum_db + rise_db
 
 
 func _reset_press_attempt_tracking(message: String) -> void:
@@ -3134,7 +3167,9 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 		"max_step": 0.0,
 		"reversals": 0
 	}
-	if history.size() < 10 or target_interval <= 0.0:
+	var mobile_fallback := _uses_mobile_audio_fallback()
+	var minimum_samples := 8 if mobile_fallback else 10
+	if history.size() < minimum_samples or target_interval <= 0.0:
 		return result
 	var smoothed: Array[float] = []
 	for i in range(history.size()):
@@ -3188,15 +3223,22 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 	result["smoothness"] = smoothness
 	result["max_step"] = max_step
 	result["reversals"] = reversal_count
-	result["detected"] = absf(smoothed[0]) <= 55.0 \
-		and max_cents >= target_interval - 38.0 \
-		and max_cents <= target_interval + 62.0 \
-		and absf(final_cents - target_interval) <= 42.0 \
-		and rise_time >= 0.10 and rise_time <= 2.5 \
-		and rise_delay <= PRESS_MAX_RISE_DELAY \
-		and max_step <= PRESS_MAX_SAMPLE_JUMP_CENTS \
-		and reversal_count <= 3 \
-		and smoothness >= 0.68
+	var source_tolerance := 70.0 if mobile_fallback else 55.0
+	var target_reach_tolerance := 55.0 if mobile_fallback else 38.0
+	var final_tolerance := 70.0 if mobile_fallback else 42.0
+	var minimum_rise_time := 0.05 if mobile_fallback else 0.10
+	var maximum_rise_delay := 1.10 if mobile_fallback else PRESS_MAX_RISE_DELAY
+	var maximum_step := 180.0 if mobile_fallback else PRESS_MAX_SAMPLE_JUMP_CENTS
+	var minimum_smoothness := 0.55 if mobile_fallback else 0.68
+	result["detected"] = absf(smoothed[0]) <= source_tolerance \
+		and max_cents >= target_interval - target_reach_tolerance \
+		and max_cents <= target_interval + 75.0 \
+		and absf(final_cents - target_interval) <= final_tolerance \
+		and rise_time >= minimum_rise_time and rise_time <= 2.5 \
+		and rise_delay <= maximum_rise_delay \
+		and max_step <= maximum_step \
+		and reversal_count <= (5 if mobile_fallback else 3) \
+		and smoothness >= minimum_smoothness
 	return result
 
 func _on_press_exercise_success(result: Dictionary) -> void:
@@ -3419,7 +3461,8 @@ func _process_vibrato_practice(delta: float) -> void:
 			_reset_vibrato_attempt_tracking("Tiếng đàn bị ngắt giữa quá trình rung. Hãy gảy lại và rung liền mạch.")
 			return
 
-	if vibrato_base_note_heard and vibrato_pitch_history.size() >= 24:
+	var vibrato_samples_needed := 20 if _uses_mobile_audio_fallback() else 24
+	if vibrato_base_note_heard and vibrato_pitch_history.size() >= vibrato_samples_needed:
 		var result := _analyze_vibrato_cents(vibrato_pitch_history)
 		if result.get("detected", false):
 			_on_vibrato_note_success(result)
@@ -3447,11 +3490,12 @@ func _is_vibrato_source_attack_valid(identity: Dictionary, target_note: String) 
 func _is_vibrato_contour_session_valid(identity: Dictionary, target_note: String, generation: int) -> bool:
 	return generation > 0 \
 		and int(identity.get("generation", -1)) == generation \
-		and _is_vibrato_source_attack_valid(identity, target_note)
+		and (_uses_mobile_audio_fallback() or _is_vibrato_source_attack_valid(identity, target_note))
 
 
 func _is_vibrato_added_sound_level(current_db: float, minimum_db: float, contour_elapsed: float) -> bool:
-	return contour_elapsed >= 0.12 and current_db >= minimum_db + VIBRATO_ADDED_SOUND_RISE_DB
+	var rise_db := 16.0 if _uses_mobile_audio_fallback() else VIBRATO_ADDED_SOUND_RISE_DB
+	return contour_elapsed >= 0.12 and current_db >= minimum_db + rise_db
 
 
 func _reset_vibrato_attempt_tracking(message: String) -> void:
@@ -3481,7 +3525,9 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 		"raw_high_cents": 0.0,
 		"duration": 0.0
 	}
-	if history.size() < 24:
+	var mobile_fallback := _uses_mobile_audio_fallback()
+	var minimum_samples := 20 if mobile_fallback else 24
+	if history.size() < minimum_samples:
 		return result
 	var raw_low_cents := float(history[0])
 	var raw_high_cents := float(history[0])
@@ -3533,14 +3579,15 @@ func _analyze_vibrato_cents(history: Array[float]) -> Dictionary:
 	# Left-hand đàn-tranh vibrato bends an open string mainly upward from its
 	# resting pitch. Symmetric modulation around the sung note is typical vocal
 	# vibrato and must not pass even when its rate/depth looks convincing.
-	result["detected"] = duration >= VIBRATO_MIN_DURATION_SEC \
-		and cycles >= 1.5 \
+	result["detected"] = duration >= (0.45 if mobile_fallback else VIBRATO_MIN_DURATION_SEC) \
+		and cycles >= (1.0 if mobile_fallback else 1.5) \
 		and rate >= 2.5 and rate <= 10.0 \
-		and depth >= 8.0 and depth <= 160.0 \
-		and low_cents >= -35.0 \
+		and depth >= (12.0 if mobile_fallback else 8.0) \
+		and depth <= (180.0 if mobile_fallback else 160.0) \
+		and low_cents >= (-50.0 if mobile_fallback else -35.0) \
 		and high_cents >= 8.0 \
-		and raw_low_cents >= VIBRATO_MIN_RAW_CENTS \
-		and raw_high_cents <= VIBRATO_MAX_RAW_UPWARD_CENTS
+		and raw_low_cents >= (-60.0 if mobile_fallback else VIBRATO_MIN_RAW_CENTS) \
+		and raw_high_cents <= (180.0 if mobile_fallback else VIBRATO_MAX_RAW_UPWARD_CENTS)
 	return result
 
 func _on_vibrato_note_success(result: Dictionary) -> void:
@@ -3856,12 +3903,17 @@ func _analyze_tremolo_sequence(
 		alternating_ratio = float(transitions) / float(maxi(1, count - 1))
 		balance_ok = first_count >= 2 and second_count >= 2
 
+	var mobile_fallback := _uses_mobile_audio_fallback()
+	var minimum_attacks := 4 if mobile_fallback else TREMOLO_MIN_ATTACK_COUNT
+	var minimum_duration := 0.75 if mobile_fallback else TREMOLO_MIN_SCORED_DURATION
+	var maximum_gap := 0.60 if mobile_fallback else TREMOLO_MAX_ATTACK_GAP
+	var minimum_regularity := 0.25 if mobile_fallback else TREMOLO_MIN_REGULARITY
 	var success := all_attacks_valid and correct_strings \
-		and count >= TREMOLO_MIN_ATTACK_COUNT \
-		and duration >= TREMOLO_MIN_SCORED_DURATION \
+		and count >= minimum_attacks \
+		and duration >= minimum_duration \
 		and rate >= TREMOLO_MIN_RATE and rate <= TREMOLO_MAX_RATE \
-		and max_gap <= TREMOLO_MAX_ATTACK_GAP \
-		and regularity >= TREMOLO_MIN_REGULARITY
+		and max_gap <= maximum_gap \
+		and regularity >= minimum_regularity
 	if mode == "octave":
 		success = success and alternating_ratio >= 0.50 and balance_ok
 
@@ -4635,7 +4687,8 @@ func _advance_polyphonic_confirmation(all_fundamentals_present: bool, delta: flo
 		return false
 
 	time_correct += maxf(delta, 0.0)
-	if time_correct < CHORD_SIMULTANEOUS_HOLD_TIME:
+	var hold_time := 0.10 if _uses_mobile_audio_fallback() else CHORD_SIMULTANEOUS_HOLD_TIME
+	if time_correct < hold_time:
 		return false
 
 	time_correct = 0.0
@@ -4652,6 +4705,9 @@ func _are_all_chord_fundamentals_present(
 		return false
 
 	var target_names: Dictionary = {}
+	var mobile_fallback := _uses_mobile_audio_fallback()
+	var minimum_fundamental_db := -62.0 if mobile_fallback else CHORD_MIN_FUNDAMENTAL_DB
+	var maximum_component_spread_db := 36.0 if mobile_fallback else CHORD_MAX_COMPONENT_SPREAD_DB
 	var target_physical_strings: Dictionary = {}
 	var target_frequencies: Array[float] = []
 	var component_levels: Array[float] = []
@@ -4673,14 +4729,14 @@ func _are_all_chord_fundamentals_present(
 		else:
 			fundamental_db = _get_spectrum_band_db(frequency, 0.05)
 
-		if fundamental_db < CHORD_MIN_FUNDAMENTAL_DB:
+		if fundamental_db < minimum_fundamental_db:
 			return false
 		component_levels.append(fundamental_db)
 
 	component_levels.sort()
 	var weakest_target_db := float(component_levels[0])
 	var strongest_target_db := float(component_levels[component_levels.size() - 1])
-	if strongest_target_db - weakest_target_db > CHORD_MAX_COMPONENT_SPREAD_DB:
+	if strongest_target_db - weakest_target_db > maximum_component_spread_db:
 		return false
 
 	# Reject a clearly played non-target string. Ignore bins that are integer
@@ -4697,7 +4753,7 @@ func _are_all_chord_fundamentals_present(
 			other_db = float(band_db_reader.call(other_frequency))
 		else:
 			other_db = _get_spectrum_band_db(other_frequency, 0.05)
-		if other_db >= CHORD_MIN_FUNDAMENTAL_DB \
+		if not mobile_fallback and other_db >= CHORD_MIN_FUNDAMENTAL_DB \
 				and other_db >= weakest_target_db - CHORD_UNEXPECTED_NOTE_MARGIN_DB:
 			return false
 
