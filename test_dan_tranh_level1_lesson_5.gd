@@ -22,6 +22,11 @@ func _init() -> void:
 		failures.append("ID nội bộ của bài 5 phải giữ là bài 2")
 	if "micro" not in str(lesson_5.get("practice", "")).to_lower():
 		failures.append("Mô tả bài 5 chưa yêu cầu nhận diện đàn thật bằng micro")
+	var expected_fingerings: Array[String] = ["2", "1", "2", "1", "2", "1", "2", "1", "2", "1"]
+	var actual_fingerings: Array[String] = []
+	actual_fingerings.assign(lesson_5.get("fingerings", []))
+	if actual_fingerings != expected_fingerings:
+		failures.append("Bài 5 phải luân phiên ngón 2 rồi ngón 1 từ nốt đầu tiên")
 
 	var dialogue_notes: Array[String] = []
 	for step_value in lesson_scene.LESSON_DIALOGUES.get("dan_tranh_level_1_bai_2_practice", []):

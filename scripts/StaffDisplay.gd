@@ -456,10 +456,11 @@ func _draw_fingering_number(note_data: Dictionary, color: Color) -> void:
 	var note_x := float(note_data.get("x", size.x * 0.5))
 	# Mọi số ngón nằm trên cùng một hàng sát đáy khung sheet, không chạy theo
 	# cao độ của đầu nốt. Chừa đủ khoảng dưới baseline để chữ không bị cắt.
-	var baseline_y := size.y - maxf(12.0, line_spacing * 0.22)
+	var baseline_y := size.y - maxf(10.0, line_spacing * 0.16)
 	var font := number_font if number_font else ThemeDB.fallback_font
 	if font:
-		var font_size := maxi(16, int(line_spacing * 0.42))
+		# Cỡ chữ lớn để số ngón vẫn rõ trên màn hình điện thoại.
+		var font_size := maxi(30, int(line_spacing * 0.68))
 		draw_string(
 			font,
 			Vector2(note_x - line_spacing * 0.4, baseline_y),

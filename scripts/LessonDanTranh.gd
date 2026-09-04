@@ -328,7 +328,7 @@ const LESSON_DIALOGUES = {
 	"dan_tranh_level_1_bai_2_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần một.", "highlight": -1},
 		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol một, La một, Đô hai, Rê hai, Mi hai, Sol hai, La hai, Đô ba, Rê ba và Mi ba.", "highlight": -1},
-		{"action": "speak", "text": "Phần này giúp bạn luyện nhận biết và gảy lần lượt các nốt từ Sol một đến Mi ba. Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy gảy chậm, rõ tiếng và đúng vị trí từng dây. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
+		{"action": "speak", "text": "Phần này giúp bạn luyện nhận biết và gảy lần lượt các nốt từ Sol một đến Mi ba. Hãy luân phiên ngón số hai rồi ngón số một, bắt đầu bằng ngón hai ở nốt đầu tiên. Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy gảy chậm, rõ tiếng và đúng vị trí từng dây. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
 		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
 		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
 		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
