@@ -396,7 +396,11 @@ const LESSON_DIALOGUES = {
 	],
 
 	"dan_tranh_level_1_bai_4_practice": [
-		{"action": "speak", "text": "Chào bạn! Khi đọc một bản nhạc, chúng ta cần chú ý đến tempo, khóa nhạc và nhịp.", "highlight": -1},
+		{"action": "speak", "text": "Chào bạn! Trước khi đọc bản nhạc, chúng ta hãy nhận biết ba âm vực của 17 dây đàn Tranh. Âm vực là vùng âm thanh trầm, trung hoặc cao; khác với quãng là khoảng cách giữa hai nốt.", "highlight": -1},
+		{"action": "speak", "text": "Âm vực trầm gồm các dây 1 đến 5: Sol1, La1, Đô2, Rê2 và Mi2. Đây là nhóm dây có âm thanh thấp nhất trên đàn.", "highlight": -1},
+		{"action": "speak", "text": "Âm vực trung gồm các dây 6 đến 10: Sol2, La2, Đô3, Rê3 và Mi3. Âm vực cao gồm các dây 11 đến 17: Sol3, La3, Đô4, Rê4, Mi4, Sol4 và La4.", "highlight": -1},
+		{"action": "speak", "text": "Các tên nốt có thể lặp lại ở những độ cao khác nhau, chẳng hạn Sol1, Sol2, Sol3 và Sol4. Con số sau tên nốt giúp chúng ta phân biệt đúng dây và đúng âm vực.", "highlight": -1},
+		{"action": "speak", "text": "Khi đọc một bản nhạc, chúng ta còn cần chú ý đến tempo, khóa nhạc và nhịp.", "highlight": -1},
 		{"action": "speak", "text": "Tempo là tốc độ nhanh hoặc chậm của bản nhạc. Tempo có thể được ghi bằng số B P M; ví dụ, sáu mươi B P M chậm hơn một trăm hai mươi B P M. Khi tập đàn, bạn nên bắt đầu chậm, giữ đều nhịp rồi mới tăng tốc.", "highlight": -1, "show_speed": true},
 		{"action": "speak", "text": "Khóa Sol là ký hiệu thường đặt ở đầu khuông nhạc, giúp chúng ta xác định tên và độ cao của các nốt. Dấu khóa này bắt đầu từ dòng thứ hai của khuông nhạc, cho biết đó là vị trí của nốt Sol.", "highlight": -1, "show_staff": true, "clef": true},
 		{"action": "speak", "text": "Nhịp bốn phần tư nghĩa là mỗi ô nhịp có bốn phách và nốt đen được tính là một phách. Ta đếm đều: một, hai, ba, bốn. Phách một thường mạnh hơn các phách còn lại.", "highlight": -1, "show_staff": true, "time_sig": 4},
@@ -418,7 +422,7 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Nốt Sol3 theo nhịp 2/4.", "highlight": 13, "note": "Sol3", "time_sig": 2},
 		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 14, "note": "Rê3", "time_sig": 2},
 		{"action": "speak", "text": "Và cuối cùng nốt Đô3, giữ nhịp 2/4 thật đều.", "highlight": 15, "note": "Đô3", "time_sig": 2},
-		{"action": "speak", "text": "Tuyệt vời! Tóm lại: Tempo là tốc độ bài nhạc, khóa Sol xác định vị trí nốt trên khuông, nhịp 4/4 có 4 phách mỗi ô, nhịp 2/4 có 2 phách mỗi ô. Bạn đã hoàn thành bài học!", "highlight": -1}
+		{"action": "speak", "text": "Tuyệt vời! Tóm lại: 17 dây đàn được chia thành âm vực trầm, trung và cao; tempo là tốc độ bài nhạc; khóa Sol xác định vị trí nốt trên khuông; nhịp 4/4 có 4 phách mỗi ô và nhịp 2/4 có 2 phách mỗi ô. Bạn đã hoàn thành bài học!", "highlight": -1}
 	],
 
 	"dan_tranh_level_1_bai_5_practice": [
