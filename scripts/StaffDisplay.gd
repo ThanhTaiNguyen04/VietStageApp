@@ -165,7 +165,10 @@ func _draw():
 		if n_name == "REST":
 			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
-		if not str(note_data.get("fingering", "")).is_empty():
+		# Các đầu nốt trong một song thanh có cùng vị trí ngang. Chỉ vẽ một
+		# nhãn ghép (ví dụ "1 + 2") để số ngón không bị chồng đè lên nhau.
+		if not str(note_data.get("fingering", "")).is_empty() \
+				and int(note_data.get("chord_component_index", 0)) == 0:
 			_draw_fingering_number(note_data, n_color)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)

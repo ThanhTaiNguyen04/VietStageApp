@@ -56,7 +56,7 @@ const LEVELS := [
 				"practice_id": "dan_tranh_level_7_bai_20_practice",
 				"title": "Kỹ thuật song thanh",
 				"video": "",
-				"practice": "Làm quen với việc gảy 2 dây cùng lúc (song âm).",
+				"practice": "Dùng ngón 1 và ngón 2 gảy đồng thời 2 dây để tạo song thanh.",
 				"practice_title": "Luyện tập: Kỹ thuật song thanh",
 				"sheet": [
 					"Đô2+Mi2", "Đô2+Mi2", "Đô2+Mi2",
@@ -64,7 +64,8 @@ const LEVELS := [
 					"La1+Đô2", "La1+Đô2", "La1+Đô2",
 					"Đô2+Mi2", "Mi2+Sol2", "La1+Đô2"
 				],
-				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"]
+				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"],
+				"fingerings": ["1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2"]
 			},
 			{"number": 21, "display_number": "13", "practice_id": "dan_tranh_level_7_bai_21_practice", "practice_mode": "vibrato_7", "title": "Kỹ thuật rung dây", "video": "", "practice": "Gảy rồi rung lần lượt các nốt Sol2, La2, Đô3, Rê3, Mi3, Sol3 và La3 bằng tay trái.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0], "cues": ["vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato"]},
 			{"number": 13, "display_number": "14", "title": "Luyện bài Sứ thanh hoa – Nửa đoạn đầu", "type": "practice", "video": "Hướng dẫn gảy đoạn đầu bài Sứ Thanh Hoa: chuyển quãng và nhấn nhả nốt.", "practice": "Luyện gảy đoạn đầu bài Sứ Thanh Hoa ở tốc độ chậm.", "practice_title": "Sứ Thanh Hoa – Đoạn đầu", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0]},

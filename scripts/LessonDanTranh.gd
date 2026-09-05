@@ -508,7 +508,7 @@ const LESSON_DIALOGUES = {
 	"dan_tranh_level_7_bai_20_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật song thanh trên đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Song thanh là kỹ thuật gảy để hai nốt cùng phát ra một lúc. Song thanh truyền thống thường sử dụng quãng tám; các nhạc sĩ hiện đại còn kết hợp thêm những quãng khác.", "highlight": -1},
-		{"action": "speak", "text": "Có hai cách tạo song thanh cơ bản: kết hợp ngón 1 với ngón 2, hoặc kết hợp ngón 1 với ngón 3.", "highlight": -1},
+		{"action": "speak", "text": "Trong bài này, chúng ta dùng ngón 1 và ngón 2 của tay phải để gảy đồng thời hai dây.", "highlight": -1},
 		{"action": "speak", "text": "Khi thực hiện, hai tiếng phải phát ra đồng thời, không bị chênh nhau và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
 	],
 
@@ -2197,14 +2197,17 @@ func _show_intro_sheet_preview() -> void:
 		elif duration < 0.75:
 			note_type = "eighth"
 		var fingering := current_song_fingerings[index] if index < current_song_fingerings.size() else ""
+		var chord_component_index := 0
 		for chord_note in note_name.split("+"):
 			preview_notes.append({
 				"note": "ZT_" + chord_note,
 				"x": first_x + step_x * index,
 				"color": Color.BLACK,
 				"type": note_type,
-				"fingering": fingering
+				"fingering": fingering,
+				"chord_component_index": chord_component_index
 			})
+			chord_component_index += 1
 	staff_display.set_notes(preview_notes)
 
 func _on_practice_now_pressed() -> void:
