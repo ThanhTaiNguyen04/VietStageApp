@@ -165,10 +165,9 @@ func _draw():
 		if n_name == "REST":
 			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
-		# Các đầu nốt trong một song thanh có cùng vị trí ngang. Chỉ vẽ một
-		# nhãn ghép (ví dụ "1 + 2") để số ngón không bị chồng đè lên nhau.
-		if not str(note_data.get("fingering", "")).is_empty() \
-				and int(note_data.get("chord_component_index", 0)) == 0:
+		# Song thanh cần hiện số cho từng đầu nốt: ngón 2 ở hàng trên,
+		# ngón 1 ở hàng dưới; không gộp thành một nhãn duy nhất.
+		if not str(note_data.get("fingering", "")).is_empty():
 			_draw_fingering_number(note_data, n_color)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
@@ -453,17 +452,27 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		_draw_vibrato_mark(Vector2(note_x, mark_y), note_color, line_spacing)
 
 func _draw_fingering_number(note_data: Dictionary, color: Color) -> void:
-	var fingering := str(note_data.get("fingering", ""))
-	if fingering.is_empty():
+	var fingering_spec := str(note_data.get("fingering", ""))
+	if fingering_spec.is_empty():
 		return
+	var fingering := fingering_spec
+	var chord_component_index := int(note_data.get("chord_component_index", 0))
+	var individual_fingers := fingering_spec.split("+", false)
+	var is_chord_fingering := individual_fingers.size() > 1
+	if is_chord_fingering:
+		if chord_component_index >= individual_fingers.size():
+			return
+		fingering = str(individual_fingers[chord_component_index]).strip_edges()
 	var note_x := float(note_data.get("x", size.x * 0.5))
-	# Mọi số ngón nằm trên cùng một hàng sát đáy khung sheet, không chạy theo
-	# cao độ của đầu nốt. Chừa đủ khoảng dưới baseline để chữ không bị cắt.
+	# Nốt đơn nằm ở hàng thấp. Với song thanh, thành phần sau trong hợp âm là
+	# nốt cao hơn nên số ngón của nó được nâng lên một hàng (2 trên, 1 dưới).
 	var baseline_y := size.y - maxf(10.0, line_spacing * 0.16)
 	var font := number_font if number_font else ThemeDB.fallback_font
 	if font:
 		# Cỡ chữ lớn để số ngón vẫn rõ trên màn hình điện thoại.
 		var font_size := maxi(30, int(line_spacing * 0.68))
+		if is_chord_fingering:
+			baseline_y -= chord_component_index * maxf(float(font_size) * 0.92, line_spacing * 0.82)
 		draw_string(
 			font,
 			Vector2(note_x - line_spacing * 0.4, baseline_y),
