@@ -259,9 +259,10 @@ func _ready() -> void:
 	_connect_navigation()
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
-	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	# Khung chứa chỉ dùng để bố trí/vẽ đường nối; các LessonBtn là vùng bấm.
+	lessons_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var content_margin := lessons_hbox.get_parent() as Control
-	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_PASS
+	if content_margin: content_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.28)
 
 static func get_level_data(level_number: int) -> Dictionary:
@@ -473,6 +474,7 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	# Giữ hình tròn bài học và đặt cả số bài lẫn tên bài bên trong.
 	var lesson_button := _create_circle_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed)
 	lesson_button.name = "LessonBtn"
+	lesson_button.z_index = 10
 	# Bài mở đầu phải bắt đầu bằng video giới thiệu; xem xong mới vào phần cô Mai
 	# hướng dẫn và thực hành trong LessonDanTranh.
 	var opens_video_first := selected_level == 1 and lesson_number == 1

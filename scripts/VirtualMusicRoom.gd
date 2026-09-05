@@ -34,7 +34,7 @@ const FORCE_PROCEDURAL_PLAYER : bool = true
 @onready var s_trong       : Button         = $RoomContent/StationTrong
 
 # Navigation
-@onready var btn_back        : Button         = $HUD/BtnBack
+@onready var btn_back        : Button         = get_node_or_null("HUD/BtnBack")
 
 # Focus Mode Popup
 @onready var popup             : Control        = $HUD/FocusModePopup
@@ -243,7 +243,8 @@ func _ready() -> void:
 		btn_tab_fingering.add_theme_font_override("font", _font_body_bold)
 		btn_popup_play.add_theme_font_override("font", _font_body_bold)
 		btn_popup_close.add_theme_font_override("font", _font_body_bold)
-		btn_back.add_theme_font_override("font", _font_body_bold)
+		if btn_back:
+			btn_back.add_theme_font_override("font", _font_body_bold)
 		
 	# Initialize ambient particles
 	for i in range(30):
@@ -295,20 +296,6 @@ func _ready() -> void:
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
 	_setup_hanging_scroll()
-	
-	# Setup Back button to return to Main Menu (Icon button for mobile style)
-	btn_back.show()
-	btn_back.text = ""
-	btn_back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
-	btn_back.expand_icon = true
-	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_style_hud_icon_button(btn_back)
-	_make_btn_bouncy(btn_back)
-	btn_back.pressed.connect(func() -> void:
-		if _audio_manager:
-			_audio_manager.audio_player.stop()
-		_fade_to("res://scenes/MainMenu.tscn")
-	)
 	
 	# Transition fade in
 	modulate.a = 0.0
@@ -2435,11 +2422,8 @@ func _on_viewport_size_changed() -> void:
 	if dialogue_box and is_instance_valid(dialogue_box):
 		_update_dialogue_layout(size)
 
-	btn_back.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
-	btn_back.offset_left = 12.0 if is_mobile else 32.0
-	btn_back.offset_top = 12.0 if is_mobile else 32.0
-	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
-	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
+	if btn_back:
+		btn_back.visible = false
 	_update_hud_hbox_layout(is_mobile)
 	_update_hanging_scroll_layout()
 
