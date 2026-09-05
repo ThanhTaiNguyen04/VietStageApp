@@ -51,7 +51,10 @@ static var data := {
 	"practice_time_seconds": 0,
 	"unlocked_decorations": [],
 	"active_decorations": [],
-	"pending_game_attempts": []
+	"pending_game_attempts": [],
+	# Attempts made with bundled/sample content have no backend id to sync with,
+	# but they still belong in the learner's local activity history.
+	"local_activity_history": []
 }
 
 static func save_data() -> void:
@@ -181,6 +184,30 @@ static func remove_pending_game_attempt(client_attempt_id: String) -> void:
 		return not (item is Dictionary and str(item.get("client_attempt_id", "")) == client_attempt_id)
 	)
 	save_data()
+
+
+## Lưu hoạt động chỉ có trên thiết bị (ví dụ quiz mẫu offline không có quizId
+## của backend). Bản ghi này không được gửi lên server và luôn được đánh dấu
+## LOCAL_ONLY khi hiển thị ở màn hình lịch sử.
+static func record_local_activity(activity: Dictionary) -> void:
+	if not data.has("local_activity_history") or not (data["local_activity_history"] is Array):
+		data["local_activity_history"] = []
+	var event_id := str(activity.get("client_attempt_id", activity.get("eventId", "")))
+	if event_id.is_empty():
+		return
+	for existing: Variant in data["local_activity_history"]:
+		if existing is Dictionary and str(existing.get("client_attempt_id", existing.get("eventId", ""))) == event_id:
+			return
+	data["local_activity_history"].append(activity.duplicate(true))
+	# Local history is a convenience cache, not an unbounded event log.
+	if data["local_activity_history"].size() > 100:
+		data["local_activity_history"] = data["local_activity_history"].slice(data["local_activity_history"].size() - 100)
+	save_data()
+
+
+static func get_local_activity_history() -> Array:
+	var value: Variant = data.get("local_activity_history", [])
+	return value.duplicate(true) if value is Array else []
 
 
 static func sync_backend_summary(summary_data: Dictionary) -> void:

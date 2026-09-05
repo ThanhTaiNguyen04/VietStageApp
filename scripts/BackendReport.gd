@@ -13,6 +13,7 @@ const AuthSessionStore = preload("res://scripts/AuthSession.gd")
 const ApiClientScript = preload("res://scripts/ApiClient.gd")
 
 var _api: Node = null
+var _retry_pending_in_progress := false
 
 
 func _ready() -> void:
@@ -393,11 +394,13 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 		start_value,
 		complete_value
 	)
-	if not _is_success(response):
+	var attempt_data := _attempt_data(response)
+	if not _is_success(response) or attempt_data.is_empty():
 		SecureDataManager.enqueue_pending_game_attempt({
 			"kind": "minigame", "minigame_id": minigame_id, "score": score,
 			"started_at": start_value, "completed_at": complete_value, "client_attempt_id": attempt_id,
 		})
+		activity_history_changed.emit()
 		return {
 			"submitted": false,
 			"queued": true,
@@ -406,9 +409,6 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 			"message": _api.error_message(response, "Không thể đồng bộ điểm minigame."),
 		}
 
-	var attempt_data: Dictionary = response.get("body", {}).get("data", {})
-	if not attempt_data is Dictionary:
-		attempt_data = {}
 	SecureDataManager.apply_backend_reward(attempt_data)
 	activity_history_changed.emit()
 	return {
@@ -426,9 +426,16 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Dictionary = {}) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
+	if quiz_id <= 0:
+		return {"submitted": false, "reason": "invalid_quiz_id"}
 	var attempt_id := _uuid()
 	var response: Dictionary = await _api.submit_quiz_attempt(quiz_id, selected_answer, attempt_id)
-	if not _is_success(response):
+	var attempt_data := _attempt_data(response)
+	# A network failure is represented by status 0. ApiClient deliberately does
+	# not convert quiz POSTs into a generic 202 queue response; still require a
+	# response body so a future async/empty 202 cannot be mistaken for a graded
+	# attempt.
+	if not _is_success(response) or attempt_data.is_empty():
 		_log_quiz_sync_failure("submit", quiz_id, response)
 		var pending_attempt := pending_preview.duplicate(true)
 		pending_attempt.merge({
@@ -436,6 +443,7 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 			"client_attempt_id": attempt_id,
 		}, true)
 		SecureDataManager.enqueue_pending_game_attempt(pending_attempt)
+		activity_history_changed.emit()
 		return {
 			"submitted": false,
 			"queued": true,
@@ -443,9 +451,6 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 			"status": int(response.get("status", 0)),
 			"message": _api.error_message(response, "Không thể nộp câu trắc nghiệm."),
 		}
-	var attempt_data: Dictionary = response.get("body", {}).get("data", {})
-	if not attempt_data is Dictionary:
-		attempt_data = {}
 	SecureDataManager.apply_backend_reward(attempt_data)
 	activity_history_changed.emit()
 	return {
@@ -454,7 +459,11 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 		"is_correct": bool(attempt_data.get("isCorrect", attempt_data.get("is_correct", false))),
 		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
 		"stars_earned": int(attempt_data.get("starsEarned", attempt_data.get("stars_earned", 0))),
-		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", "")))
+		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", ""))),
+		"score": float(attempt_data.get("score", 0.0)),
+		"max_score": 100.0,
+		"attempt_id": int(attempt_data.get("id", 0)),
+		"completed_at": str(attempt_data.get("attemptedAt", attempt_data.get("attempted_at", ""))),
 	}
 
 
@@ -463,6 +472,9 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 func retry_pending_game_attempts() -> void:
 	if not is_signed_in():
 		return
+	if _retry_pending_in_progress:
+		return
+	_retry_pending_in_progress = true
 	for value: Variant in SecureDataManager.get_pending_game_attempts():
 		if not value is Dictionary:
 			continue
@@ -474,14 +486,15 @@ func retry_pending_game_attempts() -> void:
 			response = await _api.submit_minigame_attempt(int(item.get("minigame_id", 0)), int(item.get("score", 0)), str(item.get("client_attempt_id", "")), str(item.get("started_at", "")), str(item.get("completed_at", "")))
 		else:
 			continue
-		if _is_success(response):
-			var reward: Variant = response.get("body", {}).get("data", {})
-			if reward is Dictionary:
-				SecureDataManager.apply_backend_reward(reward)
+		var reward := _attempt_data(response)
+		if _is_success(response) and not reward.is_empty():
+			SecureDataManager.apply_backend_reward(reward)
 			SecureDataManager.remove_pending_game_attempt(str(item.get("client_attempt_id", "")))
 			activity_history_changed.emit()
 		else:
-			_log_quiz_sync_failure("retry", int(item.get("quiz_id", 0)), response)
+			if str(item.get("kind", "")) == "quiz":
+				_log_quiz_sync_failure("retry", int(item.get("quiz_id", 0)), response)
+	_retry_pending_in_progress = false
 
 
 ## Log ở cả Output và Debugger/Warnings. Không in access token hay đáp án.
@@ -546,6 +559,14 @@ func _extract_array(response: Dictionary) -> Array:
 func _is_success(response: Dictionary) -> bool:
 	var status := int(response.get("status", 0))
 	return status >= 200 and status < 300
+
+
+func _attempt_data(response: Dictionary) -> Dictionary:
+	var body: Variant = response.get("body", {})
+	if not body is Dictionary:
+		return {}
+	var data: Variant = (body as Dictionary).get("data", {})
+	return data as Dictionary if data is Dictionary else {}
 
 
 static func _uuid() -> String:

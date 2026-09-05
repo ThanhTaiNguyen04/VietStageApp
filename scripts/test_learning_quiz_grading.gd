@@ -33,6 +33,11 @@ func _init() -> void:
 		"id": 43,
 		"options": ["Đô"],
 	}]).is_empty())
+	var preview := screen._pending_quiz_preview(quiz, 0, "Đô")
+	assert(preview.get("score") == 100)
+	assert(preview.get("maxScore") == 100)
+	assert(preview.get("previewPoints") == 10)
+	assert(preview.get("selectedAnswer") == "Đô")
 
 	var server_result := screen._grade_answer(quiz, 0, "Đô", {
 		"submitted": true,

@@ -14,6 +14,7 @@ const C_OK        := Color("#3e8e63")
 const C_OK_BG     := Color("#e7f4ec")
 const C_BAD       := Color("#c0392b")
 const C_BAD_BG    := Color("#fbeae8")
+const QUIZ_PREVIEW_POINTS := 10
 
 # ── Context (set by caller screens before changing scene) ────────────────
 static var quiz_instrument: String = ""
@@ -134,16 +135,18 @@ func _begin_quiz() -> void:
 	if quiz_instrument.is_empty() or quiz_local_ids.is_empty():
 		_show_empty("Chưa chọn bài học để kiểm tra kiến thức.")
 		return
-	if not BackendReport.is_signed_in():
+	var report := _backend_report()
+	if report == null or not report.is_signed_in():
 		_show_empty("Hãy đăng nhập để tham gia kiểm tra kiến thức.")
 		return
-	_quizzes = await BackendReport.fetch_quizzes_for_level(quiz_instrument, quiz_local_ids)
+	_quizzes = await report.fetch_quizzes_for_level(quiz_instrument, quiz_local_ids)
 	if _quizzes.is_empty():
 		_show_empty("Bài học này chưa có câu hỏi trắc nghiệm nào.")
 		return
 	_index = 0
 	_score = 0
 	_correct_count = 0
+	_api_stars_earned = 0
 	_show_question()
 
 func _show_question() -> void:
@@ -195,16 +198,31 @@ func _on_option(_btn: Button, idx: int, selected: String) -> void:
 	var selected_index := idx
 
 	_busy = true
-	var result: Dictionary = await BackendReport.report_quiz(int(quiz.get("id", 0)), selected)
+	var pending_preview := _pending_quiz_preview(quiz, selected_index, selected)
+	var result: Dictionary = {}
+	var report := _backend_report()
+	if report != null:
+		result = await report.report_quiz(int(quiz.get("id", 0)), selected, pending_preview)
 	_busy = false
 
-	var is_correct := false
+	var is_correct := _is_correct(selected_index, selected, quiz)
 	var earned := int(result.get("points_earned", 0))
 	if result.get("submitted", false):
 		is_correct = bool(result.get("is_correct", false))
 		_submitted_correct_answer = str(result.get("correct_answer", ""))
 		_api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
 		_score += earned
+	else:
+		_submitted_correct_answer = str(quiz.get("correctAnswer", quiz.get("correct_answer", "")))
+		if is_correct:
+			_score += QUIZ_PREVIEW_POINTS
+		if int(quiz.get("id", 0)) <= 0:
+			var local_attempt := pending_preview.duplicate(true)
+			local_attempt["kind"] = "quiz_local"
+			local_attempt["client_attempt_id"] = _client_attempt_id("local-quiz")
+			local_attempt["quiz_id"] = int(quiz.get("id", 0))
+			local_attempt["selected_answer"] = selected
+			SecureDataManager.record_local_activity(local_attempt)
 
 	if is_correct:
 		_correct_count += 1
@@ -233,8 +251,9 @@ func _next() -> void:
 		_show_question()
 
 func _show_summary() -> void:
-	if BackendReport.is_signed_in():
-		await BackendReport.refresh_progress_from_backend()
+	var report := _backend_report()
+	if report != null and report.is_signed_in():
+		await report.refresh_progress_from_backend()
 	_answered = true
 	question_lbl.visible = false
 	options_vbox.visible = false
@@ -251,7 +270,9 @@ func _show_summary() -> void:
 	question_lbl.add_theme_font_size_override("font_size", 28)
 
 	var sub := Label.new()
-	sub.text = "Phần thưởng từ hệ thống: +%d điểm · +%d sao" % [_score, _api_stars_earned]
+	var preview_stars := _stars(_score, maxi(1, total * QUIZ_PREVIEW_POINTS))
+	var shown_stars := clampi(_api_stars_earned if _api_stars_earned > 0 else preview_stars, 0, 3)
+	sub.text = "Phần thưởng từ hệ thống: +%d điểm · +%d sao" % [_score, shown_stars]
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 18)
 	sub.add_theme_color_override("font_color", C_TEXT_MUT)
@@ -332,7 +353,10 @@ func _show_feedback(is_correct: bool, quiz: Dictionary) -> void:
 		feedback_lbl.add_theme_color_override("font_color", C_OK)
 	else:
 		feedback_pan.add_theme_stylebox_override("panel", _flat(C_BAD_BG, C_BAD, 16))
-		feedback_lbl.text = "Chưa đúng. Đáp án đúng: %s" % str(quiz.get("correctAnswer", ""))
+		var correct_text := _submitted_correct_answer
+		if correct_text.is_empty():
+			correct_text = str(quiz.get("correctAnswer", quiz.get("correct_answer", "")))
+		feedback_lbl.text = "Chưa đúng. Đáp án đúng: %s" % correct_text if not correct_text.is_empty() else "Chưa thể chấm câu trả lời này. Hãy thử lại khi có mạng."
 		feedback_lbl.add_theme_color_override("font_color", C_BAD)
 	feedback_pan.modulate.a = 0.0
 	var tw := create_tween()
@@ -349,6 +373,34 @@ func _is_correct(idx: int, selected: String, quiz: Dictionary) -> bool:
 	if correct.length() == 1 and "a" <= correct and correct <= "j":
 		return correct == "abcdefghij"[idx]
 	return false
+
+
+func _pending_quiz_preview(quiz: Dictionary, selected_index: int, selected_text: String = "") -> Dictionary:
+	var options := _parse_options(quiz.get("options", ""))
+	var correct_index := -1
+	var expected := str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))).strip_edges()
+	if expected.length() == 1 and expected.to_lower() in ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]:
+		correct_index = "abcdefghij".find(expected.to_lower())
+	else:
+		for i in options.size():
+			if _normalize_option(str(options[i])) == _normalize_option(expected):
+				correct_index = i
+				break
+	if correct_index < 0:
+		return {"title": str(quiz.get("title", "Câu hỏi")), "selectedAnswer": selected_text, "completedAt": _now_iso()}
+	var is_correct := selected_index == correct_index
+	return {
+		"title": str(quiz.get("title", "Câu hỏi")),
+		"question": str(quiz.get("question", "")),
+		"selectedAnswer": selected_text,
+		"correctAnswer": str(options[correct_index]),
+		"score": 100 if is_correct else 0,
+		"maxScore": 100,
+		"isCorrect": is_correct,
+		"previewPoints": QUIZ_PREVIEW_POINTS if is_correct else 0,
+		"previewStars": _stars(100 if is_correct else 0, 100),
+		"completedAt": _now_iso(),
+	}
 
 func _normalize_option(s: String) -> String:
 	var t := s.strip_edges().to_lower()
@@ -386,6 +438,9 @@ func _go_back() -> void:
 	tw.tween_property(self, "modulate:a", 0.0, 0.25)
 	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(target))
 
+func _backend_report() -> Node:
+	return get_node_or_null("/root/BackendReport")
+
 func _make_btn_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
 	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
@@ -406,6 +461,18 @@ func _make_btn_bouncy(btn: Button) -> void:
 			var target := Vector2(1.04, 1.04) if btn.is_hovered() else Vector2.ONE
 			create_tween().tween_property(btn, "scale", target, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
+
+func _client_attempt_id(prefix: String = "") -> String:
+	var suffix := "%04x%04x" % [randi_range(0, 0xFFFF), randi_range(0, 0xFFFF)]
+	var base := "%d-%s" % [Time.get_unix_time_from_system(), suffix]
+	return prefix + "-" + base if not prefix.is_empty() else base
+
+func _now_iso() -> String:
+	return Time.get_datetime_string_from_system(true)
+
+func _stars(value: int, max_value: int) -> int:
+	var maximum := maxi(1, max_value)
+	return 3 if value * 100 >= maximum * 80 else (2 if value * 100 >= maximum * 55 else (1 if value > 0 else 0))
 
 func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

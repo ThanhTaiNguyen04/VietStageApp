@@ -149,10 +149,14 @@ func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 ## Nộp đáp án câu hỏi trắc nghiệm
 func submit_quiz_attempt(quiz_id: int, selected_answer: String, client_attempt_id: String) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.QUIZ_ATTEMPTS % str(quiz_id))
+	# BackendReport owns the durable quiz-attempt queue. Do not also put this
+	# request in ApiClient's generic queue: doing both makes a failed quiz look
+	# like HTTP 202 (and therefore "submitted") and can create a stale duplicate
+	# queue entry that the history screen cannot render.
 	return await request_json(path, HTTPClient.METHOD_POST, {
 		"selectedAnswer": selected_answer,
 		"clientAttemptId": client_attempt_id,
-	})
+	}, true, false)
 
 ## Lấy danh sách minigame của bài học
 func get_lesson_minigames(lesson_id: int) -> Dictionary:
@@ -174,7 +178,9 @@ func submit_minigame_attempt(
 		"completedAt": completed_at,
 	}
 	var path := ApiRoutes.build(ApiRoutes.MINIGAME_ATTEMPTS % str(minigame_id))
-	return await request_json(path, HTTPClient.METHOD_POST, payload)
+	# BackendReport has a dedicated durable queue for game attempts, just like
+	# quiz attempts. Keep the generic queue from returning a false HTTP 202 ACK.
+	return await request_json(path, HTTPClient.METHOD_POST, payload, true, false)
 
 ## Tiến độ của một học viên trong một bài học (INSTRUCTOR)
 func get_learner_lesson_progress(lesson_id: int, learner_id: int) -> Dictionary:
@@ -491,7 +497,8 @@ func request_json(
 	path: String,
 	method: HTTPClient.Method = HTTPClient.METHOD_GET,
 	payload: Variant = {},
-	retry_after_refresh: bool = true
+	retry_after_refresh: bool = true,
+	queue_offline: bool = true
 ) -> Dictionary:
 	var response := await _request_raw(path, method, payload, true)
 	
@@ -506,7 +513,7 @@ func request_json(
 					"body": cached_body,
 					"message": "Đang chạy chế độ Ngoại tuyến (Offline)."
 				}
-		elif method in [HTTPClient.METHOD_POST, HTTPClient.METHOD_PUT, HTTPClient.METHOD_PATCH]:
+		elif queue_offline and method in [HTTPClient.METHOD_POST, HTTPClient.METHOD_PUT, HTTPClient.METHOD_PATCH]:
 			print("OFFLINE MODE: Queuing request for ", path)
 			_add_to_sync_queue(path, method, payload)
 			return {

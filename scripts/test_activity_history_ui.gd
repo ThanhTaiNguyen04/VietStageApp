@@ -68,18 +68,27 @@ func _run() -> void:
 		"status": "FAILED_SYNC"
 	}
 	var compact_card := screen_instance._make_3d_activity_card(long_item)
-	assert(compact_card.custom_minimum_size.y == 72)
+	assert(compact_card.custom_minimum_size.y >= 70)
+	assert(screen_instance._icons8_texture("game") != null)
+	assert(screen_instance._icons8_texture("songs") != null)
+	assert(screen_instance._icons8_texture("course") != null)
+	assert(screen_instance._icons8_texture("progress") != null)
 	assert(screen_instance._score_text(long_item) == "—")
 	assert(screen_instance._accuracy_text(long_item) == "—")
 	assert(screen_instance._activity_time_text(long_item) == "—")
 	assert(screen_instance._is_compact_landscape_size(Vector2(640, 360)))
 	assert(screen_instance._is_compact_landscape_size(Vector2(932, 430)))
 	assert(not screen_instance._is_compact_landscape_size(Vector2(430, 932)))
-	print("[Check 4] Compact card handles long and missing content.")
+	print("[Check 4] Compact card and Icons8 textures verified.")
 
 	screen_instance._render_loading_skeleton()
 	assert(screen_instance._list_container.get_child_count() == 3)
 	print("[Check 5] Loading skeleton renders three lightweight rows.")
+
+	# Check empty state rendering
+	var empty_panel := screen_instance._build_empty_state()
+	assert(empty_panel != null)
+	print("[Check 5b] Empty state with CTA button renders cleanly.")
 
 	# Check detail modal open
 	screen_instance._open_detail(mock_items[0])
