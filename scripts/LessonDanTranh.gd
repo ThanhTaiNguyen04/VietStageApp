@@ -4248,8 +4248,8 @@ func _process_song_thanh_sample(delta: float) -> void:
 func _show_song_thanh_sample_set(set_index: int) -> void:
 	# Chỉ hiện 6 cặp của từng lượt trên một màn hình để khuông thoáng và dễ theo.
 	var first_pair := set_index * SONG_THANH_SAMPLE_PAIRS_PER_SET
-	var hit_x := staff_display.hit_line_x
-	var staff_width := staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
+	var hit_x: float = float(staff_display.hit_line_x)
+	var staff_width: float = staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
 	var pair_spacing := maxf(105.0, (staff_width - hit_x - 65.0) / float(SONG_THANH_SAMPLE_PAIRS_PER_SET - 1))
 	for note in active_falling_notes:
 		var group_idx := int(note.get("chord_group_id", -1))

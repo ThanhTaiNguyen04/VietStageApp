@@ -478,6 +478,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	# Bài mở đầu phải bắt đầu bằng video giới thiệu; xem xong mới vào phần cô Mai
 	# hướng dẫn và thực hành trong LessonDanTranh.
 	var opens_video_first := selected_level == 1 and lesson_number == 1
+	lesson_button.set_meta("lesson_data", lesson)
+	lesson_button.set_meta("open_activity", "video" if opens_video_first else "practice")
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "video" if opens_video_first else "practice"))
 	column.add_child(lesson_button)
 	var opens_directly := selected_level == 1 and str(lesson.get("display_number", "")) in ["4.1", "4.2"]
@@ -497,6 +499,39 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		action_slot_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		column.add_child(action_slot_spacer)
 	return column
+
+
+func _input(event: InputEvent) -> void:
+	# Một số thiết bị/overlay của ScrollContainer đã nuốt sự kiện Button. Bắt
+	# trực tiếp cả click chuột lẫn chạm màn hình trong vùng card. Xogot trên
+	# iPhone gửi InputEventScreenTouch nên không thể chỉ kiểm tra MouseButton.
+	var press_position := Vector2.ZERO
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		if mouse_event.button_index != MOUSE_BUTTON_LEFT or not mouse_event.pressed:
+			return
+		press_position = mouse_event.position
+	elif event is InputEventScreenTouch:
+		var touch_event := event as InputEventScreenTouch
+		if not touch_event.pressed:
+			return
+		press_position = touch_event.position
+	else:
+		return
+	for column_value in lessons_hbox.get_children():
+		var column := column_value as VBoxContainer
+		if not column:
+			continue
+		var lesson_button := column.get_node_or_null("LessonBtn") as Button
+		if not lesson_button or lesson_button.disabled:
+			continue
+		if not lesson_button.get_global_rect().has_point(press_position):
+			continue
+		var lesson_value = lesson_button.get_meta("lesson_data", {})
+		if lesson_value is Dictionary:
+			get_viewport().set_input_as_handled()
+			_open_lesson(lesson_value as Dictionary, str(lesson_button.get_meta("open_activity", "practice")))
+		return
 
 func _create_small_btn(label: String, unlocked: bool) -> Button:
 	var button := Button.new()
