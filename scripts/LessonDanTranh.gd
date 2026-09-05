@@ -1281,6 +1281,16 @@ func _is_tremolo_practice() -> bool:
 	return current_lesson_id == LEVEL_8_TREMOLO_ID
 
 
+func _is_song_thanh_practice() -> bool:
+	# Khi chuyển scene, danh sách bài đã truyền sheet trước khi active_lesson_id
+	# đôi lúc được đồng bộ. Nhận diện thêm bằng mẫu sheet đặc trưng của Bài 12
+	# để bố cục và nghe mẫu không rơi về luồng nốt đơn mặc định.
+	return current_lesson_id == LEVEL_7_SONG_THANH_ID \
+		or (lesson_sheet.size() == 12 \
+			and lesson_sheet[0] == "Đô2+Mi2" \
+			and lesson_sheet[3] == "Mi2+Sol2")
+
+
 func _is_micro_scoring_blocked() -> bool:
 	if _micro_scoring_locked:
 		return true
@@ -1604,7 +1614,7 @@ func _process(delta):
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		if is_sample_mode and current_lesson_id == LEVEL_7_SONG_THANH_ID:
+		if is_sample_mode and _is_song_thanh_practice():
 			_process_song_thanh_sample(delta)
 		elif is_sample_mode and _is_technique_sample_practice():
 			_process_technique_sample(delta)
@@ -4209,6 +4219,7 @@ func _process_song_thanh_sample(delta: float) -> void:
 
 	if song_thanh_sample_pair_idx == SONG_THANH_SAMPLE_PAIRS_PER_SET and not song_thanh_sample_set_break_done:
 		song_thanh_sample_set_break_done = true
+		_show_song_thanh_sample_set(1)
 		song_thanh_sample_next_event += SONG_THANH_SAMPLE_SET_BREAK
 		_set_sample_listening_status("Nghỉ giữa lượt · chuẩn bị nghe 6 cặp song thanh tiếp theo")
 		return
@@ -4232,6 +4243,24 @@ func _process_song_thanh_sample(delta: float) -> void:
 	var sample_set := 1 if song_thanh_sample_pair_idx <= SONG_THANH_SAMPLE_PAIRS_PER_SET else 2
 	var pair_in_set := song_thanh_sample_pair_idx if sample_set == 1 else song_thanh_sample_pair_idx - SONG_THANH_SAMPLE_PAIRS_PER_SET
 	_set_sample_listening_status("Nghe mẫu lượt %d/2 · cặp %d/6" % [sample_set, pair_in_set])
+
+
+func _show_song_thanh_sample_set(set_index: int) -> void:
+	# Chỉ hiện 6 cặp của từng lượt trên một màn hình để khuông thoáng và dễ theo.
+	var first_pair := set_index * SONG_THANH_SAMPLE_PAIRS_PER_SET
+	var hit_x := staff_display.hit_line_x
+	var staff_width := staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
+	var pair_spacing := maxf(105.0, (staff_width - hit_x - 65.0) / float(SONG_THANH_SAMPLE_PAIRS_PER_SET - 1))
+	for note in active_falling_notes:
+		var group_idx := int(note.get("chord_group_id", -1))
+		if group_idx >= first_pair and group_idx < first_pair + SONG_THANH_SAMPLE_PAIRS_PER_SET:
+			note["x"] = hit_x + float(group_idx - first_pair) * pair_spacing
+			note["color"] = Color(0.6, 0.6, 0.6, 0.9)
+		else:
+			# Đẩy các cặp của lượt còn lại ra ngoài để không xuất hiện lẫn vào lượt đang nghe.
+			note["x"] = -1000.0
+			note["color"] = Color(0.6, 0.6, 0.6, 0.0)
+	staff_display.set_notes(active_falling_notes)
 
 
 func _stop_technique_sample(stop_board_audio: bool = true) -> void:
@@ -4590,7 +4619,7 @@ func _start_practice():
 	var start_x = _staff_w + 100.0
 	# Song thanh cần nhìn được cả câu nhạc: giữ cặp đầu ở vạch đánh và nén
 	# khoảng cách để toàn bộ 12 song âm xuất hiện trong khuông ngay từ đầu.
-	if current_lesson_id == LEVEL_7_SONG_THANH_ID:
+	if _is_song_thanh_practice():
 		start_x = staff_display.hit_line_x
 		var remaining_slots := maxi(1, lesson_sheet.size() - 1)
 		var visible_width := maxf(240.0, _staff_w - start_x - 65.0)
@@ -4649,11 +4678,12 @@ func _start_practice():
 					"type": n_type
 				})
 		cur_beat += dur
-	if current_lesson_id == LEVEL_7_SONG_THANH_ID and is_sample_mode:
+	if _is_song_thanh_practice() and is_sample_mode:
 		song_thanh_sample_pair_idx = 0
 		song_thanh_sample_elapsed = 0.0
 		song_thanh_sample_next_event = 0.45
 		song_thanh_sample_set_break_done = false
+		_show_song_thanh_sample_set(0)
 		_set_sample_listening_status("Nghe mẫu chậm · lượt 1/2 · mỗi lượt 6 cặp song thanh")
 	staff_display.set_notes(active_falling_notes)
 
