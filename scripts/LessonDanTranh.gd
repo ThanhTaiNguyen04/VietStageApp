@@ -220,6 +220,13 @@ var technique_sample_sequence_idx := 0
 var technique_sample_in_gap := false
 var technique_sample_input_cooldown := 0.0
 const TECHNIQUE_SAMPLE_GAP := 0.65
+const SONG_THANH_SAMPLE_PAIR_INTERVAL := 1.05
+const SONG_THANH_SAMPLE_SET_BREAK := 1.80
+const SONG_THANH_SAMPLE_PAIRS_PER_SET := 6
+var song_thanh_sample_pair_idx := 0
+var song_thanh_sample_elapsed := 0.0
+var song_thanh_sample_next_event := 0.45
+var song_thanh_sample_set_break_done := false
 const GLISSANDO_SAMPLE_INTERVAL := 0.075
 const PRESS_SAMPLE_DURATION := 2.25
 const VIBRATO_DEMO_DURATION := 2.20
@@ -1597,7 +1604,9 @@ func _process(delta):
 	if current_state == State.PRACTICE_SINGLE:
 		_process_practice_single(delta)
 	elif current_state == State.PRACTICE:
-		if is_sample_mode and _is_technique_sample_practice():
+		if is_sample_mode and current_lesson_id == LEVEL_7_SONG_THANH_ID:
+			_process_song_thanh_sample(delta)
+		elif is_sample_mode and _is_technique_sample_practice():
 			_process_technique_sample(delta)
 		elif technique_sample_input_cooldown > 0.0 and _is_technique_sample_practice():
 			pass
@@ -4191,6 +4200,40 @@ func _on_tremolo_failed(result: Dictionary) -> void:
 
 
 # --- Nghe mẫu cho các kỹ thuật đàn tranh đặc biệt ---------------------------
+func _process_song_thanh_sample(delta: float) -> void:
+	# Song thanh có 12 cặp. Mẫu được chia thành 2 lượt, mỗi lượt 6 cặp,
+	# để học viên kịp quan sát vị trí hai ngón và lắng nghe từng lần gảy.
+	song_thanh_sample_elapsed += delta
+	if song_thanh_sample_elapsed < song_thanh_sample_next_event:
+		return
+
+	if song_thanh_sample_pair_idx == SONG_THANH_SAMPLE_PAIRS_PER_SET and not song_thanh_sample_set_break_done:
+		song_thanh_sample_set_break_done = true
+		song_thanh_sample_next_event += SONG_THANH_SAMPLE_SET_BREAK
+		_set_sample_listening_status("Nghỉ giữa lượt · chuẩn bị nghe 6 cặp song thanh tiếp theo")
+		return
+
+	if song_thanh_sample_pair_idx >= lesson_sheet.size():
+		# Nghe mẫu chỉ là minh hoạ, không được hoàn thành bài hay mở bảng kết quả.
+		is_sample_mode = false
+		_set_sample_listening_status("Đã nghe xong 2 lượt mẫu. Bây giờ hãy tự gảy 12 cặp song thanh.")
+		call_deferred("_start_practice")
+		return
+
+	for note in active_falling_notes:
+		note["color"] = Color(0.6, 0.6, 0.6, 0.9)
+		if int(note.get("chord_group_id", -1)) == song_thanh_sample_pair_idx:
+			note["color"] = Color(0.20, 0.72, 0.30, 1.0)
+			zither_board.call("pluck", int(note.get("target_string", 0)))
+	staff_display.set_notes(active_falling_notes)
+
+	song_thanh_sample_pair_idx += 1
+	song_thanh_sample_next_event += SONG_THANH_SAMPLE_PAIR_INTERVAL
+	var sample_set := 1 if song_thanh_sample_pair_idx <= SONG_THANH_SAMPLE_PAIRS_PER_SET else 2
+	var pair_in_set := song_thanh_sample_pair_idx if sample_set == 1 else song_thanh_sample_pair_idx - SONG_THANH_SAMPLE_PAIRS_PER_SET
+	_set_sample_listening_status("Nghe mẫu lượt %d/2 · cặp %d/6" % [sample_set, pair_in_set])
+
+
 func _stop_technique_sample(stop_board_audio: bool = true) -> void:
 	technique_sample_kind = TechniqueSampleKind.NONE
 	technique_sample_demo_idx = 0
@@ -4606,6 +4649,13 @@ func _start_practice():
 					"type": n_type
 				})
 		cur_beat += dur
+	if current_lesson_id == LEVEL_7_SONG_THANH_ID and is_sample_mode:
+		song_thanh_sample_pair_idx = 0
+		song_thanh_sample_elapsed = 0.0
+		song_thanh_sample_next_event = 0.45
+		song_thanh_sample_set_break_done = false
+		_set_sample_listening_status("Nghe mẫu chậm · lượt 1/2 · mỗi lượt 6 cặp song thanh")
+	staff_display.set_notes(active_falling_notes)
 
 func _process_practice(delta):
 	if active_falling_notes.size() == 0 and practice_idx >= lesson_sheet.size():
