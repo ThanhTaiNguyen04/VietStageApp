@@ -4545,6 +4545,13 @@ func _start_practice():
 	var distance_per_beat = (scroll_speed * 60.0) / lesson_bpm
 	var _staff_w := staff_display.size.x if staff_display.size.x > 50.0 else get_viewport_rect().size.x
 	var start_x = _staff_w + 100.0
+	# Song thanh cần nhìn được cả câu nhạc: giữ cặp đầu ở vạch đánh và nén
+	# khoảng cách để toàn bộ 12 song âm xuất hiện trong khuông ngay từ đầu.
+	if current_lesson_id == LEVEL_7_SONG_THANH_ID:
+		start_x = staff_display.hit_line_x
+		var remaining_slots := maxi(1, lesson_sheet.size() - 1)
+		var visible_width := maxf(240.0, _staff_w - start_x - 65.0)
+		distance_per_beat = maxf(72.0, visible_width / float(remaining_slots))
 	
 	var cur_beat: float = 0.0
 	for i in range(lesson_sheet.size()):
@@ -5363,6 +5370,8 @@ func _create_pause_system():
 	# 1. Tạo nút Pause ở góc trên cùng bên phải (HUD tròn chuyên nghiệp)
 	pause_btn = _create_hud_icon_btn("res://icons8/icons8-pause-100.png", _toggle_pause)
 	add_child(pause_btn)
+	# Nút này vẫn phải ở trên menu khi menu tạm dừng được mở.
+	pause_btn.z_index = 210
 	pause_btn.anchor_left = 1.0
 	pause_btn.anchor_right = 1.0
 	pause_btn.anchor_top = 0.0
@@ -5383,6 +5392,8 @@ func _create_pause_system():
 	pause_overlay = ColorRect.new()
 	pause_overlay.name = "PauseOverlay"
 	pause_overlay.color = Color(0, 0, 0, 0.45)
+	# Phủ lên HUD micro để HUD không chặn các nút Chơi lại và Nghe mẫu.
+	pause_overlay.z_index = 200
 	add_child(pause_overlay)
 	pause_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	pause_overlay.visible = false
