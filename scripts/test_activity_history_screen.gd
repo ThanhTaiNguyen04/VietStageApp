@@ -26,5 +26,8 @@ func _init() -> void:
 	assert(local_quiz.get("status") == "LOCAL_ONLY")
 	assert(local_quiz.get("title") == "Quiz mẫu")
 	assert(screen._sync_status_text(local_quiz) == "Trên thiết bị")
+	assert(screen._history_error_text({"status": 0}).contains("Không thể kết nối"))
+	assert(screen._history_error_text({"status": 401}).contains("đăng nhập"))
+	assert(screen._history_error_text({"status": 500}).contains("Máy chủ"))
 	print("ActivityHistoryScreen pending mapping PASS")
 	quit()

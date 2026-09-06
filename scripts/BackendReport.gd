@@ -395,7 +395,9 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 		complete_value
 	)
 	var attempt_data := _attempt_data(response)
-	if not _is_success(response) or attempt_data.is_empty():
+	# A 2xx response is not an acknowledgement unless it identifies the persisted
+	# attempt. Without data.id the app must retain the same client id for retry.
+	if not _is_success(response) or attempt_data.is_empty() or int(attempt_data.get("id", 0)) <= 0:
 		SecureDataManager.enqueue_pending_game_attempt({
 			"kind": "minigame", "minigame_id": minigame_id, "score": score,
 			"started_at": start_value, "completed_at": complete_value, "client_attempt_id": attempt_id,
@@ -435,7 +437,9 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 	# not convert quiz POSTs into a generic 202 queue response; still require a
 	# response body so a future async/empty 202 cannot be mistaken for a graded
 	# attempt.
-	if not _is_success(response) or attempt_data.is_empty():
+	# A 2xx response is not an acknowledgement unless it identifies the persisted
+	# attempt. Without data.id the app must retain the same client id for retry.
+	if not _is_success(response) or attempt_data.is_empty() or int(attempt_data.get("id", 0)) <= 0:
 		_log_quiz_sync_failure("submit", quiz_id, response)
 		var pending_attempt := pending_preview.duplicate(true)
 		pending_attempt.merge({
@@ -487,7 +491,7 @@ func retry_pending_game_attempts() -> void:
 		else:
 			continue
 		var reward := _attempt_data(response)
-		if _is_success(response) and not reward.is_empty():
+		if _is_success(response) and not reward.is_empty() and int(reward.get("id", 0)) > 0:
 			SecureDataManager.apply_backend_reward(reward)
 			SecureDataManager.remove_pending_game_attempt(str(item.get("client_attempt_id", "")))
 			activity_history_changed.emit()

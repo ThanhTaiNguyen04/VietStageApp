@@ -407,5 +407,5 @@ func _sync_status_text() -> String:
 	if result_sync_status == "be":
 		return "✓ Đã đồng bộ kết quả với BE"
 	if result_sync_status == "failed":
-		return "⚠ Không đồng bộ được · kết quả đã lưu trên thiết bị"
-	return "○ Offline · kết quả mẫu lưu trên thiết bị"
+		return "⚠ Chưa đồng bộ · XP, Coin và Sao đang là dự kiến"
+	return "○ Quiz mẫu · chỉ lưu trên thiết bị, không có phần thưởng BE"

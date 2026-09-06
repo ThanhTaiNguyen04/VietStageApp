@@ -42,6 +42,18 @@ func _run() -> void:
 	assert(failed.get("queued") == true)
 	assert(Secure.get_pending_game_attempts().size() == 1)
 
+	# A nominal success without data.id is not a persistence acknowledgement.
+	fake.response = {"status": 201, "body": {"data": {"score": 100, "pointsEarned": 10}}}
+	var missing_id: Dictionary = await report.report_quiz(10, "Fa", {"score": 100, "maxScore": 100})
+	assert(missing_id.get("submitted") == false)
+	assert(missing_id.get("queued") == true)
+	assert(Secure.get_pending_game_attempts().size() == 2)
+
+	# Retrying either queued item removes it only after a persisted id arrives.
+	fake.response = {"status": 201, "body": {"data": {"id": 13, "score": 100, "pointsEarned": 10}}}
+	await report.retry_pending_game_attempts()
+	assert(Secure.get_pending_game_attempts().is_empty())
+
 	Secure.data["pending_game_attempts"] = original_pending
 	Secure.save_data()
 	print("BackendReport quiz ACK and offline queue PASS")

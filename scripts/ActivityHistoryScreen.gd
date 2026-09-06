@@ -647,7 +647,7 @@ func _load_next_page() -> void:
 func _fetch_page(replace: bool) -> void:
 	var response: Dictionary = await _api.get_activity_history(_page, PAGE_SIZE, _filter)
 	if not _api._is_success(response):
-		_connection_label.text = "Chưa có kết nối — dữ liệu vẫn được lưu trên thiết bị"
+		_connection_label.text = _history_error_text(response)
 		_connection_banner.visible = true
 		_render(merge_pending_items([]))
 		return
@@ -673,6 +673,19 @@ func _fetch_page(replace: bool) -> void:
 	else:
 		_connection_banner.visible = false
 	_render(merged)
+
+
+func _history_error_text(response: Dictionary) -> String:
+	var status := int(response.get("status", 0))
+	match status:
+		0:
+			return "Không thể kết nối máy chủ — dữ liệu vẫn lưu trên thiết bị"
+		401, 403:
+			return "Phiên đăng nhập không hợp lệ — hãy đăng nhập lại để đồng bộ"
+		500:
+			return "Máy chủ chưa thể tải lịch sử — các hoạt động vẫn chờ đồng bộ"
+		_:
+			return "Không thể tải lịch sử (HTTP %d) — dữ liệu vẫn lưu trên thiết bị" % status
 
 
 func merge_pending_items(confirmed: Array) -> Array:
@@ -1036,18 +1049,19 @@ func _make_3d_activity_card(item: Dictionary) -> Button:
 	if item.has("score") and item.get("score") != null:
 		metrics.add_child(_make_activity_metric("Điểm", _score_text(item), C_BLUE, 88, C_BLUE_BG))
 
-	# Metric 2: Achievement Reward (Stars, XP, or Accuracy)
+	# Metric 2: confirmed rewards must not be conflated with a local preview.
+	var sync_status_upper := str(item.get("status", "")).to_upper()
+	var is_provisional := sync_status_upper in ["PENDING_SYNC", "SYNCING", "FAILED_SYNC", "SYNC_FAILED", "FAILED", "LOCAL_ONLY"]
 	var stars: int = int(item.get("starsEarned", item.get("previewStars", 0)))
 	var xp: int = int(item.get("pointsEarned", item.get("previewPoints", 0)))
 	if stars > 0:
-		metrics.add_child(_make_activity_metric("Thành tích", _stars_display(stars), C_GOLD, 88, C_GOLD_BG))
+		metrics.add_child(_make_activity_metric("Dự kiến" if is_provisional else "Thành tích", _stars_display(stars), C_GOLD, 88, C_GOLD_BG))
 	elif xp > 0:
-		metrics.add_child(_make_activity_metric("Thưởng", "+%d XP" % xp, C_PURPLE, 84, C_PURPLE_BG))
+		metrics.add_child(_make_activity_metric("Dự kiến" if is_provisional else "Thưởng", "+%d XP" % xp, C_PURPLE, 84, C_PURPLE_BG))
 	elif item.has("score") and item.get("score") != null:
 		metrics.add_child(_make_activity_metric("Chính xác", _accuracy_text(item), C_GREEN, 84, C_GREEN_BG))
 
 	# Metric 3: Sync Status Alert
-	var sync_status_upper := str(item.get("status", "")).to_upper()
 	if sync_status_upper in ["PENDING_SYNC", "SYNCING"]:
 		metrics.add_child(_make_activity_metric("Trạng thái", "Chờ sync", C_AMBER, 94, C_AMBER_BG))
 	elif sync_status_upper in ["FAILED_SYNC", "SYNC_FAILED", "FAILED"]:
@@ -1330,6 +1344,7 @@ func _open_detail(item: Dictionary) -> void:
 
 	# 2. Results Highlights 3-Capsule Bento Row
 	var score_val := _score_text(item)
+	var is_provisional := not _is_confirmed_item(item)
 	var stars_val := _stars_display(int(item.get("previewStars", item.get("starsEarned", 0))))
 	var xp_val := "+%d XP" % int(item.get("previewPoints", item.get("pointsEarned", 0)))
 
@@ -1339,8 +1354,8 @@ func _open_detail(item: Dictionary) -> void:
 	_modal_content.add_child(bento_row)
 
 	bento_row.add_child(_make_modal_stat_box("ĐIỂM SỐ", score_val, C_BLUE, C_BLUE_BG))
-	bento_row.add_child(_make_modal_stat_box("NGÔI SAO", stars_val, C_GOLD, C_GOLD_BG))
-	bento_row.add_child(_make_modal_stat_box("KINH NGHIỆM", xp_val, C_PURPLE, C_PURPLE_BG))
+	bento_row.add_child(_make_modal_stat_box("SAO DỰ KIẾN" if is_provisional else "NGÔI SAO", stars_val, C_GOLD, C_GOLD_BG))
+	bento_row.add_child(_make_modal_stat_box("XP DỰ KIẾN" if is_provisional else "KINH NGHIỆM", xp_val, C_PURPLE, C_PURPLE_BG))
 
 	# 3. Content Breakdown based on status & type
 	if str(item.get("status", "")).to_upper() in ["PENDING_SYNC", "SYNCING", "FAILED_SYNC"]:
