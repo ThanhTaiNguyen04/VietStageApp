@@ -128,6 +128,7 @@ var shop_popup : Control = null
 var profile_quick_menu : PanelContainer = null
 var profile_menu_dismiss : Button = null
 var profile_menu_avatar : TextureRect = null
+var _hud_profile_avatar : TextureRect = null
 var _profile_avatar_request : HTTPRequest = null
 var _requested_profile_avatar_url := ""
 var _api_client = null
@@ -2907,16 +2908,28 @@ func _setup_hud_profile_button(hud_hbox: HBoxContainer) -> void:
 	# Reuse the same circular avatar treatment used by curriculum screens.
 	var profile_pill := DS.build_profile_pill()
 	profile_pill.name = "ProfilePill"
+	# DS creates intermediate containers without stable names. Resolve the
+	# explicitly named texture once, including runtime nodes without an owner.
+	_hud_profile_avatar = profile_pill.find_child("AvatarIcon", true, false) as TextureRect
+	if _hud_profile_avatar == null:
+		push_error("VirtualMusicRoom: ProfilePill is missing AvatarIcon")
 	var trigger := profile_pill.get_node_or_null("TriggerButton") as Button
 	if trigger:
 		trigger.tooltip_text = "Hồ sơ và cài đặt"
 		trigger.pressed.connect(_toggle_profile_quick_menu)
 	hud_hbox.add_child(profile_pill)
 	_setup_profile_quick_menu()
+	if _hud_profile_avatar:
+		_set_profile_avatar_texture(_hud_profile_avatar.texture)
 	_load_hud_profile_avatar()
 
 func _load_hud_profile_avatar() -> void:
 	var avatar_url := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
+	if avatar_url.is_empty():
+		avatar_url = str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	if avatar_url.begins_with("res://"):
+		_set_profile_avatar_texture(load(avatar_url) as Texture2D)
+		return
 	if not avatar_url.begins_with("https://") and not avatar_url.begins_with("http://"):
 		return
 	if avatar_url == _requested_profile_avatar_url or _profile_avatar_request == null:
@@ -2957,13 +2970,15 @@ func _on_profile_avatar_loaded(result: int, response_code: int, _headers: Packed
 	if decode_error != OK:
 		_requested_profile_avatar_url = ""
 		return
-	var profile_pill := $HUD.get_node_or_null("HUDHBox/ProfilePill") as PanelContainer
-	var avatar_icon := profile_pill.get_node_or_null("MarginContainer/AvatarFrame/AvatarIcon") as TextureRect if profile_pill else null
-	var avatar_texture := ImageTexture.create_from_image(image)
-	if avatar_icon:
-		avatar_icon.texture = avatar_texture
-	if profile_menu_avatar:
-		profile_menu_avatar.texture = avatar_texture
+	_set_profile_avatar_texture(ImageTexture.create_from_image(image))
+
+func _set_profile_avatar_texture(texture: Texture2D) -> void:
+	if texture == null:
+		return
+	if is_instance_valid(_hud_profile_avatar):
+		_hud_profile_avatar.texture = texture
+	if is_instance_valid(profile_menu_avatar):
+		profile_menu_avatar.texture = texture
 
 func _setup_profile_quick_menu() -> void:
 	# Full-screen invisible dismiss target, matching the curriculum account menu.
