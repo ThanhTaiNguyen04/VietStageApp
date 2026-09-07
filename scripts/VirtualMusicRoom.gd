@@ -125,6 +125,7 @@ var dialogue_lbl : Label
 var btn_dialogue_close : Button
 
 var shop_popup : Control = null
+var profile_quick_menu : PanelContainer = null
 var _api_client = null
 var _cosmetics_all: Array = []
 var _cosmetics_owned: Array = []
@@ -2473,7 +2474,8 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	hud_hbox.offset_top = 12 if is_mobile else 32
 	hud_hbox.offset_right = -12 if is_mobile else -32
-	hud_hbox.offset_left = -280 if is_mobile else -340
+	# Keep the top-right controls in the requested order: Shop, stars, avatar.
+	hud_hbox.offset_left = -350 if is_mobile else -430
 	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 56)
 	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
 	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
@@ -2485,6 +2487,10 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
 		btn_shop.custom_minimum_size = Vector2(100, 42) if is_mobile else Vector2(140, 48)
+	var profile_pill = hud_hbox.get_node_or_null("ProfilePill") as PanelContainer
+	if profile_pill:
+		profile_pill.custom_minimum_size = Vector2(54, 54) if is_mobile else Vector2(64, 64)
+	_update_profile_quick_menu_layout(is_mobile)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2767,7 +2773,7 @@ func _setup_hud_shop_button() -> void:
 	$HUD.add_child(hud_hbox)
 	hud_hbox.layout_mode = 1
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	hud_hbox.offset_left = -380
+	hud_hbox.offset_left = -430
 	hud_hbox.offset_top = 32
 	hud_hbox.offset_right = -32
 	hud_hbox.offset_bottom = 32 + 48
@@ -2887,6 +2893,93 @@ func _setup_hud_shop_button() -> void:
 	
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
+	_setup_hud_profile_button(hud_hbox)
+
+func _setup_hud_profile_button(hud_hbox: HBoxContainer) -> void:
+	# Reuse the same circular avatar treatment used by curriculum screens.
+	var profile_pill := DS.build_profile_pill()
+	profile_pill.name = "ProfilePill"
+	var trigger := profile_pill.get_node_or_null("TriggerButton") as Button
+	if trigger:
+		trigger.tooltip_text = "Hồ sơ và cài đặt"
+		trigger.pressed.connect(_toggle_profile_quick_menu)
+	hud_hbox.add_child(profile_pill)
+	_setup_profile_quick_menu()
+
+func _setup_profile_quick_menu() -> void:
+	profile_quick_menu = PanelContainer.new()
+	profile_quick_menu.name = "ProfileQuickMenu"
+	profile_quick_menu.visible = false
+	profile_quick_menu.custom_minimum_size = Vector2(330, 0)
+	profile_quick_menu.add_theme_stylebox_override("panel", _flat_sb(Color(0.98, 0.97, 0.94, 0.96), C_GOLD, 14, true, 0))
+	$HUD.add_child(profile_quick_menu)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 8)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	profile_quick_menu.add_child(margin)
+	var menu := VBoxContainer.new()
+	menu.add_theme_constant_override("separation", 4)
+	margin.add_child(menu)
+	# Match the avatar menu used by the instrument curriculum screens.
+	_add_profile_menu_action(menu, "Xem chi tiết hồ sơ", func() -> void: _open_profile_destination("res://scenes/AccountScreen.tscn"))
+	_add_profile_menu_action(menu, "Bộ sưu tập thành tựu", func() -> void: _open_profile_destination("res://scenes/ProgressScreen.tscn"))
+	_add_profile_menu_action(menu, "Cài đặt tài khoản", func() -> void: _open_profile_destination("res://scenes/AccountSettings.tscn"))
+	_add_profile_menu_action(menu, "Đăng xuất", _confirm_profile_logout, true)
+
+func _add_profile_menu_action(menu: VBoxContainer, label: String, action: Callable, is_danger: bool = false) -> void:
+	var button := Button.new()
+	button.text = label
+	button.custom_minimum_size = Vector2(314, 40)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_size_override("font_size", 15)
+	if _font_body_bold:
+		button.add_theme_font_override("font", _font_body_bold)
+	button.add_theme_color_override("font_color", Color("#dc2626") if is_danger else C_JADE)
+	button.add_theme_stylebox_override("normal", _flat_sb(Color.TRANSPARENT, Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("hover", _flat_sb(Color(0.94, 0.27, 0.27, 0.10) if is_danger else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("pressed", _flat_sb(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.14), Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.pressed.connect(action)
+	menu.add_child(button)
+
+func _toggle_profile_quick_menu() -> void:
+	if profile_quick_menu:
+		profile_quick_menu.visible = not profile_quick_menu.visible
+
+func _open_profile_destination(path: String) -> void:
+	if profile_quick_menu:
+		profile_quick_menu.hide()
+	_fade_to(path)
+
+func _confirm_profile_logout() -> void:
+	if profile_quick_menu:
+		profile_quick_menu.hide()
+	var confirmation := ConfirmationDialog.new()
+	confirmation.title = "Đăng xuất"
+	confirmation.dialog_text = "Kết thúc phiên đăng nhập hiện tại?"
+	confirmation.ok_button_text = "Đăng xuất"
+	confirmation.cancel_button_text = "Ở lại"
+	confirmation.confirmed.connect(_logout_from_profile_menu)
+	confirmation.canceled.connect(confirmation.queue_free)
+	$HUD.add_child(confirmation)
+	confirmation.popup_centered()
+
+func _logout_from_profile_menu() -> void:
+	if _api_client:
+		await _api_client.logout()
+	get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn")
+
+func _update_profile_quick_menu_layout(is_mobile: bool) -> void:
+	if not profile_quick_menu:
+		return
+	profile_quick_menu.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	profile_quick_menu.offset_right = -12 if is_mobile else -32
+	profile_quick_menu.offset_left = (-342 if is_mobile else -362)
+	profile_quick_menu.offset_top = 66 if is_mobile else 96
+	profile_quick_menu.offset_bottom = profile_quick_menu.offset_top + 192
 
 func _update_star_badge() -> void:
 	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/HBoxContainer/Label") as Label
