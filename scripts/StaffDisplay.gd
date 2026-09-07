@@ -452,33 +452,37 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		_draw_vibrato_mark(Vector2(note_x, mark_y), note_color, line_spacing)
 
 func _draw_fingering_number(note_data: Dictionary, color: Color) -> void:
-	var fingering_spec := str(note_data.get("fingering", ""))
+	var fingering_spec := str(note_data.get("fingering", "")).strip_edges()
 	if fingering_spec.is_empty():
 		return
-	var fingering := fingering_spec
 	var chord_component_index := int(note_data.get("chord_component_index", 0))
 	var individual_fingers := fingering_spec.split("+", false)
 	var is_chord_fingering := individual_fingers.size() > 1
+	
+	# Với hợp âm nhiều nốt, chỉ vẽ một lần tại component đầu tiên (chord_component_index == 0)
+	# để hiển thị nhãn số ngón dạng "1 - 2 - 3" hoặc "1 - 2" gọn gàng ở đáy khung.
+	if is_chord_fingering and chord_component_index != 0:
+		return
+
+	var display_fingering := fingering_spec
 	if is_chord_fingering:
-		if chord_component_index >= individual_fingers.size():
-			return
-		fingering = str(individual_fingers[chord_component_index]).strip_edges()
+		var cleaned_fingers: Array[String] = []
+		for f in individual_fingers:
+			cleaned_fingers.append(f.strip_edges())
+		display_fingering = " - ".join(cleaned_fingers)
+
 	var note_x := float(note_data.get("x", size.x * 0.5))
-	# Nốt đơn nằm ở hàng thấp. Với song thanh, thành phần sau trong hợp âm là
-	# nốt cao hơn nên số ngón của nó được nâng lên một hàng (2 trên, 1 dưới).
-	var baseline_y := size.y - maxf(10.0, line_spacing * 0.16)
+	var baseline_y := size.y - maxf(12.0, line_spacing * 0.20)
 	var font := number_font if number_font else ThemeDB.fallback_font
 	if font:
-		# Cỡ chữ lớn để số ngón vẫn rõ trên màn hình điện thoại.
-		var font_size := maxi(30, int(line_spacing * 0.68))
-		if is_chord_fingering:
-			baseline_y -= chord_component_index * maxf(float(font_size) * 0.92, line_spacing * 0.82)
+		var font_size := maxi(24, int(line_spacing * 0.60))
+		var box_width := line_spacing * 2.2 if is_chord_fingering else line_spacing * 0.8
 		draw_string(
 			font,
-			Vector2(note_x - line_spacing * 0.4, baseline_y),
-			fingering,
+			Vector2(note_x - box_width * 0.5, baseline_y),
+			display_fingering,
 			HORIZONTAL_ALIGNMENT_CENTER,
-			line_spacing * 0.8,
+			box_width,
 			font_size,
 			color
 		)

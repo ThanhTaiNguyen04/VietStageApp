@@ -2181,15 +2181,8 @@ func _start_intro():
 	_play_next_intro_step()
 
 func _create_intro_sheet_overlay() -> void:
-	intro_overlay = ColorRect.new()
-	intro_overlay.name = "IntroSheetDimOverlay"
-	intro_overlay.color = Color(0.0, 0.0, 0.0, 0.48)
-	intro_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	intro_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	intro_overlay.z_index = 20
-	intro_overlay.visible = false
-	add_child(intro_overlay)
-	staff_card.z_index = 5
+	# Keep background clean and crisp without dimming overlay so staff board and title remain vibrant
+	staff_card.z_index = 25
 	if title_plaque:
 		title_plaque.z_index = 30
 	if pill_badge:
