@@ -126,6 +126,8 @@ var btn_dialogue_close : Button
 
 var shop_popup : Control = null
 var profile_quick_menu : PanelContainer = null
+var _profile_avatar_request : HTTPRequest = null
+var _requested_profile_avatar_url := ""
 var _api_client = null
 var _cosmetics_all: Array = []
 var _cosmetics_owned: Array = []
@@ -196,6 +198,9 @@ func _ready() -> void:
 	
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
+	_profile_avatar_request = HTTPRequest.new()
+	_profile_avatar_request.request_completed.connect(_on_profile_avatar_loaded)
+	add_child(_profile_avatar_request)
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -2905,6 +2910,36 @@ func _setup_hud_profile_button(hud_hbox: HBoxContainer) -> void:
 		trigger.pressed.connect(_toggle_profile_quick_menu)
 	hud_hbox.add_child(profile_pill)
 	_setup_profile_quick_menu()
+	_load_hud_profile_avatar()
+
+func _load_hud_profile_avatar() -> void:
+	var avatar_url := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
+	if not avatar_url.begins_with("https://") and not avatar_url.begins_with("http://"):
+		return
+	if avatar_url == _requested_profile_avatar_url or _profile_avatar_request == null:
+		return
+	_requested_profile_avatar_url = avatar_url
+	_profile_avatar_request.cancel_request()
+	if _profile_avatar_request.request(avatar_url) != OK:
+		_requested_profile_avatar_url = ""
+
+func _on_profile_avatar_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or body.is_empty():
+		_requested_profile_avatar_url = ""
+		return
+	var image := Image.new()
+	var decode_error := image.load_png_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_jpg_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_webp_from_buffer(body)
+	if decode_error != OK:
+		_requested_profile_avatar_url = ""
+		return
+	var profile_pill := $HUD.get_node_or_null("HUDHBox/ProfilePill") as PanelContainer
+	var avatar_icon := profile_pill.get_node_or_null("Margin/AvatarFrame/AvatarIcon") as TextureRect if profile_pill else null
+	if avatar_icon:
+		avatar_icon.texture = ImageTexture.create_from_image(image)
 
 func _setup_profile_quick_menu() -> void:
 	profile_quick_menu = PanelContainer.new()
