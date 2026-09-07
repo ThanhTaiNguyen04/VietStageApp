@@ -225,6 +225,7 @@ func _ready() -> void:
 	
 	_spawn_decorations()
 	_setup_hud_shop_button()
+	_fetch_hud_profile_identity()
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
@@ -2925,6 +2926,24 @@ func _load_hud_profile_avatar() -> void:
 	if _profile_avatar_request.request(avatar_url) != OK:
 		_requested_profile_avatar_url = ""
 
+func _fetch_hud_profile_identity() -> void:
+	if _api_client == null:
+		return
+	var response: Dictionary = await _api_client.get_me()
+	if not _api_client._is_success(response):
+		return
+	var body: Variant = response.get("body", {})
+	var profile: Variant = body.get("data", {}) if body is Dictionary else {}
+	if not profile is Dictionary:
+		return
+	var full_name := str(profile.get("fullName", "")).strip_edges()
+	var avatar_url := str(profile.get("avatarUrl", "")).strip_edges()
+	if not full_name.is_empty():
+		SecureDataManager.data["user_name"] = full_name
+	SecureDataManager.data["user_avatar_url"] = avatar_url
+	SecureDataManager.save_data()
+	_load_hud_profile_avatar()
+
 func _on_profile_avatar_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or body.is_empty():
 		_requested_profile_avatar_url = ""
@@ -3081,6 +3100,9 @@ func _close_profile_quick_menu() -> void:
 func _open_profile_destination(path: String) -> void:
 	if profile_quick_menu:
 		_close_profile_quick_menu()
+	# Account-related screens use this to return to the room, not the curriculum.
+	SecureDataManager.data["navigation_return_scene"] = "res://scenes/VirtualMusicRoom.tscn"
+	SecureDataManager.save_data()
 	_fade_to(path)
 
 func _confirm_profile_logout() -> void:

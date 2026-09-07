@@ -408,6 +408,12 @@ func _animate_profile() -> void:
 
 
 func _go_back() -> void:
+	var return_scene := str(SecureDataManager.data.get("navigation_return_scene", ""))
+	if return_scene == "res://scenes/VirtualMusicRoom.tscn":
+		SecureDataManager.data.erase("navigation_return_scene")
+		SecureDataManager.save_data()
+		get_tree().change_scene_to_file(return_scene)
+		return
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
