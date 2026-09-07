@@ -3081,6 +3081,9 @@ func _add_profile_menu_action(menu: VBoxContainer, label: String, icon_name: Str
 		button.add_theme_font_override("font", _font_body_bold)
 	button.add_theme_color_override("font_color", Color("#dc2626") if is_danger else C_JADE)
 	button.icon = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
+	# Tint the white SVG strokes black locally for this light account menu.
+	for icon_state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color", "icon_disabled_color"]:
+		button.add_theme_color_override(icon_state, Color.BLACK)
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 22)
 	button.add_theme_constant_override("h_separation", 14)
