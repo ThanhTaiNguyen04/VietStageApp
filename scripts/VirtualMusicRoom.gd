@@ -2958,12 +2958,12 @@ func _on_profile_avatar_loaded(result: int, response_code: int, _headers: Packed
 		_requested_profile_avatar_url = ""
 		return
 	var profile_pill := $HUD.get_node_or_null("HUDHBox/ProfilePill") as PanelContainer
-	var avatar_icon := profile_pill.get_node_or_null("Margin/AvatarFrame/AvatarIcon") as TextureRect if profile_pill else null
+	var avatar_icon := profile_pill.get_node_or_null("MarginContainer/AvatarFrame/AvatarIcon") as TextureRect if profile_pill else null
+	var avatar_texture := ImageTexture.create_from_image(image)
 	if avatar_icon:
-		var avatar_texture := ImageTexture.create_from_image(image)
 		avatar_icon.texture = avatar_texture
-		if profile_menu_avatar:
-			profile_menu_avatar.texture = avatar_texture
+	if profile_menu_avatar:
+		profile_menu_avatar.texture = avatar_texture
 
 func _setup_profile_quick_menu() -> void:
 	# Full-screen invisible dismiss target, matching the curriculum account menu.
