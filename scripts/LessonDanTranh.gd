@@ -1396,23 +1396,37 @@ func _uses_chord_basics_lesson_flow() -> bool:
 
 
 func _setup_top_pitch_box():
-	var l_title = "LUYỆN ĐÀN TRANH"
-	var active_id = SecureDataManager.active_lesson_id
-	if active_id:
-		if active_id == ERROR_FLASH_DEMO_ID: l_title = "BÀI 22: DEMO PHẢN HỒI SAI"
-		elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "BÀI 10: KỸ THUẬT Á"
-		elif active_id == LEVEL_7_PRESS_ID: l_title = "BÀI 11: KỸ THUẬT NHẤN"
-		elif active_id == LEVEL_7_VIBRATO_ID: l_title = "BÀI 13: KỸ THUẬT RUNG DÂY"
-		elif "bai1" in active_id: l_title = "BÀI 1: NỐT CƠ BẢN"
-		elif "bai2" in active_id: l_title = "BÀI 2: KỸ THUẬT GẢY"
-		elif "bai3" in active_id: l_title = "BÀI 3: HỢP ÂM"
-		elif "bai4" in active_id: l_title = "BÀI 4: KẾT HỢP"
-		elif "bai5" in active_id: l_title = "BÀI 5: NÂNG CAO"
+	var l_num := "BÀI LUYỆN"
+	var l_title := "LUYỆN ĐÀN TRANH"
+	
+	if PracticeRoom.current_song_title != "":
+		l_title = PracticeRoom.current_song_title.to_upper()
+	else:
+		var active_id = SecureDataManager.active_lesson_id
+		if active_id:
+			if active_id == ERROR_FLASH_DEMO_ID: l_title = "DEMO PHẢN HỒI SAI"
+			elif active_id == LEVEL_7_GLISSANDO_ID: l_title = "KỸ THUẬT Á"
+			elif active_id == LEVEL_7_PRESS_ID: l_title = "KỸ THUẬT NHẤN"
+			elif active_id == LEVEL_7_VIBRATO_ID: l_title = "KỸ THUẬT RUNG DÂY"
+			elif "bai1" in active_id: l_title = "TÌM HIỂU NHẠC CỤ ĐÀN TRANH"
+			elif "bai2" in active_id: l_title = "LUYỆN GẢY CÁC NỐT CƠ BẢN – PHẦN 1"
+			elif "bai3" in active_id: l_title = "LUYỆN GẢY CÁC NỐT CƠ BẢN – PHẦN 2"
+			elif "bai4" in active_id: l_title = "ĐỌC BẢN NHẠC CƠ BẢN"
+			elif "bai5" in active_id: l_title = "NHỊP ĐIỆU CƠ BẢN"
+			elif "bai7" in active_id or "bai8" in active_id: l_title = "KỸ THUẬT GẢY NGÓN"
+			elif "bai10" in active_id: l_title = "LUYỆN BÀI LÝ CÂY ĐA – ĐOẠN ĐẦU"
+			elif "bai11" in active_id: l_title = "LUYỆN BÀI LÝ CÂY ĐA – ĐOẠN CUỐI"
+			elif "bai12" in active_id: l_title = "HOÀN THIỆN BÀI LÝ CÂY ĐA"
+			elif "bai13" in active_id: l_title = "SỨ THANH HOA – ĐOẠN ĐẦU"
+			elif "bai14" in active_id: l_title = "SỨ THANH HOA – ĐOẠN CUỐI"
+			elif "bai15" in active_id: l_title = "HOÀN THIỆN BÀI SỨ THANH HOA"
+			elif "bai20" in active_id: l_title = "KỸ THUẬT SONG THANH"
+			else: l_title = active_id.replace("_", " ").to_upper()
 
 	title_plaque = PanelContainer.new()
 	title_plaque.name = "TitlePlaque"
 	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
-	title_plaque.offset_left = -250; title_plaque.offset_right = 250
+	title_plaque.offset_left = -300; title_plaque.offset_right = 300
 	title_plaque.offset_top = 32; title_plaque.offset_bottom = 120
 	var tp_sb = StyleBoxFlat.new()
 	tp_sb.bg_color = Color(0.24, 0.16, 0.10, 0.95)
@@ -1428,7 +1442,7 @@ func _setup_top_pitch_box():
 	title_plaque.add_child(pl_vbox)
 	
 	var lbl_num = Label.new()
-	lbl_num.text = "BÀI LUYỆN"
+	lbl_num.text = l_num
 	lbl_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl_num.add_theme_color_override("font_color", Color(0.92, 0.82, 0.60, 1.0))
 	lbl_num.add_theme_font_size_override("font_size", 20)
@@ -1438,7 +1452,7 @@ func _setup_top_pitch_box():
 	lbl_main.text = "🌿   " + l_title + "   🌿"
 	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
-	lbl_main.add_theme_font_size_override("font_size", 34)
+	lbl_main.add_theme_font_size_override("font_size", 30)
 	pl_vbox.add_child(lbl_main)
 	add_child(title_plaque)
 	
