@@ -140,7 +140,8 @@ const LEVELS := [
 					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
 					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2"
 				],
-				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"]
+				"cues": ["circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "circle", "circle", "triangle", "triangle", "circle", "triangle"],
+				"fingerings": ["1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3"]
 			}
 		]
 	},
@@ -160,7 +161,8 @@ const LEVELS := [
 				"practice": "Thực hành kỹ thuật vê đều tay để tạo âm thanh liên tục và tròn tiếng.",
 				"practice_title": "Kỹ thuật Vê",
 				"sheet": ["Đô2", "Mi2", "Sol2", "Mi2", "Đô2", "Mi2", "Sol2", "Mi2"],
-				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+				"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+				"fingerings": ["2", "2", "2", "2", "2", "2", "2", "2"]
 			},
 			{
 				"number": 31,
@@ -171,7 +173,8 @@ const LEVELS := [
 				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
 				"practice_title": "Hợp âm ba âm cơ bản",
 				"sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Mi2", "Đô2", "La1", "Sol1", "Rê2", "Đô2+Mi2+Sol2"],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"]
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle", "triangle", "circle"],
+				"fingerings": ["1", "2", "1", "2", "1", "1", "1", "2", "1", "2", "1 + 2 + 3"]
 			},
 			{
 				"number": 32,
@@ -186,7 +189,8 @@ const LEVELS := [
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2",
 					"Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2", "Đô2+Mi2+Sol2"
 				],
-				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"]
+				"cues": ["circle", "circle", "circle", "circle", "circle", "triangle", "triangle", "triangle", "triangle"],
+				"fingerings": ["1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3"]
 			},
 			{
 				"number": 33,
@@ -201,7 +205,8 @@ const LEVELS := [
 					"Đô2+Mi2+Sol2", "La1+Đô2+Mi2", "Đô2+Mi2+Sol2", "La1+Đô2+Mi2",
 					"La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2", "La1+Đô2+Mi2"
 				],
-				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"]
+				"cues": ["circle", "circle", "circle", "triangle", "circle", "triangle", "circle", "circle", "circle", "circle", "circle"],
+				"fingerings": ["1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3"]
 			}
 		]
 	}
