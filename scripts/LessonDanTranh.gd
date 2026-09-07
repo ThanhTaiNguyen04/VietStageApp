@@ -772,7 +772,7 @@ func _ready():
 	# Giữ form và nút thực hành giống màn hướng dẫn của Sáo.
 	var mode_buttons = teacher_area.get_node_or_null("DialogBox/M/V/ModeButtons")
 	if mode_buttons:
-		mode_buttons.visible = true
+		mode_buttons.visible = not _is_theory_only_lesson()
 		
 	# Style và định vị Giảng viên cùng Khung chat ở giữa màn hình (Lớn hơn)
 	var dialog_sb = StyleBoxFlat.new()
@@ -2234,6 +2234,9 @@ func _on_practice_now_pressed() -> void:
 	intro_playback_token += 1
 	if ai_audio and is_instance_valid(ai_audio.audio_player):
 		ai_audio.audio_player.stop()
+	if _is_theory_only_lesson():
+		_finish_theory_lesson()
+		return
 	if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 		_start_practice_single()
 	else:
@@ -2246,13 +2249,8 @@ func _play_next_intro_step():
 	if intro_step >= dialogues.size():
 		# Bài 1 (bai_1), 2 (bai_5), 3 (bai_4) là lý thuyết thuần – khi hết dialogue
 		# thì hoàn thành bài luôn, không hiện khuôn nhạc thực hành.
-		const THEORY_ONLY_IDS := [
-			"dan_tranh_level_1_bai_1_practice",
-			"dan_tranh_level_1_bai_5_practice",
-			"dan_tranh_level_1_bai_4_practice"
-		]
-		if current_lesson_id in THEORY_ONLY_IDS:
-			_finish_practice()
+		if _is_theory_only_lesson():
+			_finish_theory_lesson()
 			return
 		if current_lesson_id.begins_with("dan_tranh_level_6") or _uses_chord_lesson_flow():
 			_start_practice_single()
@@ -2261,6 +2259,11 @@ func _play_next_intro_step():
 		return
 		
 	var step_data = dialogues[intro_step]
+	# Bài 1–3 chỉ dừng ở phần lý thuyết cô Mai trình bày. Dữ liệu thoại cũ
+	# có các câu mời gảy đàn ở cuối bài; tuyệt đối không hiển thị chúng.
+	if _is_theory_only_lesson() and _is_practice_prompt(step_data):
+		_finish_theory_lesson()
+		return
 	if step_data["action"] == "speak":
 		speech_text.text = step_data["text"]
 		if ai_audio:
@@ -2295,7 +2298,7 @@ func _play_next_intro_step():
 			zither_board.call("set_lesson_marker", highlight_idx, "Gảy", 1)
 			
 			# Redesign lesson 1 level 1, lesson 2 level 1 and lesson 5 level 2 to wait for player input on note introduction steps!
-			if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
+			if not _is_theory_only_lesson() and current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
 				current_state = State.PRACTICE_SINGLE
 				var target_note = step_data.get("note", ALL_17_NOTES[highlight_idx])
 				staff_display.visible = true
@@ -2326,6 +2329,31 @@ func _play_next_intro_step():
 				_play_next_intro_step()
 		)
 	intro_step += 1
+
+func _is_theory_only_lesson() -> bool:
+	return current_lesson_id in [
+		"dan_tranh_level_1_bai_1_practice",
+		"dan_tranh_level_1_bai_5_practice",
+		"dan_tranh_level_1_bai_4_practice"
+	]
+
+func _is_practice_prompt(step_data: Dictionary) -> bool:
+	if int(step_data.get("highlight", -1)) >= 0:
+		return true
+	var text := str(step_data.get("text", "")).to_lower()
+	return text.contains("thực hành") or text.contains("hãy gảy")
+
+func _finish_theory_lesson() -> void:
+	current_state = State.COMPLETED
+	if analyzer:
+		analyzer.rapid_sequence_mode = false
+		analyzer.contour_tracking_mode = false
+	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
+	if not completed.has(current_lesson_id):
+		completed.append(current_lesson_id)
+		SecureDataManager.data.completed_lessons["dan_tranh"] = completed
+		SecureDataManager.save_data()
+	_on_back()
 
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
@@ -5412,9 +5440,12 @@ func _create_skip_intro_button():
 	get_viewport().size_changed.connect(update_skip_pos)
 	update_skip_pos.call()
 	
-	# Sự kiện nhấn nút: Bỏ qua giới thiệu thoại và vào tập luyện trực tiếp
+	# Bài lý thuyết không được phép đi vào thực hành nhận diện âm thanh.
 	skip_intro_btn.pressed.connect(func():
-		_start_practice()
+		if _is_theory_only_lesson():
+			_finish_theory_lesson()
+		else:
+			_start_practice()
 	)
 	previous_intro_btn.pressed.connect(_play_previous_intro_step)
 

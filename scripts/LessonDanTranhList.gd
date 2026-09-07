@@ -29,9 +29,9 @@ const LEVELS := [
 		"sessions": "Bài 1–9 (gồm 4.1–4.3)",
 		"objective": "Làm quen đàn tranh, nhạc lý cơ bản, luyện các nốt và hoàn thiện bài Lý Cây Đa.",
 		"lessons": [
-			{"number": 1, "display_number": "1", "title": "Tìm hiểu nhạc cụ Đàn tranh", "type": "both", "video": "Xem video hướng dẫn lý thuyết nhạc lý, cấu tạo đàn tranh và tư thế ngồi, tư thế tay chuẩn.", "practice": "Nhận biết âm sắc dây đàn và làm quen tư thế tay gảy.", "practice_title": "Làm quen âm sắc & tư thế", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.5, 1.5, 1.5, 1.5, 2.0]},
-			{"number": 5, "display_number": "2", "title": "Nhịp điệu cơ bản", "type": "practice", "video": "Tìm hiểu về trường độ nốt nhạc: nốt trắng, nốt đen, nốt móc đơn, nốt móc kép.", "practice": "Luyện tập nhận diện và gảy phân biệt các nốt có trường độ khác nhau trên khuông nhạc.", "practice_title": "Trường độ nốt nhạc", "sheet": ["Đô2", "Đô2", "Rê2", "Mi2", "Mi2", "Sol2", "Sol2", "Sol2", "Sol2", "La2", "La2"], "durations": [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]},
-			{"number": 4, "display_number": "3", "title": "Đọc bản nhạc cơ bản", "type": "practice", "video": "Tìm hiểu âm vực trầm, trung, cao của 17 dây Đàn Tranh; Tempo (tốc độ bài nhạc), Khóa Sol, Nhịp 4/4 và Nhịp 2/4 — cách đếm phách và giữ nhịp đều khi chơi.", "practice": "Luyện tập giữ nhịp độ đều đặn theo máy đếm nhịp: gảy nốt đen theo nhịp 4/4 rồi nhịp 2/4.", "practice_title": "Âm vực, Tempo, Khóa Sol & Số chỉ nhịp", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Rê3", "Đô3", "La2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "Rê3", "Đô3"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]},
+			{"number": 1, "display_number": "1", "video_id": "dan_tranh_level_1_bai_1_video", "practice_id": "dan_tranh_level_1_bai_1_practice", "quiz_lesson_id": "dan_tranh_level_1_bai_1_video", "title": "Tìm hiểu nhạc cụ Đàn tranh", "type": "video", "video": "Xem video hướng dẫn lý thuyết nhạc lý, cấu tạo đàn tranh và tư thế ngồi, tư thế tay chuẩn.", "video_path": "res://Video/DT_LV1_B1.ogv"},
+			{"number": 5, "display_number": "2", "practice_id": "dan_tranh_level_1_bai_5_practice", "quiz_lesson_id": "dan_tranh_level_1_bai_2_video", "title": "Nhịp điệu cơ bản", "type": "theory", "practice": "Cô Mai giới thiệu trường độ: nốt trắng, nốt đen, nốt móc đơn và nốt móc kép."},
+			{"number": 4, "display_number": "3", "practice_id": "dan_tranh_level_1_bai_4_practice", "quiz_lesson_id": "dan_tranh_level_1_bai_3_video", "title": "Đọc bản nhạc cơ bản", "type": "theory", "practice": "Cô Mai giới thiệu âm vực 17 dây, tempo, khóa Sol, nhịp 4/4 và 2/4."},
 			{"number": 8, "display_number": "4.1", "title": "Kỹ thuật gảy ngón 2", "type": "both", "video": "Hướng dẫn sử dụng ngón trỏ tay phải (ngón 2), giữ bàn tay khum tự nhiên và thả lỏng khi gảy đàn.", "practice": "Dùng ngón 2 gảy lần lượt 5 nốt trên 5 dây đầu: Sol1, La1, Đô2, Rê2 và Mi2. Ứng dụng nhận diện cao độ của từng dây bằng micro.", "practice_title": "Gảy ngón 2 – 5 nốt cơ bản", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], "durations": [1.0, 1.0, 1.0, 1.0, 2.0], "fingerings": ["2", "2", "2", "2", "2"]},
 			{"number": 7, "display_number": "4.2", "title": "Kỹ thuật gảy ngón 1", "type": "both", "video": "Hướng dẫn sử dụng ngón cái tay phải (ngón 1), giữ cổ tay thả lỏng và gảy dây rõ tiếng.", "practice": "Dùng ngón 1 gảy lần lượt 5 nốt trên các dây 6 đến 10: Sol2, La2, Đô3, Rê3 và Mi3. Ứng dụng nhận diện cao độ của từng dây bằng micro.", "practice_title": "Gảy ngón 1 – 5 nốt cơ bản", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3"], "durations": [1.0, 1.0, 1.0, 1.0, 2.0], "fingerings": ["1", "1", "1", "1", "1"]},
 			{"number": 9, "display_number": "4.3", "title": "Kỹ thuật gảy ngón 3", "type": "practice", "video": "Hướng dẫn sử dụng ngón giữa tay phải (ngón 3), giữ bàn tay khum tự nhiên và gảy rõ tiếng ở âm vực cao.", "practice": "Dùng ngón 3 gảy lần lượt 7 nốt trên các dây 11 đến 17: Sol3, La3, Đô4, Rê4, Mi4, Sol4 và La4. Ứng dụng nhận diện cao độ của từng dây bằng micro.", "practice_title": "Gảy ngón 3 – 7 nốt âm vực cao", "sheet": ["Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"], "durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0], "fingerings": ["3", "3", "3", "3", "3", "3", "3"]},
@@ -450,12 +450,14 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	var lesson_number := int(lesson["number"])
 	var display_number := str(lesson.get("display_number", lesson_number))
 	var lesson_type := str(lesson.get("type", "practice"))
-	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
+	var lesson_activity := "video" if lesson_type == "video" else "practice"
+	var practice_id := str(lesson.get("%s_id" % lesson_activity, _lesson_id(lesson_number, lesson_activity)))
 	var lesson_ready: bool = not REQUIRE_SEQUENTIAL_UNLOCK or index == 0
 	if REQUIRE_SEQUENTIAL_UNLOCK and index > 0:
 		var previous: Dictionary = lessons[index - 1]
 		var previous_number := int(previous["number"])
-		var previous_id := str(previous.get("practice_id", _lesson_id(previous_number, "practice")))
+		var previous_activity := "video" if str(previous.get("type", "practice")) == "video" else "practice"
+		var previous_id := str(previous.get("%s_id" % previous_activity, _lesson_id(previous_number, previous_activity)))
 		lesson_ready = completed.has(previous_id)
 	var practice_completed: bool = completed.has(practice_id)
 	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
@@ -477,7 +479,7 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	lesson_button.z_index = 10
 	# Bài mở đầu phải bắt đầu bằng video giới thiệu; xem xong mới vào phần cô Mai
 	# hướng dẫn và thực hành trong LessonDanTranh.
-	var opens_video_first := selected_level == 1 and lesson_number == 1
+	var opens_video_first := lesson_type == "video"
 	lesson_button.set_meta("lesson_data", lesson)
 	lesson_button.set_meta("open_activity", "video" if opens_video_first else "practice")
 	lesson_button.pressed.connect(_open_lesson.bind(lesson, "video" if opens_video_first else "practice"))
@@ -872,7 +874,7 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	if activity == "video":
 		SecureDataManager.active_lesson_id = str(lesson.get("video_id", _lesson_id(lesson_number, "video")))
 		var VP = load("res://scripts/VideoPlayer.gd")
-		var video_path := str(lesson.get("video", ""))
+		var video_path := str(lesson.get("video_path", lesson.get("video", "")))
 		if not video_path.begins_with("res://"):
 			video_path = "res://Video/DT_LV1_B" + str(lesson_number) + ".ogv"
 		if not ResourceLoader.exists(video_path):
@@ -1018,7 +1020,9 @@ func _open_quiz() -> void:
 	for lesson: Dictionary in level_data.get("lessons", []):
 		var number := int(lesson.get("number", 0))
 		if number > 0:
-			ids.append(str(lesson.get("practice_id", _lesson_id(number, "practice"))))
+			# Quiz dùng ID nghiệp vụ riêng của Bài 1–3. ID mở nội dung cô Mai
+			# không phải ID quiz, vì Bài 2–3 không có video và không có thực hành.
+			ids.append(str(lesson.get("quiz_lesson_id", lesson.get("practice_id", _lesson_id(number, "practice")))))
 	LearningActivityContextScript.configure("dan_tranh", ids, "res://scenes/LessonDanTranhList.tscn")
 	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 

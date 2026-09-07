@@ -47,7 +47,8 @@ static func get_level_status(level_number: int, save_data: Dictionary) -> Dictio
 		var prefix := "%s_level_%d_bai_%d_" % [INSTRUMENT_ID, level_number, lesson_number]
 		if str(lesson.get("video", "")) != "":
 			step_ids.append(str(lesson.get("video_id", prefix + "video")))
-		step_ids.append(str(lesson.get("practice_id", prefix + "practice")))
+		if str(lesson.get("type", "practice")) != "video":
+			step_ids.append(str(lesson.get("practice_id", prefix + "practice")))
 
 	var completed_count := 0
 	var total_stars := 0
