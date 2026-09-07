@@ -502,6 +502,11 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 
 
 func _input(event: InputEvent) -> void:
+	# _input runs before GUI buttons: never activate a card behind an account
+	# menu or its logout dialog. Leave the event available to the menu GUI.
+	for account_menu in get_tree().get_nodes_in_group("curriculum_account_menus"):
+		if account_menu.blocks_lesson_input():
+			return
 	# Một số thiết bị/overlay của ScrollContainer đã nuốt sự kiện Button. Bắt
 	# trực tiếp cả click chuột lẫn chạm màn hình trong vùng card. Xogot trên
 	# iPhone gửi InputEventScreenTouch nên không thể chỉ kiểm tra MouseButton.

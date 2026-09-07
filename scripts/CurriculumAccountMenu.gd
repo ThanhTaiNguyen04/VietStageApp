@@ -9,8 +9,13 @@ var api: Node
 var request: HTTPRequest
 var requested_url := ""
 var level := 1
+var logout_confirmation: ConfirmationDialog
+
+func blocks_lesson_input() -> bool:
+	return (is_instance_valid(overlay) and overlay.visible) or (is_instance_valid(logout_confirmation) and logout_confirmation.visible)
 
 func _ready() -> void:
+	add_to_group("curriculum_account_menus")
 	small_avatar = pill.find_child("AvatarIcon", true, false) as TextureRect
 	var layer := CanvasLayer.new()
 	layer.layer = 50
@@ -19,6 +24,19 @@ func _ready() -> void:
 	layer.add_child(overlay)
 	panel = overlay.get_node("AccountPanel")
 	large_avatar = overlay.find_child("LargeAvatar", true, false) as TextureRect
+	# Match the roadmap header instead of inheriting Godot's gray panel theme.
+	var avatar_frame := large_avatar.get_parent() as PanelContainer
+	var avatar_style := StyleBoxFlat.new()
+	avatar_style.bg_color = Color("#e2d8c9")
+	avatar_style.border_color = Color(0.77, 0.58, 0.15, 1.0)
+	avatar_style.set_border_width_all(2)
+	avatar_style.set_corner_radius_all(24)
+	avatar_frame.add_theme_stylebox_override("panel", avatar_style)
+	var online_dot := overlay.find_child("OnlineDot", true, false) as PanelContainer
+	var dot_style := StyleBoxFlat.new()
+	dot_style.bg_color = Color("#22c55e")
+	dot_style.set_corner_radius_all(4)
+	online_dot.add_theme_stylebox_override("panel", dot_style)
 	_set_avatar(small_avatar.texture)
 	var background := StyleBoxFlat.new()
 	background.bg_color = Color(0.995, 0.99, 0.985, 0.98)
@@ -139,6 +157,7 @@ func _navigate(destination: String) -> void:
 	overlay.hide()
 	if destination == "logout":
 		var confirmation := ConfirmationDialog.new()
+		logout_confirmation = confirmation
 		confirmation.title = "Đăng xuất"
 		confirmation.dialog_text = "Kết thúc phiên đăng nhập hiện tại?"
 		confirmation.ok_button_text = "Đăng xuất"
