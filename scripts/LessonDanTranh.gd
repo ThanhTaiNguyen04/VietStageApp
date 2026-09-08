@@ -3981,7 +3981,7 @@ func _build_tremolo_display_notes() -> void:
 		tremolo_display_notes.append({
 			"note": "ZT_" + str(notes[0]),
 			"x": center_x,
-			"color": C_GOLD,
+			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "half",
 			"cue": "tremolo_single"
 		})
@@ -3991,7 +3991,7 @@ func _build_tremolo_display_notes() -> void:
 		tremolo_display_notes.append({
 			"note": "ZT_" + str(notes[0]),
 			"x": source_x,
-			"color": C_GOLD,
+			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "half",
 			"tremolo_pair_target": "ZT_" + str(notes[1]),
 			"tremolo_pair_target_x": target_x
@@ -3999,7 +3999,7 @@ func _build_tremolo_display_notes() -> void:
 		tremolo_display_notes.append({
 			"note": "ZT_" + str(notes[1]),
 			"x": target_x,
-			"color": C_GOLD,
+			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "half"
 		})
 	staff_display.set_notes(tremolo_display_notes)
@@ -4025,6 +4025,7 @@ func _append_tremolo_attack(
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	if not allowed_strings.has(string_idx):
 		tremolo_wrong_attacks += 1
+		_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
 		var target_label := str(notes[0])
 		if notes.size() > 1:
 			target_label = "%s – %s" % [notes[0], notes[1]]
@@ -4042,6 +4043,7 @@ func _append_tremolo_attack(
 		return
 	if tremolo_attack_times.is_empty():
 		tremolo_attempt_started_at = attack_time_sec
+		_set_tremolo_note_color(Color(0.16, 0.14, 0.12, 1.0))
 	tremolo_attack_strings.append(string_idx)
 	tremolo_attack_times.append(attack_time_sec)
 	tremolo_attack_generations.append(attack_generation)
