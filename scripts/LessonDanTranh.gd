@@ -4328,9 +4328,7 @@ func _process_song_thanh_sample(delta: float) -> void:
 
 	if song_thanh_sample_pair_idx >= lesson_sheet.size():
 		# Nghe mẫu chỉ là minh hoạ, không được hoàn thành bài hay mở bảng kết quả.
-		is_sample_mode = false
-		_set_sample_listening_status("Đã nghe xong 2 lượt mẫu. Bây giờ hãy tự gảy 12 cặp song thanh.")
-		call_deferred("_start_practice")
+		_finish_sample_and_offer_actions("Đã nghe xong 2 lượt mẫu song thanh.")
 		return
 
 	for note in active_falling_notes:
@@ -4406,7 +4404,7 @@ func _finish_technique_sample(message: String, status_label: Label = null) -> vo
 	if status_label:
 		status_label.text = message
 		status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
-	_set_sample_listening_status("Đã nghe xong mẫu. Bấm Luyện tập để tự thực hành.")
+	_finish_sample_and_offer_actions("Đã nghe xong mẫu kỹ thuật.")
 
 
 func _begin_glissando_sample() -> void:
@@ -4791,7 +4789,10 @@ func _start_practice():
 
 func _process_practice(delta):
 	if active_falling_notes.size() == 0 and practice_idx >= lesson_sheet.size():
-		_finish_practice()
+		if is_sample_mode:
+			_finish_sample_and_offer_actions("Đã nghe xong mẫu.")
+		else:
+			_finish_practice()
 		return
 		
 	if mic_cooldown > 0.0:
@@ -4970,7 +4971,10 @@ func _process_practice(delta):
 	if all_passed and active_falling_notes.size() > 0:
 		active_falling_notes.clear()
 		zither_board.call("clear_lesson_markers")
-		_finish_practice()
+		if is_sample_mode:
+			_finish_sample_and_offer_actions("Đã nghe xong mẫu.")
+		else:
+			_finish_practice()
 		
 	staff_display.set_notes(active_falling_notes)
 	if glissando_sheet:
@@ -5141,7 +5145,13 @@ func _is_target_harmonic(frequency: float, target_frequencies: Array[float]) -> 
 
 
 func _finish_practice():
+	# Nghe mẫu chỉ kết thúc ở topbar lựa chọn, tuyệt đối không được tính là hoàn thành bài.
+	if is_sample_mode:
+		_finish_sample_and_offer_actions("Đã nghe xong mẫu.")
+		return
 	_stop_technique_sample()
+	sample_actions_ready = false
+	is_paused = false
 	current_state = State.COMPLETED
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
@@ -5538,7 +5548,9 @@ func _play_previous_intro_step() -> void:
 var pause_btn: Button = null
 var is_paused: bool = false
 var is_sample_mode: bool = false
+var sample_actions_ready: bool = false
 var pause_overlay: ColorRect = null
+var btn_resume_ref: Button = null
 var btn_sample_ref: Button = null
 var progress_label: Label = null
 
@@ -5614,20 +5626,28 @@ func _create_pause_system():
 	hbox.add_child(actions_box)
 	
 	var btn_resume = _create_pause_action_btn("Tiếp tục", "res://icons8/icons8-play-100.png", func():
-		_toggle_pause()
+		if sample_actions_ready:
+			_start_practice_from_sample_actions()
+		else:
+			_toggle_pause()
 	)
+	btn_resume_ref = btn_resume
 	actions_box.add_child(btn_resume)
 	
 	var btn_replay = _create_pause_action_btn("Chơi lại", "res://icons8/icons8-restart-100.png", func():
-		_toggle_pause()
+		_close_pause_overlay()
+		sample_actions_ready = false
 		is_sample_mode = false
 		_start_practice()
 	)
 	actions_box.add_child(btn_replay)
 	
 	btn_sample_ref = _create_pause_action_btn("Nghe mẫu", "res://icons8/icons8-speaker-100.png", func():
-		_toggle_pause()
-		_toggle_sample_mode()
+		if sample_actions_ready:
+			_start_sample_from_actions()
+		else:
+			_toggle_pause()
+			_toggle_sample_mode()
 	)
 	actions_box.add_child(btn_sample_ref)
 	
@@ -5720,18 +5740,7 @@ func _create_pause_action_btn(text: String, icon_path: String, pressed_callable:
 func _toggle_pause():
 	is_paused = not is_paused
 	pause_overlay.visible = is_paused
-	
-	if btn_sample_ref:
-		var vbox = btn_sample_ref.get_child(0)
-		var texture_node = vbox.get_child(0) as TextureRect
-		var label_node = vbox.get_child(1) as Label
-		
-		if is_sample_mode:
-			label_node.text = "Luyện tập"
-			texture_node.texture = load("res://icons8/icons8-play-100.png") as Texture2D
-		else:
-			label_node.text = "Nghe mẫu"
-			texture_node.texture = load("res://icons8/icons8-speaker-100.png") as Texture2D
+	_refresh_sample_action_buttons()
 			
 	if progress_label:
 		var total_notes = lesson_sheet.size()
@@ -5740,8 +5749,62 @@ func _toggle_pause():
 
 func _toggle_sample_mode():
 	is_sample_mode = not is_sample_mode
+	sample_actions_ready = false
 	if not is_sample_mode:
 		technique_sample_input_cooldown = 0.55
+	_start_practice()
+
+func _set_pause_action_button_content(button: Button, text: String, icon_path: String) -> void:
+	if button == null or button.get_child_count() == 0:
+		return
+	var vbox := button.get_child(0) as VBoxContainer
+	if vbox == null or vbox.get_child_count() < 2:
+		return
+	var texture_node := vbox.get_child(0) as TextureRect
+	var label_node := vbox.get_child(1) as Label
+	if texture_node:
+		texture_node.texture = load(icon_path) as Texture2D
+	if label_node:
+		label_node.text = text
+
+func _refresh_sample_action_buttons() -> void:
+	if sample_actions_ready:
+		_set_pause_action_button_content(btn_resume_ref, "Luyện tập", "res://icons8/icons8-play-100.png")
+		_set_pause_action_button_content(btn_sample_ref, "Nghe lại", "res://icons8/icons8-speaker-100.png")
+		return
+	_set_pause_action_button_content(btn_resume_ref, "Tiếp tục", "res://icons8/icons8-play-100.png")
+	if is_sample_mode:
+		_set_pause_action_button_content(btn_sample_ref, "Luyện tập", "res://icons8/icons8-play-100.png")
+	else:
+		_set_pause_action_button_content(btn_sample_ref, "Nghe mẫu", "res://icons8/icons8-speaker-100.png")
+
+func _close_pause_overlay() -> void:
+	is_paused = false
+	if pause_overlay:
+		pause_overlay.visible = false
+	_refresh_sample_action_buttons()
+
+func _finish_sample_and_offer_actions(message: String) -> void:
+	_stop_technique_sample()
+	is_sample_mode = false
+	sample_actions_ready = true
+	technique_sample_input_cooldown = 0.0
+	_set_sample_listening_status(message + " Chọn Nghe lại hoặc Luyện tập.")
+	is_paused = true
+	if pause_overlay:
+		pause_overlay.visible = true
+	_refresh_sample_action_buttons()
+
+func _start_practice_from_sample_actions() -> void:
+	sample_actions_ready = false
+	is_sample_mode = false
+	_close_pause_overlay()
+	_start_practice()
+
+func _start_sample_from_actions() -> void:
+	sample_actions_ready = false
+	is_sample_mode = true
+	_close_pause_overlay()
 	_start_practice()
 
 func _create_hud_icon_btn(icon_path: String, pressed_callable: Callable) -> Button:
