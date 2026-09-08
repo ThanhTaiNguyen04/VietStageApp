@@ -10,6 +10,7 @@ const AUTH_RESET_PASSWORD := "/auth/reset-password"
 const AUTH_REFRESH := "/auth/refresh"
 const AUTH_LOGOUT := "/auth/logout"
 const USERS_ME := "/users/me"
+const ACTIVITY_HISTORY := "/users/me/activity-history"
 const UPLOAD := "/upload"
 
 # Leaderboards
@@ -57,6 +58,8 @@ const LESSON_STATUS := "/lessons/%s/status"
 const LESSON_EXERCISES := "/lessons/%s/exercises"
 const LESSON_QUIZZES := "/lessons/%s/quizzes"
 const QUIZ_ATTEMPTS := "/quizzes/%s/attempts"
+const LESSON_ASSESSMENT_SESSIONS := "/lessons/%s/assessment-sessions"
+const ASSESSMENT_SESSION_DETAIL := "/lessons/assessment-sessions/%s"
 const LESSON_MINIGAMES := "/lessons/%s/minigames"
 const MINIGAME_ATTEMPTS := "/minigames/%s/attempts"
 

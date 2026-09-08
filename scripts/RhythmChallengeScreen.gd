@@ -125,11 +125,11 @@ func _load_challenges() -> void:
 
 	rhythms = RhythmModel.parse_challenges(target_challenges)
 	if rhythms.is_empty():
-		_set_flow_state(FlowState.ERROR)
-		_build_load_error(
-			"Chưa tìm thấy thử thách RHYTHM_MATCH cho bài học này.",
-			"Bạn có thể thử tải lại hoặc chơi bằng dữ liệu mẫu trên thiết bị."
-		)
+		# A signed-in learner can reach this branch when the lesson has not been
+		# authored with a rhythm challenge yet. Keep the game playable, but make
+		# the run explicitly offline so it is never presented as backend content
+		# or submitted as a real attempt.
+		_use_offline_data()
 		return
 
 	result_sync_status = "pending"
@@ -511,21 +511,27 @@ func _submit_payload(payload: Dictionary) -> bool:
 	if report == null or not report.is_signed_in():
 		payload["error"] = "Phiên đăng nhập không còn hiệu lực."
 		return false
-	var response: Dictionary = await report.report_minigame_by_id(
-		int(payload.get("minigame_id", 0)),
-		int(payload.get("score", 0)),
-		int(payload.get("stars", 0)),
-		str(payload.get("started_at", "")),
-		str(payload.get("completed_at", "")),
-		str(payload.get("client_attempt_id", ""))
-	)
-	if not bool(response.get("submitted", false)):
-		payload["error"] = str(response.get("message", "Không thể đồng bộ kết quả."))
+	var minigame_id := int(payload.get("minigame_id", 0))
+	if minigame_id <= 0:
+		return true
+	var score := int(payload.get("score", 0))
+	var preview_stars := int(payload.get("stars", 0))
+	var start_str := str(payload.get("started_at", ""))
+	var completed_str := str(payload.get("completed_at", ""))
+	var client_id := str(payload.get("client_attempt_id", ""))
+	var result: Dictionary = await report.report_minigame_by_id(minigame_id, score, preview_stars, start_str, completed_str, client_id)
+	if bool(result.get("submitted", false)):
+		submitted_count += 1
+		backend_stars_earned = maxi(backend_stars_earned, int(result.get("stars_earned", 0)))
+		backend_points_earned = maxi(backend_points_earned, int(result.get("points_earned", 0)))
+		result_sync_status = "be"
+		return true
+	elif bool(result.get("queued", false)) or str(result.get("reason", "")) == "attempt_failed":
+		result_sync_status = "failed"
 		return false
-	submitted_count += 1
-	backend_stars_earned += maxi(0, int(response.get("stars_earned", 0)))
-	backend_points_earned += maxi(0, int(response.get("points_earned", 0)))
-	return true
+	else:
+		result_sync_status = "offline"
+		return false
 
 
 func _build_round_result(round_accuracy: float) -> void:
@@ -578,7 +584,7 @@ func _build_final_result() -> void:
 	card_body.add_child(detail)
 
 	var metrics := GridContainer.new()
-	metrics.columns = 2 if _is_mobile() else 4
+	metrics.columns = 2 if _is_mobile() else (4 if online_session and submitted_count > 0 else 3)
 	metrics.add_theme_constant_override("h_separation", 12)
 	metrics.add_theme_constant_override("v_separation", 12)
 	metrics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -586,20 +592,34 @@ func _build_final_result() -> void:
 	metrics.add_child(_metric_card("◆", "Điểm", "%d / %d" % [total_score, total_max_score], C_BLUE))
 	metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % accuracy, C_GREEN))
 	metrics.add_child(_metric_card("★", "Xếp hạng", "%d / 3" % stars, C_GOLD))
-	metrics.add_child(_metric_card("●", "Điểm thưởng", "+%d" % backend_points_earned if submitted_count > 0 else "—", C_PURPLE))
+	if online_session and submitted_count > 0:
+		metrics.add_child(_metric_card("⚡", "XP", "+%d" % backend_points_earned, C_PURPLE))
 
-	var sync_text := "○ Offline · kết quả chưa gửi lên hệ thống"
+	var sync_text := "○ Luyện tập offline · kết quả lưu trên thiết bị"
 	var sync_color := C_MUTED
-	if online_session and sync_failures.is_empty() and submitted_count > 0:
-		sync_text = "✓ Đã đồng bộ %d kết quả · nhận %d sao" % [submitted_count, backend_stars_earned]
-		sync_color = C_OK
-	elif online_session:
-		if sync_failures.is_empty():
-			sync_text = "○ Chưa có kết quả hợp lệ để đồng bộ"
-			sync_color = C_MUTED
-		else:
-			sync_text = "⚠ Còn %d kết quả chưa đồng bộ" % sync_failures.size()
+	if online_session and Context.backend_lesson_id > 0:
+		if submitted_count > 0:
+			sync_text = "✓ Đã xác nhận bởi hệ thống · Nhận %d sao" % backend_stars_earned
+			sync_color = C_OK
+		elif result_sync_status == "failed" or not sync_failures.is_empty():
+			sync_text = "⚠ Đang chờ đồng bộ · XP và Sao đang là dự kiến"
 			sync_color = C_BAD
+		else:
+			sync_text = "Chưa có kết quả hợp lệ để đồng bộ"
+			sync_color = C_MUTED
+	elif not online_session:
+		var local_entry := {
+			"kind": "minigame_local",
+			"client_attempt_id": _new_attempt_id(),
+			"title": "Thử thách nhịp điệu",
+			"lessonTitle": _instrument_title(),
+			"score": total_score,
+			"maxScore": total_max_score,
+			"completedAt": _now_iso(),
+			"status": "LOCAL_ONLY",
+		}
+		SecureDataManager.record_local_activity(local_entry)
+
 	var sync := _label(sync_text, 13 if _is_mobile() else 14, sync_color)
 	sync.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(sync)

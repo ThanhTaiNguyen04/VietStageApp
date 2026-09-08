@@ -923,7 +923,9 @@ func _build_profile_btn() -> void:
 	spacer.name = "TopSpacerRight"
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	toph.add_child(spacer)
-	var pill := DS.build_profile_pill()
+	# build_profile_pill() là static của DS.gd; gọi qua preload thay vì autoload
+	# identifier để script còn compile được trong test `godot -s` (autoload chỉ tồn tại khi chạy app).
+	var pill := preload("res://scripts/DS.gd").build_profile_pill()
 	toph.add_child(pill)
 	var account_menu := preload("res://scripts/CurriculumAccountMenu.gd").new()
 	account_menu.pill = pill

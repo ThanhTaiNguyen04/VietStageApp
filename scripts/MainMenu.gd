@@ -93,6 +93,7 @@ var _daily_overlay: ColorRect = null
 @onready var profile_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/ProfileAction
 @onready var achievement_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/AchievementAction
 @onready var settings_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/SettingsAction
+@onready var activity_history_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/ActivityHistoryAction
 @onready var logout_action: Button = $AccountMenuLayer/AccountPanel/MenuM/MenuV/LogoutAction
 
 @onready var streak_pill   : PanelContainer  = $Root/RightContent/TopBar/TopRow/StatsRow/StreakPill
@@ -212,7 +213,9 @@ func _fetch_and_sync_progress() -> void:
 				streak_pill.visible = true
 				xp_pill.visible = true
 	_fetch_daily_challenges()
-	BackendReport.fetch_and_install_catalog()
+	var backend_report = get_node_or_null("/root/BackendReport")
+	if backend_report and backend_report.has_method("fetch_and_install_catalog"):
+		backend_report.fetch_and_install_catalog()
 
 func _fetch_profile_identity() -> void:
 	if _api_client == null:
@@ -868,9 +871,10 @@ func _build_daily_challenge_pill() -> void:
 	stats_row.add_child(_daily_pill)
 
 func _fetch_daily_challenges() -> void:
-	if not BackendReport.is_signed_in():
+	var report = get_node_or_null("/root/BackendReport")
+	if report == null or not report.has_method("is_signed_in") or not report.is_signed_in():
 		return
-	_daily_challenges = await BackendReport.fetch_daily_challenges()
+	_daily_challenges = await report.fetch_daily_challenges()
 	_refresh_daily_pill_text()
 	if _daily_pill:
 		_daily_pill.visible = not _daily_challenges.is_empty()
@@ -1003,7 +1007,10 @@ func _build_daily_challenge_row(vbox: VBoxContainer, challenge: Dictionary) -> v
 	vbox.add_child(row)
 
 func _complete_daily_challenge(challenge_id: int) -> void:
-	var result: Dictionary = await BackendReport.complete_daily_challenge(challenge_id)
+	var report = get_node_or_null("/root/BackendReport")
+	if report == null or not report.has_method("complete_daily_challenge"):
+		return
+	var result: Dictionary = await report.complete_daily_challenge(challenge_id)
 	if not result.get("submitted", false):
 		push_warning("[MainMenu] Không nhận được thưởng thử thách: %s" % str(result.get("message", "")))
 		return
@@ -1036,6 +1043,7 @@ func _build_profile_menu() -> void:
 	profile_action.pressed.connect(func() -> void: _open_account_destination("profile"))
 	achievement_action.pressed.connect(func() -> void: _open_account_destination("achievements"))
 	settings_action.pressed.connect(func() -> void: _open_account_destination("settings"))
+	activity_history_action.pressed.connect(func() -> void: _open_account_destination("activity_history"))
 	logout_action.pressed.connect(func() -> void: _open_account_destination("logout"))
 
 func _update_profile_menu_data() -> void:
@@ -1151,6 +1159,7 @@ func _style_account_menu() -> void:
 	_style_account_action(profile_action, "user", false)
 	_style_account_action(achievement_action, "trophy", false)
 	_style_account_action(settings_action, "settings", false)
+	_style_account_action(activity_history_action, "calendar-days", false)
 	_style_account_action(logout_action, "log-out", true)
 
 	dismiss_button.add_theme_stylebox_override("normal", _flat(Color(0.0, 0.0, 0.0, 0.08), Color.TRANSPARENT, 0))
@@ -1252,6 +1261,8 @@ func _open_account_destination(destination: String) -> void:
 		_go_progress()
 	elif destination == "settings":
 		_go_settings()
+	elif destination == "activity_history":
+		get_tree().change_scene_to_file("res://scenes/ActivityHistoryScreen.tscn")
 	elif destination == "logout":
 		_confirm_logout()
 	else:

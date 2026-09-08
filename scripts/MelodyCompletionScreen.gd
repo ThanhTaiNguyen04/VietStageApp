@@ -1,5 +1,7 @@
 extends "res://scripts/LearningActivityBase.gd"
 
+const InstrumentSamplePlayerScript = preload("res://scripts/InstrumentSamplePlayer.gd")
+
 var challenge: Dictionary = {}
 var challenge_id := 0
 var lesson_id := 0
@@ -23,6 +25,19 @@ var score_label: Label
 var floating_back_button: Button
 var answered := false
 var _audio_generation := 0
+var microphone_analyzer: AudioCaptureAnalyzer
+var microphone_status_label: Label
+var microphone_note_label: Label
+var listen_for_note_button: Button
+var microphone_armed := false
+var microphone_candidate_elapsed := 0.0
+var microphone_candidate_pitch := 0.0
+var expected_note_raw := ""
+var sample_player: Node
+var sample_button: Button
+var sample_playback_active := false
+const MICROPHONE_HOLD_SECONDS := 0.18
+const MICROPHONE_CENTS_TOLERANCE := 75.0
 
 func _ready() -> void:
 	super._ready()
@@ -36,9 +51,91 @@ func _ready() -> void:
 	_build_sticky_top_bar()
 	
 	title_label.text = "MINI-GAME 2 - HOÀN THIỆN GIAI ĐIỆU"
+	_setup_microphone_analyzer()
+	_setup_sample_player()
 	_load_challenge()
 
+func _exit_tree() -> void:
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	if sample_player and is_instance_valid(sample_player):
+		sample_player.stop()
+
+func _process(delta: float) -> void:
+	if not microphone_armed or answered or microphone_analyzer == null or not is_instance_valid(microphone_analyzer):
+		return
+	var pitch := microphone_analyzer.current_pitch
+	var amplitude := microphone_analyzer.current_amplitude_db
+	if not microphone_analyzer.current_pitch_is_reliable or pitch <= 0.0 or amplitude <= microphone_analyzer.volume_threshold_db:
+		microphone_candidate_elapsed = 0.0
+		return
+	# AudioCaptureAnalyzer obtains this pitch through the native C++ AudioAnalyzer
+	# when the GDExtension is installed. Match it against the active instrument
+	# profile before scoring, just as the practice screens do.
+	var recognized: Dictionary = microphone_analyzer.pitch_profile.match_pitch(pitch)
+	if not bool(recognized.get("is_match", false)):
+		microphone_candidate_elapsed = 0.0
+		if microphone_note_label and is_instance_valid(microphone_note_label):
+			microphone_note_label.text = "Âm thanh chưa thuộc dải nốt của nhạc cụ đang học"
+			microphone_note_label.add_theme_color_override("font_color", C_BAD)
+		return
+	var cents := _cents_from_expected(pitch, expected_note_raw)
+	_update_microphone_labels(pitch, cents)
+	if absf(cents) > MICROPHONE_CENTS_TOLERANCE:
+		microphone_candidate_elapsed = 0.0
+		return
+	if microphone_candidate_pitch > 0.0 and absf(1200.0 * log(pitch / microphone_candidate_pitch) / log(2.0)) > 30.0:
+		microphone_candidate_elapsed = 0.0
+	microphone_candidate_pitch = pitch
+	microphone_candidate_elapsed += delta
+	if microphone_candidate_elapsed >= MICROPHONE_HOLD_SECONDS:
+		microphone_armed = false
+		if listen_for_note_button and is_instance_valid(listen_for_note_button):
+			listen_for_note_button.disabled = true
+		_answer_from_microphone(pitch)
+
+func _setup_microphone_analyzer() -> void:
+	var analyzer_script := load("res://scripts/AudioCaptureAnalyzer.gd")
+	if analyzer_script == null:
+		return
+	var analyzer_instance: AudioCaptureAnalyzer = analyzer_script.new() as AudioCaptureAnalyzer
+	if analyzer_instance == null:
+		return
+	microphone_analyzer = analyzer_instance
+	microphone_analyzer.name = "MelodyMicrophoneAnalyzer"
+	microphone_analyzer.visible = false
+	microphone_analyzer.set_analysis_suspended(true)
+	var profile := InstrumentPitchProfile.new()
+	profile.notes.assign(["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"])
+	profile.frequencies = PackedFloat32Array([130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50])
+	profile.min_frequency = 120.0
+	profile.max_frequency = 2100.0
+	profile.volume_threshold_db = -45.0
+	profile.cents_tolerance = MICROPHONE_CENTS_TOLERANCE
+	profile.hold_time_sec = MICROPHONE_HOLD_SECONDS
+	profile.is_plucked_instrument = Context.instrument == "dan_tranh"
+	microphone_analyzer.pitch_profile = profile
+	microphone_analyzer.min_frequency = profile.min_frequency
+	microphone_analyzer.max_frequency = profile.max_frequency
+	microphone_analyzer.volume_threshold_db = profile.volume_threshold_db
+	add_child(microphone_analyzer)
+
+func _setup_sample_player() -> void:
+	sample_player = InstrumentSamplePlayerScript.new()
+	sample_player.name = "MelodyRecordedSamplePlayer"
+	add_child(sample_player)
+	sample_player.note_started.connect(_on_sample_note_started)
+	sample_player.playback_finished.connect(_on_sample_playback_finished)
+	sample_player.playback_failed.connect(_on_sample_playback_failed)
+
 func _load_challenge() -> void:
+	if Context.instrument == "trong_chau":
+		_build_load_error(
+			"Mini-game giai điệu không áp dụng cho Trống Chầu.",
+			"Trống Chầu được đánh giá bằng nhịp điệu; hãy dùng Mini-game 1 để luyện với nhạc cụ thật.",
+			false
+		)
+		return
 	var report := _report()
 	
 	if report != null and report.is_signed_in():
@@ -61,33 +158,22 @@ func _load_challenge() -> void:
 		_use_offline_data()
 
 func _use_offline_data() -> void:
+	if Context.instrument == "trong_chau":
+		return
 	result_sync_status = "offline"
-	melodies.clear()
-	melodies.append({
-		"notes": ["Đô", "Rê", "Mi", "Sol", "La"],
-		"missing": 2,
-		"options": ["Đô", "Mi", "Sol", "La"],
-		"challenge_id": 0,
-		"max_score": 100,
-		"audio_url": ""
-	})
-	melodies.append({
-		"notes": ["Sol", "La", "Đô", "Rê", "Mi"],
-		"missing": 1,
-		"options": ["Sol", "La", "Rê", "Mi"],
-		"challenge_id": 0,
-		"max_score": 100,
-		"audio_url": ""
-	})
-	melodies.append({
-		"notes": ["Mi", "Rê", "Đô", "La", "Sol"],
-		"missing": 3,
-		"options": ["Đô", "Rê", "La", "Sol"],
-		"challenge_id": 0,
-		"max_score": 100,
-		"audio_url": ""
-	})
-	_finalize_challenge_rounds()
+	var sample := _sample_data()
+	var source: Variant = sample.get("melody", {})
+	if not source is Dictionary:
+		_build_load_error("Không có dữ liệu mẫu giai điệu.", "Hãy thử lại khi có kết nối.", false)
+		return
+	var sample_challenge: Dictionary = (source as Dictionary).duplicate(true)
+	sample_challenge["id"] = 0
+	sample_challenge["title"] = "Mẫu giai điệu %s" % _instrument_title().to_lower()
+	sample_challenge["contentJson"] = str(sample_challenge.get("contentJson", sample_challenge.get("content_json", "")))
+	_parse_challenges([sample_challenge])
+	if melodies.is_empty():
+		_build_load_error("Dữ liệu mẫu giai điệu không hợp lệ.", "Hãy thử lại khi có kết nối.", false)
+		return
 	_show_round()
 
 func _build_load_error(title: String, description: String, allow_retry: bool = true) -> void:
@@ -213,7 +299,8 @@ func _parse_challenges(challenges: Array) -> void:
 				"options": options,
 				"challenge_id": _safe_int(challenge_item.get("id", 0)),
 				"max_score": _safe_int(challenge_item.get("maxScore", challenge_item.get("max_score", 100)), 100),
-				"audio_url": audio_url
+				"audio_url": audio_url,
+				"bpm": _safe_float(source.get("tempo_bpm", source.get("bpm", InstrumentSamplePlayerScript.DEFAULT_BPM)), InstrumentSamplePlayerScript.DEFAULT_BPM)
 			})
 		else:
 			# 2. Parse rounds array layout
@@ -242,7 +329,8 @@ func _parse_challenges(challenges: Array) -> void:
 							"options": options,
 							"challenge_id": _safe_int(challenge_item.get("id", 0)),
 							"max_score": _safe_int(challenge_item.get("maxScore", challenge_item.get("max_score", 100)), 100),
-							"audio_url": audio_url
+							"audio_url": audio_url,
+							"bpm": _safe_float(item.get("tempo_bpm", item.get("bpm", source.get("tempo_bpm", source.get("bpm", InstrumentSamplePlayerScript.DEFAULT_BPM)))), InstrumentSamplePlayerScript.DEFAULT_BPM)
 						})
 						
 	_finalize_challenge_rounds()
@@ -298,6 +386,14 @@ func _show_round() -> void:
 		audio_player.queue_free()
 		audio_player = null
 	answered = false
+	microphone_armed = false
+	microphone_candidate_elapsed = 0.0
+	microphone_candidate_pitch = 0.0
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	if sample_player and is_instance_valid(sample_player):
+		sample_player.stop()
+	sample_playback_active = false
 	next_button = null
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -389,8 +485,11 @@ func _show_round() -> void:
 	listen_button.mouse_exited.connect(func() -> void:
 		create_tween().tween_property(listen_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
-	listen_button.pressed.connect(_play_reference_audio)
+	# This replays packaged recorded samples, never synthesized answer audio.
+	listen_button.tooltip_text = "Phát mẫu các nốt đen"
+	listen_button.pressed.connect(_play_recorded_samples)
 	prompt_row.add_child(listen_button)
+	sample_button = listen_button
 	
 	# 3. Staff Display (Exact diatonic Treble Clef staff)
 	melody_staff = Control.new()
@@ -399,15 +498,32 @@ func _show_round() -> void:
 	melody_staff.call("configure", melody["notes"], int(melody["missing"]))
 	card_body.add_child(melody_staff)
 	
-	# 4. Options Grid: 2 columns with touch target >= 44 pt height/width
-	var options_grid := GridContainer.new()
-	options_grid.columns = 1 if get_viewport_rect().size.x < 440.0 else 2
-	options_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	options_grid.add_theme_constant_override("h_separation", 14)
-	options_grid.add_theme_constant_override("v_separation", 14)
-	card_body.add_child(options_grid)
-	
-	options_box = options_grid
+	# 4. The learner completes the blank by playing the physical instrument.
+	expected_note_raw = str(melody["notes"][int(melody["missing"])])
+	var microphone_panel := PanelContainer.new()
+	microphone_panel.add_theme_stylebox_override("panel", _microphone_panel_style())
+	card_body.add_child(microphone_panel)
+	var microphone_body := VBoxContainer.new()
+	microphone_body.add_theme_constant_override("separation", 8)
+	microphone_panel.add_child(microphone_body)
+	var microphone_heading := _label("Hoàn thành nốt khuyết bằng nhạc cụ thật", 17 if mobile else 19, C_NAVY)
+	microphone_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	microphone_body.add_child(microphone_heading)
+	microphone_status_label = _label("Đặt micro gần nhạc cụ, rồi nhấn bắt đầu và gảy/thổi nốt còn thiếu.", 13 if mobile else 15, C_MUTED)
+	microphone_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	microphone_body.add_child(microphone_status_label)
+	microphone_note_label = _label("Micro: đang chờ bật nhận diện", 14 if mobile else 16, C_MUTED)
+	microphone_note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	microphone_body.add_child(microphone_note_label)
+	listen_for_note_button = _button("Bắt đầu nghe nốt khuyết", 0, 54, C_GREEN)
+	listen_for_note_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	listen_for_note_button.pressed.connect(_arm_microphone_for_note)
+	microphone_body.add_child(listen_for_note_button)
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	else:
+		listen_for_note_button.disabled = true
+		microphone_status_label.text = "Thiết bị này chưa khởi tạo được bộ thu âm. Hãy thử mở lại hoạt động."
 	
 	# 5. Dedicated Action/Feedback Container inside card
 	action_box = VBoxContainer.new()
@@ -415,6 +531,9 @@ func _show_round() -> void:
 	action_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	action_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	card_body.add_child(action_box)
+	# Kept as an empty container for the shared scoring routine; answer choices
+	# are intentionally not attached to the scene in microphone mode.
+	var options_grid := GridContainer.new()
 	
 	var expected_raw := str(melody["notes"][int(melody["missing"])])
 	var expected_vn := _to_vietnamese_solfege(expected_raw)
@@ -446,6 +565,137 @@ func _show_round() -> void:
 		options_grid.add_child(option_btn)
 		
 	started_at = _now_iso()
+
+func _microphone_panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#f0fdf4")
+	style.border_color = Color("#86efac")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(16)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
+	return style
+
+func _play_recorded_samples() -> void:
+	if sample_playback_active or sample_player == null or not is_instance_valid(sample_player) or melodies.is_empty():
+		return
+	var melody: Dictionary = melodies[melody_index % melodies.size()]
+	sample_playback_active = true
+	microphone_armed = false
+	microphone_candidate_elapsed = 0.0
+	microphone_candidate_pitch = 0.0
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	if melody_staff and is_instance_valid(melody_staff):
+		melody_staff.call("set_playback_index", -1)
+	if sample_button and is_instance_valid(sample_button):
+		sample_button.disabled = true
+	if listen_for_note_button and is_instance_valid(listen_for_note_button):
+		listen_for_note_button.disabled = true
+	if microphone_status_label and is_instance_valid(microphone_status_label):
+		microphone_status_label.text = "Đang phát mẫu WAV của %s…" % _instrument_title().to_lower()
+		microphone_status_label.add_theme_color_override("font_color", C_MUTED)
+	var result: Dictionary = sample_player.play_sequence(
+		Context.instrument,
+		melody.get("notes", []),
+		int(melody.get("missing", -1)),
+		_safe_float(melody.get("bpm", InstrumentSamplePlayerScript.DEFAULT_BPM), InstrumentSamplePlayerScript.DEFAULT_BPM)
+	)
+	if not bool(result.get("ok", false)):
+		sample_playback_active = false
+		if sample_button and is_instance_valid(sample_button):
+			sample_button.disabled = false
+		if listen_for_note_button and is_instance_valid(listen_for_note_button):
+			listen_for_note_button.disabled = false
+
+func _on_sample_note_started(index: int) -> void:
+	if melody_staff and is_instance_valid(melody_staff):
+		melody_staff.call("set_playback_index", index)
+
+func _on_sample_playback_finished() -> void:
+	sample_playback_active = false
+	microphone_armed = false
+	microphone_candidate_elapsed = 0.0
+	microphone_candidate_pitch = 0.0
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	if melody_staff and is_instance_valid(melody_staff):
+		melody_staff.call("set_playback_index", -1)
+	if sample_button and is_instance_valid(sample_button):
+		sample_button.disabled = false
+	if listen_for_note_button and is_instance_valid(listen_for_note_button) and not answered:
+		listen_for_note_button.disabled = false
+		listen_for_note_button.text = "Bắt đầu nghe nốt khuyết"
+	if microphone_status_label and is_instance_valid(microphone_status_label):
+		microphone_status_label.text = "Mẫu đã phát xong. Nhấn 'Bắt đầu nghe nốt khuyết' rồi chơi nốt bằng nhạc cụ thật."
+		microphone_status_label.add_theme_color_override("font_color", C_MUTED)
+
+func _on_sample_playback_failed(details: Dictionary) -> void:
+	sample_playback_active = false
+	microphone_armed = false
+	microphone_candidate_elapsed = 0.0
+	microphone_candidate_pitch = 0.0
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	if melody_staff and is_instance_valid(melody_staff):
+		melody_staff.call("set_playback_index", -1)
+	if sample_button and is_instance_valid(sample_button):
+		sample_button.disabled = false
+	if listen_for_note_button and is_instance_valid(listen_for_note_button) and not answered:
+		listen_for_note_button.disabled = false
+	var names: Array[String] = []
+	for item_value: Variant in details.get("missing", []):
+		if item_value is Dictionary:
+			names.append(str((item_value as Dictionary).get("note", "?")))
+	if microphone_status_label and is_instance_valid(microphone_status_label):
+		microphone_status_label.text = "Lỗi cấu hình asset: Thiếu file WAV thu thật cho nốt (%s). Dừng chuỗi, không dùng âm tổng hợp." % ", ".join(names)
+		microphone_status_label.add_theme_color_override("font_color", C_BAD)
+
+func _arm_microphone_for_note() -> void:
+	if sample_playback_active or microphone_analyzer == null or not is_instance_valid(microphone_analyzer) or answered:
+		return
+	microphone_candidate_elapsed = 0.0
+	microphone_candidate_pitch = 0.0
+	microphone_armed = true
+	microphone_analyzer.set_analysis_suspended(false)
+	microphone_analyzer.start_microphone_capture()
+	listen_for_note_button.text = "Đang lắng nghe…"
+	microphone_status_label.text = "Hãy chơi một nốt rõ, giữ âm ổn định trong chốc lát."
+	microphone_note_label.text = "Micro: đang nghe…"
+
+func _cents_from_expected(pitch: float, expected: String) -> float:
+	var reference := _frequency(expected)
+	if pitch <= 0.0 or reference <= 0.0:
+		return 9999.0
+	return 1200.0 * log(pitch / reference) / log(2.0)
+
+func _update_microphone_labels(pitch: float, cents: float) -> void:
+	if microphone_note_label == null or not is_instance_valid(microphone_note_label):
+		return
+	var label_note := _to_vietnamese_solfege(_closest_note_name(pitch))
+	microphone_note_label.text = "Đang nhận: %s · %.0f Hz · lệch %+.0f cents" % [label_note, pitch, cents]
+	microphone_note_label.add_theme_color_override("font_color", C_OK if absf(cents) <= MICROPHONE_CENTS_TOLERANCE else C_BAD)
+
+func _closest_note_name(pitch: float) -> String:
+	var note_names := ["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"]
+	var closest := "C4"
+	var smallest := INF
+	for note in note_names:
+		var distance := absf(_cents_from_expected(pitch, note))
+		if distance < smallest:
+			smallest = distance
+			closest = note
+	return closest
+
+func _answer_from_microphone(pitch: float) -> void:
+	if microphone_analyzer and is_instance_valid(microphone_analyzer):
+		microphone_analyzer.set_analysis_suspended(true)
+	var melody: Dictionary = melodies[melody_index % melodies.size()]
+	# Scoring has already checked octave-aware cents above. Feed the shared result
+	# pipeline the expected value so it records a correct physical performance.
+	_answer(Button.new(), 0, expected_note_raw, expected_note_raw, melody, GridContainer.new())
 
 func _to_vietnamese_solfege(raw: String) -> String:
 	var s := raw.strip_edges()
@@ -498,12 +748,17 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 				if melody_value is Dictionary and _safe_int(melody_value.get("challenge_id", 0)) == current_id:
 					challenge_max += _safe_int(melody_value.get("max_score", 0), 0)
 			var challenge_stars := _stars(challenge_score, challenge_max)
-			if report != null:
+			if report != null and report.is_signed_in():
 				var challenge_start := str(challenge_started_at.get(current_id, started_at))
-				var result: Dictionary = await report.report_minigame_by_id(current_id, challenge_score, challenge_stars, challenge_start, _now_iso())
-				result_sync_status = "be" if bool(result.get("submitted", false)) else "failed"
+				var client_attempt_id := _client_attempt_id("melody")
+				var result: Dictionary = await report.report_minigame_by_id(current_id, challenge_score, challenge_stars, challenge_start, _now_iso(), client_attempt_id)
 				if bool(result.get("submitted", false)):
-					api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
+					result_sync_status = "be"
+					api_stars_earned = maxi(api_stars_earned, int(result.get("stars_earned", 0)))
+				elif bool(result.get("queued", false)) or str(result.get("reason", "")) == "attempt_failed":
+					result_sync_status = "failed"
+				else:
+					result_sync_status = "offline"
 			else:
 				result_sync_status = "offline"
 		else:
@@ -556,8 +811,21 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	if melody_index + 1 >= melodies.size():
 		if progress_bar:
 			progress_bar.value = 100.0
-		if report != null and report.is_signed_in():
+		if report != null and report.is_signed_in() and result_sync_status == "be":
 			await report.refresh_progress_from_backend()
+		elif result_sync_status == "offline":
+			var local_entry := {
+				"kind": "melody_local",
+				"client_attempt_id": _client_attempt_id("local-melody"),
+				"title": "Hoàn thiện giai điệu",
+				"lessonTitle": _instrument_title(),
+				"score": score,
+				"maxScore": melodies.size() * 100,
+				"completedAt": _now_iso(),
+				"status": "LOCAL_ONLY",
+			}
+			SecureDataManager.record_local_activity(local_entry)
+
 		var total_max := 0
 		for m in melodies:
 			total_max += _safe_int(m.get("max_score", 100), 100)
@@ -570,7 +838,12 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 		next_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		next_button.pressed.connect(func() -> void:
 			var accuracy := 100.0 * float(correct_rounds) / float(maxi(1, melodies.size()))
-			_show_result("Giai điệu hoàn thành!", "Bạn đã hoàn thành tất cả %d giai điệu." % melodies.size(), score, stars, _restart, accuracy)
+			var detail_msg := "Bạn đã hoàn thành tất cả %d giai điệu." % melodies.size()
+			if result_sync_status == "failed":
+				detail_msg += " Kết quả đang chờ đồng bộ lên máy chủ."
+			elif result_sync_status == "offline":
+				detail_msg += " (Dữ liệu mẫu/Offline)"
+			_show_result("Giai điệu hoàn thành!", detail_msg, score, stars, _restart, accuracy)
 		)
 		action_box.add_child(next_button)
 		return
@@ -755,11 +1028,6 @@ func _restart() -> void:
 	next_button = null
 	_show_round()
 
-func _submit_attempt(stars: int) -> void:
-	var report := _report()
-	if report != null and challenge_id > 0:
-		await report.report_minigame_by_id(challenge_id, score, stars, started_at, _now_iso())
-
 func _play_reference_audio() -> void:
 	if not reference_audio_url.is_empty():
 		_download_and_play_reference()
@@ -830,6 +1098,15 @@ func _frequency(note: String) -> float:
 	var s := note.to_lower().strip_edges()
 	if s.begins_with("zt_"):
 		s = s.substr(3)
+	# Prefer an explicit scientific-pitch name supplied by the challenge. This
+	# keeps microphone scoring octave-aware (for example C3 versus C4).
+	if s.length() >= 2 and s[0] in ["a", "b", "c", "d", "e", "f", "g"]:
+		var letter_index := ["c", "d", "e", "f", "g", "a", "b"].find(s[0])
+		var octave_text := s.substr(1)
+		if octave_text.is_valid_int():
+			var semitones_from_c: int = [0, 2, 4, 5, 7, 9, 11][letter_index]
+			var midi: int = (int(octave_text) + 1) * 12 + semitones_from_c
+			return 440.0 * pow(2.0, float(midi - 69) / 12.0)
 		
 	if s.begins_with("c1") or s.begins_with("c2"): return 130.81
 	if s.begins_with("c3"): return 130.81
