@@ -13,6 +13,7 @@ const C_CARD := Color("#fffdf8")
 const SIDEBAR_COLLAPSED_WIDTH := 64.0
 
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
+const DanTranhApiCourseContractScript := preload("res://scripts/DanTranhApiCourseContract.gd")
 
 static var selected_level: int = 1
 const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
@@ -48,12 +49,14 @@ const LEVELS := [
 		"sessions": "Bài 10–16",
 		"objective": "Luyện kỹ thuật Á, nhấn, song thanh, rung dây trước khi hoàn thiện Sứ Thanh Hoa.",
 		"lessons": [
-			{"number": 18, "display_number": "10", "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando_17", "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành kỹ thuật á, vuốt liên tục trên 17 dây đàn.", "practice_title": "Kỹ thuật Á – Vuốt 17 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]},
-			{"number": 19, "display_number": "11", "practice_id": "dan_tranh_level_7_bai_19_practice", "practice_mode": "press_4", "title": "Kỹ thuật nhấn", "video": "", "practice": "Gảy nốt gốc rồi nhấn đúng dây để nâng Mi lên Fa và La lên Si ở hai âm vực.", "practice_title": "Kỹ thuật nhấn – Mi lên Fa, La lên Si", "sheet": ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"], "durations": [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0], "cues": ["press", "", "press", "", "press", "", "press", ""]},
+			{"number": 18, "display_number": "10", "practice_id": "dan_tranh_level_7_bai_18_practice", "practice_mode": "glissando", "practiceConfig": {"practiceMode": "glissando", "rounds": [{"direction": "down", "stringSequence": [1, 2, 3, 4, 5, 6], "finger": "2"}, {"direction": "up", "stringSequence": [17, 16, 15, 14, 13, 12], "finger": "1"}]}, "title": "Kỹ thuật Á", "video": "", "practice": "Thực hành Á xuống 6 dây từ dây 1 đến dây 6 và Á lên 6 dây từ dây 17 về dây 12.", "practice_title": "Kỹ thuật Á – Vuốt 6 dây", "sheet": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2"]},
+			{"number": 19, "display_number": "11", "practice_id": "dan_tranh_level_7_bai_19_practice", "practice_mode": "press", "practiceConfig": {"practiceMode": "press", "noteSequence": ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"], "techniqueCues": ["press", "", "press", "", "press", "", "press", ""]}, "title": "Kỹ thuật nhấn", "video": "", "practice": "Gảy nốt gốc rồi nhấn đúng dây để nâng Mi lên Fa và La lên Si ở hai âm vực.", "practice_title": "Kỹ thuật nhấn – Mi lên Fa, La lên Si", "sheet": ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"], "durations": [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0], "cues": ["press", "", "press", "", "press", "", "press", ""]},
 			{
 				"number": 20,
 				"display_number": "12",
 				"practice_id": "dan_tranh_level_7_bai_20_practice",
+				"practice_mode": "double_stop",
+				"practiceConfig": {"practiceMode": "double_stop", "fingerings": ["1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2"]},
 				"title": "Kỹ thuật song thanh",
 				"video": "",
 				"practice": "Dùng ngón 1 và ngón 2 gảy đồng thời 2 dây để tạo song thanh.",
@@ -67,7 +70,7 @@ const LEVELS := [
 				"cues": ["circle", "circle", "circle", "triangle", "triangle", "triangle", "circle", "circle", "circle", "circle", "triangle", "circle"],
 				"fingerings": ["1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2", "1 + 2"]
 			},
-			{"number": 21, "display_number": "13", "practice_id": "dan_tranh_level_7_bai_21_practice", "practice_mode": "vibrato_7", "title": "Kỹ thuật rung dây", "video": "", "practice": "Gảy rồi rung lần lượt các nốt Sol2, La2, Đô3, Rê3, Mi3, Sol3 và La3 bằng tay trái.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0], "cues": ["vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato"]},
+			{"number": 21, "display_number": "13", "practice_id": "dan_tranh_level_7_bai_21_practice", "practice_mode": "vibrato", "practiceConfig": {"practiceMode": "vibrato", "noteSequence": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"], "techniqueCues": ["vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato"]}, "title": "Kỹ thuật rung dây", "video": "", "practice": "Gảy rồi rung lần lượt các nốt Sol2, La2, Đô3, Rê3, Mi3, Sol3 và La3 bằng tay trái.", "practice_title": "Kỹ thuật rung – Tay trái", "sheet": ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"], "durations": [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0], "cues": ["vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato", "vibrato"]},
 			{"number": 13, "display_number": "14", "title": "Luyện bài Sứ thanh hoa – Nửa đoạn đầu", "type": "practice", "video": "Hướng dẫn gảy đoạn đầu bài Sứ Thanh Hoa: chuyển quãng và nhấn nhả nốt.", "practice": "Luyện gảy đoạn đầu bài Sứ Thanh Hoa ở tốc độ chậm.", "practice_title": "Sứ Thanh Hoa – Đoạn đầu", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0]},
 			{"number": 14, "display_number": "15", "title": "Luyện bài Sứ thanh hoa – Nửa đoạn cuối", "type": "practice", "video": "Hướng dẫn gảy đoạn sau bài Sứ Thanh Hoa.", "practice": "Luyện gảy đoạn sau bài Sứ Thanh Hoa.", "practice_title": "Sứ Thanh Hoa – Đoạn sau", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]},
 			{"number": 15, "display_number": "16", "title": "Hoàn thiện bài Sứ thanh hoa", "type": "practice", "video": "Ôn tập và ghép hoàn chỉnh bài Sứ Thanh Hoa.", "practice": "Luyện đánh cả bài Sứ Thanh Hoa ở BPM 80 với các quãng rộng.", "practice_title": "Sứ Thanh Hoa – Cả bài", "sheet": ["Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3", "Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3", "Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3", "Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"], "durations": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0]}
@@ -155,7 +158,8 @@ const LEVELS := [
 				"number": 30,
 				"display_number": "17",
 				"practice_id": "dan_tranh_level_8_bai_30_practice",
-				"practice_mode": "tremolo_6",
+				"practice_mode": "tremolo",
+				"practiceConfig": {"practiceMode": "tremolo", "noteSequence": ["Đô2", "Mi2", "Sol2", "Mi2", "Đô2", "Mi2", "Sol2", "Mi2"], "fingerings": ["2", "2", "2", "2", "2", "2", "2", "2"]},
 				"title": "Kỹ thuật Vê",
 				"video": "",
 				"practice": "Thực hành kỹ thuật vê đều tay để tạo âm thanh liên tục và tròn tiếng.",
@@ -168,6 +172,8 @@ const LEVELS := [
 				"number": 31,
 				"display_number": "18",
 				"practice_id": "dan_tranh_level_8_bai_31_practice",
+				"practice_mode": "triad",
+				"practiceConfig": {"practiceMode": "triad", "fingerings": ["1", "2", "1", "2", "1", "1", "1", "2", "1", "2", "1 + 2 + 3"]},
 				"title": "Hợp âm ba âm cơ bản",
 				"video": "",
 				"practice": "Phân biệt nốt đơn và hợp âm. Ôn lại các nốt cơ bản và gảy thử hợp âm Đô trưởng.",
@@ -180,6 +186,8 @@ const LEVELS := [
 				"number": 32,
 				"display_number": "18.1",
 				"practice_id": "dan_tranh_level_8_bai_32_practice",
+				"practice_mode": "triad",
+				"practiceConfig": {"practiceMode": "triad", "fingerings": ["1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3"]},
 				"title": "Hợp âm Đô trưởng",
 				"video": "",
 				"practice": "Thực hành đánh hợp âm Đô trưởng bằng ba ngón, giữ tiếng đàn rõ và đồng đều.",
@@ -196,6 +204,8 @@ const LEVELS := [
 				"number": 33,
 				"display_number": "18.2",
 				"practice_id": "dan_tranh_level_8_bai_33_practice",
+				"practice_mode": "triad",
+				"practiceConfig": {"practiceMode": "triad", "fingerings": ["1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3", "1 + 2 + 3"]},
 				"title": "Hợp âm La thứ",
 				"video": "",
 				"practice": "Thực hành đánh hợp âm La thứ bằng ba ngón, giữ nhịp chắc và cân bằng các dây.",
@@ -870,7 +880,7 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	var practice_id := str(lesson.get("practice_id", _lesson_id(lesson_number, "practice")))
 	# The mode is stored on Level 7 / Bài 18 itself, so this route cannot collide
 	# with Level 6 / Bài 14 song âm even if selected_level ever becomes stale.
-	if str(lesson.get("practice_mode", "")) == "glissando_17":
+	if DanTranhApiCourseContractScript.normalize_practice_mode(str(lesson.get("practice_mode", ""))) == DanTranhApiCourseContractScript.PRACTICE_MODE_GLISSANDO:
 		SecureDataManager.active_lesson_id = practice_id
 		LessonDanTranh.force_glissando_start = true
 		_fade_to("res://scenes/LessonDanTranh.tscn")

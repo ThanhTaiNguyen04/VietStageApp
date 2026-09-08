@@ -6,6 +6,32 @@ class_name DanTranhApiCourseContract
 const REMOTE_CONTENT_ENABLED := false
 const INSTRUMENT_KEY := "dan_tranh"
 
+# API naming reference (OpenAPI 3.1, VietStage API): LessonResponse uses
+# lessonCode, title, description, status, orderIndex, techniques, mediaAssets
+# and exercises. Keep these names stable in new Dan Tranh content adapters.
+#
+# Important: the current Exercise API only exposes title, description,
+# beatMapAssetId, passThreshold and orderIndex. It does NOT yet define the
+# note/gesture configuration needed by microphone practice. `practiceConfig`
+# below is an app contract for a future backend field (or versioned JSON
+# payload); it is deliberately not sent to the API while remote content is off.
+const API_LESSON_FIELDS := [
+	"lessonCode", "title", "description", "status", "orderIndex",
+	"skillLevel", "instrument", "techniques", "mediaAssets", "exercises"
+]
+const API_EXERCISE_FIELDS := ["title", "description", "beatMapAssetId", "passThreshold", "orderIndex"]
+const PRACTICE_CONFIG_FIELD := "practiceConfig"
+
+# Stable values for the future `practiceConfig.practiceMode` field. These are
+# content identifiers only; changing them never changes microphone detection.
+const PRACTICE_MODE_NOTE_SEQUENCE := "note_sequence"
+const PRACTICE_MODE_GLISSANDO := "glissando"
+const PRACTICE_MODE_PRESS := "press"
+const PRACTICE_MODE_VIBRATO := "vibrato"
+const PRACTICE_MODE_TREMOLO := "tremolo"
+const PRACTICE_MODE_DOUBLE_STOP := "double_stop"
+const PRACTICE_MODE_TRIAD := "triad"
+
 const SKILL_LEVELS := {
 	"BEGINNER": {"name": "Sơ cấp", "order_index": 1, "local_level": 1},
 	"INTERMEDIATE": {"name": "Trung cấp", "order_index": 2, "local_level": 2},
@@ -42,6 +68,37 @@ const CONTENT_BLOCK_TYPES := [
 
 static func is_remote_content_enabled() -> bool:
 	return REMOTE_CONTENT_ENABLED
+
+
+## Converts temporary local mode names into stable content identifiers.
+## This adapter is safe to use before API integration and has no audio side
+## effects: it does not touch pitch thresholds, analyzer events or scoring.
+static func normalize_practice_mode(mode: String) -> String:
+	match mode:
+		"glissando_17", PRACTICE_MODE_GLISSANDO:
+			return PRACTICE_MODE_GLISSANDO
+		"press_4", PRACTICE_MODE_PRESS:
+			return PRACTICE_MODE_PRESS
+		"vibrato_7", PRACTICE_MODE_VIBRATO:
+			return PRACTICE_MODE_VIBRATO
+		"tremolo_6", PRACTICE_MODE_TREMOLO:
+			return PRACTICE_MODE_TREMOLO
+		"song_thanh", PRACTICE_MODE_DOUBLE_STOP:
+			return PRACTICE_MODE_DOUBLE_STOP
+		"hop_am_ba_ngon", PRACTICE_MODE_TRIAD:
+			return PRACTICE_MODE_TRIAD
+		_:
+			return mode
+
+
+## Local hard-coded lessons may carry `practiceConfig` now, before the backend
+## supports it. The helper accepts both the API camelCase key and legacy local
+## snake_case key so migration can occur without changing recognition code.
+static func get_practice_config(lesson: Dictionary) -> Dictionary:
+	var config: Variant = lesson.get(PRACTICE_CONFIG_FIELD, lesson.get("practice_config", {}))
+	if config is Dictionary:
+		return (config as Dictionary).duplicate(true)
+	return {}
 
 
 static func skill_level_to_local_level(skill_level: Dictionary) -> int:
