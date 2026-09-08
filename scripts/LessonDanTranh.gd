@@ -2181,8 +2181,15 @@ func _start_intro():
 	_play_next_intro_step()
 
 func _create_intro_sheet_overlay() -> void:
-	# Keep background clean and crisp without dimming overlay so staff board and title remain vibrant
-	staff_card.z_index = 25
+	intro_overlay = ColorRect.new()
+	intro_overlay.name = "IntroSheetDimOverlay"
+	intro_overlay.color = Color(0.0, 0.0, 0.0, 0.48)
+	intro_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_overlay.z_index = 20
+	intro_overlay.visible = false
+	add_child(intro_overlay)
+	staff_card.z_index = 5
 	if title_plaque:
 		title_plaque.z_index = 30
 	if pill_badge:
@@ -2858,6 +2865,9 @@ func _build_glissando_round_notes(_mode: String) -> void:
 	# Ba bài dùng cùng bảy nốt đi lên như sheet mẫu; hướng kỹ thuật được thể
 	# hiện bằng ký hiệu Á xuống, Á lên hoặc Á vòng đặt trước từng nốt.
 	var string_order: Array[int] = [0, 1, 2, 3, 4, 5, 6]
+	# Á xuống dùng ngón 2, còn Á lên dùng ngón 1. Á vòng giữ nguyên vì không
+	# thuộc yêu cầu hiển thị số ngón này.
+	var fingering := "2" if _mode == "down" else ("1" if _mode == "up" else "")
 
 	var staff_width := maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
 	var start_x := 285.0
@@ -2878,6 +2888,7 @@ func _build_glissando_round_notes(_mode: String) -> void:
 		var bar_x: float = measure_start + measure_width
 		glissando_display_notes.append({
 			"note": "ZT_" + ALL_17_NOTES[string_order[i]],
+			"fingering": fingering,
 			"x": note_x,
 			"glissando_cue_x": cue_x,
 			"glissando_second_cue_x": second_cue_x,
@@ -5853,4 +5864,5 @@ func _update_staff_layout() -> void:
 		_teacher_avatar_wrapper.position = Vector2(-80.0, v_height - 320.0)
 	if _is_glissando_practice() and current_state == State.PRACTICE and not glissando_round_locked:
 		_build_glissando_round_notes(str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"]))
+	staff_display.queue_redraw()
 	staff_display.queue_redraw()
