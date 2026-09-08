@@ -34,7 +34,7 @@ const FORCE_PROCEDURAL_PLAYER : bool = true
 @onready var s_trong       : Button         = $RoomContent/StationTrong
 
 # Navigation
-@onready var btn_back        : Button         = $HUD/BtnBack
+@onready var btn_back        : Button         = get_node_or_null("HUD/BtnBack")
 
 # Focus Mode Popup
 @onready var popup             : Control        = $HUD/FocusModePopup
@@ -125,6 +125,12 @@ var dialogue_lbl : Label
 var btn_dialogue_close : Button
 
 var shop_popup : Control = null
+var profile_quick_menu : PanelContainer = null
+var profile_menu_dismiss : Button = null
+var profile_menu_avatar : TextureRect = null
+var _hud_profile_avatar : TextureRect = null
+var _profile_avatar_request : HTTPRequest = null
+var _requested_profile_avatar_url := ""
 var _api_client = null
 var _cosmetics_all: Array = []
 var _cosmetics_owned: Array = []
@@ -195,6 +201,9 @@ func _ready() -> void:
 	
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
+	_profile_avatar_request = HTTPRequest.new()
+	_profile_avatar_request.request_completed.connect(_on_profile_avatar_loaded)
+	add_child(_profile_avatar_request)
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -217,6 +226,7 @@ func _ready() -> void:
 	
 	_spawn_decorations()
 	_setup_hud_shop_button()
+	_fetch_hud_profile_identity()
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
@@ -243,7 +253,8 @@ func _ready() -> void:
 		btn_tab_fingering.add_theme_font_override("font", _font_body_bold)
 		btn_popup_play.add_theme_font_override("font", _font_body_bold)
 		btn_popup_close.add_theme_font_override("font", _font_body_bold)
-		btn_back.add_theme_font_override("font", _font_body_bold)
+		if btn_back:
+			btn_back.add_theme_font_override("font", _font_body_bold)
 		
 	# Initialize ambient particles
 	for i in range(30):
@@ -295,20 +306,6 @@ func _ready() -> void:
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
 	_setup_hanging_scroll()
-	
-	# Setup Back button to return to Main Menu (Icon button for mobile style)
-	btn_back.show()
-	btn_back.text = ""
-	btn_back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
-	btn_back.expand_icon = true
-	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_style_hud_icon_button(btn_back)
-	_make_btn_bouncy(btn_back)
-	btn_back.pressed.connect(func() -> void:
-		if _audio_manager:
-			_audio_manager.audio_player.stop()
-		_fade_to("res://scenes/MainMenu.tscn")
-	)
 	
 	# Transition fade in
 	modulate.a = 0.0
@@ -2435,11 +2432,8 @@ func _on_viewport_size_changed() -> void:
 	if dialogue_box and is_instance_valid(dialogue_box):
 		_update_dialogue_layout(size)
 
-	btn_back.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
-	btn_back.offset_left = 12.0 if is_mobile else 32.0
-	btn_back.offset_top = 12.0 if is_mobile else 32.0
-	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
-	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
+	if btn_back:
+		btn_back.visible = false
 	_update_hud_hbox_layout(is_mobile)
 	_update_hanging_scroll_layout()
 
@@ -2489,7 +2483,8 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	hud_hbox.offset_top = 12 if is_mobile else 32
 	hud_hbox.offset_right = -12 if is_mobile else -32
-	hud_hbox.offset_left = -280 if is_mobile else -340
+	# Keep the top-right controls in the requested order: Shop, stars, avatar.
+	hud_hbox.offset_left = -350 if is_mobile else -430
 	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 56)
 	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
 	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
@@ -2501,6 +2496,10 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
 		btn_shop.custom_minimum_size = Vector2(100, 42) if is_mobile else Vector2(140, 48)
+	var profile_pill = hud_hbox.get_node_or_null("ProfilePill") as PanelContainer
+	if profile_pill:
+		profile_pill.custom_minimum_size = Vector2(54, 54) if is_mobile else Vector2(64, 64)
+	_update_profile_quick_menu_layout(is_mobile)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2783,7 +2782,7 @@ func _setup_hud_shop_button() -> void:
 	$HUD.add_child(hud_hbox)
 	hud_hbox.layout_mode = 1
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	hud_hbox.offset_left = -380
+	hud_hbox.offset_left = -430
 	hud_hbox.offset_top = 32
 	hud_hbox.offset_right = -32
 	hud_hbox.offset_bottom = 32 + 48
@@ -2903,6 +2902,253 @@ func _setup_hud_shop_button() -> void:
 	
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
+	_setup_hud_profile_button(hud_hbox)
+
+func _setup_hud_profile_button(hud_hbox: HBoxContainer) -> void:
+	# Reuse the same circular avatar treatment used by curriculum screens.
+	var profile_pill := DS.build_profile_pill()
+	profile_pill.name = "ProfilePill"
+	# DS creates intermediate containers without stable names. Resolve the
+	# explicitly named texture once, including runtime nodes without an owner.
+	_hud_profile_avatar = profile_pill.find_child("AvatarIcon", true, false) as TextureRect
+	if _hud_profile_avatar == null:
+		push_error("VirtualMusicRoom: ProfilePill is missing AvatarIcon")
+	var trigger := profile_pill.get_node_or_null("TriggerButton") as Button
+	if trigger:
+		trigger.tooltip_text = "Hồ sơ và cài đặt"
+		trigger.pressed.connect(_toggle_profile_quick_menu)
+	hud_hbox.add_child(profile_pill)
+	_setup_profile_quick_menu()
+	if _hud_profile_avatar:
+		_set_profile_avatar_texture(_hud_profile_avatar.texture)
+	_load_hud_profile_avatar()
+
+func _load_hud_profile_avatar() -> void:
+	var avatar_url := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
+	if avatar_url.is_empty():
+		avatar_url = str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	if avatar_url.begins_with("res://"):
+		_set_profile_avatar_texture(load(avatar_url) as Texture2D)
+		return
+	if not avatar_url.begins_with("https://") and not avatar_url.begins_with("http://"):
+		return
+	if avatar_url == _requested_profile_avatar_url or _profile_avatar_request == null:
+		return
+	_requested_profile_avatar_url = avatar_url
+	_profile_avatar_request.cancel_request()
+	if _profile_avatar_request.request(avatar_url) != OK:
+		_requested_profile_avatar_url = ""
+
+func _fetch_hud_profile_identity() -> void:
+	if _api_client == null:
+		return
+	var response: Dictionary = await _api_client.get_me()
+	if not _api_client._is_success(response):
+		return
+	var body: Variant = response.get("body", {})
+	var profile: Variant = body.get("data", {}) if body is Dictionary else {}
+	if not profile is Dictionary:
+		return
+	var full_name := str(profile.get("fullName", "")).strip_edges()
+	var avatar_url := str(profile.get("avatarUrl", "")).strip_edges()
+	if not full_name.is_empty():
+		SecureDataManager.data["user_name"] = full_name
+	SecureDataManager.data["user_avatar_url"] = avatar_url
+	SecureDataManager.save_data()
+	_load_hud_profile_avatar()
+
+func _on_profile_avatar_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or body.is_empty():
+		_requested_profile_avatar_url = ""
+		return
+	var image := Image.new()
+	var decode_error := image.load_png_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_jpg_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_webp_from_buffer(body)
+	if decode_error != OK:
+		_requested_profile_avatar_url = ""
+		return
+	_set_profile_avatar_texture(ImageTexture.create_from_image(image))
+
+func _set_profile_avatar_texture(texture: Texture2D) -> void:
+	if texture == null:
+		return
+	if is_instance_valid(_hud_profile_avatar):
+		_hud_profile_avatar.texture = texture
+	if is_instance_valid(profile_menu_avatar):
+		profile_menu_avatar.texture = texture
+
+func _setup_profile_quick_menu() -> void:
+	# Full-screen invisible dismiss target, matching the curriculum account menu.
+	profile_menu_dismiss = Button.new()
+	profile_menu_dismiss.name = "ProfileMenuDismiss"
+	profile_menu_dismiss.flat = true
+	profile_menu_dismiss.focus_mode = Control.FOCUS_NONE
+	profile_menu_dismiss.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	profile_menu_dismiss.visible = false
+	profile_menu_dismiss.pressed.connect(_close_profile_quick_menu)
+	$HUD.add_child(profile_menu_dismiss)
+
+	profile_quick_menu = PanelContainer.new()
+	profile_quick_menu.name = "ProfileQuickMenu"
+	profile_quick_menu.visible = false
+	profile_quick_menu.custom_minimum_size = Vector2(330, 0)
+	profile_quick_menu.add_theme_stylebox_override("panel", _flat_sb(Color(0.995, 0.99, 0.985, 0.98), Color("#e2d8c9"), 20, true, 0))
+	$HUD.add_child(profile_quick_menu)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	profile_quick_menu.add_child(margin)
+	var menu := VBoxContainer.new()
+	menu.add_theme_constant_override("separation", 8)
+	margin.add_child(menu)
+	_build_profile_menu_header(menu)
+	var separator := HSeparator.new()
+	menu.add_child(separator)
+	# Match the avatar menu used by the instrument curriculum screens.
+	_add_profile_menu_action(menu, "Xem chi tiết hồ sơ", "user", func() -> void: _open_profile_destination("res://scenes/AccountScreen.tscn"))
+	_add_profile_menu_action(menu, "Bộ sưu tập thành tựu", "trophy", func() -> void: _open_profile_destination("res://scenes/ProgressScreen.tscn"))
+	_add_profile_menu_action(menu, "Cài đặt tài khoản", "settings", func() -> void: _open_profile_destination("res://scenes/AccountSettings.tscn"))
+	_add_profile_menu_action(menu, "Đăng xuất", "log-out", _confirm_profile_logout, true)
+
+func _build_profile_menu_header(menu: VBoxContainer) -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 14)
+	menu.add_child(header)
+	var avatar_frame := PanelContainer.new()
+	avatar_frame.custom_minimum_size = Vector2(72, 72)
+	avatar_frame.clip_contents = true
+	avatar_frame.add_theme_stylebox_override("panel", _flat_sb(Color.WHITE, Color("#e2d8c9"), 36, false, 0))
+	header.add_child(avatar_frame)
+	profile_menu_avatar = TextureRect.new()
+	var avatar_shader := load("res://assets/shaders/circular_avatar.gdshader") as Shader
+	if avatar_shader:
+		var avatar_material := ShaderMaterial.new()
+		avatar_material.shader = avatar_shader
+		profile_menu_avatar.material = avatar_material
+	profile_menu_avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	profile_menu_avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	profile_menu_avatar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var avatar_source := str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	if avatar_source.begins_with("res://"):
+		profile_menu_avatar.texture = load(avatar_source) as Texture2D
+	avatar_frame.add_child(profile_menu_avatar)
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	copy.add_theme_constant_override("separation", 3)
+	header.add_child(copy)
+	var name_label := Label.new()
+	name_label.text = str(SecureDataManager.data.get("user_name", "Học viên VietStage"))
+	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_color_override("font_color", Color("#0f172a"))
+	if _font_body_bold:
+		name_label.add_theme_font_override("font", _font_body_bold)
+	copy.add_child(name_label)
+	var meta_label := Label.new()
+	meta_label.text = "Cấp độ 1 · Đang học %s" % _profile_instrument_name()
+	meta_label.add_theme_font_size_override("font_size", 13)
+	meta_label.add_theme_color_override("font_color", Color("#64748b"))
+	meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	copy.add_child(meta_label)
+	var online_label := Label.new()
+	online_label.text = "• Đang hoạt động"
+	online_label.add_theme_font_size_override("font_size", 11)
+	online_label.add_theme_color_override("font_color", Color("#16a34a"))
+	if _font_body_bold:
+		online_label.add_theme_font_override("font", _font_body_bold)
+	copy.add_child(online_label)
+
+func _profile_instrument_name() -> String:
+	match str(SecureDataManager.data.get("selected_instrument", "dan_tranh")):
+		"dan_bau": return "Đàn Bầu"
+		"sao_truc": return "Sáo Trúc"
+		"trong_chau": return "Trống Chầu"
+		_: return "Đàn Tranh"
+
+func _add_profile_menu_action(menu: VBoxContainer, label: String, icon_name: String, action: Callable, is_danger: bool = false) -> void:
+	var button := Button.new()
+	button.text = label
+	button.custom_minimum_size = Vector2(290, 58)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_size_override("font_size", 15)
+	if _font_body_bold:
+		button.add_theme_font_override("font", _font_body_bold)
+	button.add_theme_color_override("font_color", Color("#dc2626") if is_danger else C_JADE)
+	button.icon = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
+	# Tint the white SVG strokes black locally for this light account menu.
+	for icon_state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color", "icon_disabled_color"]:
+		button.add_theme_color_override(icon_state, Color.BLACK)
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 22)
+	button.add_theme_constant_override("h_separation", 14)
+	button.add_theme_stylebox_override("normal", _flat_sb(Color.TRANSPARENT, Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("hover", _flat_sb(Color(0.94, 0.27, 0.27, 0.10) if is_danger else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("pressed", _flat_sb(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.14), Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.pressed.connect(action)
+	menu.add_child(button)
+
+func _toggle_profile_quick_menu() -> void:
+	if profile_quick_menu:
+		if profile_quick_menu.visible:
+			_close_profile_quick_menu()
+		else:
+			profile_quick_menu.show()
+			if profile_menu_dismiss:
+				profile_menu_dismiss.show()
+			profile_quick_menu.modulate.a = 0.0
+			profile_quick_menu.scale = Vector2(0.96, 0.96)
+			var tween := profile_quick_menu.create_tween().set_parallel(true)
+			tween.tween_property(profile_quick_menu, "modulate:a", 1.0, 0.16)
+			tween.tween_property(profile_quick_menu, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _close_profile_quick_menu() -> void:
+	if profile_quick_menu:
+		profile_quick_menu.hide()
+		profile_quick_menu.scale = Vector2.ONE
+	if profile_menu_dismiss:
+		profile_menu_dismiss.hide()
+
+func _open_profile_destination(path: String) -> void:
+	if profile_quick_menu:
+		_close_profile_quick_menu()
+	# Account-related screens use this to return to the room, not the curriculum.
+	SecureDataManager.data["navigation_return_scene"] = "res://scenes/VirtualMusicRoom.tscn"
+	SecureDataManager.save_data()
+	_fade_to(path)
+
+func _confirm_profile_logout() -> void:
+	if profile_quick_menu:
+		_close_profile_quick_menu()
+	var confirmation := ConfirmationDialog.new()
+	confirmation.title = "Đăng xuất"
+	confirmation.dialog_text = "Kết thúc phiên đăng nhập hiện tại?"
+	confirmation.ok_button_text = "Đăng xuất"
+	confirmation.cancel_button_text = "Ở lại"
+	confirmation.confirmed.connect(_logout_from_profile_menu)
+	confirmation.canceled.connect(confirmation.queue_free)
+	$HUD.add_child(confirmation)
+	confirmation.popup_centered()
+
+func _logout_from_profile_menu() -> void:
+	if _api_client:
+		await _api_client.logout()
+	get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn")
+
+func _update_profile_quick_menu_layout(is_mobile: bool) -> void:
+	if not profile_quick_menu:
+		return
+	profile_quick_menu.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	profile_quick_menu.offset_right = -12 if is_mobile else -32
+	profile_quick_menu.offset_left = (-342 if is_mobile else -362)
+	profile_quick_menu.offset_top = 66 if is_mobile else 96
+	profile_quick_menu.offset_bottom = profile_quick_menu.offset_top + 382
 
 func _update_star_badge() -> void:
 	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/HBoxContainer/Label") as Label

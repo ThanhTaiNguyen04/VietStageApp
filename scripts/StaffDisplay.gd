@@ -165,6 +165,10 @@ func _draw():
 		if n_name == "REST":
 			continue
 		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
+		# Song thanh cần hiện số cho từng đầu nốt: ngón 2 ở hàng trên,
+		# ngón 1 ở hàng dưới; không gộp thành một nhãn duy nhất.
+		if not str(note_data.get("fingering", "")).is_empty():
+			_draw_fingering_number(note_data, n_color)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
 		if n_cue == "tremolo_single":
@@ -232,8 +236,10 @@ func _draw_glissando_arrow(center_y: float) -> void:
 	var stem_top: float = center_y - 2.45 * float(line_spacing)
 	var stem_bottom: float = center_y + 2.0 * float(line_spacing)
 	for note_data in notes_to_draw:
+		if not bool(note_data.get("show_glissando_arrow", true)):
+			continue
 		var note_x := float(note_data.get("x", size.x / 2.0))
-		# Ký hiệu Á nằm trước từng nốt như sheet mẫu, không nối các nốt với nhau.
+		# Ký hiệu Á bắt đầu sau nốt đầu tiên, nằm giữa nốt đầu và nốt kế tiếp.
 		var cue_x := float(note_data.get("glissando_cue_x", note_x - maxf(20.0, line_spacing * 0.72)))
 		if glissando_arrow_mode == "up":
 			var up_tip := Vector2(cue_x, stem_top)
@@ -299,16 +305,26 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 	_draw_glissando_arrow_head(points[points.size() - 2], tip, color)
 	var font := ThemeDB.fallback_font
 	if font:
+		# Dấu * nằm trực tiếp trên nốt đích (Fa), đúng vị trí ký hiệu Nhấn
+		# trong sheet, thay vì chỉ ghi một nhãn ở giữa đường cong.
+		draw_string(
+			font,
+			Vector2(tip.x - line_spacing * 0.24, tip.y - line_spacing * 1.10),
+			"*",
+			HORIZONTAL_ALIGNMENT_CENTER,
+			line_spacing * 0.50,
+			maxi(20, int(line_spacing * 0.56)),
+			color
+		)
 		draw_string(
 			font,
 			Vector2(control.x - line_spacing * 0.48, control.y - 5.0),
-			"NHẤN",
+			str(note_data.get("press_label", "NHẤN")),
 			HORIZONTAL_ALIGNMENT_CENTER,
 			line_spacing * 0.96,
 			maxi(11, int(line_spacing * 0.23)),
 			color
 		)
-
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
@@ -446,6 +462,38 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 	if cue == "vibrato":
 		var mark_y: float = note_y - line_spacing * (2.65 if pos_idx < 2.0 else 1.25)
 		_draw_vibrato_mark(Vector2(note_x, mark_y), note_color, line_spacing)
+
+func _draw_fingering_number(note_data: Dictionary, color: Color) -> void:
+	var fingering_spec := str(note_data.get("fingering", ""))
+	if fingering_spec.is_empty():
+		return
+	var fingering := fingering_spec
+	var chord_component_index := int(note_data.get("chord_component_index", 0))
+	var individual_fingers := fingering_spec.split("+", false)
+	var is_chord_fingering := individual_fingers.size() > 1
+	if is_chord_fingering:
+		if chord_component_index >= individual_fingers.size():
+			return
+		fingering = str(individual_fingers[chord_component_index]).strip_edges()
+	var note_x := float(note_data.get("x", size.x * 0.5))
+	# Nốt đơn nằm ở hàng thấp. Với song thanh, thành phần sau trong hợp âm là
+	# nốt cao hơn nên số ngón của nó được nâng lên một hàng (2 trên, 1 dưới).
+	var baseline_y := size.y - maxf(10.0, line_spacing * 0.16)
+	var font := number_font if number_font else ThemeDB.fallback_font
+	if font:
+		# Cỡ chữ lớn để số ngón vẫn rõ trên màn hình điện thoại.
+		var font_size := maxi(30, int(line_spacing * 0.68))
+		if is_chord_fingering:
+			baseline_y -= chord_component_index * maxf(float(font_size) * 0.92, line_spacing * 0.82)
+		draw_string(
+			font,
+			Vector2(note_x - line_spacing * 0.4, baseline_y),
+			fingering,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			line_spacing * 0.8,
+			font_size,
+			color
+		)
 
 func _draw_vibrato_mark(center: Vector2, color: Color, spacing: float) -> void:
 	var points := PackedVector2Array()

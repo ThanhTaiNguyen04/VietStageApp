@@ -459,11 +459,6 @@ func _on_forward_pressed() -> void:
 		
 		if custom_video_sequence.size() > 0:
 			_show_sequence_modal()
-		elif SecureDataManager.active_lesson_id == "dan_tranh_level_1_bai_1_video":
-			# Bài 1 là luồng nhập môn: video kết thúc thì vào thẳng phần cô Mai
-			# hướng dẫn, không bắt người học bấm thêm một nút trung gian.
-			SecureDataManager.active_lesson_id = "dan_tranh_level_1_bai_1_practice"
-			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
 		else:
 			_va_success_prompt()
 			linh_rect.visible = true
@@ -600,7 +595,11 @@ func _on_complete() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
+		if _is_dan_tranh_lesson_1_video(lesson_id):
+			# Bài 1: xem video xong chuyển sang phần cô Mai thuyết minh.
+			SecureDataManager.active_lesson_id = "dan_tranh_level_1_bai_1_practice"
+			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
+		elif lesson_id.begins_with("dan_tranh_level_") and lesson_id.ends_with("_video"):
 			SecureDataManager.active_lesson_id = lesson_id.replace("_video", "_practice")
 			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
 		elif lesson_id.begins_with("dan_bau_coban_") and lesson_id.ends_with("_video"):
@@ -612,6 +611,9 @@ func _on_complete() -> void:
 		else:
 			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
+
+func _is_dan_tranh_lesson_1_video(lesson_id: String) -> bool:
+	return lesson_id == "dan_tranh_level_1_bai_1_video"
 
 func _go_back() -> void:
 	video_stream_player.stop()
@@ -627,7 +629,7 @@ func _go_back() -> void:
 		if inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
 			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
 		else:
-			var target := "res://scenes/LessonDanTranh.tscn" if lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn"
+			var target := "res://scenes/LessonDanTranhList.tscn" if _is_dan_tranh_lesson_1_video(lesson_id) else ("res://scenes/LessonDanTranh.tscn" if lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn")
 			get_tree().change_scene_to_file(target)
 	)
 

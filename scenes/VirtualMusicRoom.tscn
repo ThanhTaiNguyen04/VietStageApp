@@ -123,6 +123,7 @@ vertical_alignment = 1
 [node name="HUD" type="CanvasLayer" parent="." unique_id=259083162]
 
 [node name="BtnBack" type="Button" parent="HUD" unique_id=1127516209]
+visible = false
 custom_minimum_size = Vector2(160, 48)
 offset_left = 32.0
 offset_top = 32.0
