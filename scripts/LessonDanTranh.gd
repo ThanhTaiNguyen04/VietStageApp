@@ -3643,8 +3643,6 @@ func _start_vibrato_note(note_index: int) -> void:
 	for i in range(vibrato_display_notes.size()):
 		if i < note_index:
 			vibrato_display_notes[i]["color"] = Color(0.12, 0.72, 0.30, 1.0)
-		elif i == note_index:
-			vibrato_display_notes[i]["color"] = C_GOLD
 		else:
 			vibrato_display_notes[i]["color"] = Color(0.16, 0.14, 0.12, 1.0)
 	staff_display.queue_redraw()
@@ -3686,12 +3684,16 @@ func _process_vibrato_practice(delta: float) -> void:
 				vibrato_min_amplitude_db = float(analyzer.current_amplitude_db)
 				vibrato_added_sound_elapsed = 0.0
 				vibrato_silence_elapsed = 0.0
+				vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.16, 0.14, 0.12, 1.0)
+				staff_display.queue_redraw()
 				if vibrato_status_label:
 					vibrato_status_label.text = "Đã nhận đúng lần gảy dây %s. Tiếp tục rung đều tay trái..." % target_note
 			elif bool(attack_identity.get("active", false)) \
 					and int(attack_identity.get("string_index", -1)) >= 0 \
 					and vibrato_status_label:
 				var heard_note := str(attack_identity.get("note_name", "âm khác"))
+				vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				staff_display.queue_redraw()
 				vibrato_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi rung." % [heard_note, target_note]
 				vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 				_show_practice_error_feedback(
@@ -3777,6 +3779,9 @@ func _reset_vibrato_attempt_tracking(message: String) -> void:
 	vibrato_contour_elapsed = 0.0
 	vibrato_min_amplitude_db = 0.0
 	vibrato_added_sound_elapsed = 0.0
+	if vibrato_note_idx >= 0 and vibrato_note_idx < vibrato_display_notes.size():
+		vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+		staff_display.queue_redraw()
 	if vibrato_status_label:
 		vibrato_status_label.text = message
 		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
@@ -4429,11 +4434,10 @@ func _process_glissando_sample(delta: float) -> void:
 		var string_idx := technique_sample_sequence[technique_sample_sequence_idx]
 		zither_board.call("pluck", string_idx)
 		technique_sample_sequence_idx += 1
-		# Sheet chỉ hiển thị 7 nốt đại diện cho nét Á. Mỗi phần của chuỗi
-		# mẫu vừa phát sẽ tô xanh nốt tương ứng để học viên thấy rõ tiến trình.
+		# Sheet hiển thị 6 nốt của lượt Á. Mỗi lần phát sẽ tô xanh
+		# nốt tương ứng để học viên thấy rõ tiến trình.
 		if not glissando_display_notes.is_empty():
-			var progress := float(technique_sample_sequence_idx) / float(technique_sample_sequence.size())
-			var display_idx := mini(glissando_display_notes.size() - 1, int(floor(progress * glissando_display_notes.size())))
+			var display_idx := mini(glissando_display_notes.size() - 1, technique_sample_sequence_idx - 1)
 			glissando_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0)
 			visual_note_changed = true
 		if glissando_progress_bar:
