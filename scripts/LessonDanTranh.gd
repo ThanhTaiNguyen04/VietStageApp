@@ -46,6 +46,7 @@ var _portrait_is_talking := false
 var _portrait_frame := 0
 var _portrait_frame_elapsed := 0.0
 var _teacher_avatar_wrapper: Panel
+var _teacher_chat_button: Button
 const PORTRAIT_FRAME_DURATION := 0.08
 const PORTRAIT_FRAME_COUNT := 16
 const PORTRAIT_SHEET_COLUMNS := 4
@@ -2455,6 +2456,37 @@ func _shrink_teacher() -> void:
 	var teacher_tween := create_tween()
 	teacher_tween.tween_property(_teacher_avatar_wrapper, "scale", Vector2(0.35, 0.35), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	teacher_tween.parallel().tween_property(_teacher_avatar_wrapper, "position", target_position, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_ensure_compact_teacher_chat_button()
+
+
+func _ensure_compact_teacher_chat_button() -> void:
+	if is_instance_valid(_teacher_chat_button):
+		_teacher_chat_button.visible = true
+		return
+
+	# Ảnh cô Mai được vẽ lệch ra ngoài khung cắt tròn khi thu nhỏ. Vì vậy dùng
+	# một nút trong suốt bám theo đúng vùng avatar nhìn thấy, thay vì dựa vào
+	# vùng nhận chuột của khung cắt.
+	_teacher_chat_button = Button.new()
+	_teacher_chat_button.name = "CompactTeacherChatButton"
+	_teacher_chat_button.flat = true
+	_teacher_chat_button.focus_mode = Control.FOCUS_NONE
+	_teacher_chat_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_teacher_chat_button.tooltip_text = "Trò chuyện với cô Mai"
+	_teacher_chat_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_teacher_chat_button.offset_left = 20.0
+	_teacher_chat_button.offset_top = -210.0
+	_teacher_chat_button.offset_right = 170.0
+	_teacher_chat_button.offset_bottom = -20.0
+	_teacher_chat_button.z_index = 101
+	_teacher_chat_button.pressed.connect(_open_compact_teacher_chat)
+	add_child(_teacher_chat_button)
+
+
+func _open_compact_teacher_chat() -> void:
+	var chat := AIChatPopup.new()
+	add_child(chat)
+	chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
 
 func _on_compact_teacher_clicked(event: InputEvent) -> void:
 	var activated: bool = false
@@ -2466,9 +2498,7 @@ func _on_compact_teacher_clicked(event: InputEvent) -> void:
 		activated = touch_event.pressed
 	if not activated:
 		return
-	var chat := AIChatPopup.new()
-	add_child(chat)
-	chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
+	_open_compact_teacher_chat()
 
 func _schedule_next_single_note():
 	if single_practice_idx >= unique_practice_notes.size():
