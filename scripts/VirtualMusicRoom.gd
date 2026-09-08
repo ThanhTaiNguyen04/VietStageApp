@@ -3842,12 +3842,15 @@ func _start_intro_cinematic() -> void:
 	
 	add_child(sub_panel)
 	
+	char_linh.z_index = 50
+	
 	var t = create_tween()
 	t.set_parallel(true)
 	t.tween_property(dim_overlay, "color:a", 0.75, 1.0)
 	t.tween_property(sub_panel, "modulate:a", 1.0, 1.0)
-	# Keep Mai under the dim overlay during the welcome narration. The intro is
-	# about the narration, not a separate highlighted avatar presentation.
+	t.tween_property(char_linh, "position:x", 600.0 - 50.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(char_linh, "size", Vector2(250.0, 250.0) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "_linh_base_y", 370.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	
 	for c in $HUD.get_children():
 		if c is Control and c.name != "IntroSkipBtn":
