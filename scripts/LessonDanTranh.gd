@@ -2440,7 +2440,12 @@ func _shrink_teacher() -> void:
 		teacher_char.size = Vector2(500.0, 850.0)
 		teacher_char.position = Vector2(-120.0, -50.0)
 
-		_teacher_avatar_wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
+		# Ảnh TextureRect có thể chặn gui_input của Panel. Cho ảnh bỏ qua chuột
+		# để chính khung avatar luôn nhận được thao tác mở chat.
+		teacher_char.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_teacher_avatar_wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
+		_teacher_avatar_wrapper.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		_teacher_avatar_wrapper.tooltip_text = "Trò chuyện với cô Mai"
 		_teacher_avatar_wrapper.gui_input.connect(_on_compact_teacher_clicked)
 
 	var target_position := Vector2(-80.0, get_viewport_rect().size.y - 320.0)
@@ -2458,6 +2463,7 @@ func _on_compact_teacher_clicked(event: InputEvent) -> void:
 		activated = touch_event.pressed
 	if not activated:
 		return
+	_teacher_avatar_wrapper.accept_event()
 	var chat := AIChatPopup.new()
 	add_child(chat)
 	chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
