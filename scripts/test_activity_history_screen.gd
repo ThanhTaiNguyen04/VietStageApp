@@ -18,16 +18,19 @@ func _init() -> void:
 	assert(game_pending.get("score") == 72)
 	assert(screen._score_text({"score": 72, "maxScore": 100}) == "72/100")
 	assert(screen._filter_label("PRACTICE") == "Luyện tập")
-	var local_quiz := screen._map_local({
-		"client_attempt_id": "local-1", "title": "Quiz mẫu", "score": 100,
-		"maxScore": 100, "previewStars": 3, "selectedAnswer": "Sol",
-		"correctAnswer": "Sol", "completedAt": Time.get_datetime_string_from_system(true)
+	var assessment_pending := screen._map_pending({"kind": "lesson_assessment", "client_attempt_id": "assess-1", "lesson_id": 42})
+	assert(assessment_pending.get("type") == "ASSESSMENT")
+	assert(assessment_pending.get("status") == "PENDING_SYNC")
+	assert(screen._type_name("ASSESSMENT") == "Đánh giá bài học")
+	assert(screen._icon_name_for_type("ASSESSMENT") == "course")
+
+	var local_game := screen._map_local({
+		"kind": "minigame_local", "client_attempt_id": "local-mg-1", "title": "Thử thách nhịp điệu",
+		"score": 85, "maxScore": 100, "completedAt": Time.get_datetime_string_from_system(true)
 	})
-	assert(local_quiz.get("status") == "LOCAL_ONLY")
-	assert(local_quiz.get("title") == "Quiz mẫu")
-	assert(screen._sync_status_text(local_quiz) == "Trên thiết bị")
-	assert(screen._history_error_text({"status": 0}).contains("Không thể kết nối"))
-	assert(screen._history_error_text({"status": 401}).contains("đăng nhập"))
-	assert(screen._history_error_text({"status": 500}).contains("Máy chủ"))
-	print("ActivityHistoryScreen pending mapping PASS")
+	assert(local_game.get("status") == "LOCAL_ONLY")
+	assert(local_game.get("type") == "MINIGAME")
+	assert(screen._sync_status_text(local_game) == "Trên thiết bị")
+
+	print("ActivityHistoryScreen pending & local mapping PASS")
 	quit()

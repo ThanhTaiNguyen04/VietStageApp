@@ -7,6 +7,7 @@ const C_BLUE := Color("#b88322") # Quiz accent: antique gold.
 const C_GREEN := Color("#245f43") # Rhythm accent: jade.
 const C_PURPLE := Color("#75533a") # Melody accent: lacquer wood.
 const C_GOLD := Color("#c59626")
+const C_AMBER := Color("#d97706")
 const C_TEXT := Color("#21140d")
 const C_MUTED := Color("#6f6257")
 const C_CARD := Color("#fffdf8")
@@ -167,6 +168,10 @@ func _build_shell() -> void:
 	margin.add_child(content_box)
 
 func _go_back() -> void:
+	if not Context.activity.is_empty():
+		Context.activity = ""
+		get_tree().change_scene_to_file("res://scenes/LearningActivitiesScreen.tscn")
+		return
 	get_tree().change_scene_to_file(Context.return_scene)
 
 func _bottom_inset(mobile: bool) -> int:
@@ -258,6 +263,25 @@ func _client_attempt_id(prefix: String = "") -> String:
 func _normalize_type(value: String) -> String:
 	return value.to_upper().replace("-", "_").replace(" ", "_")
 
+func _safe_int(val: Variant, default: int = 0) -> int:
+	if val == null:
+		return default
+	if val is String and val.is_empty():
+		return default
+	return int(val)
+
+func _safe_float(val: Variant, default: float = 0.0) -> float:
+	if val == null:
+		return default
+	if val is String and val.is_empty():
+		return default
+	return float(val)
+
+func _safe_str(val: Variant, default: String = "") -> String:
+	if val == null:
+		return default
+	return str(val)
+
 func _extract_json(value: Variant) -> Variant:
 	if value is Dictionary or value is Array:
 		return value
@@ -339,17 +363,27 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 
 	# Metrics grid — always 4 wide on desktop, 2×2 on mobile
 	var metrics := GridContainer.new()
-	metrics.columns = 2 if mobile else 4
+	metrics.columns = 2 if mobile else (4 if result_sync_status in ["be", "failed"] else 2)
 	metrics.add_theme_constant_override("h_separation", 12)
 	metrics.add_theme_constant_override("v_separation", 12)
 	metrics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(metrics)
-	var xp := maxi(0, score / 10)
-	var coins := stars * 5 + maxi(0, score / 50)
-	metrics.add_child(_metric_card("\u26a1", "XP", "+%d" % xp, C_BLUE))
-	metrics.add_child(_metric_card("\u25c9", "Coin", "+%d" % coins, C_GOLD))
-	metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
-	metrics.add_child(_metric_card("\u2605", "Stars", "%d / 3" % stars, C_GOLD))
+
+	if result_sync_status == "be":
+		var xp := maxi(0, score / 10)
+		metrics.add_child(_metric_card("◆", "Điểm", "%d" % score, C_BLUE))
+		metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
+		metrics.add_child(_metric_card("★", "Stars", "%d / 3" % stars, C_GOLD))
+		metrics.add_child(_metric_card("⚡", "XP", "+%d" % xp, C_PURPLE))
+	elif result_sync_status == "failed":
+		var xp := maxi(0, score / 10)
+		metrics.add_child(_metric_card("◆", "Điểm", "%d" % score, C_BLUE))
+		metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
+		metrics.add_child(_metric_card("★", "Sao (Dự kiến)", "%d / 3" % stars, C_GOLD))
+		metrics.add_child(_metric_card("⚡", "XP (Dự kiến)", "+%d" % xp, C_PURPLE))
+	else:
+		metrics.add_child(_metric_card("◆", "Điểm", "%d" % score, C_BLUE))
+		metrics.add_child(_metric_card("%", "Độ chính xác", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
 
 	# Sync status
 	var sync := _label(_sync_status_text(), 13 if mobile else 14, C_OK if result_sync_status == "be" else (C_BAD if result_sync_status == "failed" else C_MUTED))
@@ -362,11 +396,11 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 	actions.add_theme_constant_override("separation", 14)
 	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(actions)
-	var retry_button := _button("Ch\u01a1i l\u1ea1i", 0, 58 if mobile else 64, C_BLUE)
+	var retry_button := _button("Chơi lại", 0, 58 if mobile else 64, C_BLUE)
 	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(retry)
 	actions.add_child(retry_button)
-	var back_button := _secondary_button("V\u1ec1 ho\u1ea1t \u0111\u1ed9ng", 0, 58 if mobile else 64, C_NAVY)
+	var back_button := _secondary_button("Về hoạt động", 0, 58 if mobile else 64, C_NAVY)
 	back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back_button.pressed.connect(_go_back)
 	actions.add_child(back_button)
@@ -405,7 +439,9 @@ func _metric_card(icon: String, label_text: String, value: String, color: Color)
 
 func _sync_status_text() -> String:
 	if result_sync_status == "be":
-		return "✓ Đã đồng bộ kết quả với BE"
+		return "✓ Đã xác nhận bởi hệ thống"
+	if result_sync_status == "pending":
+		return "Đã lưu bản nháp · hoàn tất các nội dung để nhận đánh giá chính thức"
 	if result_sync_status == "failed":
-		return "⚠ Chưa đồng bộ · XP, Coin và Sao đang là dự kiến"
-	return "○ Quiz mẫu · chỉ lưu trên thiết bị, không có phần thưởng BE"
+		return "⚠ Đang chờ đồng bộ · XP và Sao đang là dự kiến"
+	return "○ Luyện tập trên thiết bị · kết quả lưu cục bộ"

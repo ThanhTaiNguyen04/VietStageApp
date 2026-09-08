@@ -1,4 +1,4 @@
-﻿extends SceneTree
+extends SceneTree
 
 var failures := 0
 
@@ -9,6 +9,8 @@ func _run() -> void:
 	print("--- Running Minigame Contract & Screens Test ---")
 	_test_rhythm_contract()
 	_test_melody_contract()
+	_test_instrument_sample_player()
+	_test_staff_display_playback_highlight()
 	_test_melody_screen_instantiation()
 	_test_rhythm_screen_instantiation()
 	
@@ -73,7 +75,7 @@ func _test_melody_contract() -> void:
 				"correct_answers": {
 					"2": "G4"
 				},
-				"bpm": 90,
+				"bpm": 95,
 				"time_limit_sec": 30
 			})
 		}
@@ -87,8 +89,79 @@ func _test_melody_contract() -> void:
 		_check(item.get("notes") == ["C4", "E4", "G4", "C5"], "Melody notes must match")
 		_check(item.get("options") == ["C4", "E4", "G4", "A4"], "Note options must match")
 		_check(item.get("challenge_id") == 201, "Challenge ID must be 201")
+		_check(item.get("bpm") == 95.0, "Parsed BPM must be 95.0")
+	_check(absf(melody_screen._frequency("D3") - 146.83) < 0.1, "Scientific D3 pitch must be octave-aware")
+	_check(absf(melody_screen._cents_from_expected(392.0, "G4")) < 0.1, "Reference pitch must score at zero cents")
 
 	melody_screen.free()
+
+func _test_instrument_sample_player() -> void:
+	var PlayerScript = load("res://scripts/InstrumentSamplePlayer.gd")
+	var player = PlayerScript.new()
+	root.add_child(player)
+
+	# 1. Normalization checks
+	# Dan Tranh
+	_check(PlayerScript.normalize_note_key("dan_tranh", "C4") == "c4", "Dan Tranh: C4 -> c4")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "Sol1") == "g3", "Dan Tranh: Sol1 -> g3")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "La1") == "a3", "Dan Tranh: La1 -> a3")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "Đô2") == "c4", "Dan Tranh: Đô2 -> c4")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "ZT_Mi2") == "e4", "Dan Tranh: ZT_Mi2 -> e4")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "Đô3") == "c5", "Dan Tranh: Đô3 -> c5")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "Sol3") == "g5", "Dan Tranh: Sol3 -> g5")
+	_check(PlayerScript.normalize_note_key("dan_tranh", "Đô4") == "c6", "Dan Tranh: Đô4 -> c6")
+
+	# Sao Truc
+	_check(PlayerScript.normalize_note_key("sao_truc", "C5") == "c5", "Sao Truc: C5 -> c5")
+	_check(PlayerScript.normalize_note_key("sao_truc", "Đô") == "c5", "Sao Truc: Đô -> c5")
+	_check(PlayerScript.normalize_note_key("sao_truc", "Đô2") == "c6", "Sao Truc: Đô2 -> c6")
+	_check(PlayerScript.normalize_note_key("sao_truc", "Đô3") == "c7", "Sao Truc: Đô3 -> c7")
+	_check(PlayerScript.normalize_note_key("sao_truc", "Sol1") == "g5", "Sao Truc: Sol1 -> g5")
+
+	# Dan Bau
+	_check(PlayerScript.normalize_note_key("dan_bau", "c4") == "c4", "Dan Bau: c4 -> c4")
+	_check(PlayerScript.normalize_note_key("dan_bau", "sol4") == "g4", "Dan Bau: sol4 -> g4")
+	_check(PlayerScript.normalize_note_key("dan_bau", "c5") == "c5", "Dan Bau: c5 -> c5")
+	_check(PlayerScript.normalize_note_key("dan_bau", "mi5") == "e5", "Dan Bau: mi5 -> e5")
+	_check(PlayerScript.normalize_note_key("dan_bau", "sol5") == "g5", "Dan Bau: sol5 -> g5")
+	_check(PlayerScript.normalize_note_key("dan_bau", "c6") == "c6", "Dan Bau: c6 -> c6")
+
+	# 2. Preflight and WAV asset checking
+	var check_tranh = player.preflight("dan_tranh", ["Sol1", "La1", "Đô2", "Rê2", "Mi2"], 2)
+	_check(check_tranh.get("ok") == true, "Dan Tranh preflight should pass with packaged assets")
+
+	var check_flute = player.preflight("sao_truc", ["C5", "D5", "E5", "G5", "C6"], 1)
+	_check(check_flute.get("ok") == true, "Sao Truc preflight should pass with packaged assets")
+
+	var check_bau = player.preflight("dan_bau", ["c4", "g4", "c5", "e5", "g5", "c6"], 3)
+	_check(check_bau.get("ok") == true, "Dan Bau preflight should pass with packaged assets")
+
+	# 3. Missing index skipping check: invalid note at missing index must NOT fail preflight
+	var check_skip = player.preflight("dan_tranh", ["C4", "E4", "INVALID_NOTE_XYZ", "G4"], 2)
+	_check(check_skip.get("ok") == true, "Preflight must ignore invalid note at missing_index (index 2)")
+
+	# 4. Strict error reporting when missing required note (NO synthesis fallback)
+	var check_missing = player.preflight("dan_tranh", ["C4", "UNKNOWN_NOTE_123", "G4"], 0)
+	_check(check_missing.get("ok") == false, "Preflight must fail when a required note asset is missing")
+	var missing_items: Array = check_missing.get("missing", [])
+	_check(missing_items.size() == 1 and missing_items[0]["note"] == "UNKNOWN_NOTE_123", "Failure details must report missing note")
+
+	player.queue_free()
+
+func _test_staff_display_playback_highlight() -> void:
+	var StaffScript = load("res://scripts/LearningMelodyStaffDisplay.gd")
+	var staff = Control.new()
+	staff.set_script(StaffScript)
+	staff.custom_minimum_size = Vector2(400, 200)
+	staff.call("configure", ["C4", "E4", "G4", "C5"], 2)
+	_check(staff.get("playback_index") == -1, "Initial playback_index must be -1")
+
+	staff.call("set_playback_index", 1)
+	_check(staff.get("playback_index") == 1, "set_playback_index(1) should update playback_index to 1")
+
+	staff.call("set_playback_index", -1)
+	_check(staff.get("playback_index") == -1, "set_playback_index(-1) should reset playback_index to -1")
+	staff.free()
 
 func _test_melody_screen_instantiation() -> void:
 	var packed: PackedScene = load("res://scenes/MelodyCompletionScreen.tscn")

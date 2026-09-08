@@ -405,7 +405,7 @@ func _begin_quiz() -> void:
 				_load_sample_quizzes(true)
 				_set_source_badge("Dữ liệu mẫu · BE chưa có quiz", true)
 			else:
-				_install_backend_quizzes(_backend_quizzes)
+				await _install_backend_quizzes(_backend_quizzes)
 		else:
 			_backend_fetch_timed_out = true
 			_load_sample_quizzes(true)
@@ -477,7 +477,7 @@ func _fetch_from_backend() -> void:
 	if not _using_sample_quizzes or question_index > 0 or answered or score > 0 or correct_count > 0:
 		_set_source_badge("Dữ liệu BE đã tải", false)
 		return
-	_install_backend_quizzes(valid)
+	await _install_backend_quizzes(valid)
 
 func _retry_fetch() -> void:
 	if _retry_in_progress:
@@ -823,13 +823,15 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 		if child is Button:
 			(child as Button).disabled = true
 	var quiz: Dictionary = quizzes[question_index]
+	var quiz_id := int(quiz.get("id", 0))
+	var is_backend_quiz := quiz_id > 0
 	# Preserve locally known grading for offline history; the server remains authoritative.
 	var pending_preview := _pending_quiz_preview(quiz, selected_index, selected_text)
 
 	var report := _report()
 	var result: Dictionary = {}
-	if report != null and report.is_signed_in() and int(quiz.get("id", 0)) > 0:
-		result = await report.report_quiz(int(quiz.get("id", 0)), selected_text, pending_preview)
+	if is_backend_quiz and report != null and report.is_signed_in():
+		result = await report.report_quiz(quiz_id, selected_text, pending_preview)
 		_record_quiz_submission(result)
 
 	# The server response is authoritative when it arrives. Sample/offline quizzes
@@ -837,7 +839,6 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 	# as incorrect.
 	var grading := _grade_answer(quiz, selected_index, selected_text, result)
 	var is_correct := bool(grading.get("is_correct", false))
-	var graded_locally := str(grading.get("source", "")) == "local"
 	var earned_points := 0
 	var correct_text := str(grading.get("correct_answer", ""))
 	if bool(result.get("submitted", false)):
@@ -846,25 +847,21 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 
 	if is_correct:
 		correct_count += 1
-		# A confirmed response is the only source of backend XP. For sample or
-		# temporarily offline questions, keep a clearly provisional local score so
-		# the learner still receives a meaningful result and history entry.
 		if bool(result.get("submitted", false)):
 			score += maxi(0, earned_points)
-		else:
+		elif not is_backend_quiz:
 			score += int(pending_preview.get("previewPoints", QUIZ_PREVIEW_POINTS))
 			local_preview_count += 1
 		_style_option_button_state(button, "correct")
 	else:
 		_style_option_button_state(button, "incorrect")
 
-	if not bool(result.get("submitted", false)) and int(quiz.get("id", 0)) <= 0:
-		# Bundled questions do not have a backend quiz id. Persist them separately
-		# so they remain visible in Activity History without being retried forever.
+	if not is_backend_quiz:
+		# Sample/offline quiz only
 		var local_attempt := pending_preview.duplicate(true)
 		local_attempt["kind"] = "quiz_local"
 		local_attempt["client_attempt_id"] = _client_attempt_id("local-quiz")
-		local_attempt["quiz_id"] = int(quiz.get("id", 0))
+		local_attempt["quiz_id"] = 0
 		local_attempt["selected_answer"] = selected_text
 		SecureDataManager.record_local_activity(local_attempt)
 
@@ -876,19 +873,26 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 
 	var feedback_text := ""
 	if is_correct:
-		if graded_locally:
-			feedback_text = "Bạn đã trả lời chính xác! Kết quả sẽ được đồng bộ khi có mạng." if int(quiz.get("id", 0)) > 0 else "Bạn đã trả lời chính xác! Đây là câu hỏi mẫu."
+		if is_backend_quiz and not bool(result.get("submitted", false)):
+			feedback_text = "Bạn đã chọn đáp án này. Kết quả sẽ được đồng bộ khi có mạng."
+		elif not is_backend_quiz:
+			feedback_text = "Chính xác! (Dữ liệu mẫu/Offline)"
 		else:
 			feedback_text = "Bạn đã trả lời chính xác! +%d điểm" % (earned_points if earned_points > 0 else 10)
 	else:
-		feedback_text = "Chưa chính xác. Đáp án đúng là: %s" % correct_text if not correct_text.is_empty() else "Chưa thể chấm câu trả lời này. Hãy thử lại khi có mạng."
+		if is_backend_quiz and not bool(result.get("submitted", false)):
+			feedback_text = "Chưa thể đồng bộ đáp án. Đã lưu để thử lại khi có mạng."
+		elif not correct_text.is_empty():
+			feedback_text = "Chưa chính xác. Đáp án đúng là: %s" % correct_text
+		else:
+			feedback_text = "Chưa thể chấm câu trả lời này. Hãy thử lại khi có mạng."
 
 	# Update score pill label immediately
 	if score_label and is_instance_valid(score_label):
 		score_label.text = str(score)
 
 	# Display feedback text below the options box
-	var feedback_color := Color("#2e7d32") if is_correct else Color("#c62828")
+	var feedback_color := Color("#2e7d32") if is_correct else (Color("#d97706") if (is_backend_quiz and not bool(result.get("submitted", false))) else Color("#c62828"))
 	var ans_label := _label(feedback_text, 16, feedback_color)
 	ans_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content_box.add_child(ans_label)
@@ -918,11 +922,25 @@ func _show_quiz_result() -> void:
 		floating_back_button.visible = false
 
 	var report := _report()
-	if report != null and report.is_signed_in():
+	if report != null and report.is_signed_in() and not _using_sample_quizzes:
 		await report.refresh_progress_from_backend()
+		if unsynced_attempt_count == 0 and submitted_attempt_count > 0:
+			result_sync_status = "be"
+		elif unsynced_attempt_count > 0:
+			result_sync_status = "failed"
+		else:
+			result_sync_status = "pending"
+	else:
+		result_sync_status = "offline"
+
 	var preview_stars := _stars(score, maxi(1, quizzes.size() * QUIZ_PREVIEW_POINTS))
-	var stars := clampi(api_stars_earned if api_stars_earned > 0 else preview_stars, 0, 3)
-	_show_result("Quiz hoàn thành!", "Bạn trả lời đúng %d / %d câu." % [correct_count, quizzes.size()], score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0)
+	var stars := clampi(api_stars_earned if api_stars_earned > 0 else (preview_stars if _using_sample_quizzes else 0), 0, 3)
+	var detail_text := "Bạn trả lời đúng %d / %d câu." % [correct_count, quizzes.size()]
+	if result_sync_status == "offline" or _using_sample_quizzes:
+		detail_text += " (Dữ liệu mẫu/Offline)"
+	elif result_sync_status == "failed":
+		detail_text += " Có %d câu chưa đồng bộ được lên máy chủ." % unsynced_attempt_count
+	_show_result("Quiz hoàn thành!", detail_text, score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0)
 
 
 ## Trạng thái đồng bộ ở trang kết quả phải phản ánh attempt đã nộp, không chỉ
@@ -930,8 +948,10 @@ func _show_quiz_result() -> void:
 func _record_quiz_submission(result: Dictionary) -> void:
 	if bool(result.get("submitted", false)):
 		submitted_attempt_count += 1
-		if unsynced_attempt_count == 0:
-			result_sync_status = "be"
+		result_sync_status = "be"
+		return
+	if str(result.get("reason", "")) == "incomplete":
+		result_sync_status = "pending"
 		return
 	unsynced_attempt_count += 1
 	result_sync_status = "failed"
@@ -968,6 +988,12 @@ func _grade_answer(quiz: Dictionary, selected_index: int, selected_text: String,
 			"is_correct": bool(result.get("is_correct", false)),
 			"correct_answer": str(result.get("correct_answer", "")),
 			"source": "server"
+		}
+	if int(quiz.get("id", 0)) > 0:
+		return {
+			"is_correct": false,
+			"correct_answer": "",
+			"source": "server_failed"
 		}
 	return {
 		"is_correct": _is_correct(selected_index, selected_text, quiz),

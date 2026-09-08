@@ -5,6 +5,7 @@ var missing_index := -1
 var answer_visible := false
 var answer_correct := false
 var selected_note := ""
+var playback_index := -1
 
 var clef_texture: Texture2D
 var lora_font: Font
@@ -30,6 +31,11 @@ func configure(note_values: Array, missing: int) -> void:
 	answer_visible = false
 	answer_correct = false
 	selected_note = ""
+	playback_index = -1
+	queue_redraw()
+
+func set_playback_index(index: int) -> void:
+	playback_index = index
 	queue_redraw()
 
 func show_answer(correct: bool, selected: String) -> void:
@@ -142,6 +148,8 @@ func _draw() -> void:
 				note_color = Color("#d97706") # Amber cho nốt còn thiếu
 			else:
 				note_color = Color("#16a34a") if answer_correct else Color("#dc2626")
+		elif i == playback_index:
+			note_color = Color("#c59626")
 
 		# 5.C. Vẽ đầu nốt (hình elip xoay -18 độ)
 		if is_missing and not answer_visible:
@@ -295,4 +303,3 @@ static func _to_vietnamese_solfege(raw: String) -> String:
 		return "Si"
 		
 	return s
-

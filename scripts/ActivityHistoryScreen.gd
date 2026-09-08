@@ -97,7 +97,26 @@ func _on_activity_history_changed() -> void:
 func _icons8_texture(icon_name: String) -> Texture2D:
 	if _icon_cache.has(icon_name):
 		return _icon_cache[icon_name] as Texture2D
-	var path := "res://assets/textures/icons8/%s.png" % icon_name
+
+	var path := ""
+	match icon_name:
+		"menu", "all", "view_all":
+			path = "res://icons8/icons8-view-all-ios-27-outlined/icons8-view-all-100.png"
+		"course", "quiz":
+			path = "res://icons8/icons8-quiz-pulsar-line/icons8-quiz-100.png"
+		"game", "minigame", "controller":
+			path = "res://icons8/icons8-game-controller-windows-11-outline/icons8-game-controller-100.png"
+		"songs", "practice", "music":
+			if ResourceLoader.exists("res://icons8/icons8-treble-clef-120.png"):
+				path = "res://icons8/icons8-treble-clef-120.png"
+			else:
+				path = "res://assets/textures/icons8/songs.png"
+		_:
+			path = "res://assets/textures/icons8/%s.png" % icon_name
+
+	if not ResourceLoader.exists(path):
+		path = "res://assets/textures/icons8/%s.png" % icon_name
+
 	if ResourceLoader.exists(path):
 		var tex := load(path) as Texture2D
 		_icon_cache[icon_name] = tex
@@ -121,20 +140,20 @@ func _icons8_icon(icon_name: String, icon_size: int = 24, tint: Color = Color.WH
 # ── UI Construction ──────────────────────────────────────────────────────────
 
 func _build_ui() -> void:
-	# Illustrated Landscape Background (identical to Quiz Screen)
-	var bg := TextureRect.new()
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 1. Illustrated Heritage Background
+	var bg_tex := TextureRect.new()
+	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/textures/dan_tranh_background.png"):
-		bg.texture = load("res://assets/textures/dan_tranh_background.png") as Texture2D
-	add_child(bg)
+		bg_tex.texture = load("res://assets/textures/dan_tranh_background.png") as Texture2D
+	add_child(bg_tex)
 
 	var bg_wash := ColorRect.new()
-	bg_wash.color = Color(0.04, 0.07, 0.06, 0.20)
-	bg_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg_wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_wash.color = Color(0.04, 0.07, 0.06, 0.16)
+	bg_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg_wash)
 
 	_root_margin = MarginContainer.new()
@@ -145,17 +164,16 @@ func _build_ui() -> void:
 	_root_margin.add_theme_constant_override("margin_bottom", _vertical_inset())
 	add_child(_root_margin)
 
-	# Main Full-Screen Layout
 	var main_vbox := VBoxContainer.new()
 	main_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	main_vbox.add_theme_constant_override("separation", 14)
+	main_vbox.add_theme_constant_override("separation", 12)
 	_root_margin.add_child(main_vbox)
 
-	# 1. Top Bar with Large Back Button + Left-aligned Title (No white bg) + Refresh Button
+	# 1. Top Bar: Sticky Top-Left Back Button + Title + KPI HUD + Refresh Button
 	main_vbox.add_child(_build_top_bar())
 
-	# 2. Activity Filter Buttons Bar (Below Title, with 15px left/right margins)
+	# 2. Activity Filter Tabs Bar
 	var filter_margin := MarginContainer.new()
 	filter_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	filter_margin.add_theme_constant_override("margin_left", 15)
@@ -164,11 +182,11 @@ func _build_ui() -> void:
 
 	_filters_container = HBoxContainer.new()
 	_filters_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_filters_container.add_theme_constant_override("separation", 12)
+	_filters_container.add_theme_constant_override("separation", 10)
 	filter_margin.add_child(_filters_container)
 	_render_filter_pills()
 
-	# Connection / Offline Banner (Minimalist alert bar with 15px margins)
+	# Connection / Offline Banner
 	var banner_margin := MarginContainer.new()
 	banner_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	banner_margin.add_theme_constant_override("margin_left", 15)
@@ -184,7 +202,7 @@ func _build_ui() -> void:
 	_stats_container.visible = false
 	main_vbox.add_child(_stats_container)
 
-	# 3. Main Centered Activity History List (Full-Width Scrollable Feed with 15px margins)
+	# 3. Main Centered Activity History List (Fills remaining height)
 	var list_margin := MarginContainer.new()
 	list_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -202,23 +220,23 @@ func _build_ui() -> void:
 
 	var list_outer := VBoxContainer.new()
 	list_outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list_outer.add_theme_constant_override("separation", 12)
+	list_outer.add_theme_constant_override("separation", 10)
 	_list_scroll.add_child(list_outer)
 
 	_list_container = VBoxContainer.new()
 	_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_list_container.add_theme_constant_override("separation", 12)
+	_list_container.add_theme_constant_override("separation", 10)
 	list_outer.add_child(_list_container)
 
 	_load_more_btn = Button.new()
 	_load_more_btn.text = "Tải thêm hoạt động cũ hơn  ▼"
-	_load_more_btn.custom_minimum_size = Vector2(0, 56)
+	_load_more_btn.custom_minimum_size = Vector2(0, 50)
 	_load_more_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_load_more_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if _font_bold:
 		_load_more_btn.add_theme_font_override("font", _font_bold)
-		_load_more_btn.add_theme_font_size_override("font_size", 18)
-	_style_3d_button(_load_more_btn, Color(1.0, 1.0, 1.0, 0.88), C_JADE, 18, 4, Color("#cbd5e1"))
+		_load_more_btn.add_theme_font_size_override("font_size", 16)
+	_style_3d_button(_load_more_btn, Color(1.0, 1.0, 1.0, 0.90), C_JADE, 16, 4, Color("#cbd5e1"))
 	_load_more_btn.pressed.connect(_load_next_page)
 	_load_more_btn.visible = false
 	list_outer.add_child(_load_more_btn)
@@ -282,46 +300,46 @@ func _build_connection_banner_node() -> PanelContainer:
 
 func _build_top_bar() -> HBoxContainer:
 	var top_bar := HBoxContainer.new()
-	top_bar.add_theme_constant_override("separation", 14)
+	top_bar.add_theme_constant_override("separation", 16)
 	top_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# 1. Tactile 3D Circular Back Button (76x76)
+	# 1. Large 3D Sticky Back Button (84x84 matching Quiz screen)
 	var back_btn := Button.new()
-	back_btn.custom_minimum_size = Vector2(76, 76)
+	back_btn.custom_minimum_size = Vector2(84, 84)
 	back_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	back_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back_btn.expand_icon = true
 	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	back_btn.add_theme_constant_override("icon_max_width", 38)
+	back_btn.add_theme_constant_override("icon_max_width", 42)
 	back_btn.tooltip_text = "Quay lại"
 
 	var style_n := StyleBoxFlat.new()
-	style_n.bg_color = Color(1.0, 1.0, 1.0, 0.90)
-	style_n.set_corner_radius_all(38)
+	style_n.bg_color = Color.WHITE
+	style_n.set_corner_radius_all(42)
 	style_n.set_border_width_all(2)
 	style_n.border_width_bottom = 5
-	style_n.border_color = Color(0.85, 0.88, 0.92, 0.85)
-	style_n.shadow_color = Color(0, 0, 0, 0.08)
+	style_n.border_color = Color("#cbd5e1")
+	style_n.shadow_color = Color(0, 0, 0, 0.06)
 	style_n.shadow_size = 6
 	style_n.shadow_offset = Vector2(0, 3)
 
 	var style_h := style_n.duplicate() as StyleBoxFlat
-	style_h.bg_color = Color(1.0, 1.0, 1.0, 0.98)
+	style_h.bg_color = Color("#FDFCF9")
 	style_h.border_color = Color("#94a3b8")
 
 	var style_p := style_n.duplicate() as StyleBoxFlat
-	style_p.bg_color = Color(0.95, 0.94, 0.92, 0.92)
-	style_p.border_width_bottom = 2
+	style_p.bg_color = Color("#F5F0E5")
+	style_p.border_width_bottom = 1
 	style_p.border_width_top = 4
 
 	back_btn.add_theme_stylebox_override("normal", style_n)
 	back_btn.add_theme_stylebox_override("hover", style_h)
 	back_btn.add_theme_stylebox_override("pressed", style_p)
 	back_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	back_btn.add_theme_color_override("icon_normal_color", C_JADE)
+	back_btn.add_theme_color_override("icon_normal_color", C_NAVY)
 
-	back_btn.pivot_offset = Vector2(38, 38)
+	back_btn.pivot_offset = Vector2(42, 42)
 	back_btn.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(back_btn, "scale", Vector2(1.06, 1.06), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
@@ -331,62 +349,75 @@ func _build_top_bar() -> HBoxContainer:
 	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
 	top_bar.add_child(back_btn)
 
-	# 2. Left-aligned Title with Frosted Glass Plaque for supreme contrast & readability
+	# 2. Left-aligned Title Card with Frosted Glass Plate
 	var title_panel := PanelContainer.new()
 	title_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var t_style := StyleBoxFlat.new()
-	t_style.bg_color = Color(1.0, 1.0, 1.0, 0.85)
-	t_style.set_corner_radius_all(18)
+	t_style.bg_color = Color(1.0, 1.0, 1.0, 0.88)
+	t_style.set_corner_radius_all(20)
 	t_style.set_border_width_all(2)
 	t_style.border_width_bottom = 4
-	t_style.border_color = Color(0.85, 0.88, 0.92, 0.75)
+	t_style.border_color = Color(0.85, 0.88, 0.92, 0.80)
 	t_style.shadow_color = Color(0, 0, 0, 0.05)
 	t_style.shadow_size = 6
 	t_style.shadow_offset = Vector2(0, 2)
-	t_style.content_margin_left = 18
-	t_style.content_margin_right = 20
-	t_style.content_margin_top = 8
-	t_style.content_margin_bottom = 8
+	t_style.content_margin_left = 20
+	t_style.content_margin_right = 24
+	t_style.content_margin_top = 10
+	t_style.content_margin_bottom = 10
 	title_panel.add_theme_stylebox_override("panel", t_style)
 	top_bar.add_child(title_panel)
 
 	_title_lbl = Label.new()
 	_title_lbl.text = "LỊCH SỬ HOẠT ĐỘNG"
 	_title_lbl.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	_title_lbl.add_theme_font_size_override("font_size", 24)
+	_title_lbl.add_theme_font_size_override("font_size", 26)
 	_title_lbl.add_theme_color_override("font_color", C_NAVY)
 	_title_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title_panel.add_child(_title_lbl)
 
-	# 3. Flexible spacer to separate title from KPI Stats
+	# 3. Flexible spacer to separate title from Refresh button
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_bar.add_child(spacer)
 
-	# 4. Top KPI Stats Strip
-	_stats_container = HBoxContainer.new()
-	_stats_container.add_theme_constant_override("separation", 8)
-	_stats_container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top_bar.add_child(_stats_container)
-
-	# 5. Tactile 3D Circular Refresh Button (76x76)
+	# 4. Secondary Refresh Button (52x52, smaller & less prominent than Back button)
 	var refresh_btn := Button.new()
-	refresh_btn.custom_minimum_size = Vector2(76, 76)
+	refresh_btn.custom_minimum_size = Vector2(52, 52)
 	refresh_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	refresh_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	refresh_btn.icon = load("res://assets/textures/lucide/rotate-cw.svg") as Texture2D
 	refresh_btn.expand_icon = true
 	refresh_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	refresh_btn.add_theme_constant_override("icon_max_width", 34)
+	refresh_btn.add_theme_constant_override("icon_max_width", 24)
 	refresh_btn.tooltip_text = "Làm mới lịch sử"
 
-	refresh_btn.add_theme_stylebox_override("normal", style_n)
-	refresh_btn.add_theme_stylebox_override("hover", style_h)
-	refresh_btn.add_theme_stylebox_override("pressed", style_p)
-	refresh_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	refresh_btn.add_theme_color_override("icon_normal_color", C_JADE)
+	var ref_style_n := StyleBoxFlat.new()
+	ref_style_n.bg_color = Color(1.0, 1.0, 1.0, 0.92)
+	ref_style_n.set_corner_radius_all(26)
+	ref_style_n.set_border_width_all(1)
+	ref_style_n.border_width_bottom = 3
+	ref_style_n.border_color = Color("#cbd5e1")
+	ref_style_n.shadow_color = Color(0, 0, 0, 0.04)
+	ref_style_n.shadow_size = 4
+	ref_style_n.shadow_offset = Vector2(0, 2)
 
-	refresh_btn.pivot_offset = Vector2(38, 38)
+	var ref_style_h := ref_style_n.duplicate() as StyleBoxFlat
+	ref_style_h.bg_color = Color("#FFFFFF")
+	ref_style_h.border_color = Color("#94a3b8")
+
+	var ref_style_p := ref_style_n.duplicate() as StyleBoxFlat
+	ref_style_p.bg_color = Color("#F1F5F9")
+	ref_style_p.border_width_bottom = 1
+	ref_style_p.border_width_top = 2
+
+	refresh_btn.add_theme_stylebox_override("normal", ref_style_n)
+	refresh_btn.add_theme_stylebox_override("hover", ref_style_h)
+	refresh_btn.add_theme_stylebox_override("pressed", ref_style_p)
+	refresh_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	refresh_btn.add_theme_color_override("icon_normal_color", C_NAVY)
+
+	refresh_btn.pivot_offset = Vector2(26, 26)
 	refresh_btn.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(refresh_btn, "scale", Vector2(1.06, 1.06), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
@@ -473,7 +504,7 @@ func _make_bento_item(icon_name: String, val_text: String, label_text: String, a
 	return p
 
 
-# ── Filter Segmented Pills (Icons8 Integrated) ─────────────────────────────
+# ── Filter Segmented Pills (Icons8 Integrated & Disabled state) ────────────
 
 func _render_filter_pills(items: Array = _last_rendered_items) -> void:
 	_clear(_filters_container)
@@ -488,56 +519,66 @@ func _render_filter_pills(items: Array = _last_rendered_items) -> void:
 		var val := str(opt["value"])
 		var is_active := val == _filter
 		var count := items.size() if val.is_empty() else items.filter(func(item: Variant) -> bool: return item is Dictionary and str((item as Dictionary).get("type", "")).to_upper() == val).size()
+		var is_disabled := (count == 0 and not val.is_empty() and not is_active)
 
 		var pill := PanelContainer.new()
-		pill.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		pill.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN if is_disabled else Control.CURSOR_POINTING_HAND
 		pill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		pill.custom_minimum_size = Vector2(0, 58)
+		pill.custom_minimum_size = Vector2(0, 52)
 
-		# Frosted Glass Card Styling
+		# Clean Segmented Pill Styling
 		var style := StyleBoxFlat.new()
 		style.set_corner_radius_all(16)
-		style.set_border_width_all(2)
-		style.border_width_bottom = 4
+		style.set_border_width_all(1)
+		style.border_width_bottom = 3
 		style.content_margin_left = 14
 		style.content_margin_right = 14
 		style.content_margin_top = 6
 		style.content_margin_bottom = 6
 
-		if is_active:
-			style.bg_color = Color(0.18, 0.49, 0.20, 0.94) # Frosted glowing jade glass
-			style.border_color = Color(0.10, 0.35, 0.15, 0.95)
-			style.shadow_color = Color(0.18, 0.49, 0.20, 0.30)
+		if is_disabled:
+			style.bg_color = Color(0.92, 0.94, 0.96, 0.70)
+			style.border_color = Color(0.85, 0.88, 0.92, 0.50)
+		elif is_active:
+			style.bg_color = Color(0.12, 0.35, 0.22, 0.98) # C_JADE
+			style.border_color = Color(0.07, 0.22, 0.14, 1.0)
+			style.shadow_color = Color(0.12, 0.35, 0.22, 0.25)
 			style.shadow_size = 6
 			style.shadow_offset = Vector2(0, 2)
 		else:
-			style.bg_color = Color(1.0, 1.0, 1.0, 0.86) # Frosted white glass
-			style.border_color = Color(0.85, 0.88, 0.92, 0.75)
-			style.shadow_color = Color(0, 0, 0, 0.05)
+			style.bg_color = Color(1.0, 1.0, 1.0, 0.98) # Crisp solid white surface
+			style.border_color = Color(0.85, 0.88, 0.92, 0.85)
+			style.shadow_color = Color(0, 0, 0, 0.04)
 			style.shadow_size = 4
 			style.shadow_offset = Vector2(0, 2)
 
 		pill.add_theme_stylebox_override("panel", style)
 
 		var hbox := HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 10)
+		hbox.add_theme_constant_override("separation", 8)
 		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 		hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		pill.add_child(hbox)
 
 		# Large Icons8 Icon
-		var icon_rect := _icons8_icon(str(opt["icon"]), 26)
+		var icon_rect := _icons8_icon(str(opt["icon"]), 24)
 		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if is_disabled:
+			icon_rect.modulate = Color(0.65, 0.68, 0.72, 0.75)
+		elif is_active:
+			icon_rect.modulate = Color.WHITE
 		hbox.add_child(icon_rect)
 
-		# Label
+		# Integrated Label & Count (e.g. "Tất cả 20", "Câu hỏi 15", "Nhịp điệu 5", "Luyện tập 0")
 		var label_node := Label.new()
-		label_node.text = str(opt["label"])
+		label_node.text = "%s %d" % [str(opt["label"]), count]
 		label_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label_node.add_theme_font_size_override("font_size", 16)
+		label_node.add_theme_font_size_override("font_size", 15)
 		label_node.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if is_active:
+		if is_disabled:
+			label_node.add_theme_color_override("font_color", Color("#94A3B8"))
+		elif is_active:
 			label_node.add_theme_color_override("font_color", Color.WHITE)
 		else:
 			label_node.add_theme_color_override("font_color", C_NAVY)
@@ -545,62 +586,27 @@ func _render_filter_pills(items: Array = _last_rendered_items) -> void:
 			label_node.add_theme_font_override("font", _font_bold)
 		hbox.add_child(label_node)
 
-		# Square Badge Count Card
-		var badge := PanelContainer.new()
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge.custom_minimum_size = Vector2(34, 34)
-		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		var badge_style := StyleBoxFlat.new()
-		badge_style.set_corner_radius_all(8) # Square card shape with subtle corners
-		badge_style.set_border_width_all(1)
-		badge_style.content_margin_left = 3
-		badge_style.content_margin_right = 3
-		badge_style.content_margin_top = 2
-		badge_style.content_margin_bottom = 2
-		if is_active:
-			badge_style.bg_color = C_GOLD
-			badge_style.border_color = Color(1.0, 1.0, 1.0, 0.40)
-		else:
-			badge_style.bg_color = Color(0.92, 0.94, 0.97, 0.85)
-			badge_style.border_color = Color(0.80, 0.84, 0.88, 0.50)
-		badge.add_theme_stylebox_override("panel", badge_style)
+		# Clickable Button overlay (if not disabled)
+		if not is_disabled:
+			var btn := Button.new()
+			btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			btn.flat = true
+			btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			var empty_sb := StyleBoxEmpty.new()
+			btn.add_theme_stylebox_override("normal", empty_sb)
+			btn.add_theme_stylebox_override("hover", empty_sb)
+			btn.add_theme_stylebox_override("pressed", empty_sb)
+			btn.add_theme_stylebox_override("focus", empty_sb)
+			btn.pressed.connect(_set_filter.bind(val))
+			pill.add_child(btn)
 
-		var count_lbl := Label.new()
-		count_lbl.text = str(count)
-		count_lbl.add_theme_font_size_override("font_size", 14)
-		count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		count_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		count_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if is_active:
-			count_lbl.add_theme_color_override("font_color", Color.WHITE)
-		else:
-			count_lbl.add_theme_color_override("font_color", C_NAVY)
-		if _font_bold:
-			count_lbl.add_theme_font_override("font", _font_bold)
-		badge.add_child(count_lbl)
-		hbox.add_child(badge)
-
-		# Clickable Button overlay
-		var btn := Button.new()
-		btn.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		btn.flat = true
-		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		var empty_sb := StyleBoxEmpty.new()
-		btn.add_theme_stylebox_override("normal", empty_sb)
-		btn.add_theme_stylebox_override("hover", empty_sb)
-		btn.add_theme_stylebox_override("pressed", empty_sb)
-		btn.add_theme_stylebox_override("focus", empty_sb)
-		btn.pressed.connect(_set_filter.bind(val))
-		pill.add_child(btn)
-
-		pill.pivot_offset = Vector2(80, 29)
-		pill.mouse_entered.connect(func() -> void:
-			create_tween().tween_property(pill, "scale", Vector2(1.02, 1.02), 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		)
-		pill.mouse_exited.connect(func() -> void:
-			create_tween().tween_property(pill, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		)
+			pill.pivot_offset = Vector2(80, 26)
+			pill.mouse_entered.connect(func() -> void:
+				create_tween().tween_property(pill, "scale", Vector2(1.02, 1.02), 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			)
+			pill.mouse_exited.connect(func() -> void:
+				create_tween().tween_property(pill, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			)
 
 		_filters_container.add_child(pill)
 
@@ -713,7 +719,7 @@ func merge_pending_items(confirmed: Array) -> Array:
 
 func _map_pending(pending: Dictionary) -> Dictionary:
 	var kind := str(pending.get("kind", "minigame")).to_lower()
-	var activity_type := "QUIZ" if kind == "quiz" else "MINIGAME"
+	var activity_type := "ASSESSMENT" if kind == "lesson_assessment" else ("QUIZ" if kind == "quiz" else "MINIGAME")
 	var completed_at := str(pending.get("completed_at", pending.get("started_at", "")))
 	return {
 		"eventId": "PENDING:" + str(pending.get("client_attempt_id", "local")),
@@ -734,10 +740,14 @@ func _map_pending(pending: Dictionary) -> Dictionary:
 
 
 func _map_local(local: Dictionary) -> Dictionary:
+	var kind := str(local.get("kind", "quiz_local")).to_lower()
+	var act_type := "QUIZ"
+	if kind.contains("minigame") or kind.contains("rhythm") or kind.contains("melody"):
+		act_type = "MINIGAME"
 	return {
 		"eventId": "LOCAL:" + str(local.get("client_attempt_id", local.get("eventId", "local"))),
-		"type": "QUIZ",
-		"title": str(local.get("title", "Câu hỏi")),
+		"type": act_type,
+		"title": str(local.get("title", "Câu hỏi" if act_type == "QUIZ" else "Mini Game")),
 		"lessonTitle": str(local.get("lessonTitle", local.get("lesson_title", ""))),
 		"score": local.get("score", null),
 		"maxScore": local.get("maxScore", local.get("max_score", 100)) if local.get("score", null) != null else null,
@@ -907,9 +917,8 @@ func _is_confirmed_item(item: Dictionary) -> bool:
 func _group_items_by_date(items: Array) -> Dictionary:
 	var groups := {
 		"Hôm nay": [],
-		"Hôm qua": [],
 		"Tuần này": [],
-		"Hoạt động trước đó": []
+		"Trước đó": []
 	}
 
 	var now_unix := Time.get_unix_time_from_system()
@@ -924,12 +933,10 @@ func _group_items_by_date(items: Array) -> Dictionary:
 		var diff_seconds := now_unix - item_unix
 		if diff_seconds < 86400: # < 24h
 			groups["Hôm nay"].append(item)
-		elif diff_seconds < 172800: # < 48h
-			groups["Hôm qua"].append(item)
 		elif diff_seconds < 604800: # < 7 days
 			groups["Tuần này"].append(item)
 		else:
-			groups["Hoạt động trước đó"].append(item)
+			groups["Trước đó"].append(item)
 
 	return groups
 
@@ -961,7 +968,7 @@ func _parse_iso_to_unix(iso_str: String) -> int:
 	return Time.get_unix_time_from_datetime_dict(dict)
 
 
-# ── 3D Activity Card (Icons8 Integrated) ───────────────────────────────────
+# ── 3D Activity Card (Simply Piano Minimalist Style) ───────────────────────
 
 func _make_3d_activity_card(item: Dictionary) -> Button:
 	var type_code := str(item.get("type", "PRACTICE")).to_upper()
@@ -969,55 +976,54 @@ func _make_3d_activity_card(item: Dictionary) -> Button:
 	var bg_accent := _bg_color_for_type(type_code)
 
 	var card := Button.new()
-	card.custom_minimum_size = Vector2(0, 84)
+	card.custom_minimum_size = Vector2(0, 74)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	# 3D Frosted Glass Card Styling
-	_style_3d_card(card, Color(1.0, 1.0, 1.0, 0.88), Color(0.85, 0.88, 0.92, 0.80), 18, 4)
+	# Crisp Minimalist Card with Subtle Shadow
+	_style_3d_card(card, Color(1.0, 1.0, 1.0, 0.96), Color(0.88, 0.90, 0.94, 0.85), 18, 3)
 
 	# Content layout
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 6)
 	card.add_child(margin)
 
 	var hbox := HBoxContainer.new()
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_theme_constant_override("separation", 14)
+	hbox.add_theme_constant_override("separation", 12)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(hbox)
 
-	# 1. Left Round Icon Box with Icons8 Texture (56x56)
+	# 1. Left Pastel Icon Box (48x48)
 	var icon_panel := PanelContainer.new()
-	icon_panel.custom_minimum_size = Vector2(56, 56)
+	icon_panel.custom_minimum_size = Vector2(48, 48)
 	icon_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var icon_box_style := StyleBoxFlat.new()
-	icon_box_style.bg_color = Color(bg_accent.r, bg_accent.g, bg_accent.b, 0.90)
-	icon_box_style.set_corner_radius_all(28)
-	icon_box_style.set_border_width_all(2)
-	icon_box_style.border_color = Color(accent.r, accent.g, accent.b, 0.45)
+	icon_box_style.bg_color = bg_accent
+	icon_box_style.set_corner_radius_all(24)
+	icon_box_style.set_border_width_all(1)
+	icon_box_style.border_color = Color(accent.r, accent.g, accent.b, 0.35)
 	icon_panel.add_theme_stylebox_override("panel", icon_box_style)
 
 	var icon_name := _icon_name_for_type(type_code)
-	icon_panel.add_child(_icons8_icon(icon_name, 36))
+	icon_panel.add_child(_icons8_icon(icon_name, 26))
 	hbox.add_child(icon_panel)
 
-	# 2. Activity title & category
+	# 2. Activity title & relative time
 	var content_vbox := VBoxContainer.new()
 	content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_vbox.size_flags_stretch_ratio = 1.0
 	content_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_vbox.add_theme_constant_override("separation", 2)
 	hbox.add_child(content_vbox)
 
 	var title_lbl := Label.new()
 	title_lbl.text = str(item.get("title", item.get("lessonTitle", "Hoạt động")))
-	title_lbl.add_theme_font_size_override("font_size", 20)
+	title_lbl.add_theme_font_size_override("font_size", 16)
 	title_lbl.add_theme_color_override("font_color", C_NAVY)
 	title_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	title_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -1027,59 +1033,89 @@ func _make_3d_activity_card(item: Dictionary) -> Button:
 
 	var subtitle := Label.new()
 	subtitle.text = "%s · %s" % [_type_name(type_code), _relative_time(str(item.get("completedAt", item.get("startedAt", ""))))]
-	subtitle.add_theme_font_size_override("font_size", 14)
-	subtitle.add_theme_color_override("font_color", accent)
+	subtitle.add_theme_font_size_override("font_size", 13)
+	subtitle.add_theme_color_override("font_color", C_MUTED)
 	subtitle.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_OFF
-	if _font_bold:
-		subtitle.add_theme_font_override("font", _font_bold)
-	elif _font_regular:
+	if _font_regular:
 		subtitle.add_theme_font_override("font", _font_regular)
 	content_vbox.add_child(subtitle)
 
-	# 3. Result columns: prominent essential metrics
-	var metrics := HBoxContainer.new()
-	metrics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	metrics.add_theme_constant_override("separation", 8)
-	metrics.alignment = BoxContainer.ALIGNMENT_END
-	metrics.size_flags_stretch_ratio = 1.0
-	hbox.add_child(metrics)
+	# 3. Right Result Badge (Single clean focal metric - Simply Piano style)
+	var result_box := HBoxContainer.new()
+	result_box.add_theme_constant_override("separation", 8)
+	result_box.alignment = BoxContainer.ALIGNMENT_END
+	result_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(result_box)
 
-	# Metric 1: Score Badge (Large & Bold)
-	if item.has("score") and item.get("score") != null:
-		metrics.add_child(_make_activity_metric("Điểm", _score_text(item), C_BLUE, 88, C_BLUE_BG))
-
-	# Metric 2: confirmed rewards must not be conflated with a local preview.
+	# Status tag (if not fully synced / local only)
 	var sync_status_upper := str(item.get("status", "")).to_upper()
-	var is_provisional := sync_status_upper in ["PENDING_SYNC", "SYNCING", "FAILED_SYNC", "SYNC_FAILED", "FAILED", "LOCAL_ONLY"]
-	var stars: int = int(item.get("starsEarned", item.get("previewStars", 0)))
-	var xp: int = int(item.get("pointsEarned", item.get("previewPoints", 0)))
-	if stars > 0:
-		metrics.add_child(_make_activity_metric("Dự kiến" if is_provisional else "Thành tích", _stars_display(stars), C_GOLD, 88, C_GOLD_BG))
-	elif xp > 0:
-		metrics.add_child(_make_activity_metric("Dự kiến" if is_provisional else "Thưởng", "+%d XP" % xp, C_PURPLE, 84, C_PURPLE_BG))
-	elif item.has("score") and item.get("score") != null:
-		metrics.add_child(_make_activity_metric("Chính xác", _accuracy_text(item), C_GREEN, 84, C_GREEN_BG))
-
-	# Metric 3: Sync Status Alert
 	if sync_status_upper in ["PENDING_SYNC", "SYNCING"]:
-		metrics.add_child(_make_activity_metric("Trạng thái", "Chờ sync", C_AMBER, 94, C_AMBER_BG))
+		result_box.add_child(_make_clean_badge("Chờ sync", C_AMBER, C_AMBER_BG))
 	elif sync_status_upper in ["FAILED_SYNC", "SYNC_FAILED", "FAILED"]:
-		metrics.add_child(_make_activity_metric("Trạng thái", "Lỗi sync", Color("#DC2626"), 94, Color("#FEE2E2")))
+		result_box.add_child(_make_clean_badge("Lỗi sync", Color("#DC2626"), Color("#FEE2E2")))
 	elif sync_status_upper == "LOCAL_ONLY":
-		metrics.add_child(_make_activity_metric("Trạng thái", "Thiết bị", C_MUTED, 88, Color("#F3F4F6")))
+		result_box.add_child(_make_clean_badge("Trên máy", C_MUTED, Color("#F1F5F9")))
 
-	# Chevron indicator
+	# Main Score Badge or Star Badge
+	var stars: int = int(item.get("starsEarned", item.get("previewStars", 0)))
+	if stars > 0:
+		result_box.add_child(_make_clean_badge(_stars_display(stars), C_GOLD, C_GOLD_BG, true))
+	elif item.has("score") and item.get("score") != null:
+		var acc_str := _accuracy_text(item)
+		var sc_val := float(item.get("score", 0.0))
+		var max_sc := float(item.get("maxScore", 100.0))
+		var ratio := (sc_val / max_sc) if max_sc > 0.0 else 0.0
+		if ratio >= 0.80:
+			result_box.add_child(_make_clean_badge(acc_str, C_GREEN, C_GREEN_BG, true))
+		elif ratio >= 0.50:
+			result_box.add_child(_make_clean_badge(acc_str, C_GOLD, C_GOLD_BG, true))
+		elif ratio > 0.0:
+			result_box.add_child(_make_clean_badge(acc_str, C_MUTED, Color("#F1F5F9"), true))
+		else:
+			result_box.add_child(_make_clean_badge("Chưa đạt", Color("#DC2626"), Color("#FEE2E2"), true))
+	else:
+		result_box.add_child(_make_clean_badge("Đã lưu", C_MUTED, Color("#F1F5F9"), false))
+
+	# Minimalist Chevron indicator
 	var chevron := Label.new()
 	chevron.text = "›"
-	chevron.add_theme_font_size_override("font_size", 28)
+	chevron.add_theme_font_size_override("font_size", 22)
 	chevron.add_theme_color_override("font_color", Color("#94a3b8"))
 	if _font_bold:
 		chevron.add_theme_font_override("font", _font_bold)
-	hbox.add_child(chevron)
+	result_box.add_child(chevron)
 
 	card.pressed.connect(_open_detail.bind(item))
 	return card
+
+
+func _make_clean_badge(text_val: String, text_col: Color, bg_col: Color, is_bold: bool = false) -> PanelContainer:
+	var badge := PanelContainer.new()
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var b_style := StyleBoxFlat.new()
+	b_style.bg_color = bg_col
+	b_style.set_corner_radius_all(10)
+	b_style.set_border_width_all(1)
+	b_style.border_color = Color(text_col.r, text_col.g, text_col.b, 0.35)
+	b_style.content_margin_left = 10
+	b_style.content_margin_right = 10
+	b_style.content_margin_top = 4
+	b_style.content_margin_bottom = 4
+	badge.add_theme_stylebox_override("panel", b_style)
+
+	var lbl := Label.new()
+	lbl.text = text_val
+	lbl.add_theme_font_size_override("font_size", 13)
+	lbl.add_theme_color_override("font_color", text_col)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if is_bold and _font_bold:
+		lbl.add_theme_font_override("font", _font_bold)
+	elif _font_regular:
+		lbl.add_theme_font_override("font", _font_regular)
+	badge.add_child(lbl)
+	return badge
 
 
 func _format_card_subtitle(item: Dictionary) -> String:
@@ -1228,11 +1264,10 @@ func _build_detail_sheet() -> void:
 	center_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_modal_overlay.add_child(center_wrapper)
 
-	# Modal Plaque Container (Doppelrand Architecture)
+	# Modal Plaque Container (Snug fit, no collapsing)
 	_modal_card = PanelContainer.new()
 	var vp := get_viewport_rect().size
-	var card_w := minf(580.0, vp.x - 32.0)
-	var max_scroll_h := minf(vp.y - 40.0, 460.0)
+	var card_w := minf(560.0, vp.x - 32.0)
 	_modal_card.custom_minimum_size = Vector2(card_w, 0)
 	_modal_card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_modal_card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -1253,34 +1288,15 @@ func _build_detail_sheet() -> void:
 	_modal_card.add_theme_stylebox_override("panel", sheet_style)
 	center_wrapper.add_child(_modal_card)
 
-	var modal_scroll := ScrollContainer.new()
-	modal_scroll.custom_minimum_size = Vector2(0, minf(max_scroll_h, 440.0))
-	modal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	modal_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	_modal_card.add_child(modal_scroll)
-
 	_modal_content = VBoxContainer.new()
 	_modal_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_modal_content.add_theme_constant_override("separation", 14)
-	modal_scroll.add_child(_modal_content)
+	_modal_content.add_theme_constant_override("separation", 12)
+	_modal_card.add_child(_modal_content)
 
 
-func _open_detail(item: Dictionary) -> void:
-	_active_modal_item = item
-	_clear(_modal_content)
-	_modal_overlay.visible = true
-	_modal_overlay.modulate.a = 0.0
-
-	var tw := create_tween()
-	tw.tween_property(_modal_overlay, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_SINE)
-
-	var type_code := str(item.get("type", "PRACTICE")).to_upper()
-	var accent := _color_for_type(type_code)
-
-	# 1. Header with Category, Title, and Circular Close Button
+func _build_modal_header(item: Dictionary, type_code: String, accent: Color) -> HBoxContainer:
 	var header_hbox := HBoxContainer.new()
 	header_hbox.add_theme_constant_override("separation", 12)
-	_modal_content.add_child(header_hbox)
 
 	var icon_badge := PanelContainer.new()
 	icon_badge.custom_minimum_size = Vector2(44, 44)
@@ -1328,14 +1344,37 @@ func _open_detail(item: Dictionary) -> void:
 	title_vbox.add_child(lesson_lbl)
 
 	var close_btn := Button.new()
-	close_btn.text = "✕"
-	close_btn.custom_minimum_size = Vector2(36, 36)
+	close_btn.custom_minimum_size = Vector2(48, 48)
 	close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	if _font_bold:
-		close_btn.add_theme_font_override("font", _font_bold)
-	_style_3d_button(close_btn, Color("#F0ECE1"), C_MUTED, 18, 2)
+	close_btn.tooltip_text = "Đóng chi tiết"
+	close_btn.icon = load("res://assets/textures/lucide/x.svg") as Texture2D
+	close_btn.expand_icon = true
+	close_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	close_btn.add_theme_constant_override("icon_max_width", 20)
+	close_btn.add_theme_color_override("icon_normal_color", C_MUTED)
+	close_btn.add_theme_color_override("icon_hover_color", C_JADE)
+	close_btn.add_theme_color_override("icon_pressed_color", C_JADE_DARK)
+	_style_3d_button(close_btn, Color("#F0ECE1"), C_MUTED, 24, 2, Color("#DCD3C3"))
 	close_btn.pressed.connect(_close_detail_sheet)
 	header_hbox.add_child(close_btn)
+
+	return header_hbox
+
+
+func _open_detail(item: Dictionary) -> void:
+	_active_modal_item = item
+	_clear(_modal_content)
+	_modal_overlay.visible = true
+	_modal_overlay.modulate.a = 0.0
+
+	var tw := create_tween()
+	tw.tween_property(_modal_overlay, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_SINE)
+
+	var type_code := str(item.get("type", "PRACTICE")).to_upper()
+	var accent := _color_for_type(type_code)
+
+	# 1. Header with Category, Title, and Circular Close Button
+	_modal_content.add_child(_build_modal_header(item, type_code, accent))
 
 	var divider := ColorRect.new()
 	divider.custom_minimum_size = Vector2(0, 1)
@@ -1378,8 +1417,11 @@ func _open_detail(item: Dictionary) -> void:
 
 	var response: Dictionary = await _api.get_activity_history_detail(str(item.get("eventId", "")))
 	_clear(_modal_content)
-	_modal_content.add_child(header_hbox)
-	_modal_content.add_child(divider)
+	_modal_content.add_child(_build_modal_header(item, type_code, accent))
+	var divider2 := ColorRect.new()
+	divider2.custom_minimum_size = Vector2(0, 1)
+	divider2.color = Color("#EBE4D8")
+	_modal_content.add_child(divider2)
 
 	var detail := _extract_data(response) if _api._is_success(response) else item
 	var live_score := _score_text(detail)
@@ -1608,42 +1650,20 @@ func _add_modal_actions(item: Dictionary) -> void:
 	action_hbox.add_theme_constant_override("separation", 10)
 	action_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	var type_code := str(item.get("type", "PRACTICE")).to_upper()
-	var retry_btn := Button.new()
-	retry_btn.text = "Luyện tập lại bài này  →"
-	retry_btn.custom_minimum_size = Vector2(0, 46)
-	retry_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	retry_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var room_btn := Button.new()
+	room_btn.text = "Đến phòng nhạc ảo  →"
+	room_btn.custom_minimum_size = Vector2(0, 52)
+	room_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	room_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if _font_bold:
-		retry_btn.add_theme_font_override("font", _font_bold)
-	_style_3d_button(retry_btn, C_JADE, Color.WHITE, 16, 4, C_JADE_DARK)
-	retry_btn.pressed.connect(func():
-		_close_detail_sheet()
-		_retry_activity(type_code)
+		room_btn.add_theme_font_override("font", _font_bold)
+	_style_3d_button(room_btn, C_JADE, Color.WHITE, 16, 4, C_JADE_DARK)
+	room_btn.pressed.connect(func():
+		get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn")
 	)
-	action_hbox.add_child(retry_btn)
-
-	var close_btn := Button.new()
-	close_btn.text = "Đóng"
-	close_btn.custom_minimum_size = Vector2(100, 46)
-	close_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	if _font_bold:
-		close_btn.add_theme_font_override("font", _font_bold)
-	_style_3d_button(close_btn, Color("#EDE7DC"), C_MUTED, 16, 3, Color("#DCD3C3"))
-	close_btn.pressed.connect(_close_detail_sheet)
-	action_hbox.add_child(close_btn)
+	action_hbox.add_child(room_btn)
 
 	_modal_content.add_child(action_hbox)
-
-
-func _retry_activity(type_code: String) -> void:
-	match type_code:
-		"QUIZ":
-			get_tree().change_scene_to_file("res://scenes/LearningQuizScreen.tscn")
-		"MINIGAME":
-			get_tree().change_scene_to_file("res://scenes/RhythmChallengeScreen.tscn")
-		_:
-			get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
 func _close_detail_sheet() -> void:
@@ -1720,6 +1740,7 @@ func _style_3d_card(btn: Button, bg: Color, border_c: Color, radius: int = 20, b
 
 func _color_for_type(type_code: String) -> Color:
 	match type_code:
+		"ASSESSMENT": return C_PURPLE
 		"QUIZ": return C_BLUE
 		"MINIGAME": return C_GREEN
 		"PRACTICE": return C_AMBER
@@ -1728,6 +1749,7 @@ func _color_for_type(type_code: String) -> Color:
 
 func _bg_color_for_type(type_code: String) -> Color:
 	match type_code:
+		"ASSESSMENT": return C_PURPLE_BG
 		"QUIZ": return C_BLUE_BG
 		"MINIGAME": return C_GREEN_BG
 		"PRACTICE": return C_AMBER_BG
@@ -1736,6 +1758,7 @@ func _bg_color_for_type(type_code: String) -> Color:
 
 func _icon_name_for_type(type_code: String) -> String:
 	match type_code:
+		"ASSESSMENT": return "course"
 		"QUIZ": return "course"
 		"MINIGAME": return "game"
 		"PRACTICE": return "songs"
@@ -1744,6 +1767,7 @@ func _icon_name_for_type(type_code: String) -> String:
 
 func _icon_for_type(type_code: String) -> String:
 	match type_code:
+		"ASSESSMENT": return "📜"
 		"QUIZ": return "🎯"
 		"MINIGAME": return "🥁"
 		"PRACTICE": return "🎻"
@@ -1752,8 +1776,9 @@ func _icon_for_type(type_code: String) -> String:
 
 func _type_name(type_code: String) -> String:
 	match type_code:
+		"ASSESSMENT": return "Đánh giá bài học"
 		"QUIZ": return "Câu hỏi"
-		"MINIGAME": return "Mini Game"
+		"MINIGAME": return "Nhịp điệu"
 		"PRACTICE": return "Luyện tập"
 		_: return "Hoạt động"
 
@@ -1823,7 +1848,20 @@ func _stars_display(value: int) -> String:
 func _relative_time(value: String) -> String:
 	if value.is_empty():
 		return "—"
-	return value.replace("T", " ").left(16)
+	var unix_ts := _parse_iso_to_unix(value)
+	if unix_ts <= 0:
+		return value.replace("T", " ").left(16)
+	var now := Time.get_unix_time_from_system()
+	var diff := int(now - unix_ts)
+	var dt := Time.get_datetime_dict_from_unix_time(unix_ts)
+	var time_part := "%02d:%02d" % [int(dt.get("hour", 0)), int(dt.get("minute", 0))]
+	if diff >= 0 and diff < 86400:
+		return "Hôm nay %s" % time_part
+	elif diff >= 86400 and diff < 172800:
+		return "Hôm qua %s" % time_part
+	elif diff >= 172800 and diff < 604800:
+		return "%d ngày trước" % int(diff / 86400)
+	return "%d thg %d, %s" % [int(dt.get("day", 1)), int(dt.get("month", 1)), time_part]
 
 
 func _duration_text(started: String, completed: String) -> String:

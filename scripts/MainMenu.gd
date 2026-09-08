@@ -213,7 +213,9 @@ func _fetch_and_sync_progress() -> void:
 				streak_pill.visible = true
 				xp_pill.visible = true
 	_fetch_daily_challenges()
-	BackendReport.fetch_and_install_catalog()
+	var backend_report = get_node_or_null("/root/BackendReport")
+	if backend_report and backend_report.has_method("fetch_and_install_catalog"):
+		backend_report.fetch_and_install_catalog()
 
 func _fetch_profile_identity() -> void:
 	if _api_client == null:
@@ -869,9 +871,10 @@ func _build_daily_challenge_pill() -> void:
 	stats_row.add_child(_daily_pill)
 
 func _fetch_daily_challenges() -> void:
-	if not BackendReport.is_signed_in():
+	var report = get_node_or_null("/root/BackendReport")
+	if report == null or not report.has_method("is_signed_in") or not report.is_signed_in():
 		return
-	_daily_challenges = await BackendReport.fetch_daily_challenges()
+	_daily_challenges = await report.fetch_daily_challenges()
 	_refresh_daily_pill_text()
 	if _daily_pill:
 		_daily_pill.visible = not _daily_challenges.is_empty()
@@ -1004,7 +1007,10 @@ func _build_daily_challenge_row(vbox: VBoxContainer, challenge: Dictionary) -> v
 	vbox.add_child(row)
 
 func _complete_daily_challenge(challenge_id: int) -> void:
-	var result: Dictionary = await BackendReport.complete_daily_challenge(challenge_id)
+	var report = get_node_or_null("/root/BackendReport")
+	if report == null or not report.has_method("complete_daily_challenge"):
+		return
+	var result: Dictionary = await report.complete_daily_challenge(challenge_id)
 	if not result.get("submitted", false):
 		push_warning("[MainMenu] Không nhận được thưởng thử thách: %s" % str(result.get("message", "")))
 		return

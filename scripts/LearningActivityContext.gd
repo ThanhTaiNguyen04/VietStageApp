@@ -2,6 +2,10 @@ extends RefCounted
 
 static var instrument := "dan_tranh"
 static var local_lesson_ids: Array[String] = []
+static var backend_lesson_id := 0
+static var lesson_code := ""
+static var instrument_id := 0
+static var skill_level_id := 0
 static var return_scene := "res://scenes/MainMenu.tscn"
 static var activity := ""
 
@@ -12,6 +16,21 @@ static func configure(instrument_key: String, lesson_ids: Array, scene_path: Str
 		local_lesson_ids.append(str(lesson_id))
 	return_scene = scene_path
 	activity = ""
+	backend_lesson_id = 0
+	lesson_code = ""
+	instrument_id = 0
+	skill_level_id = 0
+
+
+static func set_backend_lesson(lesson: Dictionary) -> void:
+	backend_lesson_id = int(lesson.get("id", 0))
+	lesson_code = str(lesson.get("lessonCode", lesson.get("lesson_code", "")))
+	var instrument_data: Variant = lesson.get("instrument", {})
+	if instrument_data is Dictionary:
+		instrument_id = int((instrument_data as Dictionary).get("id", 0))
+	var level_data: Variant = lesson.get("skillLevel", lesson.get("skill_level", {}))
+	if level_data is Dictionary:
+		skill_level_id = int((level_data as Dictionary).get("id", 0))
 
 static func ensure_defaults() -> void:
 	if local_lesson_ids.is_empty():

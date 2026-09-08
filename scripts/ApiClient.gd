@@ -158,6 +158,16 @@ func submit_quiz_attempt(quiz_id: int, selected_answer: String, client_attempt_i
 		"clientAttemptId": client_attempt_id,
 	}, true, false)
 
+
+## Nộp một đánh giá tổng hợp của toàn bộ nội dung bắt buộc trong lesson.
+func submit_lesson_assessment(lesson_id: int, payload: Dictionary) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_ASSESSMENT_SESSIONS % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_POST, payload, true, false)
+
+
+func get_lesson_assessment_detail(session_id: int) -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.ASSESSMENT_SESSION_DETAIL % str(session_id)), HTTPClient.METHOD_GET)
+
 ## Lấy danh sách minigame của bài học
 func get_lesson_minigames(lesson_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.LESSON_MINIGAMES % str(lesson_id))

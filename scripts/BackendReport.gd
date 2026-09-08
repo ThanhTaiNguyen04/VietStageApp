@@ -11,6 +11,8 @@ signal activity_history_changed
 
 const AuthSessionStore = preload("res://scripts/AuthSession.gd")
 const ApiClientScript = preload("res://scripts/ApiClient.gd")
+const LearningActivityContext = preload("res://scripts/LearningActivityContext.gd")
+const LessonAssessmentCoordinator = preload("res://scripts/LessonAssessmentCoordinator.gd")
 
 var _api: Node = null
 var _retry_pending_in_progress := false
@@ -149,13 +151,16 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Arr
 		if lesson.is_empty():
 			continue
 		var lesson_id := int(lesson.get("id", 0))
+		LearningActivityContext.set_backend_lesson(lesson)
 		bound_ids.append(lesson_id)
 		var quizzes: Array = await ensure_quizzes(lesson_id)
 		print("[QuizDebug] ensure_quizzes returned size: ", quizzes.size())
 		for quiz: Variant in quizzes:
 			if quiz is Dictionary:
 				result.append(quiz)
-	if result.is_empty():
+	# Do not silently broaden a lesson assessment to another lesson. A missing
+	# canonical binding is local-only content, never a cross-lesson fallback.
+	if false and result.is_empty():
 		var instrument_lesson_ids := SecureDataManager.be_lesson_ids_for_instrument(instrument)
 		if not instrument_lesson_ids.is_empty():
 			push_warning("[Quiz] Không lấy được quiz theo lesson local, quét toàn bộ %d lesson của %s để lấy quiz." % [instrument_lesson_ids.size(), instrument])
@@ -206,6 +211,7 @@ func fetch_minigames_for_level(instrument: String, local_lesson_ids: Array, expe
 		var lesson_id := int(lesson.get("id", 0))
 		if lesson_id <= 0:
 			continue
+		LearningActivityContext.set_backend_lesson(lesson)
 		bound_ids.append(lesson_id)
 		var minigames: Array = await ensure_minigame_list(lesson_id, force_refresh)
 		for item_value: Variant in minigames:
@@ -234,7 +240,8 @@ func fetch_minigames_for_level(instrument: String, local_lesson_ids: Array, expe
 			result.append(enriched)
 
 	# 2. Nếu chưa tìm thấy minigame nào, tự động quét toàn bộ bài học của nhạc cụ đó
-	if result.is_empty():
+	# Assessment content must remain bound to the selected canonical lesson.
+	if false and result.is_empty():
 		var instrument_lesson_ids := SecureDataManager.be_lesson_ids_for_instrument(instrument)
 		for lesson_id: int in instrument_lesson_ids:
 			if bound_ids.has(lesson_id):
@@ -471,6 +478,36 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 	}
 
 
+## Submits the only authoritative assessment for one lesson. The payload is
+## queued unchanged on any non-acknowledged response so retries are idempotent.
+func report_lesson_assessment(lesson_id: int, payload: Dictionary) -> Dictionary:
+	if not is_signed_in():
+		return {"submitted": false, "reason": "not_signed_in"}
+	if lesson_id <= 0:
+		return {"submitted": false, "reason": "invalid_lesson_id"}
+	var client_session_id := str(payload.get("clientSessionId", ""))
+	if client_session_id.is_empty():
+		return {"submitted": false, "reason": "missing_client_session_id"}
+	var response: Dictionary = await _api.submit_lesson_assessment(lesson_id, payload)
+	var assessment := _attempt_data(response)
+	if not _is_success(response) or assessment.is_empty() or int(assessment.get("id", 0)) <= 0:
+		SecureDataManager.enqueue_pending_game_attempt({
+			"kind": "lesson_assessment", "lesson_id": lesson_id,
+			"client_attempt_id": client_session_id, "payload": payload.duplicate(true),
+			"instrument": LearningActivityContext.instrument,
+			"local_lesson_id": LearningActivityContext.local_lesson_ids[0] if not LearningActivityContext.local_lesson_ids.is_empty() else "",
+			"completed_at": str(payload.get("completedAt", _iso_now())),
+			"title": "Đánh giá bài học",
+			"lessonTitle": SecureDataManager.active_course_title if not SecureDataManager.active_course_title.is_empty() else "Bài học",
+		})
+		activity_history_changed.emit()
+		return {"submitted": false, "queued": true, "reason": "assessment_failed", "status": int(response.get("status", 0)), "message": _api.error_message(response, "Đồng bộ đánh giá bài học thất bại.")}
+	SecureDataManager.apply_backend_reward(assessment)
+	_apply_assessment_completion(assessment, LearningActivityContext.instrument, LearningActivityContext.local_lesson_ids[0] if not LearningActivityContext.local_lesson_ids.is_empty() else "")
+	activity_history_changed.emit()
+	return {"submitted": true, "assessment_id": int(assessment.get("id", 0)), "score": assessment.get("score", 0), "max_score": assessment.get("maxScore", 0), "accuracy": assessment.get("accuracy", 0), "stars_earned": int(assessment.get("starsEarned", 0)), "points_earned": int(assessment.get("pointsEarned", 0)), "completed": bool(assessment.get("completed", false)), "lesson_stars": int(assessment.get("lessonStars", 0))}
+
+
 ## Retries persisted game attempts after startup/login. Rewards are applied only
 ## once this API acknowledgement succeeds, then the queue entry is deleted.
 func retry_pending_game_attempts() -> void:
@@ -488,17 +525,27 @@ func retry_pending_game_attempts() -> void:
 			response = await _api.submit_quiz_attempt(int(item.get("quiz_id", 0)), str(item.get("selected_answer", "")), str(item.get("client_attempt_id", "")))
 		elif str(item.get("kind", "")) == "minigame":
 			response = await _api.submit_minigame_attempt(int(item.get("minigame_id", 0)), int(item.get("score", 0)), str(item.get("client_attempt_id", "")), str(item.get("started_at", "")), str(item.get("completed_at", "")))
+		elif str(item.get("kind", "")) == "lesson_assessment":
+			var payload: Dictionary = item.get("payload", {})
+			response = await _api.submit_lesson_assessment(int(item.get("lesson_id", 0)), payload)
 		else:
 			continue
 		var reward := _attempt_data(response)
 		if _is_success(response) and not reward.is_empty() and int(reward.get("id", 0)) > 0:
 			SecureDataManager.apply_backend_reward(reward)
+			if str(item.get("kind", "")) == "lesson_assessment":
+				_apply_assessment_completion(reward, str(item.get("instrument", "")), str(item.get("local_lesson_id", "")))
+				LessonAssessmentCoordinator.clear(int(item.get("lesson_id", 0)))
 			SecureDataManager.remove_pending_game_attempt(str(item.get("client_attempt_id", "")))
 			activity_history_changed.emit()
 		else:
 			if str(item.get("kind", "")) == "quiz":
 				_log_quiz_sync_failure("retry", int(item.get("quiz_id", 0)), response)
 	_retry_pending_in_progress = false
+
+func _apply_assessment_completion(assessment: Dictionary, instrument: String, local_lesson_id: String) -> void:
+	if bool(assessment.get("completed", false)) and not instrument.is_empty() and not local_lesson_id.is_empty():
+		SecureDataManager.apply_confirmed_lesson_completion(instrument, local_lesson_id, int(assessment.get("lessonStars", 0)))
 
 
 ## Log ở cả Output và Debugger/Warnings. Không in access token hay đáp án.
