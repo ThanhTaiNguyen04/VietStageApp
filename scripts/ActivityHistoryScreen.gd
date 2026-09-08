@@ -346,7 +346,7 @@ func _build_top_bar() -> HBoxContainer:
 	back_btn.mouse_exited.connect(func() -> void:
 		create_tween().tween_property(back_btn, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
-	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/AccountScreen.tscn"))
+	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	top_bar.add_child(back_btn)
 
 	# 2. Left-aligned Title Card with Frosted Glass Plate
