@@ -118,8 +118,7 @@ const GLISSANDO_MAX_STRING_STEP := 6
 const GLISSANDO_MIN_DISTINCT_STRINGS := 5
 const GLISSANDO_ROUNDS := [
 	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
-	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"},
-	{"mode": "round", "title": "Á vòng", "instruction": "Vuốt từ dây cao xuống dây thấp rồi trở lên dây cao"}
+	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"}
 ]
 var vibrato_sheet_hud: Control
 var vibrato_instruction_label: Label
@@ -313,8 +312,7 @@ const LESSON_DIALOGUES = {
 		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật Á trên đàn Tranh.", "highlight": -1},
 		{"action": "speak", "text": "Kỹ thuật Á là dùng ngón tay phải vuốt nhanh và liên tục qua nhiều dây để tạo thành một chuỗi âm thanh liền mạch.", "highlight": -1},
 		{"action": "speak", "text": "Á xuống là vuốt từ vùng dây có âm cao xuống vùng dây có âm thấp. Á lên là vuốt theo chiều ngược lại, từ âm thấp lên âm cao.", "highlight": -1},
-		{"action": "speak", "text": "Á vòng là kết hợp hai chiều trong cùng một động tác: vuốt xuống rồi đổi hướng vuốt trở lên. Khi thực hiện, các tiếng cần nối đều, rõ và không bị ngắt quãng.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm ba lượt: Á xuống, Á lên và Á vòng. Ứng dụng sẽ nghe đàn thật, kiểm tra hướng vuốt, độ rộng và tính liên tục của chuỗi âm. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
+		{"action": "speak", "text": "Phần thực hành gồm hai lượt: Á xuống và Á lên. Ứng dụng sẽ nghe đàn thật, kiểm tra hướng vuốt, độ rộng và tính liên tục của chuỗi âm. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
 	],
 	"dan_tranh_level_1_bai_1_practice": [
 		{"action": "speak", "text": "Chào bạn! Trong bài học đầu tiên, chúng ta sẽ cùng tìm hiểu nhạc cụ đàn Tranh.", "highlight": -1},
@@ -2855,7 +2853,7 @@ func _process_glissando_practice() -> void:
 	var silence_gap := now_sec - glissando_last_detection_time
 	var gesture_duration := now_sec - glissando_detected_times[0]
 	var mode := str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"])
-	var max_duration := 3.8 if mode == "round" else 2.4
+	var max_duration := 2.4
 	if silence_gap >= GLISSANDO_GAP_TIMEOUT or gesture_duration >= max_duration:
 		_evaluate_glissando_gesture()
 
@@ -2890,7 +2888,7 @@ func _start_glissando_round(round_index: int) -> void:
 			GLISSANDO_ROUNDS[round_index]["instruction"]
 		]
 	if glissando_progress_label:
-		glissando_progress_label.text = "Lượt %d/3 · 0 dây" % (round_index + 1)
+		glissando_progress_label.text = "Lượt %d/2 · 0 dây" % (round_index + 1)
 	if glissando_progress_bar:
 		glissando_progress_bar.value = 0.0
 	if glissando_status_label:
@@ -2901,12 +2899,11 @@ func _start_glissando_round(round_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _build_glissando_round_notes(_mode: String) -> void:
-	# Ba bài dùng cùng bảy nốt đi lên như sheet mẫu; hướng kỹ thuật được thể
-	# hiện bằng ký hiệu Á xuống, Á lên hoặc Á vòng đặt trước từng nốt.
+	# Hai lượt dùng cùng bảy nốt đi lên như sheet mẫu; hướng kỹ thuật được thể
+	# hiện bằng ký hiệu Á xuống hoặc Á lên đặt trước từng nốt.
 	var string_order: Array[int] = [0, 1, 2, 3, 4, 5, 6]
-	# Á xuống dùng ngón 2, còn Á lên dùng ngón 1. Á vòng giữ nguyên vì không
-	# thuộc yêu cầu hiển thị số ngón này.
-	var fingering := "2" if _mode == "down" else ("1" if _mode == "up" else "")
+	# Á xuống dùng ngón 2, còn Á lên dùng ngón 1.
+	var fingering := "2" if _mode == "down" else "1"
 
 	var staff_width := maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
 	var start_x := 285.0
@@ -2917,10 +2914,6 @@ func _build_glissando_round_notes(_mode: String) -> void:
 		var measure_start: float = start_x + measure_width * float(i)
 		var cue_ratio: float = 0.18
 		var note_ratio: float = 0.68
-		if _mode == "round":
-			# Á vòng phải đọc từ trái sang phải: mũi tên xuống, mũi tên lên, rồi đến nốt.
-			cue_ratio = 0.10
-			note_ratio = 0.72
 		var cue_x: float = measure_start + measure_width * cue_ratio
 		var second_cue_x: float = measure_start + measure_width * 0.38
 		var note_x: float = measure_start + measure_width * note_ratio
@@ -2952,7 +2945,7 @@ func _update_glissando_detection_feedback() -> void:
 	for value in glissando_detected_strings:
 		distinct[value] = true
 	if glissando_progress_label:
-		glissando_progress_label.text = "Lượt %d/3 · %d âm hợp lệ · %d dây khác nhau · phủ %d dây" % [
+		glissando_progress_label.text = "Lượt %d/2 · %d âm hợp lệ · %d dây khác nhau · phủ %d dây" % [
 			glissando_round_idx + 1,
 			glissando_detected_strings.size(),
 			distinct.size(),
@@ -3049,15 +3042,15 @@ func _analyze_glissando_gesture(
 	var distinct_count := distinct.size()
 	var coverage_ratio := float(distinct_count) / float(maxi(1, span + 1))
 	var mobile_fallback := _uses_mobile_audio_fallback()
-	var max_duration := 4.5 if mode == "round" else 3.5
+	var max_duration := 3.5
 	var continuous: bool = times_increasing \
 		and max_gap <= (0.60 if mobile_fallback else GLISSANDO_MAX_ATTACK_GAP) \
 		and max_step <= (8 if mobile_fallback else GLISSANDO_MAX_STRING_STEP) \
 		and duration <= max_duration
 	var minimum_distinct := 4 if mobile_fallback else GLISSANDO_MIN_DISTINCT_STRINGS
-	var minimum_events := 7 if mode == "round" else 5
+	var minimum_events := 5
 	if mobile_fallback:
-		minimum_events = 6 if mode == "round" else 4
+		minimum_events = 4
 	var enough_strings := distinct_count >= minimum_distinct \
 		and strings.size() >= minimum_events
 	var range_valid := false
@@ -3074,26 +3067,6 @@ func _analyze_glissando_gesture(
 		range_valid = span >= (5 if mobile_fallback else 6) and first <= 8 and last >= 7 \
 			and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
 		direction_valid = direction_ratio >= (0.55 if mobile_fallback else 0.65)
-	elif mode == "round":
-		var turn_idx := strings.find(min_string)
-		var minimum_leg_events := 1 if mobile_fallback else 2
-		if turn_idx >= minimum_leg_events and turn_idx <= strings.size() - minimum_leg_events - 1:
-			var down_leg: Array[int] = []
-			var up_leg: Array[int] = []
-			for i in range(turn_idx + 1):
-				down_leg.append(strings[i])
-			for i in range(turn_idx, strings.size()):
-				up_leg.append(strings[i])
-			var down_ratio := _direction_ratio(down_leg, false)
-			var up_ratio := _direction_ratio(up_leg, true)
-			direction_ratio = minf(down_ratio, up_ratio)
-			var minimum_leg_span := 4 if mobile_fallback else 5
-			range_valid = min_string <= 7 and first >= 7 and last >= 7 \
-				and first - min_string >= minimum_leg_span and last - min_string >= minimum_leg_span \
-				and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
-			var minimum_direction_ratio := 0.52 if mobile_fallback else 0.60
-			direction_valid = down_ratio >= minimum_direction_ratio and up_ratio >= minimum_direction_ratio
-
 	result["distinct_count"] = distinct_count
 	result["span"] = span
 	result["duration"] = duration
@@ -4423,9 +4396,6 @@ func _prepare_glissando_sample_round() -> void:
 	else:
 		for string_idx in range(ALL_17_NOTES.size() - 1, -1, -1):
 			technique_sample_sequence.append(string_idx)
-		if mode == "round":
-			for string_idx in range(1, ALL_17_NOTES.size()):
-				technique_sample_sequence.append(string_idx)
 	technique_sample_sequence_idx = 0
 	technique_sample_elapsed = 0.0
 	technique_sample_event_elapsed = GLISSANDO_SAMPLE_INTERVAL
@@ -4444,7 +4414,7 @@ func _process_glissando_sample(delta: float) -> void:
 			if technique_sample_demo_idx >= GLISSANDO_ROUNDS.size():
 				if glissando_progress_bar:
 					glissando_progress_bar.value = 17.0
-				_finish_technique_sample("Đã nghe xong Á xuống, Á lên và Á vòng.", glissando_status_label)
+				_finish_technique_sample("Đã nghe xong Á xuống và Á lên.", glissando_status_label)
 			else:
 				_prepare_glissando_sample_round()
 		return
