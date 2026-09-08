@@ -174,6 +174,7 @@ const PRESS_MAX_SAMPLE_JUMP_CENTS := 120.0
 const PRESS_MAX_RISE_DELAY := 0.80
 const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
+const PRESS_PENDING_COLOR := Color(0.60, 0.60, 0.60, 0.90)
 const PRESS_EXERCISES := [
 	# Bài tập nhấn 1/2 cung: gảy Mi, rồi nhấn tay trái để âm lên Fa.
 	{"source": "Mi2", "target": "Fa2", "interval": 100.0}
@@ -3195,7 +3196,7 @@ func _build_press_display_notes() -> void:
 		press_display_notes.append({
 			"note": "ZT_" + str(exercise["source"]),
 			"x": source_x,
-			"color": Color(0.16, 0.14, 0.12, 1.0),
+			"color": PRESS_PENDING_COLOR,
 			"type": "half",
 			"press_target": "ZT_" + str(exercise["target"]),
 			"press_target_x": target_x,
@@ -3204,7 +3205,7 @@ func _build_press_display_notes() -> void:
 		press_display_notes.append({
 			"note": "ZT_" + str(exercise["target"]),
 			"x": target_x,
-			"color": Color(0.16, 0.14, 0.12, 1.0),
+			"color": PRESS_PENDING_COLOR,
 			"type": "half",
 			"bar_after": i < PRESS_EXERCISES.size() - 1,
 			"bar_x": bar_x
@@ -3235,11 +3236,9 @@ func _start_press_exercise(exercise_index: int) -> void:
 	# Never reuse a still-ringing attack from the previous instruction/attempt.
 	press_consumed_attack_generation = _get_current_technique_attack_generation()
 	for pair_idx in range(PRESS_EXERCISES.size()):
-		var color := Color(0.16, 0.14, 0.12, 1.0)
+		var color := PRESS_PENDING_COLOR
 		if pair_idx < exercise_index:
 			color = Color(0.12, 0.72, 0.30, 1.0)
-		elif pair_idx == exercise_index:
-			color = C_GOLD
 		press_display_notes[pair_idx * 2]["color"] = color
 		press_display_notes[pair_idx * 2 + 1]["color"] = color
 	staff_display.queue_redraw()
@@ -3292,6 +3291,11 @@ func _process_press_practice(delta: float) -> void:
 				press_added_sound_elapsed = 0.0
 				press_silence_elapsed = 0.0
 				press_cents_history.append(0.0)
+				# Đã gảy đúng Mi: trả hai nốt về trạng thái đang chờ trước khi
+				# theo dõi đường nhấn lên Fa.
+				press_display_notes[press_exercise_idx * 2]["color"] = PRESS_PENDING_COLOR
+				press_display_notes[press_exercise_idx * 2 + 1]["color"] = PRESS_PENDING_COLOR
+				staff_display.queue_redraw()
 				if press_status_label:
 					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
 			elif bool(attack_identity.get("active", false)) \
@@ -3305,6 +3309,11 @@ func _process_press_practice(delta: float) -> void:
 					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, source],
 					"Sai dây"
 				)
+				# Sai dây phải phản hồi ngay trên cả cặp Mi -> Fa, giống bài
+				# Kỹ thuật gảy ngón 2; lượt gảy Mi đúng sau đó sẽ trả lại màu xám.
+				press_display_notes[press_exercise_idx * 2]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				staff_display.queue_redraw()
 		else:
 			var cents := 1200.0 * log(pitch / maxf(press_baseline_hz, 0.001)) / log(2.0)
 			if not _is_press_contour_session_valid(attack_identity, source, press_attack_generation):

@@ -303,6 +303,17 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 	_draw_glissando_arrow_head(points[points.size() - 2], tip, color)
 	var font := ThemeDB.fallback_font
 	if font:
+		# Dấu * nằm trực tiếp trên nốt đích (Fa), đúng vị trí ký hiệu Nhấn
+		# trong sheet, thay vì chỉ ghi một nhãn ở giữa đường cong.
+		draw_string(
+			font,
+			Vector2(tip.x - line_spacing * 0.24, tip.y - line_spacing * 1.10),
+			"*",
+			HORIZONTAL_ALIGNMENT_CENTER,
+			line_spacing * 0.50,
+			maxi(20, int(line_spacing * 0.56)),
+			color
+		)
 		draw_string(
 			font,
 			Vector2(control.x - line_spacing * 0.48, control.y - 5.0),
