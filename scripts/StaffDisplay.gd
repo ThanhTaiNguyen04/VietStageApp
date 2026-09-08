@@ -236,8 +236,10 @@ func _draw_glissando_arrow(center_y: float) -> void:
 	var stem_top: float = center_y - 2.45 * float(line_spacing)
 	var stem_bottom: float = center_y + 2.0 * float(line_spacing)
 	for note_data in notes_to_draw:
+		if not bool(note_data.get("show_glissando_arrow", true)):
+			continue
 		var note_x := float(note_data.get("x", size.x / 2.0))
-		# Ký hiệu Á nằm trước từng nốt như sheet mẫu, không nối các nốt với nhau.
+		# Ký hiệu Á bắt đầu sau nốt đầu tiên, nằm giữa nốt đầu và nốt kế tiếp.
 		var cue_x := float(note_data.get("glissando_cue_x", note_x - maxf(20.0, line_spacing * 0.72)))
 		if glissando_arrow_mode == "up":
 			var up_tip := Vector2(cue_x, stem_top)

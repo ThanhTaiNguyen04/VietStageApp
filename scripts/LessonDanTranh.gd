@@ -115,10 +115,11 @@ var glissando_round_locked := false
 const GLISSANDO_GAP_TIMEOUT := 0.75
 const GLISSANDO_MAX_ATTACK_GAP := 0.45
 const GLISSANDO_MAX_STRING_STEP := 6
-const GLISSANDO_MIN_DISTINCT_STRINGS := 5
+const GLISSANDO_NOTE_COUNT := 6
+const GLISSANDO_MIN_DISTINCT_STRINGS := 6
 const GLISSANDO_ROUNDS := [
-	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch từ dây cao xuống dây thấp"},
-	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch từ dây thấp lên dây cao"}
+	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch 6 nốt từ dây 1 đến dây 6"},
+	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch 6 nốt từ dây 17 về dây 12"}
 ]
 var vibrato_sheet_hud: Control
 var vibrato_instruction_label: Label
@@ -967,7 +968,7 @@ func _build_glissando_sheet() -> void:
 	glissando_status_label.add_theme_font_size_override("font_size", 14)
 	content.add_child(glissando_status_label)
 	glissando_progress_bar = ProgressBar.new()
-	glissando_progress_bar.max_value = 17.0
+	glissando_progress_bar.max_value = GLISSANDO_NOTE_COUNT
 	glissando_progress_bar.show_percentage = false
 	glissando_progress_bar.custom_minimum_size = Vector2(0, 7)
 	content.add_child(glissando_progress_bar)
@@ -2899,11 +2900,12 @@ func _start_glissando_round(round_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _build_glissando_round_notes(_mode: String) -> void:
-	# Khuông luôn đọc theo thời gian từ trái sang phải. Á xuống hiển thị nốt
-	# cao tới thấp, còn Á lên hiển thị nốt thấp tới cao để khớp âm mẫu.
-	var string_order: Array[int] = [0, 3, 5, 8, 11, 14, 16]
+	# Khuông đọc từ trái sang phải và hiển thị đúng 6 dây được dùng trong lượt.
+	var string_order: Array[int] = [0, 1, 2, 3, 4, 5]
 	if _mode == "down":
-		string_order.reverse()
+		string_order = [0, 1, 2, 3, 4, 5]
+	else:
+		string_order = [16, 15, 14, 13, 12, 11]
 	# Á xuống dùng ngón 2, còn Á lên dùng ngón 1.
 	var fingering := "2" if _mode == "down" else "1"
 
@@ -2914,11 +2916,10 @@ func _build_glissando_round_notes(_mode: String) -> void:
 	glissando_display_notes.clear()
 	for i in range(string_order.size()):
 		var measure_start: float = start_x + measure_width * float(i)
-		var cue_ratio: float = 0.18
 		var note_ratio: float = 0.68
-		var cue_x: float = measure_start + measure_width * cue_ratio
-		var second_cue_x: float = measure_start + measure_width * 0.38
 		var note_x: float = measure_start + measure_width * note_ratio
+		var cue_x: float = note_x + measure_width * 0.5
+		var second_cue_x: float = measure_start + measure_width * 0.38
 		var bar_x: float = measure_start + measure_width
 		glissando_display_notes.append({
 			"note": "ZT_" + ALL_17_NOTES[string_order[i]],
@@ -2926,6 +2927,7 @@ func _build_glissando_round_notes(_mode: String) -> void:
 			"x": note_x,
 			"glissando_cue_x": cue_x,
 			"glissando_second_cue_x": second_cue_x,
+			"show_glissando_arrow": i == 0,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "quarter",
 			"bar_after": true,
@@ -2954,7 +2956,7 @@ func _update_glissando_detection_feedback() -> void:
 			covered_strings
 		]
 	if glissando_progress_bar:
-		glissando_progress_bar.value = clampf(float(covered_strings), 0.0, 17.0)
+		glissando_progress_bar.value = clampf(float(covered_strings), 0.0, GLISSANDO_NOTE_COUNT)
 	if glissando_status_label:
 		glissando_status_label.text = "Đang nghe: %s (dây %d)" % [
 			ALL_17_NOTES[glissando_detected_strings.back()],
@@ -3049,10 +3051,8 @@ func _analyze_glissando_gesture(
 		and max_gap <= (0.60 if mobile_fallback else GLISSANDO_MAX_ATTACK_GAP) \
 		and max_step <= (8 if mobile_fallback else GLISSANDO_MAX_STRING_STEP) \
 		and duration <= max_duration
-	var minimum_distinct := 4 if mobile_fallback else GLISSANDO_MIN_DISTINCT_STRINGS
-	var minimum_events := 5
-	if mobile_fallback:
-		minimum_events = 4
+	var minimum_distinct := GLISSANDO_MIN_DISTINCT_STRINGS
+	var minimum_events := GLISSANDO_NOTE_COUNT
 	var enough_strings := distinct_count >= minimum_distinct \
 		and strings.size() >= minimum_events
 	var range_valid := false
@@ -3060,14 +3060,14 @@ func _analyze_glissando_gesture(
 	var direction_ratio := 0.0
 
 	if mode == "down":
-		direction_ratio = _direction_ratio(strings, false)
-		range_valid = span >= (5 if mobile_fallback else 6) and first >= 7 and last <= 8 \
-			and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
+		direction_ratio = _direction_ratio(strings, true)
+		range_valid = span >= 5 and first <= 1 and last >= 4 \
+			and coverage_ratio >= 0.35
 		direction_valid = direction_ratio >= (0.55 if mobile_fallback else 0.65)
 	elif mode == "up":
-		direction_ratio = _direction_ratio(strings, true)
-		range_valid = span >= (5 if mobile_fallback else 6) and first <= 8 and last >= 7 \
-			and coverage_ratio >= (0.25 if mobile_fallback else 0.35)
+		direction_ratio = _direction_ratio(strings, false)
+		range_valid = span >= 5 and first >= 15 and last <= 12 \
+			and coverage_ratio >= 0.35
 		direction_valid = direction_ratio >= (0.55 if mobile_fallback else 0.65)
 	result["distinct_count"] = distinct_count
 	result["span"] = span
@@ -3087,7 +3087,7 @@ func _on_glissando_round_success() -> void:
 		note_data["color"] = Color(0.12, 0.78, 0.30, 1.0)
 	staff_display.queue_redraw()
 	if glissando_progress_bar:
-		glissando_progress_bar.value = 17.0
+		glissando_progress_bar.value = GLISSANDO_NOTE_COUNT
 	if glissando_status_label:
 		glissando_status_label.text = "✓ Đúng %s: chuỗi âm liền mạch và đúng hướng." % GLISSANDO_ROUNDS[glissando_round_idx]["title"]
 		glissando_status_label.add_theme_color_override("font_color", Color(0.10, 0.58, 0.25, 1.0))
@@ -4392,11 +4392,11 @@ func _prepare_glissando_sample_round() -> void:
 	_start_glissando_round(technique_sample_demo_idx)
 	technique_sample_sequence.clear()
 	var mode := str(GLISSANDO_ROUNDS[technique_sample_demo_idx]["mode"])
-	if mode == "up":
-		for string_idx in range(ALL_17_NOTES.size()):
+	if mode == "down":
+		for string_idx in range(GLISSANDO_NOTE_COUNT):
 			technique_sample_sequence.append(string_idx)
 	else:
-		for string_idx in range(ALL_17_NOTES.size() - 1, -1, -1):
+		for string_idx in range(ALL_17_NOTES.size() - 1, ALL_17_NOTES.size() - GLISSANDO_NOTE_COUNT - 1, -1):
 			technique_sample_sequence.append(string_idx)
 	technique_sample_sequence_idx = 0
 	technique_sample_elapsed = 0.0
@@ -4415,7 +4415,7 @@ func _process_glissando_sample(delta: float) -> void:
 			technique_sample_demo_idx += 1
 			if technique_sample_demo_idx >= GLISSANDO_ROUNDS.size():
 				if glissando_progress_bar:
-					glissando_progress_bar.value = 17.0
+					glissando_progress_bar.value = GLISSANDO_NOTE_COUNT
 				_finish_technique_sample("Đã nghe xong Á xuống và Á lên.", glissando_status_label)
 			else:
 				_prepare_glissando_sample_round()
@@ -4437,7 +4437,7 @@ func _process_glissando_sample(delta: float) -> void:
 			glissando_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0)
 			visual_note_changed = true
 		if glissando_progress_bar:
-			glissando_progress_bar.value = minf(17.0, float(technique_sample_sequence_idx))
+			glissando_progress_bar.value = minf(float(GLISSANDO_NOTE_COUNT), float(technique_sample_sequence_idx))
 	if visual_note_changed:
 		staff_display.set_notes(glissando_display_notes)
 	if technique_sample_sequence_idx >= technique_sample_sequence.size():
