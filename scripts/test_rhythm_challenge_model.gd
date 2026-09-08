@@ -48,6 +48,18 @@ func _test_parser() -> void:
 	_check(bool(parsed[1]["submit_after"]), "chỉ submit ở vòng cuối challenge")
 	_check(int(parsed[1]["max_score"]) == 500, "mọi vòng phải giữ maxScore của challenge")
 
+	_check(not bool(parsed[0]["performance_mode"]), "beats-only must stay on the legacy TAP path")
+	var performance := RhythmModel.parse_challenges([{
+		"contentJson": {"tempo_bpm": 80, "notes": ["C4", "D4"], "beats": [0.5, 1.0]}
+	}])
+	_check(performance.size() == 1 and bool(performance[0]["performance_mode"]), "ordered notes and beats must enable performance mode")
+	if performance.size() == 1:
+		_check(performance[0]["notes"] == ["C4", "D4"], "performance notes must retain their authored order")
+	var invalid_performance := RhythmModel.parse_challenges([{
+		"contentJson": {"notes": ["C4", "D4"], "beats": [1.0, 0.5]}
+	}])
+	_check(invalid_performance.size() == 1 and not bool(invalid_performance[0]["performance_mode"]), "unordered beats must not desynchronize notes and timing")
+
 	var invalid := RhythmModel.parse_challenges([{"contentJson": "{not-json}"}])
 	_check(invalid.is_empty(), "challenge không có beat hợp lệ phải bị loại")
 

@@ -8,6 +8,8 @@ func _init() -> void:
 func _run() -> void:
 	print("--- Running Minigame Contract & Screens Test ---")
 	_test_rhythm_contract()
+	_test_rhythm_performance_scoring()
+	_test_rhythm_staff_display()
 	_test_melody_contract()
 	_test_instrument_sample_player()
 	_test_staff_display_playback_highlight()
@@ -39,6 +41,42 @@ func _test_rhythm_contract() -> void:
 		_check(parsed_single[0]["beats"] == [1.0, 2.0, 3.0, 4.0], "Beats must match exactly")
 		_check(int(parsed_single[0]["tempo_bpm"]) == 120, "Tempo must be 120")
 		_check(parsed_single[0]["submit_after"] == true, "Single round should submit_after == true")
+		_check(parsed_single[0]["performance_mode"] == false, "Legacy beats-only challenge should have performance_mode == false")
+
+	var perf_challenge := {
+		"id": 103,
+		"title": "Khuông nhạc nhịp điệu",
+		"challengeType": "RHYTHM_MATCH",
+		"maxScore": 500,
+		"contentJson": JSON.stringify({
+			"tempo_bpm": 90,
+			"notes": ["C4", "D4", "E4", "G4", "A4", "C5"],
+			"beats": [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],
+			"durations": [1, 1, 1, 1, 1, 1]
+		})
+	}
+	var parsed_perf = RhythmModel.parse_challenges([perf_challenge])
+	_check(parsed_perf.size() == 1, "Performance challenge should produce 1 item")
+	if parsed_perf.size() == 1:
+		_check(parsed_perf[0]["performance_mode"] == true, "Challenge with matching notes & beats must enable performance_mode")
+		_check(parsed_perf[0]["notes"] == ["C4", "D4", "E4", "G4", "A4", "C5"], "Notes array must be preserved")
+		_check(parsed_perf[0]["durations"].size() == 6, "Durations array must match size 6")
+
+	var mismatch_challenge := {
+		"id": 104,
+		"title": "Lệch nốt và nhịp",
+		"challengeType": "RHYTHM_MATCH",
+		"maxScore": 300,
+		"contentJson": JSON.stringify({
+			"tempoBpm": 80,
+			"notes": ["C4", "D4"],
+			"beats": [0.5, 1.0, 1.5]
+		})
+	}
+	var parsed_mismatch = RhythmModel.parse_challenges([mismatch_challenge])
+	_check(parsed_mismatch.size() == 1, "Mismatch challenge parsed")
+	if parsed_mismatch.size() == 1:
+		_check(parsed_mismatch[0]["performance_mode"] == false, "Mismatch note/beat size must fallback to legacy mode")
 
 	var multi_round_challenge := {
 		"id": 102,
@@ -57,6 +95,45 @@ func _test_rhythm_contract() -> void:
 	if parsed_multi.size() == 2:
 		_check(parsed_multi[0]["submit_after"] == false, "Round 1 should not submit_after")
 		_check(parsed_multi[1]["submit_after"] == true, "Round 2 should submit_after")
+
+func _test_rhythm_performance_scoring() -> void:
+	var RhythmModel = load("res://scripts/RhythmChallengeModel.gd")
+	var beats: Array[float] = [1.0, 2.0, 3.0]
+	var judgements: Array[String] = ["", "", ""]
+
+	# Perfect: correct pitch + within 0.08s
+	var res_perf = RhythmModel.judge_performance_note(1.03, beats, judgements, true)
+	_check(res_perf.get("judgement") == "PERFECT", "Scoring: Perfect hit judgement")
+	_check(res_perf.get("points") == 100, "Scoring: Perfect hit gives 100 points")
+	judgements[0] = "PERFECT"
+
+	# Good: correct pitch + within 0.24s
+	var res_good = RhythmModel.judge_performance_note(2.15, beats, judgements, true)
+	_check(res_good.get("judgement") == "GOOD", "Scoring: Good hit judgement")
+	_check(res_good.get("points") == 88, "Scoring: Good hit gives 88 points (60 pitch + 28 timing)")
+	judgements[1] = "GOOD"
+
+	# Wrong note: incorrect pitch + on time
+	var res_wrong = RhythmModel.judge_performance_note(3.01, beats, judgements, false)
+	_check(res_wrong.get("judgement") == "WRONG_NOTE", "Scoring: Wrong note judgement")
+	_check(res_wrong.get("points") == 0, "Scoring: Wrong note gives 0 points")
+
+	# Accuracy metrics
+	_check(is_equal_approx(RhythmModel.pitch_accuracy_percent(2, 4), 50.0), "Pitch accuracy 2/4 = 50%")
+	_check(is_equal_approx(RhythmModel.timing_accuracy_percent(3, 4), 75.0), "Timing accuracy 3/4 = 75%")
+
+func _test_rhythm_staff_display() -> void:
+	var StaffScript = load("res://scripts/RhythmStaffDisplay.gd")
+	var rstaff = Control.new()
+	rstaff.set_script(StaffScript)
+	rstaff.custom_minimum_size = Vector2(500, 240)
+	rstaff.call("configure_rhythm", ["Đô2", "Rê2", "Mi2", "Sol2"], [0.6, 1.2, 1.8, 2.4], 3.0)
+	_check(rstaff.get("beat_times").size() == 4, "RhythmStaffDisplay: 4 beat times configured")
+	_check(rstaff.get("judgements").size() == 4, "RhythmStaffDisplay: 4 empty judgements initialized")
+	
+	rstaff.call("update_progress", 1.2, ["PERFECT", "GOOD", "", ""])
+	_check(rstaff.get("playback_index") == 1, "RhythmStaffDisplay: active playback_index matches beat at 1.2s")
+	rstaff.free()
 
 func _test_melody_contract() -> void:
 	var melody_screen = load("res://scripts/MelodyCompletionScreen.gd").new()

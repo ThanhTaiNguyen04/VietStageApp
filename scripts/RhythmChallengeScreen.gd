@@ -1,6 +1,9 @@
 extends "res://scripts/LearningActivityBase.gd"
 
 const RhythmModel = preload("res://scripts/RhythmChallengeModel.gd")
+const RhythmStaffDisplayScript = preload("res://scripts/RhythmStaffDisplay.gd")
+const InstrumentSamplePlayerScript = preload("res://scripts/InstrumentSamplePlayer.gd")
+const AudioCaptureAnalyzerScript = preload("res://scripts/AudioCaptureAnalyzer.gd")
 
 enum FlowState {
 	LOADING,
@@ -29,13 +32,23 @@ var round_duration := 1.0
 var round_started_at_ms := 0
 var challenge_started_at := ""
 var playing := false
+var performance_mode := false
+var performance_notes: Array[String] = []
+var staff: Control
+var sample_player: Node
+var audio_analyzer: AudioCaptureAnalyzer
+var last_detected_at_ms := -1000
 
 var round_accuracy_points := 0
 var round_hits := 0
+var round_correct_pitch_count := 0
+var round_on_time_count := 0
 var challenge_accuracy_points := 0
 var challenge_beat_count := 0
 var total_accuracy_points := 0
 var total_beat_count := 0
+var total_correct_pitch_count := 0
+var total_on_time_count := 0
 var total_score := 0
 var total_max_score := 0
 var backend_stars_earned := 0
@@ -45,6 +58,7 @@ var sync_failures: Array[Dictionary] = []
 var online_session := false
 
 var status_label: Label
+var microphone_label: Label
 var accuracy_label: Label
 var hit_label: Label
 var timeline: Control
@@ -69,6 +83,7 @@ func _ready() -> void:
 	click_player = AudioStreamPlayer.new()
 	click_player.name = "RhythmClickPlayer"
 	add_child(click_player)
+	_setup_performance_audio()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	_load_challenges()
 
@@ -78,24 +93,73 @@ func _exit_tree() -> void:
 	session_generation += 1
 	preview_generation += 1
 	playing = false
+	if is_instance_valid(sample_player):
+		sample_player.call("stop")
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(true)
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if flow_state == FlowState.PLAYING and event.is_action_pressed("ui_accept") and not event.is_echo():
-		_tap()
-		get_viewport().set_input_as_handled()
-
-
-func _process(_delta: float) -> void:
-	if not playing or flow_state != FlowState.PLAYING:
+func _setup_performance_audio() -> void:
+	sample_player = InstrumentSamplePlayerScript.new()
+	sample_player.name = "RhythmRecordedSamplePlayer"
+	add_child(sample_player)
+	sample_player.note_started.connect(_on_sample_note_started)
+	sample_player.playback_finished.connect(_on_sample_finished)
+	sample_player.playback_failed.connect(_on_sample_failed)
+	audio_analyzer = AudioCaptureAnalyzerScript.new() as AudioCaptureAnalyzer
+	if audio_analyzer == null:
 		return
-	var elapsed := float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0
-	for index in beat_times.size():
-		if judgements[index].is_empty() and elapsed > beat_times[index] + GOOD_WINDOW:
-			_set_judgement(index, "MISS")
-	if is_instance_valid(timeline):
-		timeline.call("update_progress", elapsed, judgements)
-	_update_live_metrics()
+	audio_analyzer.name = "RhythmAudioCaptureAnalyzer"
+	audio_analyzer.pitch_profile = _make_pitch_profile()
+	add_child(audio_analyzer)
+	audio_analyzer.set_analysis_suspended(true)
+
+
+func _make_pitch_profile() -> InstrumentPitchProfile:
+	var profile := InstrumentPitchProfile.new()
+	profile.cents_tolerance = 75.0
+	profile.min_frequency = 120.0
+	profile.max_frequency = 2200.0
+	profile.is_plucked_instrument = Context.instrument == "dan_tranh"
+	var names: Array[String] = []
+	var frequencies := PackedFloat32Array()
+	for midi in range(48, 85):
+		var note_names := ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+		names.append("%s%d" % [note_names[midi % 12], midi / 12 - 1])
+		frequencies.append(440.0 * pow(2.0, (float(midi) - 69.0) / 12.0))
+	profile.notes = names
+	profile.frequencies = frequencies
+	return profile
+
+
+func _on_sample_note_started(index: int) -> void:
+	if is_instance_valid(staff):
+		staff.set_playback_index(index)
+
+
+func _on_sample_finished() -> void:
+	if flow_state == FlowState.PREVIEW:
+		_set_flow_state(FlowState.INTRO)
+		if is_instance_valid(preview_button):
+			preview_button.text = "↻  Nghe lại"
+		if is_instance_valid(preview_status):
+			preview_status.text = "Mẫu đã phát xong. Nhấn Bắt đầu để hệ thống nghe nhạc cụ thật."
+	if is_instance_valid(staff):
+		staff.set_playback_index(-1)
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(true)
+
+
+func _on_sample_failed(details: Dictionary) -> void:
+	if flow_state == FlowState.PREVIEW:
+		_set_flow_state(FlowState.INTRO)
+	if is_instance_valid(preview_button):
+		preview_button.disabled = false
+		preview_button.text = "▶  Nghe mẫu"
+	if is_instance_valid(preview_status):
+		var missing: Array = details.get("missing", [])
+		preview_status.text = "Thiếu WAV thu thật cho nốt mẫu (%d asset). Không dùng âm tổng hợp." % missing.size()
+
 
 
 func _load_challenges() -> void:
@@ -123,7 +187,7 @@ func _load_challenges() -> void:
 	if generation != load_generation or not is_inside_tree():
 		return
 
-	rhythms = RhythmModel.parse_challenges(target_challenges)
+	rhythms = RhythmModel.parse_challenges(target_challenges, Context.instrument)
 	if rhythms.is_empty():
 		# A signed-in learner can reach this branch when the lesson has not been
 		# authored with a rhythm challenge yet. Keep the game playable, but make
@@ -148,7 +212,7 @@ func _use_offline_data() -> void:
 	item["id"] = 0
 	item["title"] = "Mẫu nhịp %s" % _instrument_title().to_lower()
 	item["difficulty"] = "Luyện tập"
-	rhythms = RhythmModel.parse_challenges([item])
+	rhythms = RhythmModel.parse_challenges([item], Context.instrument)
 	if rhythms.is_empty():
 		_set_flow_state(FlowState.ERROR)
 		_build_load_error("Dữ liệu nhịp mẫu không hợp lệ.", "Không thể bắt đầu trò chơi ở chế độ offline.", false)
@@ -212,12 +276,22 @@ func _build_intro() -> void:
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(detail)
 
-	var instruction := _label("Nghe mẫu, quan sát vạch quét và gõ khi vạch đi qua từng điểm nhịp.", 16 if _is_mobile() else 18, C_TEXT)
+	var instruction := _label("Nghe mẫu, sau đó chơi từng nốt trên nhạc cụ thật khi playhead đi qua nốt đó.", 16 if _is_mobile() else 18, C_TEXT)
+	if Context.instrument == "trong_chau":
+		instruction.text = "Nghe mẫu, sau đó gõ từng nhịp trên Trống Chầu khi playhead đi qua nốt vàng."
 	instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(instruction)
 
-	card_body.add_child(_build_beat_preview())
-	preview_status = _label("PERFECT ±80 ms  ·  GOOD ±240 ms", 13 if _is_mobile() else 14, C_MUTED)
+	staff = Control.new()
+	staff.name = "RhythmPreviewStaff"
+	staff.set_script(RhythmStaffDisplayScript)
+	staff.custom_minimum_size = Vector2(0, 210 if _is_mobile() else 245)
+	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	staff.call("configure_rhythm", performance_notes, beat_times, round_duration)
+	staff.call("update_progress", 0.0, judgements)
+	card_body.add_child(staff)
+
+	preview_status = _label("Micro chỉ dùng để chấm sau khi bạn nhấn Bắt đầu.", 13 if _is_mobile() else 14, C_MUTED)
 	preview_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(preview_status)
 
@@ -243,41 +317,44 @@ func _build_intro() -> void:
 	card_body.add_child(mode)
 
 
-func _build_beat_preview() -> Control:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 74)
-	panel.add_theme_stylebox_override("panel", _soft_panel(C_GOLD_SOFT, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.30), 16))
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 14 if _is_mobile() else 20)
-	panel.add_child(row)
-	for index in beat_times.size():
-		var beat := _label("●", 22 if _is_mobile() else 26, C_GOLD)
-		beat.tooltip_text = "Phách %d · %.2f giây" % [index + 1, beat_times[index]]
-		row.add_child(beat)
-	return panel
-
-
 func _play_sample() -> void:
 	if flow_state == FlowState.PREVIEW:
-		preview_generation += 1
+		if is_instance_valid(sample_player):
+			sample_player.call("stop")
 		if is_instance_valid(click_player):
 			click_player.stop()
+		preview_generation += 1
 		_set_flow_state(FlowState.INTRO)
 		if is_instance_valid(preview_button):
 			preview_button.disabled = false
 			preview_button.text = "▶  Nghe mẫu"
 		if is_instance_valid(preview_status):
-			preview_status.text = "Đã dừng mẫu nhịp"
+			preview_status.text = "Đã dừng nghe mẫu"
+		if is_instance_valid(staff):
+			staff.set_playback_index(-1)
 		return
+
 	if flow_state != FlowState.INTRO:
 		return
+
 	preview_generation += 1
 	var generation := preview_generation
 	_set_flow_state(FlowState.PREVIEW)
-	preview_button.text = "■  Dừng nghe"
-	preview_status.text = "Đang phát mẫu nhịp…"
-	_run_preview(generation)
+	if is_instance_valid(preview_button):
+		preview_button.text = "■  Dừng nghe"
+	if is_instance_valid(preview_status):
+		preview_status.text = "Đang phát mẫu; microphone tạm khóa."
+
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(true)
+
+	var bpm := float(_safe_int(rhythms[rhythm_index].get("tempo_bpm", 80), 80))
+	var sample_res: Dictionary = {}
+	if is_instance_valid(sample_player):
+		sample_res = sample_player.call("play_sequence", Context.instrument, performance_notes, -1, bpm)
+
+	if not bool(sample_res.get("ok", false)):
+		_run_preview(generation)
 
 
 func _run_preview(generation: int) -> void:
@@ -287,11 +364,15 @@ func _run_preview(generation: int) -> void:
 		await get_tree().create_timer(wait_time).timeout
 		if generation != preview_generation or not is_inside_tree():
 			return
+		if is_instance_valid(staff):
+			staff.set_playback_index(index)
 		_play_click(index == 0)
 		previous_time = beat_times[index]
 	await get_tree().create_timer(0.35).timeout
 	if generation != preview_generation or not is_inside_tree():
 		return
+	if is_instance_valid(staff):
+		staff.set_playback_index(-1)
 	_set_flow_state(FlowState.INTRO)
 	if is_instance_valid(preview_button):
 		preview_button.text = "↻  Nghe lại"
@@ -305,6 +386,10 @@ func _start_round() -> void:
 	preview_generation += 1
 	if is_instance_valid(click_player):
 		click_player.stop()
+	if is_instance_valid(sample_player):
+		sample_player.call("stop")
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(true)
 	session_generation += 1
 	var generation := session_generation
 	playing = false
@@ -319,13 +404,13 @@ func _run_countdown(generation: int) -> void:
 	_set_flow_state(FlowState.COUNTDOWN)
 	_clear_content()
 	var card_body := _add_centered_card(C_GREEN, 640.0)
-	var prompt := _label("Sẵn sàng gõ theo nhịp", 20 if _is_mobile() else 24, C_NAVY)
+	var prompt := _label("Sẵn sàng diễn tấu theo khuông nhạc", 20 if _is_mobile() else 24, C_NAVY)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(prompt)
 	countdown_label = _label("3", 78 if _is_mobile() else 96, C_GREEN)
 	countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(countdown_label)
-	var hint := _label("Bạn có thể dùng nút TAP hoặc phím Space / Enter", 14, C_MUTED)
+	var hint := _label("Sau khi bắt đầu, hệ thống sẽ chấm từ âm thanh nhạc cụ qua micro.", 14, C_MUTED)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(hint)
 	for value in ["3", "2", "1", "BẮT ĐẦU!"]:
@@ -340,12 +425,35 @@ func _run_countdown(generation: int) -> void:
 	if challenge_started_at.is_empty():
 		challenge_started_at = _now_iso()
 	round_started_at_ms = Time.get_ticks_msec()
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(false)
+		audio_analyzer.start_microphone_capture()
 	playing = true
 	_set_flow_state(FlowState.PLAYING)
 	_build_game()
 	await get_tree().create_timer(round_duration).timeout
 	if generation == session_generation and playing and is_inside_tree():
 		_finish_round()
+
+
+func _unhandled_input(_event: InputEvent) -> void:
+	pass
+
+
+func _process(_delta: float) -> void:
+	if not playing or flow_state != FlowState.PLAYING:
+		return
+	var elapsed := float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0
+	for index in beat_times.size():
+		if judgements[index].is_empty() and elapsed > beat_times[index] + GOOD_WINDOW:
+			_set_judgement(index, "MISS")
+	if performance_mode:
+		_process_live_note(elapsed)
+	if is_instance_valid(staff):
+		staff.call("update_progress", elapsed, judgements)
+	if performance_mode:
+		_update_microphone_indicator()
+	_update_live_metrics()
 
 
 func _build_game() -> void:
@@ -362,8 +470,9 @@ func _build_game() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_row.add_child(spacer)
-	var keyboard_hint := _label("SPACE / ENTER", 12, C_MUTED)
-	top_row.add_child(_chip(keyboard_hint, Color("#f3f5f8"), Color("#d8deea")))
+
+	var microphone_chip_label := _label("● MICRO ĐANG NGHE", 12, C_OK)
+	top_row.add_child(_chip(microphone_chip_label, C_GREEN_SOFT, Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.28)))
 
 	var heading := _label(str(current.get("title", "Thử thách nhịp điệu")), 21 if _is_mobile() else 26, C_NAVY)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -380,34 +489,33 @@ func _build_game() -> void:
 	metrics.add_child(accuracy_label)
 	metrics.add_child(hit_label)
 
-	timeline = Control.new()
-	timeline.name = "BeatLane"
-	timeline.set_script(load("res://scripts/LearningBeatLane.gd"))
-	timeline.custom_minimum_size = Vector2(0, 150 if _is_mobile() else 168)
-	timeline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	timeline.call("configure", beat_times, round_duration)
-	timeline.call("update_progress", 0.0, judgements)
-	card_body.add_child(timeline)
+	staff = Control.new()
+	staff.name = "RhythmStaff"
+	staff.set_script(RhythmStaffDisplayScript)
+	staff.custom_minimum_size = Vector2(0, 230 if _is_mobile() else 270)
+	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	staff.call("configure_rhythm", performance_notes, beat_times, round_duration)
+	staff.call("update_progress", 0.0, judgements)
+	card_body.add_child(staff)
 
 	status_label = _label("CHỜ NHỊP…", 20 if _is_mobile() else 24, C_MUTED)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.custom_minimum_size = Vector2(0, 28)
 	card_body.add_child(status_label)
 
-	tap_button = _button("TAP  ·  GÕ NHỊP", 0, 76 if _is_mobile() else 84, C_GREEN)
-	tap_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tap_button.add_theme_font_size_override("font_size", 22 if _is_mobile() else 26)
-	tap_button.tooltip_text = "Gõ đúng lúc vạch quét đi qua điểm nhịp"
-	tap_button.pressed.connect(_tap)
-	card_body.add_child(tap_button)
+	microphone_label = _label("Micro đang khởi động…", 13 if _is_mobile() else 14, C_MUTED)
+	microphone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card_body.add_child(microphone_label)
 
-	var guidance := _label("Chạm nút hoặc nhấn Space / Enter khi playhead đi qua chấm vàng.", 13 if _is_mobile() else 14, C_MUTED)
+	var guidance := _label("Chơi đúng cao độ khi playhead đi qua nốt vàng. Không cần chạm màn hình hay nhấn phím.", 13 if _is_mobile() else 14, C_MUTED)
 	guidance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if Context.instrument == "trong_chau":
+		guidance.text = "Gõ đúng nhịp khi playhead đi qua nốt vàng. Không cần chạm màn hình hay nhấn phím."
 	card_body.add_child(guidance)
 
 
 func _tap() -> void:
-	if not playing or flow_state != FlowState.PLAYING:
+	if performance_mode or not playing or flow_state != FlowState.PLAYING:
 		return
 	var elapsed := float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0
 	var decision := RhythmModel.judge_tap(elapsed, beat_times, judgements, PERFECT_WINDOW, GOOD_WINDOW)
@@ -425,6 +533,67 @@ func _tap() -> void:
 	_update_live_metrics()
 
 
+func _process_live_note(elapsed: float) -> void:
+	if not is_instance_valid(audio_analyzer):
+		return
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - last_detected_at_ms < 110:
+		return
+
+	if Context.instrument == "trong_chau":
+		if audio_analyzer.current_amplitude_db > -45.0 or audio_analyzer.current_pitch_is_reliable:
+			var decision := RhythmModel.judge_performance_note(elapsed, beat_times, judgements, true, PERFECT_WINDOW, GOOD_WINDOW)
+			var index := int(decision.get("index", -1))
+			if index >= 0 and index < performance_notes.size():
+				last_detected_at_ms = now_ms
+				var judgement := str(decision.get("judgement", "MISS"))
+				_set_judgement(index, judgement)
+				if judgement in ["PERFECT", "GOOD"]:
+					round_hits += 1
+					round_correct_pitch_count += 1
+					round_on_time_count += 1
+				_update_live_metrics()
+		return
+
+	if not audio_analyzer.current_pitch_is_reliable or audio_analyzer.current_pitch <= 0.0:
+		return
+
+	var candidate_decision := RhythmModel.judge_tap(elapsed, beat_times, judgements, PERFECT_WINDOW, GOOD_WINDOW)
+	var index := int(candidate_decision.get("index", -1))
+	if index < 0 or index >= performance_notes.size():
+		return
+
+	var is_correct_pitch := _matches_expected_pitch(audio_analyzer.current_pitch, performance_notes[index])
+	var perf_decision := RhythmModel.judge_performance_note(elapsed, beat_times, judgements, is_correct_pitch, PERFECT_WINDOW, GOOD_WINDOW)
+	last_detected_at_ms = now_ms
+	var judgement := str(perf_decision.get("judgement", "MISS"))
+	_set_judgement(index, judgement)
+	if is_correct_pitch:
+		round_correct_pitch_count += 1
+	if bool(perf_decision.get("timing_ok", false)):
+		round_on_time_count += 1
+	if judgement in ["PERFECT", "GOOD"]:
+		round_hits += 1
+	_update_live_metrics()
+
+
+func _matches_expected_pitch(frequency: float, expected_note: String) -> bool:
+	var key := InstrumentSamplePlayer.normalize_note_key(Context.instrument, expected_note)
+	if key.length() < 2 or frequency <= 0.0:
+		return false
+	var letter := key.substr(0, 1).to_upper()
+	var octave_text := key.substr(1)
+	if not octave_text.is_valid_int():
+		return false
+	var semitone_map := {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+	if not semitone_map.has(letter):
+		return false
+	var midi := (int(octave_text) + 1) * 12 + int(semitone_map[letter])
+	var reference := 440.0 * pow(2.0, (float(midi) - 69.0) / 12.0)
+	var cents := 1200.0 * log(frequency / reference) / log(2.0)
+	return absf(cents) <= 75.0
+
+
 func _set_judgement(index: int, value: String) -> void:
 	if index < 0 or index >= judgements.size() or not judgements[index].is_empty():
 		return
@@ -433,12 +602,17 @@ func _set_judgement(index: int, value: String) -> void:
 		round_accuracy_points += 100
 		_show_feedback("PERFECT  +100", C_OK)
 	elif value == "GOOD":
-		round_accuracy_points += 70
-		_show_feedback("GOOD  +70", C_BLUE)
+		var points := 88 if performance_mode else 70 # pitch 60 + GOOD timing 28
+		round_accuracy_points += points
+		_show_feedback("GOOD  +%d" % points, C_BLUE)
+	elif value == "WRONG_NOTE":
+		_show_feedback("SAI NỐT", C_BAD)
 	else:
 		_show_feedback("MISS", C_BAD)
 	if is_instance_valid(timeline):
 		timeline.call("update_progress", float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0, judgements)
+	if is_instance_valid(staff):
+		staff.call("update_progress", float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0, judgements)
 
 
 func _show_feedback(text_value: String, color: Color) -> void:
@@ -447,6 +621,30 @@ func _show_feedback(text_value: String, color: Color) -> void:
 	status_label.text = text_value
 	status_label.add_theme_color_override("font_color", color)
 	_pulse_control(status_label, 1.08)
+
+
+func _update_microphone_indicator() -> void:
+	if not is_instance_valid(microphone_label) or not is_instance_valid(audio_analyzer):
+		return
+	if not audio_analyzer.has_microphone_permission():
+		microphone_label.text = "Micro chưa được cấp quyền. Hãy cấp quyền để hệ thống chấm bài."
+		microphone_label.add_theme_color_override("font_color", C_BAD)
+		return
+	var diagnostics := audio_analyzer.get_microphone_diagnostics()
+	var capture_status := str(diagnostics.get("status", "starting"))
+	if capture_status == "receiving":
+		var pitch := audio_analyzer.current_pitch
+		if audio_analyzer.current_pitch_is_reliable and pitch > 0.0:
+			microphone_label.text = "Micro đang nghe · phát hiện %.1f Hz" % pitch
+		else:
+			microphone_label.text = "Micro đang nghe · chờ bạn chơi nốt tiếp theo"
+		microphone_label.add_theme_color_override("font_color", C_OK)
+	elif capture_status in ["no_frames", "silent_stream"]:
+		microphone_label.text = "Chưa nhận được âm thanh từ micro. Kiểm tra thiết bị đầu vào."
+		microphone_label.add_theme_color_override("font_color", C_BAD)
+	else:
+		microphone_label.text = "Micro đang khởi động…"
+		microphone_label.add_theme_color_override("font_color", C_MUTED)
 
 
 func _update_live_metrics() -> void:
@@ -461,6 +659,8 @@ func _finish_round() -> void:
 	if not playing:
 		return
 	playing = false
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(true)
 	_set_flow_state(FlowState.SUBMITTING)
 	if is_instance_valid(timeline):
 		timeline.set("active", false)
@@ -471,6 +671,8 @@ func _finish_round() -> void:
 	challenge_beat_count += beat_times.size()
 	total_accuracy_points += round_accuracy_points
 	total_beat_count += beat_times.size()
+	total_correct_pitch_count += round_correct_pitch_count
+	total_on_time_count += round_on_time_count
 
 	if bool(current.get("submit_after", true)):
 		var max_score := _safe_int(current.get("max_score", 100), 100)
@@ -537,16 +739,33 @@ func _submit_payload(payload: Dictionary) -> bool:
 func _build_round_result(round_accuracy: float) -> void:
 	_set_flow_state(FlowState.ROUND_RESULT)
 	_clear_content()
-	var card_body := _add_centered_card(C_GREEN, 760.0)
+	var card_body := _add_centered_card(C_GREEN, 820.0)
 	var icon := _label("✓", 64 if _is_mobile() else 76, C_OK)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(icon)
 	var heading := _label("Vòng %d hoàn thành!" % (rhythm_index + 1), 24 if _is_mobile() else 28, C_NAVY)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(heading)
-	var detail := _label("Đúng %d/%d phách  ·  Accuracy %.0f%%" % [round_hits, beat_times.size(), round_accuracy], 16 if _is_mobile() else 18, C_MUTED)
+
+	var pitch_acc := RhythmModel.pitch_accuracy_percent(round_correct_pitch_count, beat_times.size())
+	var time_acc := RhythmModel.timing_accuracy_percent(round_on_time_count, beat_times.size())
+	var detail_text := "Đúng %d/%d phách  ·  Accuracy %.0f%%" % [round_hits, beat_times.size(), round_accuracy]
+	if performance_mode:
+		detail_text = "Cao độ: %.0f%%  ·  Nhịp điệu: %.0f%%  ·  Tổng hợp: %.0f%%" % [pitch_acc, time_acc, round_accuracy]
+	var detail := _label(detail_text, 15 if _is_mobile() else 17, C_MUTED)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(detail)
+
+	if performance_mode:
+		var result_staff: Control = Control.new()
+		result_staff.name = "RoundResultStaff"
+		result_staff.set_script(RhythmStaffDisplayScript)
+		result_staff.custom_minimum_size = Vector2(0, 200 if _is_mobile() else 230)
+		result_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		result_staff.call("configure_rhythm", performance_notes, beat_times, round_duration)
+		result_staff.call("update_progress", round_duration, judgements)
+		card_body.add_child(result_staff)
+
 	var next_title := str(rhythms[rhythm_index + 1].get("title", "Thử thách tiếp theo"))
 	var next_hint := _label("Tiếp theo: %s" % next_title, 14, C_TEXT)
 	next_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -570,9 +789,12 @@ func _build_final_result() -> void:
 	_clear_content()
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var card_body := _add_centered_card(C_GOLD, 900.0)
+	var card_body := _add_centered_card(C_GOLD, 920.0)
 	var stars := RhythmModel.stars_for_score(total_score, total_max_score)
 	var accuracy := RhythmModel.accuracy_percent(total_accuracy_points, total_beat_count)
+	var pitch_acc := RhythmModel.pitch_accuracy_percent(total_correct_pitch_count, total_beat_count)
+	var time_acc := RhythmModel.timing_accuracy_percent(total_on_time_count, total_beat_count)
+
 	var icon := _label("★" if stars > 0 else "✓", 66 if _is_mobile() else 78, C_GOLD if stars > 0 else C_OK)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(icon)
@@ -583,14 +805,27 @@ func _build_final_result() -> void:
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(detail)
 
+	if performance_mode and not performance_notes.is_empty():
+		var final_staff: Control = Control.new()
+		final_staff.name = "FinalResultStaff"
+		final_staff.set_script(RhythmStaffDisplayScript)
+		final_staff.custom_minimum_size = Vector2(0, 190 if _is_mobile() else 220)
+		final_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		final_staff.call("configure_rhythm", performance_notes, beat_times, round_duration)
+		final_staff.call("update_progress", round_duration, judgements)
+		card_body.add_child(final_staff)
+
 	var metrics := GridContainer.new()
-	metrics.columns = 2 if _is_mobile() else (4 if online_session and submitted_count > 0 else 3)
+	metrics.columns = 2 if _is_mobile() else (5 if (online_session and submitted_count > 0) else 4)
 	metrics.add_theme_constant_override("h_separation", 12)
 	metrics.add_theme_constant_override("v_separation", 12)
 	metrics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_body.add_child(metrics)
 	metrics.add_child(_metric_card("◆", "Điểm", "%d / %d" % [total_score, total_max_score], C_BLUE))
 	metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % accuracy, C_GREEN))
+	if performance_mode:
+		metrics.add_child(_metric_card("♫", "Cao độ", "%.0f%%" % pitch_acc, Color("#059669")))
+		metrics.add_child(_metric_card("⏱", "Nhịp điệu", "%.0f%%" % time_acc, Color("#2563eb")))
 	metrics.add_child(_metric_card("★", "Xếp hạng", "%d / 3" % stars, C_GOLD))
 	if online_session and submitted_count > 0:
 		metrics.add_child(_metric_card("⚡", "XP", "+%d" % backend_points_earned, C_PURPLE))
@@ -727,10 +962,17 @@ func _prepare_current_round() -> void:
 	beat_times.clear()
 	for value: Variant in current.get("beats", []):
 		beat_times.append(float(value))
+	performance_notes.clear()
+	for value: Variant in current.get("notes", []):
+		performance_notes.append(str(value))
+	if performance_notes.is_empty() or performance_notes.size() != beat_times.size():
+		performance_notes = RhythmModel.default_notes_for_instrument(Context.instrument, beat_times.size())
+	performance_mode = true
 	judgements.clear()
 	for _beat in beat_times:
 		judgements.append("")
 	round_duration = (beat_times[-1] if not beat_times.is_empty() else 2.0) + 1.0
+	last_detected_at_ms = -1000
 
 
 func _clear_content(stop_preview: bool = true) -> void:
@@ -744,9 +986,11 @@ func _clear_content(stop_preview: bool = true) -> void:
 	content_box.size_flags_vertical = Control.SIZE_FILL
 	content_box.add_theme_constant_override("separation", 18 if _is_mobile() else 22)
 	status_label = null
+	microphone_label = null
 	accuracy_label = null
 	hit_label = null
 	timeline = null
+	staff = null
 	tap_button = null
 	countdown_label = null
 	preview_button = null
