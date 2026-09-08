@@ -2927,7 +2927,7 @@ func _build_glissando_round_notes(_mode: String) -> void:
 			"x": note_x,
 			"glissando_cue_x": cue_x,
 			"glissando_second_cue_x": second_cue_x,
-			"show_glissando_arrow": i == 0,
+			"show_glissando_arrow": i < string_order.size() - 1,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "quarter",
 			"bar_after": true,
