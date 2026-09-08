@@ -2168,7 +2168,8 @@ func _start_intro():
 	if skip_intro_btn:
 		skip_intro_btn.visible = true
 	if previous_intro_btn:
-		previous_intro_btn.visible = true
+		# There is no previous Mai speech on the first line of a lesson.
+		previous_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = false
 	if pause_overlay:
@@ -2279,6 +2280,10 @@ func _play_next_intro_step():
 	if _is_theory_only_lesson() and _is_practice_prompt(step_data):
 		_finish_theory_lesson()
 		return
+	# intro_step is the index of the speech about to be shown. Only show
+	# "Trở lại" from the second speech onward.
+	if previous_intro_btn:
+		previous_intro_btn.visible = intro_step > 0
 	if step_data["action"] == "speak":
 		speech_text.text = step_data["text"]
 		if ai_audio:
@@ -5512,23 +5517,35 @@ func _create_skip_intro_button():
 	get_viewport().size_changed.connect(update_skip_pos)
 	update_skip_pos.call()
 	
-	# Bài lý thuyết không được phép đi vào thực hành nhận diện âm thanh.
-	skip_intro_btn.pressed.connect(func():
-		if _is_theory_only_lesson():
-			_finish_theory_lesson()
-		else:
-			_start_practice()
-	)
+	# Skip advances exactly one Mai speech. It must never jump directly to
+	# practice or complete the whole theory lesson.
+	skip_intro_btn.pressed.connect(_skip_current_intro_step)
 	previous_intro_btn.pressed.connect(_play_previous_intro_step)
 
 
+func _skip_current_intro_step() -> void:
+	if current_state != State.INTRO and current_state != State.PRACTICE_SINGLE:
+		return
+	# Invalidate the timer that was scheduled for the skipped speech and stop
+	# its TTS before rendering only the next dialogue item.
+	intro_playback_token += 1
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stop()
+	current_state = State.INTRO
+	_play_next_intro_step()
+
+
 func _play_previous_intro_step() -> void:
-	if current_state != State.INTRO:
+	if current_state != State.INTRO and current_state != State.PRACTICE_SINGLE:
 		return
 	# intro_step points to the next speech after the one currently on screen.
 	# Move back two positions, then let the regular dialogue renderer replay it.
 	if intro_step <= 1:
 		return
+	intro_playback_token += 1
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stop()
+	current_state = State.INTRO
 	intro_step = max(0, intro_step - 2)
 	_play_next_intro_step()
 
