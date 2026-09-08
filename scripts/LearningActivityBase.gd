@@ -248,6 +248,42 @@ func _instrument_title() -> String:
 func _instrument_background_path() -> String:
 	return "res://assets/textures/dan_tranh_background.png"
 
+func _icons8_texture(icon_name: String) -> Texture2D:
+	var path := ""
+	match icon_name:
+		"menu", "all", "view_all":
+			path = "res://icons8/icons8-view-all-ios-27-outlined/icons8-view-all-100.png"
+		"course", "quiz":
+			path = "res://icons8/icons8-quiz-pulsar-line/icons8-quiz-100.png"
+		"game", "minigame", "controller", "rhythm":
+			path = "res://icons8/icons8-game-controller-windows-11-outline/icons8-game-controller-100.png"
+		"songs", "practice", "music", "melody", "treble_clef":
+			if ResourceLoader.exists("res://icons8/icons8-treble-clef-120.png"):
+				path = "res://icons8/icons8-treble-clef-120.png"
+			else:
+				path = "res://assets/textures/icons8/songs.png"
+		_:
+			path = "res://assets/textures/icons8/%s.png" % icon_name
+
+	if not ResourceLoader.exists(path):
+		path = "res://assets/textures/icons8/%s.png" % icon_name
+
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
+
+func _icons8_icon(icon_name: String, icon_size: int = 24, tint: Color = Color.WHITE) -> TextureRect:
+	var tr := TextureRect.new()
+	var tex := _icons8_texture(icon_name)
+	if tex:
+		tr.texture = tex
+	tr.custom_minimum_size = Vector2(icon_size, icon_size)
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if tint != Color.WHITE:
+		tr.modulate = tint
+	return tr
+
 func _now_iso() -> String:
 	return Time.get_datetime_string_from_system(true)
 

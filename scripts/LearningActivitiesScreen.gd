@@ -81,9 +81,27 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 	var badge := _label(_state_label(activity_id, locked), 14, color if not locked else C_MUTED)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(badge)
-	var icon := _label("?" if activity_id == "quiz" else ("♫" if activity_id == "rhythm" else "♪"), 54 if mobile else 62, color if not locked else C_MUTED)
-	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.add_child(icon)
+	var icon_wrapper := CenterContainer.new()
+	icon_wrapper.custom_minimum_size = Vector2(0, 68 if mobile else 76)
+	body.add_child(icon_wrapper)
+
+	var icon_panel := PanelContainer.new()
+	var box_size := 54.0 if mobile else 62.0
+	icon_panel.custom_minimum_size = Vector2(box_size, box_size)
+	var icon_style := StyleBoxFlat.new()
+	icon_style.bg_color = Color(color.r, color.g, color.b, 0.12) if not locked else Color(0.9, 0.9, 0.9, 0.5)
+	icon_style.border_color = Color(color.r, color.g, color.b, 0.35) if not locked else Color("#cbd5e1")
+	icon_style.set_border_width_all(1)
+	icon_style.set_corner_radius_all(int(box_size * 0.5))
+	icon_panel.add_theme_stylebox_override("panel", icon_style)
+	icon_wrapper.add_child(icon_panel)
+
+	var icon_name := "quiz" if activity_id == "quiz" else ("game" if activity_id == "rhythm" else "songs")
+	var icon_tr := _icons8_icon(icon_name, int(box_size * 0.55), color if not locked else C_MUTED)
+	icon_tr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon_tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon_panel.add_child(icon_tr)
+
 	var title := _label(heading, 22 if mobile else 26, C_NAVY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(title)
