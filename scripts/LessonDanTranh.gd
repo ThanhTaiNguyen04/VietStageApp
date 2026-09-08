@@ -2899,9 +2899,11 @@ func _start_glissando_round(round_index: int) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
 
 func _build_glissando_round_notes(_mode: String) -> void:
-	# Hai lượt dùng cùng bảy nốt đi lên như sheet mẫu; hướng kỹ thuật được thể
-	# hiện bằng ký hiệu Á xuống hoặc Á lên đặt trước từng nốt.
-	var string_order: Array[int] = [0, 1, 2, 3, 4, 5, 6]
+	# Khuông luôn đọc theo thời gian từ trái sang phải. Á xuống hiển thị nốt
+	# cao tới thấp, còn Á lên hiển thị nốt thấp tới cao để khớp âm mẫu.
+	var string_order: Array[int] = [0, 3, 5, 8, 11, 14, 16]
+	if _mode == "down":
+		string_order.reverse()
 	# Á xuống dùng ngón 2, còn Á lên dùng ngón 1.
 	var fingering := "2" if _mode == "down" else "1"
 
@@ -4420,14 +4422,24 @@ func _process_glissando_sample(delta: float) -> void:
 		return
 
 	technique_sample_event_elapsed += delta
+	var visual_note_changed := false
 	while technique_sample_event_elapsed >= GLISSANDO_SAMPLE_INTERVAL \
 			and technique_sample_sequence_idx < technique_sample_sequence.size():
 		technique_sample_event_elapsed -= GLISSANDO_SAMPLE_INTERVAL
 		var string_idx := technique_sample_sequence[technique_sample_sequence_idx]
 		zither_board.call("pluck", string_idx)
 		technique_sample_sequence_idx += 1
+		# Sheet chỉ hiển thị 7 nốt đại diện cho nét Á. Mỗi phần của chuỗi
+		# mẫu vừa phát sẽ tô xanh nốt tương ứng để học viên thấy rõ tiến trình.
+		if not glissando_display_notes.is_empty():
+			var progress := float(technique_sample_sequence_idx) / float(technique_sample_sequence.size())
+			var display_idx := mini(glissando_display_notes.size() - 1, int(floor(progress * glissando_display_notes.size())))
+			glissando_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0)
+			visual_note_changed = true
 		if glissando_progress_bar:
 			glissando_progress_bar.value = minf(17.0, float(technique_sample_sequence_idx))
+	if visual_note_changed:
+		staff_display.set_notes(glissando_display_notes)
 	if technique_sample_sequence_idx >= technique_sample_sequence.size():
 		technique_sample_in_gap = true
 		technique_sample_elapsed = 0.0
@@ -5951,7 +5963,7 @@ func _update_staff_layout() -> void:
 	staff_display.line_spacing = spacing
 	if is_instance_valid(_teacher_avatar_wrapper):
 		_teacher_avatar_wrapper.position = Vector2(-80.0, v_height - 320.0)
-	if _is_glissando_practice() and current_state == State.PRACTICE and not glissando_round_locked:
+	if _is_glissando_practice() and current_state == State.PRACTICE and not glissando_round_locked and not is_sample_mode:
 		_build_glissando_round_notes(str(GLISSANDO_ROUNDS[glissando_round_idx]["mode"]))
 	staff_display.queue_redraw()
 	staff_display.queue_redraw()
