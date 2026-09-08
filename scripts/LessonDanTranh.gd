@@ -159,6 +159,7 @@ var press_attempt_elapsed := 0.0
 var press_silence_elapsed := 0.0
 var press_target_hold_elapsed := 0.0
 var press_base_note_heard := false
+var press_baseline_hz := 0.0
 var press_exercise_locked := false
 var press_max_cents := 0.0
 var press_attack_generation := -1
@@ -174,10 +175,8 @@ const PRESS_MAX_RISE_DELAY := 0.80
 const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
 const PRESS_EXERCISES := [
-	{"source": "Mi2", "target": "Fa2", "interval": 100.0},
-	{"source": "La2", "target": "Si2", "interval": 200.0},
-	{"source": "Mi3", "target": "Fa3", "interval": 100.0},
-	{"source": "La3", "target": "Si3", "interval": 200.0}
+	# Bài tập nhấn 1/2 cung: gảy Mi, rồi nhấn tay trái để âm lên Fa.
+	{"source": "Mi2", "target": "Fa2", "interval": 100.0}
 ]
 var tremolo_sheet_hud: Control
 var tremolo_instruction_label: Label
@@ -1349,6 +1348,7 @@ func _clear_partial_micro_attempts() -> void:
 	press_silence_elapsed = 0.0
 	press_target_hold_elapsed = 0.0
 	press_base_note_heard = false
+	press_baseline_hz = 0.0
 	press_max_cents = 0.0
 	press_attack_generation = -1
 	press_consumed_attack_generation = interrupted_attack_generation
@@ -3198,7 +3198,8 @@ func _build_press_display_notes() -> void:
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "half",
 			"press_target": "ZT_" + str(exercise["target"]),
-			"press_target_x": target_x
+			"press_target_x": target_x,
+			"press_label": "NHẤN ½↑"
 		})
 		press_display_notes.append({
 			"note": "ZT_" + str(exercise["target"]),
@@ -3224,6 +3225,7 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_silence_elapsed = 0.0
 	press_target_hold_elapsed = 0.0
 	press_base_note_heard = false
+	press_baseline_hz = 0.0
 	press_exercise_locked = false
 	press_max_cents = 0.0
 	press_attack_generation = -1
@@ -3247,9 +3249,11 @@ func _start_press_exercise(exercise_index: int) -> void:
 	var target := str(exercise["target"])
 	var string_number := int(NOTE_TO_STRING.get(source, 0)) + 1
 	if press_instruction_label:
-		press_instruction_label.text = "Lượt %d/4 · %s → %s (dây %d)" % [exercise_index + 1, source, target, string_number]
+		press_instruction_label.text = "Lượt %d/%d · %s → %s · Nhấn ½ cung ↑ (dây %d)" % [
+			exercise_index + 1, PRESS_EXERCISES.size(), source, target, string_number
+		]
 	if press_status_label:
-		press_status_label.text = "Gảy %s trước, sau đó nhấn tay trái lên đúng cao độ %s và giữ ổn định." % [source, target]
+		press_status_label.text = "Gảy %s, rồi nhấn tay trái để âm tăng lên %s (+100 cents) và giữ ổn định." % [source, target]
 		press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	if press_progress_bar:
 		press_progress_bar.value = float(exercise_index)
@@ -3271,20 +3275,23 @@ func _process_press_practice(delta: float) -> void:
 	var attack_identity := _get_technique_attack_identity()
 
 	if signal_active and source_hz > 0.0:
-		var cents := 1200.0 * log(pitch / source_hz) / log(2.0)
+		var source_cents := 1200.0 * log(pitch / source_hz) / log(2.0)
 		if not press_base_note_heard:
 			var generation := int(attack_identity.get("generation", -1))
-			if absf(cents) <= 65.0 \
+			if absf(source_cents) <= 65.0 \
 					and generation != press_consumed_attack_generation \
 					and _is_press_source_attack_valid(attack_identity, source):
 				press_base_note_heard = true
+				# Mỗi đàn có thể được lên dây lệch nhẹ. Lấy chính âm Mi vừa gảy
+				# làm mốc để chỉ chấm chuyển động Mi -> Fa, không ép tần số tuyệt đối.
+				press_baseline_hz = pitch
 				press_attack_generation = generation
 				press_consumed_attack_generation = generation
 				press_contour_elapsed = 0.0
 				press_min_amplitude_db = float(analyzer.current_amplitude_db)
 				press_added_sound_elapsed = 0.0
 				press_silence_elapsed = 0.0
-				press_cents_history.append(cents)
+				press_cents_history.append(0.0)
 				if press_status_label:
 					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
 			elif bool(attack_identity.get("active", false)) \
@@ -3299,6 +3306,7 @@ func _process_press_practice(delta: float) -> void:
 					"Sai dây"
 				)
 		else:
+			var cents := 1200.0 * log(pitch / maxf(press_baseline_hz, 0.001)) / log(2.0)
 			if not _is_press_contour_session_valid(attack_identity, source, press_attack_generation):
 				_reset_press_attempt_tracking("Âm nhấn không còn thuộc lần gảy dây %s. Hãy gảy lại đúng dây rồi nhấn." % source)
 				return
@@ -3423,6 +3431,7 @@ func _reset_press_attempt_tracking(message: String) -> void:
 	press_silence_elapsed = 0.0
 	press_target_hold_elapsed = 0.0
 	press_base_note_heard = false
+	press_baseline_hz = 0.0
 	press_attack_generation = -1
 	press_max_cents = 0.0
 	press_contour_elapsed = 0.0

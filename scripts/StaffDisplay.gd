@@ -306,13 +306,12 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 		draw_string(
 			font,
 			Vector2(control.x - line_spacing * 0.48, control.y - 5.0),
-			"NHẤN",
+			str(note_data.get("press_label", "NHẤN")),
 			HORIZONTAL_ALIGNMENT_CENTER,
 			line_spacing * 0.96,
 			maxi(11, int(line_spacing * 0.23)),
 			color
 		)
-
 func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
