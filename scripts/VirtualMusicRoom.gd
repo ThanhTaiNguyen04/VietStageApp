@@ -3785,6 +3785,15 @@ func _start_intro_cinematic() -> void:
 	if not is_instance_valid(_audio_manager): return
 	_has_played_intro = true
 	_is_in_intro = true
+	# The welcome is a non-interactive cinematic. Unlike the shop and star
+	# indicators, the profile avatar must not float above the dim layer.
+	_close_profile_quick_menu()
+	var profile_pill := get_node_or_null("HUD/HUDHBox/ProfilePill") as Control
+	if profile_pill:
+		profile_pill.visible = false
+	# Mai remains the speaker of this cinematic: show her beside the subtitle,
+	# above the room dimmer but below the text panel itself.
+	char_linh.z_index = 50
 	var dim_overlay = ColorRect.new()
 	dim_overlay.name = "IntroDimOverlay"
 	dim_overlay.color = Color(0, 0, 0, 0)
@@ -3918,6 +3927,9 @@ func _end_intro_cinematic() -> void:
 		if dim_overlay: dim_overlay.queue_free()
 		if subtitle: subtitle.queue_free()
 		if skip_btn: skip_btn.queue_free()
+		var profile_pill := get_node_or_null("HUD/HUDHBox/ProfilePill") as Control
+		if profile_pill:
+			profile_pill.visible = true
 		char_linh.z_index = 0
 		_on_viewport_size_changed()
 	)
