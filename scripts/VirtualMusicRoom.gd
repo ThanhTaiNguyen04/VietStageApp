@@ -2850,7 +2850,8 @@ func _setup_hud_shop_button() -> void:
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
-	badge_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	# Match the star count to the "Cửa hàng" label in the same HUD.
+	badge_label.add_theme_color_override("font_color", C_JADE)
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_hbox.add_child(badge_label)
@@ -3832,15 +3833,12 @@ func _start_intro_cinematic() -> void:
 	
 	add_child(sub_panel)
 	
-	char_linh.z_index = 50
-	
 	var t = create_tween()
 	t.set_parallel(true)
 	t.tween_property(dim_overlay, "color:a", 0.75, 1.0)
 	t.tween_property(sub_panel, "modulate:a", 1.0, 1.0)
-	t.tween_property(char_linh, "position:x", 600.0 - 50.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(char_linh, "size", Vector2(250.0, 250.0) * 2.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(self, "_linh_base_y", 370.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Keep Mai under the dim overlay during the welcome narration. The intro is
+	# about the narration, not a separate highlighted avatar presentation.
 	
 	for c in $HUD.get_children():
 		if c is Control and c.name != "IntroSkipBtn":
@@ -3848,7 +3846,7 @@ func _start_intro_cinematic() -> void:
 			
 	var skip_btn = Button.new()
 	skip_btn.name = "IntroSkipBtn"
-	skip_btn.text = "Bỏ qua >>"
+	skip_btn.text = "Bỏ qua"
 	skip_btn.add_theme_font_size_override("font_size", 16)
 	if _font_body_bold: skip_btn.add_theme_font_override("font", _font_body_bold)
 	
