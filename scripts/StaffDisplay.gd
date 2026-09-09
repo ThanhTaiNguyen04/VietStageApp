@@ -161,10 +161,12 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		var flash_t = note_data.get("flash_trigger", 0.0)
+		var note_flash_color: Color = note_data.get("flash_color", Color(1.0, 0.3, 0.3))
+		var note_flash_scale := bool(note_data.get("flash_scale", true))
 		# REST notes: draw nothing (empty space represents a rest naturally)
 		if n_name == "REST":
 			continue
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t, note_flash_color, note_flash_scale)
 		# Song thanh cần hiện số cho từng đầu nốt: ngón 2 ở hàng trên,
 		# ngón 1 ở hàng dưới; không gộp thành một nhãn duy nhất.
 		if not str(note_data.get("fingering", "")).is_empty():
@@ -325,7 +327,7 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 			maxi(11, int(line_spacing * 0.23)),
 			color
 		)
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0, flash_color: Color = Color(1.0, 0.3, 0.3), flash_scale: bool = true):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
@@ -384,8 +386,8 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		var elapsed = Time.get_ticks_msec() - flash_t
 		if elapsed < 400: # 400ms flash
 			var progress = elapsed / 400.0
-			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
-			var flash_color: Color = note_data.get("flash_color", Color(1.0, 0.3, 0.3))
+			if flash_scale:
+				scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
 			note_color = flash_color.lerp(note_color, progress)
 			
 	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod

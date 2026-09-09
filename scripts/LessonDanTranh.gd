@@ -223,6 +223,7 @@ var technique_sample_elapsed := 0.0
 var technique_sample_event_elapsed := 0.0
 var technique_sample_sequence: Array[int] = []
 var technique_sample_sequence_idx := 0
+var tremolo_sample_group_idx := -1
 var technique_sample_in_gap := false
 var technique_sample_input_cooldown := 0.0
 const TECHNIQUE_SAMPLE_GAP := 0.65
@@ -4013,6 +4014,7 @@ func _flash_tremolo_sample_group(group_index: int) -> void:
 			note["color"] = Color(0.12, 0.78, 0.30, 1.0)
 			note["flash_trigger"] = flash_time
 			note["flash_color"] = Color(0.48, 1.0, 0.56, 1.0)
+			note["flash_scale"] = false
 	staff_display.queue_redraw()
 
 func _build_tremolo_display_notes() -> void:
@@ -4612,6 +4614,7 @@ func _prepare_tremolo_sample_exercise() -> void:
 	technique_sample_elapsed = 0.0
 	technique_sample_event_elapsed = TREMOLO_SAMPLE_INTERVAL
 	technique_sample_sequence_idx = 0
+	tremolo_sample_group_idx = -1
 	technique_sample_in_gap = false
 	var exercise: Dictionary = TREMOLO_EXERCISES[technique_sample_demo_idx]
 	if tremolo_status_label:
@@ -4635,17 +4638,25 @@ func _process_tremolo_sample(delta: float) -> void:
 
 	technique_sample_elapsed += delta
 	technique_sample_event_elapsed += delta
-	var notes := _get_tremolo_sample_notes(technique_sample_demo_idx)
-	if notes.is_empty():
+	var exercise: Dictionary = TREMOLO_EXERCISES[technique_sample_demo_idx]
+	var groups: Array = exercise["groups"]
+	if groups.is_empty():
+		return
+	# Hear one complete Vê figure before advancing to the next written figure.
+	# This makes the visual and audio travel left → right rather than hopping
+	# between all notes of the sheet on every attack.
+	var group_duration := TREMOLO_SAMPLE_DURATION / float(groups.size())
+	var group_index := mini(groups.size() - 1, int(technique_sample_elapsed / group_duration))
+	if group_index != tremolo_sample_group_idx:
+		tremolo_sample_group_idx = group_index
+		technique_sample_sequence_idx = 0
+	var group_notes: Array = groups[group_index]
+	if group_notes.is_empty():
 		return
 	while technique_sample_event_elapsed >= TREMOLO_SAMPLE_INTERVAL:
 		technique_sample_event_elapsed -= TREMOLO_SAMPLE_INTERVAL
-		var sequence_index := technique_sample_sequence_idx % notes.size()
-		var note_name := str(notes[sequence_index])
-		var group_index := sequence_index
-		if str(TREMOLO_EXERCISES[technique_sample_demo_idx]["mode"]) == "octave":
-			group_index = int(sequence_index / 2)
 		_flash_tremolo_sample_group(group_index)
+		var note_name := str(group_notes[technique_sample_sequence_idx % group_notes.size()])
 		var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
 		if string_idx >= 0:
 			zither_board.call("pluck", string_idx)
