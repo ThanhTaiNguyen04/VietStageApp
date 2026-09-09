@@ -1478,7 +1478,6 @@ func _is_error_flash_demo() -> bool:
 func _uses_chord_lesson_flow() -> bool:
 	# Các bài kỹ thuật kế thừa cùng luồng: tập từng hợp âm trước, rồi vào khuông nhạc.
 	return current_lesson_id in [
-		"dan_tranh_level_7_bai_20_practice",
 		"dan_tranh_level_8_bai_31_practice",
 		"dan_tranh_level_8_bai_32_practice",
 		"dan_tranh_level_8_bai_33_practice"
@@ -4518,7 +4517,7 @@ func _show_song_thanh_sample_set(set_index: int) -> void:
 		var group_idx := int(note.get("chord_group_id", -1))
 		if group_idx >= first_pair and group_idx < first_pair + SONG_THANH_SAMPLE_PAIRS_PER_SET:
 			note["x"] = hit_x + float(group_idx - first_pair) * pair_spacing
-			note["color"] = Color(0.6, 0.6, 0.6, 0.9)
+			note["color"] = Color(0.20, 0.72, 0.30, 1.0) if bool(note.get("hit", false)) else Color(0.6, 0.6, 0.6, 0.9)
 		else:
 			# Đẩy các cặp của lượt còn lại ra ngoài để không xuất hiện lẫn vào lượt đang nghe.
 			note["x"] = -1000.0
@@ -5012,6 +5011,11 @@ func _process_practice(delta):
 		if first_set_complete and not second_set_visible:
 			_show_song_thanh_sample_set(1)
 			_update_song_thanh_hud(SONG_THANH_SAMPLE_PAIRS_PER_SET, false)
+			staff_display.set_notes(active_falling_notes)
+		elif not first_set_complete:
+			# Keep all six pairs in view while waiting for the learner. The normal
+			# wait-mode movement previously left only the first pair visible.
+			_show_song_thanh_sample_set(0)
 			staff_display.set_notes(active_falling_notes)
 	
 	var is_wait_mode = true # Always wait for the correct note sound before advancing past notes!
