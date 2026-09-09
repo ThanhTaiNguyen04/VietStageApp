@@ -4006,6 +4006,15 @@ func _get_tremolo_sample_notes(exercise_index: int) -> Array:
 			sample_notes.append(note_name)
 	return sample_notes
 
+func _flash_tremolo_sample_group(group_index: int) -> void:
+	var flash_time := float(Time.get_ticks_msec())
+	for note in tremolo_display_notes:
+		if int(note.get("tremolo_group_index", -1)) == group_index:
+			note["color"] = Color(0.12, 0.78, 0.30, 1.0)
+			note["flash_trigger"] = flash_time
+			note["flash_color"] = Color(0.48, 1.0, 0.56, 1.0)
+	staff_display.queue_redraw()
+
 func _build_tremolo_display_notes() -> void:
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
@@ -4022,7 +4031,7 @@ func _build_tremolo_display_notes() -> void:
 		if mode == "single":
 			tremolo_display_notes.append({
 				"note": "ZT_" + str(notes[0]), "x": x, "color": inactive,
-				"type": "half", "cue": "tremolo_single", "fingering": "1–2",
+				"type": "half", "cue": "tremolo_single", "fingering": "1", "fingering_top": "2",
 				"tremolo_group_index": group_index
 			})
 		else:
@@ -4254,6 +4263,7 @@ func _set_tremolo_target_group_color(color: Color) -> void:
 
 func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: float) -> void:
 	_set_tremolo_target_group_color(Color(0.12, 0.78, 0.30, 1.0))
+	_flash_tremolo_sample_group(tremolo_target_group_idx)
 	var current_groups: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["groups"]
 	if tremolo_progress_bar and tremolo_target_group_idx + 1 >= current_groups.size():
 		tremolo_progress_bar.value = float(tremolo_exercise_idx + 1)
@@ -4630,7 +4640,12 @@ func _process_tremolo_sample(delta: float) -> void:
 		return
 	while technique_sample_event_elapsed >= TREMOLO_SAMPLE_INTERVAL:
 		technique_sample_event_elapsed -= TREMOLO_SAMPLE_INTERVAL
-		var note_name := str(notes[technique_sample_sequence_idx % notes.size()])
+		var sequence_index := technique_sample_sequence_idx % notes.size()
+		var note_name := str(notes[sequence_index])
+		var group_index := sequence_index
+		if str(TREMOLO_EXERCISES[technique_sample_demo_idx]["mode"]) == "octave":
+			group_index = int(sequence_index / 2)
+		_flash_tremolo_sample_group(group_index)
 		var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
 		if string_idx >= 0:
 			zither_board.call("pluck", string_idx)

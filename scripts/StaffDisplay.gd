@@ -385,7 +385,8 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		if elapsed < 400: # 400ms flash
 			var progress = elapsed / 400.0
 			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
-			note_color = Color(1.0, 0.3, 0.3).lerp(note_color, progress)
+			var flash_color: Color = note_data.get("flash_color", Color(1.0, 0.3, 0.3))
+			note_color = flash_color.lerp(note_color, progress)
 			
 	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
 	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
@@ -494,6 +495,19 @@ func _draw_fingering_number(note_data: Dictionary, color: Color) -> void:
 			font_size,
 			color
 		)
+		# Vê một dây uses two alternating fingers on one written note. Draw the
+		# upper cue independently so it follows the Song thanh two-row layout.
+		var upper_fingering := str(note_data.get("fingering_top", ""))
+		if not upper_fingering.is_empty():
+			draw_string(
+				font,
+				Vector2(note_x - line_spacing * 0.4, baseline_y - maxf(float(font_size) * 0.92, line_spacing * 0.82)),
+				upper_fingering,
+				HORIZONTAL_ALIGNMENT_CENTER,
+				line_spacing * 0.8,
+				font_size,
+				color
+			)
 
 func _draw_vibrato_mark(center: Vector2, color: Color, spacing: float) -> void:
 	var points := PackedVector2Array()
