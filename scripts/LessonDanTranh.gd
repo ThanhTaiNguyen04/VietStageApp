@@ -184,6 +184,7 @@ var tremolo_instruction_label: Label
 var tremolo_status_label: Label
 var tremolo_progress_bar: ProgressBar
 var tremolo_exercise_idx := 0
+var tremolo_target_group_idx := 0
 var tremolo_display_notes: Array = []
 var tremolo_attack_strings: Array[int] = []
 var tremolo_attack_times: Array[float] = []
@@ -203,12 +204,16 @@ const TREMOLO_MAX_RATE := 14.0
 const TREMOLO_MAX_ATTACK_GAP := 0.50
 const TREMOLO_MIN_REGULARITY := 0.35
 const TREMOLO_EXERCISES := [
-	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
-	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
-	{"mode": "single", "title": "Vê một dây · Đô3", "notes": ["Đô3"]},
-	{"mode": "octave", "title": "Vê quãng tám · Đô2 – Đô3", "notes": ["Đô2", "Đô3"]},
-	{"mode": "octave", "title": "Vê quãng tám · Sol2 – Sol3", "notes": ["Sol2", "Sol3"]},
-	{"mode": "octave", "title": "Vê quãng tám · La2 – La3", "notes": ["La2", "La3"]}
+	{
+		"mode": "single",
+		"title": "Vê một dây",
+		"groups": [["Đô2"], ["Sol2"], ["Đô3"]]
+	},
+	{
+		"mode": "octave",
+		"title": "Vê hai dây cùng tên nốt",
+		"groups": [["Đô2", "Đô3"], ["Sol2", "Sol3"], ["La2", "La3"]]
+	}
 ]
 var dan_tranh_string_streams: Array = []
 var technique_sample_player: AudioStreamPlayer
@@ -1111,12 +1116,14 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tremolo_sheet_hud.anchor_left = 0.5
 	tremolo_sheet_hud.anchor_right = 0.5
-	tremolo_sheet_hud.anchor_top = 1.0
-	tremolo_sheet_hud.anchor_bottom = 1.0
+	# Keep the exercise status above the staff so the finger numbers below the
+	# notes are never covered by this panel.
+	tremolo_sheet_hud.anchor_top = 0.0
+	tremolo_sheet_hud.anchor_bottom = 0.0
 	tremolo_sheet_hud.offset_left = -450.0
 	tremolo_sheet_hud.offset_right = 450.0
-	tremolo_sheet_hud.offset_top = -102.0
-	tremolo_sheet_hud.offset_bottom = -18.0
+	tremolo_sheet_hud.offset_top = 14.0
+	tremolo_sheet_hud.offset_bottom = 98.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.96)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.76)
@@ -3949,6 +3956,14 @@ func _start_tremolo_exercise(exercise_index: int) -> void:
 		_finish_practice()
 		return
 	tremolo_exercise_idx = exercise_index
+	tremolo_target_group_idx = 0
+	_build_tremolo_display_notes()
+	_prepare_tremolo_target_group(0)
+
+func _prepare_tremolo_target_group(group_index: int) -> void:
+	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
+	var groups: Array = exercise["groups"]
+	tremolo_target_group_idx = clampi(group_index, 0, groups.size() - 1)
 	tremolo_attack_strings.clear()
 	tremolo_attack_times.clear()
 	tremolo_attack_generations.clear()
@@ -3957,56 +3972,72 @@ func _start_tremolo_exercise(exercise_index: int) -> void:
 	tremolo_last_seen_generation = -1
 	tremolo_exercise_locked = false
 	tremolo_wrong_attacks = 0
-	_build_tremolo_display_notes()
-
-	var exercise: Dictionary = TREMOLO_EXERCISES[exercise_index]
 	var mode := str(exercise["mode"])
+	var target_notes := _get_tremolo_target_notes()
 	if tremolo_instruction_label:
-		tremolo_instruction_label.text = "Lượt %d/6 · %s" % [exercise_index + 1, exercise["title"]]
+		tremolo_instruction_label.text = "Lượt %d/%d · %s · Mẫu %d/%d" % [tremolo_exercise_idx + 1, TREMOLO_EXERCISES.size(), exercise["title"], tremolo_target_group_idx + 1, groups.size()]
 	if tremolo_status_label:
 		if mode == "single":
-			tremolo_status_label.text = "Gảy luân phiên hai ngón trên cùng một dây, nhanh và đều trong khoảng 3 giây."
+			tremolo_status_label.text = "Vê luân phiên ngón 1 và 2 trên dây %s, nhanh và đều." % target_notes[0]
 		else:
-			tremolo_status_label.text = "Gảy luân phiên hai dây cùng tên nốt, khác quãng; không gảy đồng thời."
+			tremolo_status_label.text = "Vê luân phiên ngón 1 và 2 trên %s – %s; không gảy đồng thời." % [target_notes[0], target_notes[1]]
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	if tremolo_progress_bar:
-		tremolo_progress_bar.value = float(exercise_index)
+		tremolo_progress_bar.value = float(tremolo_exercise_idx)
 	if mic_status_lbl:
 		mic_status_lbl.text = "🎙️ Đang nghe tốc độ và độ đều của kỹ thuật vê"
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+	_set_tremolo_target_group_color(Color(0.16, 0.14, 0.12, 1.0))
+
+func _get_tremolo_target_notes() -> Array:
+	if tremolo_exercise_idx < 0 or tremolo_exercise_idx >= TREMOLO_EXERCISES.size():
+		return []
+	var groups: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["groups"]
+	if tremolo_target_group_idx < 0 or tremolo_target_group_idx >= groups.size():
+		return []
+	return groups[tremolo_target_group_idx]
+
+func _get_tremolo_sample_notes(exercise_index: int) -> Array:
+	if exercise_index < 0 or exercise_index >= TREMOLO_EXERCISES.size():
+		return []
+	var sample_notes: Array = []
+	for group in TREMOLO_EXERCISES[exercise_index]["groups"]:
+		for note_name in group:
+			sample_notes.append(note_name)
+	return sample_notes
 
 func _build_tremolo_display_notes() -> void:
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
-	var notes: Array = exercise["notes"]
+	var groups: Array = exercise["groups"]
 	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
-	var center_x := maxf(440.0, staff_width * 0.58)
+	var left_x := maxf(300.0, staff_width * 0.34)
+	var right_x := minf(staff_width - 170.0, staff_width * 0.78)
+	var step_x := (right_x - left_x) / maxf(1.0, float(groups.size() - 1))
 	tremolo_display_notes.clear()
-	if mode == "single":
-		tremolo_display_notes.append({
-			"note": "ZT_" + str(notes[0]),
-			"x": center_x,
-			"color": Color(0.16, 0.14, 0.12, 1.0),
-			"type": "half",
-			"cue": "tremolo_single"
-		})
-	else:
-		var source_x := center_x - 120.0
-		var target_x := center_x + 120.0
-		tremolo_display_notes.append({
-			"note": "ZT_" + str(notes[0]),
-			"x": source_x,
-			"color": Color(0.16, 0.14, 0.12, 1.0),
-			"type": "half",
-			"tremolo_pair_target": "ZT_" + str(notes[1]),
-			"tremolo_pair_target_x": target_x
-		})
-		tremolo_display_notes.append({
-			"note": "ZT_" + str(notes[1]),
-			"x": target_x,
-			"color": Color(0.16, 0.14, 0.12, 1.0),
-			"type": "half"
-		})
+	for group_index in range(groups.size()):
+		var notes: Array = groups[group_index]
+		var x := left_x + step_x * group_index
+		var inactive := Color(0.38, 0.37, 0.34, 0.55)
+		if mode == "single":
+			tremolo_display_notes.append({
+				"note": "ZT_" + str(notes[0]), "x": x, "color": inactive,
+				"type": "half", "cue": "tremolo_single", "fingering": "1–2",
+				"tremolo_group_index": group_index
+			})
+		else:
+			var source_x := x - 46.0
+			var target_x := x + 46.0
+			tremolo_display_notes.append({
+				"note": "ZT_" + str(notes[0]), "x": source_x, "color": inactive,
+				"type": "half", "tremolo_pair_target": "ZT_" + str(notes[1]),
+				"tremolo_pair_target_x": target_x, "fingering": "1",
+				"tremolo_group_index": group_index
+			})
+			tremolo_display_notes.append({
+				"note": "ZT_" + str(notes[1]), "x": target_x, "color": inactive,
+				"type": "half", "fingering": "2", "tremolo_group_index": group_index
+			})
 	staff_display.set_notes(tremolo_display_notes)
 	staff_display.queue_redraw()
 
@@ -4023,14 +4054,15 @@ func _append_tremolo_attack(
 			or attack_time_sec <= 0.0 or attack_generation <= tremolo_last_seen_generation:
 		return
 	tremolo_last_seen_generation = attack_generation
-	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
-	var notes: Array = exercise["notes"]
+	var notes := _get_tremolo_target_notes()
+	if notes.is_empty():
+		return
 	var allowed_strings: Array[int] = []
 	for note_name in notes:
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	if not allowed_strings.has(string_idx):
 		tremolo_wrong_attacks += 1
-		_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
+		_set_tremolo_target_group_color(Color(0.88, 0.16, 0.14, 1.0))
 		var target_label := str(notes[0])
 		if notes.size() > 1:
 			target_label = "%s – %s" % [notes[0], notes[1]]
@@ -4048,7 +4080,7 @@ func _append_tremolo_attack(
 		return
 	if tremolo_attack_times.is_empty():
 		tremolo_attempt_started_at = attack_time_sec
-		_set_tremolo_note_color(Color(0.16, 0.14, 0.12, 1.0))
+		_set_tremolo_target_group_color(Color(0.16, 0.14, 0.12, 1.0))
 	tremolo_attack_strings.append(string_idx)
 	tremolo_attack_times.append(attack_time_sec)
 	tremolo_attack_generations.append(attack_generation)
@@ -4078,7 +4110,7 @@ func _evaluate_tremolo_attempt() -> void:
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
 	var allowed_strings: Array[int] = []
-	for note_name in exercise["notes"]:
+	for note_name in _get_tremolo_target_notes():
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	var result := _analyze_tremolo_sequence(
 		tremolo_attack_strings,
@@ -4214,9 +4246,16 @@ func _set_tremolo_note_color(color: Color) -> void:
 		note["color"] = color
 	staff_display.queue_redraw()
 
+func _set_tremolo_target_group_color(color: Color) -> void:
+	for note in tremolo_display_notes:
+		if int(note.get("tremolo_group_index", -1)) == tremolo_target_group_idx:
+			note["color"] = color
+	staff_display.queue_redraw()
+
 func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: float) -> void:
-	_set_tremolo_note_color(Color(0.12, 0.78, 0.30, 1.0))
-	if tremolo_progress_bar:
+	_set_tremolo_target_group_color(Color(0.12, 0.78, 0.30, 1.0))
+	var current_groups: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["groups"]
+	if tremolo_progress_bar and tremolo_target_group_idx + 1 >= current_groups.size():
 		tremolo_progress_bar.value = float(tremolo_exercise_idx + 1)
 	if tremolo_status_label:
 		var extra := ""
@@ -4239,13 +4278,18 @@ func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: floa
 	if ai_audio:
 		ai_audio.speak_vietnamese("Tốt lắm! Bạn đã thực hiện kỹ thuật vê nhanh, đều và liền mạch.")
 	var completed_exercise := tremolo_exercise_idx
+	var completed_group := tremolo_target_group_idx
 	get_tree().create_timer(1.4).timeout.connect(func():
 		if current_state == State.PRACTICE and _is_tremolo_practice() and tremolo_exercise_idx == completed_exercise:
-			_start_tremolo_exercise(completed_exercise + 1)
+			var groups: Array = TREMOLO_EXERCISES[completed_exercise]["groups"]
+			if completed_group + 1 < groups.size():
+				_prepare_tremolo_target_group(completed_group + 1)
+			else:
+				_start_tremolo_exercise(completed_exercise + 1)
 	)
 
 func _on_tremolo_failed(result: Dictionary) -> void:
-	_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
+	_set_tremolo_target_group_color(Color(0.88, 0.16, 0.14, 1.0))
 	var count := int(result.get("count", 0))
 	var duration := float(result.get("duration", 0.0))
 	var rate := float(result.get("rate", 0.0))
@@ -4270,7 +4314,7 @@ func _on_tremolo_failed(result: Dictionary) -> void:
 	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" \
 			and (alternating_ratio < 0.78 or not result.get("balance_ok", false)):
 		feedback = "Hãy gảy luân phiên nốt thấp và nốt cao; không lặp nhiều lần trên cùng một dây."
-	var target_notes: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["notes"]
+	var target_notes := _get_tremolo_target_notes()
 	_show_practice_error_feedback(
 		str(target_notes[0]),
 		"Cần vê nhanh, đều và đúng dây",
@@ -4581,7 +4625,9 @@ func _process_tremolo_sample(delta: float) -> void:
 
 	technique_sample_elapsed += delta
 	technique_sample_event_elapsed += delta
-	var notes: Array = TREMOLO_EXERCISES[technique_sample_demo_idx]["notes"]
+	var notes := _get_tremolo_sample_notes(technique_sample_demo_idx)
+	if notes.is_empty():
+		return
 	while technique_sample_event_elapsed >= TREMOLO_SAMPLE_INTERVAL:
 		technique_sample_event_elapsed -= TREMOLO_SAMPLE_INTERVAL
 		var note_name := str(notes[technique_sample_sequence_idx % notes.size()])
