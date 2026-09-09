@@ -686,6 +686,11 @@ func _ready():
 			lesson_sheet.assign(dur_sheet)
 			var dur_arr: Array[float] = [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]
 			lesson_durations.assign(dur_arr)
+		elif current_lesson_id == LEVEL_7_PRESS_ID:
+			# The introduction and its dimmed preview must show the actual Nhấn
+			# score, never the generic 17-string fallback score.
+			lesson_sheet.assign(["Fa2", "Fa3", "Fa4"])
+			lesson_durations.assign([1.0, 1.0, 1.0])
 		elif current_lesson_id == "dan_tranh_level_3_bai_17_practice":
 			var press_sheet: Array[String] = ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"]
 			lesson_sheet.assign(press_sheet)
@@ -755,8 +760,6 @@ func _ready():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _is_glissando_practice():
 		_build_glissando_sheet()
-	if _is_press_practice():
-		_build_press_sheet_hud()
 	if _is_vibrato_practice():
 		_build_vibrato_sheet_hud()
 	if _is_tremolo_practice():
@@ -1605,12 +1608,13 @@ func _setup_pitch_hud_box():
 		mic_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		mic_lbl.add_theme_font_size_override("font_size", 16)
 		mic_lbl.custom_minimum_size = Vector2(0, 36) # Compact space for 2-line instructions
-		
-		# Divider line below the instruction
+
+		# Divider that closes the listening-status section.
 		var divider = ColorRect.new()
 		divider.custom_minimum_size = Vector2(0, 1)
 		divider.color = Color(0.88, 0.72, 0.38, 0.3)
 		pb_vbox.add_child(divider)
+
 	
 	# Pitch note label
 	pitch_note_lbl = Label.new()
@@ -1638,6 +1642,16 @@ func _setup_pitch_hud_box():
 	
 	if feedback_area:
 		feedback_area.add_child(pitch_box)
+		# This belongs below the whole microphone card (including the progress
+		# line), never inside the “Đang chờ âm thanh…” card itself.
+		press_round_hint_label = Label.new()
+		press_round_hint_label.name = "PressRoundHint"
+		press_round_hint_label.visible = false
+		press_round_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		press_round_hint_label.add_theme_color_override("font_color", Color(0.42, 0.31, 0.16, 0.96))
+		press_round_hint_label.add_theme_font_size_override("font_size", 14)
+		press_round_hint_label.custom_minimum_size = Vector2(0, 40)
+		feedback_area.add_child(press_round_hint_label)
 
 func _process(delta):
 	# Update teacher talking animation
@@ -2240,6 +2254,11 @@ func _create_intro_sheet_overlay() -> void:
 
 func _show_intro_sheet_preview() -> void:
 	if not staff_display or lesson_sheet.is_empty():
+		return
+	# Use the same authored three-note score in the intro overlay and in the
+	# practice screen. This also retains the * technique mark and finger 2.
+	if _is_press_practice():
+		_build_press_display_notes()
 		return
 	var preview_notes: Array = []
 	var staff_width := staff_display.size.x
@@ -3194,10 +3213,10 @@ func _start_press_practice() -> void:
 	staff_display.beats_per_measure = 4
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
-	# The press score must remain conventional and neutral: black quarter notes,
-	# with no coloured pending-note glow. Reserve the top of the sheet for its HUD.
-	staff_display.use_note_colors = false
-	staff_display.content_top_inset = 150.0
+	# Notes begin black. Green is reserved for a note the learner has completed
+	# or the sample player is actively demonstrating.
+	staff_display.use_note_colors = true
+	staff_display.content_top_inset = 24.0
 	if speed_bar_container:
 		speed_bar_container.visible = true
 	_build_press_display_notes()
@@ -3205,11 +3224,10 @@ func _start_press_practice() -> void:
 
 func _build_press_display_notes() -> void:
 	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
-	# Keep all three notes inside the actual staff width. The previous 1120px
-	# minimum pushed the final note beyond compact/portrait sheets.
-	var start_x := clampf(staff_width * 0.29, 245.0, maxf(245.0, staff_width - 250.0))
-	var end_x: float = maxf(start_x + 120.0, staff_width - 82.0)
-	var note_width: float = (end_x - start_x) / float(PRESS_NOTES_PER_ROUND - 1)
+	# A round contains only three notes, so keep them as a readable centered
+	# group instead of spreading them across the full width of the sheet.
+	var note_gap := clampf(staff_width * 0.16, 150.0, 260.0)
+	var group_center := clampf(staff_width * 0.60, note_gap + 150.0, staff_width - note_gap - 80.0)
 	var round_start: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else PRESS_NOTES_PER_ROUND
 	press_display_notes.clear()
 	for i in range(PRESS_NOTES_PER_ROUND):
@@ -3218,7 +3236,7 @@ func _build_press_display_notes() -> void:
 			# Nhạc đích duy nhất: học viên mượn dây được nêu trong HUD rồi nhấn
 			# để đạt Fa/Si. Không vẽ cặp nốt hoặc đường cong gây hiểu nhầm.
 			"note": "ZT_" + str(exercise["target"]),
-			"x": start_x + note_width * float(i),
+			"x": group_center + note_gap * float(i - 1),
 			"color": Color.BLACK,
 			"type": "quarter",
 			# Số bên dưới là ngón gảy tay phải. Dấu * ở trên nốt chỉ riêng
@@ -3257,23 +3275,17 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_consumed_attack_generation = _get_current_technique_attack_generation()
 	var note_in_round := press_exercise_idx % PRESS_NOTES_PER_ROUND
 	for display_idx in range(press_display_notes.size()):
-		press_display_notes[display_idx]["color"] = Color(0.12, 0.72, 0.30, 1.0) if display_idx < note_in_round else PRESS_PENDING_COLOR
+		# Keep previously completed notes green; do not pre-highlight the note
+		# currently waiting for the learner.
+		press_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0) if display_idx < note_in_round else Color.BLACK
 	staff_display.queue_redraw()
 
 	var exercise: Dictionary = PRESS_EXERCISES[exercise_index]
 	var source := str(exercise["source"])
 	var target := str(exercise["target"])
-	var is_half_step := int(exercise["interval"]) == 100
-	var round_title := "Nhấn ½ cung" if is_half_step else "Nhấn 1 cung"
-	var borrow_instruction := "Mượn dây Mi nhấn lên Fa" if is_half_step else "Mượn dây La nhấn lên Si"
-	if press_instruction_label:
-		press_instruction_label.text = "Lượt %d/2 · %s · Nốt %d/3" % [
-			current_round + 1, round_title, note_in_round + 1
-		]
-	if press_status_label:
-		press_status_label.text = "%s, rồi nhấn tay trái để ra %s (*) và giữ ổn định." % [source, target]
-		press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	var borrow_instruction := "Mượn dây Mi nhấn lên dây Fa" if int(exercise["interval"]) == 100 else "Mượn dây La nhấn lên dây Si"
 	if press_round_hint_label:
+		press_round_hint_label.visible = true
 		press_round_hint_label.text = "%s\nNhấn tay trái bằng 3 ngón" % borrow_instruction
 	if press_progress_bar:
 		press_progress_bar.value = float(current_round) + float(note_in_round) / float(PRESS_NOTES_PER_ROUND)
@@ -3314,7 +3326,7 @@ func _process_press_practice(delta: float) -> void:
 				press_cents_history.append(0.0)
 				# Đã gảy đúng dây mượn: giữ nốt đích của lần này ở trạng thái chờ
 				# trong khi theo dõi đường nhấn liên tục.
-				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = PRESS_PENDING_COLOR
+				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 				staff_display.queue_redraw()
 				if press_status_label:
 					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
@@ -3330,7 +3342,7 @@ func _process_press_practice(delta: float) -> void:
 					"Sai dây"
 				)
 				# Báo sai ngay trên nốt đích của lần đang luyện.
-				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 				staff_display.queue_redraw()
 		else:
 			var cents := 1200.0 * log(pitch / maxf(press_baseline_hz, 0.001)) / log(2.0)
@@ -3555,7 +3567,7 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 
 func _on_press_exercise_success(result: Dictionary) -> void:
 	press_exercise_locked = true
-	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 	staff_display.queue_redraw()
 	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
 	if press_progress_bar:
@@ -3587,7 +3599,7 @@ func _on_press_exercise_success(result: Dictionary) -> void:
 
 func _on_press_exercise_failed(target_interval: float) -> void:
 	press_exercise_locked = true
-	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 	staff_display.queue_redraw()
 	var feedback := "Chưa nhận đúng nốt gốc. Hãy gảy đúng dây được chỉ dẫn trước."
 	var overlay_detail := "Cần gảy đúng dây trước khi nhấn"
@@ -4551,6 +4563,12 @@ func _prepare_press_sample_exercise() -> void:
 	technique_sample_elapsed = 0.0
 	technique_sample_in_gap = false
 	var exercise: Dictionary = PRESS_EXERCISES[technique_sample_demo_idx]
+	# A sample is an explicit playback event: mark the note being heard green
+	# and retain green on every note already demonstrated in this round.
+	var sample_note_in_round := technique_sample_demo_idx % PRESS_NOTES_PER_ROUND
+	for display_idx in range(press_display_notes.size()):
+		press_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0) if display_idx <= sample_note_in_round else Color.BLACK
+	staff_display.queue_redraw()
 	_play_sustained_technique_note(str(exercise["source"]))
 	if press_status_label:
 		press_status_label.text = "Đang nghe mẫu nhấn %s → %s..." % [exercise["source"], exercise["target"]]
@@ -6104,11 +6122,6 @@ func _update_staff_layout() -> void:
 	# We want them to fit within card_height with comfortable top/bottom padding of 45px.
 	var max_spacing = (card_height - 90.0) / 11.0
 	var spacing = 32.0 if _is_glissando_practice() else clampf(max_spacing, 46.0, 78.0)
-	# Nhấn spans Fa2–Si4 and has an instructional panel above the staff.
-	# A compact spacing keeps the top note and its * marker, as well as the
-	# lowest note, inside the clipped score card.
-	if _is_press_practice():
-		spacing = minf(spacing, 38.0)
 	staff_display.line_spacing = spacing
 	if is_instance_valid(_teacher_avatar_wrapper):
 		_teacher_avatar_wrapper.position = Vector2(-80.0, v_height - 320.0)
