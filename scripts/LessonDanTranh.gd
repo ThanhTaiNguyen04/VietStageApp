@@ -243,6 +243,10 @@ var song_thanh_sample_pair_idx := 0
 var song_thanh_sample_elapsed := 0.0
 var song_thanh_sample_next_event := 0.45
 var song_thanh_sample_set_break_done := false
+var song_thanh_sheet_hud: PanelContainer
+var song_thanh_instruction_label: Label
+var song_thanh_status_label: Label
+var song_thanh_progress_bar: ProgressBar
 const GLISSANDO_SAMPLE_INTERVAL := 0.075
 const PRESS_SAMPLE_DURATION := 2.25
 const VIBRATO_DEMO_DURATION := 2.20
@@ -760,6 +764,8 @@ func _ready():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _is_glissando_practice():
 		_build_glissando_sheet()
+	if _is_song_thanh_practice():
+		_build_song_thanh_sheet_hud()
 	if _is_vibrato_practice():
 		_build_vibrato_sheet_hud()
 	if _is_tremolo_practice():
@@ -937,10 +943,10 @@ func _build_glissando_sheet() -> void:
 	header_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header_panel.anchor_left = 0.5
 	header_panel.anchor_right = 0.5
-	header_panel.offset_left = -410.0
-	header_panel.offset_right = 410.0
-	header_panel.offset_top = 18.0
-	header_panel.offset_bottom = 105.0
+	header_panel.offset_left = -300.0
+	header_panel.offset_right = 300.0
+	header_panel.offset_top = 34.0
+	header_panel.offset_bottom = 94.0
 	var header_style := StyleBoxFlat.new()
 	header_style.bg_color = Color(1.0, 0.98, 0.91, 0.94)
 	header_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -956,10 +962,10 @@ func _build_glissando_sheet() -> void:
 	glissando_sheet.add_child(header_panel)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_bottom", 9)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	header_panel.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
@@ -969,32 +975,31 @@ func _build_glissando_sheet() -> void:
 	glissando_instruction_label = Label.new()
 	glissando_instruction_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	glissando_instruction_label.add_theme_color_override("font_color", C_JADE)
-	glissando_instruction_label.add_theme_font_size_override("font_size", 21)
+	glissando_instruction_label.add_theme_font_size_override("font_size", 15)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		glissando_instruction_label.add_theme_font_override("font", bold_font)
 	title_row.add_child(glissando_instruction_label)
 	glissando_progress_label = Label.new()
 	glissando_progress_label.add_theme_color_override("font_color", C_JADE)
-	glissando_progress_label.add_theme_font_size_override("font_size", 15)
+	glissando_progress_label.add_theme_font_size_override("font_size", 11)
 	title_row.add_child(glissando_progress_label)
 
 	glissando_status_label = Label.new()
 	glissando_status_label.text = "Micro đang nghe đàn thật..."
 	glissando_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	glissando_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
-	glissando_status_label.add_theme_font_size_override("font_size", 14)
+	glissando_status_label.add_theme_font_size_override("font_size", 11)
 	content.add_child(glissando_status_label)
 	glissando_progress_bar = ProgressBar.new()
 	glissando_progress_bar.max_value = GLISSANDO_NOTE_COUNT
 	glissando_progress_bar.show_percentage = false
-	glissando_progress_bar.custom_minimum_size = Vector2(0, 7)
+	glissando_progress_bar.custom_minimum_size = Vector2(0, 4)
 	content.add_child(glissando_progress_bar)
 
 func _build_vibrato_sheet_hud() -> void:
-	# PanelContainer stretches every direct Control child to its full content area.
-	# Keep the compact HUD inside a neutral full-size layer so its bottom anchors
-	# are respected instead of letting its cream panel cover the whole staff.
+	# Keep this compact HUD under the “ĐÀN TRANH” pill, at the top of the score.
+	# It leaves clear vertical space for the highest note in the Rung exercise.
 	var hud_layer := Control.new()
 	hud_layer.name = "VibratoHUDLayer"
 	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1006,12 +1011,12 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vibrato_sheet_hud.anchor_left = 0.5
 	vibrato_sheet_hud.anchor_right = 0.5
-	vibrato_sheet_hud.anchor_top = 1.0
-	vibrato_sheet_hud.anchor_bottom = 1.0
-	vibrato_sheet_hud.offset_left = -430.0
-	vibrato_sheet_hud.offset_right = 430.0
-	vibrato_sheet_hud.offset_top = -98.0
-	vibrato_sheet_hud.offset_bottom = -18.0
+	vibrato_sheet_hud.anchor_top = 0.0
+	vibrato_sheet_hud.anchor_bottom = 0.0
+	vibrato_sheet_hud.offset_left = -300.0
+	vibrato_sheet_hud.offset_right = 300.0
+	vibrato_sheet_hud.offset_top = 34.0
+	vibrato_sheet_hud.offset_bottom = 94.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -1027,10 +1032,10 @@ func _build_vibrato_sheet_hud() -> void:
 	hud_layer.add_child(vibrato_sheet_hud)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	vibrato_sheet_hud.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
@@ -1038,7 +1043,7 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_instruction_label = Label.new()
 	vibrato_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vibrato_instruction_label.add_theme_color_override("font_color", C_JADE)
-	vibrato_instruction_label.add_theme_font_size_override("font_size", 18)
+	vibrato_instruction_label.add_theme_font_size_override("font_size", 15)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		vibrato_instruction_label.add_theme_font_override("font", bold_font)
@@ -1046,13 +1051,73 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_status_label = Label.new()
 	vibrato_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vibrato_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
-	vibrato_status_label.add_theme_font_size_override("font_size", 14)
+	vibrato_status_label.add_theme_font_size_override("font_size", 11)
 	content.add_child(vibrato_status_label)
 	vibrato_progress_bar = ProgressBar.new()
 	vibrato_progress_bar.max_value = float(VIBRATO_NOTES.size())
 	vibrato_progress_bar.show_percentage = false
-	vibrato_progress_bar.custom_minimum_size = Vector2(0, 6)
+	vibrato_progress_bar.custom_minimum_size = Vector2(0, 4)
 	content.add_child(vibrato_progress_bar)
+
+func _build_song_thanh_sheet_hud() -> void:
+	var hud_layer := Control.new()
+	hud_layer.name = "SongThanhHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	song_thanh_sheet_hud = PanelContainer.new()
+	song_thanh_sheet_hud.name = "SongThanhSheetHUD"
+	song_thanh_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	song_thanh_sheet_hud.anchor_left = 0.5
+	song_thanh_sheet_hud.anchor_right = 0.5
+	song_thanh_sheet_hud.anchor_top = 0.0
+	song_thanh_sheet_hud.anchor_bottom = 0.0
+	song_thanh_sheet_hud.offset_left = -300.0
+	song_thanh_sheet_hud.offset_right = 300.0
+	song_thanh_sheet_hud.offset_top = 34.0
+	song_thanh_sheet_hud.offset_bottom = 94.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
+	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	panel_style.border_width_left = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 14
+	panel_style.corner_radius_top_right = 14
+	panel_style.corner_radius_bottom_left = 14
+	panel_style.corner_radius_bottom_right = 14
+	song_thanh_sheet_hud.add_theme_stylebox_override("panel", panel_style)
+	hud_layer.add_child(song_thanh_sheet_hud)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
+	song_thanh_sheet_hud.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	song_thanh_instruction_label = Label.new()
+	song_thanh_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	song_thanh_instruction_label.add_theme_color_override("font_color", C_JADE)
+	song_thanh_instruction_label.add_theme_font_size_override("font_size", 15)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		song_thanh_instruction_label.add_theme_font_override("font", bold_font)
+	content.add_child(song_thanh_instruction_label)
+	song_thanh_status_label = Label.new()
+	song_thanh_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	song_thanh_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	song_thanh_status_label.add_theme_font_size_override("font_size", 11)
+	content.add_child(song_thanh_status_label)
+	song_thanh_progress_bar = ProgressBar.new()
+	song_thanh_progress_bar.max_value = 12.0
+	song_thanh_progress_bar.show_percentage = false
+	song_thanh_progress_bar.custom_minimum_size = Vector2(0, 4)
+	content.add_child(song_thanh_progress_bar)
 
 func _build_press_sheet_hud() -> void:
 	# Use an intermediate layer for the same reason as the vibrato HUD: adding
@@ -1136,14 +1201,13 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tremolo_sheet_hud.anchor_left = 0.5
 	tremolo_sheet_hud.anchor_right = 0.5
-	# Keep the exercise status above the staff so the finger numbers below the
-	# notes are never covered by this panel.
+	# Same compact treatment as Á/Rung: directly below the instrument pill.
 	tremolo_sheet_hud.anchor_top = 0.0
 	tremolo_sheet_hud.anchor_bottom = 0.0
-	tremolo_sheet_hud.offset_left = -450.0
-	tremolo_sheet_hud.offset_right = 450.0
-	tremolo_sheet_hud.offset_top = 14.0
-	tremolo_sheet_hud.offset_bottom = 98.0
+	tremolo_sheet_hud.offset_left = -300.0
+	tremolo_sheet_hud.offset_right = 300.0
+	tremolo_sheet_hud.offset_top = 34.0
+	tremolo_sheet_hud.offset_bottom = 94.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.96)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.76)
@@ -1159,10 +1223,10 @@ func _build_tremolo_sheet_hud() -> void:
 	hud_layer.add_child(tremolo_sheet_hud)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	tremolo_sheet_hud.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
@@ -1170,7 +1234,7 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_instruction_label = Label.new()
 	tremolo_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tremolo_instruction_label.add_theme_color_override("font_color", C_JADE)
-	tremolo_instruction_label.add_theme_font_size_override("font_size", 18)
+	tremolo_instruction_label.add_theme_font_size_override("font_size", 15)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		tremolo_instruction_label.add_theme_font_override("font", bold_font)
@@ -1178,12 +1242,12 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_status_label = Label.new()
 	tremolo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tremolo_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
-	tremolo_status_label.add_theme_font_size_override("font_size", 14)
+	tremolo_status_label.add_theme_font_size_override("font_size", 11)
 	content.add_child(tremolo_status_label)
 	tremolo_progress_bar = ProgressBar.new()
 	tremolo_progress_bar.max_value = float(TREMOLO_EXERCISES.size())
 	tremolo_progress_bar.show_percentage = false
-	tremolo_progress_bar.custom_minimum_size = Vector2(0, 6)
+	tremolo_progress_bar.custom_minimum_size = Vector2(0, 4)
 	content.add_child(tremolo_progress_bar)
 
 
@@ -2945,16 +3009,15 @@ func _start_glissando_round(round_index: int) -> void:
 	if speed_bar_container:
 		speed_bar_container.visible = true
 	if glissando_instruction_label:
-		glissando_instruction_label.text = "%s · %s" % [
-			GLISSANDO_ROUNDS[round_index]["title"],
-			GLISSANDO_ROUNDS[round_index]["instruction"]
+		glissando_instruction_label.text = "%s · Lượt %d/2" % [
+			GLISSANDO_ROUNDS[round_index]["title"], round_index + 1
 		]
 	if glissando_progress_label:
 		glissando_progress_label.text = "Lượt %d/2 · 0 dây" % (round_index + 1)
 	if glissando_progress_bar:
 		glissando_progress_bar.value = 0.0
 	if glissando_status_label:
-		glissando_status_label.text = "Micro đang nghe đàn thật... Hãy thực hiện một động tác liền mạch."
+		glissando_status_label.text = str(GLISSANDO_ROUNDS[round_index]["instruction"])
 		glissando_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	if mic_status_lbl:
 		mic_status_lbl.text = "🎙️ Đang nhận diện chuỗi âm kỹ thuật Á"
@@ -3667,6 +3730,7 @@ func _build_vibrato_display_notes() -> void:
 			"x": note_x,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "half",
+			"fingering": "2",
 			"cue": "vibrato",
 			"bar_after": i < VIBRATO_NOTES.size() - 1,
 			"bar_x": (note_x + next_x) * 0.5
@@ -4395,6 +4459,19 @@ func _on_tremolo_failed(result: Dictionary) -> void:
 
 
 # --- Nghe mẫu cho các kỹ thuật đàn tranh đặc biệt ---------------------------
+func _update_song_thanh_hud(completed_pairs: int, sample_playback: bool) -> void:
+	if not song_thanh_instruction_label:
+		return
+	var visible_pair := clampi(completed_pairs + 1, 1, 12)
+	var round_number := 1 if visible_pair <= SONG_THANH_SAMPLE_PAIRS_PER_SET else 2
+	var pair_in_round := visible_pair if round_number == 1 else visible_pair - SONG_THANH_SAMPLE_PAIRS_PER_SET
+	song_thanh_instruction_label.text = ("Nghe mẫu" if sample_playback else "Song thanh") + " · Lượt %d/2 · Cặp %d/6" % [round_number, pair_in_round]
+	if song_thanh_status_label:
+		song_thanh_status_label.text = "Gảy đồng thời hai nốt; giữ tiếng đàn đều và rõ."
+	if song_thanh_progress_bar:
+		song_thanh_progress_bar.value = float(clampi(completed_pairs, 0, 12))
+
+
 func _process_song_thanh_sample(delta: float) -> void:
 	# Song thanh có 12 cặp. Mẫu được chia thành 2 lượt, mỗi lượt 6 cặp,
 	# để học viên kịp quan sát vị trí hai ngón và lắng nghe từng lần gảy.
@@ -4425,6 +4502,7 @@ func _process_song_thanh_sample(delta: float) -> void:
 	song_thanh_sample_next_event += SONG_THANH_SAMPLE_PAIR_INTERVAL
 	var sample_set := 1 if song_thanh_sample_pair_idx <= SONG_THANH_SAMPLE_PAIRS_PER_SET else 2
 	var pair_in_set := song_thanh_sample_pair_idx if sample_set == 1 else song_thanh_sample_pair_idx - SONG_THANH_SAMPLE_PAIRS_PER_SET
+	_update_song_thanh_hud(song_thanh_sample_pair_idx, true)
 	_set_sample_listening_status("Nghe mẫu lượt %d/2 · cặp %d/6" % [sample_set, pair_in_set])
 
 
@@ -4816,6 +4894,8 @@ func _start_practice():
 		if is_sample_mode:
 			_begin_tremolo_sample()
 		return
+	if _is_song_thanh_practice():
+		_update_song_thanh_hud(0, is_sample_mode)
 		
 	# Determine BPM based on current lesson
 	var lesson_bpm: float = 60.0
