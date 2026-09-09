@@ -1058,12 +1058,14 @@ func _build_press_sheet_hud() -> void:
 	press_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	press_sheet_hud.anchor_left = 0.5
 	press_sheet_hud.anchor_right = 0.5
-	press_sheet_hud.anchor_top = 1.0
-	press_sheet_hud.anchor_bottom = 1.0
+	# Keep the round information above the staff, leaving the lower area free
+	# for the fingering number shown beneath the plucked source note.
+	press_sheet_hud.anchor_top = 0.0
+	press_sheet_hud.anchor_bottom = 0.0
 	press_sheet_hud.offset_left = -440.0
 	press_sheet_hud.offset_right = 440.0
-	press_sheet_hud.offset_top = -98.0
-	press_sheet_hud.offset_bottom = -18.0
+	press_sheet_hud.offset_top = 14.0
+	press_sheet_hud.offset_bottom = 98.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -2396,6 +2398,10 @@ func _finish_theory_lesson() -> void:
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
 	_apply_adaptive_speed()
+	# Hợp âm ba âm uses the single-note practice flow but still needs the same
+	# speed selector as all other đàn tranh practice screens.
+	if speed_bar_container:
+		speed_bar_container.visible = true
 	if intro_overlay:
 		intro_overlay.visible = false
 	_shrink_teacher()
@@ -2905,7 +2911,7 @@ func _start_glissando_round(round_index: int) -> void:
 	_build_glissando_round_notes(str(GLISSANDO_ROUNDS[round_index]["mode"]))
 
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	if glissando_instruction_label:
 		glissando_instruction_label.text = "%s · %s" % [
 			GLISSANDO_ROUNDS[round_index]["title"],
@@ -3176,7 +3182,7 @@ func _start_press_practice() -> void:
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	_build_press_display_notes()
 	_start_press_exercise(0)
 
@@ -3196,6 +3202,9 @@ func _build_press_display_notes() -> void:
 			"x": source_x,
 			"color": PRESS_PENDING_COLOR,
 			"type": "half",
+			# The pluck that starts each Nhấn gesture uses right-hand finger 2;
+			# the following target is made by the left hand pressing that string.
+			"fingering": "2",
 			"press_target": "ZT_" + str(exercise["target"]),
 			"press_target_x": target_x,
 			"press_label": "NHẤN ½↑"
@@ -3619,7 +3628,7 @@ func _start_vibrato_practice() -> void:
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	_build_vibrato_display_notes()
 	_start_vibrato_note(0)
 
@@ -3957,7 +3966,7 @@ func _start_tremolo_practice() -> void:
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	_start_tremolo_exercise(0)
 
 func _start_tremolo_exercise(exercise_index: int) -> void:

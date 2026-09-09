@@ -875,12 +875,13 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 
 	var typed_fingerings: Array[String] = []
 	typed_fingerings.assign(lesson.get("fingerings", []))
-	# Bài 14–16 là ba đoạn của Sứ Thanh Hoa. The lesson data has no explicit
+	# Bài 7–9 (Lý Cây Đa) và 14–16 (Sứ Thanh Hoa) chưa có dữ liệu ngón tường
+	# minh. The lesson data has no explicit
 	# fingering yet, so provide the intended right-hand alternation for every
 	# sounded note. Keep this as a fallback only: API-provided fingerings always
 	# take priority when they are available.
 	var display_number := str(lesson.get("display_number", ""))
-	if typed_fingerings.is_empty() and display_number in ["14", "15", "16"]:
+	if typed_fingerings.is_empty() and display_number in ["7", "8", "9", "14", "15", "16"]:
 		var next_finger := "2"
 		for note_name in typed_sheet:
 			if note_name == "Rest" or note_name == "-":
