@@ -61,6 +61,7 @@ var pitch_meter: Control
 var force_mobile_audio_fallback_for_tests := false
 var staff_card: PanelContainer
 var title_plaque: PanelContainer
+var title_main_label: Label
 var pill_badge: PanelContainer
 var sub_instr_row: HBoxContainer
 var intro_overlay: ColorRect
@@ -1437,12 +1438,20 @@ func _setup_top_pitch_box():
 	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
 	title_plaque.offset_left = -300; title_plaque.offset_right = 300
 	title_plaque.offset_top = 32; title_plaque.offset_bottom = 120
+	# A lesson title must never paint over the speed controls.  The responsive
+	# bounds are applied in _update_staff_layout(); clipping is a final guard
+	# while the first layout pass is being calculated.
+	title_plaque.clip_contents = true
 	var tp_sb = StyleBoxFlat.new()
 	tp_sb.bg_color = Color(0.24, 0.16, 0.10, 0.95)
 	tp_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
 	tp_sb.border_width_left = 3; tp_sb.border_width_right = 3; tp_sb.border_width_top = 3; tp_sb.border_width_bottom = 3
 	tp_sb.corner_radius_top_left = 16; tp_sb.corner_radius_top_right = 16; tp_sb.corner_radius_bottom_left = 16; tp_sb.corner_radius_bottom_right = 16
-	tp_sb.shadow_color = Color(0.15, 0.10, 0.05, 0.4); tp_sb.shadow_size = 10; tp_sb.shadow_offset = Vector2(0, 4)
+	# Do not use a rectangular panel shadow here: it becomes visible outside the
+	# rounded corners on some renderers and makes the plaque look like a gray box.
+	tp_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.0); tp_sb.shadow_size = 0; tp_sb.shadow_offset = Vector2.ZERO
+	tp_sb.corner_detail = 12
+	tp_sb.anti_aliasing = true
 	title_plaque.add_theme_stylebox_override("panel", tp_sb)
 	
 	var pl_vbox = VBoxContainer.new()
@@ -1457,12 +1466,13 @@ func _setup_top_pitch_box():
 	lbl_num.add_theme_font_size_override("font_size", 20)
 	pl_vbox.add_child(lbl_num)
 	
-	var lbl_main = Label.new()
-	lbl_main.text = "🌿   " + l_title + "   🌿"
-	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
-	lbl_main.add_theme_font_size_override("font_size", 30)
-	pl_vbox.add_child(lbl_main)
+	title_main_label = Label.new()
+	title_main_label.text = "🌿 " + l_title + " 🌿"
+	title_main_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_main_label.clip_text = true
+	title_main_label.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
+	title_main_label.add_theme_font_size_override("font_size", 26)
+	pl_vbox.add_child(title_main_label)
 	add_child(title_plaque)
 	
 	pill_badge = PanelContainer.new()
@@ -5632,13 +5642,10 @@ var btn_sample_ref: Button = null
 var progress_label: Label = null
 
 func _should_have_speed_control() -> bool:
-	var parts = current_lesson_id.split("_")
-	for i in range(parts.size()):
-		if parts[i] == "bai" and i + 1 < parts.size():
-			var num = int(parts[i+1])
-			if num >= 3:
-				return true
-	return false
+	# The speed picker is a common practice HUD.  It is created for every đàn
+	# tranh lesson, then remains hidden during Mai's introduction and theory.
+	# Once the learner enters practice, _start_practice() makes it available.
+	return true
 
 func _create_pause_system():
 	# 1. Tạo nút Pause ở góc trên cùng bên phải (HUD tròn chuyên nghiệp)
@@ -6028,6 +6035,30 @@ func _update_staff_layout() -> void:
 	# Responsive positioning
 	var title_top = clampf(v_height * 0.02, 10.0, 24.0)
 	if title_plaque:
+		# On practice songs the speed HUD occupies the top-right corner.  Reserve
+		# its real width before sizing the title plaque, instead of letting a long
+		# title extend over the 60/80/100/120% controls.
+		if speed_bar_container and size.x >= 1200.0:
+			var speed_width := maxf(speed_bar_container.get_combined_minimum_size().x, 420.0)
+			var speed_left: float = size.x - 124.0 - speed_width
+			var title_left: float = clampf(size.x * 0.285, 520.0, 600.0)
+			var title_right: float = minf(speed_left - 18.0, title_left + 820.0)
+			# Keep a usable plaque even on reduced desktop widths.
+			if title_right < title_left + 420.0:
+				title_left = maxf(110.0, title_right - 420.0)
+			title_plaque.anchor_left = 0.0
+			title_plaque.anchor_right = 0.0
+			title_plaque.offset_left = title_left
+			title_plaque.offset_right = title_right
+			if title_main_label:
+				title_main_label.add_theme_font_size_override("font_size", 26 if title_right - title_left >= 680.0 else 22)
+		else:
+			title_plaque.anchor_left = 0.5
+			title_plaque.anchor_right = 0.5
+			title_plaque.offset_left = -300.0
+			title_plaque.offset_right = 300.0
+			if title_main_label:
+				title_main_label.add_theme_font_size_override("font_size", 24)
 		title_plaque.offset_top = title_top
 		title_plaque.offset_bottom = title_top + 80.0
 		
