@@ -6,6 +6,9 @@ var answer_visible := false
 var answer_correct := false
 var selected_note := ""
 var playback_index := -1
+# Subclasses that render their own note states can keep this base renderer for
+# the staff, clef and time signature without drawing a second set of glyphs.
+var suppress_base_note_glyphs := false
 
 var clef_texture: Texture2D
 var lora_font: Font
@@ -95,7 +98,7 @@ func _draw() -> void:
 		# Bottom digit 4
 		draw_string(num_font, Vector2(ts_x, center_y + spacing * 2.05), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, staff_line_color)
 
-	if notes.is_empty():
+	if notes.is_empty() or suppress_base_note_glyphs:
 		return
 
 	# 5. Distribute Notes across usable width

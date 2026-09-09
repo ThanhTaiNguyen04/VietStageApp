@@ -7,17 +7,25 @@ var judgements: Array[String] = []
 var current_time := 0.0
 var duration := 1.0
 var show_note_hints := true
+var show_student_targets := false
 
 const C_PERFECT := Color("#16a34a") # Emerald green for PERFECT / GOOD
 const C_GOOD := Color("#16a34a")    # Emerald green
 const C_MISS := Color("#dc2626")    # Rose / Red for WRONG_NOTE / MISS
-const C_GOLD_ACTIVE := Color("#c59626") # Vibrant Gold for target/active note
+const C_DEMO_NOTE := Color("#334155") # Muted black for the listen-to-example staff
+const C_TARGET_NOTE := Color("#94a3b8") # Gray: learner has not played this note yet
 const C_PLAYHEAD := Color("#0ea5e9") # Sky blue cursor
 
 
-func configure_rhythm(note_values: Array, times: Array, total_duration: float, hints: bool = true) -> void:
+func configure_rhythm(note_values: Array, times: Array, total_duration: float, hints: bool = true, student_mode: bool = false) -> void:
+	# LearningMelodyStaffDisplay draws normal notes in its _draw(). Rhythm notes
+	# need judgement/playback colours, so drawing both created offset duplicate
+	# heads and stems. Retain its staff primitives only, then draw each note once
+	# below with the rhythm state.
+	suppress_base_note_glyphs = true
 	configure(note_values, -1)
 	show_note_hints = hints
+	show_student_targets = student_mode
 	beat_times.clear()
 	for value: Variant in times:
 		beat_times.append(float(value))
@@ -86,28 +94,21 @@ func _draw() -> void:
 		var diatonic_step := _parse_diatonic_step(raw_note)
 		var note_y := center_y - float(diatonic_step - 6) * (spacing * 0.5)
 
-		# Determine note color based on judgement or active playhead
-		var note_color := Color("#0f172a")
-		var is_active := (i == playback_index and state.is_empty())
+		# Demo notes are subdued black. In the performance phase, every pending
+		# learner target starts gray; only an evaluated target changes color.
+		var note_color := C_TARGET_NOTE if show_student_targets else C_DEMO_NOTE
 		if not state.is_empty():
 			if state in ["PERFECT", "GOOD"]:
 				note_color = C_PERFECT
 			else:
 				note_color = C_MISS
-		elif is_active:
-			note_color = C_GOLD_ACTIVE
 
-		# If note is active or judged, redraw note head and stem with state color
-		if not state.is_empty() or is_active:
-			if is_active:
-				# Glowing halo around the active note head
-				_draw_rotated_ellipse(note_x, note_y, note_head_rx * 1.5, note_head_ry * 1.5, deg_to_rad(-18), Color(0.96, 0.68, 0.15, 0.28))
-			_draw_rotated_ellipse(note_x, note_y, note_head_rx, note_head_ry, deg_to_rad(-18), note_color)
-			var stem_up := diatonic_step < 6
-			var stem_x := note_x + (note_head_rx * 0.85) if stem_up else note_x - (note_head_rx * 0.85)
-			var stem_start_y := note_y
-			var stem_end_y := note_y - stem_length if stem_up else note_y + stem_length
-			draw_line(Vector2(stem_x, stem_start_y), Vector2(stem_x, stem_end_y), note_color, stem_width, true)
+		_draw_rotated_ellipse(note_x, note_y, note_head_rx, note_head_ry, deg_to_rad(-18), note_color)
+		var stem_up := diatonic_step < 6
+		var stem_x := note_x + (note_head_rx * 0.85) if stem_up else note_x - (note_head_rx * 0.85)
+		var stem_start_y := note_y
+		var stem_end_y := note_y - stem_length if stem_up else note_y + stem_length
+		draw_line(Vector2(stem_x, stem_start_y), Vector2(stem_x, stem_end_y), note_color, stem_width, true)
 
 		# Draw Solfege Name Tag below the staff if hints enabled
 		if show_note_hints:
@@ -123,9 +124,9 @@ func _draw() -> void:
 				else:
 					tag_color = C_MISS
 					tag_bg = Color(0.86, 0.15, 0.15, 0.15)
-			elif is_active:
-				tag_color = Color("#b45309")
-				tag_bg = Color(0.96, 0.68, 0.15, 0.22)
+			elif show_student_targets:
+				tag_color = C_TARGET_NOTE.darkened(0.24)
+				tag_bg = Color(C_TARGET_NOTE.r, C_TARGET_NOTE.g, C_TARGET_NOTE.b, 0.15)
 
 			var tag_rect := Rect2(note_x - tag_w * 0.5, tag_y - 2, tag_w, 20)
 			draw_rect(tag_rect, tag_bg, true)
@@ -149,15 +150,7 @@ func _draw() -> void:
 
 	# 3. Draw Moving Playhead cursor if within active duration
 	if current_time > 0.0 and current_time <= duration and not beat_times.is_empty():
-		var playhead_x := start_note_x
-		var first_beat := beat_times[0]
-		var last_beat := beat_times[-1]
-		
-		if last_beat > first_beat:
-			var t_ratio := clampf((current_time - first_beat) / (last_beat - first_beat), 0.0, 1.0)
-			playhead_x = start_note_x + (end_note_x - start_note_x) * t_ratio
-		elif current_time >= first_beat:
-			playhead_x = start_note_x
+		var playhead_x := _playhead_x(current_time, start_note_x, step_x)
 
 		var top_y := center_y - 2.8 * spacing
 		var bot_y := center_y + 2.8 * spacing
@@ -169,3 +162,15 @@ func _draw() -> void:
 		draw_circle(Vector2(playhead_x, bot_y), 4.0, C_PLAYHEAD)
 
 
+func _playhead_x(elapsed: float, start_x: float, step_x: float) -> float:
+	if beat_times.is_empty():
+		return start_x
+	if beat_times.size() == 1 or elapsed <= beat_times[0]:
+		return start_x
+	for index in range(beat_times.size() - 1):
+		var segment_start := beat_times[index]
+		var segment_end := beat_times[index + 1]
+		if elapsed <= segment_end:
+			var segment_ratio := clampf((elapsed - segment_start) / maxf(0.001, segment_end - segment_start), 0.0, 1.0)
+			return start_x + step_x * (float(index) + segment_ratio)
+	return start_x + step_x * float(beat_times.size() - 1)

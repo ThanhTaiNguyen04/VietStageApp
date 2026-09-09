@@ -181,6 +181,9 @@ func _setup_custom_header_and_backdrop() -> void:
 	# Small round badge: Vòng 1/1
 	top_round_badge = _label("Vòng 1/1", 12, C_GREEN_DARK)
 	var badge_chip := _chip(top_round_badge, C_GREEN_SOFT, Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.35))
+	# The round is already shown in the game card; omit this duplicate chip on
+	# short landscape phones so the header never truncates its content.
+	badge_chip.visible = not _is_compact_height()
 	bar_row.add_child(badge_chip)
 
 
@@ -374,7 +377,7 @@ func _build_intro() -> void:
 	staff.set_script(RhythmStaffDisplayScript)
 	staff.custom_minimum_size = Vector2(0, 200 if mobile else 235)
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true)
+	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, false)
 	staff.call("update_progress", 0.0, judgements)
 	card_body.add_child(staff)
 
@@ -384,9 +387,9 @@ func _build_intro() -> void:
 	card_body.add_child(preview_status)
 
 	# 1-line concise instruction
-	var instruction_text := "Nghe mẫu, sau đó chơi nốt vàng khi playhead đi qua."
+	var instruction_text := "Nghe mẫu, sau đó chơi nốt xám khi playhead đi qua."
 	if Context.instrument == "trong_chau":
-		instruction_text = "Nghe mẫu, sau đó gõ nốt vàng khi playhead đi qua."
+		instruction_text = "Nghe mẫu, sau đó gõ theo nốt xám khi playhead đi qua."
 	var instruction := _label(instruction_text, 14 if mobile else 16, C_TEXT)
 	instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(instruction)
@@ -520,7 +523,7 @@ func _run_countdown(generation: int) -> void:
 	countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(countdown_label)
 
-	var hint := _label("Chơi từng nốt trên nhạc cụ thật khi playhead đi qua nốt vàng.", 14, C_MUTED)
+	var hint := _label("Chơi từng nốt trên nhạc cụ thật khi playhead đi qua nốt xám.", 14, C_MUTED)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(hint)
 
@@ -588,6 +591,8 @@ func _build_game() -> void:
 	top_row.add_child(spacer)
 
 	var microphone_chip_label := _label("● MICRO ĐANG NGHE", 12, C_OK)
+	if _is_compact_height():
+		microphone_chip_label.text = "• MICRO"
 	top_row.add_child(_chip(microphone_chip_label, C_GREEN_SOFT, Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.28)))
 
 	var heading := _label(str(current.get("title", "Đọc khuông nhạc")), 20 if mobile else 24, C_NAVY)
@@ -615,7 +620,7 @@ func _build_game() -> void:
 	staff.set_script(RhythmStaffDisplayScript)
 	staff.custom_minimum_size = Vector2(0, 210 if mobile else 250)
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true)
+	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true)
 	staff.call("update_progress", 0.0, judgements)
 	card_body.add_child(staff)
 
@@ -628,15 +633,15 @@ func _build_game() -> void:
 	card_body.add_child(status_label)
 
 	# Dynamic live microphone diagnostics
-	microphone_label = _label("● Micro đang nghe · Chờ bạn chơi nốt vàng", 13 if mobile else 14, C_OK)
+	microphone_label = _label("● Micro đang nghe · Chờ bạn chơi nốt xám", 13 if mobile else 14, C_OK)
 	microphone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(microphone_label)
 
 	# Bottom instruction (no touch prompt)
-	var guidance := _label("Chơi đúng cao độ khi playhead đi qua nốt vàng. Không cần chạm màn hình.", 13 if mobile else 14, C_MUTED)
+	var guidance := _label("Chơi đúng cao độ khi playhead đi qua nốt xám. Không cần chạm màn hình.", 13 if mobile else 14, C_MUTED)
 	guidance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if Context.instrument == "trong_chau":
-		guidance.text = "Gõ đúng nhịp khi playhead đi qua nốt vàng. Không cần chạm màn hình."
+		guidance.text = "Gõ đúng nhịp khi playhead đi qua nốt xám. Không cần chạm màn hình."
 	card_body.add_child(guidance)
 
 
@@ -759,7 +764,7 @@ func _update_microphone_indicator() -> void:
 		if audio_analyzer.current_pitch_is_reliable and pitch > 0.0:
 			microphone_label.text = "● Micro đang nghe · Phát hiện %.1f Hz" % pitch
 		else:
-			microphone_label.text = "● Micro đang nghe · Chờ bạn chơi nốt vàng"
+			microphone_label.text = "● Micro đang nghe · Chờ bạn chơi nốt xám"
 		microphone_label.add_theme_color_override("font_color", C_OK)
 	elif capture_status in ["no_frames", "silent_stream"]:
 		microphone_label.text = "! Không nhận được tín hiệu micro. Kiểm tra thiết bị đầu vào."
@@ -883,7 +888,7 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 	result_staff.set_script(RhythmStaffDisplayScript)
 	result_staff.custom_minimum_size = Vector2(0, 190 if mobile else 220)
 	result_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	result_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true)
+	result_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true)
 	result_staff.call("update_progress", round_duration, judgements)
 	card_body.add_child(result_staff)
 
@@ -957,7 +962,7 @@ func _build_final_result() -> void:
 		final_staff.set_script(RhythmStaffDisplayScript)
 		final_staff.custom_minimum_size = Vector2(0, 180 if mobile else 210)
 		final_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		final_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true)
+		final_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true)
 		final_staff.call("update_progress", round_duration, judgements)
 		card_body.add_child(final_staff)
 
@@ -1150,10 +1155,28 @@ func _clear_content(stop_preview: bool = true) -> void:
 
 
 func _add_centered_card(accent: Color, max_width: float) -> VBoxContainer:
+	# Phones in landscape can have only ~300 px below the header. Keep the
+	# complete round summary reachable instead of letting the card extend beyond
+	# the viewport.
+	var card_host: Control
+	if _is_compact_height():
+		var scroll := ScrollContainer.new()
+		scroll.name = "RhythmCardScroll"
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		content_box.add_child(scroll)
+		card_host = scroll
+	else:
+		card_host = content_box
+
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_box.add_child(center)
+	if not _is_compact_height():
+		center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	else:
+		center.custom_minimum_size.x = maxf(280.0, get_viewport_rect().size.x)
+	card_host.add_child(center)
 	var card := PanelContainer.new()
 	var available := maxf(280.0, get_viewport_rect().size.x - (28.0 if _is_mobile() else 96.0))
 	card.custom_minimum_size = Vector2(minf(max_width, available), 0)
@@ -1266,6 +1289,10 @@ func _new_attempt_id() -> String:
 
 func _is_mobile() -> bool:
 	return get_viewport_rect().size.x < 720.0
+
+
+func _is_compact_height() -> bool:
+	return get_viewport_rect().size.y < 520.0
 
 
 func _safe_int(value: Variant, fallback: int = 0) -> int:
