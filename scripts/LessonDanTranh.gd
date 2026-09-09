@@ -151,6 +151,7 @@ const VIBRATO_MIN_RAW_CENTS := -40.0
 var press_sheet_hud: Control
 var press_instruction_label: Label
 var press_status_label: Label
+var press_round_hint_label: Label
 var press_progress_bar: ProgressBar
 var press_exercise_idx := 0
 var press_display_notes: Array = []
@@ -176,9 +177,16 @@ const PRESS_MAX_RISE_DELAY := 0.80
 const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
 const PRESS_PENDING_COLOR := Color(0.60, 0.60, 0.60, 0.90)
+const PRESS_NOTES_PER_ROUND := 3
 const PRESS_EXERCISES := [
-	# Bài tập nhấn 1/2 cung: gảy Mi, rồi nhấn tay trái để âm lên Fa.
-	{"source": "Mi2", "target": "Fa2", "interval": 100.0}
+	# Lượt 1: mượn ba dây Mi ở ba quãng, nhấn 1/2 cung để ra Fa.
+	{"source": "Mi2", "target": "Fa2", "interval": 100.0, "round": 0, "finger": "2"},
+	{"source": "Mi3", "target": "Fa3", "interval": 100.0, "round": 0, "finger": "2"},
+	{"source": "Mi4", "target": "Fa4", "interval": 100.0, "round": 0, "finger": "2"},
+	# Lượt 2: mượn ba dây La ở ba quãng, nhấn một cung để ra Si.
+	{"source": "La2", "target": "Si2", "interval": 200.0, "round": 1, "finger": "2"},
+	{"source": "La3", "target": "Si3", "interval": 200.0, "round": 1, "finger": "2"},
+	{"source": "La4", "target": "Si4", "interval": 200.0, "round": 1, "finger": "2"}
 ]
 var tremolo_sheet_hud: Control
 var tremolo_instruction_label: Label
@@ -587,16 +595,16 @@ const SU_THANH_HOA_DURATIONS: Array[float] = [
 const NOTE_TO_STRING = {
 	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4, "Fa2": 4,
 	"Sol2": 5, "La2": 6, "Si2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9, "Fa3": 9,
-	"Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
-	"Sol4": 15, "La4": 16
+	"Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14, "Fa4": 14,
+	"Sol4": 15, "La4": 16, "Si4": 16
 }
 
 const NOTE_FREQS = {
 	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
 	"Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88, "Đô3": 523.25,
 	"Rê3": 587.33, "Mi3": 659.25, "Fa3": 698.46, "Sol3": 783.99, "La3": 880.00,
-	"Si3": 987.77, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51, "Sol4": 1567.98,
-	"La4": 1760.00
+	"Si3": 987.77, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51, "Fa4": 1396.91,
+	"Sol4": 1567.98, "La4": 1760.00, "Si4": 1975.53
 }
 
 func _ready():
@@ -608,7 +616,7 @@ func _ready():
 	var profile_notes: Array[String] = [
 		"Sol1", "La1", "Đô2", "Rê2", "Mi2", "Fa2",
 		"Sol2", "La2", "Si2", "Đô3", "Rê3", "Mi3", "Fa3",
-		"Sol3", "La3", "Si3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"
+		"Sol3", "La3", "Si3", "Đô4", "Rê4", "Mi4", "Fa4", "Sol4", "La4", "Si4"
 	]
 	profile.notes.assign(profile_notes)
 	var freqs: Array[float] = []
@@ -619,7 +627,7 @@ func _ready():
 	profile.frequencies = PackedFloat32Array(freqs)
 	profile.physical_mappings = mappings
 	profile.min_frequency = 180.0
-	profile.max_frequency = 1900.0
+	profile.max_frequency = 2050.0
 	profile.volume_threshold_db = -58.0
 	# A phone microphone and a real đàn tranh can drift more than a synthesized
 	# reference. ±60 cents still keeps adjacent pentatonic strings well apart.
@@ -1065,7 +1073,7 @@ func _build_press_sheet_hud() -> void:
 	press_sheet_hud.offset_left = -440.0
 	press_sheet_hud.offset_right = 440.0
 	press_sheet_hud.offset_top = 14.0
-	press_sheet_hud.offset_bottom = 98.0
+	press_sheet_hud.offset_bottom = 142.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -1102,8 +1110,13 @@ func _build_press_sheet_hud() -> void:
 	press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	press_status_label.add_theme_font_size_override("font_size", 14)
 	content.add_child(press_status_label)
+	press_round_hint_label = Label.new()
+	press_round_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	press_round_hint_label.add_theme_color_override("font_color", Color(0.42, 0.31, 0.16, 0.96))
+	press_round_hint_label.add_theme_font_size_override("font_size", 14)
+	content.add_child(press_round_hint_label)
 	press_progress_bar = ProgressBar.new()
-	press_progress_bar.max_value = float(PRESS_EXERCISES.size())
+	press_progress_bar.max_value = float(PRESS_EXERCISES.size() / PRESS_NOTES_PER_ROUND)
 	press_progress_bar.show_percentage = false
 	press_progress_bar.custom_minimum_size = Vector2(0, 6)
 	content.add_child(press_progress_bar)
@@ -3181,6 +3194,10 @@ func _start_press_practice() -> void:
 	staff_display.beats_per_measure = 4
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
+	# The press score must remain conventional and neutral: black quarter notes,
+	# with no coloured pending-note glow. Reserve the top of the sheet for its HUD.
+	staff_display.use_note_colors = false
+	staff_display.content_top_inset = 150.0
 	if speed_bar_container:
 		speed_bar_container.visible = true
 	_build_press_display_notes()
@@ -3188,34 +3205,26 @@ func _start_press_practice() -> void:
 
 func _build_press_display_notes() -> void:
 	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
-	var start_x := 320.0
-	var end_x: float = maxf(start_x + 920.0, staff_width - 120.0)
-	var pair_width := (end_x - start_x) / float(PRESS_EXERCISES.size())
+	# Keep all three notes inside the actual staff width. The previous 1120px
+	# minimum pushed the final note beyond compact/portrait sheets.
+	var start_x := clampf(staff_width * 0.29, 245.0, maxf(245.0, staff_width - 250.0))
+	var end_x: float = maxf(start_x + 120.0, staff_width - 82.0)
+	var note_width: float = (end_x - start_x) / float(PRESS_NOTES_PER_ROUND - 1)
+	var round_start: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else PRESS_NOTES_PER_ROUND
 	press_display_notes.clear()
-	for i in range(PRESS_EXERCISES.size()):
-		var exercise: Dictionary = PRESS_EXERCISES[i]
-		var source_x := start_x + pair_width * float(i) + pair_width * 0.12
-		var target_x := start_x + pair_width * float(i) + pair_width * 0.52
-		var bar_x := start_x + pair_width * float(i + 1)
+	for i in range(PRESS_NOTES_PER_ROUND):
+		var exercise: Dictionary = PRESS_EXERCISES[round_start + i]
 		press_display_notes.append({
-			"note": "ZT_" + str(exercise["source"]),
-			"x": source_x,
-			"color": PRESS_PENDING_COLOR,
-			"type": "half",
-			# The pluck that starts each Nhấn gesture uses right-hand finger 2;
-			# the following target is made by the left hand pressing that string.
-			"fingering": "2",
-			"press_target": "ZT_" + str(exercise["target"]),
-			"press_target_x": target_x,
-			"press_label": "NHẤN ½↑"
-		})
-		press_display_notes.append({
+			# Nhạc đích duy nhất: học viên mượn dây được nêu trong HUD rồi nhấn
+			# để đạt Fa/Si. Không vẽ cặp nốt hoặc đường cong gây hiểu nhầm.
 			"note": "ZT_" + str(exercise["target"]),
-			"x": target_x,
-			"color": PRESS_PENDING_COLOR,
-			"type": "half",
-			"bar_after": i < PRESS_EXERCISES.size() - 1,
-			"bar_x": bar_x
+			"x": start_x + note_width * float(i),
+			"color": Color.BLACK,
+			"type": "quarter",
+			# Số bên dưới là ngón gảy tay phải. Dấu * ở trên nốt chỉ riêng
+			# kỹ thuật Nhấn tay trái, không phải một "ngón số 3".
+			"fingering": str(exercise["finger"]),
+			"technique_marker": "*"
 		})
 	staff_display.set_notes(press_display_notes)
 	staff_display.queue_redraw()
@@ -3226,7 +3235,11 @@ func _start_press_exercise(exercise_index: int) -> void:
 			analyzer.contour_tracking_mode = false
 		_finish_practice()
 		return
+	var previous_round: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else 1
 	press_exercise_idx = exercise_index
+	var current_round: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else 1
+	if previous_round != current_round:
+		_build_press_display_notes()
 	press_cents_history.clear()
 	press_sample_accumulator = 0.0
 	press_attempt_elapsed = 0.0
@@ -3242,27 +3255,28 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_added_sound_elapsed = 0.0
 	# Never reuse a still-ringing attack from the previous instruction/attempt.
 	press_consumed_attack_generation = _get_current_technique_attack_generation()
-	for pair_idx in range(PRESS_EXERCISES.size()):
-		var color := PRESS_PENDING_COLOR
-		if pair_idx < exercise_index:
-			color = Color(0.12, 0.72, 0.30, 1.0)
-		press_display_notes[pair_idx * 2]["color"] = color
-		press_display_notes[pair_idx * 2 + 1]["color"] = color
+	var note_in_round := press_exercise_idx % PRESS_NOTES_PER_ROUND
+	for display_idx in range(press_display_notes.size()):
+		press_display_notes[display_idx]["color"] = Color(0.12, 0.72, 0.30, 1.0) if display_idx < note_in_round else PRESS_PENDING_COLOR
 	staff_display.queue_redraw()
 
 	var exercise: Dictionary = PRESS_EXERCISES[exercise_index]
 	var source := str(exercise["source"])
 	var target := str(exercise["target"])
-	var string_number := int(NOTE_TO_STRING.get(source, 0)) + 1
+	var is_half_step := int(exercise["interval"]) == 100
+	var round_title := "Nhấn ½ cung" if is_half_step else "Nhấn 1 cung"
+	var borrow_instruction := "Mượn dây Mi nhấn lên Fa" if is_half_step else "Mượn dây La nhấn lên Si"
 	if press_instruction_label:
-		press_instruction_label.text = "Lượt %d/%d · %s → %s · Nhấn ½ cung ↑ (dây %d)" % [
-			exercise_index + 1, PRESS_EXERCISES.size(), source, target, string_number
+		press_instruction_label.text = "Lượt %d/2 · %s · Nốt %d/3" % [
+			current_round + 1, round_title, note_in_round + 1
 		]
 	if press_status_label:
-		press_status_label.text = "Gảy %s, rồi nhấn tay trái để âm tăng lên %s (+100 cents) và giữ ổn định." % [source, target]
+		press_status_label.text = "%s, rồi nhấn tay trái để ra %s (*) và giữ ổn định." % [source, target]
 		press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	if press_round_hint_label:
+		press_round_hint_label.text = "%s\nNhấn tay trái bằng 3 ngón" % borrow_instruction
 	if press_progress_bar:
-		press_progress_bar.value = float(exercise_index)
+		press_progress_bar.value = float(current_round) + float(note_in_round) / float(PRESS_NOTES_PER_ROUND)
 	if mic_status_lbl:
 		mic_status_lbl.text = "🎙️ Đang nghe đường nhấn %s lên %s" % [source, target]
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
@@ -3298,10 +3312,9 @@ func _process_press_practice(delta: float) -> void:
 				press_added_sound_elapsed = 0.0
 				press_silence_elapsed = 0.0
 				press_cents_history.append(0.0)
-				# Đã gảy đúng Mi: trả hai nốt về trạng thái đang chờ trước khi
-				# theo dõi đường nhấn lên Fa.
-				press_display_notes[press_exercise_idx * 2]["color"] = PRESS_PENDING_COLOR
-				press_display_notes[press_exercise_idx * 2 + 1]["color"] = PRESS_PENDING_COLOR
+				# Đã gảy đúng dây mượn: giữ nốt đích của lần này ở trạng thái chờ
+				# trong khi theo dõi đường nhấn liên tục.
+				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = PRESS_PENDING_COLOR
 				staff_display.queue_redraw()
 				if press_status_label:
 					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
@@ -3316,10 +3329,8 @@ func _process_press_practice(delta: float) -> void:
 					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, source],
 					"Sai dây"
 				)
-				# Sai dây phải phản hồi ngay trên cả cặp Mi -> Fa, giống bài
-				# Kỹ thuật gảy ngón 2; lượt gảy Mi đúng sau đó sẽ trả lại màu xám.
-				press_display_notes[press_exercise_idx * 2]["color"] = Color(0.88, 0.16, 0.14, 1.0)
-				press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				# Báo sai ngay trên nốt đích của lần đang luyện.
+				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color(0.88, 0.16, 0.14, 1.0)
 				staff_display.queue_redraw()
 		else:
 			var cents := 1200.0 * log(pitch / maxf(press_baseline_hz, 0.001)) / log(2.0)
@@ -3544,12 +3555,11 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 
 func _on_press_exercise_success(result: Dictionary) -> void:
 	press_exercise_locked = true
-	press_display_notes[press_exercise_idx * 2]["color"] = Color(0.12, 0.78, 0.30, 1.0)
-	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color(0.12, 0.78, 0.30, 1.0)
 	staff_display.queue_redraw()
 	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
 	if press_progress_bar:
-		press_progress_bar.value = float(press_exercise_idx + 1)
+		press_progress_bar.value = float(press_exercise_idx + 1) / float(PRESS_NOTES_PER_ROUND)
 	if press_status_label:
 		press_status_label.text = "✓ Nhấn đúng %s → %s · đích %.0f cents · độ mượt %.0f%%" % [
 			exercise["source"],
@@ -3577,8 +3587,7 @@ func _on_press_exercise_success(result: Dictionary) -> void:
 
 func _on_press_exercise_failed(target_interval: float) -> void:
 	press_exercise_locked = true
-	press_display_notes[press_exercise_idx * 2]["color"] = Color(0.88, 0.16, 0.14, 1.0)
-	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color(0.88, 0.16, 0.14, 1.0)
 	staff_display.queue_redraw()
 	var feedback := "Chưa nhận đúng nốt gốc. Hãy gảy đúng dây được chỉ dẫn trước."
 	var overlay_detail := "Cần gảy đúng dây trước khi nhấn"
@@ -4556,7 +4565,7 @@ func _process_press_sample(delta: float) -> void:
 			technique_sample_demo_idx += 1
 			if technique_sample_demo_idx >= PRESS_EXERCISES.size():
 				if press_progress_bar:
-					press_progress_bar.value = float(PRESS_EXERCISES.size())
+					press_progress_bar.value = float(PRESS_EXERCISES.size() / PRESS_NOTES_PER_ROUND)
 				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật nhấn.", press_status_label)
 			else:
 				_prepare_press_sample_exercise()
@@ -6095,6 +6104,11 @@ func _update_staff_layout() -> void:
 	# We want them to fit within card_height with comfortable top/bottom padding of 45px.
 	var max_spacing = (card_height - 90.0) / 11.0
 	var spacing = 32.0 if _is_glissando_practice() else clampf(max_spacing, 46.0, 78.0)
+	# Nhấn spans Fa2–Si4 and has an instructional panel above the staff.
+	# A compact spacing keeps the top note and its * marker, as well as the
+	# lowest note, inside the clipped score card.
+	if _is_press_practice():
+		spacing = minf(spacing, 38.0)
 	staff_display.line_spacing = spacing
 	if is_instance_valid(_teacher_avatar_wrapper):
 		_teacher_avatar_wrapper.position = Vector2(-80.0, v_height - 320.0)
