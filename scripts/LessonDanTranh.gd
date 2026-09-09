@@ -1107,11 +1107,13 @@ func _build_song_thanh_sheet_hud() -> void:
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		song_thanh_instruction_label.add_theme_font_override("font", bold_font)
+	song_thanh_instruction_label.text = "Song thanh · Lượt 1/2 · Cặp 1/6"
 	content.add_child(song_thanh_instruction_label)
 	song_thanh_status_label = Label.new()
 	song_thanh_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	song_thanh_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	song_thanh_status_label.add_theme_font_size_override("font_size", 11)
+	song_thanh_status_label.text = "Gảy đồng thời hai nốt; giữ tiếng đàn đều và rõ."
 	content.add_child(song_thanh_status_label)
 	song_thanh_progress_bar = ProgressBar.new()
 	song_thanh_progress_bar.max_value = 12.0
@@ -4969,13 +4971,16 @@ func _start_practice():
 					"type": n_type
 				})
 		cur_beat += dur
-	if _is_song_thanh_practice() and is_sample_mode:
-		song_thanh_sample_pair_idx = 0
-		song_thanh_sample_elapsed = 0.0
-		song_thanh_sample_next_event = 0.45
-		song_thanh_sample_set_break_done = false
+	if _is_song_thanh_practice():
+		# Both modes begin with the same readable six-pair layout. Previously this
+		# was applied only to Nghe mẫu, leaving normal practice with one pair.
 		_show_song_thanh_sample_set(0)
-		_set_sample_listening_status("Nghe mẫu chậm · lượt 1/2 · mỗi lượt 6 cặp song thanh")
+		if is_sample_mode:
+			song_thanh_sample_pair_idx = 0
+			song_thanh_sample_elapsed = 0.0
+			song_thanh_sample_next_event = 0.45
+			song_thanh_sample_set_break_done = false
+			_set_sample_listening_status("Nghe mẫu chậm · lượt 1/2 · mỗi lượt 6 cặp song thanh")
 	staff_display.set_notes(active_falling_notes)
 
 func _process_practice(delta):
@@ -4993,6 +4998,21 @@ func _process_practice(delta):
 	practice_time += delta
 	var hit_x = staff_display.hit_line_x
 	var scroll_speed = 350.0
+	if _is_song_thanh_practice() and not is_sample_mode:
+		# After the learner completes the first six visible pairs, reveal the
+		# second six-pair page instead of leaving its notes off-screen.
+		var first_set_complete := true
+		var second_set_visible := false
+		for song_note in active_falling_notes:
+			var group_index := int(song_note.get("chord_group_id", -1))
+			if group_index >= 0 and group_index < SONG_THANH_SAMPLE_PAIRS_PER_SET and not bool(song_note.get("hit", false)):
+				first_set_complete = false
+			elif group_index >= SONG_THANH_SAMPLE_PAIRS_PER_SET and float(song_note.get("x", -1000.0)) > -900.0:
+				second_set_visible = true
+		if first_set_complete and not second_set_visible:
+			_show_song_thanh_sample_set(1)
+			_update_song_thanh_hud(SONG_THANH_SAMPLE_PAIRS_PER_SET, false)
+			staff_display.set_notes(active_falling_notes)
 	
 	var is_wait_mode = true # Always wait for the correct note sound before advancing past notes!
 	
