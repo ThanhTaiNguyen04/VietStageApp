@@ -4493,10 +4493,16 @@ func _process_song_thanh_sample(delta: float) -> void:
 		return
 
 	for note in active_falling_notes:
-		note["color"] = Color(0.6, 0.6, 0.6, 0.9)
-		if int(note.get("chord_group_id", -1)) == song_thanh_sample_pair_idx:
+		var group_idx := int(note.get("chord_group_id", -1))
+		# Các cặp mẫu đã gảy phải giữ xanh. Trước đây mọi nốt bị trả về xám
+		# ở mỗi nhịp mẫu, nên chỉ còn cặp đang phát là xanh.
+		if group_idx >= 0 and group_idx <= song_thanh_sample_pair_idx:
+			note["hit"] = true
 			note["color"] = Color(0.20, 0.72, 0.30, 1.0)
-			zither_board.call("pluck", int(note.get("target_string", 0)))
+			if group_idx == song_thanh_sample_pair_idx:
+				zither_board.call("pluck", int(note.get("target_string", 0)))
+		else:
+			note["color"] = Color(0.6, 0.6, 0.6, 0.9)
 	staff_display.set_notes(active_falling_notes)
 
 	song_thanh_sample_pair_idx += 1
