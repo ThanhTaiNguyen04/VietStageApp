@@ -34,6 +34,7 @@ var challenge_started_at := ""
 var playing := false
 var performance_mode := false
 var performance_notes: Array[String] = []
+var event_modes: Array[String] = []
 var staff: Control
 var sample_player: Node
 var audio_analyzer: AudioCaptureAnalyzer
@@ -560,6 +561,11 @@ func _process(_delta: float) -> void:
 		return
 	var elapsed := float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0
 	for index in beat_times.size():
+		if index < event_modes.size() and event_modes[index] == "SAMPLE":
+			if judgements[index].is_empty() and elapsed >= beat_times[index]:
+				judgements[index] = "SAMPLE"
+				call_deferred("_play_sample_event", index)
+			continue
 		if judgements[index].is_empty() and elapsed > beat_times[index] + GOOD_WINDOW:
 			_set_judgement(index, "MISS")
 	if performance_mode:
@@ -569,6 +575,19 @@ func _process(_delta: float) -> void:
 	if performance_mode:
 		_update_microphone_indicator()
 	_update_live_metrics()
+
+
+func _play_sample_event(index: int) -> void:
+	if index < 0 or index >= performance_notes.size() or not is_inside_tree():
+		return
+	# Do not let the device speaker's sample be judged as a learner note.
+	if is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(true)
+	if is_instance_valid(sample_player):
+		sample_player.call("play_sequence", Context.instrument, [performance_notes[index]], -1, 240.0)
+	await get_tree().create_timer(0.32).timeout
+	if is_inside_tree() and playing and is_instance_valid(audio_analyzer):
+		audio_analyzer.set_analysis_suspended(false)
 
 
 func _build_game() -> void:
@@ -1123,8 +1142,18 @@ func _prepare_current_round() -> void:
 	performance_notes.clear()
 	for value: Variant in current.get("notes", []):
 		performance_notes.append(str(value))
+	event_modes.clear()
 	if performance_notes.is_empty() or performance_notes.size() != beat_times.size():
 		performance_notes = RhythmModel.default_notes_for_instrument(Context.instrument, beat_times.size())
+		for _beat in beat_times:
+			event_modes.append("TARGET")
+	else:
+		for value: Variant in current.get("event_modes", []):
+			event_modes.append(str(value).to_upper())
+		if event_modes.size() != beat_times.size():
+			event_modes.clear()
+			for _beat in beat_times:
+				event_modes.append("TARGET")
 	performance_mode = true
 	judgements.clear()
 	for _beat in beat_times:

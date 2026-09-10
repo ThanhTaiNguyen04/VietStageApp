@@ -45,6 +45,14 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 			if not round_value is Dictionary:
 				continue
 			var round_data: Dictionary = round_value
+			var inherited_tempo: Variant = content.get("tempoBpm", content.get("tempo_bpm", 0))
+			var round_tempo: Variant = round_data.get("tempoBpm", round_data.get("tempo_bpm", inherited_tempo))
+			var event_round := _event_round(round_data.get("events", []), _positive_int(round_tempo, 0))
+			if not event_round.is_empty():
+				event_round["tempo_bpm"] = _positive_int(round_tempo, 0)
+				event_round["label"] = str(round_data.get("title", round_data.get("label", ""))).strip_edges()
+				valid_rounds.append(event_round)
+				continue
 			var raw_beats: Variant = round_data.get("beats", [])
 			var beats := normalize_beats(raw_beats)
 			if beats.is_empty():
@@ -63,8 +71,6 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 					durations.clear()
 			elif not durations.is_empty() and durations.size() != beats.size():
 				durations.clear()
-			var inherited_tempo: Variant = content.get("tempoBpm", content.get("tempo_bpm", 0))
-			var round_tempo: Variant = round_data.get("tempoBpm", round_data.get("tempo_bpm", inherited_tempo))
 			valid_rounds.append({
 				"beats": beats,
 				"tempo_bpm": _positive_int(round_tempo, 0),
@@ -72,6 +78,7 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 				"notes": notes,
 				"durations": durations,
 				"performance_mode": performance_mode,
+				"event_modes": [],
 			})
 		if valid_rounds.is_empty():
 			continue
@@ -96,6 +103,7 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 				"beats": round_data["beats"],
 				"notes": round_data.get("notes", []),
 				"durations": round_data.get("durations", []),
+				"event_modes": round_data.get("event_modes", []),
 				"performance_mode": bool(round_data.get("performance_mode", false)),
 				"max_score": max_score,
 				"order_index": _safe_int(item.get("orderIndex", item.get("order_index", 0))),
@@ -104,6 +112,42 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 				"submit_after": round_index == valid_rounds.size() - 1,
 			})
 	return result
+
+
+## Converts the web editor's sequential musical events into the legacy beat lane.
+## SAMPLE events stay in the timeline so the screen can trigger instrument audio,
+## while TARGET events remain the events that receive learner pitch judgement.
+static func _event_round(raw_events: Variant, tempo_bpm: int) -> Dictionary:
+	if not raw_events is Array or raw_events.size() < 2 or tempo_bpm <= 0:
+		return {}
+	var beats: Array[float] = []
+	var notes: Array[String] = []
+	var durations: Array[float] = []
+	var event_modes: Array[String] = []
+	var elapsed_ms := 0.0
+	for raw_event: Variant in raw_events:
+		if not raw_event is Dictionary:
+			return {}
+		var event: Dictionary = raw_event
+		var note := str(event.get("note", "")).strip_edges()
+		var mode := str(event.get("mode", "")).strip_edges().to_upper()
+		var duration_beats := float(event.get("duration_beats", 0.0))
+		if note.is_empty() or mode not in ["SAMPLE", "TARGET"] or duration_beats <= 0.0:
+			return {}
+		var at_ms := float(event.get("at_ms", elapsed_ms))
+		if at_ms < elapsed_ms - 0.5:
+			return {}
+		var duration_ms := float(event.get("duration_ms", duration_beats * 60000.0 / float(tempo_bpm)))
+		if duration_ms <= 0.0:
+			return {}
+		beats.append(at_ms / 1000.0)
+		notes.append(note)
+		durations.append(duration_ms / 1000.0)
+		event_modes.append(mode)
+		elapsed_ms = at_ms + duration_ms
+	if not event_modes.has("TARGET"):
+		return {}
+	return {"beats": beats, "notes": notes, "durations": durations, "event_modes": event_modes, "performance_mode": true}
 
 
 static func normalize_durations(raw_durations: Variant) -> Array[float]:

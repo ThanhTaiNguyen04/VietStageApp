@@ -55,6 +55,25 @@ func _test_parser() -> void:
 	_check(performance.size() == 1 and bool(performance[0]["performance_mode"]), "ordered notes and beats must enable performance mode")
 	if performance.size() == 1:
 		_check(performance[0]["notes"] == ["C4", "D4"], "performance notes must retain their authored order")
+	var authored_rounds := RhythmModel.parse_challenges([{
+		"contentJson": {"tempo_bpm": 100, "rounds": [
+			{"title": "Vòng 1", "beats": [1.0, 2.0], "notes": ["Sol1", "La1"]},
+			{"title": "Vòng 2", "tempo_bpm": 120, "beats": [0.5, 1.0], "notes": ["Sol4", "La4"]}
+		]}
+	}])
+	_check(authored_rounds.size() == 2, "payload nhiều vòng từ web phải tạo đủ round trong app")
+	if authored_rounds.size() == 2:
+		_check(authored_rounds[0]["notes"] == ["Sol1", "La1"] and authored_rounds[1]["notes"] == ["Sol4", "La4"], "app phải giữ đúng 17 dây đàn tranh mà tác giả đã soạn theo từng vòng")
+	var event_rounds := RhythmModel.parse_challenges([{
+		"contentJson": {"rounds": [{"title": "Sự kiện", "tempo_bpm": 120, "events": [
+			{"note": "Sol1", "mode": "SAMPLE", "duration_beats": 1, "at_ms": 0, "duration_ms": 500},
+			{"note": "La1", "mode": "TARGET", "duration_beats": 0.5, "at_ms": 500, "duration_ms": 250}
+		]}]}
+	}])
+	_check(event_rounds.size() == 1, "payload events từ web phải tạo được một vòng")
+	if event_rounds.size() == 1:
+		_check(event_rounds[0]["beats"] == [0.0, 0.5], "events phải giữ đúng thời điểm đã tính từ trường độ")
+		_check(event_rounds[0]["event_modes"] == ["SAMPLE", "TARGET"], "app phải phân biệt nốt nghe mẫu và nốt học viên chơi")
 	var invalid_performance := RhythmModel.parse_challenges([{
 		"contentJson": {"notes": ["C4", "D4"], "beats": [1.0, 0.5]}
 	}])
