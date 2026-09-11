@@ -175,13 +175,14 @@ func _ready() -> void:
 	_build_roadmap_cards()
 	_connect_buttons()
 	_setup_drawing_callbacks()
+
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	_on_viewport_size_changed()
+
 	_animate_in()
 
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.38)
-
-	get_viewport().size_changed.connect(_on_viewport_size_changed)
-	_on_viewport_size_changed()
 
 	avatar_circle.hide()
 	btn_account.hide()
@@ -317,8 +318,14 @@ func _setup_drawing_callbacks() -> void:
 		var cy := vis_level_3.size.y / 2.0
 		var r := 34.0
 		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
-		var stats: Dictionary = _get_dan_tranh_level_status(7)
-		var pct := float(stats.get("pct", 0))
+		var inst_tmp: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		var pct := 0.0
+		if inst_tmp == "dan_tranh":
+			pct = float(_get_dan_tranh_level_status(7).get("pct", 0))
+		elif inst_tmp == "dan_bau":
+			pct = float(_get_dan_bau_card_status("soloist").get("pct", 0))
+		else:
+			pct = 0.0 # Default for trong_chau/sao_truc until implemented
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_level_3.draw_arc(Vector2(cx, cy), r, -PI / 2.0, -PI / 2.0 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
@@ -440,13 +447,21 @@ func _draw_roadmap_paths() -> void:
 		
 		# Đường thẳng duy nhất nằm ngang
 		if card_basic.visible and card_essentials.visible:
-			_draw_thick_path(p_basic, p_ess)
-		if card_essentials.visible and card_soloist_skills.visible:
-			_draw_thick_path(p_ess, p_sol_sk)
-		if card_soloist_skills.visible and card_chords_skills.visible:
-			_draw_thick_path(p_sol_sk, p_cho_sk)
+			_draw_card_connector(card_basic, card_essentials)
+		if card_essentials.visible and card_level_7.visible:
+			_draw_card_connector(card_essentials, card_level_7)
+		elif card_essentials.visible and card_soloist_skills.visible:
+			_draw_card_connector(card_essentials, card_soloist_skills)
+		
+		if card_level_7.visible and card_chords_skills.visible:
+			_draw_card_connector(card_level_7, card_chords_skills)
+		elif card_soloist_skills.visible and card_chords_skills.visible:
+			_draw_card_connector(card_soloist_skills, card_chords_skills)
+			
 		if card_chords_skills.visible and card_pop_chords.visible:
-			_draw_thick_path(p_cho_sk, p_pop)
+			_draw_card_connector(card_chords_skills, card_pop_chords)
+		elif card_chords_skills.visible and card_classical.visible:
+			_draw_card_connector(card_chords_skills, card_classical)
 
 	else:
 		# Draw roadmap line segments connecting cards
@@ -1506,67 +1521,39 @@ func _build_roadmap_cards() -> void:
 		card_pop_chords.hide()
 		path_soloist_title.hide()
 		path_chords_title.hide()
-		card_soloist_skills.position = Vector2(1060, 275)
+		card_soloist_skills.hide()
+		card_level_7.show()
+		card_level_7.position = Vector2(1060, 275)
+		
+		level_7_title.text = "LEVEL 3: KỸ NĂNG ĐỘC TẤU"
+		level_7_desc.text = "Luyện tập đánh Liên Khúc Trống Chầu và các kỹ năng biểu diễn."
+
 		# Lộ trình Trống Chầu
 		path_soloist_title.text = "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)"
 		path_chords_title.text = "🥁 ĐƯỜNG ĐỆM HÁT (RHYTHM PATH)"
-		
-		basic_title.text = "Nhập Môn Trống Chầu"
+		basic_title.text = "LEVEL 1: NHẬP MÔN TRỐNG CHẦU"
 		basic_desc.text = "Học tư thế cầm dùi, vị trí mặt da, vành trống và các âm Tịch, Cắc cơ bản."
-		# basic_details.text = "📖 5 Bài Học | 🔒 Mở khoá ngay"
 		
-		ess_title.text = "Kỹ Thuật Gõ Nâng Cao"
+		ess_title.text = "LEVEL 2: KỸ THUẬT GÕ NÂNG CAO"
 		ess_desc.text = "Luyện kỹ thuật đập Vành, trống cuộn (Roll) và nhịp Múa Lân."
-		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành bài trước"
-		
-		ess_title.text = "LEVEL 2: KỸ THUẬT DIỄN TẤU"
-		ess_desc.text = "Tìm hiểu về các kỹ thuật Á, nhấn, song thanh và rung dây."
-		# ess_details.text = "📖 3 Bài Học | 🔒 Cần hoàn thành level trước"
-		
-		soloist_skills_title.text = "LEVEL 3: NHỊP ĐIỆU & TỐC ĐỘ"
-		soloist_skills_bullets.text = "✓ Luyện ngón tốc độ cao – Mã Vũ\n✓ Dân ca Quan họ – Lý Cây Đa\n✓ Làm quen mật độ nốt dày hơn"
-		
-		chords_skills_title.text = "LEVEL 4: KỸ THUẬT NÂNG CAO"
-		chords_skills_bullets.text = "✓ Mô phỏng kỹ thuật rung tay trái\n✓ Hòa tấu cùng nhạc cụ khác\n✓ Đánh đàn theo beat"
-		
-		pop_chords_title.text = "LEVEL 5: MASTER – NHẠC HIỆN ĐẠI"
-		pop_chords_desc.text = "✓ Nhạc hiện đại: Sứ Thanh Hoa\n✓ Boss Stage sinh tồn\n✓ Biểu diễn không gợi ý"
-		
-		classical_title.text = "LEVEL 6: HỢP ÂM & HÒA ÂM"
-		classical_desc.text = "✓ Lý thuyết & thế bấm hợp âm\n✓ Kỹ thuật gảy song âm & Arpeggio\n✓ Thực hành đệm hòa âm"
-		level_7_title.text = "LEVEL 3: KỸ THUẬT NÂNG CAO MỞ RỘNG"
-		level_7_desc.text = "Mở rộng khả năng diễn tấu với các kỹ thuật nâng cao."
-
-		# Chuẩn hóa typography và khoảng nội dung để ba card luôn bằng nhau,
-		# kể cả khi tiêu đề Level 3 dài hơn và phải xuống dòng.
-		for title: Label in [basic_title, ess_title, level_7_title]:
-			title.add_theme_font_size_override("font_size", 23)
-			title.custom_minimum_size = Vector2(310, 84)
-			title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		for desc: Label in [basic_desc, ess_desc, level_7_desc]:
-			desc.add_theme_font_size_override("font_size", 16)
-			desc.custom_minimum_size = Vector2(310, 54)
-			desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		for details: Label in [basic_details, ess_details, level_7_details]:
-			details.add_theme_font_size_override("font_size", 15)
-			details.custom_minimum_size = Vector2(310, 24)
 	elif instrument == "dan_bau":
-		# Ẩn các node dư thừa để tạo 1 đường duy nhất cho Đàn Bầu
+		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
+		
+		# Hide branching layout cards
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
 		card_classical.hide()
 		path_soloist_title.hide()
 		path_chords_title.hide()
+		card_soloist_skills.hide()
+		
+		# Hide extra levels for Dan Bau (making it 3 levels)
 		card_chords_skills.hide()
 		card_pop_chords.hide()
-
-		# BẮT BUỘC ĐƯA CÁC THẺ VỀ CÙNG 1 ĐƯỜNG THẲNG NGANG (Y = 275)
-		card_soloist_skills.position = Vector2(1060, 275)
-		card_chords_skills.position = Vector2(1570, 275)
-		card_pop_chords.position = Vector2(2080, 275)
-
-		# Lộ trình Đàn Bầu
-		_set_title_with_icon(roadmap_guide, "map", "Lộ trình học tập Đàn Bầu")
+		
+		# Show straight layout cards
+		card_level_7.show()
+		
 		basic_title.text = "LEVEL 1: NHẬP MÔN TẠO ÂM"
 		basic_desc.text = "Nắm vững tư thế và cách tạo bồi âm chuẩn trên cơ chế 1 dây."
 		# basic_details.text = "📖 2 Bài Học | ⭐ 4 Sao | 0% Hoàn Thành"
@@ -1578,8 +1565,8 @@ func _build_roadmap_cards() -> void:
 		soloist_unlock_title.text = "LEVEL 3"
 		chords_unlock_title.text = "LEVEL 4"
 
-		soloist_skills_title.text = "LEVEL 3: UYỂN CHUYỂN"
-		soloist_skills_bullets.text = "✓ Làm chủ kỹ thuật chùng dây\n✓ Đẩy cần đàn về phía thân người\n✓ Bài hát: Lý Cây Đa"
+		level_7_title.text = "LEVEL 3: UYỂN CHUYỂN"
+		level_7_desc.text = "Làm chủ kỹ thuật chùng dây\nĐẩy cần đàn về phía thân người\nBài hát: Lý Cây Đa"
 
 		chords_skills_title.text = "LEVEL 4: KỸ THUẬT LUYẾN ÂM"
 		chords_skills_bullets.text = "✓ Đánh các nốt luyến dài\n✓ Kỹ thuật Luyến 2 chiều\n✓ Bài hát: Cò Lả & Auld Lang Syne"
@@ -1700,6 +1687,8 @@ func _build_roadmap_cards() -> void:
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
 			_set_details_text(ess_details, 2, stats.get("stars", 0), stats.get("pct", 0), false)
+			var stats3 := _get_dan_bau_card_status("soloist")
+			_set_details_text(level_7_details, 3, stats3.get("stars", 0), stats3.get("pct", 0), false)
 		else:
 			var stars_dict = SecureDataManager.data.get("stars", {})
 			var inst_stars = stars_dict.get(instrument, {})
@@ -1753,9 +1742,17 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(det, 3, 0, 0, false)
 
 	# Card Level 3 follows the exact visual language of Levels 1 and 2.
-	var level_3_stats := _get_dan_tranh_level_status(7)
-	var level_2_stats := _get_dan_tranh_level_status(2)
-	var is_level_3_unlocked := bool(level_2_stats.get("completed", false))
+	var level_3_stats := {}
+	var is_level_3_unlocked := false
+	if instrument == "dan_tranh":
+		level_3_stats = _get_dan_tranh_level_status(7)
+		is_level_3_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
+	elif instrument == "dan_bau":
+		level_3_stats = _get_dan_bau_card_status("soloist")
+		is_level_3_unlocked = bool(_get_dan_bau_card_status("essentials").get("completed", false))
+	else:
+		level_3_stats = _get_dan_tranh_level_status(7)
+		is_level_3_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
 	var level_3_sb := _flat(
 		C_CARD_BG_DK if is_level_3_unlocked else Color(1.0, 1.0, 1.0, 0.45),
 		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
@@ -1773,6 +1770,19 @@ func _build_roadmap_cards() -> void:
 		_connect_dan_tranh_level_card(card_basic, 1)
 		_connect_dan_tranh_level_card(card_essentials, 2)
 		_connect_dan_tranh_level_card(card_level_7, 7)
+
+	# Chuẩn hóa typography và khoảng nội dung để ba card luôn bằng nhau
+	for title: Label in [basic_title, ess_title, level_7_title]:
+		title.add_theme_font_size_override("font_size", 23)
+		title.custom_minimum_size = Vector2(310, 84)
+		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	for desc: Label in [basic_desc, ess_desc, level_7_desc]:
+		desc.add_theme_font_size_override("font_size", 16)
+		desc.custom_minimum_size = Vector2(310, 54)
+		desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	for details: Label in [basic_details, ess_details, level_7_details]:
+		details.add_theme_font_size_override("font_size", 15)
+		details.custom_minimum_size = Vector2(310, 24)
 
 	for c in [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]:
 		_make_card_clickable(c)
@@ -2103,9 +2113,15 @@ func _connect_buttons() -> void:
 	)
 	card_level_7.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
-			if str(SecureDataManager.data.get("selected_instrument", "dan_tranh")) == "dan_tranh":
+			var inst = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+			if inst == "dan_tranh":
 				DAN_TRANH_LESSON_SCRIPT.selected_level = 7
 				_fade_to("res://scenes/LessonDanTranhList.tscn")
+			elif inst == "dan_bau":
+				LESSON_SCRIPT.selected_level = 3
+				_fade_to("res://scenes/LessonDanBau.tscn")
+			elif inst == "trong_chau":
+				_fade_to("res://scenes/PracticeTrongChau.tscn")
 	)
 	card_pop_chords.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
@@ -2491,31 +2507,40 @@ func _on_viewport_size_changed() -> void:
 		var x_string_roll: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var total_w: float = x_ch + card_w + 40.0 if instrument == "dan_tranh" else x_pop + card_w + 40.0
+		var is_3_levels = (instrument == "dan_tranh" or instrument == "dan_bau" or instrument == "trong_chau")
+		var total_w: float = x_sk + card_w + 40.0 if is_3_levels else x_pop + card_w + 40.0
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 
 		card_basic.position = Vector2(x_basic, y_mid)
-		card_basic.custom_minimum_size = Vector2(card_w, card_h if instrument == "dan_tranh" else card_basic.custom_minimum_size.y)
-		if instrument == "dan_tranh": card_basic.size = Vector2(card_w, card_h)
-		
+		card_basic.custom_minimum_size = Vector2(card_w, card_h if is_3_levels else card_basic.custom_minimum_size.y)
+		if is_3_levels: card_basic.size = Vector2(card_w, card_h)
+
 		card_essentials.position = Vector2(x_ess, y_mid)
-		card_essentials.custom_minimum_size = Vector2(card_w, card_h if instrument == "dan_tranh" else card_essentials.custom_minimum_size.y)
-		if instrument == "dan_tranh": card_essentials.size = Vector2(card_w, card_h)
-		
+		card_essentials.custom_minimum_size = Vector2(card_w, card_h if is_3_levels else card_essentials.custom_minimum_size.y)
+		if is_3_levels: card_essentials.size = Vector2(card_w, card_h)
+
 		card_soloist_skills.position = Vector2(x_sk, y_mid)
 		card_soloist_skills.custom_minimum_size = Vector2(card_w, card_soloist_skills.custom_minimum_size.y)
 
 		card_chords_skills.position = Vector2(x_ch, y_mid)
 		card_chords_skills.custom_minimum_size = Vector2(card_w, card_chords_skills.custom_minimum_size.y)
-		
-		card_pop_chords.position = Vector2(x_ch, y_mid) if instrument == "dan_tranh" else Vector2(x_pop, y_mid)
+
+		if instrument == "dan_tranh":
+			card_pop_chords.position = Vector2(x_ch, y_mid)
+		else:
+			card_pop_chords.position = Vector2(x_pop, y_mid)
 		card_pop_chords.custom_minimum_size = Vector2(card_w, card_pop_chords.custom_minimum_size.y)
 
 		card_classical.position = Vector2(x_class, y_mid)
 		card_classical.custom_minimum_size = Vector2(card_w, card_classical.custom_minimum_size.y)
-		card_level_7.position = Vector2(x_sk, y_mid) if instrument == "dan_tranh" else Vector2(x_class, y_mid)
-		card_level_7.custom_minimum_size = Vector2(card_w, card_h if instrument == "dan_tranh" else card_level_7.custom_minimum_size.y)
-		if instrument == "dan_tranh": card_level_7.size = Vector2(card_w, card_h)
+		
+		if is_3_levels:
+			card_level_7.position = Vector2(x_sk, y_mid)
+			card_level_7.custom_minimum_size = Vector2(card_w, card_h)
+			card_level_7.size = Vector2(card_w, card_h)
+		else:
+			card_level_7.position = Vector2(x_class, y_mid)
+			card_level_7.custom_minimum_size = Vector2(card_w, card_level_7.custom_minimum_size.y)
 	else:
 		var x_ess: float = x_basic + card_w + gap
 		x_un = x_ess + card_w + gap
