@@ -1,6 +1,7 @@
 extends SceneTree
 
 const RhythmModel = preload("res://scripts/RhythmChallengeModel.gd")
+const InstrumentSamplePlayer = preload("res://scripts/InstrumentSamplePlayer.gd")
 
 var failures := 0
 
@@ -13,6 +14,7 @@ func _run() -> void:
 	_test_parser()
 	_test_judgement()
 	_test_scoring()
+	_test_sample_assets()
 	if failures == 0:
 		print("[RhythmChallengeModel] PASS")
 		quit(0)
@@ -103,6 +105,20 @@ func _test_scoring() -> void:
 	_check(RhythmModel.stars_for_score(450, 500) == 3, "90% phải nhận 3 sao")
 	_check(RhythmModel.stars_for_score(349, 500) == 1, "dưới 70% nhưng từ 50% phải nhận 1 sao")
 	_check(RhythmModel.stars_for_score(249, 500) == 0, "dưới 50% không nhận sao")
+
+
+func _test_sample_assets() -> void:
+	var player := InstrumentSamplePlayer.new()
+	var supported := {
+		"dan_tranh": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"],
+		"sao_truc": ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si", "Đố"],
+		"dan_bau": ["C4", "G4", "C5", "E5", "G5", "C6"],
+	}
+	for instrument: String in supported:
+		for note: String in supported[instrument]:
+			var path := player.sample_path(instrument, note)
+			_check(not path.is_empty() and ResourceLoader.exists(path), "%s %s phải có WAV nghe mẫu" % [instrument, note])
+	player.free()
 
 
 func _check(condition: bool, message: String) -> void:

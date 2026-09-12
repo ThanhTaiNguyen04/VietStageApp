@@ -170,6 +170,13 @@ func _test_melody_contract() -> void:
 	_check(absf(melody_screen._frequency("D3") - 146.83) < 0.1, "Scientific D3 pitch must be octave-aware")
 	_check(absf(melody_screen._cents_from_expected(392.0, "G4")) < 0.1, "Reference pitch must score at zero cents")
 
+	melody_screen._parse_challenges([{
+		"id": 202,
+		"challengeType": "MELODY_COMPLETE",
+		"contentJson": JSON.stringify({"melody": ["Sol1", "La1", "Đô2"], "missing_index": 1, "bpm": 80})
+	}])
+	_check(melody_screen.melodies.size() == 1 and melody_screen.melodies[0].get("missing") == 1, "Simple missing_index payload must select the physical-instrument note")
+
 	melody_screen.free()
 
 func _test_instrument_sample_player() -> void:

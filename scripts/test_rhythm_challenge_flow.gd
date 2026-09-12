@@ -37,10 +37,18 @@ func _run() -> void:
 	_check(_find_button(screen, "▶  Nghe mẫu") != null, "intro phải có nút Nghe mẫu")
 	_check(_find_button(screen, "Bắt đầu  →") != null, "intro phải có nút Bắt đầu")
 
+	# Dữ liệu offline chỉ có TARGET; tạo một SAMPLE để kiểm tra preview
+	# không phụ thuộc vào nốt học viên cần chơi.
+	var original_modes: Array = (screen.get("event_modes") as Array).duplicate()
+	var preview_modes: Array = original_modes.duplicate()
+	if not preview_modes.is_empty():
+		preview_modes[0] = "SAMPLE"
+		screen.set("event_modes", preview_modes)
 	screen.call("_play_sample")
 	_check(int(screen.get("flow_state")) == PREVIEW, "Nghe mẫu phải chuyển sang PREVIEW")
 	screen.call("_play_sample")
 	_check(int(screen.get("flow_state")) == INTRO, "Dừng mẫu phải trở lại INTRO")
+	screen.set("event_modes", original_modes)
 
 	screen.call("_start_round")
 	var playing_ready := await _wait_for_state(PLAYING, 4.0)
