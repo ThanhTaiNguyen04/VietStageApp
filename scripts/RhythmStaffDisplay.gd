@@ -8,6 +8,7 @@ var current_time := 0.0
 var duration := 1.0
 var show_note_hints := true
 var show_student_targets := false
+var event_modes: Array[String] = []
 
 const C_PERFECT := Color("#16a34a") # Emerald green for PERFECT / GOOD
 const C_GOOD := Color("#16a34a")    # Emerald green
@@ -17,7 +18,7 @@ const C_TARGET_NOTE := Color("#94a3b8") # Gray: learner has not played this note
 const C_PLAYHEAD := Color("#0ea5e9") # Sky blue cursor
 
 
-func configure_rhythm(note_values: Array, times: Array, total_duration: float, hints: bool = true, student_mode: bool = false) -> void:
+func configure_rhythm(note_values: Array, times: Array, total_duration: float, hints: bool = true, student_mode: bool = false, modes: Array = []) -> void:
 	# LearningMelodyStaffDisplay draws normal notes in its _draw(). Rhythm notes
 	# need judgement/playback colours, so drawing both created offset duplicate
 	# heads and stems. Retain its staff primitives only, then draw each note once
@@ -26,6 +27,13 @@ func configure_rhythm(note_values: Array, times: Array, total_duration: float, h
 	configure(note_values, -1)
 	show_note_hints = hints
 	show_student_targets = student_mode
+	event_modes.clear()
+	for value: Variant in modes:
+		event_modes.append(str(value).to_upper())
+	if event_modes.size() != note_values.size():
+		event_modes.clear()
+		for _note in note_values:
+			event_modes.append("TARGET")
 	beat_times.clear()
 	for value: Variant in times:
 		beat_times.append(float(value))
@@ -91,13 +99,13 @@ func _draw() -> void:
 		var note_x := start_note_x + step_x * float(i)
 		var solfege := _to_vietnamese_solfege(raw_note)
 		var state := judgements[i] if i < judgements.size() else ""
+		var is_sample := i < event_modes.size() and event_modes[i] == "SAMPLE"
 		var diatonic_step := _parse_diatonic_step(raw_note)
 		var note_y := center_y - float(diatonic_step - 6) * (spacing * 0.5)
 
-		# Demo notes are subdued black. In the performance phase, every pending
-		# learner target starts gray; only an evaluated target changes color.
-		var note_color := C_TARGET_NOTE if show_student_targets else C_DEMO_NOTE
-		if not state.is_empty():
+		# Sample notes remain muted. Only learner targets receive judgement colours.
+		var note_color := C_DEMO_NOTE if is_sample or not show_student_targets else C_TARGET_NOTE
+		if not is_sample and not state.is_empty():
 			if state in ["PERFECT", "GOOD"]:
 				note_color = C_PERFECT
 			else:
@@ -117,14 +125,14 @@ func _draw() -> void:
 			var tag_color := Color("#475569")
 			var tag_bg := Color(0.94, 0.96, 0.98, 0.92)
 			
-			if not state.is_empty():
+			if not is_sample and not state.is_empty():
 				if state in ["PERFECT", "GOOD"]:
 					tag_color = C_PERFECT
 					tag_bg = Color(0.09, 0.64, 0.29, 0.15)
 				else:
 					tag_color = C_MISS
 					tag_bg = Color(0.86, 0.15, 0.15, 0.15)
-			elif show_student_targets:
+			elif show_student_targets and not is_sample:
 				tag_color = C_TARGET_NOTE.darkened(0.24)
 				tag_bg = Color(C_TARGET_NOTE.r, C_TARGET_NOTE.g, C_TARGET_NOTE.b, 0.15)
 
@@ -135,7 +143,7 @@ func _draw() -> void:
 				draw_string(font, Vector2(note_x - tag_w * 0.5, tag_y + 13), solfege, HORIZONTAL_ALIGNMENT_CENTER, tag_w, 12, tag_color)
 
 		# 2. Draw Judgement Badge Above the staff
-		if not state.is_empty():
+		if not is_sample and not state.is_empty():
 			var judge_y := 20.0
 			var judge_color := C_PERFECT if state in ["PERFECT", "GOOD"] else C_MISS
 			var judge_text := state

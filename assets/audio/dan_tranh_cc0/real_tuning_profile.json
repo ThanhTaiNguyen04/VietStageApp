@@ -1,0 +1,138 @@
+[
+  {
+    "string": "Sol 1 (Dây 1)",
+    "note": "G3",
+    "targetHz": 196,
+    "measuredHz": 206.91,
+    "centsOffset": 93.8,
+    "file": "G3.wav"
+  },
+  {
+    "string": "La 1 (Dây 2)",
+    "note": "A3",
+    "targetHz": 220,
+    "measuredHz": 219.26,
+    "centsOffset": -5.9,
+    "file": "A3.wav"
+  },
+  {
+    "string": "Đô 2 (Dây 3)",
+    "note": "C4",
+    "targetHz": 261.63,
+    "measuredHz": 187.13,
+    "centsOffset": -580.1,
+    "file": "C4.wav"
+  },
+  {
+    "string": "Rê 2 (Dây 4)",
+    "note": "D4",
+    "targetHz": 293.66,
+    "measuredHz": 293.38,
+    "centsOffset": -1.6,
+    "file": "D4.wav"
+  },
+  {
+    "string": "Mi 2 (Dây 5)",
+    "note": "E4",
+    "targetHz": 329.63,
+    "measuredHz": 318.48,
+    "centsOffset": -59.6,
+    "file": "E4.wav"
+  },
+  {
+    "string": "Sol 2 (Dây 6)",
+    "note": "G4",
+    "targetHz": 392,
+    "measuredHz": 384.98,
+    "centsOffset": -31.3,
+    "file": "G4.wav"
+  },
+  {
+    "string": "La 2 (Dây 7)",
+    "note": "A4",
+    "targetHz": 440,
+    "measuredHz": 436.14,
+    "centsOffset": -15.3,
+    "file": "A4.wav"
+  },
+  {
+    "string": "Đô 3 (Dây 8)",
+    "note": "C5",
+    "targetHz": 523.25,
+    "measuredHz": 262.5,
+    "centsOffset": -1194.2,
+    "file": "C5.wav"
+  },
+  {
+    "string": "Rê 3 (Dây 9)",
+    "note": "D5",
+    "targetHz": 587.33,
+    "measuredHz": 294,
+    "centsOffset": -1198,
+    "file": "D5.wav"
+  },
+  {
+    "string": "Mi 3 (Dây 10)",
+    "note": "E5",
+    "targetHz": 659.25,
+    "measuredHz": 654.05,
+    "centsOffset": -13.7,
+    "file": "E5.wav"
+  },
+  {
+    "string": "Sol 3 (Dây 11)",
+    "note": "G5",
+    "targetHz": 783.99,
+    "measuredHz": 741.16,
+    "centsOffset": -97.3,
+    "file": "G5.wav"
+  },
+  {
+    "string": "La 3 (Dây 12)",
+    "note": "A5",
+    "targetHz": 880,
+    "measuredHz": 835.75,
+    "centsOffset": -89.3,
+    "file": "A5.wav"
+  },
+  {
+    "string": "Đô 4 (Dây 13)",
+    "note": "C6",
+    "targetHz": 1046.5,
+    "measuredHz": 525,
+    "centsOffset": -1194.2,
+    "file": "C6.wav"
+  },
+  {
+    "string": "Rê 4 (Dây 14)",
+    "note": "D6",
+    "targetHz": 1174.66,
+    "measuredHz": 1091.34,
+    "centsOffset": -127.4,
+    "file": "D6.wav"
+  },
+  {
+    "string": "Mi 4 (Dây 15)",
+    "note": "E6",
+    "targetHz": 1318.51,
+    "measuredHz": 1138.31,
+    "centsOffset": -254.4,
+    "file": "E6.wav"
+  },
+  {
+    "string": "Sol 4 (Dây 16)",
+    "note": "G6",
+    "targetHz": 1567.98,
+    "measuredHz": 1391.36,
+    "centsOffset": -206.9,
+    "file": "G6.wav"
+  },
+  {
+    "string": "La 4 (Dây 17)",
+    "note": "A6",
+    "targetHz": 1760,
+    "measuredHz": 1292.3,
+    "centsOffset": -534.8,
+    "file": "A6.wav"
+  }
+]

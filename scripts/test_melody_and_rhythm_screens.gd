@@ -130,6 +130,8 @@ func _test_rhythm_staff_display() -> void:
 	rstaff.call("configure_rhythm", ["Đô2", "Rê2", "Mi2", "Sol2"], [0.6, 1.2, 1.8, 2.4], 3.0)
 	_check(rstaff.get("beat_times").size() == 4, "RhythmStaffDisplay: 4 beat times configured")
 	_check(rstaff.get("judgements").size() == 4, "RhythmStaffDisplay: 4 empty judgements initialized")
+	rstaff.call("configure_rhythm", ["Đô2", "Rê2", "Mi2", "Sol2"], [0.6, 1.2, 1.8, 2.4], 3.0, true, true, ["SAMPLE", "TARGET", "SAMPLE", "TARGET"])
+	_check(rstaff.get("event_modes") == ["SAMPLE", "TARGET", "SAMPLE", "TARGET"], "RhythmStaffDisplay: preserve SAMPLE and TARGET modes")
 	
 	rstaff.call("update_progress", 1.2, ["PERFECT", "GOOD", "", ""])
 	_check(rstaff.get("playback_index") == 1, "RhythmStaffDisplay: active playback_index matches beat at 1.2s")

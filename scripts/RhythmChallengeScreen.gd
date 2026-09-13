@@ -378,7 +378,7 @@ func _build_intro() -> void:
 	staff.set_script(RhythmStaffDisplayScript)
 	staff.custom_minimum_size = Vector2(0, 200 if mobile else 235)
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, false)
+	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, false, event_modes)
 	staff.call("update_progress", 0.0, judgements)
 	card_body.add_child(staff)
 
@@ -624,10 +624,10 @@ func _build_game() -> void:
 	# Top Live Metrics
 	var metrics := HBoxContainer.new()
 	metrics.alignment = BoxContainer.ALIGNMENT_CENTER
-	metrics.add_theme_constant_override("separation", 24 if mobile else 48)
+	metrics.add_theme_constant_override("separation", 16 if mobile else 32)
 	card_body.add_child(metrics)
-	hit_label = _label("Đúng  0/%d nốt" % beat_times.size(), 15 if mobile else 17, C_NAVY)
-	accuracy_label = _label("Độ chính xác  0%", 15 if mobile else 17, C_NAVY)
+	hit_label = _label("Đúng  0/%d" % _target_event_count(), 15 if mobile else 17, C_NAVY)
+	accuracy_label = _label("Chính xác  0%", 15 if mobile else 17, C_NAVY)
 	hit_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	accuracy_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	metrics.add_child(hit_label)
@@ -639,7 +639,7 @@ func _build_game() -> void:
 	staff.set_script(RhythmStaffDisplayScript)
 	staff.custom_minimum_size = Vector2(0, 210 if mobile else 250)
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true)
+	staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true, event_modes)
 	staff.call("update_progress", 0.0, judgements)
 	card_body.add_child(staff)
 
@@ -651,16 +651,16 @@ func _build_game() -> void:
 		status_label.add_theme_font_override("font", bold_font)
 	card_body.add_child(status_label)
 
-	# Dynamic live microphone diagnostics
+	# The detailed microphone state stays here; the compact chip is in the top row.
 	microphone_label = _label("● Micro đang nghe · Chờ bạn chơi nốt xám", 13 if mobile else 14, C_OK)
 	microphone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(microphone_label)
 
 	# Bottom instruction (no touch prompt)
-	var guidance := _label("Chơi đúng cao độ khi playhead đi qua nốt xám. Không cần chạm màn hình.", 13 if mobile else 14, C_MUTED)
+	var guidance := _label("Chơi nốt xám khi playhead đi qua.", 13 if mobile else 14, C_MUTED)
 	guidance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if Context.instrument == "trong_chau":
-		guidance.text = "Gõ đúng nhịp khi playhead đi qua nốt xám. Không cần chạm màn hình."
+		guidance.text = "Gõ khi playhead đi qua."
 	card_body.add_child(guidance)
 
 
@@ -794,11 +794,20 @@ func _update_microphone_indicator() -> void:
 
 
 func _update_live_metrics() -> void:
-	var accuracy := RhythmModel.accuracy_percent(round_accuracy_points, beat_times.size())
+	var target_count := _target_event_count()
+	var accuracy := RhythmModel.accuracy_percent(round_accuracy_points, target_count)
 	if is_instance_valid(hit_label):
-		hit_label.text = "Đúng  %d/%d nốt" % [round_hits, beat_times.size()]
+		hit_label.text = "Đúng  %d/%d" % [round_hits, target_count]
 	if is_instance_valid(accuracy_label):
-		accuracy_label.text = "Độ chính xác  %.0f%%" % accuracy
+		accuracy_label.text = "Chính xác  %.0f%%" % accuracy
+
+
+func _target_event_count() -> int:
+	var count := 0
+	for mode in event_modes:
+		if mode != "SAMPLE":
+			count += 1
+	return maxi(1, count)
 
 
 func _finish_round() -> void:
@@ -810,16 +819,17 @@ func _finish_round() -> void:
 	_set_flow_state(FlowState.SUBMITTING)
 
 	var current := rhythms[rhythm_index]
-	var round_accuracy := RhythmModel.accuracy_percent(round_accuracy_points, beat_times.size())
+	var target_count := _target_event_count()
+	var round_accuracy := RhythmModel.accuracy_percent(round_accuracy_points, target_count)
 	challenge_accuracy_points += round_accuracy_points
-	challenge_beat_count += beat_times.size()
+	challenge_beat_count += target_count
 	total_accuracy_points += round_accuracy_points
-	total_beat_count += beat_times.size()
+	total_beat_count += target_count
 	total_correct_pitch_count += round_correct_pitch_count
 	total_on_time_count += round_on_time_count
 
 	var max_score := _safe_int(current.get("max_score", 100), 100)
-	var round_score := RhythmModel.scaled_score(round_accuracy_points, beat_times.size(), max_score)
+	var round_score := RhythmModel.scaled_score(round_accuracy_points, target_count, max_score)
 
 	if bool(current.get("submit_after", true)):
 		var challenge_score := RhythmModel.scaled_score(challenge_accuracy_points, challenge_beat_count, max_score)
@@ -907,13 +917,13 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 	result_staff.set_script(RhythmStaffDisplayScript)
 	result_staff.custom_minimum_size = Vector2(0, 190 if mobile else 220)
 	result_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	result_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true)
+	result_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true, event_modes)
 	result_staff.call("update_progress", round_duration, judgements)
 	card_body.add_child(result_staff)
 
 	# Exactly 3 key metric cards
-	var pitch_acc := RhythmModel.pitch_accuracy_percent(round_correct_pitch_count, beat_times.size())
-	var time_acc := RhythmModel.timing_accuracy_percent(round_on_time_count, beat_times.size())
+	var pitch_acc := RhythmModel.pitch_accuracy_percent(round_correct_pitch_count, _target_event_count())
+	var time_acc := RhythmModel.timing_accuracy_percent(round_on_time_count, _target_event_count())
 
 	var metrics := GridContainer.new()
 	metrics.columns = 3
@@ -981,7 +991,7 @@ func _build_final_result() -> void:
 		final_staff.set_script(RhythmStaffDisplayScript)
 		final_staff.custom_minimum_size = Vector2(0, 180 if mobile else 210)
 		final_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		final_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true)
+		final_staff.call("configure_rhythm", performance_notes, beat_times, round_duration, true, true, event_modes)
 		final_staff.call("update_progress", round_duration, judgements)
 		card_body.add_child(final_staff)
 
@@ -1269,7 +1279,7 @@ func _on_viewport_size_changed() -> void:
 	elif flow_state == FlowState.ROUND_RESULT:
 		var current := rhythms[rhythm_index]
 		var max_score := _safe_int(current.get("max_score", 100), 100)
-		var round_score := RhythmModel.scaled_score(round_accuracy_points, beat_times.size(), max_score)
+		var round_score := RhythmModel.scaled_score(round_accuracy_points, _target_event_count(), max_score)
 		_build_round_result(round_score, max_score)
 	elif flow_state == FlowState.FINAL_RESULT:
 		_build_final_result()
