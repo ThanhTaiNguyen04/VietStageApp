@@ -37,24 +37,39 @@ func _run() -> void:
 	_check(_find_button(screen, "▶  Nghe mẫu") != null, "intro phải có nút Nghe mẫu")
 	_check(_find_button(screen, "Bắt đầu  →") != null, "intro phải có nút Bắt đầu")
 
+	# Dữ liệu offline chỉ có TARGET; tạo một SAMPLE để kiểm tra preview
+	# không phụ thuộc vào nốt học viên cần chơi.
+	var original_modes: Array = (screen.get("event_modes") as Array).duplicate()
+	var preview_modes: Array = original_modes.duplicate()
+	if not preview_modes.is_empty():
+		preview_modes[0] = "SAMPLE"
+		screen.set("event_modes", preview_modes)
 	screen.call("_play_sample")
 	_check(int(screen.get("flow_state")) == PREVIEW, "Nghe mẫu phải chuyển sang PREVIEW")
 	screen.call("_play_sample")
 	_check(int(screen.get("flow_state")) == INTRO, "Dừng mẫu phải trở lại INTRO")
+	screen.set("event_modes", original_modes)
 
 	screen.call("_start_round")
 	var playing_ready := await _wait_for_state(PLAYING, 4.0)
 	_check(playing_ready, "countdown phải chuyển sang PLAYING")
 	if playing_ready:
+		var is_perf: bool = screen.get("performance_mode")
+		var analyzer: Node = screen.get("audio_analyzer")
 		var beats: Array = screen.get("beat_times")
-		for beat_value: Variant in beats:
-			var target := float(beat_value)
+		for idx in beats.size():
+			var target := float(beats[idx])
 			while float(Time.get_ticks_msec() - int(screen.get("round_started_at_ms"))) / 1000.0 < target:
 				await process_frame
-			screen.call("_tap")
+			if is_perf and is_instance_valid(analyzer):
+				analyzer.set("current_pitch", 261.63) # C4 / Đô2
+				analyzer.set("current_pitch_is_reliable", true)
+				screen.call("_process_live_note", target)
+			else:
+				screen.call("_tap")
 		_check(await _wait_for_state(FINAL_RESULT, 5.0), "kết thúc vòng phải hiển thị FINAL_RESULT")
 
-	_check(int(screen.get("total_score")) > 0, "tap đúng phải tạo điểm")
+	_check(int(screen.get("total_score")) > 0, "diễn tấu đúng phải tạo điểm")
 	_check(int(screen.get("total_max_score")) > 0, "kết quả phải có max score")
 	_check(_find_button(screen, "Chơi lại") != null, "kết quả phải có nút Chơi lại")
 	_check(_find_button(screen, "Về hoạt động") != null, "kết quả phải có nút Về hoạt động")

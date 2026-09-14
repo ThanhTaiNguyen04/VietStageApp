@@ -259,8 +259,8 @@ func _parse_challenges(challenges: Array) -> void:
 		if source.has("melody") and source.get("melody") is Array and not source.get("melody", []).is_empty():
 			var notes: Array = source.get("melody", []).duplicate()
 			var missing_positions: Variant = source.get("missing_positions", source.get("missingPositions", [2]))
-			var missing := 2
-			if missing_positions is Array and not missing_positions.is_empty():
+			var missing := _safe_int(source.get("missing_index", source.get("missingIndex", 2)), 2)
+			if not source.has("missing_index") and not source.has("missingIndex") and missing_positions is Array and not missing_positions.is_empty():
 				missing = _safe_int(missing_positions[0], 2)
 			missing = clampi(missing, 0, notes.size() - 1)
 				

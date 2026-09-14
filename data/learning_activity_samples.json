@@ -28,7 +28,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":90,\"beats\":[0.5,1.0,1.5,2.0,2.5]}"
+      "contentJson": "{\"tempoBpm\":90,\"notes\":[\"Đô2\",\"Rê2\",\"Mi2\",\"Sol2\",\"La2\"],\"beats\":[0.6,1.2,1.8,2.4,3.0]}"
     },
     "melody": {
       "maxScore": 500,
@@ -55,7 +55,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":72,\"beats\":[0.6,1.2,1.8,2.4,3.0]}"
+      "contentJson": "{\"tempoBpm\":75,\"notes\":[\"c4\",\"sol4\",\"c5\",\"mi5\",\"sol5\"],\"beats\":[0.8,1.6,2.4,3.2,4.0]}"
     },
     "melody": {
       "maxScore": 500,
@@ -82,7 +82,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":80,\"beats\":[0.5,1.0,1.75,2.25,3.0]}"
+      "contentJson": "{\"tempoBpm\":80,\"notes\":[\"Đô\",\"Rê\",\"Mi\",\"Sol\",\"La\"],\"beats\":[0.75,1.5,2.25,3.0,3.75]}"
     },
     "melody": {
       "maxScore": 500,
@@ -108,7 +108,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":96,\"beats\":[0.4,0.8,1.4,1.8,2.4,2.8]}"
+      "contentJson": "{\"tempoBpm\":96,\"notes\":[\"Tịch\",\"Cắc\",\"Tịch\",\"Cắc\",\"Tịch\"],\"beats\":[0.6,1.2,1.8,2.4,3.0]}"
     },
     "melody": {
       "maxScore": 500,

@@ -6,6 +6,9 @@ var answer_visible := false
 var answer_correct := false
 var selected_note := ""
 var playback_index := -1
+# Subclasses that render their own note states can keep this base renderer for
+# the staff, clef and time signature without drawing a second set of glyphs.
+var suppress_base_note_glyphs := false
 
 var clef_texture: Texture2D
 var lora_font: Font
@@ -95,7 +98,7 @@ func _draw() -> void:
 		# Bottom digit 4
 		draw_string(num_font, Vector2(ts_x, center_y + spacing * 2.05), "4", HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, staff_line_color)
 
-	if notes.is_empty():
+	if notes.is_empty() or suppress_base_note_glyphs:
 		return
 
 	# 5. Distribute Notes across usable width
@@ -252,6 +255,10 @@ func _parse_diatonic_step(note_str: String) -> int:
 		"lá": 12, "la3": 12, "la_3": 12, "a5": 12, "a3": 12,
 		"sĩ": 13, "si3": 13, "si_3": 13, "b5": 13, "b3": 13,
 		
+		# Trống Chầu
+		"tịch": 0, "tich": 0,
+		"cắc": 4, "cac": 4,
+
 		# Quãng trầm (Octave 3)
 		"sol1": -3, "sol_1": -3, "sò": -3, "g1": -3,
 		"la1": -2, "la_1": -2, "là": -2, "a1": -2,

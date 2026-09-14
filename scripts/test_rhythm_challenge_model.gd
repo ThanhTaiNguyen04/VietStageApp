@@ -1,6 +1,7 @@
 extends SceneTree
 
 const RhythmModel = preload("res://scripts/RhythmChallengeModel.gd")
+const InstrumentSamplePlayer = preload("res://scripts/InstrumentSamplePlayer.gd")
 
 var failures := 0
 
@@ -13,6 +14,7 @@ func _run() -> void:
 	_test_parser()
 	_test_judgement()
 	_test_scoring()
+	_test_sample_assets()
 	if failures == 0:
 		print("[RhythmChallengeModel] PASS")
 		quit(0)
@@ -48,6 +50,37 @@ func _test_parser() -> void:
 	_check(bool(parsed[1]["submit_after"]), "chỉ submit ở vòng cuối challenge")
 	_check(int(parsed[1]["max_score"]) == 500, "mọi vòng phải giữ maxScore của challenge")
 
+	_check(not bool(parsed[0]["performance_mode"]), "beats-only must stay on the legacy TAP path")
+	var performance := RhythmModel.parse_challenges([{
+		"contentJson": {"tempo_bpm": 80, "notes": ["C4", "D4"], "beats": [0.5, 1.0]}
+	}])
+	_check(performance.size() == 1 and bool(performance[0]["performance_mode"]), "ordered notes and beats must enable performance mode")
+	if performance.size() == 1:
+		_check(performance[0]["notes"] == ["C4", "D4"], "performance notes must retain their authored order")
+	var authored_rounds := RhythmModel.parse_challenges([{
+		"contentJson": {"tempo_bpm": 100, "rounds": [
+			{"title": "Vòng 1", "beats": [1.0, 2.0], "notes": ["Sol1", "La1"]},
+			{"title": "Vòng 2", "tempo_bpm": 120, "beats": [0.5, 1.0], "notes": ["Sol4", "La4"]}
+		]}
+	}])
+	_check(authored_rounds.size() == 2, "payload nhiều vòng từ web phải tạo đủ round trong app")
+	if authored_rounds.size() == 2:
+		_check(authored_rounds[0]["notes"] == ["Sol1", "La1"] and authored_rounds[1]["notes"] == ["Sol4", "La4"], "app phải giữ đúng 17 dây đàn tranh mà tác giả đã soạn theo từng vòng")
+	var event_rounds := RhythmModel.parse_challenges([{
+		"contentJson": {"rounds": [{"title": "Sự kiện", "tempo_bpm": 120, "events": [
+			{"note": "Sol1", "mode": "SAMPLE", "duration_beats": 1, "at_ms": 0, "duration_ms": 500},
+			{"note": "La1", "mode": "TARGET", "duration_beats": 0.5, "at_ms": 500, "duration_ms": 250}
+		]}]}
+	}])
+	_check(event_rounds.size() == 1, "payload events từ web phải tạo được một vòng")
+	if event_rounds.size() == 1:
+		_check(event_rounds[0]["beats"] == [0.0, 0.5], "events phải giữ đúng thời điểm đã tính từ trường độ")
+		_check(event_rounds[0]["event_modes"] == ["SAMPLE", "TARGET"], "app phải phân biệt nốt nghe mẫu và nốt học viên chơi")
+	var invalid_performance := RhythmModel.parse_challenges([{
+		"contentJson": {"notes": ["C4", "D4"], "beats": [1.0, 0.5]}
+	}])
+	_check(invalid_performance.size() == 1 and not bool(invalid_performance[0]["performance_mode"]), "unordered beats must not desynchronize notes and timing")
+
 	var invalid := RhythmModel.parse_challenges([{"contentJson": "{not-json}"}])
 	_check(invalid.is_empty(), "challenge không có beat hợp lệ phải bị loại")
 
@@ -72,6 +105,20 @@ func _test_scoring() -> void:
 	_check(RhythmModel.stars_for_score(450, 500) == 3, "90% phải nhận 3 sao")
 	_check(RhythmModel.stars_for_score(349, 500) == 1, "dưới 70% nhưng từ 50% phải nhận 1 sao")
 	_check(RhythmModel.stars_for_score(249, 500) == 0, "dưới 50% không nhận sao")
+
+
+func _test_sample_assets() -> void:
+	var player := InstrumentSamplePlayer.new()
+	var supported := {
+		"dan_tranh": ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"],
+		"sao_truc": ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si", "Đố"],
+		"dan_bau": ["C4", "G4", "C5", "E5", "G5", "C6"],
+	}
+	for instrument: String in supported:
+		for note: String in supported[instrument]:
+			var path := player.sample_path(instrument, note)
+			_check(not path.is_empty() and ResourceLoader.exists(path), "%s %s phải có WAV nghe mẫu" % [instrument, note])
+	player.free()
 
 
 func _check(condition: bool, message: String) -> void:
