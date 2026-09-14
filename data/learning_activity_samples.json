@@ -28,7 +28,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":90,\"notes\":[\"Đô2\",\"Rê2\",\"Mi2\",\"Sol2\",\"La2\"],\"beats\":[0.6,1.2,1.8,2.4,3.0]}"
+      "contentJson": "{\"tempoBpm\":80,\"time_signature\":[4,4],\"rounds\":[{\"title\":\"Luyện nhịp 4/4 Đàn Tranh\",\"time_signature\":[4,4],\"tempo_bpm\":80,\"events\":[{\"note\":\"Đô2\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"Rê2\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"Mi2\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Sol2\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"La2\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"Sol2\",\"duration_beats\":2.0,\"mode\":\"TARGET\"},{\"note\":\"Đô3\",\"duration_beats\":2.0,\"mode\":\"TARGET\"}]}]}"
     },
     "melody": {
       "maxScore": 500,
@@ -55,7 +55,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":75,\"notes\":[\"c4\",\"sol4\",\"c5\",\"mi5\",\"sol5\"],\"beats\":[0.8,1.6,2.4,3.2,4.0]}"
+      "contentJson": "{\"tempoBpm\":75,\"time_signature\":[3,4],\"rounds\":[{\"title\":\"Luyện nhịp 3/4 Đàn Bầu\",\"time_signature\":[3,4],\"tempo_bpm\":75,\"events\":[{\"note\":\"c4\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"sol4\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"c5\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"mi5\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"sol5\",\"duration_beats\":2.0,\"mode\":\"TARGET\"}]}]}"
     },
     "melody": {
       "maxScore": 500,
@@ -82,7 +82,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":80,\"notes\":[\"Đô\",\"Rê\",\"Mi\",\"Sol\",\"La\"],\"beats\":[0.75,1.5,2.25,3.0,3.75]}"
+      "contentJson": "{\"tempoBpm\":90,\"time_signature\":[6,8],\"rounds\":[{\"title\":\"Luyện nhịp 6/8 Sáo Trúc\",\"time_signature\":[6,8],\"tempo_bpm\":90,\"events\":[{\"note\":\"Đô\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Rê\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Mi\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Sol\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"La\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Đô2\",\"duration_beats\":0.5,\"mode\":\"TARGET\"}]}]}"
     },
     "melody": {
       "maxScore": 500,
@@ -108,7 +108,7 @@
     ],
     "rhythm": {
       "maxScore": 500,
-      "contentJson": "{\"tempoBpm\":96,\"notes\":[\"Tịch\",\"Cắc\",\"Tịch\",\"Cắc\",\"Tịch\"],\"beats\":[0.6,1.2,1.8,2.4,3.0]}"
+      "contentJson": "{\"tempoBpm\":90,\"time_signature\":[2,4],\"rounds\":[{\"title\":\"Luyện nhịp 2/4 Trống Chầu\",\"time_signature\":[2,4],\"tempo_bpm\":90,\"events\":[{\"note\":\"Tịch\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"Cắc\",\"duration_beats\":1.0,\"mode\":\"TARGET\"},{\"note\":\"Tịch\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Tịch\",\"duration_beats\":0.5,\"mode\":\"TARGET\"},{\"note\":\"Cắc\",\"duration_beats\":1.0,\"mode\":\"TARGET\"}]}]}"
     },
     "melody": {
       "maxScore": 500,

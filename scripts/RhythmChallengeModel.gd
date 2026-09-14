@@ -25,6 +25,24 @@ static func default_notes_for_instrument(instrument: String, count: int) -> Arra
 	return result
 
 
+static func parse_time_signature(raw_sig: Variant) -> Array[int]:
+	if raw_sig is Array and raw_sig.size() >= 2:
+		var num := int(raw_sig[0])
+		var den := int(raw_sig[1])
+		if (num == 2 and den == 4) or (num == 3 and den == 4) or (num == 4 and den == 4) or (num == 6 and den == 8):
+			return [num, den]
+	return [4, 4]
+
+
+static func measure_duration_in_beats(time_signature: Array) -> float:
+	if time_signature.size() >= 2:
+		if int(time_signature[0]) == 6 and int(time_signature[1]) == 8:
+			return 3.0
+		if int(time_signature[1]) == 4:
+			return float(time_signature[0])
+	return 4.0
+
+
 static func parse_challenges(challenge_items: Array, instrument: String = "") -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var fallback_key := 0
@@ -47,10 +65,16 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 			var round_data: Dictionary = round_value
 			var inherited_tempo: Variant = content.get("tempoBpm", content.get("tempo_bpm", 0))
 			var round_tempo: Variant = round_data.get("tempoBpm", round_data.get("tempo_bpm", inherited_tempo))
+			var raw_sig: Variant = round_data.get("time_signature", round_data.get("timeSignature", content.get("time_signature", content.get("timeSignature", [4, 4]))))
+			var time_signature := parse_time_signature(raw_sig)
+			var measure_beats := measure_duration_in_beats(time_signature)
+
 			var event_round := _event_round(round_data.get("events", []), _positive_int(round_tempo, 0))
 			if not event_round.is_empty():
 				event_round["tempo_bpm"] = _positive_int(round_tempo, 0)
 				event_round["label"] = str(round_data.get("title", round_data.get("label", ""))).strip_edges()
+				event_round["time_signature"] = time_signature
+				event_round["measure_duration_beats"] = measure_beats
 				valid_rounds.append(event_round)
 				continue
 			var raw_beats: Variant = round_data.get("beats", [])
@@ -60,6 +84,10 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 			var notes := normalize_notes(round_data.get("notes", round_data.get("melody", [])))
 			var raw_durations: Variant = round_data.get("durations", [])
 			var durations := normalize_durations(raw_durations)
+			var durations_beats: Array[float] = []
+			var tempo_val := float(_positive_int(round_tempo, 100))
+			for d_sec in durations:
+				durations_beats.append(d_sec * (tempo_val / 60.0))
 			
 			var performance_mode := not notes.is_empty() and notes.size() == beats.size() and _beats_are_strictly_ordered(raw_beats)
 			if not performance_mode:
@@ -69,14 +97,19 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 				else:
 					notes.clear()
 					durations.clear()
+					durations_beats.clear()
 			elif not durations.is_empty() and durations.size() != beats.size():
 				durations.clear()
+				durations_beats.clear()
 			valid_rounds.append({
 				"beats": beats,
 				"tempo_bpm": _positive_int(round_tempo, 0),
 				"label": str(round_data.get("title", round_data.get("label", ""))).strip_edges(),
 				"notes": notes,
 				"durations": durations,
+				"durations_beats": durations_beats,
+				"time_signature": time_signature,
+				"measure_duration_beats": measure_beats,
 				"performance_mode": performance_mode,
 				"event_modes": [],
 			})
@@ -100,9 +133,12 @@ static func parse_challenges(challenge_items: Array, instrument: String = "") ->
 				"difficulty": str(item.get("difficulty", "")).strip_edges(),
 				"tempo_bpm": int(round_data.get("tempo_bpm", 0)),
 				"round_label": str(round_data.get("label", "")),
+				"time_signature": round_data.get("time_signature", [4, 4]),
+				"measure_duration_beats": round_data.get("measure_duration_beats", 4.0),
 				"beats": round_data["beats"],
 				"notes": round_data.get("notes", []),
 				"durations": round_data.get("durations", []),
+				"durations_beats": round_data.get("durations_beats", []),
 				"event_modes": round_data.get("event_modes", []),
 				"performance_mode": bool(round_data.get("performance_mode", false)),
 				"max_score": max_score,
@@ -123,6 +159,7 @@ static func _event_round(raw_events: Variant, tempo_bpm: int) -> Dictionary:
 	var beats: Array[float] = []
 	var notes: Array[String] = []
 	var durations: Array[float] = []
+	var durations_beats: Array[float] = []
 	var event_modes: Array[String] = []
 	var elapsed_ms := 0.0
 	for raw_event: Variant in raw_events:
@@ -143,11 +180,19 @@ static func _event_round(raw_events: Variant, tempo_bpm: int) -> Dictionary:
 		beats.append(at_ms / 1000.0)
 		notes.append(note)
 		durations.append(duration_ms / 1000.0)
+		durations_beats.append(duration_beats)
 		event_modes.append(mode)
 		elapsed_ms = at_ms + duration_ms
 	if not event_modes.has("TARGET"):
 		return {}
-	return {"beats": beats, "notes": notes, "durations": durations, "event_modes": event_modes, "performance_mode": true}
+	return {
+		"beats": beats,
+		"notes": notes,
+		"durations": durations,
+		"durations_beats": durations_beats,
+		"event_modes": event_modes,
+		"performance_mode": true,
+	}
 
 
 static func normalize_durations(raw_durations: Variant) -> Array[float]:

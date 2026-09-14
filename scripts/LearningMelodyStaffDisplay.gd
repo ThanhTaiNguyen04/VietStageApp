@@ -48,15 +48,16 @@ func show_answer(correct: bool, selected: String) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var width := maxf(size.x, 320.0)
-	var height := maxf(size.y, 200.0)
+	var width := maxf(size.x, 300.0)
+	var height := maxf(size.y, 160.0)
 	
 	# Staff spacing: 22px on mobile / small, 24px on desktop
-	var spacing := 22.0 if width < 500.0 else 24.0
-	var center_y := height * 0.46 # Line 3 (Middle line B4 / Si)
+	var compact := width < 420.0
+	var spacing := 16.0 if compact else (21.0 if width < 600.0 else 24.0)
+	var center_y := height * (0.47 if compact else 0.46) # Line 3 (Middle line B4 / Si)
 	
-	var left_margin := 26.0
-	var right_margin := width - 26.0
+	var left_margin := 12.0 if compact else 26.0
+	var right_margin := width - (12.0 if compact else 26.0)
 	
 	# 1. Draw 5 Staff Lines
 	# Đếm từ dưới lên:
@@ -80,8 +81,10 @@ func _draw() -> void:
 	var clef_scale := 6.5
 	var clef_font_size := int(spacing * clef_scale)
 	var clef_y_offset := clef_font_size * 0.20
-	var clef_x := left_margin - 16.0
+	var clef_x := left_margin + 2.0 if compact else left_margin - 16.0
 	
+	# The bundled SVG has an invalid filled outline when rasterized by Godot.
+	# The native musical-symbol glyph renders the correct treble-clef contour.
 	if font:
 		draw_string(font, Vector2(clef_x, center_y + clef_y_offset), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, clef_font_size, staff_line_color)
 
@@ -90,7 +93,7 @@ func _draw() -> void:
 	# Số 4 dưới: chiếm 2 khe dưới (giữa dòng 1 và dòng 3), baseline đặt tại dòng 1 (center_y + spacing * 2.05)
 	var num_font := bold_font if bold_font else font
 	var ts_size := int(spacing * 2.2)
-	var ts_x := clef_x + spacing * clef_scale * 0.68
+	var ts_x := clef_x + spacing * (2.35 if compact else clef_scale * 0.68)
 	
 	if num_font:
 		# Top digit 4
@@ -102,8 +105,8 @@ func _draw() -> void:
 		return
 
 	# 5. Distribute Notes across usable width
-	var start_note_x := ts_x + spacing * 2.4
-	var end_note_x := right_margin - 36.0
+	var start_note_x := ts_x + spacing * (2.0 if compact else 2.4)
+	var end_note_x := right_margin - (10.0 if compact else 36.0)
 	var total_note_slots := maxi(1, notes.size() - 1)
 	var step_x := (end_note_x - start_note_x) / float(total_note_slots) if notes.size() > 1 else 0.0
 	if notes.size() == 1:
