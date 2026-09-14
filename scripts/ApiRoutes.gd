@@ -10,6 +10,7 @@ const AUTH_RESET_PASSWORD := "/auth/reset-password"
 const AUTH_REFRESH := "/auth/refresh"
 const AUTH_LOGOUT := "/auth/logout"
 const USERS_ME := "/users/me"
+const ACTIVITY_HISTORY := "/users/me/activity-history"
 const UPLOAD := "/upload"
 
 # Leaderboards
@@ -31,11 +32,13 @@ const PRACTICE_ATTEMPT_FEEDBACK := "/practice/attempts/%s/feedback"
 # Cosmetics
 const COSMETICS := "/cosmetics"
 const MY_COSMETICS := "/users/me/cosmetics"
+const COSMETICS_LAYOUT := "/users/me/cosmetics/layout"
 
 # Profile Progress & Achievements
 const ACHIEVEMENTS := "/achievements"
 const USER_PROGRESS := "/users/me/progress"
 const USER_PROGRESS_SUMMARY := "/users/me/progress/summary"
+const COMPLETE_LESSON := "/users/me/lessons/%s/complete"
 const MY_ACHIEVEMENTS := "/users/me/achievements"
 const USER_PASSWORD := "/users/me/password"
 const USER_POINT_TRANSACTIONS := "/users/%s/point-transactions"
@@ -48,9 +51,15 @@ const CONFIGS := "/configs"
 
 # Lesson content subsets
 const LESSON_ASSETS := "/lessons/%s/assets"
+const LESSON_ASSET := "/lessons/%s/assets/%s"
+const LESSON_CONTENTS := "/lessons/%s/contents"
+const LESSON_CONTENT := "/lessons/%s/contents/%s"
+const LESSON_STATUS := "/lessons/%s/status"
 const LESSON_EXERCISES := "/lessons/%s/exercises"
 const LESSON_QUIZZES := "/lessons/%s/quizzes"
 const QUIZ_ATTEMPTS := "/quizzes/%s/attempts"
+const LESSON_ASSESSMENT_SESSIONS := "/lessons/%s/assessment-sessions"
+const ASSESSMENT_SESSION_DETAIL := "/lessons/assessment-sessions/%s"
 const LESSON_MINIGAMES := "/lessons/%s/minigames"
 const MINIGAME_ATTEMPTS := "/minigames/%s/attempts"
 

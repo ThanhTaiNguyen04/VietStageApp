@@ -1,5 +1,7 @@
 extends Control
 
+const AppConfig = preload("res://scripts/AppConfig.gd")
+
 # ─── Color Palette (Traditional Vietnamese Jade Green & Gold Theme) ───────────
 const C_BG_DARK     := Color(0.95, 0.93, 0.89, 1.0) # #F3EFE3 - warm cream-beige for sidebar
 const C_BG_DARKER   := Color(0.98, 0.97, 0.94, 1.0) # #FAF8F5 - warm cream background
@@ -32,7 +34,7 @@ const FORCE_PROCEDURAL_PLAYER : bool = true
 @onready var s_trong       : Button         = $RoomContent/StationTrong
 
 # Navigation
-@onready var btn_back        : Button         = $HUD/BtnBack
+@onready var btn_back        : Button         = get_node_or_null("HUD/BtnBack")
 
 # Focus Mode Popup
 @onready var popup             : Control        = $HUD/FocusModePopup
@@ -85,14 +87,6 @@ var _tex_linh_walk_up_left : Texture2D
 var _tex_linh_walk_up_right : Texture2D
 var _tex_player : Texture2D
 var _tex_wall : Texture2D
-var _tex_decor_chausen : Texture2D
-var _tex_decor_bantra : Texture2D
-var _tex_decor_tranh : Texture2D
-var _tex_decor_quat : Texture2D
-var _tex_decor_denlong : Texture2D
-var _tex_decor_denda : Texture2D
-var _tex_decor_chuonggio : Texture2D
-var _tex_decor_binhsen : Texture2D
 var _linh_walk_direction : String = "down"
 var _idle_breath_time : float = 0.0
 var _blink_timer : float = 2.0
@@ -131,10 +125,21 @@ var dialogue_lbl : Label
 var btn_dialogue_close : Button
 
 var shop_popup : Control = null
+var profile_quick_menu : PanelContainer = null
+var profile_menu_dismiss : Button = null
+var profile_menu_avatar : TextureRect = null
+var _hud_profile_avatar : TextureRect = null
+var _profile_avatar_request : HTTPRequest = null
+var _requested_profile_avatar_url := ""
 var _api_client = null
 var _cosmetics_all: Array = []
 var _cosmetics_owned: Array = []
 var _cosmetics_locked: Array = []
+var _cosmetic_textures: Dictionary = {}
+var _cosmetic_texture_requests: Dictionary = {}
+var _cosmetic_actions_pending: Dictionary = {}
+var _shop_status_message: String = ""
+var _shop_status_is_error: bool = false
 var _instruments_data: Dictionary = {
 	"tranh": {
 		"name": "Đàn Tranh",
@@ -196,14 +201,9 @@ func _ready() -> void:
 	
 	_api_client = preload("res://scripts/ApiClient.gd").new()
 	add_child(_api_client)
-	_tex_decor_chausen = _load_decor_texture("res://assets/textures/comestic_rewards/277822b0-ef0c-48e5-b7cf-59fb941dd3e3.png")
-	_tex_decor_bantra = _load_decor_texture("res://assets/textures/comestic_rewards/53b2828a-00b9-4913-8ef1-ea95f7efe6aa.png")
-	_tex_decor_tranh = _load_decor_texture("res://assets/textures/comestic_rewards/6a00c552-cc19-47ac-bb4e-4da0900a6473.png")
-	_tex_decor_quat = _load_decor_texture("res://assets/textures/comestic_rewards/70833c90-f0c2-4f58-9df3-9d348f1c28fe.png")
-	_tex_decor_denlong = _load_decor_texture("res://assets/textures/comestic_rewards/7f2fca74-fec1-42a5-ba94-bfde4c80fe21.png")
-	_tex_decor_denda = _load_decor_texture("res://assets/textures/comestic_rewards/98fada3c-096e-4105-af8d-c74e249aad04.png")
-	_tex_decor_chuonggio = _load_decor_texture("res://assets/textures/comestic_rewards/a39c0e84-7cad-4af1-823e-af840b82328a.png")
-	_tex_decor_binhsen = _load_decor_texture("res://assets/textures/comestic_rewards/a5f93c96-38b6-4692-b001-8e2e7704040f.png")
+	_profile_avatar_request = HTTPRequest.new()
+	_profile_avatar_request.request_completed.connect(_on_profile_avatar_loaded)
+	add_child(_profile_avatar_request)
 	_tex_tranh = load("res://assets/textures/dan_tranh_17_assetremove.png") as Texture2D
 	_tex_sao = load("res://assets/textures/sao_truc_SN01_assetremove.png") as Texture2D
 	_tex_bau = load("res://assets/textures/dan_bau_assetremove.png") as Texture2D
@@ -226,6 +226,7 @@ func _ready() -> void:
 	
 	_spawn_decorations()
 	_setup_hud_shop_button()
+	_fetch_hud_profile_identity()
 	
 	# Initialize Player Character (Disabled/Removed by design)
 	char_player = null
@@ -252,7 +253,8 @@ func _ready() -> void:
 		btn_tab_fingering.add_theme_font_override("font", _font_body_bold)
 		btn_popup_play.add_theme_font_override("font", _font_body_bold)
 		btn_popup_close.add_theme_font_override("font", _font_body_bold)
-		btn_back.add_theme_font_override("font", _font_body_bold)
+		if btn_back:
+			btn_back.add_theme_font_override("font", _font_body_bold)
 		
 	# Initialize ambient particles
 	for i in range(30):
@@ -304,20 +306,6 @@ func _ready() -> void:
 	# Setup Focus Mode Popup controls
 	_setup_focus_popup_controls()
 	_setup_hanging_scroll()
-	
-	# Setup Back button to return to Main Menu (Icon button for mobile style)
-	btn_back.show()
-	btn_back.text = ""
-	btn_back.icon = load("res://icons8/icons8-back-16.png") as Texture2D
-	btn_back.expand_icon = true
-	btn_back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_style_hud_icon_button(btn_back)
-	_make_btn_bouncy(btn_back)
-	btn_back.pressed.connect(func() -> void:
-		if _audio_manager:
-			_audio_manager.audio_player.stop()
-		_fade_to("res://scenes/MainMenu.tscn")
-	)
 	
 	# Transition fade in
 	modulate.a = 0.0
@@ -865,7 +853,7 @@ func _on_char_linh_gui_input(e: InputEvent) -> void:
 			_audio_manager.audio_player.stop()
 		var chat = AIChatPopup.new()
 		$HUD.add_child(chat)
-		chat.open_chat("general")
+		chat.open_chat("general", {"screenContext": "virtual_music_room", "lessonCode": "", "levelCode": ""})
 
 
 
@@ -2444,11 +2432,8 @@ func _on_viewport_size_changed() -> void:
 	if dialogue_box and is_instance_valid(dialogue_box):
 		_update_dialogue_layout(size)
 
-	btn_back.custom_minimum_size = Vector2(48, 48) if is_mobile else Vector2(56, 56)
-	btn_back.offset_left = 12.0 if is_mobile else 32.0
-	btn_back.offset_top = 12.0 if is_mobile else 32.0
-	btn_back.offset_right = btn_back.offset_left + btn_back.custom_minimum_size.x
-	btn_back.offset_bottom = btn_back.offset_top + btn_back.custom_minimum_size.y
+	if btn_back:
+		btn_back.visible = false
 	_update_hud_hbox_layout(is_mobile)
 	_update_hanging_scroll_layout()
 
@@ -2498,7 +2483,8 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	hud_hbox.offset_top = 12 if is_mobile else 32
 	hud_hbox.offset_right = -12 if is_mobile else -32
-	hud_hbox.offset_left = -280 if is_mobile else -340
+	# Keep the top-right controls in the requested order: Shop, stars, avatar.
+	hud_hbox.offset_left = -350 if is_mobile else -430
 	hud_hbox.offset_bottom = hud_hbox.offset_top + (42 if is_mobile else 56)
 	hud_hbox.add_theme_constant_override("separation", 8 if is_mobile else 16)
 	var star_badge = hud_hbox.get_node_or_null("StarBadge") as PanelContainer
@@ -2510,6 +2496,10 @@ func _update_hud_hbox_layout(is_mobile: bool) -> void:
 	var btn_shop = hud_hbox.get_node_or_null("BtnShop") as Button
 	if btn_shop:
 		btn_shop.custom_minimum_size = Vector2(100, 42) if is_mobile else Vector2(140, 48)
+	var profile_pill = hud_hbox.get_node_or_null("ProfilePill") as PanelContainer
+	if profile_pill:
+		profile_pill.custom_minimum_size = Vector2(54, 54) if is_mobile else Vector2(64, 64)
+	_update_profile_quick_menu_layout(is_mobile)
 
 # ─── Styling and Bouncy Helpers ───────────────────────────────────────────────
 func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:
@@ -2551,102 +2541,211 @@ func _fetch_cosmetics_data() -> void:
 	if _api_client == null:
 		return
 	
-	var use_mock := true
+	_cosmetics_all = []
+	_cosmetics_owned = []
+	_cosmetics_locked = []
+	
 	if BackendReport.is_signed_in():
-		var response = await _api_client.get_all_cosmetics()
+		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
 		if _api_client._is_success(response):
-			_cosmetics_all = response.get("body", {}).get("data", [])
-		else:
-			_cosmetics_all = []
+			_cosmetics_all = _filter_room_decor_items(response.get("body", {}).get("data", []))
 			
 		var my_response = await _api_client.get_my_cosmetics()
 		if _api_client._is_success(my_response):
 			var body = my_response.get("body", {}).get("data", {})
-			_cosmetics_owned = body.get("owned", [])
-			_cosmetics_locked = body.get("locked", [])
-			
-			# Filter out items not present in sample list
-			var allowed_keys := ["chausen", "bantra", "tranh", "quat", "binhsen"]
-			_cosmetics_owned = _cosmetics_owned.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
-			_cosmetics_locked = _cosmetics_locked.filter(func(it): return allowed_keys.has(_get_draw_key(it)))
-			
-			# Respect local active list for equipped states
-			var active = SecureDataManager.data.get("active_decorations", [])
+			if body is Dictionary:
+				SecureDataManager.apply_backend_reward(body)
+			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []))
+			_cosmetics_locked = _filter_room_decor_items(body.get("locked", []))
+
+			# Backend là nguồn chính cho trạng thái trang bị; local chỉ là cache offline.
+			var active: Array = []
 			for item in _cosmetics_owned:
-				var m_key = _get_draw_key(item)
-				item["isEquipped"] = item.get("isEquipped", item.get("is_equipped", false)) or active.has(m_key)
-				
-			if not _cosmetics_owned.is_empty() or not _cosmetics_locked.is_empty():
-				use_mock = false
+				if bool(item.get("isEquipped", item.get("is_equipped", false))):
+					active.append(_get_cosmetic_key(item))
+			SecureDataManager.data["active_decorations"] = active
+			SecureDataManager.save_data()
+
+			var layout_response = await _api_client.get_cosmetic_layout()
+			if _api_client._is_success(layout_response):
+				_apply_backend_cosmetic_layout(layout_response.get("body", {}).get("data", {}))
 		else:
-			_cosmetics_owned = []
-			_cosmetics_locked = []
+			_set_shop_status(_api_client.error_message(my_response, "Không thể tải vật phẩm đã sở hữu."), true)
+	else:
+		# Nếu backend bảo vệ catalog bằng Bearer token, người chưa đăng nhập sẽ thấy yêu cầu đăng nhập.
+		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
+		if _api_client._is_success(response):
+			var all_items = _filter_room_decor_items(response.get("body", {}).get("data", []))
+			_cosmetics_all = all_items
+			_cosmetics_locked = all_items
+		else:
+			_set_shop_status("Đăng nhập để xem và sử dụng cửa hàng trang trí.", true)
+
+	for cosmetic in _cosmetics_all + _cosmetics_owned + _cosmetics_locked:
+		_queue_cosmetic_texture(cosmetic)
 			
-	if use_mock:
-		# BYPASS API FOR LOCAL TEST OR FALLBACK
-		_cosmetics_all = []
-		_cosmetics_owned = []
-		_cosmetics_locked = []
-		if _cosmetics_owned.is_empty() and _cosmetics_locked.is_empty():
-			var all_mock = [
-				{"id": 1, "name": "Chậu sen nhỏ", "assetUrl": "chausen", "unlockValue": 50, "description": "Trang trí phòng nhạc."},
-				{"id": 2, "name": "Bàn trà", "assetUrl": "bantra", "unlockValue": 100, "description": "Trang trí phòng nhạc."},
-				{"id": 3, "name": "Tranh phong cảnh", "assetUrl": "tranh", "unlockValue": 200, "description": "Trang trí phòng nhạc."},
-				{"id": 4, "name": "Quạt treo tường", "assetUrl": "quat", "unlockValue": 150, "description": "Trang trí phòng nhạc."},
-				{"id": 8, "name": "Bình sen lớn", "assetUrl": "binhsen", "unlockValue": 90, "description": "Trang trí phòng nhạc."}
-			]
-			var unlocked = SecureDataManager.data.get("unlocked_decorations", [])
-			var active = SecureDataManager.data.get("active_decorations", [])
-			if unlocked.is_empty():
-				# Initialize defaults to avoid an empty room on first launch/offline mode
-				unlocked = ["chausen", "tranh", "quat"]
-				active = ["chausen", "tranh", "quat"]
-				SecureDataManager.data["unlocked_decorations"] = unlocked
-				SecureDataManager.data["active_decorations"] = active
-				SecureDataManager.save_data()
-				
-			for m_item in all_mock:
-				var m_key = _get_draw_key(m_item)
-				if unlocked.has(m_key):
-					m_item["isEquipped"] = active.has(m_key)
-					_cosmetics_owned.append(m_item)
-				else:
-					_cosmetics_locked.append(m_item)
-		
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_spawn_decorations()
 	if shop_popup and shop_popup.visible:
 		_update_shop_items()
 
-func _get_draw_key(item: Dictionary) -> String:
-	var asset_url := str(item.get("assetUrl", "")).to_lower()
-	var item_name := str(item.get("name", "")).to_lower()
-	
-	if "chausen" in asset_url: return "chausen"
-	elif "bantra" in asset_url: return "bantra"
-	elif "tranh" in asset_url: return "tranh"
-	elif "quat" in asset_url: return "quat"
-	elif "denlong" in asset_url: return "denlong"
-	elif "denda" in asset_url: return "denda"
-	elif "chuonggio" in asset_url: return "chuonggio"
-	elif "binhsen" in asset_url: return "binhsen"
-	
-	if "chau sen" in item_name or "chậu sen" in item_name: return "chausen"
-	elif "ban tra" in item_name or "bàn trà" in item_name: return "bantra"
-	elif "quat" in item_name or "quạt" in item_name: return "quat"
-	elif "den long" in item_name or "đèn lồng" in item_name: return "denlong"
-	elif "den da" in item_name or "đèn đá" in item_name: return "denda"
-	elif "chuong gio" in item_name or "chuông gió" in item_name: return "chuonggio"
-	elif "binh sen" in item_name or "bình sen" in item_name: return "binhsen"
-	elif "painting" in asset_url or "painting" in item_name or "tranh" in item_name:
-		return "tranh"
-	elif "vase" in asset_url or "vase" in item_name or "bình" in item_name or "hoa" in item_name:
-		return "binhsen"
-	elif "bamboo" in asset_url or "bamboo" in item_name or "trúc" in item_name:
-		return "chausen"
-	elif "drum" in asset_url or "drum" in item_name or "trống" in item_name:
-		return "bantra"
-	return "tranh"
+
+func _apply_backend_cosmetic_layout(value: Variant) -> void:
+	if not value is Dictionary:
+		return
+	var items: Variant = value.get("items", [])
+	if not items is Array:
+		return
+	var positions: Dictionary = SecureDataManager.data.get("decor_positions", {})
+	for raw_item: Variant in items:
+		if not raw_item is Dictionary:
+			continue
+		var layout_item: Dictionary = raw_item
+		var cosmetic_id := int(layout_item.get("cosmeticId", 0))
+		if cosmetic_id <= 0:
+			continue
+		positions["cosmetic_%d" % cosmetic_id] = {
+			"x": float(layout_item.get("x", 0.0)),
+			"y": float(layout_item.get("y", 0.0)),
+			"scale": float(layout_item.get("scale", 1.0)),
+			"zindex": int(layout_item.get("zindex", layout_item.get("zIndex", 0))),
+		}
+	SecureDataManager.data["decor_positions"] = positions
+	SecureDataManager.save_data()
+
+
+func _save_cosmetic_layout_to_backend() -> void:
+	if not BackendReport.is_signed_in() or _api_client == null:
+		return
+	var items: Array = []
+	for child: Node in room_content.get_children():
+		if not child is Control or not str(child.name).begins_with("Decor_"):
+			continue
+		var cosmetic_id := int(str(child.name).trim_prefix("Decor_"))
+		if cosmetic_id <= 0:
+			continue
+		var decor := child as Control
+		items.append({
+			"cosmeticId": cosmetic_id,
+			"x": decor.position.x,
+			"y": decor.position.y,
+			"scale": 1.0,
+			"zindex": decor.z_index,
+		})
+	var response = await _api_client.save_cosmetic_layout(items)
+	if not _api_client._is_success(response):
+		_set_shop_status(_api_client.error_message(response, "Chưa thể đồng bộ vị trí trang trí."), true)
+
+
+func _new_client_request_id() -> String:
+	var random_bytes := Crypto.new().generate_random_bytes(16)
+	return random_bytes.hex_encode()
+
+func _filter_room_decor_items(value: Variant) -> Array:
+	var source: Array = []
+	if value is Array:
+		source = value
+	elif value is Dictionary:
+		var nested = value.get("content", value.get("items", []))
+		if nested is Array:
+			source = nested
+	var result: Array = []
+	for entry in source:
+		if not entry is Dictionary:
+			continue
+		var item := entry as Dictionary
+		var item_type := str(item.get("itemType", item.get("item_type", "ROOM_DECOR")))
+		var status := str(item.get("status", "ACTIVE"))
+		if item_type == "ROOM_DECOR" and status != "INACTIVE":
+			result.append(item)
+	return result
+
+func _get_cosmetic_key(item: Dictionary) -> String:
+	var cosmetic_id := int(item.get("id", 0))
+	if cosmetic_id > 0:
+		return "cosmetic_%d" % cosmetic_id
+	return "cosmetic_%d" % str(item.get("assetUrl", item.get("name", "unknown"))).hash()
+
+func _get_cosmetic_asset_url(item: Dictionary) -> String:
+	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).strip_edges()
+	if asset_url.begins_with("http://") or asset_url.begins_with("https://"):
+		return asset_url
+	return ""
+
+func _queue_cosmetic_texture(item: Dictionary) -> void:
+	var key := _get_cosmetic_key(item)
+	if _cosmetic_textures.has(key) or _cosmetic_texture_requests.has(key):
+		return
+	var asset_url := _get_cosmetic_asset_url(item)
+	if asset_url.is_empty():
+		return
+	if not asset_url.begins_with("http://") and not asset_url.begins_with("https://"):
+		return
+
+	var request := HTTPRequest.new()
+	request.timeout = AppConfig.get_api_timeout_seconds()
+	add_child(request)
+	_cosmetic_texture_requests[key] = request
+	request.request_completed.connect(_on_cosmetic_texture_loaded.bind(key, asset_url, request))
+	var request_error := request.request(asset_url)
+	if request_error != OK:
+		_cosmetic_texture_requests.erase(key)
+		request.queue_free()
+
+func _on_cosmetic_texture_loaded(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+	key: String,
+	asset_url: String,
+	request: HTTPRequest
+) -> void:
+	_cosmetic_texture_requests.erase(key)
+	if is_instance_valid(request):
+		request.queue_free()
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
+		return
+
+	var image := Image.new()
+	var extension := asset_url.get_slice("?", 0).get_extension().to_lower()
+	var load_error := ERR_FILE_UNRECOGNIZED
+	match extension:
+		"png": load_error = image.load_png_from_buffer(body)
+		"jpg", "jpeg": load_error = image.load_jpg_from_buffer(body)
+		"webp": load_error = image.load_webp_from_buffer(body)
+	if load_error != OK:
+		load_error = image.load_png_from_buffer(body)
+	if load_error != OK:
+		load_error = image.load_jpg_from_buffer(body)
+	if load_error != OK:
+		load_error = image.load_webp_from_buffer(body)
+	if load_error != OK or image.is_empty():
+		return
+
+	_cosmetic_textures[key] = ImageTexture.create_from_image(image)
+	for child in room_content.get_children():
+		if str(child.name).begins_with("Decor_"):
+			child.queue_redraw()
+	if shop_popup and shop_popup.visible:
+		_update_shop_items()
+
+func _get_cosmetic_texture(item: Dictionary) -> Texture2D:
+	var key := _get_cosmetic_key(item)
+	if _cosmetic_textures.has(key):
+		return _cosmetic_textures[key] as Texture2D
+	return null
+
+func _set_shop_status(message: String, is_error: bool = false) -> void:
+	_shop_status_message = message
+	_shop_status_is_error = is_error
+	if not shop_popup:
+		return
+	var label := shop_popup.get_node_or_null("ScrollPanel/ScrollContent/ShopStatusLabel") as Label
+	if label:
+		label.text = message
+		label.visible = not message.is_empty()
+		label.add_theme_color_override("font_color", Color(0.75, 0.16, 0.12) if is_error else C_JADE)
 
 func _fetch_instruments_data() -> void:
 	if _api_client == null:
@@ -2683,7 +2782,7 @@ func _setup_hud_shop_button() -> void:
 	$HUD.add_child(hud_hbox)
 	hud_hbox.layout_mode = 1
 	hud_hbox.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	hud_hbox.offset_left = -380
+	hud_hbox.offset_left = -430
 	hud_hbox.offset_top = 32
 	hud_hbox.offset_right = -32
 	hud_hbox.offset_bottom = 32 + 48
@@ -2747,11 +2846,12 @@ func _setup_hud_shop_button() -> void:
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "%d" % SecureDataManager.get_total_stars()
+	badge_label.text = "%d" % SecureDataManager.get_spendable_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
-	badge_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	# Match the star count to the "Cửa hàng" label in the same HUD.
+	badge_label.add_theme_color_override("font_color", C_JADE)
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_hbox.add_child(badge_label)
@@ -2803,69 +2903,320 @@ func _setup_hud_shop_button() -> void:
 	
 	_make_btn_bouncy(btn_shop)
 	btn_shop.pressed.connect(_open_shop_popup)
+	_setup_hud_profile_button(hud_hbox)
+
+func _setup_hud_profile_button(hud_hbox: HBoxContainer) -> void:
+	# Reuse the same circular avatar treatment used by curriculum screens.
+	var profile_pill := DS.build_profile_pill()
+	profile_pill.name = "ProfilePill"
+	# DS creates intermediate containers without stable names. Resolve the
+	# explicitly named texture once, including runtime nodes without an owner.
+	_hud_profile_avatar = profile_pill.find_child("AvatarIcon", true, false) as TextureRect
+	if _hud_profile_avatar == null:
+		push_error("VirtualMusicRoom: ProfilePill is missing AvatarIcon")
+	var trigger := profile_pill.get_node_or_null("TriggerButton") as Button
+	if trigger:
+		trigger.tooltip_text = "Hồ sơ và cài đặt"
+		trigger.pressed.connect(_toggle_profile_quick_menu)
+	hud_hbox.add_child(profile_pill)
+	_setup_profile_quick_menu()
+	if _hud_profile_avatar:
+		_set_profile_avatar_texture(_hud_profile_avatar.texture)
+	_load_hud_profile_avatar()
+
+func _load_hud_profile_avatar() -> void:
+	var avatar_url := str(SecureDataManager.data.get("user_avatar_url", "")).strip_edges()
+	if avatar_url.is_empty():
+		avatar_url = str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	if avatar_url.begins_with("res://"):
+		_set_profile_avatar_texture(load(avatar_url) as Texture2D)
+		return
+	if not avatar_url.begins_with("https://") and not avatar_url.begins_with("http://"):
+		return
+	if avatar_url == _requested_profile_avatar_url or _profile_avatar_request == null:
+		return
+	_requested_profile_avatar_url = avatar_url
+	_profile_avatar_request.cancel_request()
+	if _profile_avatar_request.request(avatar_url) != OK:
+		_requested_profile_avatar_url = ""
+
+func _fetch_hud_profile_identity() -> void:
+	if _api_client == null:
+		return
+	var response: Dictionary = await _api_client.get_me()
+	if not _api_client._is_success(response):
+		return
+	var body: Variant = response.get("body", {})
+	var profile: Variant = body.get("data", {}) if body is Dictionary else {}
+	if not profile is Dictionary:
+		return
+	var full_name := str(profile.get("fullName", "")).strip_edges()
+	var avatar_url := str(profile.get("avatarUrl", "")).strip_edges()
+	if not full_name.is_empty():
+		SecureDataManager.data["user_name"] = full_name
+	SecureDataManager.data["user_avatar_url"] = avatar_url
+	SecureDataManager.save_data()
+	_load_hud_profile_avatar()
+
+func _on_profile_avatar_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300 or body.is_empty():
+		_requested_profile_avatar_url = ""
+		return
+	var image := Image.new()
+	var decode_error := image.load_png_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_jpg_from_buffer(body)
+	if decode_error != OK:
+		decode_error = image.load_webp_from_buffer(body)
+	if decode_error != OK:
+		_requested_profile_avatar_url = ""
+		return
+	_set_profile_avatar_texture(ImageTexture.create_from_image(image))
+
+func _set_profile_avatar_texture(texture: Texture2D) -> void:
+	if texture == null:
+		return
+	if is_instance_valid(_hud_profile_avatar):
+		_hud_profile_avatar.texture = texture
+	if is_instance_valid(profile_menu_avatar):
+		profile_menu_avatar.texture = texture
+
+func _setup_profile_quick_menu() -> void:
+	# Full-screen invisible dismiss target, matching the curriculum account menu.
+	profile_menu_dismiss = Button.new()
+	profile_menu_dismiss.name = "ProfileMenuDismiss"
+	profile_menu_dismiss.flat = true
+	profile_menu_dismiss.focus_mode = Control.FOCUS_NONE
+	profile_menu_dismiss.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	profile_menu_dismiss.visible = false
+	profile_menu_dismiss.pressed.connect(_close_profile_quick_menu)
+	$HUD.add_child(profile_menu_dismiss)
+
+	profile_quick_menu = PanelContainer.new()
+	profile_quick_menu.name = "ProfileQuickMenu"
+	profile_quick_menu.visible = false
+	profile_quick_menu.custom_minimum_size = Vector2(330, 0)
+	profile_quick_menu.add_theme_stylebox_override("panel", _flat_sb(Color(0.995, 0.99, 0.985, 0.98), Color("#e2d8c9"), 20, true, 0))
+	$HUD.add_child(profile_quick_menu)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	profile_quick_menu.add_child(margin)
+	var menu := VBoxContainer.new()
+	menu.add_theme_constant_override("separation", 8)
+	margin.add_child(menu)
+	_build_profile_menu_header(menu)
+	var separator := HSeparator.new()
+	menu.add_child(separator)
+	# Match the avatar menu used by the instrument curriculum screens.
+	_add_profile_menu_action(menu, "Xem chi tiết hồ sơ", "user", func() -> void: _open_profile_destination("res://scenes/AccountScreen.tscn"))
+	_add_profile_menu_action(menu, "Bộ sưu tập thành tựu", "trophy", func() -> void: _open_profile_destination("res://scenes/ProgressScreen.tscn"))
+	_add_profile_menu_action(menu, "Cài đặt tài khoản", "settings", func() -> void: _open_profile_destination("res://scenes/AccountSettings.tscn"))
+	_add_profile_menu_action(menu, "Đăng xuất", "log-out", _confirm_profile_logout, true)
+
+func _build_profile_menu_header(menu: VBoxContainer) -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 14)
+	menu.add_child(header)
+	var avatar_frame := PanelContainer.new()
+	avatar_frame.custom_minimum_size = Vector2(72, 72)
+	avatar_frame.clip_contents = true
+	avatar_frame.add_theme_stylebox_override("panel", _flat_sb(Color.WHITE, Color("#e2d8c9"), 36, false, 0))
+	header.add_child(avatar_frame)
+	profile_menu_avatar = TextureRect.new()
+	var avatar_shader := load("res://assets/shaders/circular_avatar.gdshader") as Shader
+	if avatar_shader:
+		var avatar_material := ShaderMaterial.new()
+		avatar_material.shader = avatar_shader
+		profile_menu_avatar.material = avatar_material
+	profile_menu_avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	profile_menu_avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	profile_menu_avatar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var avatar_source := str(SecureDataManager.data.get("user_avatar", "res://assets/textures/default_avatar.png"))
+	if avatar_source.begins_with("res://"):
+		profile_menu_avatar.texture = load(avatar_source) as Texture2D
+	avatar_frame.add_child(profile_menu_avatar)
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	copy.add_theme_constant_override("separation", 3)
+	header.add_child(copy)
+	var name_label := Label.new()
+	name_label.text = str(SecureDataManager.data.get("user_name", "Học viên VietStage"))
+	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_color_override("font_color", Color("#0f172a"))
+	if _font_body_bold:
+		name_label.add_theme_font_override("font", _font_body_bold)
+	copy.add_child(name_label)
+	var meta_label := Label.new()
+	meta_label.text = "Cấp độ 1 · Đang học %s" % _profile_instrument_name()
+	meta_label.add_theme_font_size_override("font_size", 13)
+	meta_label.add_theme_color_override("font_color", Color("#64748b"))
+	meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	copy.add_child(meta_label)
+	var online_label := Label.new()
+	online_label.text = "• Đang hoạt động"
+	online_label.add_theme_font_size_override("font_size", 11)
+	online_label.add_theme_color_override("font_color", Color("#16a34a"))
+	if _font_body_bold:
+		online_label.add_theme_font_override("font", _font_body_bold)
+	copy.add_child(online_label)
+
+func _profile_instrument_name() -> String:
+	match str(SecureDataManager.data.get("selected_instrument", "dan_tranh")):
+		"dan_bau": return "Đàn Bầu"
+		"sao_truc": return "Sáo Trúc"
+		"trong_chau": return "Trống Chầu"
+		_: return "Đàn Tranh"
+
+func _add_profile_menu_action(menu: VBoxContainer, label: String, icon_name: String, action: Callable, is_danger: bool = false) -> void:
+	var button := Button.new()
+	button.text = label
+	button.custom_minimum_size = Vector2(290, 58)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_size_override("font_size", 15)
+	if _font_body_bold:
+		button.add_theme_font_override("font", _font_body_bold)
+	button.add_theme_color_override("font_color", Color("#dc2626") if is_danger else C_JADE)
+	button.icon = load("res://assets/textures/lucide/" + icon_name + ".svg") as Texture2D
+	# Tint the white SVG strokes black locally for this light account menu.
+	for icon_state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color", "icon_focus_color", "icon_disabled_color"]:
+		button.add_theme_color_override(icon_state, Color.BLACK)
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 22)
+	button.add_theme_constant_override("h_separation", 14)
+	button.add_theme_stylebox_override("normal", _flat_sb(Color.TRANSPARENT, Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("hover", _flat_sb(Color(0.94, 0.27, 0.27, 0.10) if is_danger else Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.16), Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("pressed", _flat_sb(Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.14), Color.TRANSPARENT, 10, false, 0))
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.pressed.connect(action)
+	menu.add_child(button)
+
+func _toggle_profile_quick_menu() -> void:
+	if profile_quick_menu:
+		if profile_quick_menu.visible:
+			_close_profile_quick_menu()
+		else:
+			profile_quick_menu.show()
+			if profile_menu_dismiss:
+				profile_menu_dismiss.show()
+			profile_quick_menu.modulate.a = 0.0
+			profile_quick_menu.scale = Vector2(0.96, 0.96)
+			var tween := profile_quick_menu.create_tween().set_parallel(true)
+			tween.tween_property(profile_quick_menu, "modulate:a", 1.0, 0.16)
+			tween.tween_property(profile_quick_menu, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _close_profile_quick_menu() -> void:
+	if profile_quick_menu:
+		profile_quick_menu.hide()
+		profile_quick_menu.scale = Vector2.ONE
+	if profile_menu_dismiss:
+		profile_menu_dismiss.hide()
+
+func _open_profile_destination(path: String) -> void:
+	if profile_quick_menu:
+		_close_profile_quick_menu()
+	# Account-related screens use this to return to the room, not the curriculum.
+	SecureDataManager.data["navigation_return_scene"] = "res://scenes/VirtualMusicRoom.tscn"
+	SecureDataManager.save_data()
+	_fade_to(path)
+
+func _confirm_profile_logout() -> void:
+	if profile_quick_menu:
+		_close_profile_quick_menu()
+	var confirmation := ConfirmationDialog.new()
+	confirmation.title = "Đăng xuất"
+	confirmation.dialog_text = "Kết thúc phiên đăng nhập hiện tại?"
+	confirmation.ok_button_text = "Đăng xuất"
+	confirmation.cancel_button_text = "Ở lại"
+	confirmation.confirmed.connect(_logout_from_profile_menu)
+	confirmation.canceled.connect(confirmation.queue_free)
+	$HUD.add_child(confirmation)
+	confirmation.popup_centered()
+
+func _logout_from_profile_menu() -> void:
+	if _api_client:
+		await _api_client.logout()
+	get_tree().change_scene_to_file("res://scenes/LoginScreen.tscn")
+
+func _update_profile_quick_menu_layout(is_mobile: bool) -> void:
+	if not profile_quick_menu:
+		return
+	profile_quick_menu.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	profile_quick_menu.offset_right = -12 if is_mobile else -32
+	profile_quick_menu.offset_left = (-342 if is_mobile else -362)
+	profile_quick_menu.offset_top = 66 if is_mobile else 96
+	profile_quick_menu.offset_bottom = profile_quick_menu.offset_top + 382
 
 func _update_star_badge() -> void:
 	var label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/HBoxContainer/Label") as Label
 	if not label:
 		label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "%d" % SecureDataManager.get_total_stars()
+		label.text = "%d" % SecureDataManager.get_spendable_stars()
+
+
+func _default_cosmetic_size(item: Dictionary) -> Vector2:
+	var max_side := minf(room_content.size.x, room_content.size.y) * 0.22
+	var texture := _get_cosmetic_texture(item)
+	if texture == null or texture.get_height() <= 0:
+		return Vector2(max_side, max_side)
+	var aspect := float(texture.get_width()) / float(texture.get_height())
+	if aspect >= 1.0:
+		return Vector2(max_side, max_side / aspect)
+	return Vector2(max_side * aspect, max_side)
+
+
+func _default_cosmetic_position(index: int, decor_size: Vector2) -> Vector2:
+	var margin := minf(room_content.size.x, room_content.size.y) * 0.08
+	var cell_size := minf(room_content.size.x, room_content.size.y) * 0.28
+	var columns := maxi(1, int((room_content.size.x - margin * 2.0) / cell_size))
+	var column := index % columns
+	var row := int(index / columns)
+	return Vector2(
+		margin + column * cell_size + (cell_size - decor_size.x) * 0.5,
+		margin + row * cell_size + (cell_size - decor_size.y) * 0.5
+	)
 
 func _spawn_decorations() -> void:
 	# Clear old decorations first
-	for c in room_content.get_children():
-		if "Decor_" in c.name:
+	var children = room_content.get_children()
+	for c in children:
+		if str(c.name).begins_with("Decor_"):
 			room_content.remove_child(c)
 			c.queue_free()
 			
+	var equipped_index := 0
 	for item in _cosmetics_owned:
-		if item.get("isEquipped", false):
-			var item_id = _get_draw_key(item)
+		if bool(item.get("isEquipped", item.get("is_equipped", false))):
+			var item_key := _get_cosmetic_key(item)
 			var ctrl := Control.new()
 			ctrl.name = "Decor_" + str(item.get("id"))
 			ctrl.mouse_filter = Control.MOUSE_FILTER_STOP
-			ctrl.gui_input.connect(_on_decor_gui_input.bind(ctrl, item_id))
+			ctrl.gui_input.connect(_on_decor_gui_input.bind(ctrl, item_key))
 			
 			var saved_positions = SecureDataManager.data.get("decor_positions", {})
-			var has_saved = saved_positions.has(item_id)
-			
-			# Define sizes and positions for room layout
-			match item_id:
-				"chausen":
-					ctrl.position = Vector2(65, 469)
-					ctrl.size = Vector2(200, 200)
-				"bantra":
-					ctrl.position = Vector2(899, 512)
-					ctrl.size = Vector2(250, 200)
-				"tranh":
-					ctrl.position = Vector2(60, 180)
-					ctrl.size = Vector2(300, 200)
-				"quat":
-					ctrl.position = Vector2(850, 180)
-					ctrl.size = Vector2(300, 200)
-				"denlong":
-					ctrl.position = Vector2(130, -20)
-					ctrl.size = Vector2(150, 250)
-				"denda":
-					ctrl.position = Vector2(40, 610)
-					ctrl.size = Vector2(120, 200)
-				"chuonggio":
-					ctrl.position = Vector2(920, -20)
-					ctrl.size = Vector2(150, 250)
-				"binhsen":
-					ctrl.position = Vector2(1080, 400)
-					ctrl.size = Vector2(120, 250)
-				_:
-					ctrl.position = Vector2(0, 0)
-					ctrl.size = Vector2(100, 100)
+			var has_saved = saved_positions.has(item_key)
+			ctrl.size = _default_cosmetic_size(item)
+			ctrl.position = _default_cosmetic_position(equipped_index, ctrl.size)
+			equipped_index += 1
 					
 			if has_saved:
-				var pos = saved_positions[item_id]
-				ctrl.position = Vector2(pos.x, pos.y)
+				var pos = saved_positions[item_key]
+				if pos is Dictionary:
+					ctrl.position = Vector2(float(pos.get("x", ctrl.position.x)), float(pos.get("y", ctrl.position.y)))
+					var saved_scale := float(pos.get("scale", 1.0))
+					ctrl.scale = Vector2(saved_scale, saved_scale)
+					ctrl.z_index = int(pos.get("zindex", pos.get("zIndex", ctrl.z_index)))
+				elif pos is Vector2:
+					ctrl.position = pos
 				
 			ctrl.pivot_offset = ctrl.size / 2.0
 			room_content.add_child(ctrl)
-			ctrl.draw.connect(_draw_decor_node.bind(ctrl, item_id, false))
+			ctrl.draw.connect(_draw_decor_node.bind(ctrl, item, false))
 	
 	_sort_room_elements()
 
@@ -2901,8 +3252,14 @@ func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> v
 					t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BOUNCE)
 					if not SecureDataManager.data.has("decor_positions"):
 						SecureDataManager.data["decor_positions"] = {}
-					SecureDataManager.data["decor_positions"][item_id] = {"x": ctrl.position.x, "y": ctrl.position.y}
+					SecureDataManager.data["decor_positions"][item_id] = {
+						"x": ctrl.position.x,
+						"y": ctrl.position.y,
+						"scale": 1.0,
+						"zindex": ctrl.z_index,
+					}
 					SecureDataManager.save_data()
+					_save_cosmetic_layout_to_backend()
 				elif _pressed_decor == ctrl:
 					var t = create_tween()
 					t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.1)
@@ -2929,11 +3286,8 @@ func _on_decor_gui_input(event: InputEvent, ctrl: Control, item_id: String) -> v
 				var t = create_tween()
 				t.tween_property(ctrl, "scale", Vector2(1.0, 1.0), 0.1)
 
-func _draw_decor_node(c: Control, item_id: String, in_shop: bool = false) -> void:
-	var scale := 1.0
-	if item_id == "bronze_drum" and not in_shop:
-		scale = 3.5
-	_draw_decor_item(c, item_id, scale)
+func _draw_decor_node(c: Control, item: Dictionary, _in_shop: bool = false) -> void:
+	_draw_decor_item(c, item)
 
 func _draw_ellipse_poly(c: Control, center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:
 	var pts := PackedVector2Array()
@@ -2951,22 +3305,9 @@ func _draw_ellipse_line(c: Control, center: Vector2, radius_x: float, radius_y: 
 		pts.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
 	c.draw_polyline(pts, color, width, true)
 
-func _load_decor_texture(path: String) -> Texture2D:
-	return load(path) as Texture2D
-
-
-func _draw_decor_item(c: Control, item_id: String, size_scale: float = 1.0) -> void:
+func _draw_decor_item(c: Control, item: Dictionary, size_scale: float = 1.0) -> void:
 	var sz := c.size
-	var tex: Texture2D = null
-	match item_id:
-		"chausen": tex = _tex_decor_chausen
-		"bantra": tex = _tex_decor_bantra
-		"tranh": tex = _tex_decor_tranh
-		"quat": tex = _tex_decor_quat
-		"denlong": tex = _tex_decor_denlong
-		"denda": tex = _tex_decor_denda
-		"chuonggio": tex = _tex_decor_chuonggio
-		"binhsen": tex = _tex_decor_binhsen
+	var tex := _get_cosmetic_texture(item)
 	if tex:
 		var tex_size = tex.get_size()
 		var scale_x = sz.x / tex_size.x
@@ -3085,12 +3426,24 @@ func _setup_shop_popup() -> void:
 	
 	var stars_val_label := Label.new()
 	stars_val_label.name = "StarsValLabel"
-	stars_val_label.text = "%d Sao" % SecureDataManager.get_total_stars()
+	stars_val_label.text = "%d Sao" % SecureDataManager.get_spendable_stars()
 	stars_val_label.add_theme_font_size_override("font_size", 14)
 	stars_val_label.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
 		stars_val_label.add_theme_font_override("font", _font_body_bold)
 	stars_container.add_child(stars_val_label)
+
+	var status_label := Label.new()
+	status_label.name = "ShopStatusLabel"
+	status_label.text = _shop_status_message
+	status_label.visible = not _shop_status_message.is_empty()
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	status_label.add_theme_font_size_override("font_size", 13)
+	status_label.add_theme_color_override("font_color", Color(0.75, 0.16, 0.12) if _shop_status_is_error else C_JADE)
+	if _font_body_bold:
+		status_label.add_theme_font_override("font", _font_body_bold)
+	scroll_content.add_child(status_label)
 	
 	var shop_scroll := ScrollContainer.new()
 	shop_scroll.name = "ShopScroll"
@@ -3125,51 +3478,52 @@ func _setup_shop_popup() -> void:
 	)
 
 func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
-	var cosmetic_id = int(item.get("id", 0))
+	var cosmetic_id := int(item.get("id", 0))
 	if cosmetic_id == 0:
 		return
-	
+	if not BackendReport.is_signed_in():
+		_set_shop_status("Bạn cần đăng nhập để mua hoặc trang bị vật phẩm.", true)
+		return
+	if _cosmetic_actions_pending.has(cosmetic_id):
+		return
+
+	_cosmetic_actions_pending[cosmetic_id] = true
+	_set_shop_status("Đang cập nhật vật phẩm...", false)
+	_update_shop_items()
+
 	if not owned:
-		var success = false
-		var cost = int(item.get("unlockValue", 0))
-		var item_key = _get_draw_key(item)
-		if SecureDataManager.unlock_decoration(item_key, cost):
-			if SecureDataManager.data.has("stars") and SecureDataManager.data["stars"].has("test"):
-				SecureDataManager.data["stars"]["test"]["free"] = max(0, SecureDataManager.data["stars"]["test"]["free"] - cost)
-				SecureDataManager.save_data()
-			success = true
-		if success:
+		var purchase_response = await _api_client.purchase_cosmetic(cosmetic_id, _new_client_request_id())
+		if _api_client._is_success(purchase_response):
+			var purchase_body: Variant = purchase_response.get("body", {})
+			var purchase_data: Variant = purchase_body
+			if purchase_body is Dictionary and purchase_body.get("data") is Dictionary:
+				purchase_data = purchase_body.get("data")
+			if purchase_data is Dictionary:
+				SecureDataManager.apply_backend_reward(purchase_data)
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
+			_set_shop_status("Đã mở khóa %s." % str(item.get("name", "vật phẩm")), false)
 			_update_star_badge()
-			_fetch_cosmetics_data()
-			_update_shop_items()
-	else:
-		var is_equipped = item.get("isEquipped", false)
-		var item_key = _get_draw_key(item)
-		if not is_equipped:
-			if not SecureDataManager.data.has("active_decorations"):
-				SecureDataManager.data["active_decorations"] = []
-			if not SecureDataManager.data["active_decorations"].has(item_key):
-				SecureDataManager.data["active_decorations"].append(item_key)
+			await _fetch_cosmetics_data()
 		else:
-			if SecureDataManager.data.has("active_decorations"):
-				SecureDataManager.data["active_decorations"].erase(item_key)
-		SecureDataManager.save_data()
-		_fetch_cosmetics_data()
-		_update_shop_items()
+			var status := int(purchase_response.get("status", 0))
+			var fallback := "Máy chủ chưa hỗ trợ mua vật phẩm." if status == 404 or status == 405 else "Không thể mở khóa vật phẩm."
+			_set_shop_status(_api_client.error_message(purchase_response, fallback), true)
+	else:
+		var is_equipped := bool(item.get("isEquipped", item.get("is_equipped", false)))
+		var equip_response = await _api_client.equip_cosmetic(cosmetic_id, not is_equipped)
+		if _api_client._is_success(equip_response):
+			_set_shop_status("Đã %s %s." % ["cất" if is_equipped else "trưng bày", str(item.get("name", "vật phẩm"))], false)
+			await _fetch_cosmetics_data()
+		else:
+			_set_shop_status(_api_client.error_message(equip_response, "Không thể cập nhật trạng thái trang bị."), true)
+
+	_cosmetic_actions_pending.erase(cosmetic_id)
+	_update_shop_items()
 
 func _update_shop_items() -> void:
-	if SecureDataManager.get_total_stars() < 9999:
-		if not SecureDataManager.data.has("stars"):
-			SecureDataManager.data["stars"] = {}
-		if not SecureDataManager.data["stars"].has("test"):
-			SecureDataManager.data["stars"]["test"] = {}
-		SecureDataManager.data["stars"]["test"]["free"] = 9999
-		SecureDataManager.save_data()
-	
-	var stars = SecureDataManager.get_total_stars()
+	var stars = SecureDataManager.get_spendable_stars()
 	var stars_val_label = shop_popup.get_node_or_null("ScrollPanel/ScrollContent/StarsContainer/StarsValLabel") as Label
 	if stars_val_label:
 		stars_val_label.text = "%d Sao" % stars
@@ -3193,7 +3547,6 @@ func _update_shop_items() -> void:
 		grid.add_child(card)
 
 func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContainer:
-	var item_id = _get_draw_key(item)
 	var name = item.get("name", "Vật phẩm")
 	var cost = int(item.get("unlockValue", 3))
 	var desc = item.get("description", "Vật phẩm trang trí cho phòng nhạc.")
@@ -3232,21 +3585,12 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	preview.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(preview)
 	
-	var tex: Texture2D = null
-	match item_id:
-		"chausen": tex = _tex_decor_chausen
-		"bantra": tex = _tex_decor_bantra
-		"tranh": tex = _tex_decor_tranh
-		"quat": tex = _tex_decor_quat
-		"denlong": tex = _tex_decor_denlong
-		"denda": tex = _tex_decor_denda
-		"chuonggio": tex = _tex_decor_chuonggio
-		"binhsen": tex = _tex_decor_binhsen
+	var tex := _get_cosmetic_texture(item)
 		
 	if tex != null:
 		preview.texture = tex
 	else:
-		preview.draw.connect(_draw_decor_node.bind(preview, item_id, true))
+		preview.draw.connect(_draw_decor_node.bind(preview, item, true))
 	
 	var vbox := VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3306,7 +3650,17 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	vbox.add_child(btn)
 	_make_btn_bouncy(btn)
 	
-	if not owned:
+	var cosmetic_id := int(item.get("id", 0))
+	var is_pending := _cosmetic_actions_pending.has(cosmetic_id)
+	if is_pending:
+		btn.text = "ĐANG XỬ LÝ..."
+		_style_disabled_button(btn)
+		btn.disabled = true
+	elif not BackendReport.is_signed_in():
+		btn.text = "ĐĂNG NHẬP ĐỂ MỞ KHÓA"
+		_style_disabled_button(btn)
+		btn.disabled = true
+	elif not owned:
 		btn.text = "MỞ KHÓA"
 		if stars >= cost:
 			_style_primary_btn(btn)
@@ -3431,6 +3785,15 @@ func _start_intro_cinematic() -> void:
 	if not is_instance_valid(_audio_manager): return
 	_has_played_intro = true
 	_is_in_intro = true
+	# The welcome is a non-interactive cinematic. Unlike the shop and star
+	# indicators, the profile avatar must not float above the dim layer.
+	_close_profile_quick_menu()
+	var profile_pill := get_node_or_null("HUD/HUDHBox/ProfilePill") as Control
+	if profile_pill:
+		profile_pill.visible = false
+	# Mai remains the speaker of this cinematic: show her beside the subtitle,
+	# above the room dimmer but below the text panel itself.
+	char_linh.z_index = 50
 	var dim_overlay = ColorRect.new()
 	dim_overlay.name = "IntroDimOverlay"
 	dim_overlay.color = Color(0, 0, 0, 0)
@@ -3495,7 +3858,7 @@ func _start_intro_cinematic() -> void:
 			
 	var skip_btn = Button.new()
 	skip_btn.name = "IntroSkipBtn"
-	skip_btn.text = "Bỏ qua >>"
+	skip_btn.text = "Bỏ qua"
 	skip_btn.add_theme_font_size_override("font_size", 16)
 	if _font_body_bold: skip_btn.add_theme_font_override("font", _font_body_bold)
 	
@@ -3567,6 +3930,9 @@ func _end_intro_cinematic() -> void:
 		if dim_overlay: dim_overlay.queue_free()
 		if subtitle: subtitle.queue_free()
 		if skip_btn: skip_btn.queue_free()
+		var profile_pill := get_node_or_null("HUD/HUDHBox/ProfilePill") as Control
+		if profile_pill:
+			profile_pill.visible = true
 		char_linh.z_index = 0
 		_on_viewport_size_changed()
 	)

@@ -208,18 +208,18 @@ static func apply_body(lbl: Label) -> void:
 # Caller connects "TriggerButton" pressed -> AccountScreen.
 
 static func build_profile_pill() -> PanelContainer:
-	var pill := PanelContainer.new()
-	pill.name = "ProfilePill"
-	pill.custom_minimum_size = Vector2(70, 70)
-	pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	pill.add_theme_stylebox_override("panel", _profile_pill_style())
+	var pill_panel := PanelContainer.new()
+	pill_panel.name = "ProfilePill"
+	pill_panel.custom_minimum_size = Vector2(70, 70)
+	pill_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pill_panel.add_theme_stylebox_override("panel", _profile_pill_style())
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 3)
 	margin.add_theme_constant_override("margin_right", 3)
 	margin.add_theme_constant_override("margin_top", 3)
 	margin.add_theme_constant_override("margin_bottom", 3)
-	pill.add_child(margin)
+	pill_panel.add_child(margin)
 
 	var avatar_frame := PanelContainer.new()
 	avatar_frame.name = "AvatarFrame"
@@ -280,24 +280,24 @@ static func build_profile_pill() -> PanelContainer:
 	trigger.add_theme_stylebox_override("focus",   flat(Color.TRANSPARENT, Color.TRANSPARENT, 35, 0, Vector4i.ZERO))
 	
 	trigger.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	pill.add_child(trigger)
+	pill_panel.add_child(trigger)
 	
 	# Make the pill bouncy
 	trigger.mouse_entered.connect(func() -> void:
-		pill.create_tween().tween_property(pill, "scale", Vector2(1.06, 1.06), 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		pill_panel.create_tween().tween_property(pill_panel, "scale", Vector2(1.06, 1.06), 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 	trigger.mouse_exited.connect(func() -> void:
-		pill.create_tween().tween_property(pill, "scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		pill_panel.create_tween().tween_property(pill_panel, "scale", Vector2.ONE, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 	trigger.button_down.connect(func() -> void:
-		pill.create_tween().tween_property(pill, "scale", Vector2(0.94, 0.94), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		pill_panel.create_tween().tween_property(pill_panel, "scale", Vector2(0.94, 0.94), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	)
 	trigger.button_up.connect(func() -> void:
 		var tgt := Vector2(1.06, 1.06) if trigger.is_hovered() else Vector2.ONE
-		pill.create_tween().tween_property(pill, "scale", tgt, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		pill_panel.create_tween().tween_property(pill_panel, "scale", tgt, 0.13).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 
-	return pill
+	return pill_panel
 
 static func _profile_pill_style() -> StyleBoxFlat:
 	var s := flat(Color(1.0, 1.0, 1.0, 0.65), Color(C_GOLD_LIGHT.r, C_GOLD_LIGHT.g, C_GOLD_LIGHT.b, 0.6), 35, 1, Vector4i.ZERO)

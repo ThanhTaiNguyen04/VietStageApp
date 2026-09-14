@@ -431,6 +431,12 @@ func _animate_in() -> void:
 
 
 func _go_back() -> void:
+	var return_scene := str(SecureDataManager.data.get("navigation_return_scene", ""))
+	if return_scene in ["res://scenes/VirtualMusicRoom.tscn", "res://scenes/LessonDanTranhList.tscn", "res://scenes/LessonDanBau.tscn", "res://scenes/LessonSaoTrucList.tscn", "res://scenes/LessonTrongChau.tscn"]:
+		SecureDataManager.data.erase("navigation_return_scene")
+		SecureDataManager.save_data()
+		get_tree().change_scene_to_file(return_scene)
+		return
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
@@ -536,8 +542,8 @@ func _set_icon_button(button: Button, icon_name: String, color: Color, backgroun
 	button.add_theme_stylebox_override("pressed", _flat(bg.darkened(0.08), color, 15, 1))
 
 
-func _icon(name: String) -> Texture2D:
-	return load("res://assets/textures/lucide/%s.svg" % name) as Texture2D
+func _icon(icon_name: String) -> Texture2D:
+	return load("res://assets/textures/lucide/%s.svg" % icon_name) as Texture2D
 
 
 func _font_display() -> Font:

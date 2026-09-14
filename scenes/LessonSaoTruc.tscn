@@ -1,12 +1,11 @@
 [gd_scene format=3 uid="uid://cx8w5h1b6b55w"]
 
-[ext_resource type="Script" path="res://scripts/LessonSaoTruc.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cg5awcqeveq7y" path="res://scripts/LessonSaoTruc.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dh73yas1kofe0" path="res://assets/textures/bg_practice_room.png" id="2_bg"]
-[ext_resource type="Script" path="res://scripts/FluteBody.gd" id="3_flute_body"]
-[ext_resource type="Texture2D" path="res://assets/textures/avacogiaoMai_asset.png" id="4_char"]
-[ext_resource type="Script" path="res://scripts/AudioCaptureAnalyzer.gd" id="5_analyzer"]
+[ext_resource type="Texture2D" uid="uid://jaeqmnap3wpq" path="res://assets/textures/avacogiaoMai_asset.png" id="4_char"]
+[ext_resource type="Script" uid="uid://r7jwtmms5mjj" path="res://scripts/AudioCaptureAnalyzer.gd" id="5_analyzer"]
 
-[node name="LessonSaoTruc" type="Control"]
+[node name="LessonSaoTruc" type="Control" unique_id=829061248]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,7 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="BG" type="TextureRect" parent="."]
+[node name="BG" type="TextureRect" parent="." unique_id=1932548010]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,7 +25,7 @@ texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="BGOverlay" type="ColorRect" parent="."]
+[node name="BGOverlay" type="ColorRect" parent="." unique_id=1350446444]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -35,7 +34,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.95, 0.93, 0.89, 0.95)
 
-[node name="Root" type="VBoxContainer" parent="."]
+[node name="Root" type="VBoxContainer" parent="." unique_id=759820605]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -43,35 +42,35 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TopMargin" type="VBoxContainer" parent="Root"]
+[node name="TopMargin" type="VBoxContainer" parent="Root" unique_id=954595417]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 alignment = 1
 
-[node name="InstructionLabel" type="Label" parent="Root/TopMargin"]
+[node name="InstructionLabel" type="Label" parent="Root/TopMargin" unique_id=1063003813]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.77, 0.58, 0.15, 1.0)
+theme_override_colors/font_color = Color(0.77, 0.58, 0.15, 1)
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 
-[node name="SubInstructionLabel" type="Label" parent="Root/TopMargin"]
+[node name="SubInstructionLabel" type="Label" parent="Root/TopMargin" unique_id=1398107160]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.16, 0.10, 1.0)
+theme_override_colors/font_color = Color(0.28, 0.16, 0.1, 1)
 theme_override_font_sizes/font_size = 28
 text = "Hãy chú ý cách bấm ngón và làm theo"
 horizontal_alignment = 1
 vertical_alignment = 2
 
-[node name="CenterContainer" type="MarginContainer" parent="Root"]
+[node name="CenterContainer" type="MarginContainer" parent="Root" unique_id=1646038400]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 0
 theme_override_constants/margin_right = 0
 
-[node name="FluteBoard" type="Control" parent="Root/CenterContainer"]
+[node name="FluteBoard" type="Control" parent="Root/CenterContainer" unique_id=1713218154]
 layout_mode = 2
 
-[node name="BoardM" type="MarginContainer" parent="Root/CenterContainer/FluteBoard"]
+[node name="BoardM" type="MarginContainer" parent="Root/CenterContainer/FluteBoard" unique_id=592815593]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -83,10 +82,10 @@ theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 0
 
-[node name="FluteFrame" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM"]
+[node name="FluteFrame" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM" unique_id=1989061243]
 layout_mode = 2
 
-[node name="FluteM" type="MarginContainer" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame"]
+[node name="FluteM" type="MarginContainer" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame" unique_id=122224052]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -98,10 +97,10 @@ theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 0
 
-[node name="FluteStack" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM"]
+[node name="FluteStack" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM" unique_id=937584974]
 layout_mode = 2
 
-[node name="FluteBody" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack"]
+[node name="FluteBody" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack" unique_id=307338575]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -109,16 +108,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="RhythmArea" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="HolesOverlay" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack"]
+[node name="RhythmArea" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack" unique_id=1672556971]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -127,7 +117,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TeacherArea" type="Control" parent="."]
+[node name="HolesOverlay" type="Control" parent="Root/CenterContainer/FluteBoard/BoardM/FluteFrame/FluteM/FluteStack" unique_id=1298987279]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -136,7 +126,16 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TeacherChar" type="TextureRect" parent="TeacherArea"]
+[node name="TeacherArea" type="Control" parent="." unique_id=483348087]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TeacherChar" type="TextureRect" parent="TeacherArea" unique_id=450666900]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -150,7 +149,7 @@ texture = ExtResource("4_char")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="DialogBox" type="PanelContainer" parent="TeacherArea"]
+[node name="DialogBox" type="PanelContainer" parent="TeacherArea" unique_id=867017460]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -161,83 +160,76 @@ offset_right = 1400.0
 offset_bottom = -250.0
 grow_vertical = 0
 
-[node name="M" type="MarginContainer" parent="TeacherArea/DialogBox"]
+[node name="M" type="MarginContainer" parent="TeacherArea/DialogBox" unique_id=2024330794]
 layout_mode = 2
 theme_override_constants/margin_left = 30
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 30
 
-[node name="V" type="VBoxContainer" parent="TeacherArea/DialogBox/M"]
+[node name="V" type="VBoxContainer" parent="TeacherArea/DialogBox/M" unique_id=295191790]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="SpeechText" type="Label" parent="TeacherArea/DialogBox/M/V"]
+[node name="SpeechText" type="Label" parent="TeacherArea/DialogBox/M/V" unique_id=980800286]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 32
 text = "Chào mừng bạn đến bài học đầu tiên..."
 autowrap_mode = 3
 
-[node name="ModeButtons" type="HBoxContainer" parent="TeacherArea/DialogBox/M/V"]
+[node name="ModeButtons" type="HBoxContainer" parent="TeacherArea/DialogBox/M/V" unique_id=504032019]
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 20
+alignment = 1
 
-
-[node name="RealModeBtn" type="Button" parent="TeacherArea/DialogBox/M/V/ModeButtons"]
+[node name="RealModeBtn" type="Button" parent="TeacherArea/DialogBox/M/V/ModeButtons" unique_id=1697885115]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
 text = "  Dùng Sáo Thật  "
 
-[node name="Analyzer" type="Control" parent="."]
+[node name="Analyzer" type="Control" parent="." unique_id=1280161188]
 visible = false
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
-anchor_top = 0.0
 anchor_right = 1.0
-anchor_bottom = 0.0
 offset_left = -250.0
 offset_top = 10.0
 offset_right = -20.0
 offset_bottom = 110.0
 grow_horizontal = 0
-grow_vertical = 1
 script = ExtResource("5_analyzer")
 
-[node name="FeedbackArea" type="VBoxContainer" parent="."]
+[node name="FeedbackArea" type="VBoxContainer" parent="." unique_id=431530086]
 layout_mode = 1
-anchors_preset = 0
-anchor_top = 0.0
-anchor_bottom = 0.0
 offset_left = 200.0
 offset_top = 20.0
 offset_right = 600.0
 offset_bottom = 120.0
-grow_vertical = 1
 alignment = 1
 
-[node name="MicStatus" type="Label" parent="FeedbackArea"]
+[node name="MicStatus" type="Label" parent="FeedbackArea" unique_id=630588197]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.16, 0.10, 1.0)
+theme_override_colors/font_color = Color(0.28, 0.16, 0.1, 1)
 theme_override_font_sizes/font_size = 28
 text = "Đang chờ âm thanh..."
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="VolumeBar" type="ProgressBar" parent="FeedbackArea"]
+[node name="VolumeBar" type="ProgressBar" parent="FeedbackArea" unique_id=1339420681]
 custom_minimum_size = Vector2(300, 20)
 layout_mode = 2
 size_flags_horizontal = 4
 max_value = 1.0
 show_percentage = false
 
-[node name="NotesArea" type="Control" parent="."]
+[node name="NotesArea" type="Control" parent="." unique_id=1228178532]
+anchors_preset = 0
 
-[node name="BackBtn" type="Button" parent="."]
+[node name="BackBtn" type="Button" parent="." unique_id=633563826]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 20.0
@@ -246,7 +238,7 @@ offset_bottom = 70.0
 theme_override_font_sizes/font_size = 24
 text = "← Quay Lại"
 
-[node name="CompleteBtn" type="Button" parent="."]
+[node name="CompleteBtn" type="Button" parent="." unique_id=400540986]
 visible = false
 layout_mode = 1
 anchors_preset = 7

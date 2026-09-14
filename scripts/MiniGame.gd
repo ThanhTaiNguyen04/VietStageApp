@@ -59,9 +59,6 @@ var target_beats : Array = []
 var hit_beats : Array = []
 var rhythm_sweep_count := 0
 
-# Background texture
-var bg_texture: Texture2D = null
-
 # Melody matcher state
 var melody_notes : Array[String] = []
 var missing_idx := -1
@@ -84,13 +81,6 @@ func _ready() -> void:
 		get_node("BG").queue_free()
 		
 	SecureDataManager.load_data()
-	
-	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if inst == "dan_tranh":
-		bg_texture = load("res://assets/textures/dan_tranh_background.png") as Texture2D
-	elif inst == "sao_truc":
-		bg_texture = load("res://assets/textures/sao_truc_background.png") as Texture2D
-		
 	_build_theme()
 	_connect_buttons()
 	_show_mode_selection_menu()
@@ -102,18 +92,8 @@ func _ready() -> void:
 	_on_viewport_size_changed()
 
 func _draw() -> void:
-	var sz := get_rect().size
-	if bg_texture:
-		# Draw the texture covering the screen (like expand_mode = ignore / stretch_mode = cover)
-		# Actually, just drawing the rect with the texture is fine, but it might stretch if aspect differs.
-		# For simplicity, we draw the texture scaled to fit.
-		var tex_size := bg_texture.get_size()
-		var scale_factor := maxf(sz.x / tex_size.x, sz.y / tex_size.y)
-		var draw_size := tex_size * scale_factor
-		var draw_pos := (sz - draw_size) / 2.0
-		draw_texture_rect(bg_texture, Rect2(draw_pos, draw_size), false)
-	else:
-		draw_rect(Rect2(Vector2.ZERO, sz), C_BG_DARK)
+	# Draw Mahogany heritage background
+	draw_rect(Rect2(Vector2.ZERO, size), C_BG_DARK)
 
 func _process(delta: float) -> void:
 	if game_mode == "rhythm" and rhythm_active:
@@ -136,56 +116,22 @@ func _process(delta: float) -> void:
 			timeline.queue_redraw()
 
 func _build_theme() -> void:
-	# Top bar frosted glass
-	var top_bar = $Root/TopBar
-	if not top_bar.has_node("BlurRect"):
-		var top_blur_mat = ShaderMaterial.new()
-		var top_blur_shader = Shader.new()
-		top_blur_shader.code = """
-		shader_type canvas_item;
-		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-		uniform float lod: hint_range(0.0, 5.0) = 2.0;
-		void fragment() {
-			COLOR = textureLod(screen_texture, SCREEN_UV, lod);
-		}
-		"""
-		top_blur_mat.shader = top_blur_shader
-		var blur := ColorRect.new()
-		blur.name = "BlurRect"
-		blur.material = top_blur_mat
-		blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blur.show_behind_parent = true
-		blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		blur.offset_bottom = -1
-		top_bar.add_child(blur)
-		
-	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.28), 0)
-	top_s.border_width_bottom = 1
-	top_s.content_margin_bottom = 0
-	top_bar.add_theme_stylebox_override("panel", top_s)
+	# Top bar
+	var top_s := _flat(C_BG_BAR, Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 0)
+	top_s.border_width_bottom = 2
+	$Root/TopBar.add_theme_stylebox_override("panel", top_s)
 	
-	var title_lbl = $Root/TopBar/TopM/TopH/Title
-	title_lbl.add_theme_color_override("font_color", C_RED_SON)
-	var font_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	if font_title:
-		title_lbl.add_theme_font_override("font", font_title)
+	$Root/TopBar/TopM/TopH/Title.add_theme_color_override("font_color", C_RED_SON)
 	
 	# Back Button
-	back_btn.text = ""
-	back_btn.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
-	back_btn.expand_icon = true
-	back_btn.custom_minimum_size = Vector2(48, 48)
-	back_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	back_btn.add_theme_color_override("icon_normal_color", C_RED_SON)
-	back_btn.add_theme_color_override("icon_hover_color", C_RED_SON.lightened(0.15))
-	back_btn.add_theme_color_override("icon_pressed_color", C_RED_SON.darkened(0.15))
-	back_btn.add_theme_stylebox_override("normal",  _flat(Color(0,0,0,0), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("hover",   _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.12), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("pressed", _flat(Color(C_RED_SON.r,C_RED_SON.g,C_RED_SON.b,0.20), Color(0,0,0,0), 8))
-	back_btn.add_theme_stylebox_override("focus",   _flat(Color(0,0,0,0), Color(0,0,0,0), 0))
+	var btn_s := _flat(C_CARD, C_RED_SON, 16, true, 2)
+	back_btn.add_theme_stylebox_override("normal", btn_s)
+	back_btn.add_theme_stylebox_override("hover", _flat(C_CARD, C_RED_SON.lightened(0.15), 16, true, 2))
+	back_btn.add_theme_stylebox_override("pressed", _flat(C_BG_BAR, C_RED_SON, 16, false, 1))
+	back_btn.add_theme_color_override("font_color", C_TEXT)
 	
 	# Main Game Card
-	var card_s := _flat(Color(1.0, 1.0, 1.0, 0.85), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 28, true, 2)
+	var card_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 28, true, 4)
 	$Root/Card.add_theme_stylebox_override("panel", card_s)
 	
 	# Header styling
@@ -193,24 +139,13 @@ func _build_theme() -> void:
 	score_label.add_theme_color_override("font_color", C_JADE)
 	prompt_label.add_theme_color_override("font_color", C_TEXT)
 	
-	var font_header := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	if font_header:
-		round_label.add_theme_font_override("font", font_header)
-		score_label.add_theme_font_override("font", font_header)
-	
 	# Play sound button circle 3D
 	var play_s := _flat(C_GOLD, C_GOLD_LIGHT, 64, true, 4)
 	$Root/Card/CardM/GameVBox/PlayCircle.add_theme_stylebox_override("panel", play_s)
-	play_btn.text = ""
-	play_btn.icon = load("res://assets/textures/lucide/volume-2.svg") as Texture2D
-	play_btn.expand_icon = true
-	play_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	play_btn.add_theme_color_override("icon_normal_color", Color.WHITE)
-	play_btn.add_theme_color_override("icon_hover_color", Color.WHITE)
-	play_btn.add_theme_color_override("icon_pressed_color", Color.WHITE)
+	play_btn.add_theme_color_override("font_color", Color(1,1,1,1))
 	
 	# Feedback panel
-	var feed_s := _flat(Color(1.0, 1.0, 1.0, 0.9), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.2), 16)
+	var feed_s := _flat(C_BG_BAR, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 16)
 	feedback_pan.add_theme_stylebox_override("panel", feed_s)
 	result_lbl.add_theme_color_override("font_color", C_TEXT)
 	feedback_pan.visible = false
@@ -293,14 +228,19 @@ func _show_mode_selection_menu() -> void:
 	
 	var modes_info = [
 		{
-			"id": "quiz",
-			"title": "Trắc Nghiệm (Quiz)",
-			"desc": "Tham gia hệ thống câu hỏi trắc nghiệm âm nhạc để kiểm tra kiến thức của bạn."
+			"id": "rhythm",
+			"title": "Thử Thách Nhịp Điệu",
+			"desc": rhythm_desc
 		},
 		{
-			"id": "practice",
-			"title": "Thực Hành & Thử Thách",
-			"desc": "Vào lộ trình học để thực hành nốt trôi và được chấm điểm trực tiếp qua Microphone."
+			"id": "note",
+			"title": "Nhận Diện Nốt Nhạc",
+			"desc": note_desc
+		},
+		{
+			"id": "melody",
+			"title": "Hoàn Thiện Giai Điệu",
+			"desc": melody_desc
 		}
 	]
 	
@@ -309,7 +249,7 @@ func _show_mode_selection_menu() -> void:
 		card.custom_minimum_size = Vector2(280, 240) if is_mobile else Vector2(270, 360)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		
-		var card_s := _flat(Color(1.0, 1.0, 1.0, 0.85), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.15), 24, true, 1)
+		var card_s := _flat(C_CREAM, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 24, true, 3)
 		card.add_theme_stylebox_override("panel", card_s)
 		
 		var card_m := MarginContainer.new()
@@ -330,9 +270,6 @@ func _show_mode_selection_menu() -> void:
 		title_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 		title_lbl.add_theme_font_size_override("font_size", 18 if is_mobile else 22)
 		title_lbl.add_theme_color_override("font_color", C_RED_SON)
-		var font_card_title := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-		if font_card_title:
-			title_lbl.add_theme_font_override("font", font_card_title)
 		card_v.add_child(title_lbl)
 		
 		var desc_lbl := Label.new()
@@ -348,14 +285,14 @@ func _show_mode_selection_menu() -> void:
 		card_v.add_child(spacer)
 		
 		var play_btn_card := Button.new()
-		play_btn_card.text = "CHƠI NGAY"
+		play_btn_card.text = "Chơi Ngay"
 		play_btn_card.custom_minimum_size = Vector2(0, 48)
 		play_btn_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		play_btn_card.add_theme_font_size_override("font_size", 14 if is_mobile else 16)
 		
-		var btn_normal = _flat(C_RED_SON, Color.TRANSPARENT, 24)
-		var btn_hover = _flat(C_RED_SON.lightened(0.15), Color.TRANSPARENT, 24)
-		var btn_pressed = _flat(C_RED_SON.darkened(0.15), Color.TRANSPARENT, 24)
+		var btn_normal = _flat(C_RED_SON, C_GOLD, 16, true, 2)
+		var btn_hover = _flat(C_RED_SON_DK, C_GOLD_LIGHT, 16, true, 2)
+		var btn_pressed = _flat(C_RED_SON, C_GOLD, 16, false, 1)
 		
 		play_btn_card.add_theme_stylebox_override("normal", btn_normal)
 		play_btn_card.add_theme_stylebox_override("hover", btn_hover)
@@ -392,19 +329,22 @@ func _show_mode_selection_menu() -> void:
 	create_tween().tween_property(menu_container, "modulate:a", 1.0, 0.3)
 
 func _start_game_mode(mode: String) -> void:
-	var t := create_tween()
-	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: 
-		if mode == "quiz":
-			get_tree().change_scene_to_file("res://scenes/QuizScreen.tscn")
-		elif mode == "practice":
-			SecureDataManager.load_data()
-			var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-			if inst == "sao_truc":
-				get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
-			else:
-				get_tree().change_scene_to_file("res://scenes/LessonDanTranhList.tscn")
-	)
+	game_mode = mode
+	current_round = 1
+	score = 0
+	correct_answers = 0
+	game_active = true
+	
+	match game_mode:
+		"note":
+			$Root/TopBar/TopM/TopH/Title.text = "THỬ THÁCH NHẬN DIỆN NỐT"
+			_start_note_round()
+		"rhythm":
+			$Root/TopBar/TopM/TopH/Title.text = "THỬ THÁCH NHỊP ĐIỆU"
+			_start_rhythm_round()
+		"melody":
+			$Root/TopBar/TopM/TopH/Title.text = "HOÀN THIỆN GIAI ĐIỆU"
+			_start_melody_round()
 
 # ─── Note Game Mode ──────────────────────────────────────────────────────────
 func _start_note_round() -> void:
@@ -1076,9 +1016,7 @@ func _show_end_summary() -> void:
 		SecureDataManager.save_data()
 		
 	if score >= 200:
-		SecureDataManager.complete_lesson(inst, "Node3", 3) # Unlocks Node 4!
-		_sync_minigame_to_backend(inst, score, 3)
-		result_lbl.text = "Bạn đạt được %d điểm! Rất đáng khen ngợi.\n+ %d XP  ·  Mở Khóa Học Tiếp!" % [score, earned_xp]
+		result_lbl.text = "Bạn đạt được %d điểm! Rất đáng khen ngợi.\nKết quả cũ này chưa được dùng để cộng sao hoặc mở khóa bài." % score
 	else:
 		result_lbl.text = "Bạn đạt được %d điểm! Hãy cố gắng luyện tập thêm tai nhạc nữa nhé." % score
 		
@@ -1097,13 +1035,6 @@ func _show_end_summary() -> void:
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_make_button_bouncy(btn)
 	$Root/Card/CardM/GameVBox.add_child(btn)
-
-func _sync_minigame_to_backend(inst: String, final_score: int, stars: int) -> void:
-	if not BackendReport.is_signed_in():
-		return
-	var result: Dictionary = await BackendReport.report_minigame(inst, "Node3", final_score, stars)
-	if not result.get("submitted", false):
-		push_warning("[MiniGame] Không đồng bộ điểm minigame: %s" % str(result.get("reason", "")))
 
 # ─── Style & Helpers ──────────────────────────────────────────────────────────
 func _flat(bg: Color, border: Color, radius: int, shadow: bool = false, offset_bottom: int = 0) -> StyleBoxFlat:

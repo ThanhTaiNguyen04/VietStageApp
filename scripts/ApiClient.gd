@@ -53,6 +53,17 @@ func get_me() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USERS_ME), HTTPClient.METHOD_GET)
 
 
+func get_activity_history(page: int = 0, size: int = 20, activity_type: String = "") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.ACTIVITY_HISTORY) + "?page=" + str(maxi(page, 0)) + "&size=" + str(clampi(size, 1, 50))
+	if not activity_type.is_empty():
+		path += "&type=" + activity_type.uri_encode()
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+
+func get_activity_history_detail(event_id: String) -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.ACTIVITY_HISTORY) + "/" + event_id.uri_encode(), HTTPClient.METHOD_GET)
+
+
 # ── LEADERBOARD APIs ──────────────────────────────────────────────────
 
 ## Lấy danh sách Top bảng xếp hạng
@@ -82,15 +93,24 @@ func get_techniques(instrument_id: int = 0) -> Dictionary:
 		path += "?instrument_id=" + str(instrument_id)
 	return await request_json(path, HTTPClient.METHOD_GET)
 
-## Lấy danh sách bài học (Lọc theo nhạc cụ / kỹ thuật / trình độ)
-func get_lessons(instrument_id: int = 0, skill_level_id: int = 0, technique_id: int = 0) -> Dictionary:
+## Lấy danh sách bài học theo contract OpenAPI 3.1 hiện tại.
+## Giáo trình trong app vẫn dùng dữ liệu cứng; catalog backend chỉ phục vụ bridge.
+func get_lessons(
+	instrument_id: int = 0,
+	skill_level_id: int = 0,
+	status: String = "",
+	page: int = 1,
+	size: int = 10
+) -> Dictionary:
 	var query_params := []
 	if instrument_id > 0:
-		query_params.append("instrumentId=" + str(instrument_id))
+		query_params.append("instrument_id=" + str(instrument_id))
 	if skill_level_id > 0:
-		query_params.append("skillLevelId=" + str(skill_level_id))
-	if technique_id > 0:
-		query_params.append("techniqueId=" + str(technique_id))
+		query_params.append("skill_level_id=" + str(skill_level_id))
+	if not status.is_empty():
+		query_params.append("status=" + status.uri_encode())
+	query_params.append("page=" + str(maxi(1, page)))
+	query_params.append("size=" + str(maxi(1, size)))
 	
 	var path := ApiRoutes.build(ApiRoutes.LESSONS)
 	if query_params.size() > 0:
@@ -110,6 +130,12 @@ func get_lesson_assets(lesson_id: int, asset_type: String = "") -> Dictionary:
 		path += "?type=" + asset_type
 	return await request_json(path, HTTPClient.METHOD_GET)
 
+## Lấy các khối nội dung/lời hướng dẫn của bài học.
+## Chỉ chuẩn bị cho adapter giáo trình web; runtime hiện chưa gọi hàm này.
+func get_lesson_contents(lesson_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_CONTENTS % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_GET)
+
 ## Lấy danh sách bài tập (exercises) của bài học
 func get_lesson_exercises(lesson_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.LESSON_EXERCISES % str(lesson_id))
@@ -121,11 +147,26 @@ func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Nộp đáp án câu hỏi trắc nghiệm
-func submit_quiz_attempt(quiz_id: int, selected_answer: String) -> Dictionary:
+func submit_quiz_attempt(quiz_id: int, selected_answer: String, client_attempt_id: String) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.QUIZ_ATTEMPTS % str(quiz_id))
+	# BackendReport owns the durable quiz-attempt queue. Do not also put this
+	# request in ApiClient's generic queue: doing both makes a failed quiz look
+	# like HTTP 202 (and therefore "submitted") and can create a stale duplicate
+	# queue entry that the history screen cannot render.
 	return await request_json(path, HTTPClient.METHOD_POST, {
-		"selectedAnswer": selected_answer
-	})
+		"selectedAnswer": selected_answer,
+		"clientAttemptId": client_attempt_id,
+	}, true, false)
+
+
+## Nộp một đánh giá tổng hợp của toàn bộ nội dung bắt buộc trong lesson.
+func submit_lesson_assessment(lesson_id: int, payload: Dictionary) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.LESSON_ASSESSMENT_SESSIONS % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_POST, payload, true, false)
+
+
+func get_lesson_assessment_detail(session_id: int) -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.ASSESSMENT_SESSION_DETAIL % str(session_id)), HTTPClient.METHOD_GET)
 
 ## Lấy danh sách minigame của bài học
 func get_lesson_minigames(lesson_id: int) -> Dictionary:
@@ -136,18 +177,20 @@ func get_lesson_minigames(lesson_id: int) -> Dictionary:
 func submit_minigame_attempt(
 	minigame_id: int,
 	score: int,
-	stars_earned: int,
+	client_attempt_id: String,
 	started_at: String,
 	completed_at: String
 ) -> Dictionary:
 	var payload := {
 		"score": score,
-		"starsEarned": stars_earned,
+		"clientAttemptId": client_attempt_id,
 		"startedAt": started_at,
 		"completedAt": completed_at,
 	}
 	var path := ApiRoutes.build(ApiRoutes.MINIGAME_ATTEMPTS % str(minigame_id))
-	return await request_json(path, HTTPClient.METHOD_POST, payload)
+	# BackendReport has a dedicated durable queue for game attempts, just like
+	# quiz attempts. Keep the generic queue from returning a false HTTP 202 ACK.
+	return await request_json(path, HTTPClient.METHOD_POST, payload, true, false)
 
 ## Tiến độ của một học viên trong một bài học (INSTRUCTOR)
 func get_learner_lesson_progress(lesson_id: int, learner_id: int) -> Dictionary:
@@ -240,6 +283,22 @@ func get_my_progress(instrument_id: int = 0, skill_level_id: int = 0) -> Diction
 ## Lấy tổng quan tiến độ (Streak, XP, ...)
 func get_my_progress_summary() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USER_PROGRESS_SUMMARY), HTTPClient.METHOD_GET)
+
+## Hoàn thành một bài trong giáo trình. Backend quyết định sao và tiến trình.
+func complete_lesson_progress(
+	lesson_id: int,
+	client_attempt_id: String,
+	completed_at: String,
+	score: float = -1.0
+) -> Dictionary:
+	var payload := {
+		"clientAttemptId": client_attempt_id,
+		"completedAt": completed_at,
+	}
+	if score >= 0.0:
+		payload["score"] = score
+	var path := ApiRoutes.build(ApiRoutes.COMPLETE_LESSON % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_POST, payload)
 
 ## Lấy lịch sử biến động điểm/xu
 func get_point_transactions(user_id: int) -> Dictionary:
@@ -359,20 +418,34 @@ func admin_update_config(config_key: String, value: String) -> Dictionary:
 # ── COSMETICS APIs ────────────────────────────────────────────────────
 
 ## Lấy danh sách trang bị trong cửa hàng
-func get_all_cosmetics() -> Dictionary:
-	return await request_json(ApiRoutes.build(ApiRoutes.COSMETICS), HTTPClient.METHOD_GET)
+func get_all_cosmetics(item_type: String = "ROOM_DECOR") -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.COSMETICS)
+	if not item_type.is_empty():
+		path += "?item_type=" + item_type.uri_encode()
+	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Lấy danh sách trang bị sở hữu
 func get_my_cosmetics() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.MY_COSMETICS), HTTPClient.METHOD_GET)
 
-## Mua vật phẩm (Unlock)
-func unlock_cosmetic(cosmetic_id: int) -> Dictionary:
-	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS)
-	var payload = {
-		"cosmeticId": cosmetic_id
-	}
-	return await request_json(path, HTTPClient.METHOD_POST, payload)
+## Mua vật phẩm. Backend cần triển khai contract này; OpenAPI hiện tại chưa có endpoint mua.
+func purchase_cosmetic(cosmetic_id: int, client_request_id: String) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS) + "/" + str(cosmetic_id) + "/purchase"
+	return await request_json(path, HTTPClient.METHOD_POST, {
+		"clientRequestId": client_request_id
+	})
+
+## Lấy và lưu cách bố trí vật phẩm để đồng bộ giữa các thiết bị.
+func get_cosmetic_layout() -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.COSMETICS_LAYOUT), HTTPClient.METHOD_GET)
+
+
+func save_cosmetic_layout(items: Array) -> Dictionary:
+	return await request_json(
+		ApiRoutes.build(ApiRoutes.COSMETICS_LAYOUT),
+		HTTPClient.METHOD_PUT,
+		{"items": items}
+	)
 
 ## Trang bị / Tháo bỏ vật phẩm trang trí
 func equip_cosmetic(cosmetic_id: int, is_equipped: bool) -> Dictionary:
@@ -434,7 +507,8 @@ func request_json(
 	path: String,
 	method: HTTPClient.Method = HTTPClient.METHOD_GET,
 	payload: Variant = {},
-	retry_after_refresh: bool = true
+	retry_after_refresh: bool = true,
+	queue_offline: bool = true
 ) -> Dictionary:
 	var response := await _request_raw(path, method, payload, true)
 	
@@ -449,7 +523,7 @@ func request_json(
 					"body": cached_body,
 					"message": "Đang chạy chế độ Ngoại tuyến (Offline)."
 				}
-		elif method in [HTTPClient.METHOD_POST, HTTPClient.METHOD_PUT, HTTPClient.METHOD_PATCH]:
+		elif queue_offline and method in [HTTPClient.METHOD_POST, HTTPClient.METHOD_PUT, HTTPClient.METHOD_PATCH]:
 			print("OFFLINE MODE: Queuing request for ", path)
 			_add_to_sync_queue(path, method, payload)
 			return {

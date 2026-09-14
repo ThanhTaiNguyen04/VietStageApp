@@ -50,7 +50,11 @@ static var data := {
 	"last_practice_date": "",
 	"practice_time_seconds": 0,
 	"unlocked_decorations": [],
-	"active_decorations": []
+	"active_decorations": [],
+	"pending_game_attempts": [],
+	# Attempts made with bundled/sample content have no backend id to sync with,
+	# but they still belong in the learner's local activity history.
+	"local_activity_history": []
 }
 
 static func save_data() -> void:
@@ -91,7 +95,6 @@ static func load_data() -> void:
 
 static func sync_backend_progress(progress_list: Array) -> void:
 	_ensure_progress_containers()
-	_reset_backend_progress_cache()
 
 	for raw_item: Variant in progress_list:
 		if not raw_item is Dictionary:
@@ -105,15 +108,106 @@ static func sync_backend_progress(progress_list: Array) -> void:
 				str(item.get("title", "")),
 			])
 			continue
-		if not bool(item.get("completed", false)):
-			continue
-		_apply_backend_completion(
-			str(resolved["instrument"]),
-			str(resolved["node_id"]),
-			maxi(0, int(item.get("stars", 0)))
-		)
+		var instrument := str(resolved["instrument"])
+		var node_id := str(resolved["node_id"])
+		if bool(item.get("completed", false)):
+			_apply_backend_completion(instrument, node_id, maxi(0, int(item.get("stars", 0))))
+		else:
+			_remove_backend_completion(instrument, node_id)
 
 	save_data()
+
+
+## Chỉ gọi sau khi backend xác nhận hoàn thành bài.
+static func apply_confirmed_lesson_completion(
+	instrument: String,
+	local_lesson_id: String,
+	stars: int
+) -> void:
+	_ensure_progress_containers()
+	var normalized := _normalize_instrument_key(instrument)
+	if normalized.is_empty():
+		normalized = instrument
+	if not data["completed_lessons"].has(normalized):
+		data["completed_lessons"][normalized] = []
+	if not data["stars"].has(normalized):
+		data["stars"][normalized] = {}
+	if not data["unlocked_lessons"].has(normalized):
+		data["unlocked_lessons"][normalized] = ["Node1"]
+	_record_completed(normalized, local_lesson_id, maxi(0, stars))
+	var lesson_number := local_lesson_number(local_lesson_id)
+	if lesson_number > 0:
+		_unlock_lesson(normalized, "Node%d" % (lesson_number + 1))
+	save_data()
+
+
+## Đồng bộ ví sao/điểm từ response thưởng của backend.
+static func apply_backend_reward(reward_data: Dictionary) -> void:
+	if reward_data.has("totalStars"):
+		data["stars_total"] = maxi(0, int(reward_data.get("totalStars", 0)))
+	elif reward_data.has("total_stars"):
+		data["stars_total"] = maxi(0, int(reward_data.get("total_stars", 0)))
+	if reward_data.has("spendableStars"):
+		data["spendable_stars"] = maxi(0, int(reward_data.get("spendableStars", 0)))
+	elif reward_data.has("spendable_stars"):
+		data["spendable_stars"] = maxi(0, int(reward_data.get("spendable_stars", 0)))
+	if reward_data.has("totalPoints"):
+		data["xp"] = maxi(0, int(reward_data.get("totalPoints", 0)))
+	elif reward_data.has("total_points"):
+		data["xp"] = maxi(0, int(reward_data.get("total_points", 0)))
+	save_data()
+
+
+## Persist attempts until the authoritative backend has acknowledged them.
+static func enqueue_pending_game_attempt(attempt: Dictionary) -> void:
+	if not data.has("pending_game_attempts") or not (data["pending_game_attempts"] is Array):
+		data["pending_game_attempts"] = []
+	var attempt_id := str(attempt.get("client_attempt_id", ""))
+	if attempt_id.is_empty():
+		return
+	for existing: Variant in data["pending_game_attempts"]:
+		if existing is Dictionary and str(existing.get("client_attempt_id", "")) == attempt_id:
+			return
+	data["pending_game_attempts"].append(attempt.duplicate(true))
+	save_data()
+
+
+static func get_pending_game_attempts() -> Array:
+	var value: Variant = data.get("pending_game_attempts", [])
+	return value.duplicate(true) if value is Array else []
+
+
+static func remove_pending_game_attempt(client_attempt_id: String) -> void:
+	if not data.has("pending_game_attempts") or not (data["pending_game_attempts"] is Array):
+		return
+	data["pending_game_attempts"] = (data["pending_game_attempts"] as Array).filter(func(item: Variant) -> bool:
+		return not (item is Dictionary and str(item.get("client_attempt_id", "")) == client_attempt_id)
+	)
+	save_data()
+
+
+## Lưu hoạt động chỉ có trên thiết bị (ví dụ quiz mẫu offline không có quizId
+## của backend). Bản ghi này không được gửi lên server và luôn được đánh dấu
+## LOCAL_ONLY khi hiển thị ở màn hình lịch sử.
+static func record_local_activity(activity: Dictionary) -> void:
+	if not data.has("local_activity_history") or not (data["local_activity_history"] is Array):
+		data["local_activity_history"] = []
+	var event_id := str(activity.get("client_attempt_id", activity.get("eventId", "")))
+	if event_id.is_empty():
+		return
+	for existing: Variant in data["local_activity_history"]:
+		if existing is Dictionary and str(existing.get("client_attempt_id", existing.get("eventId", ""))) == event_id:
+			return
+	data["local_activity_history"].append(activity.duplicate(true))
+	# Local history is a convenience cache, not an unbounded event log.
+	if data["local_activity_history"].size() > 100:
+		data["local_activity_history"] = data["local_activity_history"].slice(data["local_activity_history"].size() - 100)
+	save_data()
+
+
+static func get_local_activity_history() -> Array:
+	var value: Variant = data.get("local_activity_history", [])
+	return value.duplicate(true) if value is Array else []
 
 
 static func sync_backend_summary(summary_data: Dictionary) -> void:
@@ -125,6 +219,10 @@ static func sync_backend_summary(summary_data: Dictionary) -> void:
 	data["daily_streak"] = int(summary_data.get("current_streak", summary_data.get("currentStreak", data.get("daily_streak", 1))))
 	data["xp"] = int(summary_data.get("total_points", summary_data.get("totalPoints", data.get("xp", 0))))
 	data["stars_total"] = int(summary_data.get("total_stars", summary_data.get("totalStars", data.get("stars_total", 0))))
+	data["spendable_stars"] = int(summary_data.get(
+		"spendable_stars",
+		summary_data.get("spendableStars", data.get("spendable_stars", data.get("stars_total", 0)))
+	))
 	save_data()
 
 
@@ -207,6 +305,21 @@ static func _apply_backend_completion(instrument: String, node_id: String, stars
 		_unlock_lesson(instrument, "Node%d" % (node_number + 1))
 
 
+static func _remove_backend_completion(instrument: String, node_id: String) -> void:
+	var local_ids: Array[String] = [node_id]
+	if instrument == "trong_chau":
+		var lesson_number := clampi(int(node_id.trim_prefix("Node")), 1, 3)
+		local_ids = [
+			"trong_chau_coban_%d_video" % lesson_number,
+			"trong_chau_coban_%d_practice" % lesson_number,
+		]
+	for local_id in local_ids:
+		if data["completed_lessons"].has(instrument):
+			data["completed_lessons"][instrument].erase(local_id)
+		if data["stars"].has(instrument):
+			data["stars"][instrument].erase(local_id)
+
+
 static func _record_completed(instrument: String, lesson_id: String, stars: int) -> void:
 	if not data["completed_lessons"][instrument].has(lesson_id):
 		data["completed_lessons"][instrument].append(lesson_id)
@@ -260,9 +373,9 @@ static func is_lesson_completed(instrument: String, lesson_id: String) -> bool:
 
 static func is_lesson_unlocked(instrument: String, lesson_id: String) -> bool:
 	return true # UNLOCKED ALL FOR TESTING
-	if data.unlocked_lessons.has(instrument):
-		return data.unlocked_lessons[instrument].has(lesson_id)
-	return false
+	#if data.unlocked_lessons.has(instrument):
+	#	return data.unlocked_lessons[instrument].has(lesson_id)
+	#return false
 
 static func complete_lesson(instrument: String, lesson_id: String, stars: int) -> void:
 	if not data.completed_lessons.has(instrument):
@@ -338,15 +451,24 @@ static func is_instrument_unlocked(instrument: String) -> bool:
 	return false
 
 static func get_total_stars() -> int:
-	if data.get("user_email", "").to_lower() == "student1@fpt.edu.vn":
-		return 9999
-
+	# Dùng tổng sao do backend đồng bộ làm nguồn chính. Chỉ cộng dữ liệu bài học
+	# cục bộ khi chưa từng nhận được summary (chế độ offline).
+	if data.has("stars_total"):
+		return maxi(0, int(data.get("stars_total", 0)))
 	var total := 0
 	if data.has("stars"):
 		for inst in data.stars.keys():
 			for lesson_id in data.stars[inst].keys():
 				total += int(data.stars[inst][lesson_id])
 	return total
+
+
+## Số sao hiện còn có thể dùng để mua vật phẩm. Khi backend chưa từng trả
+## spendableStars, dùng tổng sao làm fallback để tương thích dữ liệu cũ.
+static func get_spendable_stars() -> int:
+	if data.has("spendable_stars"):
+		return maxi(0, int(data.get("spendable_stars", 0)))
+	return get_total_stars()
 
 static func unlock_decoration(decor_id: String, cost: int) -> bool:
 	if not data.has("unlocked_decorations"):
@@ -442,7 +564,7 @@ static func be_instrument_id(instrument_key: String) -> int:
 ## Số bài nội bộ từ local_lesson_id (NodeN, dan_*_bai_N_*, …) hoặc 0.
 static func local_lesson_number(local_lesson_id: String) -> int:
 	var matcher := RegEx.new()
-	matcher.compile("(?:Node|bai|bài|lesson)[ _-]*(\\d+)")
+	matcher.compile("(?:Node|bai|bài|lesson|coban|co_ban|cơ_bản)[ _-]*(\\d+)")
 	var result := matcher.search(str(local_lesson_id))
 	if result:
 		return int(result.get_string(1))
@@ -469,11 +591,7 @@ static func resolve_be_lesson(instrument_key: String, local_lesson_id: String) -
 				var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[id]
 				if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
 					return lesson
-		if local_number > 0:
-			for lesson: Dictionary in be_catalog:
-				if int(lesson.get("orderIndex", lesson.get("order_index", 0))) == local_number:
-					return lesson
-		return be_catalog[0] if be_catalog.size() > 0 else {}
+		return {}
 		
 	if local_number > 0:
 		for lesson: Dictionary in candidates:
