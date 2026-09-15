@@ -2210,8 +2210,7 @@ func _connect_buttons() -> void:
 			if inst == "dan_tranh":
 				_open_dan_tranh_level(7)
 			elif inst == "dan_bau":
-				LESSON_SCRIPT.selected_level = 3
-				_fade_to("res://scenes/LessonDanBau.tscn")
+				_open_dan_bau_level(3)
 			elif inst == "trong_chau":
 				_fade_to("res://scenes/PracticeTrongChau.tscn")
 	)
