@@ -1,6 +1,8 @@
 extends Control
 class_name LessonDanTranh
 
+const COURSE_API_ADAPTER = preload("res://scripts/DanTranhApiAdapter.gd")
+
 const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
@@ -270,7 +272,17 @@ var error_feedback_title := "Chưa đúng"
 var error_feedback_detail := ""
 var unrecognized_audio_elapsed := 0.0
 const UNRECOGNIZED_AUDIO_HINT_DELAY := 0.30
-var current_lesson_id: String
+# Local progress key / future LessonResponse.lessonCode. Never replace this
+# string with LessonResponse.id: completed lessons and stars use this key.
+var current_lesson_code: String
+# Compatibility alias while the existing local gameplay remains unchanged.
+var current_lesson_id: String:
+	get:
+		return current_lesson_code
+	set(value):
+		current_lesson_code = value
+# Reserved API identity. 0 means not mapped; never infer it from orderIndex.
+var api_lesson_id: int = 0
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
 static var current_song_cues: Array[String] = []
@@ -2378,7 +2390,7 @@ func _on_practice_now_pressed() -> void:
 func _play_next_intro_step():
 	intro_playback_token += 1
 	var playback_token := intro_playback_token
-	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+	var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 	if intro_step >= dialogues.size():
 		# Bài 1 (bai_1), 2 (bai_5), 3 (bai_4) là lý thuyết thuần – khi hết dialogue
 		# thì hoàn thành bài luôn, không hiện khuôn nhạc thực hành.
@@ -2668,7 +2680,7 @@ func _process_practice_single(delta: float) -> void:
 	var target_string_idx := 0
 	
 	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+		var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx < 0 or prev_step_idx >= dialogues.size():
 			return
@@ -2771,7 +2783,7 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
 		var note_type = "quarter"
 		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+			var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 				note_type = dialogues[prev_step_idx].get("type", "quarter")
@@ -2799,7 +2811,7 @@ func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
 	var note_type = "quarter"
 	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+		var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 			note_type = dialogues[prev_step_idx].get("type", "quarter")
@@ -2854,7 +2866,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		return
 	if current_state == State.PRACTICE_SINGLE:
 		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+			var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 				var step_data = dialogues[prev_step_idx]

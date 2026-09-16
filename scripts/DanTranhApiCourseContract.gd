@@ -33,15 +33,17 @@ const PRACTICE_MODE_DOUBLE_STOP := "double_stop"
 const PRACTICE_MODE_TRIAD := "triad"
 
 const SKILL_LEVELS := {
-	"BEGINNER": {"name": "Sơ cấp", "order_index": 1, "local_level": 1},
+	"BEGINNER": {"name": "Cơ bản", "order_index": 1, "local_level": 1},
 	"INTERMEDIATE": {"name": "Trung cấp", "order_index": 2, "local_level": 2},
-	"ADVANCED": {"name": "Cao cấp", "order_index": 3, "local_level": 7}
+	"ADVANCED": {"name": "Nâng cao", "order_index": 3, "local_level": 7}
 }
 
 # App chỉ hiển thị bài đã xuất bản. HIDDEN/ARCHIVED vẫn phải được backend giữ
 # lại để bảo toàn progress, sao và lịch sử attempt của người học.
-const VISIBLE_LESSON_STATUSES := ["PUBLISHED", "ACTIVE"]
-const NON_DESTRUCTIVE_LESSON_STATUSES := ["DRAFT", "PENDING", "PUBLISHED", "ACTIVE", "HIDDEN", "ARCHIVED"]
+# OpenAPI leaves status as a string. APPROVED follows the current web UI;
+# the server must confirm visibility semantics before remote content is enabled.
+const VISIBLE_LESSON_STATUSES := ["APPROVED"]
+const NON_DESTRUCTIVE_LESSON_STATUSES := ["DRAFT", "PENDING", "APPROVED", "REJECTED"]
 
 # Hai loại đầu đang có trong OpenAPI. Các loại còn lại là contract cần backend
 # bổ sung trước khi bật REMOTE_CONTENT_ENABLED.
@@ -106,11 +108,11 @@ static func skill_level_to_local_level(skill_level: Dictionary) -> int:
 	if SKILL_LEVELS.has(code):
 		return int(SKILL_LEVELS[code]["local_level"])
 	var name := str(skill_level.get("levelName", skill_level.get("level_name", ""))).to_lower()
-	if "sơ cấp" in name or "so cap" in name:
+	if "sơ cấp" in name or "so cap" in name or "cơ bản" in name or "co ban" in name:
 		return 1
 	if "trung cấp" in name or "trung cap" in name:
 		return 2
-	if "cao cấp" in name or "cao cap" in name:
+	if "cao cấp" in name or "cao cap" in name or "nâng cao" in name or "nang cao" in name:
 		return 7
 	return 0
 
@@ -130,19 +132,20 @@ static func visible_lessons(api_lessons: Array) -> Array[Dictionary]:
 	return result
 
 
-# Với API hiện tại, nội dung có cấu trúc được đặt tạm trong content_text dưới
-# dạng JSON. Web phải gửi object có schema_version và blocks. Khi backend có
-# cột JSON riêng, adapter này có thể đổi mà không ảnh hưởng scene bài học.
+# Web currently saves plain teacher speech in content_text. Do NOT require
+# JSON in this field or send practice data through it. Legacy JSON decoding
+# remains read-only compatibility; structured practice needs its own API field.
 static func decode_lesson_content(content_response: Dictionary) -> Dictionary:
 	var raw := str(content_response.get("content_text", content_response.get("contentText", "")))
 	if raw.is_empty():
 		return {}
-	var parsed: Variant = JSON.parse_string(raw)
-	if parsed is Dictionary:
-		return parsed
+	if raw.strip_edges().begins_with("{"):
+		var parsed: Variant = JSON.parse_string(raw)
+		if parsed is Dictionary and parsed.has("schema_version") and parsed.has("blocks"):
+			return parsed
 	return {
 		"schema_version": 1,
-		"blocks": [{"type": "THEORY_TEXT", "text": raw}]
+		"blocks": [{"type": "TEACHER_SPEECH", "text": raw}]
 	}
 
 
