@@ -2,8 +2,10 @@ extends "res://scripts/LearningActivityBase.gd"
 
 var _canonical_lesson_id := 0
 var _online_content := false
-var _available := {"quiz": true, "rhythm": true, "melody": true}
+var _available := {"quiz_note": true, "quiz_knowledge": true, "rhythm": true, "melody": true}
 var _quiz_count := 0
+var _note_quiz_count := 0
+var _knowledge_quiz_count := 0
 var _rhythm_count := 0
 var _melody_count := 0
 
@@ -34,9 +36,12 @@ func _load_activity_content() -> void:
 	var minigames: Array = await report.ensure_minigame_list(_canonical_lesson_id)
 	_online_content = not quizzes.is_empty() or not minigames.is_empty()
 	_quiz_count = quizzes.size()
+	_note_quiz_count = _count_quizzes(quizzes, "NOTE_IDENTIFICATION")
+	_knowledge_quiz_count = _quiz_count - _note_quiz_count
 	_rhythm_count = _count_challenges(minigames, ["RHYTHM_MATCH", "RHYTHM_MATCHING", "RHYTHM"])
 	_melody_count = _count_challenges(minigames, ["MELODY_COMPLETION", "MELODY_COMPLETE", "MELODY"])
-	_available["quiz"] = not quizzes.is_empty()
+	_available["quiz_note"] = _note_quiz_count > 0
+	_available["quiz_knowledge"] = _knowledge_quiz_count > 0
 	_available["rhythm"] = _rhythm_count > 0
 	_available["melody"] = _melody_count > 0
 
@@ -55,12 +60,46 @@ func _render() -> void:
 	cards_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cards_row.add_theme_constant_override("separation", 16 if mobile else 24)
 	content_box.add_child(cards_row)
-	var quiz_meta := ("%d câu hỏi" % _quiz_count) if _quiz_count > 0 else "Trắc nghiệm nhận diện"
-	var rhythm_meta := ("%d thử thách nhịp" % _rhythm_count) if _rhythm_count > 0 else "Thử thách nhịp điệu"
-	var melody_meta := ("%d giai điệu" % _melody_count) if _melody_count > 0 else "Hoàn thiện giai điệu"
-	cards_row.add_child(_activity_card("QUIZ", "Nhận diện nốt nhạc", "Luyện nghe và chọn đúng cao độ của nốt đàn.", quiz_meta, C_BLUE, "quiz"))
-	cards_row.add_child(_activity_card("MINI-GAME 1", "Thử thách nhịp điệu", "Nghe mẫu, quan sát phách và gõ đúng thời điểm.", rhythm_meta, C_GREEN, "rhythm"))
-	cards_row.add_child(_activity_card("MINI-GAME 2", "Hoàn thiện giai điệu", "Nghe câu nhạc và chọn nốt còn thiếu.", melody_meta, C_PURPLE, "melody"))
+	var quiz_meta := ("%d câu hỏi · 2 dạng" % _quiz_count) if _quiz_count > 0 else "2 dạng trắc nghiệm"
+	var minigame_count := _rhythm_count + _melody_count
+	var minigame_meta := ("%d thử thách · 2 dạng" % minigame_count) if minigame_count > 0 else "2 dạng trò chơi"
+	# Giữ nguyên phong cách card Quiz; cả hai card chỉ mở danh sách dạng bài khi bấm.
+	cards_row.add_child(_activity_card("QUIZ", "Quiz", "Luyện kiến thức và khả năng cảm âm qua 2 dạng câu hỏi.", quiz_meta, C_BLUE, "quiz_menu"))
+	cards_row.add_child(_activity_card("MINIGAME", "Minigame", "Rèn cảm nhận nhịp điệu và giai điệu qua 2 trò chơi.", minigame_meta, C_GREEN, "minigame_menu"))
+
+func _render_category_picker(category: String) -> void:
+	for child in content_box.get_children():
+		child.queue_free()
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var mobile := get_viewport_rect().size.x < 600.0
+	var is_quiz := category == "quiz"
+	var heading := _label("Chọn dạng Quiz" if is_quiz else "Chọn dạng Minigame", 24 if mobile else 28, C_NAVY)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content_box.add_child(heading)
+	var subtitle := _label("Mỗi hoạt động có kết quả riêng." if is_quiz else "Chọn một trò chơi để bắt đầu thử thách.", 16 if mobile else 18, C_MUTED)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content_box.add_child(subtitle)
+	var cards_row := BoxContainer.new()
+	cards_row.vertical = mobile
+	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	cards_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards_row.add_theme_constant_override("separation", 16 if mobile else 24)
+	content_box.add_child(cards_row)
+	if is_quiz:
+		var note_meta := ("%d câu hỏi" % _note_quiz_count) if _note_quiz_count > 0 else "Nhận biết cao độ và vị trí nốt"
+		var knowledge_meta := ("%d câu hỏi" % _knowledge_quiz_count) if _knowledge_quiz_count > 0 else "Ôn kiến thức về nhạc cụ"
+		cards_row.add_child(_activity_card("QUIZ 1", "Nhận diện nốt nhạc", "Luyện nghe và chọn đúng cao độ của nốt đàn.", note_meta, C_BLUE, "quiz_note"))
+		cards_row.add_child(_activity_card("QUIZ 2", "Kiến thức nhạc cụ", "Ôn lại cấu tạo, kỹ thuật và kiến thức bài học.", knowledge_meta, C_PURPLE, "quiz_knowledge"))
+	else:
+		var rhythm_meta := ("%d thử thách nhịp" % _rhythm_count) if _rhythm_count > 0 else "Thử thách nhịp điệu"
+		var melody_meta := ("%d giai điệu" % _melody_count) if _melody_count > 0 else "Hoàn thiện giai điệu"
+		cards_row.add_child(_activity_card("MINIGAME 1", "Thử thách nhịp điệu", "Nghe mẫu, quan sát phách và gõ đúng thời điểm.", rhythm_meta, C_GREEN, "rhythm"))
+		cards_row.add_child(_activity_card("MINIGAME 2", "Hoàn thiện giai điệu", "Nghe câu nhạc và chọn nốt còn thiếu.", melody_meta, C_PURPLE, "melody"))
+	var back := _secondary_button("← Quay lại", 180, 50, C_NAVY)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	back.pressed.connect(_render)
+	content_box.add_child(back)
 
 func _summary_text() -> String:
 	if _canonical_lesson_id <= 0:
@@ -69,7 +108,8 @@ func _summary_text() -> String:
 
 func _activity_card(kicker: String, heading: String, description: String, metadata: String, color: Color, activity_id: String) -> PanelContainer:
 	var mobile := get_viewport_rect().size.x < 600.0
-	var locked := _canonical_lesson_id > 0 and _online_content and not bool(_available.get(activity_id, false))
+	var menu_card := activity_id in ["quiz_menu", "minigame_menu"]
+	var locked := not menu_card and _canonical_lesson_id > 0 and _online_content and not bool(_available.get(activity_id, false))
 	var card := PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if not mobile: card.custom_minimum_size = Vector2(0, 378)
@@ -96,7 +136,7 @@ func _activity_card(kicker: String, heading: String, description: String, metada
 	icon_panel.add_theme_stylebox_override("panel", icon_style)
 	icon_wrapper.add_child(icon_panel)
 
-	var icon_name := "quiz" if activity_id == "quiz" else ("game" if activity_id == "rhythm" else "songs")
+	var icon_name := "quiz" if activity_id.begins_with("quiz") else ("game" if activity_id in ["minigame_menu", "rhythm"] else "songs")
 	var icon_tr := _icons8_icon(icon_name, int(box_size * 0.55), color if not locked else C_MUTED)
 	icon_tr.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon_tr.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -137,7 +177,20 @@ func _count_challenges(items: Array, expected: Array) -> int:
 			count += 1
 	return count
 
+func _count_quizzes(items: Array, question_type: String) -> int:
+	var count := 0
+	for value: Variant in items:
+		if value is Dictionary and str((value as Dictionary).get("questionType", (value as Dictionary).get("question_type", "NOTE_IDENTIFICATION"))).to_upper() == question_type:
+			count += 1
+	return count
+
 func _open_activity(activity_id: String) -> void:
+	if activity_id == "quiz_menu":
+		_render_category_picker("quiz")
+		return
+	if activity_id == "minigame_menu":
+		_render_category_picker("minigame")
+		return
 	Context.activity = activity_id
-	var target := "res://scenes/LearningQuizScreen.tscn" if activity_id == "quiz" else ("res://scenes/RhythmChallengeScreen.tscn" if activity_id == "rhythm" else "res://scenes/MelodyCompletionScreen.tscn")
+	var target := "res://scenes/LearningQuizScreen.tscn" if activity_id.begins_with("quiz_") else ("res://scenes/RhythmChallengeScreen.tscn" if activity_id == "rhythm" else "res://scenes/MelodyCompletionScreen.tscn")
 	get_tree().change_scene_to_file(target)

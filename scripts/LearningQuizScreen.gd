@@ -55,7 +55,7 @@ func _ready() -> void:
 	SecureDataManager.load_data()
 	super._ready()
 	_add_quiz_scrim()
-	title_label.text = "QUIZ - NHẬN DIỆN NỐT NHẠC"
+	title_label.text = "QUIZ - %s" % ("KIẾN THỨC NHẠC CỤ" if Context.activity == "quiz_knowledge" else "NHẬN DIỆN NỐT NHẠC")
 
 	# Hide the inherited top panel navbar
 	var top_panel = root_box.get_child(0)
@@ -1034,6 +1034,8 @@ func _filter_valid_quizzes(source: Array) -> Array:
 	for item: Variant in source:
 		if item is Dictionary:
 			var quiz: Dictionary = item
+			if not _matches_selected_quiz_type(quiz):
+				continue
 			var options: Array = _parse_options(quiz.get("options", []))
 			# Quiz BE không gửi correctAnswer cho LEARNER trước khi nộp bài. Chỉ
 			# cần options hợp lệ; backend là nơi chấm điểm sau khi người dùng chọn.
@@ -1049,6 +1051,12 @@ func _filter_valid_quizzes(source: Array) -> Array:
 					str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))),
 				])
 	return valid
+
+func _matches_selected_quiz_type(quiz: Dictionary) -> bool:
+	var question_type := str(quiz.get("questionType", quiz.get("question_type", "NOTE_IDENTIFICATION"))).to_upper().strip_edges()
+	if Context.activity == "quiz_knowledge":
+		return question_type != "NOTE_IDENTIFICATION"
+	return question_type == "NOTE_IDENTIFICATION"
 
 func _resolve_correct_index(quiz: Dictionary, options: Array) -> int:
 	return Context.resolve_correct_index(quiz, options)
