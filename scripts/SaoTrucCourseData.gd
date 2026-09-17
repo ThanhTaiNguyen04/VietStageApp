@@ -5,14 +5,24 @@ const INSTRUMENT_ID := "sao_truc"
 const LESSON_LIST_SCENE := "res://scenes/LessonSaoTrucList.tscn"
 const LessonListScript := preload("res://scripts/LessonSaoTrucList.gd")
 
-# Giữ nguyên các ID mà MainMenu đã dùng để không thay đổi dữ liệu tiến độ hiện có.
+# Ba chặng hiển thị mới. Các giá trị là level cũ trong dữ liệu bài học; giữ nguyên
+# ID bài học để tiến độ và sao đã lưu của học viên không bị mất.
+const LEVEL_GROUPS := {
+	1: [1, 2],
+	2: [3, 4],
+	3: [5, 6]
+}
+
+const LEVEL_LESSON_COUNTS := {
+	1: 9,
+	2: 11,
+	3: 15
+}
+
 const CARD_STEP_IDS := {
-	"basic": ["sao_truc_level1_1_video"],
-	"essentials": ["Node1", "Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"],
-	"soloist": ["sao_truc_level3_1", "sao_truc_level3_2"],
-	"chords": ["sao_truc_level4_1", "sao_truc_level4_2"],
-	"classical": ["sao_truc_level5_1", "sao_truc_level5_2"],
-	"pop_chords": ["Node35", "Node36"]
+	"basic": ["sao_truc_level1_1", "sao_truc_level1_2", "Node2", "Node3", "Node4", "Node5", "Node6", "Node7", "Node8"],
+	"intermediate": ["sao_truc_level3_1", "sao_truc_level3_2", "sao_truc_level3_3", "sao_truc_level3_4", "sao_truc_level3_5", "sao_truc_level3_6", "sao_truc_level4_1", "sao_truc_level4_2", "sao_truc_level4_3", "sao_truc_level4_4", "sao_truc_level4_5"],
+	"advanced": ["sao_truc_level5_1", "sao_truc_level5_2", "sao_truc_level5_3", "sao_truc_level5_4", "sao_truc_level5_5", "sao_truc_level5_6", "sao_truc_level5_7", "Node35", "Node36", "Node37", "Node38", "Node39", "Node40", "Node41", "Node42"]
 }
 
 const INTRO_LESSON_ID := "sao_truc_level1_1_video"
@@ -24,20 +34,12 @@ const INTRO_VIDEO_SEQUENCE := [
 
 const ROADMAP := {
 	"guide": "Lộ trình học tập Sáo Trúc",
-	"soloist_path": "🎵 ĐƯỜNG ĐỘC TẤU (SOLOIST PATH)",
-	"ensemble_path": "🎷 ĐƯỜNG HÒA TẤU (ENSEMBLE PATH)",
-	"basic_title": "LEVEL 1: KHẨU HÌNH MÔI & TẠO ÂM",
-	"basic_description": "Học đặt môi, lấy hơi bụng, cách bấm các lỗ sáo và thổi ra âm thanh tròn trịa.",
-	"essentials_title": "LEVEL 2: BẤM NGÓN & LẤY HƠI",
-	"essentials_description": "Tập bấm các nốt chuẩn thang âm sáo trúc và kiểm soát cột hơi ổn định.",
-	"soloist_title": "LEVEL 3: KHÚC NHẠC VUI",
-	"soloist_description": "✓ Thực hành từng khung nhạc\n✓ Luyện tập cách ghép câu\n✓ Hoàn thiện bài Khúc Nhạc Vui",
-	"chords_title": "LEVEL 4: INH LẢ ƠI",
-	"chords_description": "✓ Thực hành từng câu\n✓ Luyện tập chuyển ngón\n✓ Hoàn thiện bài Inh Lả Ơi",
-	"pop_title": "LEVEL 5: FUTARI NO KIMOCHI",
-	"pop_description": "✓ Thực hành đoạn 1\n✓ Thực hành đoạn 2\n✓ Hoàn thiện bài Futari no Kimochi",
-	"classical_title": "LEVEL 6: GẶP MẸ TRONG MƠ",
-	"classical_description": "✓ Thực hành giai điệu\n✓ Chơi cùng Backing Track\n✓ Hoàn thiện toàn bài"
+	"basic_title": "LEVEL 1: NHẬP MÔN VÀ LÀM QUEN NHẠC CỤ",
+	"basic_description": "Khẩu hình, hơi thở, tư thế cầm sáo và 7 nốt nền tảng.",
+	"intermediate_title": "LEVEL 2: LUYỆN CÁC BÀI CƠ BẢN",
+	"intermediate_description": "Ghép câu, chuyển ngón, giữ nhịp và hoàn thiện Khúc Nhạc Vui, Inh Lả Ơi.",
+	"advanced_title": "LEVEL 3: LUYỆN CÁC BÀI NÂNG CAO",
+	"advanced_description": "Luyện bài dài, kiểm soát hơi và biểu diễn Futari no Kimochi, Gặp Mẹ Trong Mơ."
 }
 
 
@@ -47,7 +49,16 @@ static func get_roadmap_configuration() -> Dictionary:
 
 static func select_level(level_number: int) -> String:
 	LessonListScript.selected_level = level_number
+	var group: Array = LEVEL_GROUPS.get(level_number, [level_number])
+	var source_levels: Array = []
+	for lvl in group:
+		source_levels.append(int(lvl))
+	LessonListScript.selected_source_levels = source_levels
 	return LESSON_LIST_SCENE
+
+
+static func get_level_lesson_count(level_number: int) -> int:
+	return int(LEVEL_LESSON_COUNTS.get(level_number, 0))
 
 
 static func configure_intro(save_data: Dictionary) -> void:

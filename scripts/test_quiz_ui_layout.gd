@@ -34,18 +34,20 @@ func _run_layout_test() -> void:
 	assert(screen.options_box != null, "Options box must exist")
 	assert(screen.options_box.get_child_count() == 4, "Should have 4 option buttons")
 
-	# Assert that QuestionPromptCard and QuizStaffCard exist in content_box
-	var found_prompt_card := false
-	var found_staff_card := false
-	for child in screen.content_box.get_children():
-		if child is PanelContainer:
-			if child.name == "QuestionPromptCard":
-				found_prompt_card = true
-			elif child.name == "QuizStaffCard":
-				found_staff_card = true
+	# Assert that FrostedStage, QuestionPromptCard, and QuizStaffCard exist
+	var frosted_stage := screen.content_box.find_child("FrostedStage", true, false) as Control
+	assert(frosted_stage != null, "FrostedStage must exist inside content_box")
 
-	assert(found_prompt_card, "QuestionPromptCard must exist in content_box")
-	assert(found_staff_card, "QuizStaffCard must exist in content_box")
+	var prompt_card := screen.content_box.find_child("QuestionPromptCard", true, false) as PanelContainer
+	assert(prompt_card != null, "QuestionPromptCard must exist inside FrostedStage")
+
+	var staff_card := screen.content_box.find_child("QuizStaffCard", true, false) as PanelContainer
+	assert(staff_card != null, "QuizStaffCard must exist inside FrostedStage")
+
+	# Check enlarged option button dimensions
+	var first_btn := screen.options_box.get_child(0) as Button
+	assert(first_btn != null, "First option button must exist")
+	assert(first_btn.custom_minimum_size.y >= 74.0, "Option button min height must be >= 74px")
 
 	print("[LayoutTest] LearningQuizScreen UI Layout and Structure PASS!")
 	screen.queue_free()

@@ -47,7 +47,7 @@ theme_override_constants/separation = 8
 alignment = 0
 
 [node name="BtnMenu" type="Button" parent="Root/Sidebar/SideM/SideV"]
-visible = false
+visible = true
 custom_minimum_size = Vector2(220, 100)
 layout_mode = 2
 flat = true
@@ -118,13 +118,6 @@ size_flags_vertical = 4
 theme_override_font_sizes/font_size = 28
 text = "GIÁO TRÌNH ĐÀN BẦU CƠ BẢN"
 vertical_alignment = 1
-
-[node name="ChangeCourseBtn" type="Button" parent="Root/RightContent/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(180, 48)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 18
-text = "Đổi khóa học"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Root/RightContent"]
 layout_mode = 2
