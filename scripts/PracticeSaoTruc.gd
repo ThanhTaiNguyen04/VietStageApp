@@ -103,132 +103,31 @@ var _intro_listen_btn : Button = null
 var _intro_active_note_display_lbl : Label = null
 var _active_note_is_correct := false
 var _active_note_is_heard := false
-const LANES := ["Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si", "Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"]
+const LANES = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_LANES
 
 var _eval_cooldown := 0.0
 var _linh_collapsed := true
 var linh_mini_btn : Button
 var _collapse_timer : SceneTreeTimer = null
 
-const FREQS := {
-	"Đô": 523.25, # C5 (Vietnamese Sáo C5 Đô lowest note)
-	"Rê": 587.33, # D5
-	"Mi": 659.25, # E5
-	"Fa": 698.46, # F5
-	"Sol": 783.99, # G5
-	"La": 880.00, # A5
-	"Si": 987.77,  # B5
-	"Đô2": 1046.50, # C6
-	"Rê2": 1174.66, # D6
-	"Mi2": 1318.51, # E6
-	"Fa2": 1396.91, # F6
-	"Sol2": 1567.98, # G6
-	"La2": 1760.00, # A6
-	"Si2": 1975.53,  # B6
-	"Đô3": 2093.00 # C7
-}
+const FREQS = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_FREQS
 
-const FINGERINGS := {
-	"Đô": [true, true, true, true, true, true],
-	"Rê": [true, true, true, true, true, false],
-	"Mi": [true, true, true, true, false, false],
-	"Fa": [true, true, true, false, false, false],
-	"Sol": [true, true, false, false, false, false],
-	"La": [true, false, false, false, false, false],
-	"Si": [false, false, false, false, false, false],
-	"Đô2": [true, true, true, true, true, true],
-	"Rê2": [true, true, true, true, true, false],
-	"Mi2": [true, true, true, true, false, false],
-	"Fa2": [true, true, true, false, false, false],
-	"Sol2": [true, true, false, false, false, false],
-	"La2": [true, false, false, false, false, false],
-	"Si2": [false, false, false, false, false, false],
-	"Đô3": [true, true, true, true, true, true]
-}
+const FINGERINGS = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_FINGERINGS
 
-const NOTES_VN : Array[String] = [
-	"Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si",
-	"Đô2", "Rê2", "Mi2", "Fa2", "Sol2", "La2", "Si2", "Đô3"
-]
+const NOTES_VN : Array[String] = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_NOTES_VN
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
 static var current_song_durations : Array[float] = []
 static var current_song_bpm := 0.0
 
-var sheet_notes : Array[String] = [
-	"Đô", "Rê", "Mi", "Fa", "Sol", "La", "Si"
-]
+var sheet_notes : Array[String] = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_SHEET_NOTES.duplicate(true)
 
-var sheet_durations : Array[float] = [
-	2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0
-]
+var sheet_durations : Array[float] = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_SHEET_DURATIONS.duplicate(true)
 
-var songs_list : Array[Dictionary] = [
-	{
-		"title": "Inh Lả Ơi",
-		"bpm": 110.0,
-		"sheet": [
-			"Đô2", "La", "Si", "Đô2", "Rest", "Đô2", "Sol", "La", "Rest", "Đô2", "Sol",
-			"Fa", "Đô2", "Si", "La", "Sol", "Rest", "Fa", "La", "Đô2", "Sol",
-			"Sol", "Sol", "Fa", "Fa", "Rest", "Đô2", "Sol", "La", "Rest", "Đô2", "Sol", "Đô2", "Rest"
-		],
-		"durations": [
-			1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-			1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-			1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0
-		]
-	},
-	{
-		"title": "Futari no Kimochi",
-		"bpm": 88.0,
-		"sheet": [
-			"Rê", "Fa", "Sol", "Sol", "Sib", "Đô2", "Rê2", "Fa2", "Rê2", "Đô2", "Sib", "Sol",
-			"Rê2", "Đô2", "Sol", "Rê2", "Đô2", "Sol", "Fa", "Rê",
-			"Rê", "Fa", "Sol", "Sol", "Sib", "Đô2", "Rê2", "Fa2", "Rê2", "Đô2", "Sib", "Sol",
-			"Rê2", "Đô2", "Sol", "Rê2", "Đô2", "Sol", "Fa", "Sol",
-			"Rê2", "Fa2", "Sol2", "Fa2", "Sol2", "La2", "Fa2", "Sol2", "Fa2", "Đô2", "Rê2",
-			"Rê2", "Fa2", "Sol2", "Fa2", "Sol2", "Sib2", "La2", "Fa2", "Rê2",
-			"Rê2", "Fa2", "Sol2", "Fa2", "Sol2", "La2", "Fa2", "Sol2", "Fa2", "Đô2", "Rê2",
-			"Rê2", "Đô2", "Sol", "Rê2", "Đô2", "Sol", "Fa", "Sol"
-		],
-		"durations": [
-			0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 2.0,
-			0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 2.0,
-			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 1.0, 2.0,
-			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-			0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 2.0
-		]
-	},
-	{
-		"title": "Lý Hoài Nam",
-		"bpm": 80.0,
-		"sheet": ["Đô", "Đô", "Rê", "Mi", "Mi", "Fa", "Sol", "Fa", "Mi", "Rê", "Đô"],
-		"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-	},
-	{
-		"title": "Lòng Mẹ",
-		"bpm": 76.0,
-		"sheet": ["Đô", "Mi", "Sol", "La", "Sol", "Mi", "Rê", "Mi", "Rê", "Đô", "Đô"],
-		"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-	},
-	{
-		"title": "Trống Cơm",
-		"bpm": 100.0,
-		"sheet": ["Sol", "La", "Si", "Sol", "La", "Sol", "Fa", "Mi", "Rê", "Mi", "Đô"],
-		"durations": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0]
-	}
-]
+var songs_list : Array[Dictionary] = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_SONGS_LIST.duplicate(true)
 
 const HOLES    := 6
-const SPEECHES : Array[String] = [
-	"Thở đều, môi khép nhẹ.",
-	"Giữ hơi ổn định nhé.",
-	"Tốt lắm, âm rõ rồi.",
-	"Cổ tay thả lỏng, đừng gồng.",
-]
+const SPEECHES : Array[String] = preload("res://scripts/SaoTrucBundledLessonData.gd").PRACTICE_SPEECHES
 
 func _is_rest_note(note: String) -> bool:
 	return note == "Rest" or note == "Nghỉ"

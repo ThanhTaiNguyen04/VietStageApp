@@ -120,10 +120,7 @@ const GLISSANDO_MAX_ATTACK_GAP := 0.45
 const GLISSANDO_MAX_STRING_STEP := 6
 const GLISSANDO_NOTE_COUNT := 6
 const GLISSANDO_MIN_DISTINCT_STRINGS := 6
-const GLISSANDO_ROUNDS := [
-	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch 6 nốt từ dây 1 đến dây 6"},
-	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch 6 nốt từ dây 17 về dây 12"}
-]
+const GLISSANDO_ROUNDS = preload("res://scripts/DanTranhBundledLessonData.gd").GLISSANDO_ROUNDS
 var vibrato_sheet_hud: Control
 var vibrato_instruction_label: Label
 var vibrato_status_label: Label
@@ -141,7 +138,7 @@ var vibrato_consumed_attack_generation := -1
 var vibrato_contour_elapsed := 0.0
 var vibrato_min_amplitude_db := 0.0
 var vibrato_added_sound_elapsed := 0.0
-const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
+const VIBRATO_NOTES: Array[String] = preload("res://scripts/DanTranhBundledLessonData.gd").VIBRATO_NOTES
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
 const VIBRATO_MAX_SIGNAL_GAP := 0.45
@@ -180,16 +177,7 @@ const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
 const PRESS_PENDING_COLOR := Color(0.60, 0.60, 0.60, 0.90)
 const PRESS_NOTES_PER_ROUND := 3
-const PRESS_EXERCISES := [
-	# Lượt 1: mượn ba dây Mi ở ba quãng, nhấn 1/2 cung để ra Fa.
-	{"source": "Mi2", "target": "Fa2", "interval": 100.0, "round": 0, "finger": "2"},
-	{"source": "Mi3", "target": "Fa3", "interval": 100.0, "round": 0, "finger": "2"},
-	{"source": "Mi4", "target": "Fa4", "interval": 100.0, "round": 0, "finger": "2"},
-	# Lượt 2: mượn ba dây La ở ba quãng, nhấn một cung để ra Si.
-	{"source": "La2", "target": "Si2", "interval": 200.0, "round": 1, "finger": "2"},
-	{"source": "La3", "target": "Si3", "interval": 200.0, "round": 1, "finger": "2"},
-	{"source": "La4", "target": "Si4", "interval": 200.0, "round": 1, "finger": "2"}
-]
+const PRESS_EXERCISES = preload("res://scripts/DanTranhBundledLessonData.gd").PRESS_EXERCISES
 var tremolo_sheet_hud: Control
 var tremolo_instruction_label: Label
 var tremolo_status_label: Label
@@ -214,18 +202,7 @@ const TREMOLO_MIN_RATE := 2.5
 const TREMOLO_MAX_RATE := 14.0
 const TREMOLO_MAX_ATTACK_GAP := 0.50
 const TREMOLO_MIN_REGULARITY := 0.35
-const TREMOLO_EXERCISES := [
-	{
-		"mode": "single",
-		"title": "Vê một dây",
-		"groups": [["Đô2"], ["Sol2"], ["Đô3"]]
-	},
-	{
-		"mode": "octave",
-		"title": "Vê hai dây cùng tên nốt",
-		"groups": [["Đô2", "Đô3"], ["Sol2", "Sol3"], ["La2", "La3"]]
-	}
-]
+const TREMOLO_EXERCISES = preload("res://scripts/DanTranhBundledLessonData.gd").TREMOLO_EXERCISES
 var dan_tranh_string_streams: Array = []
 var technique_sample_player: AudioStreamPlayer
 var technique_sample_kind := TechniqueSampleKind.NONE
@@ -331,297 +308,18 @@ var current_speed_multiplier: float = 1.0
 
 const STRINGS = 17
 
-const ALL_17_NOTES: Array[String] = [
-	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
-	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
-	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
-	"Sol4", "La4"
-]
+const ALL_17_NOTES: Array[String] = preload("res://scripts/DanTranhBundledLessonData.gd").ALL_17_NOTES
 
 
-const LESSON_DIALOGUES = {
-	"dan_tranh_level_7_bai_18_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật Á trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật Á là dùng ngón tay phải vuốt nhanh và liên tục qua nhiều dây để tạo thành một chuỗi âm thanh liền mạch.", "highlight": -1},
-		{"action": "speak", "text": "Á xuống là vuốt từ vùng dây có âm cao xuống vùng dây có âm thấp. Á lên là vuốt theo chiều ngược lại, từ âm thấp lên âm cao.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm hai lượt: Á xuống và Á lên. Ứng dụng sẽ nghe đàn thật, kiểm tra hướng vuốt, độ rộng và tính liên tục của chuỗi âm. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-	"dan_tranh_level_1_bai_1_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học đầu tiên, chúng ta sẽ cùng tìm hiểu nhạc cụ đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Đàn Tranh là nhạc cụ dây truyền thống của Việt Nam. Đàn thường có mười sáu hoặc mười chín dây, thân đàn dạng hộp dài hình thang, dài khoảng một trăm mười đến một trăm hai mươi xen-ti-mét. Đầu lớn rộng hơn là nơi mắc dây và đặt cầu đàn; đầu nhỏ có các trục để lên dây.", "highlight": -1},
-		{"action": "speak", "text": "Các bộ phận chính của đàn gồm có mặt đàn, thành và đáy đàn, cầu đàn, nhạn, trục đàn, dây đàn và móng gảy.", "highlight": -1},
-		{"action": "speak", "text": "Mặt đàn làm từ gỗ nhẹ, thường là gỗ ngô đồng, có dạng vồng lên. Thành và đáy đàn làm từ các loại gỗ cứng; đáy đàn có lỗ thoát âm và vị trí cầm hoặc treo đàn.", "highlight": -1},
-		{"action": "speak", "text": "Cầu đàn nằm ở đầu rộng, giúp cố định dây đàn. Nhạn, còn gọi là ngựa đàn, là các thanh gỗ nhỏ đỡ dây trên mặt đàn và có thể di chuyển để điều chỉnh cao độ của từng dây.", "highlight": -1},
-		{"action": "speak", "text": "Trục đàn nằm ở đầu nhỏ, dùng để căng và lên dây. Dây đàn thường làm bằng thép hoặc inox, có độ dày khác nhau để tạo ra âm thanh cao thấp.", "highlight": -1},
-		{"action": "speak", "text": "Móng gảy được đeo ở ngón cái, ngón trỏ và ngón giữa của tay phải để gảy đàn; có thể làm từ đồi mồi, sừng hoặc kim loại.", "highlight": -1},
-		{"action": "speak", "text": "Đàn Tranh có thể diễn tấu giai điệu, gảy quãng tám, chập âm và vuốt dây để tạo âm thanh mềm mại, đặc trưng. Đàn được dùng để độc tấu, hòa tấu hoặc đệm cho hát; phù hợp với dân ca, nhạc truyền thống và cả các tác phẩm hiện đại.", "highlight": -1},
-		{"action": "speak", "text": "Bây giờ, hãy ngồi thẳng lưng và đặt đàn trước mặt. Đầu lớn của đàn nằm phía tay phải. Chúng ta dùng tay phải để gảy và tay trái để nhấn, giữ dây tạo âm vang. Hãy cùng bắt đầu phần thực hành nhé!", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên, hãy làm quen với âm sắc của 5 nốt cơ bản nhất ở quãng trầm của đàn.", "highlight": -1},
-		{"action": "speak", "text": "Dây 1: Nốt Sol1. Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
-		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
-		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy nốt Đô2 ở dây thứ 3 trên đàn.", "highlight": 2},
-		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy nốt Rê2 ở dây thứ 4 trên đàn.", "highlight": 3},
-		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy nốt Mi2 ở dây thứ 5 trên đàn.", "highlight": 4},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành gảy 5 nốt cơ bản đầu tiên của Đàn Tranh!", "highlight": -1}
-	],
+const LESSON_DIALOGUES = preload("res://scripts/DanTranhBundledLessonData.gd").LESSON_DIALOGUES
 
-	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần một.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol một, La một, Đô hai, Rê hai, Mi hai, Sol hai, La hai, Đô ba, Rê ba và Mi ba.", "highlight": -1},
-		{"action": "speak", "text": "Phần này giúp bạn luyện nhận biết và gảy lần lượt các nốt từ Sol một đến Mi ba. Hãy luân phiên ngón số hai rồi ngón số một, bắt đầu bằng ngón hai ở nốt đầu tiên. Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy gảy chậm, rõ tiếng và đúng vị trí từng dây. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
-		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
-		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
-		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy dây 4.", "highlight": 3, "note": "Rê2"},
-		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy dây 5.", "highlight": 4, "note": "Mi2"},
-		{"action": "speak", "text": "Dây 6: Nốt Sol2. Hãy gảy dây 6.", "highlight": 5, "note": "Sol2"},
-		{"action": "speak", "text": "Dây 7: Nốt La2. Hãy gảy dây 7.", "highlight": 6, "note": "La2"},
-		{"action": "speak", "text": "Dây 8: Nốt Đô3. Hãy gảy dây 8.", "highlight": 7, "note": "Đô3"},
-		{"action": "speak", "text": "Dây 9: Nốt Rê3. Hãy gảy dây 9.", "highlight": 8, "note": "Rê3"},
-		{"action": "speak", "text": "Dây 10: Nốt Mi3. Hãy gảy dây 10.", "highlight": 9, "note": "Mi3"},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 10 nốt cơ bản quãng thấp và trung!", "highlight": -1}
-	],
+const SU_THANH_HOA_SHEET: Array[String] = preload("res://scripts/DanTranhBundledLessonData.gd").SU_THANH_HOA_SHEET
 
-	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần hai.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol ba, La ba, Đô bốn, Rê bốn, Mi bốn, Sol bốn và La bốn.", "highlight": -1},
-		{"action": "speak", "text": "Ở phần này, hãy luân phiên ngón số ba, ngón số hai rồi ngón số một, bắt đầu bằng ngón ba ở nốt đầu tiên. Dãy số dưới sheet sẽ là ba, hai, một, ba, hai, một, ba.", "highlight": -1},
-		{"action": "speak", "text": "Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy đổi ngón theo số dưới sheet, gảy rõ tiếng và chú ý không nhầm vị trí các dây cao. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
-		{"action": "speak", "text": "Dây 11: Nốt Sol3. Hãy gảy dây 11.", "highlight": 10, "note": "Sol3"},
-		{"action": "speak", "text": "Dây 12: Nốt La3. Hãy gảy dây 12.", "highlight": 11, "note": "La3"},
-		{"action": "speak", "text": "Dây 13: Nốt Đô4. Hãy gảy dây 13.", "highlight": 12, "note": "Đô4"},
-		{"action": "speak", "text": "Dây 14: Nốt Rê4. Hãy gảy dây 14.", "highlight": 13, "note": "Rê4"},
-		{"action": "speak", "text": "Dây 15: Nốt Mi4. Hãy gảy dây 15.", "highlight": 14, "note": "Mi4"},
-		{"action": "speak", "text": "Dây 16: Nốt Sol4. Hãy gảy dây 16.", "highlight": 15, "note": "Sol4"},
-		{"action": "speak", "text": "Dây 17: Nốt La4. Hãy gảy dây 17.", "highlight": 16, "note": "La4"},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 7 nốt ở âm vực cao!", "highlight": -1}
-	],
+const SU_THANH_HOA_DURATIONS: Array[float] = preload("res://scripts/DanTranhBundledLessonData.gd").SU_THANH_HOA_DURATIONS
 
-	"dan_tranh_level_2_bai_10_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Lý cây đa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy áp dụng các nốt và ngón gảy đã học để luyện nửa đầu bài Lý cây đa. Bạn nên tập chậm từng câu và đếm nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
+const NOTE_TO_STRING = preload("res://scripts/DanTranhBundledLessonData.gd").NOTE_TO_STRING
 
-	"dan_tranh_level_2_bai_11_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Lý cây đa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chú ý tên nốt, nhịp và ngón gảy của từng câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_12_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Lý cây đa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy ghép hai phần đã học để chơi hoàn chỉnh bài Lý cây đa. Bắt đầu chậm, gảy rõ tiếng và giữ nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_13_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Sứ thanh hoa.", "highlight": -1},
-		{"action": "speak", "text": "Ở bài này, chúng ta áp dụng luyện tập các kỹ thuật gảy ngón vào nửa đầu bài Sứ thanh hoa. Hãy tập từng câu nhạc chậm, đúng nốt và đều nhịp. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_14_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Sứ thanh hoa.", "highlight": -1},
-		{"action": "speak", "text": "Chú ý các chỗ đổi ngón, nhấn hoặc nếu có rung dây để giai điệu liền mạch và có cảm xúc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_15_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Sứ thanh hoa.", "highlight": -1},
-		{"action": "speak", "text": "Giờ ghép hai phần đã học để chơi hoàn chỉnh bài Sứ thanh hoa. Hãy giữ nhịp ổn định, gảy rõ nốt và thể hiện kỹ thuật đúng vị trí. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_7_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số một trên năm dây giữa của đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Ngón số một là ngón cái của tay phải. Ngón bốn tỳ nhẹ lên cầu đàn, các ngón còn lại khum tự nhiên; hãy giữ bàn tay và cổ tay thả lỏng khi gảy.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm năm nốt: Sol hai ở dây sáu, La hai ở dây bảy, Đô ba ở dây tám, Rê ba ở dây chín và Mi ba ở dây mười. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_8_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số hai trên năm dây đầu của đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Ngón số hai là ngón trỏ của tay phải. Hãy giữ cổ tay thả lỏng, bàn tay khum tự nhiên và dùng ngón trỏ để gảy từng dây rõ tiếng.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm năm nốt: Sol một ở dây một, La một ở dây hai, Đô hai ở dây ba, Rê hai ở dây bốn và Mi hai ở dây năm. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_9_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số ba trên bảy dây cao của đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Ngón số ba là ngón giữa của tay phải. Hãy giữ bàn tay khum tự nhiên, cổ tay thả lỏng và dùng ngón giữa để gảy từng dây rõ tiếng.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm bảy nốt: Sol ba ở dây mười một, La ba ở dây mười hai, Đô bốn ở dây mười ba, Rê bốn ở dây mười bốn, Mi bốn ở dây mười lăm, Sol bốn ở dây mười sáu và La bốn ở dây mười bảy. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_4_practice": [
-		{"action": "speak", "text": "Chào bạn! Trước khi đọc bản nhạc, chúng ta hãy nhận biết ba âm vực của 17 dây đàn Tranh. Âm vực là vùng âm thanh trầm, trung hoặc cao; khác với quãng là khoảng cách giữa hai nốt.", "highlight": -1},
-		{"action": "speak", "text": "Âm vực trầm gồm các dây 1 đến 5: Sol1, La1, Đô2, Rê2 và Mi2. Đây là nhóm dây có âm thanh thấp nhất trên đàn.", "highlight": -1},
-		{"action": "speak", "text": "Âm vực trung gồm các dây 6 đến 10: Sol2, La2, Đô3, Rê3 và Mi3. Âm vực cao gồm các dây 11 đến 17: Sol3, La3, Đô4, Rê4, Mi4, Sol4 và La4.", "highlight": -1},
-		{"action": "speak", "text": "Các tên nốt có thể lặp lại ở những độ cao khác nhau, chẳng hạn Sol1, Sol2, Sol3 và Sol4. Con số sau tên nốt giúp chúng ta phân biệt đúng dây và đúng âm vực.", "highlight": -1},
-		{"action": "speak", "text": "Khi đọc một bản nhạc, chúng ta còn cần chú ý đến tempo, khóa nhạc và nhịp.", "highlight": -1},
-		{"action": "speak", "text": "Tempo là tốc độ nhanh hoặc chậm của bản nhạc. Tempo có thể được ghi bằng số B P M; ví dụ, sáu mươi B P M chậm hơn một trăm hai mươi B P M. Khi tập đàn, bạn nên bắt đầu chậm, giữ đều nhịp rồi mới tăng tốc.", "highlight": -1, "show_speed": true},
-		{"action": "speak", "text": "Khóa Sol là ký hiệu thường đặt ở đầu khuông nhạc, giúp chúng ta xác định tên và độ cao của các nốt. Dấu khóa này bắt đầu từ dòng thứ hai của khuông nhạc, cho biết đó là vị trí của nốt Sol.", "highlight": -1, "show_staff": true, "clef": true},
-		{"action": "speak", "text": "Nhịp bốn phần tư nghĩa là mỗi ô nhịp có bốn phách và nốt đen được tính là một phách. Ta đếm đều: một, hai, ba, bốn. Phách một thường mạnh hơn các phách còn lại.", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Nhịp hai phần tư nghĩa là mỗi ô nhịp có hai phách và nốt đen cũng được tính là một phách. Ta đếm: một, hai; trong đó phách một mạnh và phách hai nhẹ hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
-		{"action": "speak", "text": "Hiểu tempo và nhịp sẽ giúp chúng ta gảy đàn đúng tốc độ, đúng điểm rơi của phách. Khóa Sol giúp chúng ta đọc đúng nốt trên bản nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Bây giờ chúng ta cùng luyện tập theo nhịp 4/4. Ta sẽ gảy nốt Sol2, đếm 1-2-3-4 cho mỗi ô nhịp. Hãy gảy nốt Sol2.", "highlight": 0, "note": "Sol2", "time_sig": 4},
-		{"action": "speak", "text": "Gảy nốt La2 giữ đều nhịp 4/4.", "highlight": 1, "note": "La2", "time_sig": 4},
-		{"action": "speak", "text": "Gảy nốt Đô3 giữ đều nhịp 4/4.", "highlight": 2, "note": "Đô3", "time_sig": 4},
-		{"action": "speak", "text": "Gảy nốt Rê3 giữ đều nhịp 4/4.", "highlight": 3, "note": "Rê3", "time_sig": 4},
-		{"action": "speak", "text": "Tiếp tục với nhịp 4/4: nốt Mi3.", "highlight": 4, "note": "Mi3", "time_sig": 4},
-		{"action": "speak", "text": "Rồi nốt Rê3, giữ nhịp đều.", "highlight": 5, "note": "Rê3", "time_sig": 4},
-		{"action": "speak", "text": "Nốt Đô3, giữ nhịp đều.", "highlight": 6, "note": "Đô3", "time_sig": 4},
-		{"action": "speak", "text": "Nốt La2, giữ nhịp đều.", "highlight": 7, "note": "La2", "time_sig": 4},
-		{"action": "speak", "text": "Giờ chuyển sang nhịp 2/4, nhanh gọn hơn: gảy nốt Sol2.", "highlight": 8, "note": "Sol2", "time_sig": 2},
-		{"action": "speak", "text": "Nốt La2 theo nhịp 2/4.", "highlight": 9, "note": "La2", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Đô3 theo nhịp 2/4.", "highlight": 10, "note": "Đô3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 11, "note": "Rê3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Mi3 theo nhịp 2/4.", "highlight": 12, "note": "Mi3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Sol3 theo nhịp 2/4.", "highlight": 13, "note": "Sol3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 14, "note": "Rê3", "time_sig": 2},
-		{"action": "speak", "text": "Và cuối cùng nốt Đô3, giữ nhịp 2/4 thật đều.", "highlight": 15, "note": "Đô3", "time_sig": 2},
-		{"action": "speak", "text": "Tuyệt vời! Tóm lại: 17 dây đàn được chia thành âm vực trầm, trung và cao; tempo là tốc độ bài nhạc; khóa Sol xác định vị trí nốt trên khuông; nhịp 4/4 có 4 phách mỗi ô và nhịp 2/4 có 2 phách mỗi ô. Bạn đã hoàn thành bài học!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_5_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu nhịp điệu cơ bản và trường độ của nốt nhạc.", "highlight": -1},
-		{"action": "speak", "text": "Trường độ là độ dài ngắn của âm thanh. Khi gảy một nốt trên đàn Tranh, chúng ta cần biết âm đó kéo dài bao lâu trước khi chuyển sang nốt tiếp theo.", "highlight": -1},
-		{"action": "speak", "text": "Trong nhịp bốn phần tư, nốt trắng dài hai phách; nốt đen dài một phách; nốt móc đơn dài nửa phách và hai nốt móc đơn bằng một nốt đen.", "highlight": -1},
-		{"action": "speak", "text": "Nốt móc kép dài một phần tư phách và bốn nốt móc kép bằng một nốt đen. Bạn có thể hiểu đơn giản: nốt càng nhiều móc thì âm càng ngắn và cần gảy nhanh hơn.", "highlight": -1},
-		{"action": "speak", "text": "Khi chơi đàn Tranh, hãy đếm đều nhịp trong đầu. Với nốt dài, chúng ta chỉ gảy một lần rồi để tiếng đàn ngân đủ số phách, không gảy lặp lại nhiều lần. Hiểu đúng trường độ sẽ giúp bản nhạc đều nhịp, rõ ràng và dễ nghe hơn. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên là Nốt Trắng. Nốt trắng có đầu hình bầu dục rỗng, có thân nốt, kéo dài 2 phách. Hãy gảy nốt Đô2 và giữ âm vang 2 phách.", "highlight": 0, "note": "Đô2", "type": "half"},
-		{"action": "speak", "text": "Thêm một nốt trắng nữa. Hãy gảy nốt Đô2 và giữ 2 phách nhé.", "highlight": 1, "note": "Đô2", "type": "half"},
-		{"action": "speak", "text": "Tiếp theo là Nốt Đen. Nốt đen có đầu hình bầu dục đặc, có thân nốt, kéo dài 1 phách. Hãy gảy nốt Rê2.", "highlight": 2, "note": "Rê2", "type": "quarter"},
-		{"action": "speak", "text": "Gảy thêm nốt đen Mi2 – 1 phách.", "highlight": 3, "note": "Mi2", "type": "quarter"},
-		{"action": "speak", "text": "Và thêm nốt đen Mi2 – 1 phách.", "highlight": 4, "note": "Mi2", "type": "quarter"},
-		{"action": "speak", "text": "Gảy nốt đen Sol2 – 1 phách.", "highlight": 5, "note": "Sol2", "type": "quarter"},
-		{"action": "speak", "text": "Bây giờ là Nốt Móc Đơn. Nốt móc đơn có đầu đặc, thân nốt và 1 móc, kéo dài nửa phách. Hãy gảy nhanh nốt Sol2.", "highlight": 6, "note": "Sol2", "type": "eighth"},
-		{"action": "speak", "text": "Thêm nốt móc đơn Sol2 – nửa phách.", "highlight": 7, "note": "Sol2", "type": "eighth"},
-		{"action": "speak", "text": "Và nốt móc đơn Sol2 – nửa phách.", "highlight": 8, "note": "Sol2", "type": "eighth"},
-		{"action": "speak", "text": "Cuối cùng là Nốt Móc Kép. Nốt móc kép có đầu đặc, thân nốt và 2 móc, kéo dài một phần tư phách. Rất nhanh! Hãy gảy nốt La2.", "highlight": 9, "note": "La2", "type": "sixteenth"},
-		{"action": "speak", "text": "Gảy thêm nốt móc kép La2.", "highlight": 10, "note": "La2", "type": "sixteenth"},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành bài học nhận diện trường độ. Tóm lại: Nốt trắng bằng 2 phách, nốt đen bằng 1 phách, nốt móc đơn bằng nửa phách, nốt móc kép bằng một phần tư phách.", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_4_practice": [
-		{"action": "speak", "text": "Chào mừng bạn học về trường độ nốt Đen (1 phách) và nốt Trắng (2 phách).", "highlight": -1},
-		{"action": "speak", "text": "Nốt trắng sẽ kéo dài gấp đôi nốt đen. Hãy chú ý giữ âm vang của dây khi gảy nốt trắng nhé.", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_5_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với Bài 5: Hệ thống nốt cơ bản và xác định vị trí nốt trên Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Đàn Tranh của chúng ta có 17 dây, được lên theo thang ngũ cung: Sol - La - Đô - Rê - Mi ở các quãng khác nhau.", "highlight": -1},
-		{"action": "speak", "text": "Trong âm nhạc chuẩn quốc tế có 7 nốt cơ bản: Đô, Rê, Mi, Fa, Sol, La, Si ký hiệu lần lượt là C, D, E, F, G, A, B.", "highlight": -1},
-		{"action": "speak", "text": "Để chơi các nốt Fa và Si trên đàn Tranh, ta sẽ gảy các dây Mi và La tương ứng rồi dùng tay trái nhấn nhẹ dây bên trái nhạn đàn để nâng cao độ.", "highlight": -1},
-		{"action": "speak", "text": "Bây giờ, chúng ta sẽ tập luyện xác định vị trí nốt. Tôi sẽ gảy trước một nốt, sau đó bạn hãy gảy lặp lại nốt đó nhé. Đầu tiên là nốt Đô 2 ở dây số 3.", "highlight": 2, "note": "Đô2"},
-		{"action": "speak", "text": "Tiếp theo là nốt Rê 2 ở dây số 4.", "highlight": 3, "note": "Rê2"},
-		{"action": "speak", "text": "Nốt Mi 2 ở dây số 5.", "highlight": 4, "note": "Mi2"},
-		{"action": "speak", "text": "Nốt Fa 2. Hãy gảy dây Mi 2 (dây 5) và nhấn nhẹ tay trái để tạo ra cao độ nốt Fa 2 nhé.", "highlight": 4, "note": "Fa2"},
-		{"action": "speak", "text": "Nốt Sol 2 ở dây số 6.", "highlight": 5, "note": "Sol2"},
-		{"action": "speak", "text": "Nốt La 2 ở dây số 7.", "highlight": 6, "note": "La2"},
-		{"action": "speak", "text": "Nốt Si 2. Hãy gảy dây La 2 (dây 7) và dùng tay trái nhấn để tạo ra cao độ nốt Si 2.", "highlight": 6, "note": "Si2"},
-		{"action": "speak", "text": "Và nốt Đô 3 ở dây số 8.", "highlight": 7, "note": "Đô3"},
-		{"action": "speak", "text": "Sau đây là thử thách Mini Game: Hãy tìm nốt Sol 2 trên đàn và chọn gảy dây tương ứng nhé!", "highlight": 5, "note": "Sol2"},
-		{"action": "speak", "text": "Rất tốt! Tiếp theo là Bài 2.3: Học viên nhận biết các nốt cùng tên ở các quãng khác nhau (khác cao độ).", "highlight": -1},
-		{"action": "speak", "text": "Ví dụ: Đô thấp ở dây số 3. Hãy gảy nốt Đô 2.", "highlight": 2, "note": "Đô2"},
-		{"action": "speak", "text": "Đô trung ở dây số 8. Hãy gảy nốt Đô 3.", "highlight": 7, "note": "Đô3"},
-		{"action": "speak", "text": "Và Đô cao ở dây số 13. Hãy gảy nốt Đô 4.", "highlight": 12, "note": "Đô4"},
-		{"action": "speak", "text": "Tuyệt vời! Nhận biết nốt cùng tên ở các quãng khác nhau là kiến thức nền để học các kỹ thuật: Song thanh, Vê, Quãng, Chuyển âm vực sau này. Bây giờ hãy luyện tập chơi chuỗi nốt nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_6_practice": [
-		{"action": "speak", "text": "Hãy làm quen với nhịp 4/4 tiêu chuẩn và khuông nhạc khóa Sol.", "highlight": -1},
-		{"action": "speak", "text": "Mỗi ô nhịp có 4 phách. Hãy tập trung nghe nhịp gõ và gảy thật đều đặn.", "highlight": -1}
-	],
-
-	"dan_tranh_level_3_bai_7_practice": [
-		{"action": "speak", "text": "Chào mừng đến với thử thách luyện ngón tốc độ cao với bài nhạc Mã Vũ.", "highlight": -1},
-		{"action": "speak", "text": "Bạn cần gảy nhanh, dứt khoát và di chuyển ngón tay linh hoạt qua các quãng xa.", "highlight": -1}
-	],
-
-	"dan_tranh_level_4_bai_9_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ học kỹ thuật nhấn Rung tay trái đặc trưng của Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Sau khi tay phải gảy nốt, hãy dùng các ngón tay trái nhấn nhẹ liên tục lên phần dây bên trái nhạn đàn.", "highlight": -1}
-	],
-
-	"dan_tranh_level_7_bai_19_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật nhấn trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật nhấn là dùng tay trái ấn dây ở phía bên trái của nhạn để nâng cao độ của âm thanh sau khi tay phải gảy dây.", "highlight": -1},
-		{"action": "speak", "text": "Nhờ kỹ thuật này, đàn Tranh có thể tạo ra những nốt không có sẵn trên dây. Ví dụ, nhấn dây La để lên nốt Si, hoặc nhấn dây Mi để lên nốt Fa.", "highlight": -1},
-		{"action": "speak", "text": "Khi thực hiện, tay phải gảy dây trước, sau đó tay trái nhấn nhẹ và đều đến đúng cao độ. Không nhấn quá mạnh vì tiếng đàn có thể bị gắt hoặc cao độ bị lệch. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_7_bai_20_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật song thanh trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Song thanh là kỹ thuật gảy để hai nốt cùng phát ra một lúc. Song thanh truyền thống thường sử dụng quãng tám; các nhạc sĩ hiện đại còn kết hợp thêm những quãng khác.", "highlight": -1},
-		{"action": "speak", "text": "Trong bài này, chúng ta dùng ngón 1 và ngón 2 của tay phải để gảy đồng thời hai dây.", "highlight": -1},
-		{"action": "speak", "text": "Khi thực hiện, hai tiếng phải phát ra đồng thời, không bị chênh nhau và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_7_bai_21_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật rung dây trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật rung dây tạo tiếng đàn ngân liên tục, mềm mại và giàu cảm xúc. Có hai kiểu rung chính: rung nhanh với biên độ hẹp và rung chậm với biên độ rộng. Trong bài này, chúng ta luyện kiểu rung để thể hiện nét vui của giai điệu.", "highlight": -1},
-		{"action": "speak", "text": "Sau khi tay phải gảy dây, tay trái rung ngay để tiếng đàn không bị ngắt quãng. Dùng ngón trỏ và ngón giữa tay trái đặt nhẹ lên dây ở phía bên trái nhạn, cách nhạn khoảng mười xen-ti-mét. Không tỳ mạnh xuống dây vì có thể làm sai cao độ.", "highlight": -1},
-		{"action": "speak", "text": "Giữ cổ tay và các ngón tay mềm mại. Dùng hai ngón tay nhồi dây nhẹ nhàng lên xuống, đều tay, để tiếng rung tự nhiên và kéo dài. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_30_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật vê trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật vê là gảy luân phiên thật nhanh và liên tục bằng hai ngón tay phải để tạo tiếng đàn ngân dài, dày và liền mạch.", "highlight": -1},
-		{"action": "speak", "text": "Có hai cách vê cơ bản. Vê một dây là hai ngón thay phiên gảy trên cùng một dây.", "highlight": -1},
-		{"action": "speak", "text": "Vê quãng tám là hai ngón thay phiên gảy trên hai dây cùng tên nốt nhưng khác quãng, ví dụ nốt Đô thấp và nốt Đô cao.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật vê thường dùng để giữ âm, làm nổi bật giai điệu và tăng cảm xúc cho câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_31_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm ba âm cơ bản trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm ba âm là ba nốt khác nhau được gảy cùng lúc, tạo âm thanh đầy đặn hơn một nốt đơn.", "highlight": -1},
-		{"action": "speak", "text": "Trong bài này, chúng ta làm quen với hai hợp âm cơ bản để hiểu thêm về cách hòa âm trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Phần hợp âm ba âm này được học để bạn biết thêm về khả năng tạo âm thanh hợp âm của đàn Tranh; nội dung này không áp dụng vào kiến thức nhạc cụ dân tộc Việt Nam. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_32_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm Đô trưởng.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm Đô trưởng gồm ba nốt: Đô, Mi và Sol.", "highlight": -1},
-		{"action": "speak", "text": "Khi gảy, hãy cố gắng để cả ba nốt vang lên cùng lúc và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_33_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm La thứ.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm La thứ gồm ba nốt: La, Đô và Mi.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm này có màu sắc nhẹ nhàng và trầm hơn hợp âm Đô trưởng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_5_bai_12_practice": [
-		{"action": "speak", "text": "Thử thách độc tấu trọn vẹn tác phẩm Sứ Thanh Hoa!", "highlight": -1},
-		{"action": "speak", "text": "Hãy kết hợp toàn bộ kỹ thuật tay phải gảy ngón và nhấn rung tay trái để hoàn thành bài nhạc xuất sắc nhất.", "highlight": -1}
-	]
-}
-
-const SU_THANH_HOA_SHEET: Array[String] = [
-	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-	"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-	"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-	"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-	"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
-]
-
-const SU_THANH_HOA_DURATIONS: Array[float] = [
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
-	0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
-	1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
-]
-
-const NOTE_TO_STRING = {
-	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4, "Fa2": 4,
-	"Sol2": 5, "La2": 6, "Si2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9, "Fa3": 9,
-	"Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14, "Fa4": 14,
-	"Sol4": 15, "La4": 16, "Si4": 16
-}
-
-const NOTE_FREQS = {
-	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88, "Đô3": 523.25,
-	"Rê3": 587.33, "Mi3": 659.25, "Fa3": 698.46, "Sol3": 783.99, "La3": 880.00,
-	"Si3": 987.77, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51, "Fa4": 1396.91,
-	"Sol4": 1567.98, "La4": 1760.00, "Si4": 1975.53
-}
+const NOTE_FREQS = preload("res://scripts/DanTranhBundledLessonData.gd").NOTE_FREQS
 
 func _ready():
 	# The lesson covers every real string from Sol1 (196 Hz) to La4 (1760 Hz).
