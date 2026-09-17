@@ -133,6 +133,8 @@ var _profile_avatar_request : HTTPRequest = null
 var _requested_profile_avatar_url := ""
 var _api_client = null
 var _cosmetics_all: Array = []
+var _cosmetics_loading := false
+var _cosmetics_account_ready := false
 var _cosmetics_owned: Array = []
 var _cosmetics_locked: Array = []
 var _cosmetic_textures: Dictionary = {}
@@ -2538,12 +2540,11 @@ func _make_btn_bouncy(btn: Button) -> void:
 
 
 func _fetch_cosmetics_data() -> void:
-	if _api_client == null:
+	if _api_client == null or _cosmetics_loading:
 		return
-	
-	_cosmetics_all = []
-	_cosmetics_owned = []
-	_cosmetics_locked = []
+	_cosmetics_loading = true
+	_cosmetics_account_ready = false
+	_set_shop_status("Đang tải cửa hàng...", false)
 	
 	if BackendReport.is_signed_in():
 		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
@@ -2553,6 +2554,15 @@ func _fetch_cosmetics_data() -> void:
 		var my_response = await _api_client.get_my_cosmetics()
 		if _api_client._is_success(my_response):
 			var body = my_response.get("body", {}).get("data", {})
+			if not body is Dictionary or not body.get("owned") is Array or not body.get("locked") is Array or not (typeof(body.get("totalStars")) in [TYPE_INT, TYPE_FLOAT]) or not (typeof(body.get("spendableStars")) in [TYPE_INT, TYPE_FLOAT]):
+				_cosmetics_loading = false
+				push_warning("[Cosmetics] GET /api/users/me/cosmetics: invalid response schema (stars/owned/locked)")
+				_set_shop_status("Dữ liệu số sao hoặc vật phẩm không hợp lệ. Tạm thời chưa thể mua hoặc trang bị.", true)
+				if shop_popup and shop_popup.visible:
+					_update_shop_items()
+				return
+			_cosmetics_account_ready = true
+			_set_shop_status("", false)
 			if body is Dictionary:
 				SecureDataManager.apply_backend_reward(body)
 			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []))
@@ -2570,7 +2580,13 @@ func _fetch_cosmetics_data() -> void:
 			if _api_client._is_success(layout_response):
 				_apply_backend_cosmetic_layout(layout_response.get("body", {}).get("data", {}))
 		else:
-			_set_shop_status(_api_client.error_message(my_response, "Không thể tải vật phẩm đã sở hữu."), true)
+			var status := int(my_response.get("status", 0))
+			if status == 401:
+				_set_shop_status("Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại để dùng cửa hàng.", true)
+			elif status == 403:
+				_set_shop_status("Tài khoản chưa được phép truy cập vật phẩm. Vui lòng liên hệ hỗ trợ.", true)
+			else:
+				_set_shop_status("Chưa tải được số sao và vật phẩm đã sở hữu. Tạm thời chưa thể mua hoặc trang bị.", true)
 	else:
 		# Nếu backend bảo vệ catalog bằng Bearer token, người chưa đăng nhập sẽ thấy yêu cầu đăng nhập.
 		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
@@ -2578,6 +2594,7 @@ func _fetch_cosmetics_data() -> void:
 			var all_items = _filter_room_decor_items(response.get("body", {}).get("data", []))
 			_cosmetics_all = all_items
 			_cosmetics_locked = all_items
+			_set_shop_status("Đăng nhập để mua hoặc trang bị vật phẩm.", false)
 		else:
 			_set_shop_status("Đăng nhập để xem và sử dụng cửa hàng trang trí.", true)
 
@@ -2585,7 +2602,9 @@ func _fetch_cosmetics_data() -> void:
 		_queue_cosmetic_texture(cosmetic)
 			
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
-	_spawn_decorations()
+	_cosmetics_loading = false
+	if _cosmetics_account_ready:
+		_spawn_decorations()
 	if shop_popup and shop_popup.visible:
 		_update_shop_items()
 
@@ -2850,7 +2869,8 @@ func _setup_hud_shop_button() -> void:
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
-	badge_label.add_theme_color_override("font_color", Color(0.13, 0.08, 0.05, 1.0))
+	# Match the star count to the "Cửa hàng" label in the same HUD.
+	badge_label.add_theme_color_override("font_color", C_JADE)
 	if _font_body_bold:
 		badge_label.add_theme_font_override("font", _font_body_bold)
 	badge_hbox.add_child(badge_label)
@@ -3425,7 +3445,7 @@ func _setup_shop_popup() -> void:
 	
 	var stars_val_label := Label.new()
 	stars_val_label.name = "StarsValLabel"
-	stars_val_label.text = "%d Sao" % SecureDataManager.get_spendable_stars()
+	stars_val_label.text = "%d Sao" % SecureDataManager.get_spendable_stars() if _cosmetics_account_ready else "— Sao"
 	stars_val_label.add_theme_font_size_override("font_size", 14)
 	stars_val_label.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
@@ -3477,6 +3497,9 @@ func _setup_shop_popup() -> void:
 	)
 
 func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
+	if not _cosmetics_account_ready or _cosmetics_loading:
+		_set_shop_status("Chưa tải được số sao và vật phẩm đã sở hữu. Tạm thời chưa thể mua hoặc trang bị.", true)
+		return
 	var cosmetic_id := int(item.get("id", 0))
 	if cosmetic_id == 0:
 		return
@@ -3525,7 +3548,7 @@ func _update_shop_items() -> void:
 	var stars = SecureDataManager.get_spendable_stars()
 	var stars_val_label = shop_popup.get_node_or_null("ScrollPanel/ScrollContent/StarsContainer/StarsValLabel") as Label
 	if stars_val_label:
-		stars_val_label.text = "%d Sao" % stars
+		stars_val_label.text = "%d Sao" % stars if _cosmetics_account_ready else "— Sao"
 		
 	var grid = shop_popup.get_node("ScrollPanel/ScrollContent/ShopScroll/Grid") as GridContainer
 	if not grid:
@@ -3536,6 +3559,11 @@ func _update_shop_items() -> void:
 		c.queue_free()
 		
 	# 1. Vẽ các vật phẩm đã sở hữu
+	if not _cosmetics_account_ready:
+		# Catalog is safe to browse; it does not establish ownership or balance.
+		for item in _cosmetics_all:
+			grid.add_child(_create_shop_card(item, false, stars))
+		return
 	for item in _cosmetics_owned:
 		var card = _create_shop_card(item, true, stars)
 		grid.add_child(card)
@@ -3657,6 +3685,10 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		btn.disabled = true
 	elif not BackendReport.is_signed_in():
 		btn.text = "ĐĂNG NHẬP ĐỂ MỞ KHÓA"
+		_style_disabled_button(btn)
+		btn.disabled = true
+	elif not _cosmetics_account_ready or _cosmetics_loading:
+		btn.text = "CHƯA TẢI ĐƯỢC SỐ SAO"
 		_style_disabled_button(btn)
 		btn.disabled = true
 	elif not owned:
@@ -3784,6 +3816,15 @@ func _start_intro_cinematic() -> void:
 	if not is_instance_valid(_audio_manager): return
 	_has_played_intro = true
 	_is_in_intro = true
+	# The welcome is a non-interactive cinematic. Unlike the shop and star
+	# indicators, the profile avatar must not float above the dim layer.
+	_close_profile_quick_menu()
+	var profile_pill := get_node_or_null("HUD/HUDHBox/ProfilePill") as Control
+	if profile_pill:
+		profile_pill.visible = false
+	# Mai remains the speaker of this cinematic: show her beside the subtitle,
+	# above the room dimmer but below the text panel itself.
+	char_linh.z_index = 50
 	var dim_overlay = ColorRect.new()
 	dim_overlay.name = "IntroDimOverlay"
 	dim_overlay.color = Color(0, 0, 0, 0)
@@ -3848,7 +3889,7 @@ func _start_intro_cinematic() -> void:
 			
 	var skip_btn = Button.new()
 	skip_btn.name = "IntroSkipBtn"
-	skip_btn.text = "Bỏ qua >>"
+	skip_btn.text = "Bỏ qua"
 	skip_btn.add_theme_font_size_override("font_size", 16)
 	if _font_body_bold: skip_btn.add_theme_font_override("font", _font_body_bold)
 	
@@ -3920,6 +3961,9 @@ func _end_intro_cinematic() -> void:
 		if dim_overlay: dim_overlay.queue_free()
 		if subtitle: subtitle.queue_free()
 		if skip_btn: skip_btn.queue_free()
+		var profile_pill := get_node_or_null("HUD/HUDHBox/ProfilePill") as Control
+		if profile_pill:
+			profile_pill.visible = true
 		char_linh.z_index = 0
 		_on_viewport_size_changed()
 	)

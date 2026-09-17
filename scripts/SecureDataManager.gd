@@ -260,6 +260,7 @@ static func resolve_backend_progress_item(item: Dictionary) -> Dictionary:
 	var title_instrument := _normalize_instrument_key(str(item.get("title", "")))
 	if not title_instrument.is_empty() and not direct_node.is_empty():
 		return {"instrument": title_instrument, "node_id": direct_node, "source": "title_fallback"}
+	
 	return {}
 
 

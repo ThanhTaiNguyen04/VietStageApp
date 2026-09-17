@@ -426,7 +426,24 @@ func get_all_cosmetics(item_type: String = "ROOM_DECOR") -> Dictionary:
 
 ## Lấy danh sách trang bị sở hữu
 func get_my_cosmetics() -> Dictionary:
-	return await request_json(ApiRoutes.build(ApiRoutes.MY_COSMETICS), HTTPClient.METHOD_GET)
+	# Ownership and spendable stars must be verified online, never from GET cache.
+	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS)
+	var response: Dictionary = {}
+	for attempt in range(3):
+		response = await _request_raw(path, HTTPClient.METHOD_GET, {}, true)
+		if int(response.get("status", 0)) == 401 and AuthSessionStore.can_refresh():
+			var refreshed := await refresh_session()
+			if _is_success(refreshed):
+				response = await _request_raw(path, HTTPClient.METHOD_GET, {}, true)
+		if _is_success(response):
+			return response
+		var status := int(response.get("status", 0))
+		# Do not print response bodies: they may contain account data or credentials.
+		push_warning("[Cosmetics] GET %s HTTP=%d attempt=%d" % [path, status, attempt + 1])
+		if status not in [0, 408, 500, 502, 503, 504] or attempt == 2:
+			break
+		await get_tree().create_timer(float(attempt + 1)).timeout
+	return response
 
 ## Mua vật phẩm. Backend cần triển khai contract này; OpenAPI hiện tại chưa có endpoint mua.
 func purchase_cosmetic(cosmetic_id: int, client_request_id: String) -> Dictionary:

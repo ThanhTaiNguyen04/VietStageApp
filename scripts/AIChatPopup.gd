@@ -10,6 +10,8 @@ const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # golden yellow
 const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0) # bright gold
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_TEXT_MUTED  := Color(0.43, 0.38, 0.33, 1.0)
+# Exact colour used by the VirtualMusicRoom "Cửa hàng" label.
+const C_ROOM_HUD_TEXT := Color("#173f2d")
 
 # AI Chat Managers
 var ai_manager : AIManager
@@ -172,7 +174,8 @@ func _build_ui() -> void:
 	title_lbl.text = "Trò chuyện với nghệ sĩ ảo cô Mai"
 	title_lbl.add_theme_font_override("font", _font_title)
 	title_lbl.add_theme_font_size_override("font_size", 26)
-	title_lbl.add_theme_color_override("font_color", C_CREAM)
+	# Keep Mai's identity labels consistent with the room's "Cửa hàng" label.
+	title_lbl.add_theme_color_override("font_color", C_ROOM_HUD_TEXT)
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title_lbl)
 	
@@ -227,7 +230,7 @@ func _build_ui() -> void:
 	artist_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	artist_caption.add_theme_font_override("font", _font_body_bold)
 	artist_caption.add_theme_font_size_override("font_size", 16)
-	artist_caption.add_theme_color_override("font_color", Color(1.0, 0.92, 0.67, 1.0))
+	artist_caption.add_theme_color_override("font_color", C_ROOM_HUD_TEXT)
 	artist_caption.add_theme_color_override("font_outline_color", Color(0.05, 0.16, 0.10, 0.95))
 	artist_caption.add_theme_constant_override("outline_size", 4)
 	left_col.add_child(artist_caption)
@@ -237,7 +240,7 @@ func _build_ui() -> void:
 	ai_status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ai_status_lbl.add_theme_font_override("font", _font_body_bold)
 	ai_status_lbl.add_theme_font_size_override("font_size", 13)
-	ai_status_lbl.add_theme_color_override("font_color", C_GOLD_LIGHT)
+	ai_status_lbl.add_theme_color_override("font_color", C_ROOM_HUD_TEXT)
 	left_col.add_child(ai_status_lbl)
 
 	var dialogue_divider := ColorRect.new()
@@ -277,15 +280,6 @@ func _build_ui() -> void:
 	ai_chat_log.add_theme_constant_override("line_separation", 8)
 	log_margin.add_child(ai_chat_log)
 
-	# Suggested prompts preserve free-form chat while giving learners an easy starting point.
-	var quick_actions = HFlowContainer.new()
-	quick_actions.add_theme_constant_override("h_separation", 8)
-	quick_actions.add_theme_constant_override("v_separation", 8)
-	right_col.add_child(quick_actions)
-	_add_quick_prompt(quick_actions, "Chọn nhạc cụ", "Cô Mai, hãy giới thiệu các nhạc cụ trong phòng học.")
-	_add_quick_prompt(quick_actions, "Kỹ thuật cơ bản", "Cô Mai, hãy hướng dẫn cho em một kỹ thuật cơ bản.")
-	_add_quick_prompt(quick_actions, "Bắt đầu luyện tập", "Cô Mai, em nên bắt đầu luyện tập như thế nào?")
-	
 	var input_row = HBoxContainer.new()
 	input_row.add_theme_constant_override("separation", 10)
 	right_col.add_child(input_row)
@@ -859,7 +853,7 @@ func _update_status(status_text: String) -> void:
 	ai_status_lbl.text = status_text
 	match status_text:
 		"Đang chờ lệnh thoại...":
-			ai_status_lbl.add_theme_color_override("font_color", Color(0.3, 0.6, 0.9))
+			ai_status_lbl.add_theme_color_override("font_color", C_ROOM_HUD_TEXT)
 		"Mai nghe đây":
 			ai_status_lbl.add_theme_color_override("font_color", Color(0.2, 0.7, 0.4))
 		"Đang nghe...":

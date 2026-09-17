@@ -1,6 +1,8 @@
 extends Control
 class_name LessonDanTranh
 
+const COURSE_API_ADAPTER = preload("res://scripts/DanTranhApiAdapter.gd")
+
 const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
 const C_JADE = Color("#173f2d")
@@ -61,6 +63,7 @@ var pitch_meter: Control
 var force_mobile_audio_fallback_for_tests := false
 var staff_card: PanelContainer
 var title_plaque: PanelContainer
+var title_main_label: Label
 var pill_badge: PanelContainer
 var sub_instr_row: HBoxContainer
 var intro_overlay: ColorRect
@@ -117,10 +120,7 @@ const GLISSANDO_MAX_ATTACK_GAP := 0.45
 const GLISSANDO_MAX_STRING_STEP := 6
 const GLISSANDO_NOTE_COUNT := 6
 const GLISSANDO_MIN_DISTINCT_STRINGS := 6
-const GLISSANDO_ROUNDS := [
-	{"mode": "down", "title": "Á xuống", "instruction": "Vuốt liền mạch 6 nốt từ dây 1 đến dây 6"},
-	{"mode": "up", "title": "Á lên", "instruction": "Vuốt liền mạch 6 nốt từ dây 17 về dây 12"}
-]
+const GLISSANDO_ROUNDS = preload("res://scripts/DanTranhBundledLessonData.gd").GLISSANDO_ROUNDS
 var vibrato_sheet_hud: Control
 var vibrato_instruction_label: Label
 var vibrato_status_label: Label
@@ -138,7 +138,7 @@ var vibrato_consumed_attack_generation := -1
 var vibrato_contour_elapsed := 0.0
 var vibrato_min_amplitude_db := 0.0
 var vibrato_added_sound_elapsed := 0.0
-const VIBRATO_NOTES: Array[String] = ["Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3"]
+const VIBRATO_NOTES: Array[String] = preload("res://scripts/DanTranhBundledLessonData.gd").VIBRATO_NOTES
 const VIBRATO_SAMPLE_INTERVAL := 0.025
 const VIBRATO_ATTEMPT_TIMEOUT := 5.0
 const VIBRATO_MAX_SIGNAL_GAP := 0.45
@@ -150,6 +150,7 @@ const VIBRATO_MIN_RAW_CENTS := -40.0
 var press_sheet_hud: Control
 var press_instruction_label: Label
 var press_status_label: Label
+var press_round_hint_label: Label
 var press_progress_bar: ProgressBar
 var press_exercise_idx := 0
 var press_display_notes: Array = []
@@ -175,15 +176,14 @@ const PRESS_MAX_RISE_DELAY := 0.80
 const PRESS_ADDED_SOUND_RISE_DB := 8.0
 const PRESS_ADDED_SOUND_HOLD_SEC := 0.10
 const PRESS_PENDING_COLOR := Color(0.60, 0.60, 0.60, 0.90)
-const PRESS_EXERCISES := [
-	# Bài tập nhấn 1/2 cung: gảy Mi, rồi nhấn tay trái để âm lên Fa.
-	{"source": "Mi2", "target": "Fa2", "interval": 100.0}
-]
+const PRESS_NOTES_PER_ROUND := 3
+const PRESS_EXERCISES = preload("res://scripts/DanTranhBundledLessonData.gd").PRESS_EXERCISES
 var tremolo_sheet_hud: Control
 var tremolo_instruction_label: Label
 var tremolo_status_label: Label
 var tremolo_progress_bar: ProgressBar
 var tremolo_exercise_idx := 0
+var tremolo_target_group_idx := 0
 var tremolo_display_notes: Array = []
 var tremolo_attack_strings: Array[int] = []
 var tremolo_attack_times: Array[float] = []
@@ -202,14 +202,7 @@ const TREMOLO_MIN_RATE := 2.5
 const TREMOLO_MAX_RATE := 14.0
 const TREMOLO_MAX_ATTACK_GAP := 0.50
 const TREMOLO_MIN_REGULARITY := 0.35
-const TREMOLO_EXERCISES := [
-	{"mode": "single", "title": "Vê một dây · Đô2", "notes": ["Đô2"]},
-	{"mode": "single", "title": "Vê một dây · Sol2", "notes": ["Sol2"]},
-	{"mode": "single", "title": "Vê một dây · Đô3", "notes": ["Đô3"]},
-	{"mode": "octave", "title": "Vê quãng tám · Đô2 – Đô3", "notes": ["Đô2", "Đô3"]},
-	{"mode": "octave", "title": "Vê quãng tám · Sol2 – Sol3", "notes": ["Sol2", "Sol3"]},
-	{"mode": "octave", "title": "Vê quãng tám · La2 – La3", "notes": ["La2", "La3"]}
-]
+const TREMOLO_EXERCISES = preload("res://scripts/DanTranhBundledLessonData.gd").TREMOLO_EXERCISES
 var dan_tranh_string_streams: Array = []
 var technique_sample_player: AudioStreamPlayer
 var technique_sample_kind := TechniqueSampleKind.NONE
@@ -218,6 +211,7 @@ var technique_sample_elapsed := 0.0
 var technique_sample_event_elapsed := 0.0
 var technique_sample_sequence: Array[int] = []
 var technique_sample_sequence_idx := 0
+var tremolo_sample_group_idx := -1
 var technique_sample_in_gap := false
 var technique_sample_input_cooldown := 0.0
 const TECHNIQUE_SAMPLE_GAP := 0.65
@@ -228,6 +222,10 @@ var song_thanh_sample_pair_idx := 0
 var song_thanh_sample_elapsed := 0.0
 var song_thanh_sample_next_event := 0.45
 var song_thanh_sample_set_break_done := false
+var song_thanh_sheet_hud: PanelContainer
+var song_thanh_instruction_label: Label
+var song_thanh_status_label: Label
+var song_thanh_progress_bar: ProgressBar
 const GLISSANDO_SAMPLE_INTERVAL := 0.075
 const PRESS_SAMPLE_DURATION := 2.25
 const VIBRATO_DEMO_DURATION := 2.20
@@ -251,7 +249,17 @@ var error_feedback_title := "Chưa đúng"
 var error_feedback_detail := ""
 var unrecognized_audio_elapsed := 0.0
 const UNRECOGNIZED_AUDIO_HINT_DELAY := 0.30
-var current_lesson_id: String
+# Local progress key / future LessonResponse.lessonCode. Never replace this
+# string with LessonResponse.id: completed lessons and stars use this key.
+var current_lesson_code: String
+# Compatibility alias while the existing local gameplay remains unchanged.
+var current_lesson_id: String:
+	get:
+		return current_lesson_code
+	set(value):
+		current_lesson_code = value
+# Reserved API identity. 0 means not mapped; never infer it from orderIndex.
+var api_lesson_id: int = 0
 var lesson_data: Dictionary
 static var current_song_durations: Array[float] = []
 static var current_song_cues: Array[String] = []
@@ -300,297 +308,18 @@ var current_speed_multiplier: float = 1.0
 
 const STRINGS = 17
 
-const ALL_17_NOTES: Array[String] = [
-	"Sol1", "La1", "Đô2", "Rê2", "Mi2",
-	"Sol2", "La2", "Đô3", "Rê3", "Mi3",
-	"Sol3", "La3", "Đô4", "Rê4", "Mi4",
-	"Sol4", "La4"
-]
+const ALL_17_NOTES: Array[String] = preload("res://scripts/DanTranhBundledLessonData.gd").ALL_17_NOTES
 
 
-const LESSON_DIALOGUES = {
-	"dan_tranh_level_7_bai_18_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật Á trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật Á là dùng ngón tay phải vuốt nhanh và liên tục qua nhiều dây để tạo thành một chuỗi âm thanh liền mạch.", "highlight": -1},
-		{"action": "speak", "text": "Á xuống là vuốt từ vùng dây có âm cao xuống vùng dây có âm thấp. Á lên là vuốt theo chiều ngược lại, từ âm thấp lên âm cao.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm hai lượt: Á xuống và Á lên. Ứng dụng sẽ nghe đàn thật, kiểm tra hướng vuốt, độ rộng và tính liên tục của chuỗi âm. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-	"dan_tranh_level_1_bai_1_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học đầu tiên, chúng ta sẽ cùng tìm hiểu nhạc cụ đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Đàn Tranh là nhạc cụ dây truyền thống của Việt Nam. Đàn thường có mười sáu hoặc mười chín dây, thân đàn dạng hộp dài hình thang, dài khoảng một trăm mười đến một trăm hai mươi xen-ti-mét. Đầu lớn rộng hơn là nơi mắc dây và đặt cầu đàn; đầu nhỏ có các trục để lên dây.", "highlight": -1},
-		{"action": "speak", "text": "Các bộ phận chính của đàn gồm có mặt đàn, thành và đáy đàn, cầu đàn, nhạn, trục đàn, dây đàn và móng gảy.", "highlight": -1},
-		{"action": "speak", "text": "Mặt đàn làm từ gỗ nhẹ, thường là gỗ ngô đồng, có dạng vồng lên. Thành và đáy đàn làm từ các loại gỗ cứng; đáy đàn có lỗ thoát âm và vị trí cầm hoặc treo đàn.", "highlight": -1},
-		{"action": "speak", "text": "Cầu đàn nằm ở đầu rộng, giúp cố định dây đàn. Nhạn, còn gọi là ngựa đàn, là các thanh gỗ nhỏ đỡ dây trên mặt đàn và có thể di chuyển để điều chỉnh cao độ của từng dây.", "highlight": -1},
-		{"action": "speak", "text": "Trục đàn nằm ở đầu nhỏ, dùng để căng và lên dây. Dây đàn thường làm bằng thép hoặc inox, có độ dày khác nhau để tạo ra âm thanh cao thấp.", "highlight": -1},
-		{"action": "speak", "text": "Móng gảy được đeo ở ngón cái, ngón trỏ và ngón giữa của tay phải để gảy đàn; có thể làm từ đồi mồi, sừng hoặc kim loại.", "highlight": -1},
-		{"action": "speak", "text": "Đàn Tranh có thể diễn tấu giai điệu, gảy quãng tám, chập âm và vuốt dây để tạo âm thanh mềm mại, đặc trưng. Đàn được dùng để độc tấu, hòa tấu hoặc đệm cho hát; phù hợp với dân ca, nhạc truyền thống và cả các tác phẩm hiện đại.", "highlight": -1},
-		{"action": "speak", "text": "Bây giờ, hãy ngồi thẳng lưng và đặt đàn trước mặt. Đầu lớn của đàn nằm phía tay phải. Chúng ta dùng tay phải để gảy và tay trái để nhấn, giữ dây tạo âm vang. Hãy cùng bắt đầu phần thực hành nhé!", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên, hãy làm quen với âm sắc của 5 nốt cơ bản nhất ở quãng trầm của đàn.", "highlight": -1},
-		{"action": "speak", "text": "Dây 1: Nốt Sol1. Hãy gảy đúng nốt Sol1 ở dây thứ nhất đàn.", "highlight": 0},
-		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy nốt La1 ở dây thứ 2 trên đàn.", "highlight": 1},
-		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy nốt Đô2 ở dây thứ 3 trên đàn.", "highlight": 2},
-		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy nốt Rê2 ở dây thứ 4 trên đàn.", "highlight": 3},
-		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy nốt Mi2 ở dây thứ 5 trên đàn.", "highlight": 4},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành gảy 5 nốt cơ bản đầu tiên của Đàn Tranh!", "highlight": -1}
-	],
+const LESSON_DIALOGUES = preload("res://scripts/DanTranhBundledLessonData.gd").LESSON_DIALOGUES
 
-	"dan_tranh_level_1_bai_2_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần một.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol một, La một, Đô hai, Rê hai, Mi hai, Sol hai, La hai, Đô ba, Rê ba và Mi ba.", "highlight": -1},
-		{"action": "speak", "text": "Phần này giúp bạn luyện nhận biết và gảy lần lượt các nốt từ Sol một đến Mi ba. Hãy luân phiên ngón số hai rồi ngón số một, bắt đầu bằng ngón hai ở nốt đầu tiên. Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy gảy chậm, rõ tiếng và đúng vị trí từng dây. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên là dây 1: Nốt Sol1 ở quãng thấp nhất. Hãy gảy dây 1.", "highlight": 0, "note": "Sol1"},
-		{"action": "speak", "text": "Dây 2: Nốt La1. Hãy gảy dây 2.", "highlight": 1, "note": "La1"},
-		{"action": "speak", "text": "Dây 3: Nốt Đô2. Hãy gảy dây 3.", "highlight": 2, "note": "Đô2"},
-		{"action": "speak", "text": "Dây 4: Nốt Rê2. Hãy gảy dây 4.", "highlight": 3, "note": "Rê2"},
-		{"action": "speak", "text": "Dây 5: Nốt Mi2. Hãy gảy dây 5.", "highlight": 4, "note": "Mi2"},
-		{"action": "speak", "text": "Dây 6: Nốt Sol2. Hãy gảy dây 6.", "highlight": 5, "note": "Sol2"},
-		{"action": "speak", "text": "Dây 7: Nốt La2. Hãy gảy dây 7.", "highlight": 6, "note": "La2"},
-		{"action": "speak", "text": "Dây 8: Nốt Đô3. Hãy gảy dây 8.", "highlight": 7, "note": "Đô3"},
-		{"action": "speak", "text": "Dây 9: Nốt Rê3. Hãy gảy dây 9.", "highlight": 8, "note": "Rê3"},
-		{"action": "speak", "text": "Dây 10: Nốt Mi3. Hãy gảy dây 10.", "highlight": 9, "note": "Mi3"},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 10 nốt cơ bản quãng thấp và trung!", "highlight": -1}
-	],
+const SU_THANH_HOA_SHEET: Array[String] = preload("res://scripts/DanTranhBundledLessonData.gd").SU_THANH_HOA_SHEET
 
-	"dan_tranh_level_1_bai_3_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện gảy các nốt cơ bản, phần hai.", "highlight": -1},
-		{"action": "speak", "text": "Chúng ta sẽ luyện tập lần lượt từng nốt: Sol ba, La ba, Đô bốn, Rê bốn, Mi bốn, Sol bốn và La bốn.", "highlight": -1},
-		{"action": "speak", "text": "Ở phần này, hãy luân phiên ngón số ba, ngón số hai rồi ngón số một, bắt đầu bằng ngón ba ở nốt đầu tiên. Dãy số dưới sheet sẽ là ba, hai, một, ba, hai, một, ba.", "highlight": -1},
-		{"action": "speak", "text": "Ứng dụng sẽ nghe đàn thật qua micro và chỉ chuyển sang dây kế tiếp sau khi nhận diện đúng cao độ. Hãy đổi ngón theo số dưới sheet, gảy rõ tiếng và chú ý không nhầm vị trí các dây cao. Bây giờ, chúng ta cùng bắt đầu nhé!", "highlight": -1},
-		{"action": "speak", "text": "Dây 11: Nốt Sol3. Hãy gảy dây 11.", "highlight": 10, "note": "Sol3"},
-		{"action": "speak", "text": "Dây 12: Nốt La3. Hãy gảy dây 12.", "highlight": 11, "note": "La3"},
-		{"action": "speak", "text": "Dây 13: Nốt Đô4. Hãy gảy dây 13.", "highlight": 12, "note": "Đô4"},
-		{"action": "speak", "text": "Dây 14: Nốt Rê4. Hãy gảy dây 14.", "highlight": 13, "note": "Rê4"},
-		{"action": "speak", "text": "Dây 15: Nốt Mi4. Hãy gảy dây 15.", "highlight": 14, "note": "Mi4"},
-		{"action": "speak", "text": "Dây 16: Nốt Sol4. Hãy gảy dây 16.", "highlight": 15, "note": "Sol4"},
-		{"action": "speak", "text": "Dây 17: Nốt La4. Hãy gảy dây 17.", "highlight": 16, "note": "La4"},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành nhận diện và gảy đúng 7 nốt ở âm vực cao!", "highlight": -1}
-	],
+const SU_THANH_HOA_DURATIONS: Array[float] = preload("res://scripts/DanTranhBundledLessonData.gd").SU_THANH_HOA_DURATIONS
 
-	"dan_tranh_level_2_bai_10_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Lý cây đa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy áp dụng các nốt và ngón gảy đã học để luyện nửa đầu bài Lý cây đa. Bạn nên tập chậm từng câu và đếm nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
+const NOTE_TO_STRING = preload("res://scripts/DanTranhBundledLessonData.gd").NOTE_TO_STRING
 
-	"dan_tranh_level_2_bai_11_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Lý cây đa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy chú ý tên nốt, nhịp và ngón gảy của từng câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_12_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Lý cây đa.", "highlight": -1},
-		{"action": "speak", "text": "Hãy ghép hai phần đã học để chơi hoàn chỉnh bài Lý cây đa. Bắt đầu chậm, gảy rõ tiếng và giữ nhịp đều. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_13_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện nửa đoạn đầu bài Sứ thanh hoa.", "highlight": -1},
-		{"action": "speak", "text": "Ở bài này, chúng ta áp dụng luyện tập các kỹ thuật gảy ngón vào nửa đầu bài Sứ thanh hoa. Hãy tập từng câu nhạc chậm, đúng nốt và đều nhịp. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_14_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ tiếp tục luyện nửa đoạn cuối bài Sứ thanh hoa.", "highlight": -1},
-		{"action": "speak", "text": "Chú ý các chỗ đổi ngón, nhấn hoặc nếu có rung dây để giai điệu liền mạch và có cảm xúc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_15_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ hoàn thiện bài Sứ thanh hoa.", "highlight": -1},
-		{"action": "speak", "text": "Giờ ghép hai phần đã học để chơi hoàn chỉnh bài Sứ thanh hoa. Hãy giữ nhịp ổn định, gảy rõ nốt và thể hiện kỹ thuật đúng vị trí. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_7_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số một trên năm dây giữa của đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Ngón số một là ngón cái của tay phải. Ngón bốn tỳ nhẹ lên cầu đàn, các ngón còn lại khum tự nhiên; hãy giữ bàn tay và cổ tay thả lỏng khi gảy.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm năm nốt: Sol hai ở dây sáu, La hai ở dây bảy, Đô ba ở dây tám, Rê ba ở dây chín và Mi ba ở dây mười. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_8_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số hai trên năm dây đầu của đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Ngón số hai là ngón trỏ của tay phải. Hãy giữ cổ tay thả lỏng, bàn tay khum tự nhiên và dùng ngón trỏ để gảy từng dây rõ tiếng.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm năm nốt: Sol một ở dây một, La một ở dây hai, Đô hai ở dây ba, Rê hai ở dây bốn và Mi hai ở dây năm. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_9_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ luyện kỹ thuật gảy ngón số ba trên bảy dây cao của đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Ngón số ba là ngón giữa của tay phải. Hãy giữ bàn tay khum tự nhiên, cổ tay thả lỏng và dùng ngón giữa để gảy từng dây rõ tiếng.", "highlight": -1},
-		{"action": "speak", "text": "Phần thực hành gồm bảy nốt: Sol ba ở dây mười một, La ba ở dây mười hai, Đô bốn ở dây mười ba, Rê bốn ở dây mười bốn, Mi bốn ở dây mười lăm, Sol bốn ở dây mười sáu và La bốn ở dây mười bảy. Ứng dụng sẽ nghe đàn thật và chỉ ghi nhận khi bạn gảy đúng cao độ. Bây giờ chúng ta bắt đầu nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_4_practice": [
-		{"action": "speak", "text": "Chào bạn! Trước khi đọc bản nhạc, chúng ta hãy nhận biết ba âm vực của 17 dây đàn Tranh. Âm vực là vùng âm thanh trầm, trung hoặc cao; khác với quãng là khoảng cách giữa hai nốt.", "highlight": -1},
-		{"action": "speak", "text": "Âm vực trầm gồm các dây 1 đến 5: Sol1, La1, Đô2, Rê2 và Mi2. Đây là nhóm dây có âm thanh thấp nhất trên đàn.", "highlight": -1},
-		{"action": "speak", "text": "Âm vực trung gồm các dây 6 đến 10: Sol2, La2, Đô3, Rê3 và Mi3. Âm vực cao gồm các dây 11 đến 17: Sol3, La3, Đô4, Rê4, Mi4, Sol4 và La4.", "highlight": -1},
-		{"action": "speak", "text": "Các tên nốt có thể lặp lại ở những độ cao khác nhau, chẳng hạn Sol1, Sol2, Sol3 và Sol4. Con số sau tên nốt giúp chúng ta phân biệt đúng dây và đúng âm vực.", "highlight": -1},
-		{"action": "speak", "text": "Khi đọc một bản nhạc, chúng ta còn cần chú ý đến tempo, khóa nhạc và nhịp.", "highlight": -1},
-		{"action": "speak", "text": "Tempo là tốc độ nhanh hoặc chậm của bản nhạc. Tempo có thể được ghi bằng số B P M; ví dụ, sáu mươi B P M chậm hơn một trăm hai mươi B P M. Khi tập đàn, bạn nên bắt đầu chậm, giữ đều nhịp rồi mới tăng tốc.", "highlight": -1, "show_speed": true},
-		{"action": "speak", "text": "Khóa Sol là ký hiệu thường đặt ở đầu khuông nhạc, giúp chúng ta xác định tên và độ cao của các nốt. Dấu khóa này bắt đầu từ dòng thứ hai của khuông nhạc, cho biết đó là vị trí của nốt Sol.", "highlight": -1, "show_staff": true, "clef": true},
-		{"action": "speak", "text": "Nhịp bốn phần tư nghĩa là mỗi ô nhịp có bốn phách và nốt đen được tính là một phách. Ta đếm đều: một, hai, ba, bốn. Phách một thường mạnh hơn các phách còn lại.", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Nhịp hai phần tư nghĩa là mỗi ô nhịp có hai phách và nốt đen cũng được tính là một phách. Ta đếm: một, hai; trong đó phách một mạnh và phách hai nhẹ hơn.", "highlight": -1, "show_staff": true, "time_sig": 2},
-		{"action": "speak", "text": "Hiểu tempo và nhịp sẽ giúp chúng ta gảy đàn đúng tốc độ, đúng điểm rơi của phách. Khóa Sol giúp chúng ta đọc đúng nốt trên bản nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1, "show_staff": true, "time_sig": 4},
-		{"action": "speak", "text": "Bây giờ chúng ta cùng luyện tập theo nhịp 4/4. Ta sẽ gảy nốt Sol2, đếm 1-2-3-4 cho mỗi ô nhịp. Hãy gảy nốt Sol2.", "highlight": 0, "note": "Sol2", "time_sig": 4},
-		{"action": "speak", "text": "Gảy nốt La2 giữ đều nhịp 4/4.", "highlight": 1, "note": "La2", "time_sig": 4},
-		{"action": "speak", "text": "Gảy nốt Đô3 giữ đều nhịp 4/4.", "highlight": 2, "note": "Đô3", "time_sig": 4},
-		{"action": "speak", "text": "Gảy nốt Rê3 giữ đều nhịp 4/4.", "highlight": 3, "note": "Rê3", "time_sig": 4},
-		{"action": "speak", "text": "Tiếp tục với nhịp 4/4: nốt Mi3.", "highlight": 4, "note": "Mi3", "time_sig": 4},
-		{"action": "speak", "text": "Rồi nốt Rê3, giữ nhịp đều.", "highlight": 5, "note": "Rê3", "time_sig": 4},
-		{"action": "speak", "text": "Nốt Đô3, giữ nhịp đều.", "highlight": 6, "note": "Đô3", "time_sig": 4},
-		{"action": "speak", "text": "Nốt La2, giữ nhịp đều.", "highlight": 7, "note": "La2", "time_sig": 4},
-		{"action": "speak", "text": "Giờ chuyển sang nhịp 2/4, nhanh gọn hơn: gảy nốt Sol2.", "highlight": 8, "note": "Sol2", "time_sig": 2},
-		{"action": "speak", "text": "Nốt La2 theo nhịp 2/4.", "highlight": 9, "note": "La2", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Đô3 theo nhịp 2/4.", "highlight": 10, "note": "Đô3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 11, "note": "Rê3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Mi3 theo nhịp 2/4.", "highlight": 12, "note": "Mi3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Sol3 theo nhịp 2/4.", "highlight": 13, "note": "Sol3", "time_sig": 2},
-		{"action": "speak", "text": "Nốt Rê3 theo nhịp 2/4.", "highlight": 14, "note": "Rê3", "time_sig": 2},
-		{"action": "speak", "text": "Và cuối cùng nốt Đô3, giữ nhịp 2/4 thật đều.", "highlight": 15, "note": "Đô3", "time_sig": 2},
-		{"action": "speak", "text": "Tuyệt vời! Tóm lại: 17 dây đàn được chia thành âm vực trầm, trung và cao; tempo là tốc độ bài nhạc; khóa Sol xác định vị trí nốt trên khuông; nhịp 4/4 có 4 phách mỗi ô và nhịp 2/4 có 2 phách mỗi ô. Bạn đã hoàn thành bài học!", "highlight": -1}
-	],
-
-	"dan_tranh_level_1_bai_5_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu nhịp điệu cơ bản và trường độ của nốt nhạc.", "highlight": -1},
-		{"action": "speak", "text": "Trường độ là độ dài ngắn của âm thanh. Khi gảy một nốt trên đàn Tranh, chúng ta cần biết âm đó kéo dài bao lâu trước khi chuyển sang nốt tiếp theo.", "highlight": -1},
-		{"action": "speak", "text": "Trong nhịp bốn phần tư, nốt trắng dài hai phách; nốt đen dài một phách; nốt móc đơn dài nửa phách và hai nốt móc đơn bằng một nốt đen.", "highlight": -1},
-		{"action": "speak", "text": "Nốt móc kép dài một phần tư phách và bốn nốt móc kép bằng một nốt đen. Bạn có thể hiểu đơn giản: nốt càng nhiều móc thì âm càng ngắn và cần gảy nhanh hơn.", "highlight": -1},
-		{"action": "speak", "text": "Khi chơi đàn Tranh, hãy đếm đều nhịp trong đầu. Với nốt dài, chúng ta chỉ gảy một lần rồi để tiếng đàn ngân đủ số phách, không gảy lặp lại nhiều lần. Hiểu đúng trường độ sẽ giúp bản nhạc đều nhịp, rõ ràng và dễ nghe hơn. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1},
-		{"action": "speak", "text": "Đầu tiên là Nốt Trắng. Nốt trắng có đầu hình bầu dục rỗng, có thân nốt, kéo dài 2 phách. Hãy gảy nốt Đô2 và giữ âm vang 2 phách.", "highlight": 0, "note": "Đô2", "type": "half"},
-		{"action": "speak", "text": "Thêm một nốt trắng nữa. Hãy gảy nốt Đô2 và giữ 2 phách nhé.", "highlight": 1, "note": "Đô2", "type": "half"},
-		{"action": "speak", "text": "Tiếp theo là Nốt Đen. Nốt đen có đầu hình bầu dục đặc, có thân nốt, kéo dài 1 phách. Hãy gảy nốt Rê2.", "highlight": 2, "note": "Rê2", "type": "quarter"},
-		{"action": "speak", "text": "Gảy thêm nốt đen Mi2 – 1 phách.", "highlight": 3, "note": "Mi2", "type": "quarter"},
-		{"action": "speak", "text": "Và thêm nốt đen Mi2 – 1 phách.", "highlight": 4, "note": "Mi2", "type": "quarter"},
-		{"action": "speak", "text": "Gảy nốt đen Sol2 – 1 phách.", "highlight": 5, "note": "Sol2", "type": "quarter"},
-		{"action": "speak", "text": "Bây giờ là Nốt Móc Đơn. Nốt móc đơn có đầu đặc, thân nốt và 1 móc, kéo dài nửa phách. Hãy gảy nhanh nốt Sol2.", "highlight": 6, "note": "Sol2", "type": "eighth"},
-		{"action": "speak", "text": "Thêm nốt móc đơn Sol2 – nửa phách.", "highlight": 7, "note": "Sol2", "type": "eighth"},
-		{"action": "speak", "text": "Và nốt móc đơn Sol2 – nửa phách.", "highlight": 8, "note": "Sol2", "type": "eighth"},
-		{"action": "speak", "text": "Cuối cùng là Nốt Móc Kép. Nốt móc kép có đầu đặc, thân nốt và 2 móc, kéo dài một phần tư phách. Rất nhanh! Hãy gảy nốt La2.", "highlight": 9, "note": "La2", "type": "sixteenth"},
-		{"action": "speak", "text": "Gảy thêm nốt móc kép La2.", "highlight": 10, "note": "La2", "type": "sixteenth"},
-		{"action": "speak", "text": "Tuyệt vời! Bạn đã hoàn thành bài học nhận diện trường độ. Tóm lại: Nốt trắng bằng 2 phách, nốt đen bằng 1 phách, nốt móc đơn bằng nửa phách, nốt móc kép bằng một phần tư phách.", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_4_practice": [
-		{"action": "speak", "text": "Chào mừng bạn học về trường độ nốt Đen (1 phách) và nốt Trắng (2 phách).", "highlight": -1},
-		{"action": "speak", "text": "Nốt trắng sẽ kéo dài gấp đôi nốt đen. Hãy chú ý giữ âm vang của dây khi gảy nốt trắng nhé.", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_5_practice": [
-		{"action": "speak", "text": "Chào mừng bạn đến với Bài 5: Hệ thống nốt cơ bản và xác định vị trí nốt trên Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Đàn Tranh của chúng ta có 17 dây, được lên theo thang ngũ cung: Sol - La - Đô - Rê - Mi ở các quãng khác nhau.", "highlight": -1},
-		{"action": "speak", "text": "Trong âm nhạc chuẩn quốc tế có 7 nốt cơ bản: Đô, Rê, Mi, Fa, Sol, La, Si ký hiệu lần lượt là C, D, E, F, G, A, B.", "highlight": -1},
-		{"action": "speak", "text": "Để chơi các nốt Fa và Si trên đàn Tranh, ta sẽ gảy các dây Mi và La tương ứng rồi dùng tay trái nhấn nhẹ dây bên trái nhạn đàn để nâng cao độ.", "highlight": -1},
-		{"action": "speak", "text": "Bây giờ, chúng ta sẽ tập luyện xác định vị trí nốt. Tôi sẽ gảy trước một nốt, sau đó bạn hãy gảy lặp lại nốt đó nhé. Đầu tiên là nốt Đô 2 ở dây số 3.", "highlight": 2, "note": "Đô2"},
-		{"action": "speak", "text": "Tiếp theo là nốt Rê 2 ở dây số 4.", "highlight": 3, "note": "Rê2"},
-		{"action": "speak", "text": "Nốt Mi 2 ở dây số 5.", "highlight": 4, "note": "Mi2"},
-		{"action": "speak", "text": "Nốt Fa 2. Hãy gảy dây Mi 2 (dây 5) và nhấn nhẹ tay trái để tạo ra cao độ nốt Fa 2 nhé.", "highlight": 4, "note": "Fa2"},
-		{"action": "speak", "text": "Nốt Sol 2 ở dây số 6.", "highlight": 5, "note": "Sol2"},
-		{"action": "speak", "text": "Nốt La 2 ở dây số 7.", "highlight": 6, "note": "La2"},
-		{"action": "speak", "text": "Nốt Si 2. Hãy gảy dây La 2 (dây 7) và dùng tay trái nhấn để tạo ra cao độ nốt Si 2.", "highlight": 6, "note": "Si2"},
-		{"action": "speak", "text": "Và nốt Đô 3 ở dây số 8.", "highlight": 7, "note": "Đô3"},
-		{"action": "speak", "text": "Sau đây là thử thách Mini Game: Hãy tìm nốt Sol 2 trên đàn và chọn gảy dây tương ứng nhé!", "highlight": 5, "note": "Sol2"},
-		{"action": "speak", "text": "Rất tốt! Tiếp theo là Bài 2.3: Học viên nhận biết các nốt cùng tên ở các quãng khác nhau (khác cao độ).", "highlight": -1},
-		{"action": "speak", "text": "Ví dụ: Đô thấp ở dây số 3. Hãy gảy nốt Đô 2.", "highlight": 2, "note": "Đô2"},
-		{"action": "speak", "text": "Đô trung ở dây số 8. Hãy gảy nốt Đô 3.", "highlight": 7, "note": "Đô3"},
-		{"action": "speak", "text": "Và Đô cao ở dây số 13. Hãy gảy nốt Đô 4.", "highlight": 12, "note": "Đô4"},
-		{"action": "speak", "text": "Tuyệt vời! Nhận biết nốt cùng tên ở các quãng khác nhau là kiến thức nền để học các kỹ thuật: Song thanh, Vê, Quãng, Chuyển âm vực sau này. Bây giờ hãy luyện tập chơi chuỗi nốt nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_2_bai_6_practice": [
-		{"action": "speak", "text": "Hãy làm quen với nhịp 4/4 tiêu chuẩn và khuông nhạc khóa Sol.", "highlight": -1},
-		{"action": "speak", "text": "Mỗi ô nhịp có 4 phách. Hãy tập trung nghe nhịp gõ và gảy thật đều đặn.", "highlight": -1}
-	],
-
-	"dan_tranh_level_3_bai_7_practice": [
-		{"action": "speak", "text": "Chào mừng đến với thử thách luyện ngón tốc độ cao với bài nhạc Mã Vũ.", "highlight": -1},
-		{"action": "speak", "text": "Bạn cần gảy nhanh, dứt khoát và di chuyển ngón tay linh hoạt qua các quãng xa.", "highlight": -1}
-	],
-
-	"dan_tranh_level_4_bai_9_practice": [
-		{"action": "speak", "text": "Hôm nay chúng ta sẽ học kỹ thuật nhấn Rung tay trái đặc trưng của Đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Sau khi tay phải gảy nốt, hãy dùng các ngón tay trái nhấn nhẹ liên tục lên phần dây bên trái nhạn đàn.", "highlight": -1}
-	],
-
-	"dan_tranh_level_7_bai_19_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật nhấn trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật nhấn là dùng tay trái ấn dây ở phía bên trái của nhạn để nâng cao độ của âm thanh sau khi tay phải gảy dây.", "highlight": -1},
-		{"action": "speak", "text": "Nhờ kỹ thuật này, đàn Tranh có thể tạo ra những nốt không có sẵn trên dây. Ví dụ, nhấn dây La để lên nốt Si, hoặc nhấn dây Mi để lên nốt Fa.", "highlight": -1},
-		{"action": "speak", "text": "Khi thực hiện, tay phải gảy dây trước, sau đó tay trái nhấn nhẹ và đều đến đúng cao độ. Không nhấn quá mạnh vì tiếng đàn có thể bị gắt hoặc cao độ bị lệch. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_7_bai_20_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật song thanh trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Song thanh là kỹ thuật gảy để hai nốt cùng phát ra một lúc. Song thanh truyền thống thường sử dụng quãng tám; các nhạc sĩ hiện đại còn kết hợp thêm những quãng khác.", "highlight": -1},
-		{"action": "speak", "text": "Trong bài này, chúng ta dùng ngón 1 và ngón 2 của tay phải để gảy đồng thời hai dây.", "highlight": -1},
-		{"action": "speak", "text": "Khi thực hiện, hai tiếng phải phát ra đồng thời, không bị chênh nhau và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_7_bai_21_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật rung dây trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật rung dây tạo tiếng đàn ngân liên tục, mềm mại và giàu cảm xúc. Có hai kiểu rung chính: rung nhanh với biên độ hẹp và rung chậm với biên độ rộng. Trong bài này, chúng ta luyện kiểu rung để thể hiện nét vui của giai điệu.", "highlight": -1},
-		{"action": "speak", "text": "Sau khi tay phải gảy dây, tay trái rung ngay để tiếng đàn không bị ngắt quãng. Dùng ngón trỏ và ngón giữa tay trái đặt nhẹ lên dây ở phía bên trái nhạn, cách nhạn khoảng mười xen-ti-mét. Không tỳ mạnh xuống dây vì có thể làm sai cao độ.", "highlight": -1},
-		{"action": "speak", "text": "Giữ cổ tay và các ngón tay mềm mại. Dùng hai ngón tay nhồi dây nhẹ nhàng lên xuống, đều tay, để tiếng rung tự nhiên và kéo dài. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_30_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu kỹ thuật vê trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật vê là gảy luân phiên thật nhanh và liên tục bằng hai ngón tay phải để tạo tiếng đàn ngân dài, dày và liền mạch.", "highlight": -1},
-		{"action": "speak", "text": "Có hai cách vê cơ bản. Vê một dây là hai ngón thay phiên gảy trên cùng một dây.", "highlight": -1},
-		{"action": "speak", "text": "Vê quãng tám là hai ngón thay phiên gảy trên hai dây cùng tên nốt nhưng khác quãng, ví dụ nốt Đô thấp và nốt Đô cao.", "highlight": -1},
-		{"action": "speak", "text": "Kỹ thuật vê thường dùng để giữ âm, làm nổi bật giai điệu và tăng cảm xúc cho câu nhạc. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_31_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm ba âm cơ bản trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm ba âm là ba nốt khác nhau được gảy cùng lúc, tạo âm thanh đầy đặn hơn một nốt đơn.", "highlight": -1},
-		{"action": "speak", "text": "Trong bài này, chúng ta làm quen với hai hợp âm cơ bản để hiểu thêm về cách hòa âm trên đàn Tranh.", "highlight": -1},
-		{"action": "speak", "text": "Phần hợp âm ba âm này được học để bạn biết thêm về khả năng tạo âm thanh hợp âm của đàn Tranh; nội dung này không áp dụng vào kiến thức nhạc cụ dân tộc Việt Nam. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_32_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm Đô trưởng.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm Đô trưởng gồm ba nốt: Đô, Mi và Sol.", "highlight": -1},
-		{"action": "speak", "text": "Khi gảy, hãy cố gắng để cả ba nốt vang lên cùng lúc và có âm lượng cân bằng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_8_bai_33_practice": [
-		{"action": "speak", "text": "Chào bạn! Trong bài học này, chúng ta sẽ cùng tìm hiểu hợp âm La thứ.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm La thứ gồm ba nốt: La, Đô và Mi.", "highlight": -1},
-		{"action": "speak", "text": "Hợp âm này có màu sắc nhẹ nhàng và trầm hơn hợp âm Đô trưởng. Bây giờ, chúng ta cùng bắt đầu phần thực hành nhé!", "highlight": -1}
-	],
-
-	"dan_tranh_level_5_bai_12_practice": [
-		{"action": "speak", "text": "Thử thách độc tấu trọn vẹn tác phẩm Sứ Thanh Hoa!", "highlight": -1},
-		{"action": "speak", "text": "Hãy kết hợp toàn bộ kỹ thuật tay phải gảy ngón và nhấn rung tay trái để hoàn thành bài nhạc xuất sắc nhất.", "highlight": -1}
-	]
-}
-
-const SU_THANH_HOA_SHEET: Array[String] = [
-	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "La2", "Sol2",
-	"Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3", "Đô3", "Mi3", "Rê3", "Đô3", "Sol2", "La2", "Mi3",
-	"Mi3", "Rê3", "Mi3", "Rê3", "Mi3", "Sol3", "Mi3", "Rest", "Mi3", "Mi3", "Rê3",
-	"Đô3", "Mi3", "Rê3", "Rê3", "Đô3", "La2", "Đô3", "Đô3", "La2", "Đô3",
-	"La2", "Sol2", "Sol2", "La2", "Mi3", "Sol3", "Sol3", "Mi3", "Sol3", "Sol3", "Mi3", "Rê3", "Đô3", "Đô3",
-	"Rê3", "Đô3", "Rê3", "Mi3", "Rê3", "Rê3", "Đô3", "Rê3", "Đô3", "Rê3", "Đô3", "Đô3", "La2", "Đô3", "Rê3", "Rê3", "Rê3"
-]
-
-const SU_THANH_HOA_DURATIONS: Array[float] = [
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 2.0,
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5,
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 2.0,
-	0.5, 0.5, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 3.0,
-	1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-	0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2.0
-]
-
-const NOTE_TO_STRING = {
-	"Sol1": 0, "La1": 1, "Đô2": 2, "Rê2": 3, "Mi2": 4, "Fa2": 4,
-	"Sol2": 5, "La2": 6, "Si2": 6, "Đô3": 7, "Rê3": 8, "Mi3": 9, "Fa3": 9,
-	"Sol3": 10, "La3": 11, "Si3": 11, "Đô4": 12, "Rê4": 13, "Mi4": 14,
-	"Sol4": 15, "La4": 16
-}
-
-const NOTE_FREQS = {
-	"Sol1": 196.00, "La1": 220.00, "Đô2": 261.63, "Rê2": 293.66, "Mi2": 329.63,
-	"Fa2": 349.23, "Sol2": 392.00, "La2": 440.00, "Si2": 493.88, "Đô3": 523.25,
-	"Rê3": 587.33, "Mi3": 659.25, "Fa3": 698.46, "Sol3": 783.99, "La3": 880.00,
-	"Si3": 987.77, "Đô4": 1046.50, "Rê4": 1174.66, "Mi4": 1318.51, "Sol4": 1567.98,
-	"La4": 1760.00
-}
+const NOTE_FREQS = preload("res://scripts/DanTranhBundledLessonData.gd").NOTE_FREQS
 
 func _ready():
 	# The lesson covers every real string from Sol1 (196 Hz) to La4 (1760 Hz).
@@ -601,7 +330,7 @@ func _ready():
 	var profile_notes: Array[String] = [
 		"Sol1", "La1", "Đô2", "Rê2", "Mi2", "Fa2",
 		"Sol2", "La2", "Si2", "Đô3", "Rê3", "Mi3", "Fa3",
-		"Sol3", "La3", "Si3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"
+		"Sol3", "La3", "Si3", "Đô4", "Rê4", "Mi4", "Fa4", "Sol4", "La4", "Si4"
 	]
 	profile.notes.assign(profile_notes)
 	var freqs: Array[float] = []
@@ -612,7 +341,7 @@ func _ready():
 	profile.frequencies = PackedFloat32Array(freqs)
 	profile.physical_mappings = mappings
 	profile.min_frequency = 180.0
-	profile.max_frequency = 1900.0
+	profile.max_frequency = 2050.0
 	profile.volume_threshold_db = -58.0
 	# A phone microphone and a real đàn tranh can drift more than a synthesized
 	# reference. ±60 cents still keeps adjacent pentatonic strings well apart.
@@ -671,6 +400,11 @@ func _ready():
 			lesson_sheet.assign(dur_sheet)
 			var dur_arr: Array[float] = [2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.25, 0.25]
 			lesson_durations.assign(dur_arr)
+		elif current_lesson_id == LEVEL_7_PRESS_ID:
+			# The introduction and its dimmed preview must show the actual Nhấn
+			# score, never the generic 17-string fallback score.
+			lesson_sheet.assign(["Fa2", "Fa3", "Fa4"])
+			lesson_durations.assign([1.0, 1.0, 1.0])
 		elif current_lesson_id == "dan_tranh_level_3_bai_17_practice":
 			var press_sheet: Array[String] = ["Mi2", "Fa2", "La2", "Si2", "Mi3", "Fa3", "La3", "Si3"]
 			lesson_sheet.assign(press_sheet)
@@ -740,8 +474,8 @@ func _ready():
 	staff_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _is_glissando_practice():
 		_build_glissando_sheet()
-	if _is_press_practice():
-		_build_press_sheet_hud()
+	if _is_song_thanh_practice():
+		_build_song_thanh_sheet_hud()
 	if _is_vibrato_practice():
 		_build_vibrato_sheet_hud()
 	if _is_tremolo_practice():
@@ -919,10 +653,10 @@ func _build_glissando_sheet() -> void:
 	header_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header_panel.anchor_left = 0.5
 	header_panel.anchor_right = 0.5
-	header_panel.offset_left = -410.0
-	header_panel.offset_right = 410.0
-	header_panel.offset_top = 18.0
-	header_panel.offset_bottom = 105.0
+	header_panel.offset_left = -300.0
+	header_panel.offset_right = 300.0
+	header_panel.offset_top = 34.0
+	header_panel.offset_bottom = 94.0
 	var header_style := StyleBoxFlat.new()
 	header_style.bg_color = Color(1.0, 0.98, 0.91, 0.94)
 	header_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -938,10 +672,10 @@ func _build_glissando_sheet() -> void:
 	glissando_sheet.add_child(header_panel)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 10)
-	margin.add_theme_constant_override("margin_bottom", 9)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	header_panel.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
@@ -951,32 +685,31 @@ func _build_glissando_sheet() -> void:
 	glissando_instruction_label = Label.new()
 	glissando_instruction_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	glissando_instruction_label.add_theme_color_override("font_color", C_JADE)
-	glissando_instruction_label.add_theme_font_size_override("font_size", 21)
+	glissando_instruction_label.add_theme_font_size_override("font_size", 15)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		glissando_instruction_label.add_theme_font_override("font", bold_font)
 	title_row.add_child(glissando_instruction_label)
 	glissando_progress_label = Label.new()
 	glissando_progress_label.add_theme_color_override("font_color", C_JADE)
-	glissando_progress_label.add_theme_font_size_override("font_size", 15)
+	glissando_progress_label.add_theme_font_size_override("font_size", 11)
 	title_row.add_child(glissando_progress_label)
 
 	glissando_status_label = Label.new()
 	glissando_status_label.text = "Micro đang nghe đàn thật..."
 	glissando_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	glissando_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
-	glissando_status_label.add_theme_font_size_override("font_size", 14)
+	glissando_status_label.add_theme_font_size_override("font_size", 11)
 	content.add_child(glissando_status_label)
 	glissando_progress_bar = ProgressBar.new()
 	glissando_progress_bar.max_value = GLISSANDO_NOTE_COUNT
 	glissando_progress_bar.show_percentage = false
-	glissando_progress_bar.custom_minimum_size = Vector2(0, 7)
+	glissando_progress_bar.custom_minimum_size = Vector2(0, 4)
 	content.add_child(glissando_progress_bar)
 
 func _build_vibrato_sheet_hud() -> void:
-	# PanelContainer stretches every direct Control child to its full content area.
-	# Keep the compact HUD inside a neutral full-size layer so its bottom anchors
-	# are respected instead of letting its cream panel cover the whole staff.
+	# Keep this compact HUD under the “ĐÀN TRANH” pill, at the top of the score.
+	# It leaves clear vertical space for the highest note in the Rung exercise.
 	var hud_layer := Control.new()
 	hud_layer.name = "VibratoHUDLayer"
 	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -988,12 +721,12 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vibrato_sheet_hud.anchor_left = 0.5
 	vibrato_sheet_hud.anchor_right = 0.5
-	vibrato_sheet_hud.anchor_top = 1.0
-	vibrato_sheet_hud.anchor_bottom = 1.0
-	vibrato_sheet_hud.offset_left = -430.0
-	vibrato_sheet_hud.offset_right = 430.0
-	vibrato_sheet_hud.offset_top = -98.0
-	vibrato_sheet_hud.offset_bottom = -18.0
+	vibrato_sheet_hud.anchor_top = 0.0
+	vibrato_sheet_hud.anchor_bottom = 0.0
+	vibrato_sheet_hud.offset_left = -300.0
+	vibrato_sheet_hud.offset_right = 300.0
+	vibrato_sheet_hud.offset_top = 34.0
+	vibrato_sheet_hud.offset_bottom = 94.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -1009,10 +742,10 @@ func _build_vibrato_sheet_hud() -> void:
 	hud_layer.add_child(vibrato_sheet_hud)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	vibrato_sheet_hud.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
@@ -1020,7 +753,7 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_instruction_label = Label.new()
 	vibrato_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vibrato_instruction_label.add_theme_color_override("font_color", C_JADE)
-	vibrato_instruction_label.add_theme_font_size_override("font_size", 18)
+	vibrato_instruction_label.add_theme_font_size_override("font_size", 15)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		vibrato_instruction_label.add_theme_font_override("font", bold_font)
@@ -1028,13 +761,75 @@ func _build_vibrato_sheet_hud() -> void:
 	vibrato_status_label = Label.new()
 	vibrato_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vibrato_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
-	vibrato_status_label.add_theme_font_size_override("font_size", 14)
+	vibrato_status_label.add_theme_font_size_override("font_size", 11)
 	content.add_child(vibrato_status_label)
 	vibrato_progress_bar = ProgressBar.new()
 	vibrato_progress_bar.max_value = float(VIBRATO_NOTES.size())
 	vibrato_progress_bar.show_percentage = false
-	vibrato_progress_bar.custom_minimum_size = Vector2(0, 6)
+	vibrato_progress_bar.custom_minimum_size = Vector2(0, 4)
 	content.add_child(vibrato_progress_bar)
+
+func _build_song_thanh_sheet_hud() -> void:
+	var hud_layer := Control.new()
+	hud_layer.name = "SongThanhHUDLayer"
+	hud_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	staff_card.add_child(hud_layer)
+	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	song_thanh_sheet_hud = PanelContainer.new()
+	song_thanh_sheet_hud.name = "SongThanhSheetHUD"
+	song_thanh_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	song_thanh_sheet_hud.anchor_left = 0.5
+	song_thanh_sheet_hud.anchor_right = 0.5
+	song_thanh_sheet_hud.anchor_top = 0.0
+	song_thanh_sheet_hud.anchor_bottom = 0.0
+	song_thanh_sheet_hud.offset_left = -300.0
+	song_thanh_sheet_hud.offset_right = 300.0
+	song_thanh_sheet_hud.offset_top = 34.0
+	song_thanh_sheet_hud.offset_bottom = 94.0
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
+	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
+	panel_style.border_width_left = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 14
+	panel_style.corner_radius_top_right = 14
+	panel_style.corner_radius_bottom_left = 14
+	panel_style.corner_radius_bottom_right = 14
+	song_thanh_sheet_hud.add_theme_stylebox_override("panel", panel_style)
+	hud_layer.add_child(song_thanh_sheet_hud)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
+	song_thanh_sheet_hud.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	song_thanh_instruction_label = Label.new()
+	song_thanh_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	song_thanh_instruction_label.add_theme_color_override("font_color", C_JADE)
+	song_thanh_instruction_label.add_theme_font_size_override("font_size", 15)
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		song_thanh_instruction_label.add_theme_font_override("font", bold_font)
+	song_thanh_instruction_label.text = "Song thanh · Lượt 1/2 · Cặp 1/6"
+	content.add_child(song_thanh_instruction_label)
+	song_thanh_status_label = Label.new()
+	song_thanh_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	song_thanh_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	song_thanh_status_label.add_theme_font_size_override("font_size", 11)
+	song_thanh_status_label.text = "Gảy đồng thời hai nốt; giữ tiếng đàn đều và rõ."
+	content.add_child(song_thanh_status_label)
+	song_thanh_progress_bar = ProgressBar.new()
+	song_thanh_progress_bar.max_value = 12.0
+	song_thanh_progress_bar.show_percentage = false
+	song_thanh_progress_bar.custom_minimum_size = Vector2(0, 4)
+	content.add_child(song_thanh_progress_bar)
 
 func _build_press_sheet_hud() -> void:
 	# Use an intermediate layer for the same reason as the vibrato HUD: adding
@@ -1051,12 +846,14 @@ func _build_press_sheet_hud() -> void:
 	press_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	press_sheet_hud.anchor_left = 0.5
 	press_sheet_hud.anchor_right = 0.5
-	press_sheet_hud.anchor_top = 1.0
-	press_sheet_hud.anchor_bottom = 1.0
+	# Keep the round information above the staff, leaving the lower area free
+	# for the fingering number shown beneath the plucked source note.
+	press_sheet_hud.anchor_top = 0.0
+	press_sheet_hud.anchor_bottom = 0.0
 	press_sheet_hud.offset_left = -440.0
 	press_sheet_hud.offset_right = 440.0
-	press_sheet_hud.offset_top = -98.0
-	press_sheet_hud.offset_bottom = -18.0
+	press_sheet_hud.offset_top = 14.0
+	press_sheet_hud.offset_bottom = 142.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.95)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
@@ -1093,8 +890,13 @@ func _build_press_sheet_hud() -> void:
 	press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	press_status_label.add_theme_font_size_override("font_size", 14)
 	content.add_child(press_status_label)
+	press_round_hint_label = Label.new()
+	press_round_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	press_round_hint_label.add_theme_color_override("font_color", Color(0.42, 0.31, 0.16, 0.96))
+	press_round_hint_label.add_theme_font_size_override("font_size", 14)
+	content.add_child(press_round_hint_label)
 	press_progress_bar = ProgressBar.new()
-	press_progress_bar.max_value = float(PRESS_EXERCISES.size())
+	press_progress_bar.max_value = float(PRESS_EXERCISES.size() / PRESS_NOTES_PER_ROUND)
 	press_progress_bar.show_percentage = false
 	press_progress_bar.custom_minimum_size = Vector2(0, 6)
 	content.add_child(press_progress_bar)
@@ -1111,12 +913,13 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_sheet_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tremolo_sheet_hud.anchor_left = 0.5
 	tremolo_sheet_hud.anchor_right = 0.5
-	tremolo_sheet_hud.anchor_top = 1.0
-	tremolo_sheet_hud.anchor_bottom = 1.0
-	tremolo_sheet_hud.offset_left = -450.0
-	tremolo_sheet_hud.offset_right = 450.0
-	tremolo_sheet_hud.offset_top = -102.0
-	tremolo_sheet_hud.offset_bottom = -18.0
+	# Same compact treatment as Á/Rung: directly below the instrument pill.
+	tremolo_sheet_hud.anchor_top = 0.0
+	tremolo_sheet_hud.anchor_bottom = 0.0
+	tremolo_sheet_hud.offset_left = -300.0
+	tremolo_sheet_hud.offset_right = 300.0
+	tremolo_sheet_hud.offset_top = 34.0
+	tremolo_sheet_hud.offset_bottom = 94.0
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(1.0, 0.98, 0.91, 0.96)
 	panel_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.76)
@@ -1132,10 +935,10 @@ func _build_tremolo_sheet_hud() -> void:
 	hud_layer.add_child(tremolo_sheet_hud)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 5)
+	margin.add_theme_constant_override("margin_bottom", 5)
 	tremolo_sheet_hud.add_child(margin)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 2)
@@ -1143,7 +946,7 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_instruction_label = Label.new()
 	tremolo_instruction_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tremolo_instruction_label.add_theme_color_override("font_color", C_JADE)
-	tremolo_instruction_label.add_theme_font_size_override("font_size", 18)
+	tremolo_instruction_label.add_theme_font_size_override("font_size", 15)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if bold_font:
 		tremolo_instruction_label.add_theme_font_override("font", bold_font)
@@ -1151,12 +954,12 @@ func _build_tremolo_sheet_hud() -> void:
 	tremolo_status_label = Label.new()
 	tremolo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tremolo_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
-	tremolo_status_label.add_theme_font_size_override("font_size", 14)
+	tremolo_status_label.add_theme_font_size_override("font_size", 11)
 	content.add_child(tremolo_status_label)
 	tremolo_progress_bar = ProgressBar.new()
 	tremolo_progress_bar.max_value = float(TREMOLO_EXERCISES.size())
 	tremolo_progress_bar.show_percentage = false
-	tremolo_progress_bar.custom_minimum_size = Vector2(0, 6)
+	tremolo_progress_bar.custom_minimum_size = Vector2(0, 4)
 	content.add_child(tremolo_progress_bar)
 
 
@@ -1385,7 +1188,6 @@ func _is_error_flash_demo() -> bool:
 func _uses_chord_lesson_flow() -> bool:
 	# Các bài kỹ thuật kế thừa cùng luồng: tập từng hợp âm trước, rồi vào khuông nhạc.
 	return current_lesson_id in [
-		"dan_tranh_level_7_bai_20_practice",
 		"dan_tranh_level_8_bai_31_practice",
 		"dan_tranh_level_8_bai_32_practice",
 		"dan_tranh_level_8_bai_33_practice"
@@ -1429,12 +1231,20 @@ func _setup_top_pitch_box():
 	title_plaque.anchor_left = 0.5; title_plaque.anchor_right = 0.5
 	title_plaque.offset_left = -300; title_plaque.offset_right = 300
 	title_plaque.offset_top = 32; title_plaque.offset_bottom = 120
+	# A lesson title must never paint over the speed controls.  The responsive
+	# bounds are applied in _update_staff_layout(); clipping is a final guard
+	# while the first layout pass is being calculated.
+	title_plaque.clip_contents = true
 	var tp_sb = StyleBoxFlat.new()
 	tp_sb.bg_color = Color(0.24, 0.16, 0.10, 0.95)
 	tp_sb.border_color = Color(0.88, 0.72, 0.38, 1.0)
 	tp_sb.border_width_left = 3; tp_sb.border_width_right = 3; tp_sb.border_width_top = 3; tp_sb.border_width_bottom = 3
 	tp_sb.corner_radius_top_left = 16; tp_sb.corner_radius_top_right = 16; tp_sb.corner_radius_bottom_left = 16; tp_sb.corner_radius_bottom_right = 16
-	tp_sb.shadow_color = Color(0.15, 0.10, 0.05, 0.4); tp_sb.shadow_size = 10; tp_sb.shadow_offset = Vector2(0, 4)
+	# Do not use a rectangular panel shadow here: it becomes visible outside the
+	# rounded corners on some renderers and makes the plaque look like a gray box.
+	tp_sb.shadow_color = Color(0.0, 0.0, 0.0, 0.0); tp_sb.shadow_size = 0; tp_sb.shadow_offset = Vector2.ZERO
+	tp_sb.corner_detail = 12
+	tp_sb.anti_aliasing = true
 	title_plaque.add_theme_stylebox_override("panel", tp_sb)
 	
 	var pl_vbox = VBoxContainer.new()
@@ -1449,12 +1259,13 @@ func _setup_top_pitch_box():
 	lbl_num.add_theme_font_size_override("font_size", 20)
 	pl_vbox.add_child(lbl_num)
 	
-	var lbl_main = Label.new()
-	lbl_main.text = "🌿   " + l_title + "   🌿"
-	lbl_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_main.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
-	lbl_main.add_theme_font_size_override("font_size", 30)
-	pl_vbox.add_child(lbl_main)
+	title_main_label = Label.new()
+	title_main_label.text = "🌿 " + l_title + " 🌿"
+	title_main_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_main_label.clip_text = true
+	title_main_label.add_theme_color_override("font_color", Color(0.98, 0.84, 0.40, 1.0))
+	title_main_label.add_theme_font_size_override("font_size", 26)
+	pl_vbox.add_child(title_main_label)
 	add_child(title_plaque)
 	
 	pill_badge = PanelContainer.new()
@@ -1572,12 +1383,13 @@ func _setup_pitch_hud_box():
 		mic_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		mic_lbl.add_theme_font_size_override("font_size", 16)
 		mic_lbl.custom_minimum_size = Vector2(0, 36) # Compact space for 2-line instructions
-		
-		# Divider line below the instruction
+
+		# Divider that closes the listening-status section.
 		var divider = ColorRect.new()
 		divider.custom_minimum_size = Vector2(0, 1)
 		divider.color = Color(0.88, 0.72, 0.38, 0.3)
 		pb_vbox.add_child(divider)
+
 	
 	# Pitch note label
 	pitch_note_lbl = Label.new()
@@ -1605,6 +1417,16 @@ func _setup_pitch_hud_box():
 	
 	if feedback_area:
 		feedback_area.add_child(pitch_box)
+		# This belongs below the whole microphone card (including the progress
+		# line), never inside the “Đang chờ âm thanh…” card itself.
+		press_round_hint_label = Label.new()
+		press_round_hint_label.name = "PressRoundHint"
+		press_round_hint_label.visible = false
+		press_round_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		press_round_hint_label.add_theme_color_override("font_color", Color(0.42, 0.31, 0.16, 0.96))
+		press_round_hint_label.add_theme_font_size_override("font_size", 14)
+		press_round_hint_label.custom_minimum_size = Vector2(0, 40)
+		feedback_area.add_child(press_round_hint_label)
 
 func _process(delta):
 	# Update teacher talking animation
@@ -2168,7 +1990,8 @@ func _start_intro():
 	if skip_intro_btn:
 		skip_intro_btn.visible = true
 	if previous_intro_btn:
-		previous_intro_btn.visible = true
+		# There is no previous Mai speech on the first line of a lesson.
+		previous_intro_btn.visible = false
 	if pause_btn:
 		pause_btn.visible = false
 	if pause_overlay:
@@ -2206,6 +2029,11 @@ func _create_intro_sheet_overlay() -> void:
 
 func _show_intro_sheet_preview() -> void:
 	if not staff_display or lesson_sheet.is_empty():
+		return
+	# Use the same authored three-note score in the intro overlay and in the
+	# practice screen. This also retains the * technique mark and finger 2.
+	if _is_press_practice():
+		_build_press_display_notes()
 		return
 	var preview_notes: Array = []
 	var staff_width := staff_display.size.x
@@ -2260,7 +2088,7 @@ func _on_practice_now_pressed() -> void:
 func _play_next_intro_step():
 	intro_playback_token += 1
 	var playback_token := intro_playback_token
-	var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+	var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 	if intro_step >= dialogues.size():
 		# Bài 1 (bai_1), 2 (bai_5), 3 (bai_4) là lý thuyết thuần – khi hết dialogue
 		# thì hoàn thành bài luôn, không hiện khuôn nhạc thực hành.
@@ -2279,6 +2107,10 @@ func _play_next_intro_step():
 	if _is_theory_only_lesson() and _is_practice_prompt(step_data):
 		_finish_theory_lesson()
 		return
+	# intro_step is the index of the speech about to be shown. Only show
+	# "Trở lại" from the second speech onward.
+	if previous_intro_btn:
+		previous_intro_btn.visible = intro_step > 0
 	if step_data["action"] == "speak":
 		speech_text.text = step_data["text"]
 		if ai_audio:
@@ -2373,6 +2205,10 @@ func _finish_theory_lesson() -> void:
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
 	_apply_adaptive_speed()
+	# Hợp âm ba âm uses the single-note practice flow but still needs the same
+	# speed selector as all other đàn tranh practice screens.
+	if speed_bar_container:
+		speed_bar_container.visible = true
 	if intro_overlay:
 		intro_overlay.visible = false
 	_shrink_teacher()
@@ -2542,7 +2378,7 @@ func _process_practice_single(delta: float) -> void:
 	var target_string_idx := 0
 	
 	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+		var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx < 0 or prev_step_idx >= dialogues.size():
 			return
@@ -2645,7 +2481,7 @@ func _on_wrong_note_played(detected_note: String, detected_idx: int, target_note
 	if current_state == State.INTRO or current_state == State.PRACTICE_SINGLE:
 		var note_type = "quarter"
 		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+			var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 				note_type = dialogues[prev_step_idx].get("type", "quarter")
@@ -2673,7 +2509,7 @@ func _on_intro_note_correct(note_name: String) -> void:
 	current_state = State.INTRO
 	var note_type = "quarter"
 	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-		var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+		var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 		var prev_step_idx = intro_step - 1
 		if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 			note_type = dialogues[prev_step_idx].get("type", "quarter")
@@ -2728,7 +2564,7 @@ func _on_string_plucked(idx: int, note_name: String) -> void:
 		return
 	if current_state == State.PRACTICE_SINGLE:
 		if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
-			var dialogues = LESSON_DIALOGUES.get(current_lesson_id, [])
+			var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
 			var prev_step_idx = intro_step - 1
 			if prev_step_idx >= 0 and prev_step_idx < dialogues.size():
 				var step_data = dialogues[prev_step_idx]
@@ -2882,18 +2718,17 @@ func _start_glissando_round(round_index: int) -> void:
 	_build_glissando_round_notes(str(GLISSANDO_ROUNDS[round_index]["mode"]))
 
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	if glissando_instruction_label:
-		glissando_instruction_label.text = "%s · %s" % [
-			GLISSANDO_ROUNDS[round_index]["title"],
-			GLISSANDO_ROUNDS[round_index]["instruction"]
+		glissando_instruction_label.text = "%s · Lượt %d/2" % [
+			GLISSANDO_ROUNDS[round_index]["title"], round_index + 1
 		]
 	if glissando_progress_label:
 		glissando_progress_label.text = "Lượt %d/2 · 0 dây" % (round_index + 1)
 	if glissando_progress_bar:
 		glissando_progress_bar.value = 0.0
 	if glissando_status_label:
-		glissando_status_label.text = "Micro đang nghe đàn thật... Hãy thực hiện một động tác liền mạch."
+		glissando_status_label.text = str(GLISSANDO_ROUNDS[round_index]["instruction"])
 		glissando_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	if mic_status_lbl:
 		mic_status_lbl.text = "🎙️ Đang nhận diện chuỗi âm kỹ thuật Á"
@@ -2927,7 +2762,7 @@ func _build_glissando_round_notes(_mode: String) -> void:
 			"x": note_x,
 			"glissando_cue_x": cue_x,
 			"glissando_second_cue_x": second_cue_x,
-			"show_glissando_arrow": i == 0,
+			"show_glissando_arrow": i < string_order.size() - 1,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "quarter",
 			"bar_after": true,
@@ -3152,38 +2987,36 @@ func _start_press_practice() -> void:
 	staff_display.beats_per_measure = 4
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
+	# Notes begin black. Green is reserved for a note the learner has completed
+	# or the sample player is actively demonstrating.
+	staff_display.use_note_colors = true
+	staff_display.content_top_inset = 24.0
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	_build_press_display_notes()
 	_start_press_exercise(0)
 
 func _build_press_display_notes() -> void:
 	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
-	var start_x := 320.0
-	var end_x: float = maxf(start_x + 920.0, staff_width - 120.0)
-	var pair_width := (end_x - start_x) / float(PRESS_EXERCISES.size())
+	# A round contains only three notes, so keep them as a readable centered
+	# group instead of spreading them across the full width of the sheet.
+	var note_gap := clampf(staff_width * 0.16, 150.0, 260.0)
+	var group_center := clampf(staff_width * 0.60, note_gap + 150.0, staff_width - note_gap - 80.0)
+	var round_start: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else PRESS_NOTES_PER_ROUND
 	press_display_notes.clear()
-	for i in range(PRESS_EXERCISES.size()):
-		var exercise: Dictionary = PRESS_EXERCISES[i]
-		var source_x := start_x + pair_width * float(i) + pair_width * 0.12
-		var target_x := start_x + pair_width * float(i) + pair_width * 0.52
-		var bar_x := start_x + pair_width * float(i + 1)
+	for i in range(PRESS_NOTES_PER_ROUND):
+		var exercise: Dictionary = PRESS_EXERCISES[round_start + i]
 		press_display_notes.append({
-			"note": "ZT_" + str(exercise["source"]),
-			"x": source_x,
-			"color": PRESS_PENDING_COLOR,
-			"type": "half",
-			"press_target": "ZT_" + str(exercise["target"]),
-			"press_target_x": target_x,
-			"press_label": "NHẤN ½↑"
-		})
-		press_display_notes.append({
+			# Nhạc đích duy nhất: học viên mượn dây được nêu trong HUD rồi nhấn
+			# để đạt Fa/Si. Không vẽ cặp nốt hoặc đường cong gây hiểu nhầm.
 			"note": "ZT_" + str(exercise["target"]),
-			"x": target_x,
-			"color": PRESS_PENDING_COLOR,
-			"type": "half",
-			"bar_after": i < PRESS_EXERCISES.size() - 1,
-			"bar_x": bar_x
+			"x": group_center + note_gap * float(i - 1),
+			"color": Color.BLACK,
+			"type": "quarter",
+			# Số bên dưới là ngón gảy tay phải. Dấu * ở trên nốt chỉ riêng
+			# kỹ thuật Nhấn tay trái, không phải một "ngón số 3".
+			"fingering": str(exercise["finger"]),
+			"technique_marker": "*"
 		})
 	staff_display.set_notes(press_display_notes)
 	staff_display.queue_redraw()
@@ -3194,7 +3027,11 @@ func _start_press_exercise(exercise_index: int) -> void:
 			analyzer.contour_tracking_mode = false
 		_finish_practice()
 		return
+	var previous_round: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else 1
 	press_exercise_idx = exercise_index
+	var current_round: int = 0 if press_exercise_idx < PRESS_NOTES_PER_ROUND else 1
+	if previous_round != current_round:
+		_build_press_display_notes()
 	press_cents_history.clear()
 	press_sample_accumulator = 0.0
 	press_attempt_elapsed = 0.0
@@ -3210,27 +3047,22 @@ func _start_press_exercise(exercise_index: int) -> void:
 	press_added_sound_elapsed = 0.0
 	# Never reuse a still-ringing attack from the previous instruction/attempt.
 	press_consumed_attack_generation = _get_current_technique_attack_generation()
-	for pair_idx in range(PRESS_EXERCISES.size()):
-		var color := PRESS_PENDING_COLOR
-		if pair_idx < exercise_index:
-			color = Color(0.12, 0.72, 0.30, 1.0)
-		press_display_notes[pair_idx * 2]["color"] = color
-		press_display_notes[pair_idx * 2 + 1]["color"] = color
+	var note_in_round := press_exercise_idx % PRESS_NOTES_PER_ROUND
+	for display_idx in range(press_display_notes.size()):
+		# Keep previously completed notes green; do not pre-highlight the note
+		# currently waiting for the learner.
+		press_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0) if display_idx < note_in_round else Color.BLACK
 	staff_display.queue_redraw()
 
 	var exercise: Dictionary = PRESS_EXERCISES[exercise_index]
 	var source := str(exercise["source"])
 	var target := str(exercise["target"])
-	var string_number := int(NOTE_TO_STRING.get(source, 0)) + 1
-	if press_instruction_label:
-		press_instruction_label.text = "Lượt %d/%d · %s → %s · Nhấn ½ cung ↑ (dây %d)" % [
-			exercise_index + 1, PRESS_EXERCISES.size(), source, target, string_number
-		]
-	if press_status_label:
-		press_status_label.text = "Gảy %s, rồi nhấn tay trái để âm tăng lên %s (+100 cents) và giữ ổn định." % [source, target]
-		press_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
+	var borrow_instruction := "Mượn dây Mi nhấn lên dây Fa" if int(exercise["interval"]) == 100 else "Mượn dây La nhấn lên dây Si"
+	if press_round_hint_label:
+		press_round_hint_label.visible = true
+		press_round_hint_label.text = "%s\nNhấn tay trái bằng 3 ngón" % borrow_instruction
 	if press_progress_bar:
-		press_progress_bar.value = float(exercise_index)
+		press_progress_bar.value = float(current_round) + float(note_in_round) / float(PRESS_NOTES_PER_ROUND)
 	if mic_status_lbl:
 		mic_status_lbl.text = "🎙️ Đang nghe đường nhấn %s lên %s" % [source, target]
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
@@ -3266,10 +3098,9 @@ func _process_press_practice(delta: float) -> void:
 				press_added_sound_elapsed = 0.0
 				press_silence_elapsed = 0.0
 				press_cents_history.append(0.0)
-				# Đã gảy đúng Mi: trả hai nốt về trạng thái đang chờ trước khi
-				# theo dõi đường nhấn lên Fa.
-				press_display_notes[press_exercise_idx * 2]["color"] = PRESS_PENDING_COLOR
-				press_display_notes[press_exercise_idx * 2 + 1]["color"] = PRESS_PENDING_COLOR
+				# Đã gảy đúng dây mượn: giữ nốt đích của lần này ở trạng thái chờ
+				# trong khi theo dõi đường nhấn liên tục.
+				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 				staff_display.queue_redraw()
 				if press_status_label:
 					press_status_label.text = "Đã nhận đúng lần gảy dây %s. Hãy nhấn dần lên %s..." % [source, target]
@@ -3284,10 +3115,8 @@ func _process_press_practice(delta: float) -> void:
 					"Đã nghe %s · cần gảy đúng dây %s trước" % [heard_note, source],
 					"Sai dây"
 				)
-				# Sai dây phải phản hồi ngay trên cả cặp Mi -> Fa, giống bài
-				# Kỹ thuật gảy ngón 2; lượt gảy Mi đúng sau đó sẽ trả lại màu xám.
-				press_display_notes[press_exercise_idx * 2]["color"] = Color(0.88, 0.16, 0.14, 1.0)
-				press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				# Báo sai ngay trên nốt đích của lần đang luyện.
+				press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 				staff_display.queue_redraw()
 		else:
 			var cents := 1200.0 * log(pitch / maxf(press_baseline_hz, 0.001)) / log(2.0)
@@ -3512,12 +3341,11 @@ func _analyze_press_contour(history: Array[float], target_interval: float) -> Di
 
 func _on_press_exercise_success(result: Dictionary) -> void:
 	press_exercise_locked = true
-	press_display_notes[press_exercise_idx * 2]["color"] = Color(0.12, 0.78, 0.30, 1.0)
-	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.12, 0.78, 0.30, 1.0)
+	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 	staff_display.queue_redraw()
 	var exercise: Dictionary = PRESS_EXERCISES[press_exercise_idx]
 	if press_progress_bar:
-		press_progress_bar.value = float(press_exercise_idx + 1)
+		press_progress_bar.value = float(press_exercise_idx + 1) / float(PRESS_NOTES_PER_ROUND)
 	if press_status_label:
 		press_status_label.text = "✓ Nhấn đúng %s → %s · đích %.0f cents · độ mượt %.0f%%" % [
 			exercise["source"],
@@ -3545,8 +3373,7 @@ func _on_press_exercise_success(result: Dictionary) -> void:
 
 func _on_press_exercise_failed(target_interval: float) -> void:
 	press_exercise_locked = true
-	press_display_notes[press_exercise_idx * 2]["color"] = Color(0.88, 0.16, 0.14, 1.0)
-	press_display_notes[press_exercise_idx * 2 + 1]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+	press_display_notes[press_exercise_idx % PRESS_NOTES_PER_ROUND]["color"] = Color.BLACK
 	staff_display.queue_redraw()
 	var feedback := "Chưa nhận đúng nốt gốc. Hãy gảy đúng dây được chỉ dẫn trước."
 	var overlay_detail := "Cần gảy đúng dây trước khi nhấn"
@@ -3596,7 +3423,7 @@ func _start_vibrato_practice() -> void:
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	_build_vibrato_display_notes()
 	_start_vibrato_note(0)
 
@@ -3614,6 +3441,7 @@ func _build_vibrato_display_notes() -> void:
 			"x": note_x,
 			"color": Color(0.16, 0.14, 0.12, 1.0),
 			"type": "half",
+			"fingering": "2",
 			"cue": "vibrato",
 			"bar_after": i < VIBRATO_NOTES.size() - 1,
 			"bar_x": (note_x + next_x) * 0.5
@@ -3643,8 +3471,6 @@ func _start_vibrato_note(note_index: int) -> void:
 	for i in range(vibrato_display_notes.size()):
 		if i < note_index:
 			vibrato_display_notes[i]["color"] = Color(0.12, 0.72, 0.30, 1.0)
-		elif i == note_index:
-			vibrato_display_notes[i]["color"] = C_GOLD
 		else:
 			vibrato_display_notes[i]["color"] = Color(0.16, 0.14, 0.12, 1.0)
 	staff_display.queue_redraw()
@@ -3686,12 +3512,16 @@ func _process_vibrato_practice(delta: float) -> void:
 				vibrato_min_amplitude_db = float(analyzer.current_amplitude_db)
 				vibrato_added_sound_elapsed = 0.0
 				vibrato_silence_elapsed = 0.0
+				vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.16, 0.14, 0.12, 1.0)
+				staff_display.queue_redraw()
 				if vibrato_status_label:
 					vibrato_status_label.text = "Đã nhận đúng lần gảy dây %s. Tiếp tục rung đều tay trái..." % target_note
 			elif bool(attack_identity.get("active", false)) \
 					and int(attack_identity.get("string_index", -1)) >= 0 \
 					and vibrato_status_label:
 				var heard_note := str(attack_identity.get("note_name", "âm khác"))
+				vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+				staff_display.queue_redraw()
 				vibrato_status_label.text = "Đang nghe %s; cần gảy đúng dây %s trước khi rung." % [heard_note, target_note]
 				vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
 				_show_practice_error_feedback(
@@ -3777,6 +3607,9 @@ func _reset_vibrato_attempt_tracking(message: String) -> void:
 	vibrato_contour_elapsed = 0.0
 	vibrato_min_amplitude_db = 0.0
 	vibrato_added_sound_elapsed = 0.0
+	if vibrato_note_idx >= 0 and vibrato_note_idx < vibrato_display_notes.size():
+		vibrato_display_notes[vibrato_note_idx]["color"] = Color(0.88, 0.16, 0.14, 1.0)
+		staff_display.queue_redraw()
 	if vibrato_status_label:
 		vibrato_status_label.text = message
 		vibrato_status_label.add_theme_color_override("font_color", Color(0.78, 0.22, 0.16, 1.0))
@@ -3929,7 +3762,7 @@ func _start_tremolo_practice() -> void:
 	staff_display.time_sig_denominator = 4
 	staff_display.glissando_arrow_mode = ""
 	if speed_bar_container:
-		speed_bar_container.visible = false
+		speed_bar_container.visible = true
 	_start_tremolo_exercise(0)
 
 func _start_tremolo_exercise(exercise_index: int) -> void:
@@ -3939,6 +3772,14 @@ func _start_tremolo_exercise(exercise_index: int) -> void:
 		_finish_practice()
 		return
 	tremolo_exercise_idx = exercise_index
+	tremolo_target_group_idx = 0
+	_build_tremolo_display_notes()
+	_prepare_tremolo_target_group(0)
+
+func _prepare_tremolo_target_group(group_index: int) -> void:
+	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
+	var groups: Array = exercise["groups"]
+	tremolo_target_group_idx = clampi(group_index, 0, groups.size() - 1)
 	tremolo_attack_strings.clear()
 	tremolo_attack_times.clear()
 	tremolo_attack_generations.clear()
@@ -3947,56 +3788,82 @@ func _start_tremolo_exercise(exercise_index: int) -> void:
 	tremolo_last_seen_generation = -1
 	tremolo_exercise_locked = false
 	tremolo_wrong_attacks = 0
-	_build_tremolo_display_notes()
-
-	var exercise: Dictionary = TREMOLO_EXERCISES[exercise_index]
 	var mode := str(exercise["mode"])
+	var target_notes := _get_tremolo_target_notes()
 	if tremolo_instruction_label:
-		tremolo_instruction_label.text = "Lượt %d/6 · %s" % [exercise_index + 1, exercise["title"]]
+		tremolo_instruction_label.text = "Lượt %d/%d · %s · Mẫu %d/%d" % [tremolo_exercise_idx + 1, TREMOLO_EXERCISES.size(), exercise["title"], tremolo_target_group_idx + 1, groups.size()]
 	if tremolo_status_label:
 		if mode == "single":
-			tremolo_status_label.text = "Gảy luân phiên hai ngón trên cùng một dây, nhanh và đều trong khoảng 3 giây."
+			tremolo_status_label.text = "Vê luân phiên ngón 1 và 2 trên dây %s, nhanh và đều." % target_notes[0]
 		else:
-			tremolo_status_label.text = "Gảy luân phiên hai dây cùng tên nốt, khác quãng; không gảy đồng thời."
+			tremolo_status_label.text = "Vê luân phiên ngón 1 và 2 trên %s – %s; không gảy đồng thời." % [target_notes[0], target_notes[1]]
 		tremolo_status_label.add_theme_color_override("font_color", Color(0.30, 0.26, 0.20, 0.92))
 	if tremolo_progress_bar:
-		tremolo_progress_bar.value = float(exercise_index)
+		tremolo_progress_bar.value = float(tremolo_exercise_idx)
 	if mic_status_lbl:
 		mic_status_lbl.text = "🎙️ Đang nghe tốc độ và độ đều của kỹ thuật vê"
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.24, 0.56, 0.35, 1.0))
+	_set_tremolo_target_group_color(Color(0.16, 0.14, 0.12, 1.0))
+
+func _get_tremolo_target_notes() -> Array:
+	if tremolo_exercise_idx < 0 or tremolo_exercise_idx >= TREMOLO_EXERCISES.size():
+		return []
+	var groups: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["groups"]
+	if tremolo_target_group_idx < 0 or tremolo_target_group_idx >= groups.size():
+		return []
+	return groups[tremolo_target_group_idx]
+
+func _get_tremolo_sample_notes(exercise_index: int) -> Array:
+	if exercise_index < 0 or exercise_index >= TREMOLO_EXERCISES.size():
+		return []
+	var sample_notes: Array = []
+	for group in TREMOLO_EXERCISES[exercise_index]["groups"]:
+		for note_name in group:
+			sample_notes.append(note_name)
+	return sample_notes
+
+func _flash_tremolo_sample_group(group_index: int) -> void:
+	var flash_time := float(Time.get_ticks_msec())
+	for note in tremolo_display_notes:
+		if int(note.get("tremolo_group_index", -1)) == group_index:
+			note["color"] = Color(0.12, 0.78, 0.30, 1.0)
+			note["flash_trigger"] = flash_time
+			note["flash_color"] = Color(0.48, 1.0, 0.56, 1.0)
+			note["flash_scale"] = false
+	staff_display.queue_redraw()
 
 func _build_tremolo_display_notes() -> void:
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
-	var notes: Array = exercise["notes"]
+	var groups: Array = exercise["groups"]
 	var staff_width: float = maxf(staff_display.size.x, get_viewport_rect().size.x - 110.0)
-	var center_x := maxf(440.0, staff_width * 0.58)
+	var left_x := maxf(300.0, staff_width * 0.34)
+	var right_x := minf(staff_width - 170.0, staff_width * 0.78)
+	var step_x := (right_x - left_x) / maxf(1.0, float(groups.size() - 1))
 	tremolo_display_notes.clear()
-	if mode == "single":
-		tremolo_display_notes.append({
-			"note": "ZT_" + str(notes[0]),
-			"x": center_x,
-			"color": C_GOLD,
-			"type": "half",
-			"cue": "tremolo_single"
-		})
-	else:
-		var source_x := center_x - 120.0
-		var target_x := center_x + 120.0
-		tremolo_display_notes.append({
-			"note": "ZT_" + str(notes[0]),
-			"x": source_x,
-			"color": C_GOLD,
-			"type": "half",
-			"tremolo_pair_target": "ZT_" + str(notes[1]),
-			"tremolo_pair_target_x": target_x
-		})
-		tremolo_display_notes.append({
-			"note": "ZT_" + str(notes[1]),
-			"x": target_x,
-			"color": C_GOLD,
-			"type": "half"
-		})
+	for group_index in range(groups.size()):
+		var notes: Array = groups[group_index]
+		var x := left_x + step_x * group_index
+		var inactive := Color(0.38, 0.37, 0.34, 0.55)
+		if mode == "single":
+			tremolo_display_notes.append({
+				"note": "ZT_" + str(notes[0]), "x": x, "color": inactive,
+				"type": "half", "cue": "tremolo_single", "fingering": "1", "fingering_top": "2",
+				"tremolo_group_index": group_index
+			})
+		else:
+			var source_x := x - 46.0
+			var target_x := x + 46.0
+			tremolo_display_notes.append({
+				"note": "ZT_" + str(notes[0]), "x": source_x, "color": inactive,
+				"type": "half", "tremolo_pair_target": "ZT_" + str(notes[1]),
+				"tremolo_pair_target_x": target_x, "fingering": "1",
+				"tremolo_group_index": group_index
+			})
+			tremolo_display_notes.append({
+				"note": "ZT_" + str(notes[1]), "x": target_x, "color": inactive,
+				"type": "half", "fingering": "2", "tremolo_group_index": group_index
+			})
 	staff_display.set_notes(tremolo_display_notes)
 	staff_display.queue_redraw()
 
@@ -4013,13 +3880,15 @@ func _append_tremolo_attack(
 			or attack_time_sec <= 0.0 or attack_generation <= tremolo_last_seen_generation:
 		return
 	tremolo_last_seen_generation = attack_generation
-	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
-	var notes: Array = exercise["notes"]
+	var notes := _get_tremolo_target_notes()
+	if notes.is_empty():
+		return
 	var allowed_strings: Array[int] = []
 	for note_name in notes:
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	if not allowed_strings.has(string_idx):
 		tremolo_wrong_attacks += 1
+		_set_tremolo_target_group_color(Color(0.88, 0.16, 0.14, 1.0))
 		var target_label := str(notes[0])
 		if notes.size() > 1:
 			target_label = "%s – %s" % [notes[0], notes[1]]
@@ -4037,6 +3906,7 @@ func _append_tremolo_attack(
 		return
 	if tremolo_attack_times.is_empty():
 		tremolo_attempt_started_at = attack_time_sec
+		_set_tremolo_target_group_color(Color(0.16, 0.14, 0.12, 1.0))
 	tremolo_attack_strings.append(string_idx)
 	tremolo_attack_times.append(attack_time_sec)
 	tremolo_attack_generations.append(attack_generation)
@@ -4066,7 +3936,7 @@ func _evaluate_tremolo_attempt() -> void:
 	var exercise: Dictionary = TREMOLO_EXERCISES[tremolo_exercise_idx]
 	var mode := str(exercise["mode"])
 	var allowed_strings: Array[int] = []
-	for note_name in exercise["notes"]:
+	for note_name in _get_tremolo_target_notes():
 		allowed_strings.append(int(NOTE_TO_STRING.get(str(note_name), -1)))
 	var result := _analyze_tremolo_sequence(
 		tremolo_attack_strings,
@@ -4202,9 +4072,17 @@ func _set_tremolo_note_color(color: Color) -> void:
 		note["color"] = color
 	staff_display.queue_redraw()
 
+func _set_tremolo_target_group_color(color: Color) -> void:
+	for note in tremolo_display_notes:
+		if int(note.get("tremolo_group_index", -1)) == tremolo_target_group_idx:
+			note["color"] = color
+	staff_display.queue_redraw()
+
 func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: float) -> void:
-	_set_tremolo_note_color(Color(0.12, 0.78, 0.30, 1.0))
-	if tremolo_progress_bar:
+	_set_tremolo_target_group_color(Color(0.12, 0.78, 0.30, 1.0))
+	_flash_tremolo_sample_group(tremolo_target_group_idx)
+	var current_groups: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["groups"]
+	if tremolo_progress_bar and tremolo_target_group_idx + 1 >= current_groups.size():
 		tremolo_progress_bar.value = float(tremolo_exercise_idx + 1)
 	if tremolo_status_label:
 		var extra := ""
@@ -4227,13 +4105,18 @@ func _on_tremolo_success(rate: float, regularity: float, alternating_ratio: floa
 	if ai_audio:
 		ai_audio.speak_vietnamese("Tốt lắm! Bạn đã thực hiện kỹ thuật vê nhanh, đều và liền mạch.")
 	var completed_exercise := tremolo_exercise_idx
+	var completed_group := tremolo_target_group_idx
 	get_tree().create_timer(1.4).timeout.connect(func():
 		if current_state == State.PRACTICE and _is_tremolo_practice() and tremolo_exercise_idx == completed_exercise:
-			_start_tremolo_exercise(completed_exercise + 1)
+			var groups: Array = TREMOLO_EXERCISES[completed_exercise]["groups"]
+			if completed_group + 1 < groups.size():
+				_prepare_tremolo_target_group(completed_group + 1)
+			else:
+				_start_tremolo_exercise(completed_exercise + 1)
 	)
 
 func _on_tremolo_failed(result: Dictionary) -> void:
-	_set_tremolo_note_color(Color(0.88, 0.16, 0.14, 1.0))
+	_set_tremolo_target_group_color(Color(0.88, 0.16, 0.14, 1.0))
 	var count := int(result.get("count", 0))
 	var duration := float(result.get("duration", 0.0))
 	var rate := float(result.get("rate", 0.0))
@@ -4258,7 +4141,7 @@ func _on_tremolo_failed(result: Dictionary) -> void:
 	elif str(TREMOLO_EXERCISES[tremolo_exercise_idx]["mode"]) == "octave" \
 			and (alternating_ratio < 0.78 or not result.get("balance_ok", false)):
 		feedback = "Hãy gảy luân phiên nốt thấp và nốt cao; không lặp nhiều lần trên cùng một dây."
-	var target_notes: Array = TREMOLO_EXERCISES[tremolo_exercise_idx]["notes"]
+	var target_notes := _get_tremolo_target_notes()
 	_show_practice_error_feedback(
 		str(target_notes[0]),
 		"Cần vê nhanh, đều và đúng dây",
@@ -4287,6 +4170,19 @@ func _on_tremolo_failed(result: Dictionary) -> void:
 
 
 # --- Nghe mẫu cho các kỹ thuật đàn tranh đặc biệt ---------------------------
+func _update_song_thanh_hud(completed_pairs: int, sample_playback: bool) -> void:
+	if not song_thanh_instruction_label:
+		return
+	var visible_pair := clampi(completed_pairs + 1, 1, 12)
+	var round_number := 1 if visible_pair <= SONG_THANH_SAMPLE_PAIRS_PER_SET else 2
+	var pair_in_round := visible_pair if round_number == 1 else visible_pair - SONG_THANH_SAMPLE_PAIRS_PER_SET
+	song_thanh_instruction_label.text = ("Nghe mẫu" if sample_playback else "Song thanh") + " · Lượt %d/2 · Cặp %d/6" % [round_number, pair_in_round]
+	if song_thanh_status_label:
+		song_thanh_status_label.text = "Gảy đồng thời hai nốt; giữ tiếng đàn đều và rõ."
+	if song_thanh_progress_bar:
+		song_thanh_progress_bar.value = float(clampi(completed_pairs, 0, 12))
+
+
 func _process_song_thanh_sample(delta: float) -> void:
 	# Song thanh có 12 cặp. Mẫu được chia thành 2 lượt, mỗi lượt 6 cặp,
 	# để học viên kịp quan sát vị trí hai ngón và lắng nghe từng lần gảy.
@@ -4307,16 +4203,23 @@ func _process_song_thanh_sample(delta: float) -> void:
 		return
 
 	for note in active_falling_notes:
-		note["color"] = Color(0.6, 0.6, 0.6, 0.9)
-		if int(note.get("chord_group_id", -1)) == song_thanh_sample_pair_idx:
+		var group_idx := int(note.get("chord_group_id", -1))
+		# Các cặp mẫu đã gảy phải giữ xanh. Trước đây mọi nốt bị trả về xám
+		# ở mỗi nhịp mẫu, nên chỉ còn cặp đang phát là xanh.
+		if group_idx >= 0 and group_idx <= song_thanh_sample_pair_idx:
+			note["hit"] = true
 			note["color"] = Color(0.20, 0.72, 0.30, 1.0)
-			zither_board.call("pluck", int(note.get("target_string", 0)))
+			if group_idx == song_thanh_sample_pair_idx:
+				zither_board.call("pluck", int(note.get("target_string", 0)))
+		else:
+			note["color"] = Color(0.6, 0.6, 0.6, 0.9)
 	staff_display.set_notes(active_falling_notes)
 
 	song_thanh_sample_pair_idx += 1
 	song_thanh_sample_next_event += SONG_THANH_SAMPLE_PAIR_INTERVAL
 	var sample_set := 1 if song_thanh_sample_pair_idx <= SONG_THANH_SAMPLE_PAIRS_PER_SET else 2
 	var pair_in_set := song_thanh_sample_pair_idx if sample_set == 1 else song_thanh_sample_pair_idx - SONG_THANH_SAMPLE_PAIRS_PER_SET
+	_update_song_thanh_hud(song_thanh_sample_pair_idx, true)
 	_set_sample_listening_status("Nghe mẫu lượt %d/2 · cặp %d/6" % [sample_set, pair_in_set])
 
 
@@ -4330,7 +4233,7 @@ func _show_song_thanh_sample_set(set_index: int) -> void:
 		var group_idx := int(note.get("chord_group_id", -1))
 		if group_idx >= first_pair and group_idx < first_pair + SONG_THANH_SAMPLE_PAIRS_PER_SET:
 			note["x"] = hit_x + float(group_idx - first_pair) * pair_spacing
-			note["color"] = Color(0.6, 0.6, 0.6, 0.9)
+			note["color"] = Color(0.20, 0.72, 0.30, 1.0) if bool(note.get("hit", false)) else Color(0.6, 0.6, 0.6, 0.9)
 		else:
 			# Đẩy các cặp của lượt còn lại ra ngoài để không xuất hiện lẫn vào lượt đang nghe.
 			note["x"] = -1000.0
@@ -4429,11 +4332,10 @@ func _process_glissando_sample(delta: float) -> void:
 		var string_idx := technique_sample_sequence[technique_sample_sequence_idx]
 		zither_board.call("pluck", string_idx)
 		technique_sample_sequence_idx += 1
-		# Sheet chỉ hiển thị 7 nốt đại diện cho nét Á. Mỗi phần của chuỗi
-		# mẫu vừa phát sẽ tô xanh nốt tương ứng để học viên thấy rõ tiến trình.
+		# Sheet hiển thị 6 nốt của lượt Á. Mỗi lần phát sẽ tô xanh
+		# nốt tương ứng để học viên thấy rõ tiến trình.
 		if not glissando_display_notes.is_empty():
-			var progress := float(technique_sample_sequence_idx) / float(technique_sample_sequence.size())
-			var display_idx := mini(glissando_display_notes.size() - 1, int(floor(progress * glissando_display_notes.size())))
+			var display_idx := mini(glissando_display_notes.size() - 1, technique_sample_sequence_idx - 1)
 			glissando_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0)
 			visual_note_changed = true
 		if glissando_progress_bar:
@@ -4456,6 +4358,12 @@ func _prepare_press_sample_exercise() -> void:
 	technique_sample_elapsed = 0.0
 	technique_sample_in_gap = false
 	var exercise: Dictionary = PRESS_EXERCISES[technique_sample_demo_idx]
+	# A sample is an explicit playback event: mark the note being heard green
+	# and retain green on every note already demonstrated in this round.
+	var sample_note_in_round := technique_sample_demo_idx % PRESS_NOTES_PER_ROUND
+	for display_idx in range(press_display_notes.size()):
+		press_display_notes[display_idx]["color"] = Color(0.20, 0.72, 0.30, 1.0) if display_idx <= sample_note_in_round else Color.BLACK
+	staff_display.queue_redraw()
 	_play_sustained_technique_note(str(exercise["source"]))
 	if press_status_label:
 		press_status_label.text = "Đang nghe mẫu nhấn %s → %s..." % [exercise["source"], exercise["target"]]
@@ -4470,7 +4378,7 @@ func _process_press_sample(delta: float) -> void:
 			technique_sample_demo_idx += 1
 			if technique_sample_demo_idx >= PRESS_EXERCISES.size():
 				if press_progress_bar:
-					press_progress_bar.value = float(PRESS_EXERCISES.size())
+					press_progress_bar.value = float(PRESS_EXERCISES.size() / PRESS_NOTES_PER_ROUND)
 				_finish_technique_sample("Đã nghe xong các mẫu kỹ thuật nhấn.", press_status_label)
 			else:
 				_prepare_press_sample_exercise()
@@ -4547,6 +4455,7 @@ func _prepare_tremolo_sample_exercise() -> void:
 	technique_sample_elapsed = 0.0
 	technique_sample_event_elapsed = TREMOLO_SAMPLE_INTERVAL
 	technique_sample_sequence_idx = 0
+	tremolo_sample_group_idx = -1
 	technique_sample_in_gap = false
 	var exercise: Dictionary = TREMOLO_EXERCISES[technique_sample_demo_idx]
 	if tremolo_status_label:
@@ -4570,10 +4479,25 @@ func _process_tremolo_sample(delta: float) -> void:
 
 	technique_sample_elapsed += delta
 	technique_sample_event_elapsed += delta
-	var notes: Array = TREMOLO_EXERCISES[technique_sample_demo_idx]["notes"]
+	var exercise: Dictionary = TREMOLO_EXERCISES[technique_sample_demo_idx]
+	var groups: Array = exercise["groups"]
+	if groups.is_empty():
+		return
+	# Hear one complete Vê figure before advancing to the next written figure.
+	# This makes the visual and audio travel left → right rather than hopping
+	# between all notes of the sheet on every attack.
+	var group_duration := TREMOLO_SAMPLE_DURATION / float(groups.size())
+	var group_index := mini(groups.size() - 1, int(technique_sample_elapsed / group_duration))
+	if group_index != tremolo_sample_group_idx:
+		tremolo_sample_group_idx = group_index
+		technique_sample_sequence_idx = 0
+	var group_notes: Array = groups[group_index]
+	if group_notes.is_empty():
+		return
 	while technique_sample_event_elapsed >= TREMOLO_SAMPLE_INTERVAL:
 		technique_sample_event_elapsed -= TREMOLO_SAMPLE_INTERVAL
-		var note_name := str(notes[technique_sample_sequence_idx % notes.size()])
+		_flash_tremolo_sample_group(group_index)
+		var note_name := str(group_notes[technique_sample_sequence_idx % group_notes.size()])
 		var string_idx := int(NOTE_TO_STRING.get(note_name, -1))
 		if string_idx >= 0:
 			zither_board.call("pluck", string_idx)
@@ -4687,6 +4611,8 @@ func _start_practice():
 		if is_sample_mode:
 			_begin_tremolo_sample()
 		return
+	if _is_song_thanh_practice():
+		_update_song_thanh_hud(0, is_sample_mode)
 		
 	# Determine BPM based on current lesson
 	var lesson_bpm: float = 60.0
@@ -4760,13 +4686,16 @@ func _start_practice():
 					"type": n_type
 				})
 		cur_beat += dur
-	if _is_song_thanh_practice() and is_sample_mode:
-		song_thanh_sample_pair_idx = 0
-		song_thanh_sample_elapsed = 0.0
-		song_thanh_sample_next_event = 0.45
-		song_thanh_sample_set_break_done = false
+	if _is_song_thanh_practice():
+		# Both modes begin with the same readable six-pair layout. Previously this
+		# was applied only to Nghe mẫu, leaving normal practice with one pair.
 		_show_song_thanh_sample_set(0)
-		_set_sample_listening_status("Nghe mẫu chậm · lượt 1/2 · mỗi lượt 6 cặp song thanh")
+		if is_sample_mode:
+			song_thanh_sample_pair_idx = 0
+			song_thanh_sample_elapsed = 0.0
+			song_thanh_sample_next_event = 0.45
+			song_thanh_sample_set_break_done = false
+			_set_sample_listening_status("Nghe mẫu chậm · lượt 1/2 · mỗi lượt 6 cặp song thanh")
 	staff_display.set_notes(active_falling_notes)
 
 func _process_practice(delta):
@@ -4784,6 +4713,26 @@ func _process_practice(delta):
 	practice_time += delta
 	var hit_x = staff_display.hit_line_x
 	var scroll_speed = 350.0
+	if _is_song_thanh_practice() and not is_sample_mode:
+		# After the learner completes the first six visible pairs, reveal the
+		# second six-pair page instead of leaving its notes off-screen.
+		var first_set_complete := true
+		var second_set_visible := false
+		for song_note in active_falling_notes:
+			var group_index := int(song_note.get("chord_group_id", -1))
+			if group_index >= 0 and group_index < SONG_THANH_SAMPLE_PAIRS_PER_SET and not bool(song_note.get("hit", false)):
+				first_set_complete = false
+			elif group_index >= SONG_THANH_SAMPLE_PAIRS_PER_SET and float(song_note.get("x", -1000.0)) > -900.0:
+				second_set_visible = true
+		if first_set_complete and not second_set_visible:
+			_show_song_thanh_sample_set(1)
+			_update_song_thanh_hud(SONG_THANH_SAMPLE_PAIRS_PER_SET, false)
+			staff_display.set_notes(active_falling_notes)
+		elif not first_set_complete:
+			# Keep all six pairs in view while waiting for the learner. The normal
+			# wait-mode movement previously left only the first pair visible.
+			_show_song_thanh_sample_set(0)
+			staff_display.set_notes(active_falling_notes)
 	
 	var is_wait_mode = true # Always wait for the correct note sound before advancing past notes!
 	
@@ -5506,23 +5455,35 @@ func _create_skip_intro_button():
 	get_viewport().size_changed.connect(update_skip_pos)
 	update_skip_pos.call()
 	
-	# Bài lý thuyết không được phép đi vào thực hành nhận diện âm thanh.
-	skip_intro_btn.pressed.connect(func():
-		if _is_theory_only_lesson():
-			_finish_theory_lesson()
-		else:
-			_start_practice()
-	)
+	# Skip advances exactly one Mai speech. It must never jump directly to
+	# practice or complete the whole theory lesson.
+	skip_intro_btn.pressed.connect(_skip_current_intro_step)
 	previous_intro_btn.pressed.connect(_play_previous_intro_step)
 
 
+func _skip_current_intro_step() -> void:
+	if current_state != State.INTRO and current_state != State.PRACTICE_SINGLE:
+		return
+	# Invalidate the timer that was scheduled for the skipped speech and stop
+	# its TTS before rendering only the next dialogue item.
+	intro_playback_token += 1
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stop()
+	current_state = State.INTRO
+	_play_next_intro_step()
+
+
 func _play_previous_intro_step() -> void:
-	if current_state != State.INTRO:
+	if current_state != State.INTRO and current_state != State.PRACTICE_SINGLE:
 		return
 	# intro_step points to the next speech after the one currently on screen.
 	# Move back two positions, then let the regular dialogue renderer replay it.
 	if intro_step <= 1:
 		return
+	intro_playback_token += 1
+	if ai_audio and is_instance_valid(ai_audio.audio_player):
+		ai_audio.audio_player.stop()
+	current_state = State.INTRO
 	intro_step = max(0, intro_step - 2)
 	_play_next_intro_step()
 
@@ -5537,13 +5498,10 @@ var btn_sample_ref: Button = null
 var progress_label: Label = null
 
 func _should_have_speed_control() -> bool:
-	var parts = current_lesson_id.split("_")
-	for i in range(parts.size()):
-		if parts[i] == "bai" and i + 1 < parts.size():
-			var num = int(parts[i+1])
-			if num >= 3:
-				return true
-	return false
+	# The speed picker is a common practice HUD.  It is created for every đàn
+	# tranh lesson, then remains hidden during Mai's introduction and theory.
+	# Once the learner enters practice, _start_practice() makes it available.
+	return true
 
 func _create_pause_system():
 	# 1. Tạo nút Pause ở góc trên cùng bên phải (HUD tròn chuyên nghiệp)
@@ -5933,6 +5891,30 @@ func _update_staff_layout() -> void:
 	# Responsive positioning
 	var title_top = clampf(v_height * 0.02, 10.0, 24.0)
 	if title_plaque:
+		# On practice songs the speed HUD occupies the top-right corner.  Reserve
+		# its real width before sizing the title plaque, instead of letting a long
+		# title extend over the 60/80/100/120% controls.
+		if speed_bar_container and size.x >= 1200.0:
+			var speed_width := maxf(speed_bar_container.get_combined_minimum_size().x, 420.0)
+			var speed_left: float = size.x - 124.0 - speed_width
+			var title_left: float = clampf(size.x * 0.285, 520.0, 600.0)
+			var title_right: float = minf(speed_left - 18.0, title_left + 820.0)
+			# Keep a usable plaque even on reduced desktop widths.
+			if title_right < title_left + 420.0:
+				title_left = maxf(110.0, title_right - 420.0)
+			title_plaque.anchor_left = 0.0
+			title_plaque.anchor_right = 0.0
+			title_plaque.offset_left = title_left
+			title_plaque.offset_right = title_right
+			if title_main_label:
+				title_main_label.add_theme_font_size_override("font_size", 26 if title_right - title_left >= 680.0 else 22)
+		else:
+			title_plaque.anchor_left = 0.5
+			title_plaque.anchor_right = 0.5
+			title_plaque.offset_left = -300.0
+			title_plaque.offset_right = 300.0
+			if title_main_label:
+				title_main_label.add_theme_font_size_override("font_size", 24)
 		title_plaque.offset_top = title_top
 		title_plaque.offset_bottom = title_top + 80.0
 		

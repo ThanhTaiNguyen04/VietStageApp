@@ -6,12 +6,39 @@ const C_VER       := Color(0.13, 0.08, 0.05, 0.35)
 
 var _is_loading := false
 var _skip_hint: Label
+var _intro_video_player: VideoStreamPlayer
 
 func _ready() -> void:
 	_style_text()
 	_create_skip_hint()
 	ResourceLoader.load_threaded_request("res://scenes/LoadingScreen.tscn")
-	_animate()
+	_try_play_startup_video()
+
+
+func _try_play_startup_video() -> void:
+	# This is the original VietStage startup film. Keep the branded splash as a
+	# safe fallback so a missing/corrupt video never blocks app startup.
+	var stream := load("res://assets/theme/introtong.ogv") as VideoStream
+	if stream == null:
+		_animate()
+		return
+
+	if has_node("Center"):
+		$Center.visible = false
+	if has_node("VersionLabel"):
+		$VersionLabel.visible = false
+	if _skip_hint:
+		_skip_hint.visible = false
+
+	_intro_video_player = VideoStreamPlayer.new()
+	_intro_video_player.name = "StartupVideo"
+	_intro_video_player.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_intro_video_player.expand = true
+	_intro_video_player.stream = stream
+	_intro_video_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_intro_video_player)
+	_intro_video_player.finished.connect(_go_loading)
+	_intro_video_player.play()
 
 func _input(event: InputEvent) -> void:
 	if _is_loading:
@@ -83,6 +110,8 @@ func _go_loading() -> void:
 	if _is_loading:
 		return
 	_is_loading = true
+	if is_instance_valid(_intro_video_player):
+		_intro_video_player.stop()
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.30).set_trans(Tween.TRANS_CUBIC)
 	t.tween_callback(func() -> void:

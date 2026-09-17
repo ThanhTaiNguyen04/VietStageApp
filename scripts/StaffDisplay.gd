@@ -52,8 +52,10 @@ const NOTE_POSITIONS = {
 	"Đô_4": 6.0,     # C6: dòng phụ 2 trên
 	"Rê_4": 6.5,     # D6: khe trên dòng phụ 2
 	"Mi_4": 7.0,     # E6: dòng phụ 3 trên
+	"Fa_4": 7.5,
 	"Sol_4": 8.0,    # G6: dòng phụ 4 trên
-	"La_4": 8.5      # A6: khe trên dòng phụ 4
+	"La_4": 8.5,     # A6: khe trên dòng phụ 4
+	"Si_4": 9.0
 }
 
 var active_note = "Đô"
@@ -86,6 +88,9 @@ var hit_line_glow_color := Color(0.3, 0.9, 0.4, 0.3)
 var glissando_arrow_mode := ""
 var current_bpm: float = 60.0  # Updated by LessonSaoTruc to match bpm_multiplier
 var bar_lines: Array = []
+# Optional protected space at the top of a score (for a lesson HUD).  The
+# renderer moves high zither notation down rather than clipping it behind HUD.
+var content_top_inset := 0.0
 
 func set_note(note_name: String):
 	active_note = note_name
@@ -107,6 +112,14 @@ func _draw():
 			break
 	if has_zither_notes:
 		center_y += line_spacing * 0.45
+	if content_top_inset > 0.0 and has_zither_notes:
+		var highest_position := -INF
+		for note_data in notes_to_draw:
+			if str(note_data.get("note", "")) != "REST":
+				highest_position = maxf(highest_position, _get_note_position_index(str(note_data.get("note", ""))))
+		# The 1.75-line allowance includes the asterisk above a press note.
+		if highest_position > -INF:
+			center_y = maxf(center_y, content_top_inset + (highest_position - 2.0 + 1.75) * line_spacing)
 		
 	var start_x = 35.0
 	var end_x = size.x - 35.0
@@ -161,14 +174,18 @@ func _draw():
 		var n_cue = note_data.get("cue", "")
 		var n_type = note_data.get("type", "quarter")
 		var flash_t = note_data.get("flash_trigger", 0.0)
+		var note_flash_color: Color = note_data.get("flash_color", Color(1.0, 0.3, 0.3))
+		var note_flash_scale := bool(note_data.get("flash_scale", true))
 		# REST notes: draw nothing (empty space represents a rest naturally)
 		if n_name == "REST":
 			continue
-		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t)
+		_draw_single_note(n_name, n_x, center_y, n_color, line_color, n_tail, n_cue, n_type, flash_t, note_flash_color, note_flash_scale)
 		# Song thanh cần hiện số cho từng đầu nốt: ngón 2 ở hàng trên,
 		# ngón 1 ở hàng dưới; không gộp thành một nhãn duy nhất.
 		if not str(note_data.get("fingering", "")).is_empty():
 			_draw_fingering_number(note_data, n_color)
+		if not str(note_data.get("technique_marker", "")).is_empty():
+			_draw_technique_marker(note_data, center_y, n_color)
 		if note_data.has("press_target"):
 			_draw_press_curve(note_data, center_y, n_color)
 		if n_cue == "tremolo_single":
@@ -282,6 +299,28 @@ func _draw_glissando_arrow_head(from_point: Vector2, tip: Vector2, color: Color,
 	])
 	draw_colored_polygon(triangle, color)
 
+func _draw_technique_marker(note_data: Dictionary, center_y: float, color: Color) -> void:
+	var marker := str(note_data.get("technique_marker", ""))
+	if marker.is_empty():
+		return
+	var note_name := str(note_data.get("note", "ZT_Đô2"))
+	var note_x := float(note_data.get("x", size.x * 0.5))
+	var note_pos := _get_note_position_index(note_name)
+	var note_y: float = center_y + (2.0 - note_pos) * line_spacing
+	var font := ThemeDB.fallback_font
+	if font:
+		# The asterisk is notation for a left-hand technique, deliberately kept
+		# above the destination note so it cannot be confused with a fingering.
+		draw_string(
+			font,
+			Vector2(note_x - line_spacing * 0.28, note_y - line_spacing * 1.05),
+			marker,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			line_spacing * 0.56,
+			maxi(22, int(line_spacing * 0.62)),
+			color
+		)
+
 func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> void:
 	var source_name := str(note_data.get("note", "ZT_Mi2"))
 	var target_name := str(note_data.get("press_target", "ZT_Fa2"))
@@ -325,7 +364,7 @@ func _draw_press_curve(note_data: Dictionary, center_y: float, color: Color) -> 
 			maxi(11, int(line_spacing * 0.23)),
 			color
 		)
-func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0):
+func _draw_single_note(note_name: String, note_x: float, center_y: float, note_color: Color, line_color: Color, tail_w: float = 0.0, cue: String = "", note_type: String = "quarter", flash_t: float = 0.0, flash_color: Color = Color(1.0, 0.3, 0.3), flash_scale: bool = true):
 	var clean_name = note_name
 	if clean_name.begins_with("ZT_"):
 		clean_name = clean_name.right(-3)
@@ -384,8 +423,9 @@ func _draw_single_note(note_name: String, note_x: float, center_y: float, note_c
 		var elapsed = Time.get_ticks_msec() - flash_t
 		if elapsed < 400: # 400ms flash
 			var progress = elapsed / 400.0
-			scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
-			note_color = Color(1.0, 0.3, 0.3).lerp(note_color, progress)
+			if flash_scale:
+				scale_mod = 1.0 + sin(progress * PI) * 0.6 # Pulses up to 1.6x size
+			note_color = flash_color.lerp(note_color, progress)
 			
 	var note_width = line_spacing * (1.15 if is_zither else 1.35) * scale_mod
 	var note_height = line_spacing * (0.8 if is_zither else 0.95) * scale_mod
@@ -494,6 +534,19 @@ func _draw_fingering_number(note_data: Dictionary, color: Color) -> void:
 			font_size,
 			color
 		)
+		# Vê một dây uses two alternating fingers on one written note. Draw the
+		# upper cue independently so it follows the Song thanh two-row layout.
+		var upper_fingering := str(note_data.get("fingering_top", ""))
+		if not upper_fingering.is_empty():
+			draw_string(
+				font,
+				Vector2(note_x - line_spacing * 0.4, baseline_y - maxf(float(font_size) * 0.92, line_spacing * 0.82)),
+				upper_fingering,
+				HORIZONTAL_ALIGNMENT_CENTER,
+				line_spacing * 0.8,
+				font_size,
+				color
+			)
 
 func _draw_vibrato_mark(center: Vector2, color: Color, spacing: float) -> void:
 	var points := PackedVector2Array()
