@@ -131,9 +131,9 @@ func _build_theme() -> void:
 		bg_rect.add_child(bg_tex)
 	
 	var top_s := StyleBoxFlat.new()
-	top_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
-	top_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
-	top_s.border_width_bottom = 2
+	top_s.bg_color = Color(1.0, 0.99, 0.97, 0.70)
+	top_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28)
+	top_s.border_width_bottom = 1
 	top_bar.add_theme_stylebox_override("panel", top_s)
 	
 	var top_blur_mat = ShaderMaterial.new()
@@ -155,7 +155,7 @@ func _build_theme() -> void:
 	top_bar.add_child(top_blur_rect)
 	top_bar.move_child(top_blur_rect, 0)
 	
-	page_title.text = "GIÁO TRÌNH TRỐNG CHẦU CƠ BẢN"
+	page_title.text = "GIÁO TRÌNH TRỐNG CHẦU · CƠ BẢN"
 	page_title.add_theme_color_override("font_color", C_JADE)
 	
 	var f_title := load("res://assets/fonts/Lora-Bold.ttf") as Font
@@ -270,9 +270,12 @@ func _open_quiz() -> void:
 
 func _build_sidebar() -> void:
 	var side_s := StyleBoxFlat.new()
-	side_s.bg_color = Color(0.93, 0.91, 0.87, 0.6) # Glassmorphism opacity
-	side_s.border_color = Color(0.8, 0.78, 0.73, 0.8)
+	side_s.bg_color = Color(0.95, 0.93, 0.89, 0.60)
+	side_s.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15)
 	side_s.border_width_right = 2
+	side_s.shadow_size = 12
+	side_s.shadow_color = Color(0.13, 0.08, 0.05, 0.15)
+	side_s.shadow_offset = Vector2(4, 0)
 	sidebar.add_theme_stylebox_override("panel", side_s)
 	
 	var blur_mat = ShaderMaterial.new()
@@ -419,92 +422,49 @@ func _flat(bg: Color, border: Color, radius: int, border_width: int = 0) -> Styl
 	return s
 
 func _build_lesson_list() -> void:
-	lessons_hbox.add_theme_constant_override("separation", 120)
-	# Clear existing children
-	for child in lessons_hbox.get_children():
-		child.queue_free()
-		
-	var inst := "trong_chau"
-	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["trong_chau_coban_1_video"])
-	
-	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	
-	for i in range(LESSONS.size()):
-		var lesson_item : Dictionary = LESSONS[i]
-		var id := lesson_item["id"] as String
-		
-		# Define task status keys
-		var v_id := id + "_video"
-		var p_id := id + "_practice"
-		
-		# Unlocking checks
-		var is_v_unlocked := false
-		if i == 0:
-			is_v_unlocked = true
-		else:
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_v_unlocked = unlocked_lessons.has(v_id) or completed_lessons.has(prev_id + "_practice")
-			
-		var is_p_unlocked := is_v_unlocked and (completed_lessons.has(v_id) or unlocked_lessons.has(p_id))
-		
-		var is_v_completed := completed_lessons.has(v_id)
-		var is_p_completed := completed_lessons.has(p_id)
-		
-		# Column layout for each lesson
-		var col := VBoxContainer.new()
-		col.custom_minimum_size = Vector2.ZERO
-		col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.add_theme_constant_override("separation", 24)
-		
-		# Top: Lesson Title Label
-		var title_lbl := Label.new()
-		title_lbl.text = lesson_item["title"]
-		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_lbl.add_theme_color_override("font_color", C_TEXT if is_v_unlocked else C_TEXT_MUTED)
-		title_lbl.add_theme_font_size_override("font_size", 20)
-		if f_bold:
-			title_lbl.add_theme_font_override("font", f_bold)
-		col.add_child(title_lbl)
-		
-		# Center: Row of circles connected horizontally
-		var row := HBoxContainer.new()
-		row.name = "Row"
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.add_theme_constant_override("separation", 100)
-		col.add_child(row)
-		
-		# 1. Hướng Dẫn Button (Left circle)
-		var v_btn := Button.new()
-		v_btn.mouse_filter = Control.MOUSE_FILTER_PASS
-		v_btn.name = "VideoBtn"
-		v_btn.custom_minimum_size = Vector2(220, 220)
-		v_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		v_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		v_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		
-		_setup_circle_btn(v_btn, "Hướng dẫn", lesson_item["note"], is_v_unlocked, is_v_completed, "video")
-		row.add_child(v_btn)
-		
-		v_btn.pressed.connect(_on_video_pressed.bind(v_id, lesson_item["subtitles"], is_v_unlocked))
-		
-		# 2. Thực Hành Button (Right circle)
-		var p_btn := Button.new()
-		p_btn.mouse_filter = Control.MOUSE_FILTER_PASS
-		p_btn.name = "PracticeBtn"
-		p_btn.custom_minimum_size = Vector2(220, 220)
-		p_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		p_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		p_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		
-		_setup_circle_btn(p_btn, "Thực hành", lesson_item["note"], is_p_unlocked, is_p_completed, "practice")
-		row.add_child(p_btn)
-		
-		p_btn.pressed.connect(_on_practice_pressed.bind(p_id, is_p_unlocked))
-		
-		lessons_hbox.add_child(col)
+	lessons_hbox.add_theme_constant_override("separation", 64)
+	for child in lessons_hbox.get_children(): child.queue_free()
+	var completed: Array = SecureDataManager.data.get("completed_lessons", {}).get("trong_chau", [])
+	for index in range(LESSONS.size()):
+		var lesson: Dictionary = LESSONS[index]
+		var lesson_id := str(lesson.get("id", ""))
+		var unlocked := index == 0 or completed.has(str(LESSONS[index - 1].get("id", "")) + "_practice")
+		var done := completed.has(lesson_id + "_practice")
+		var column := VBoxContainer.new()
+		column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		column.alignment = BoxContainer.ALIGNMENT_CENTER
+		column.add_theme_constant_override("separation", 24)
+		var button := _create_circle_button(str(index + 1), str(lesson.get("note", "")), unlocked, done)
+		button.name = "LessonBtn"
+		button.set_meta("lesson_data", lesson)
+		button.pressed.connect(_on_video_pressed.bind(lesson_id + "_video", lesson.get("subtitles", []), unlocked))
+		column.add_child(button)
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(150, 42)
+		spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(spacer)
+		lessons_hbox.add_child(column)
+
+func _create_circle_button(number: String, title: String, unlocked: bool, completed: bool) -> Button:
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(250, 250)
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if unlocked else Control.CURSOR_ARROW
+	button.disabled = not unlocked
+	button.text = ("✓\nBÀI %s\n%s\nHoàn thành" if completed else "BÀI %s\n%s") % [number, title]
+	var style := _flat(C_JADE if completed else (Color.WHITE if unlocked else Color(0.95, 0.93, 0.89, 0.6)), C_GOLD if completed else (C_JADE_LIGHT if unlocked else Color(0.85, 0.82, 0.78, 1.0)), 125, 0)
+	style.border_width_left = 6; style.border_width_right = 6; style.border_width_top = 6; style.border_width_bottom = 6
+	if unlocked and not completed: style.shadow_size = 24; style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", style.duplicate())
+	button.add_theme_stylebox_override("pressed", style)
+	button.add_theme_stylebox_override("disabled", style)
+	button.add_theme_color_override("font_color", Color.WHITE if completed else (C_TEXT if unlocked else C_MUTED))
+	button.add_theme_font_size_override("font_size", 21)
+	var font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if font: button.add_theme_font_override("font", font)
+	_make_btn_bouncy(button)
+	return button
 
 func _on_video_pressed(v_id: String, subtitles: Array, is_unlocked: bool) -> void:
 	if not is_unlocked: return
@@ -586,6 +546,27 @@ func _setup_circle_btn(btn: Button, action: String, lesson_title: String, unlock
 	_make_btn_bouncy(btn)
 
 func _draw_connecting_lines() -> void:
+	var ui_centers: Array[Vector2] = []
+	var ui_available: Array[bool] = []
+	for child in lessons_hbox.get_children():
+		var column := child as VBoxContainer
+		var button := column.get_node_or_null("LessonBtn") as Button if column else null
+		if button:
+			ui_centers.append(column.position + button.position + button.size / 2.0)
+			ui_available.append(not button.disabled)
+	if ui_centers.size() >= 2:
+		var ui_line_y := ui_centers[0].y
+		for index in range(ui_centers.size() - 1):
+			var left := lessons_hbox.get_child(index).get_node("LessonBtn") as Button
+			var right := lessons_hbox.get_child(index + 1).get_node("LessonBtn") as Button
+			var p1 := Vector2(ui_centers[index].x + left.size.x * 0.5, ui_line_y)
+			var p2 := Vector2(ui_centers[index + 1].x - right.size.x * 0.5, ui_line_y)
+			var color := C_JADE if ui_available[index + 1] else Color(C_TEXT, 0.16)
+			lessons_hbox.draw_line(p1, p2, Color(color, 0.22), 24.0, true)
+			lessons_hbox.draw_line(p1, p2, color, 14.0, true)
+			lessons_hbox.draw_line(p1, p2, Color(1, 1, 1, 0.62), 4.0, true)
+	return
+	# Legacy two-node drawing retained below for compatibility with old scenes.
 	var inst := "trong_chau"
 	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
 	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["trong_chau_coban_1_video"])
@@ -650,21 +631,18 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_right", 16 if mobile else 36)
 	top_margin.add_theme_constant_override("margin_top", 16 if mobile else 24)
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
-	page_title.add_theme_font_size_override("font_size", 20 if mobile else 28)
+	page_title.add_theme_font_size_override("font_size", 19 if mobile else 25)
 	change_course_btn.custom_minimum_size.x = 110 if mobile else 180
-	var sep := 65 if mobile else 100
+	var sep := 32 if mobile else 64
 	lessons_hbox.add_theme_constant_override("separation", sep)
 	for col in lessons_hbox.get_children():
 		if col is VBoxContainer:
 			col.custom_minimum_size = Vector2.ZERO
 			col.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			var row := col.get_node_or_null("Row") as HBoxContainer
-			if row:
-				row.add_theme_constant_override("separation", sep)
-				for btn in row.get_children():
-					if btn is Button:
-						var sz := Vector2(145, 145) if mobile else Vector2(180, 180)
-						btn.custom_minimum_size = sz
+			var btn := col.get_node_or_null("LessonBtn") as Button
+			if btn:
+				btn.custom_minimum_size = Vector2(180, 180) if mobile else Vector2(250, 250)
+				btn.add_theme_font_size_override("font_size", 18 if mobile else 21)
 
 # ─── Helper Functions ─────────────────────────────────────────────────────────
 func _style_text_btn(btn: Button, normal_color: Color, hover_color: Color) -> void:
