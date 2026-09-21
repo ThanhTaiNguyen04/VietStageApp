@@ -1925,16 +1925,12 @@ func _style_circular_play_btn(btn: Button) -> void:
 func _animate_in() -> void:
 	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]
-	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
 		_make_card_clickable(item)
-		item.modulate.a = 0.0
-		item.position.x += 40.0
-		var t := create_tween().set_parallel(true)
-		t.tween_property(item, "modulate:a", 1.0, 0.45).set_delay(delay)
-		t.tween_property(item, "position:x", item.position.x - 40.0, 0.45).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		delay += 0.08
+		# Keep roadmap cards anchored. Position tweening caused visible horizontal
+		# in/out movement whenever the roadmap was rebuilt after progress sync.
+		item.modulate.a = 1.0
 
 func _make_card_clickable(card: Control) -> void:
 	if not is_instance_valid(card): return
