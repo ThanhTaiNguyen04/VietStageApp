@@ -511,7 +511,8 @@ func _build_lesson_list() -> void:
 
 func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, completed: Array) -> VBoxContainer:
 	var lesson_id := str(lesson.get("id", ""))
-	var unlocked := index == 0 or completed.has(str(lessons[index - 1].get("id", "")))
+	# Proposed future API: isUnlocked. Temporary access does not change completion.
+	var unlocked := true
 	var done := completed.has(lesson_id)
 	var column := VBoxContainer.new()
 	column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -536,8 +537,8 @@ func _create_circle_button(display_number: String, lesson_title: String, unlocke
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if unlocked else Control.CURSOR_ARROW
 	button.disabled = not unlocked
 	button.text = ("✓\nBÀI %s\n%s\nHoàn thành" if completed else "BÀI %s\n%s") % ([display_number, lesson_title] if not completed else [display_number, lesson_title])
-	var bg_color := C_JADE if completed else (Color.WHITE if unlocked else Color(0.95, 0.93, 0.89, 0.6))
-	var border_color := C_GOLD if completed else (C_JADE_LIGHT if unlocked else Color(0.85, 0.82, 0.78, 1.0))
+	var bg_color := Color(0.09, 0.27, 0.18, 1.0) # Temporary open-access appearance.
+	var border_color := Color.WHITE
 	var style := _flat(bg_color, border_color, 125, 0)
 	style.border_width_left = 6; style.border_width_right = 6; style.border_width_top = 6; style.border_width_bottom = 6
 	if unlocked and not completed:
@@ -547,7 +548,9 @@ func _create_circle_button(display_number: String, lesson_title: String, unlocke
 	button.add_theme_stylebox_override("pressed", style)
 	button.add_theme_stylebox_override("disabled", style)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	button.add_theme_color_override("font_color", Color.WHITE if completed else (C_TEXT if unlocked else C_MUTED))
+	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 	button.add_theme_font_size_override("font_size", 21)
 	var font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if font: button.add_theme_font_override("font", font)

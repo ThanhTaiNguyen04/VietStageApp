@@ -411,6 +411,10 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		border_color = C_JADE_LIGHT # Jade border
 		text_color = C_TEXT # Dark charcoal text
 
+	# Temporary open-access appearance; completion data stays unchanged.
+	bg_color = Color(0.09, 0.27, 0.18, 1.0)
+	border_color = Color.WHITE
+	text_color = Color.WHITE
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -431,12 +435,13 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		else:
 			s_hover.bg_color = Color(1.0, 1.0, 1.0, 0.95)
 
+	s_hover.bg_color = bg_color.lightened(0.08)
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
 	btn.add_theme_stylebox_override("disabled", s_normal)
 	btn.add_theme_color_override("font_color", text_color)
-	btn.add_theme_color_override("font_hover_color", C_JADE if (is_unlocked and not is_completed) else text_color)
+	btn.add_theme_color_override("font_hover_color", text_color)
 	btn.add_theme_color_override("font_pressed_color", text_color)
 	btn.add_theme_color_override("font_disabled_color", text_color)
 

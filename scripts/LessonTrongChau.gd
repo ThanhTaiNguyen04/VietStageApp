@@ -428,7 +428,8 @@ func _build_lesson_list() -> void:
 	for index in range(LESSONS.size()):
 		var lesson: Dictionary = LESSONS[index]
 		var lesson_id := str(lesson.get("id", ""))
-		var unlocked := index == 0 or completed.has(str(LESSONS[index - 1].get("id", "")) + "_practice")
+		# Proposed future API: isUnlocked. Temporary access does not change completion.
+		var unlocked := true
 		var done := completed.has(lesson_id + "_practice")
 		var column := VBoxContainer.new()
 		column.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -452,14 +453,16 @@ func _create_circle_button(number: String, title: String, unlocked: bool, comple
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if unlocked else Control.CURSOR_ARROW
 	button.disabled = not unlocked
 	button.text = ("✓\nBÀI %s\n%s\nHoàn thành" if completed else "BÀI %s\n%s") % [number, title]
-	var style := _flat(C_JADE if completed else (Color.WHITE if unlocked else Color(0.95, 0.93, 0.89, 0.6)), C_GOLD if completed else (C_JADE_LIGHT if unlocked else Color(0.85, 0.82, 0.78, 1.0)), 125, 0)
+	var style := _flat(Color(0.09, 0.27, 0.18, 1.0), Color.WHITE, 125, 0) # Temporary open-access appearance.
 	style.border_width_left = 6; style.border_width_right = 6; style.border_width_top = 6; style.border_width_bottom = 6
 	if unlocked and not completed: style.shadow_size = 24; style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35)
 	button.add_theme_stylebox_override("normal", style)
 	button.add_theme_stylebox_override("hover", style.duplicate())
 	button.add_theme_stylebox_override("pressed", style)
 	button.add_theme_stylebox_override("disabled", style)
-	button.add_theme_color_override("font_color", Color.WHITE if completed else (C_TEXT if unlocked else C_MUTED))
+	button.add_theme_color_override("font_color", Color.WHITE)
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", Color.WHITE)
 	button.add_theme_font_size_override("font_size", 21)
 	var font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if font: button.add_theme_font_override("font", font)

@@ -317,7 +317,8 @@ func _setup_drawing_callbacks() -> void:
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
 			is_unlocked = SecureDataManager.is_lesson_completed(inst, "Node1")
 
-		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12) if is_unlocked else Color(0.18, 0.22, 0.19, 0.12)
+		is_unlocked = true # Temporary open access; preserve actual progress.
+		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12)
 		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
 		var angle_fill := (pct / 100.0) * TAU
@@ -355,7 +356,8 @@ func _setup_drawing_callbacks() -> void:
 		else:
 			pct = 0.0
 
-		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12) if is_unlocked else Color(0.18, 0.22, 0.19, 0.12)
+		is_unlocked = true # Temporary open access; preserve actual progress.
+		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12)
 		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
 		var angle_fill := (pct / 100.0) * TAU
@@ -1756,7 +1758,12 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(basic_details, 2, 0, 0, false)
 
 	# Dynamic progression styling for Card Essentials
-	var is_ess_unlocked := is_basic_completed
+	# Temporary open access; never mark lessons completed or award stars here.
+	# Proposed API names, NOT active; backend must confirm this contract:
+	# isUnlocked == false -> white alpha 0.45 (locked).
+	# isUnlocked == true and learningStatus == NOT_STARTED -> white alpha 0.82.
+	# learningStatus == IN_PROGRESS or COMPLETED -> green.
+	var is_ess_unlocked := true
 	if not is_ess_unlocked:
 		var ess_lock_sb := _flat(Color(0.96, 0.97, 0.95, 0.82), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 24)
 		ess_lock_sb.border_width_left = 6; ess_lock_sb.border_width_right = 6
@@ -1774,7 +1781,7 @@ func _build_roadmap_cards() -> void:
 		else:
 			_set_details_text(ess_details, 8 if instrument == "dan_tranh" else 3, 0, 0, false)
 	else:
-		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+		var ess_sb := _flat(C_CARD_BG, Color.WHITE, 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
 		ess_sb.border_width_top = 6; ess_sb.border_width_bottom = 6
 		card_essentials.add_theme_stylebox_override("panel", ess_sb)
@@ -1867,9 +1874,10 @@ func _build_roadmap_cards() -> void:
 	else:
 		level_3_stats = _get_dan_tranh_level_status(7)
 		is_level_3_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
+	is_level_3_unlocked = true # Temporary open access, independent of progress.
 	var level_3_sb := _flat(
-		C_CARD_BG_DK if is_level_3_unlocked else Color(0.96, 0.97, 0.95, 0.82),
-		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
+		C_CARD_BG if is_level_3_unlocked else Color(0.96, 0.97, 0.95, 0.82),
+		Color.WHITE if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
 		24
 	)
 	level_3_sb.border_width_left = 6; level_3_sb.border_width_right = 6
@@ -2249,7 +2257,7 @@ func _connect_buttons() -> void:
 			elif inst == "sao_truc":
 				_open_sao_truc_level(2)
 			else:
-				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
+				var is_ess_unlocked := true # Temporary open access.
 				if not is_ess_unlocked:
 					_virtual_artist_play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
 					return
