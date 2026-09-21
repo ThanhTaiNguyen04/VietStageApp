@@ -17,7 +17,6 @@ const LearningActivityContextScript := preload("res://scripts/LearningActivityCo
 @onready var top_bar           : PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn          : Button         = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title        : Label          = $Root/RightContent/TopBar/TopM/TopH/PageTitle
-@onready var change_course_btn : Button         = $Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
 @onready var scroll_container  : ScrollContainer = $Root/RightContent/ScrollContainer
 @onready var lessons_hbox      : HBoxContainer  = $Root/RightContent/ScrollContainer/MarginContainer/LessonsHBox
 
@@ -34,6 +33,7 @@ var btn_leaderboard            : Button
 var _sidebar_icons_cache := {}
 
 static var selected_level: int = 1
+static var selected_source_levels: Array = [1, 2]
 var _tap_timer: float = 0.0
 
 # 🗃️ Dynamic Lesson Data (10 Lessons for 5 Levels)
@@ -43,7 +43,7 @@ var LESSONS: Array = []
 func _ready() -> void:
 	LESSONS = []
 	for l in ALL_LESSONS:
-		if l.get("level", 1) == selected_level:
+		if int(l.get("level", 1)) in selected_source_levels:
 			LESSONS.append(l)
 
 	SecureDataManager.load_data()
@@ -67,7 +67,6 @@ func _ready() -> void:
 
 	_build_theme()
 	_connect_buttons()
-	_build_quiz_btn()
 	_build_profile_btn()
 
 	_build_lesson_list()
@@ -140,63 +139,12 @@ func _build_theme() -> void:
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_btn_bouncy(back_btn)
 
-	# Outlined style for ChangeCourseBtn
-	var s_outline := StyleBoxFlat.new()
-	s_outline.bg_color = Color(0, 0, 0, 0)
-	s_outline.border_color = C_JADE
-	s_outline.border_width_left = 3
-	s_outline.border_width_right = 3
-	s_outline.border_width_top = 3
-	s_outline.border_width_bottom = 3
-	s_outline.corner_radius_top_left = 24
-	s_outline.corner_radius_top_right = 24
-	s_outline.corner_radius_bottom_left = 24
-	s_outline.corner_radius_bottom_right = 24
-
-	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
-	s_outline_hover.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08)
-
-	change_course_btn.text = "Đổi khóa học"
-	change_course_btn.add_theme_stylebox_override("normal", s_outline)
-	change_course_btn.add_theme_stylebox_override("hover", s_outline_hover)
-	change_course_btn.add_theme_stylebox_override("pressed", s_outline)
-	change_course_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	change_course_btn.add_theme_color_override("font_color", C_JADE)
-	change_course_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	_make_btn_bouncy(change_course_btn)
-
 func _connect_buttons() -> void:
 	back_btn.pressed.connect(func() -> void:
 		var t := create_tween()
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
-
-	change_course_btn.pressed.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(self, "modulate:a", 0.0, 0.22)
-		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
-	)
-
-func _build_quiz_btn() -> void:
-	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
-	if toph == null or change_course_btn == null:
-		return
-	var quiz_btn := Button.new()
-	quiz_btn.name = "QuizBtn"
-	quiz_btn.text = "📝 Quiz"
-	quiz_btn.custom_minimum_size = Vector2(148, 48)
-	quiz_btn.add_theme_font_size_override("font_size", 17)
-	quiz_btn.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, C_JADE, 18, 2))
-	quiz_btn.add_theme_stylebox_override("hover", _flat(Color(C_GOLD, 0.12), C_GOLD, 18, 2))
-	quiz_btn.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD, 0.15), C_GOLD, 18, 2))
-	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	quiz_btn.add_theme_color_override("font_color", C_JADE)
-	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	quiz_btn.pressed.connect(_open_quiz)
-	_make_btn_bouncy(quiz_btn)
-	toph.add_child(quiz_btn)
-	toph.move_child(quiz_btn, change_course_btn.get_index())
 
 func _build_profile_btn() -> void:
 	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
@@ -206,18 +154,11 @@ func _build_profile_btn() -> void:
 	spacer.name = "TopSpacerRight"
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	toph.add_child(spacer)
-	var pill := DS.build_profile_pill()
+	var pill := preload("res://scripts/DS.gd").build_profile_pill()
 	toph.add_child(pill)
 	var account_menu := preload("res://scripts/CurriculumAccountMenu.gd").new()
 	account_menu.pill = pill
 	add_child(account_menu)
-
-func _open_quiz() -> void:
-	var ids: Array[String] = []
-	for l in LESSONS:
-		ids.append(str(l.get("id", "")))
-	LearningActivityContextScript.configure("sao_truc", ids, "res://scenes/LessonSaoTrucList.tscn")
-	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
@@ -411,9 +352,11 @@ func _build_lesson_list() -> void:
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.add_theme_constant_override("separation", 24)
 
-		# Top: Lesson Title Label
+		# Đánh số liên tục theo level mới. Dữ liệu nguồn của từng level cũ đều
+		# bắt đầu lại từ "BÀI 1", nên không dùng lesson_item["title"] ở đây.
+		# ID bài vẫn giữ nguyên để không ảnh hưởng tiến độ đã lưu.
 		var title_lbl := Label.new()
-		title_lbl.text = lesson_item["title"]
+		title_lbl.text = "BÀI %d" % (i + 1)
 		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_lbl.add_theme_color_override("font_color", C_TEXT if is_unlocked else C_TEXT_MUTED)
 		title_lbl.add_theme_font_size_override("font_size", 20)
@@ -554,7 +497,6 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_top", 16 if mobile else 24)
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 20 if mobile else 28)
-	change_course_btn.custom_minimum_size.x = 110 if mobile else 180
 	var sep := 65 if mobile else 100
 	lessons_hbox.add_theme_constant_override("separation", sep)
 	for col in lessons_hbox.get_children():

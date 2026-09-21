@@ -1,6 +1,7 @@
 extends "res://scripts/LearningActivityBase.gd"
 
 const InstrumentSamplePlayerScript = preload("res://scripts/InstrumentSamplePlayer.gd")
+const DanTranhAudio = preload("res://scripts/DanTranhAudio.gd")
 
 var challenge: Dictionary = {}
 var challenge_id := 0
@@ -105,15 +106,17 @@ func _setup_microphone_analyzer() -> void:
 	microphone_analyzer.name = "MelodyMicrophoneAnalyzer"
 	microphone_analyzer.visible = false
 	microphone_analyzer.set_analysis_suspended(true)
-	var profile := InstrumentPitchProfile.new()
-	profile.notes.assign(["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"])
-	profile.frequencies = PackedFloat32Array([130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50])
-	profile.min_frequency = 120.0
-	profile.max_frequency = 2100.0
-	profile.volume_threshold_db = -45.0
-	profile.cents_tolerance = MICROPHONE_CENTS_TOLERANCE
-	profile.hold_time_sec = MICROPHONE_HOLD_SECONDS
-	profile.is_plucked_instrument = Context.instrument == "dan_tranh"
+	var profile := DanTranhAudio.make_real_string_pitch_profile(MICROPHONE_CENTS_TOLERANCE) \
+		if Context.instrument == "dan_tranh" else InstrumentPitchProfile.new()
+	if Context.instrument != "dan_tranh":
+		profile.notes.assign(["C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"])
+		profile.frequencies = PackedFloat32Array([130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50])
+		profile.min_frequency = 120.0
+		profile.max_frequency = 2100.0
+		profile.volume_threshold_db = -45.0
+		profile.cents_tolerance = MICROPHONE_CENTS_TOLERANCE
+		profile.hold_time_sec = MICROPHONE_HOLD_SECONDS
+		profile.is_plucked_instrument = false
 	microphone_analyzer.pitch_profile = profile
 	microphone_analyzer.min_frequency = profile.min_frequency
 	microphone_analyzer.max_frequency = profile.max_frequency

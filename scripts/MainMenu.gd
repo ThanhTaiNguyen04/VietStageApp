@@ -297,21 +297,28 @@ func _setup_drawing_callbacks() -> void:
 		var cx := vis_essentials.size.x / 2.0
 		var cy := vis_essentials.size.y / 2.0
 		var r := 34.0
-		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
 
 		var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		var pct := 0.0
+		var is_unlocked := false
 		if inst == "dan_tranh":
 			var stats: Dictionary = _get_dan_tranh_level_status(2)
 			pct = stats.get("pct", 0)
+			is_unlocked = bool(_get_dan_tranh_level_status(1).get("completed", false))
 		elif inst == "dan_bau" or inst == "sao_truc":
 			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("essentials")
 			pct = stats.get("pct", 0)
+			is_unlocked = bool(_get_sao_truc_card_status("basic").get("completed", false)) if inst == "sao_truc" else bool(_get_dan_bau_card_status("basic").get("completed", false))
 		elif inst == "trong_chau":
 			pct = _get_trong_chau_card_status("essentials").get("pct", 0)
+			is_unlocked = bool(_get_trong_chau_card_status("basic").get("completed", false))
 		else:
 			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
+			is_unlocked = SecureDataManager.is_lesson_completed(inst, "Node1")
+
+		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12) if is_unlocked else Color(0.18, 0.22, 0.19, 0.12)
+		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
@@ -320,7 +327,8 @@ func _setup_drawing_callbacks() -> void:
 		var font := vis_essentials.get_theme_font("font")
 		var pct_text := str(int(pct)) + "%"
 		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
-		vis_essentials.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
+		var text_col := C_CREAM if is_unlocked else Color(0.18, 0.22, 0.19, 0.85)
+		vis_essentials.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, text_col)
 	)
 
 	# Card Level 3 uses the same progress-ring presentation as Levels 1 and 2.
@@ -329,22 +337,35 @@ func _setup_drawing_callbacks() -> void:
 		var cx := vis_level_3.size.x / 2.0
 		var cy := vis_level_3.size.y / 2.0
 		var r := 34.0
-		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, Color(1.0, 1.0, 1.0, 0.12), 7.0, true)
 		var inst_tmp: String = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
 		var pct := 0.0
+		var is_unlocked := false
 		if inst_tmp == "dan_tranh":
 			pct = float(_get_dan_tranh_level_status(7).get("pct", 0))
+			is_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
 		elif inst_tmp == "dan_bau":
 			pct = float(_get_dan_bau_card_status("soloist").get("pct", 0))
+			is_unlocked = bool(_get_dan_bau_card_status("essentials").get("completed", false))
+		elif inst_tmp == "sao_truc":
+			pct = float(_get_sao_truc_card_status("advanced").get("pct", 0))
+			is_unlocked = bool(_get_sao_truc_card_status("intermediate").get("completed", false))
+		elif inst_tmp == "trong_chau":
+			pct = float(_get_trong_chau_card_status("soloist").get("pct", 0))
+			is_unlocked = bool(_get_trong_chau_card_status("essentials").get("completed", false))
 		else:
-			pct = 0.0 # Default for trong_chau/sao_truc until implemented
+			pct = 0.0
+
+		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12) if is_unlocked else Color(0.18, 0.22, 0.19, 0.12)
+		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
+
 		var angle_fill := (pct / 100.0) * TAU
 		if angle_fill > 0.001:
 			vis_level_3.draw_arc(Vector2(cx, cy), r, -PI / 2.0, -PI / 2.0 + angle_fill, 32, C_GOLD_GLOW, 7.0, true)
 		var font := vis_level_3.get_theme_font("font")
 		var pct_text := str(int(pct)) + "%"
 		var text_sz := font.get_string_size(pct_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 18)
-		vis_level_3.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, C_CREAM)
+		var text_col := C_CREAM if is_unlocked else Color(0.18, 0.22, 0.19, 0.85)
+		vis_level_3.draw_string(font, Vector2(cx - text_sz.x * 0.5, cy + 6), pct_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, text_col)
 	)
 	# Lock Icons on Locked Cards
 	var lock_soloist := card_soloist_unlock.get_node("Margin/VBox/LockedIcon") as Control
@@ -442,9 +463,9 @@ func _draw_roadmap_paths() -> void:
 	var p_pop := card_pop_chords.position + card_pop_chords.size / 2.0
 
 	var inst := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	if inst == "dan_tranh":
-		# Đàn Tranh chỉ có ba card hiển thị. Nối từ mép card đến mép card
-		# để đường dẫn không chạy xuyên qua phần nội dung trong card.
+	if inst == "dan_tranh" or inst == "sao_truc" or inst == "dan_bau" or inst == "trong_chau":
+		# Các nhạc cụ lộ trình 3 thẻ thẳng hàng: Nối từ mép card đến mép card
+		# để đường dẫn không chạy xuyên qua phần nội dung bên trong card.
 		_draw_card_connector(card_basic, card_essentials)
 		_draw_card_connector(card_essentials, card_level_7)
 		return
@@ -1569,6 +1590,7 @@ func _build_roadmap_cards() -> void:
 	card_level_7.hide()
 	path_soloist_title.show()
 	path_chords_title.show()
+	roadmap_guide.show()
 
 	# Khôi phục vị trí gốc cho các nhánh
 	card_soloist_skills.position = Vector2(1410, 95)
@@ -1665,42 +1687,24 @@ func _build_roadmap_cards() -> void:
 		pop_chords_desc.text = str(dan_bau_roadmap["pop_description"])
 	elif instrument == "sao_truc":
 		var sao_truc_roadmap := SAO_TRUC_COURSE_DATA.get_roadmap_configuration()
-		_set_title_with_icon(roadmap_guide, "map", str(sao_truc_roadmap["guide"]))
-		# Lộ trình Sáo Trúc
-		path_soloist_title.text = str(sao_truc_roadmap["soloist_path"])
-		path_chords_title.text = str(sao_truc_roadmap["ensemble_path"])
-		# Lộ trình Sáo Trúc (Tuyến tính giống Đàn Bầu)
+		roadmap_guide.hide()
+		# Lộ trình Sáo Trúc: ba level tuyến tính, sử dụng 3 card đồng nhất như Đàn Tranh
 		card_soloist_unlock.hide()
 		card_chords_unlock.hide()
-		card_classical.show()
+		card_soloist_skills.hide()
+		card_chords_skills.hide()
+		card_classical.hide()
+		card_pop_chords.hide()
+		card_level_7.show()
 		path_soloist_title.hide()
 		path_chords_title.hide()
 
-		# Ép thẻ về cùng Y = 275
-		card_soloist_skills.position = Vector2(1060, 275)
-		card_chords_skills.position = Vector2(1570, 275)
-		card_pop_chords.position = Vector2(2080, 275)
-		card_classical.position = Vector2(2590, 275)
-
 		basic_title.text = str(sao_truc_roadmap["basic_title"])
 		basic_desc.text = str(sao_truc_roadmap["basic_description"])
-		# basic_details.text = "📖 1 Bài Học | ⭐ 0 Sao | 0% Hoàn Thành"
-
-		ess_title.text = str(sao_truc_roadmap["essentials_title"])
-		ess_desc.text = str(sao_truc_roadmap["essentials_description"])
-		# ess_details.text = "📖 7 Bài Học | 🔒 Cần hoàn thành bài trước"
-
-		soloist_skills_title.text = str(sao_truc_roadmap["soloist_title"])
-		soloist_skills_bullets.text = str(sao_truc_roadmap["soloist_description"])
-
-		chords_skills_title.text = str(sao_truc_roadmap["chords_title"])
-		chords_skills_bullets.text = str(sao_truc_roadmap["chords_description"])
-
-		pop_chords_title.text = str(sao_truc_roadmap["pop_title"])
-		pop_chords_desc.text = str(sao_truc_roadmap["pop_description"])
-
-		classical_title.text = str(sao_truc_roadmap["classical_title"])
-		classical_desc.text = str(sao_truc_roadmap["classical_description"])
+		ess_title.text = str(sao_truc_roadmap["intermediate_title"])
+		ess_desc.text = str(sao_truc_roadmap["intermediate_description"])
+		level_7_title.text = str(sao_truc_roadmap["advanced_title"])
+		level_7_desc.text = str(sao_truc_roadmap["advanced_description"])
 
 	# Dynamic progression styling for Card Basic (Node1 Video / Dan Bau Lesson 1-2)
 	var is_basic_completed := false
@@ -1740,7 +1744,7 @@ func _build_roadmap_cards() -> void:
 	if instrument == "dan_tranh":
 		_set_details_text(basic_details, 12, basic_stars, basic_pct, false)
 	elif instrument == "sao_truc":
-		_set_details_text(basic_details, 1, basic_stars, basic_pct, false)
+		_set_details_text(basic_details, SAO_TRUC_COURSE_DATA.get_level_lesson_count(1), basic_stars, basic_pct, false)
 	elif instrument == "dan_bau":
 		_set_details_text(basic_details, 2, basic_stars, basic_pct, false)
 	elif instrument == "trong_chau":
@@ -1754,17 +1758,17 @@ func _build_roadmap_cards() -> void:
 	# Dynamic progression styling for Card Essentials
 	var is_ess_unlocked := is_basic_completed
 	if not is_ess_unlocked:
-		var ess_lock_sb := _flat(Color(1.0, 1.0, 1.0, 0.45), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 24)
+		var ess_lock_sb := _flat(Color(0.96, 0.97, 0.95, 0.82), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 24)
 		ess_lock_sb.border_width_left = 6; ess_lock_sb.border_width_right = 6
 		ess_lock_sb.border_width_top = 6; ess_lock_sb.border_width_bottom = 6
 		card_essentials.add_theme_stylebox_override("panel", ess_lock_sb)
-		ess_title.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
-		ess_desc.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.4))
-		ess_details.add_theme_color_override("font_color", Color(0.43, 0.38, 0.33, 0.6))
+		ess_title.add_theme_color_override("font_color", Color(0.18, 0.22, 0.19, 0.92))
+		ess_desc.add_theme_color_override("font_color", Color(0.28, 0.32, 0.29, 0.85))
+		ess_details.add_theme_color_override("font_color", Color(0.35, 0.40, 0.35, 0.90))
 		if instrument == "dan_bau":
 			_set_details_text(ess_details, 2, 0, 0, false)
 		elif instrument == "sao_truc":
-			_set_details_text(ess_details, 7, 0, 0, false)
+			_set_details_text(ess_details, SAO_TRUC_COURSE_DATA.get_level_lesson_count(2), 0, 0, false)
 		elif instrument == "trong_chau":
 			_set_details_text(ess_details, 2, 0, 0, false)
 		else:
@@ -1781,8 +1785,8 @@ func _build_roadmap_cards() -> void:
 			var stats := _get_dan_tranh_level_status(2)
 			_set_details_text(ess_details, 8, stats.get("stars", 0), stats.get("pct", 0), false)
 		elif instrument == "sao_truc":
-			var stats := _get_sao_truc_card_status("essentials")
-			_set_details_text(ess_details, 7, stats.get("stars", 0), stats.get("pct", 0), false)
+			var stats := _get_sao_truc_card_status("intermediate")
+			_set_details_text(ess_details, SAO_TRUC_COURSE_DATA.get_level_lesson_count(2), stats.get("stars", 0), stats.get("pct", 0), false)
 		elif instrument == "dan_bau":
 			var stats := _get_dan_bau_card_status("essentials")
 			_set_details_text(ess_details, 2, stats.get("stars", 0), stats.get("pct", 0), false)
@@ -1854,39 +1858,63 @@ func _build_roadmap_cards() -> void:
 	elif instrument == "dan_bau":
 		level_3_stats = _get_dan_bau_card_status("soloist")
 		is_level_3_unlocked = bool(_get_dan_bau_card_status("essentials").get("completed", false))
+	elif instrument == "sao_truc":
+		level_3_stats = _get_sao_truc_card_status("advanced")
+		is_level_3_unlocked = bool(_get_sao_truc_card_status("intermediate").get("completed", false))
+	elif instrument == "trong_chau":
+		level_3_stats = _get_trong_chau_card_status("soloist")
+		is_level_3_unlocked = bool(_get_trong_chau_card_status("essentials").get("completed", false))
 	else:
 		level_3_stats = _get_dan_tranh_level_status(7)
 		is_level_3_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
 	var level_3_sb := _flat(
-		C_CARD_BG_DK if is_level_3_unlocked else Color(1.0, 1.0, 1.0, 0.45),
+		C_CARD_BG_DK if is_level_3_unlocked else Color(0.96, 0.97, 0.95, 0.82),
 		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
 		24
 	)
 	level_3_sb.border_width_left = 6; level_3_sb.border_width_right = 6
 	level_3_sb.border_width_top = 6; level_3_sb.border_width_bottom = 6
 	card_level_7.add_theme_stylebox_override("panel", level_3_sb)
-	level_7_title.add_theme_color_override("font_color", C_CREAM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
-	level_7_desc.add_theme_color_override("font_color", C_CREAM_DIM if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.4))
-	level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.43, 0.38, 0.33, 0.6))
-	_set_details_text(level_7_details, 4, level_3_stats.get("stars", 0), level_3_stats.get("pct", 0), false)
+	level_7_title.add_theme_color_override("font_color", C_CREAM if is_level_3_unlocked else Color(0.18, 0.22, 0.19, 0.92))
+	level_7_desc.add_theme_color_override("font_color", C_CREAM_DIM if is_level_3_unlocked else Color(0.28, 0.32, 0.29, 0.85))
+	level_7_details.add_theme_color_override("font_color", C_GOLD_LIGHT if is_level_3_unlocked else Color(0.35, 0.40, 0.35, 0.90))
+	var l3_lessons := 4
+	if instrument == "sao_truc":
+		l3_lessons = SAO_TRUC_COURSE_DATA.get_level_lesson_count(3)
+	elif instrument == "dan_bau" or instrument == "trong_chau":
+		l3_lessons = 3
+	_set_details_text(level_7_details, l3_lessons, level_3_stats.get("stars", 0), level_3_stats.get("pct", 0), false)
 
 	if instrument == "dan_tranh":
 		_connect_dan_tranh_level_card(card_basic, 1)
 		_connect_dan_tranh_level_card(card_essentials, 2)
 		_connect_dan_tranh_level_card(card_level_7, 7)
+	elif instrument == "sao_truc":
+		_connect_sao_truc_level_card(card_basic, 1)
+		_connect_sao_truc_level_card(card_essentials, 2)
+		_connect_sao_truc_level_card(card_level_7, 3)
 
-	# Chuẩn hóa typography và khoảng nội dung để ba card luôn bằng nhau
+	# Chuẩn hóa typography và khoảng nội dung để ba card luôn bằng nhau đồng bộ với Đàn Tranh
+	for card in [card_basic, card_essentials, card_level_7]:
+		var tv := card.get_node_or_null("Margin/Row/TextV") as VBoxContainer
+		if tv:
+			tv.add_theme_constant_override("separation", 6)
+			tv.alignment = BoxContainer.ALIGNMENT_CENTER
+
 	for title: Label in [basic_title, ess_title, level_7_title]:
-		title.add_theme_font_size_override("font_size", 23)
-		title.custom_minimum_size = Vector2(310, 84)
+		title.add_theme_font_size_override("font_size", 25)
+		title.custom_minimum_size = Vector2(310, 62)
 		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for desc: Label in [basic_desc, ess_desc, level_7_desc]:
-		desc.add_theme_font_size_override("font_size", 16)
-		desc.custom_minimum_size = Vector2(310, 54)
+		desc.add_theme_font_size_override("font_size", 17)
+		desc.custom_minimum_size = Vector2(310, 52)
 		desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for details: Label in [basic_details, ess_details, level_7_details]:
 		details.add_theme_font_size_override("font_size", 15)
-		details.custom_minimum_size = Vector2(310, 24)
+		details.custom_minimum_size = Vector2(310, 26)
+		details.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	for c in [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]:
 		_make_card_clickable(c)
@@ -2000,6 +2028,23 @@ func _connect_dan_tranh_level_card(card: Control, level_number: int) -> void:
 		card.add_child(hit_area)
 		hit_area.pressed.connect(_open_dan_tranh_level.bind(level_number))
 	hit_area.tooltip_text = "Xem các bài học Level %d" % (3 if level_number == 7 else level_number)
+
+func _connect_sao_truc_level_card(card: Control, level_number: int) -> void:
+	var hit_area := card.get_node_or_null("SaoTrucLevelHitArea") as Button
+	if hit_area == null:
+		hit_area = Button.new()
+		hit_area.name = "SaoTrucLevelHitArea"
+		hit_area.flat = true
+		hit_area.focus_mode = Control.FOCUS_NONE
+		hit_area.mouse_filter = Control.MOUSE_FILTER_STOP
+		hit_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var empty_style := StyleBoxEmpty.new()
+		hit_area.add_theme_stylebox_override("normal", empty_style)
+		hit_area.add_theme_stylebox_override("hover", empty_style)
+		hit_area.add_theme_stylebox_override("pressed", empty_style)
+		card.add_child(hit_area)
+		hit_area.pressed.connect(_open_sao_truc_level.bind(level_number))
+	hit_area.tooltip_text = "Xem các bài học Level %d" % level_number
 
 func _open_dan_tranh_level(level_number: int) -> void:
 	_fade_to(DAN_TRANH_COURSE_DATA.select_level(level_number))
@@ -2187,9 +2232,7 @@ func _connect_buttons() -> void:
 			elif inst == "trong_chau":
 				_open_trong_chau_course()
 			elif inst == "sao_truc":
-				SecureDataManager.active_lesson_id = SAO_TRUC_COURSE_DATA.INTRO_LESSON_ID
-				SAO_TRUC_COURSE_DATA.configure_intro(SecureDataManager.data)
-				_fade_to("res://scenes/VideoPlayer.tscn")
+				_open_sao_truc_level(1)
 			else:
 				SecureDataManager.active_lesson_id = "Node1"
 				_fade_to("res://scenes/VideoPlayer.tscn")
@@ -2251,6 +2294,8 @@ func _connect_buttons() -> void:
 				_open_dan_tranh_level(7)
 			elif inst == "dan_bau":
 				_open_dan_bau_level(3)
+			elif inst == "sao_truc":
+				_open_sao_truc_level(3)
 			elif inst == "trong_chau":
 				_fade_to("res://scenes/PracticeTrongChau.tscn")
 	)
@@ -2619,7 +2664,7 @@ func _on_viewport_size_changed() -> void:
 		var x_string_roll: float = x_class + card_w + gap
 		x_un = x_ess + card_w + gap # Not really used in straight layout, but set for safety
 		
-		var is_3_levels = (instrument == "dan_tranh" or instrument == "dan_bau" or instrument == "trong_chau")
+		var is_3_levels = (instrument == "dan_tranh" or instrument == "dan_bau" or instrument == "trong_chau" or instrument == "sao_truc")
 		var total_w: float = x_sk + card_w + 40.0 if is_3_levels else x_pop + card_w + 40.0
 		if is_3_levels:
 			# Keep room to pan even when all three cards fit on screen.

@@ -2,6 +2,7 @@ extends SceneTree
 
 const RhythmModel = preload("res://scripts/RhythmChallengeModel.gd")
 const InstrumentSamplePlayer = preload("res://scripts/InstrumentSamplePlayer.gd")
+const DanTranhAudio = preload("res://scripts/DanTranhAudio.gd")
 
 var failures := 0
 
@@ -15,6 +16,7 @@ func _run() -> void:
 	_test_judgement()
 	_test_scoring()
 	_test_sample_assets()
+	_test_real_dan_tranh_profile()
 	if failures == 0:
 		print("[RhythmChallengeModel] PASS")
 		quit(0)
@@ -118,6 +120,18 @@ func _test_sample_assets() -> void:
 		for note: String in supported[instrument]:
 			var path := player.sample_path(instrument, note)
 			_check(not path.is_empty() and ResourceLoader.exists(path), "%s %s phải có WAV nghe mẫu" % [instrument, note])
+	player.free()
+
+
+func _test_real_dan_tranh_profile() -> void:
+	var profile := DanTranhAudio.make_real_string_pitch_profile()
+	_check(profile.notes.size() == 17, "Đàn Tranh phải dùng đúng 17 dây thu thật")
+	_check(profile.notes[0] == "G3" and profile.notes[16] == "A6", "Dải đàn tranh thu thật phải từ G3 đến A6")
+	_check(profile.match_pitch(440.0).get("note_name") == "A4", "440 Hz phải nhận là dây La2/A4")
+	_check(profile.match_pitch(349.23).get("is_match") == false, "Fa không được nhận là dây thu thật riêng")
+	var player := InstrumentSamplePlayer.new()
+	_check(player.sample_path("dan_tranh", "F4").is_empty(), "Không phát WAV Fa tổng hợp trong minigame đàn tranh")
+	_check(player.sample_path("dan_tranh", "B5").is_empty(), "Không phát WAV Si tổng hợp trong minigame đàn tranh")
 	player.free()
 
 

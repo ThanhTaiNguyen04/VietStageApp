@@ -41,6 +41,7 @@ var feedback_desc_label: Label
 var next_button: Button
 var floating_back_button: Button
 var score_label: Label
+var _quiz_stage_v: VBoxContainer = null
 
 func _find_scroll_container(parent: Node) -> ScrollContainer:
 	for child in parent.get_children():
@@ -55,7 +56,7 @@ func _ready() -> void:
 	SecureDataManager.load_data()
 	super._ready()
 	_add_quiz_scrim()
-	title_label.text = "QUIZ - NHẬN DIỆN NỐT NHẠC"
+	title_label.text = "QUIZ - %s" % ("KIẾN THỨC NHẠC CỤ" if Context.activity == "quiz_knowledge" else "NHẬN DIỆN NỐT NHẠC")
 
 	# Hide the inherited top panel navbar
 	var top_panel = root_box.get_child(0)
@@ -215,24 +216,24 @@ func _set_bottom_feedback_answered(is_correct: bool, feedback_desc: String) -> v
 
 func _create_option_button(index: int, text_value: String) -> Button:
 	var v_height := get_viewport_rect().size.y
-	var btn_height := 72.0
-	var font_size_option := 18
-	var badge_size := Vector2(42, 42)
-	var badge_font_size := 16
-	var badge_radius := 21
+	var btn_height := 90.0
+	var font_size_option := 24
+	var badge_size := Vector2(56, 56)
+	var badge_font_size := 22
+	var badge_radius := 28
 
 	if v_height < 500.0:
-		btn_height = 64.0
-		font_size_option = 17
-		badge_size = Vector2(38, 38)
-		badge_font_size = 15
-		badge_radius = 19
-	elif v_height >= 700.0:
-		btn_height = 80.0
+		btn_height = 74.0
 		font_size_option = 20
-		badge_size = Vector2(48, 48)
+		badge_size = Vector2(46, 46)
 		badge_font_size = 18
-		badge_radius = 24
+		badge_radius = 23
+	elif v_height >= 700.0:
+		btn_height = 96.0
+		font_size_option = 26
+		badge_size = Vector2(60, 60)
+		badge_font_size = 24
+		badge_radius = 30
 
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(0, btn_height)
@@ -245,19 +246,19 @@ func _create_option_button(index: int, text_value: String) -> Button:
 	normal_style.border_color = Color("#cbd5e1") # slate-300
 	normal_style.set_border_width_all(2)
 	normal_style.border_width_bottom = 5
-	normal_style.set_corner_radius_all(18)
+	normal_style.set_corner_radius_all(22)
 	button.add_theme_stylebox_override("normal", normal_style)
 
 	# Hover state
 	var hover_style := normal_style.duplicate() as StyleBoxFlat
 	hover_style.bg_color = Color("#f8fafc") # slate-50
-	hover_style.border_color = Color("#94a3b8") # slate-400
+	hover_style.border_color = Color(0.77, 0.58, 0.15, 0.85) # Gold accent on hover
 	button.add_theme_stylebox_override("hover", hover_style)
 
 	# Pressed state
 	var pressed_style := normal_style.duplicate() as StyleBoxFlat
 	pressed_style.bg_color = Color("#f1f5f9") # slate-100
-	pressed_style.border_color = Color("#64748b") # slate-500
+	pressed_style.border_color = Color(0.77, 0.58, 0.15, 1.0)
 	pressed_style.border_width_top = 4
 	pressed_style.border_width_bottom = 2
 	button.add_theme_stylebox_override("pressed", pressed_style)
@@ -267,16 +268,16 @@ func _create_option_button(index: int, text_value: String) -> Button:
 
 	# Internal layout container
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_bottom", 6)
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(margin)
 
 	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
+	hbox.add_theme_constant_override("separation", 18)
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(hbox)
 
@@ -289,7 +290,7 @@ func _create_option_button(index: int, text_value: String) -> Button:
 	var badge_style := StyleBoxFlat.new()
 	badge_style.bg_color = Color("#f1f5f9")
 	badge_style.border_color = Color("#cbd5e1")
-	badge_style.set_border_width_all(1)
+	badge_style.set_border_width_all(2)
 	badge_style.set_corner_radius_all(badge_radius) # circular
 	badge_panel.add_theme_stylebox_override("panel", badge_style)
 
@@ -519,6 +520,57 @@ func _show_message(message: String) -> void:
 	back.pressed.connect(_go_back)
 	content_box.add_child(back)
 
+func _create_frosted_stage(is_mobile: bool) -> Dictionary:
+	var viewport_size := get_viewport_rect().size
+	var stage_panel := PanelContainer.new()
+	stage_panel.name = "FrostedStage"
+	stage_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL if is_mobile else Control.SIZE_SHRINK_CENTER
+	stage_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if not is_mobile:
+		var target_w := clampf(viewport_size.x * 0.94, 1180.0, 1360.0)
+		stage_panel.custom_minimum_size = Vector2(target_w, 0)
+
+	var stage_sb := StyleBoxFlat.new()
+	stage_sb.bg_color = Color(1.0, 0.99, 0.97, 0.62) # Soft translucent frosted glass
+	stage_sb.border_color = Color(0.77, 0.58, 0.15, 0.50) # Antique lacquer gold border
+	stage_sb.set_border_width_all(2)
+	stage_sb.set_corner_radius_all(32)
+	stage_sb.shadow_color = Color(0.04, 0.08, 0.06, 0.14)
+	stage_sb.shadow_size = 32
+	stage_sb.shadow_offset = Vector2(0, 10)
+	stage_panel.add_theme_stylebox_override("panel", stage_sb)
+
+	# Frosted Blur Rect (hint_screen_texture)
+	var stage_blur := ColorRect.new()
+	stage_blur.name = "StageBlurRect"
+	stage_blur.show_behind_parent = true
+	stage_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var mat := ShaderMaterial.new()
+	var shader := Shader.new()
+	shader.code = """shader_type canvas_item;
+uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+void fragment() {
+	COLOR = textureLod(screen_texture, SCREEN_UV, 2.4);
+}"""
+	mat.shader = shader
+	stage_blur.material = mat
+	stage_panel.add_child(stage_blur)
+
+	var stage_margin := MarginContainer.new()
+	stage_margin.add_theme_constant_override("margin_left", 20 if is_mobile else 36)
+	stage_margin.add_theme_constant_override("margin_right", 20 if is_mobile else 36)
+	stage_margin.add_theme_constant_override("margin_top", 22 if is_mobile else 30)
+	stage_margin.add_theme_constant_override("margin_bottom", 22 if is_mobile else 30)
+	stage_panel.add_child(stage_margin)
+
+	var stage_v := VBoxContainer.new()
+	stage_v.add_theme_constant_override("separation", 20 if not is_mobile else 14)
+	stage_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_margin.add_child(stage_v)
+
+	return {"panel": stage_panel, "vbox": stage_v}
+
 func _show_question() -> void:
 	for child in content_box.get_children():
 		child.queue_free()
@@ -531,22 +583,22 @@ func _show_question() -> void:
 	var mobile := viewport_size.x < 600.0
 	var v_height := viewport_size.y
 
-	var staff_height := 240.0
-	var staff_spacing := 40.0
-	var font_size_prompt := 24
+	var staff_height := 270.0
+	var staff_spacing := 46.0
+	var font_size_prompt := 28
 
 	if v_height < 500.0: # Mobile Landscape
-		staff_height = 190.0
-		staff_spacing = 34.0
-		font_size_prompt = 22
-	elif v_height < 700.0: # Portrait Mobile
 		staff_height = 200.0
 		staff_spacing = 36.0
-		font_size_prompt = 24
-	else: # Desktop / Tablet
-		staff_height = 240.0
+		font_size_prompt = 22
+	elif v_height < 700.0: # Portrait Mobile
+		staff_height = 230.0
 		staff_spacing = 40.0
-		font_size_prompt = 26
+		font_size_prompt = 25
+	else: # Desktop / Tablet
+		staff_height = 270.0
+		staff_spacing = 46.0
+		font_size_prompt = 28
 
 	_set_bottom_feedback_waiting()
 
@@ -559,26 +611,32 @@ func _show_question() -> void:
 	if score_label and is_instance_valid(score_label):
 		score_label.text = str(score)
 
-	# 1. Question Prompt Card (dedicated highlight card synchronized with staff & options)
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	var stage := _create_frosted_stage(mobile)
+	content_box.add_child(stage["panel"])
+	var stage_v := stage["vbox"] as VBoxContainer
+	_quiz_stage_v = stage_v
+
+	# 1. Question Prompt Card (dedicated highlight card on top of frosted stage)
 	var question_card := PanelContainer.new()
 	question_card.name = "QuestionPromptCard"
 	question_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var q_style := StyleBoxFlat.new()
-	q_style.bg_color = Color.WHITE
-	q_style.border_color = Color("#cbd5e1")
+	q_style.bg_color = Color(1.0, 1.0, 1.0, 0.92)
+	q_style.border_color = Color(0.77, 0.58, 0.15, 0.45)
 	q_style.set_border_width_all(2)
-	q_style.border_width_bottom = 5
-	q_style.set_corner_radius_all(18)
+	q_style.border_width_bottom = 4
+	q_style.set_corner_radius_all(20)
 	q_style.shadow_color = Color(0, 0, 0, 0.05)
 	q_style.shadow_size = 6
 	q_style.shadow_offset = Vector2(0, 3)
-	q_style.content_margin_left = 20
-	q_style.content_margin_right = 20
-	q_style.content_margin_top = 12
-	q_style.content_margin_bottom = 12
+	q_style.content_margin_left = 28
+	q_style.content_margin_right = 28
+	q_style.content_margin_top = 18
+	q_style.content_margin_bottom = 18
 	question_card.add_theme_stylebox_override("panel", q_style)
-	content_box.add_child(question_card)
+	stage_v.add_child(question_card)
 
 	var prompt := Label.new()
 	prompt.text = str(quiz.get("question", "Nhận diện nốt nhạc"))
@@ -587,17 +645,17 @@ func _show_question() -> void:
 	prompt.add_theme_color_override("font_color", C_NAVY)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	prompt.add_theme_constant_override("line_spacing", 4)
+	prompt.add_theme_constant_override("line_spacing", 6)
 	question_card.add_child(prompt)
 
-	# 2. Staff Display (whiteboard card)
+	# 2. Staff Display (whiteboard card on top of frosted stage)
 	var show_staff := _is_note_question(quiz)
 	if show_staff:
 		var staff_card := PanelContainer.new()
 		staff_card.name = "QuizStaffCard"
 		staff_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		staff_card.add_theme_stylebox_override("panel", _practice_staff_style())
-		content_box.add_child(staff_card)
+		stage_v.add_child(staff_card)
 
 		var whiteboard_vbox := VBoxContainer.new()
 		whiteboard_vbox.add_theme_constant_override("separation", 4)
@@ -614,11 +672,11 @@ func _show_question() -> void:
 
 		# Large audio button in top-right of staff card
 		audio_button = Button.new()
-		audio_button.custom_minimum_size = Vector2(48, 48)
+		audio_button.custom_minimum_size = Vector2(56, 56)
 		audio_button.icon = load("res://assets/textures/lucide/volume-2.svg") as Texture2D
 		audio_button.expand_icon = true
 		audio_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		audio_button.add_theme_constant_override("icon_max_width", 24)
+		audio_button.add_theme_constant_override("icon_max_width", 28)
 		audio_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 		audio_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
@@ -627,7 +685,7 @@ func _show_question() -> void:
 		btn_style_n.border_color = Color("#cbd5e1")
 		btn_style_n.set_border_width_all(2)
 		btn_style_n.border_width_bottom = 4
-		btn_style_n.set_corner_radius_all(24)
+		btn_style_n.set_corner_radius_all(28)
 
 		var btn_style_h := btn_style_n.duplicate() as StyleBoxFlat
 		btn_style_h.bg_color = Color("#f8fafc")
@@ -645,7 +703,7 @@ func _show_question() -> void:
 		audio_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		audio_button.add_theme_color_override("icon_normal_color", C_NAVY)
 
-		audio_button.pivot_offset = Vector2(24, 24)
+		audio_button.pivot_offset = Vector2(28, 28)
 		audio_button.mouse_entered.connect(func() -> void:
 			create_tween().tween_property(audio_button, "scale", Vector2(1.08, 1.08), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		)
@@ -670,13 +728,14 @@ func _show_question() -> void:
 		staff.set_notes([{"note": _quiz_note(quiz), "color": Color.BLACK, "type": "quarter"}])
 		whiteboard_vbox.add_child(staff)
 
-	# 3. Options Grid (2 columns on landscape/desktop, 1 column on narrow portrait)
+	# 3. Options Grid (on top of frosted stage)
 	options_box = GridContainer.new()
+	options_box.name = "OptionsGrid"
 	options_box.columns = 1 if mobile else 2
-	options_box.add_theme_constant_override("h_separation", 16)
-	options_box.add_theme_constant_override("v_separation", 12)
+	options_box.add_theme_constant_override("h_separation", 20)
+	options_box.add_theme_constant_override("v_separation", 16)
 	options_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content_box.add_child(options_box)
+	stage_v.add_child(options_box)
 
 	var options: Array = _parse_options(quiz.get("options", ""))
 	for i in range(options.size()):
@@ -685,12 +744,12 @@ func _show_question() -> void:
 		button.pressed.connect(func() -> void: _answer(button, i, option_text))
 		options_box.add_child(button)
 
-	# 4. Next Button (inline, below options)
-	next_button = _button("Xem kết quả" if question_index + 1 >= quizzes.size() else "Tiếp theo →", 200, 50, C_NAVY)
+	# 4. Next Button (inside frosted stage, below options)
+	next_button = _button("Xem kết quả" if question_index + 1 >= quizzes.size() else "Tiếp theo →", 220, 52, C_NAVY)
 	next_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	next_button.visible = false
 	next_button.pressed.connect(_next_question)
-	content_box.add_child(next_button)
+	stage_v.add_child(next_button)
 
 func _add_quiz_scrim() -> void:
 	var scrim := ColorRect.new()
@@ -703,18 +762,18 @@ func _add_quiz_scrim() -> void:
 
 func _practice_staff_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#fdfbf7")
-	style.border_color = Color("#dfb15b")
+	style.bg_color = Color("#ffffff")
+	style.border_color = Color(0.77, 0.58, 0.15, 0.40)
 	style.set_border_width_all(2)
-	style.border_width_bottom = 5
-	style.set_corner_radius_all(20)
-	style.shadow_color = Color(0.20, 0.15, 0.08, 0.10)
+	style.border_width_bottom = 4
+	style.set_corner_radius_all(24)
+	style.shadow_color = Color(0.20, 0.15, 0.08, 0.06)
 	style.shadow_size = 10
 	style.shadow_offset = Vector2(0, 4)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 14
-	style.content_margin_bottom = 12
+	style.content_margin_left = 22
+	style.content_margin_right = 22
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
 	return style
 
 func _visual_hint(quiz: Dictionary) -> String:
@@ -893,14 +952,15 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 
 	# Display feedback text below the options box
 	var feedback_color := Color("#2e7d32") if is_correct else (Color("#d97706") if (is_backend_quiz and not bool(result.get("submitted", false))) else Color("#c62828"))
-	var ans_label := _label(feedback_text, 16, feedback_color)
+	var ans_label := _label(feedback_text, 17, feedback_color)
 	ans_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content_box.add_child(ans_label)
+	var target_parent: Node = _quiz_stage_v if _quiz_stage_v and is_instance_valid(_quiz_stage_v) else content_box
+	target_parent.add_child(ans_label)
 
-	# Make inline next button visible
+	# Make inline next button visible inside the frosted stage
 	if next_button:
 		next_button.visible = true
-		content_box.move_child(next_button, content_box.get_child_count() - 1)
+		target_parent.move_child(next_button, target_parent.get_child_count() - 1)
 
 	_set_bottom_feedback_answered(is_correct, feedback_text)
 
@@ -1034,6 +1094,8 @@ func _filter_valid_quizzes(source: Array) -> Array:
 	for item: Variant in source:
 		if item is Dictionary:
 			var quiz: Dictionary = item
+			if not _matches_selected_quiz_type(quiz):
+				continue
 			var options: Array = _parse_options(quiz.get("options", []))
 			# Quiz BE không gửi correctAnswer cho LEARNER trước khi nộp bài. Chỉ
 			# cần options hợp lệ; backend là nơi chấm điểm sau khi người dùng chọn.
@@ -1049,6 +1111,12 @@ func _filter_valid_quizzes(source: Array) -> Array:
 					str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))),
 				])
 	return valid
+
+func _matches_selected_quiz_type(quiz: Dictionary) -> bool:
+	var question_type := str(quiz.get("questionType", quiz.get("question_type", "NOTE_IDENTIFICATION"))).to_upper().strip_edges()
+	if Context.activity == "quiz_knowledge":
+		return question_type != "NOTE_IDENTIFICATION"
+	return question_type == "NOTE_IDENTIFICATION"
 
 func _resolve_correct_index(quiz: Dictionary, options: Array) -> int:
 	return Context.resolve_correct_index(quiz, options)

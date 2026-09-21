@@ -38,7 +38,7 @@ func _build_shell() -> void:
 		background.texture = load(background_path)
 	add_child(background)
 	var background_wash := ColorRect.new()
-	background_wash.color = Color(0.10, 0.16, 0.11, 0.18)
+	background_wash.color = Color(0.08, 0.13, 0.09, 0.25)
 	background_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	background_wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background_wash)
@@ -246,7 +246,11 @@ func _instrument_title() -> String:
 		_: return "ĐÀN TRANH"
 
 func _instrument_background_path() -> String:
-	return "res://assets/textures/dan_tranh_background.png"
+	match Context.instrument:
+		"sao_truc": return "res://assets/textures/sao_truc_background.png"
+		"dan_bau": return "res://assets/textures/dan_bau_background.png"
+		"trong_chau": return "res://assets/textures/trong_chau_background.png"
+		_: return "res://assets/textures/dan_tranh_background.png"
 
 func _icons8_texture(icon_name: String) -> Texture2D:
 	var path := ""

@@ -135,6 +135,36 @@ func _test_rhythm_staff_display() -> void:
 	
 	rstaff.call("update_progress", 1.2, ["PERFECT", "GOOD", "", ""])
 	_check(rstaff.get("playback_index") == 1, "RhythmStaffDisplay: active playback_index matches beat at 1.2s")
+
+	# Test Time Signatures and measure beats
+	rstaff.call("configure_rhythm", ["C4", "D4"], [0.0, 1.0], 2.0, false, false, [], [2, 4], [1.0, 1.0], 60)
+	_check(is_equal_approx(float(rstaff.get("measure_beats")), 2.0), "RhythmStaffDisplay: 2/4 measure_beats == 2.0")
+	_check(int(rstaff.get("total_measures")) == 1, "RhythmStaffDisplay: 2/4 2 beats is 1 measure")
+
+	rstaff.call("configure_rhythm", ["C4", "D4", "E4"], [0.0, 1.0, 2.0], 3.0, false, false, [], [3, 4], [1.0, 1.0, 1.0], 60)
+	_check(is_equal_approx(float(rstaff.get("measure_beats")), 3.0), "RhythmStaffDisplay: 3/4 measure_beats == 3.0")
+
+	rstaff.call("configure_rhythm", ["C4", "D4", "E4", "F4", "G4", "A4"], [0.0, 0.5, 1.0, 1.5, 2.0, 2.5], 3.0, false, false, [], [6, 8], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5], 60)
+	_check(is_equal_approx(float(rstaff.get("measure_beats")), 3.0), "RhythmStaffDisplay: 6/8 measure_beats == 3.0")
+
+	# Test 2 measures in 4/4: 8 quarter notes
+	var notes_8: Array = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]
+	var times_8: Array = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+	var durs_8: Array = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+	rstaff.call("configure_rhythm", notes_8, times_8, 8.0, false, false, [], [4, 4], durs_8, 60)
+	_check(int(rstaff.get("total_measures")) == 2, "RhythmStaffDisplay: 8 quarter beats in 4/4 produces 2 measures")
+	_check(int(rstaff.get("current_measure")) == 0, "RhythmStaffDisplay: initial current_measure is 0")
+
+	# Manual navigation
+	rstaff.call("set_measure", 1)
+	_check(int(rstaff.get("current_measure")) == 1, "RhythmStaffDisplay: set_measure(1) switches to measure 1")
+	rstaff.call("prev_measure")
+	_check(int(rstaff.get("current_measure")) == 0, "RhythmStaffDisplay: prev_measure switches back to measure 0")
+
+	# Auto page-turn on playhead progress
+	rstaff.call("update_progress", 4.2, [])
+	_check(int(rstaff.get("current_measure")) == 1, "RhythmStaffDisplay: update_progress at beat 4.2 auto-flips to measure 1")
+
 	rstaff.free()
 
 func _test_melody_contract() -> void:
