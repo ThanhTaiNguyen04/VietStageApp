@@ -1292,9 +1292,10 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 			return {}
 		var f := 0.0
 		if _analyzer:
-			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.08, min_frequency, max_frequency)
+			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.12, min_frequency, max_frequency)
 		else:
-			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.08)
+			# Xogot/iOS GDScript fallback — same threshold as _estimate_pitch()
+			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.12)
 		return pitch_profile.match_pitch(f)
 	return {}
 
