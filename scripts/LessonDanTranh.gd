@@ -2,6 +2,7 @@ extends Control
 class_name LessonDanTranh
 
 const COURSE_API_ADAPTER = preload("res://scripts/DanTranhApiAdapter.gd")
+const PRACTICE_CONTROL_HUD = preload("res://scripts/PracticeControlHud.gd")
 
 const C_GOLD = Color(0.961, 0.784, 0.259, 1.0)
 const C_WOOD = Color(0.18, 0.13, 0.08, 1.0)
@@ -632,6 +633,7 @@ func _ready():
 	
 	if _should_have_speed_control():
 		_create_speed_control_bar()
+	_setup_shared_practice_hud()
 		
 	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
 	if _is_error_flash_demo():
@@ -1429,6 +1431,14 @@ func _setup_pitch_hud_box():
 		feedback_area.add_child(press_round_hint_label)
 
 func _process(delta):
+	if practice_hud:
+		# The shared HUD is the only visible practice control surface. Legacy
+		# nodes stay alive solely because existing lesson logic still references them.
+		if back_btn: back_btn.visible = false
+		if speed_bar_container: speed_bar_container.visible = false
+		if pause_btn: pause_btn.visible = false
+		if pause_overlay: pause_overlay.visible = false
+		practice_hud.set_hud_visible(current_state == State.PRACTICE or current_state == State.PRACTICE_SINGLE or current_state == State.RHYTHM_GAME)
 	# Update teacher talking animation
 	if ai_audio and is_instance_valid(ai_audio.audio_player):
 		_portrait_is_talking = ai_audio.audio_player.is_playing()
@@ -2205,6 +2215,8 @@ func _finish_theory_lesson() -> void:
 func _start_practice_single():
 	current_state = State.PRACTICE_SINGLE
 	_apply_adaptive_speed()
+	if practice_hud:
+		practice_hud.set_hud_visible(true)
 	# Hợp âm ba âm uses the single-note practice flow but still needs the same
 	# speed selector as all other đàn tranh practice screens.
 	if speed_bar_container:
@@ -4529,6 +4541,8 @@ func _is_note_missing(note_idx: int) -> bool:
 func _start_practice():
 	_stop_technique_sample()
 	current_state = State.PRACTICE
+	if practice_hud:
+		practice_hud.set_hud_visible(true)
 	if intro_overlay:
 		intro_overlay.visible = false
 	if error_flash_tween and error_flash_tween.is_running():
@@ -5094,6 +5108,8 @@ func _finish_practice():
 		pause_btn.visible = false
 	if pause_overlay:
 		pause_overlay.visible = false
+	if practice_hud:
+		practice_hud.set_hud_visible(false)
 	
 	var completed = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
 	if not completed.has(current_lesson_id):
@@ -5214,6 +5230,42 @@ func _make_btn_bouncy(btn: Button) -> void:
 var speed_bar_container: PanelContainer = null
 var user_speed_multiplier: float = 1.0
 var speed_buttons: Array[Button] = []
+var practice_hud = null
+
+func _setup_shared_practice_hud() -> void:
+	# Keep existing lesson logic while moving visual controls to the same reusable
+	# HUD used by Sáo trúc.
+	if back_btn:
+		back_btn.visible = false
+	if speed_bar_container:
+		speed_bar_container.visible = false
+	if pause_btn:
+		pause_btn.visible = false
+	practice_hud = PRACTICE_CONTROL_HUD.new()
+	add_child(practice_hud)
+	practice_hud.back_requested.connect(_on_back)
+	practice_hud.speed_selected.connect(_select_speed)
+	practice_hud.pause_requested.connect(_toggle_pause)
+	practice_hud.resume_requested.connect(func() -> void:
+		if sample_actions_ready:
+			_start_practice_from_sample_actions()
+		else:
+			_toggle_pause()
+	)
+	practice_hud.restart_requested.connect(func() -> void:
+		_close_pause_overlay()
+		sample_actions_ready = false
+		is_sample_mode = false
+		_start_practice()
+	)
+	practice_hud.sample_requested.connect(func() -> void:
+		if sample_actions_ready:
+			_start_sample_from_actions()
+		else:
+			_toggle_pause()
+			_toggle_sample_mode()
+	)
+	practice_hud.set_hud_visible(false)
 
 func _create_speed_control_bar():
 	speed_bar_container = PanelContainer.new()
@@ -5275,6 +5327,8 @@ func _select_speed(speed_val: float):
 	user_speed_multiplier = speed_val
 	current_speed_multiplier = user_speed_multiplier
 	_highlight_speed_btn(speed_val)
+	if practice_hud:
+		practice_hud.set_speed(speed_val)
 
 ## Adaptive difficulty FE: nếu người dùng chưa tự chọn tốc độ (vẫn 1.0 mặc định),
 ## dùng tempo gợi ý từ 10 lượt gần nhất của bài này.
@@ -5285,6 +5339,8 @@ func _apply_adaptive_speed():
 	var adaptive := SecureDataManager.get_adaptive_tempo_multiplier(current_lesson_id)
 	current_speed_multiplier = adaptive
 	_highlight_speed_btn(adaptive)
+	if practice_hud:
+		practice_hud.set_speed(adaptive)
 
 func _highlight_speed_btn(speed_val: float):
 	if speed_buttons.is_empty():
@@ -5679,7 +5735,10 @@ func _create_pause_action_btn(text: String, icon_path: String, pressed_callable:
 
 func _toggle_pause():
 	is_paused = not is_paused
-	pause_overlay.visible = is_paused
+	if practice_hud:
+		practice_hud.set_pause_visible(is_paused)
+	elif pause_overlay:
+		pause_overlay.visible = is_paused
 	_refresh_sample_action_buttons()
 			
 	if progress_label:
@@ -5708,6 +5767,13 @@ func _set_pause_action_button_content(button: Button, text: String, icon_path: S
 		label_node.text = text
 
 func _refresh_sample_action_buttons() -> void:
+	if practice_hud:
+		if sample_actions_ready:
+			practice_hud.set_action_labels("Luyện tập", "Nghe lại")
+		elif is_sample_mode:
+			practice_hud.set_action_labels("Tiếp tục", "Luyện tập")
+		else:
+			practice_hud.set_action_labels("Tiếp tục", "Nghe mẫu")
 	if sample_actions_ready:
 		_set_pause_action_button_content(btn_resume_ref, "Luyện tập", "res://icons8/icons8-play-100.png")
 		_set_pause_action_button_content(btn_sample_ref, "Nghe lại", "res://icons8/icons8-speaker-100.png")
@@ -5720,6 +5786,8 @@ func _refresh_sample_action_buttons() -> void:
 
 func _close_pause_overlay() -> void:
 	is_paused = false
+	if practice_hud:
+		practice_hud.set_pause_visible(false)
 	if pause_overlay:
 		pause_overlay.visible = false
 	_refresh_sample_action_buttons()
@@ -5731,7 +5799,9 @@ func _finish_sample_and_offer_actions(message: String) -> void:
 	technique_sample_input_cooldown = 0.0
 	_set_sample_listening_status(message + " Chọn Nghe lại hoặc Luyện tập.")
 	is_paused = true
-	if pause_overlay:
+	if practice_hud:
+		practice_hud.set_pause_visible(true)
+	elif pause_overlay:
 		pause_overlay.visible = true
 	_refresh_sample_action_buttons()
 

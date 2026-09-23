@@ -1,6 +1,8 @@
 extends Control
 class_name PracticeSaoTruc
 
+const PRACTICE_CONTROL_HUD = preload("res://scripts/PracticeControlHud.gd")
+
 # ─── Color Palette — Warm Cream + Jade + Gold (synced with DS.gd)
 const C_GOLD       := Color(0.77, 0.58, 0.15, 1.0)   # #C59626 lacquer gold
 const C_GOLD_LIGHT := Color(0.94, 0.80, 0.38, 1.0)   # #F0CB62 bright gold
@@ -60,6 +62,9 @@ var _count_in_timer := 3.0
 var _count_in_step := 3
 var _is_wait_mode := false
 var _is_demo_mode := false
+var _is_paused := false
+var _is_sample_playback := false
+var _sample_ready := false
 var _speed_scale := 1.0
 var _user_override_speed := false
 var _total_mistakes := 0
@@ -87,7 +92,9 @@ var _backing_timer := 0.0
 const BEAT_DURATION := 0.8
 var _lesson_beats : Array = []
 var _zither_streams : Dictionary = {}
+var _backing_players: Array[AudioStreamPlayer] = []
 var _waveform_visualizer: Control = null
+var _practice_hud = null
 
 var note_statuses : Array[String] = []
 var note_visuals : Dictionary = {}
@@ -402,39 +409,6 @@ func _ready() -> void:
 			_on_song_selected(index)
 		)
 		
-		# Dynamic Speed Selector OptionButton setup
-		var speed_sel := OptionButton.new()
-		speed_sel.name = "SpeedSelector"
-		speed_sel.custom_minimum_size = Vector2(248, 66)
-		speed_sel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		
-		speed_sel.add_theme_stylebox_override("normal", sb_normal)
-		speed_sel.add_theme_stylebox_override("hover", sb_hover)
-		speed_sel.add_theme_stylebox_override("pressed", sb_pressed)
-		if f_body: speed_sel.add_theme_font_override("font", f_body)
-		speed_sel.add_theme_color_override("font_color", C_TEXT)
-		speed_sel.add_theme_color_override("font_hover_color", C_TEXT)
-		speed_sel.add_theme_font_size_override("font_size", 24)
-		
-		speed_sel.add_item("Tốc độ: 100%", 0)
-		speed_sel.add_item("Tốc độ: 80%", 1)
-		speed_sel.add_item("Tốc độ: 60%", 2)
-		speed_sel.add_item("Tốc độ: 50%", 3)
-		speed_sel.selected = 0
-		
-		settings_vbox.add_child(speed_sel)
-		# Place it immediately after the SongSelector (now at index 2)
-		settings_vbox.move_child(speed_sel, 3)
-		
-		speed_sel.item_selected.connect(func(index: int) -> void:
-			_user_override_speed = true
-			match index:
-				0: _speed_scale = 1.0
-				1: _speed_scale = 0.8
-				2: _speed_scale = 0.6
-				3: _speed_scale = 0.5
-			_va_say("Đã chỉnh tốc độ nốt chạy thành %d%%." % int(_speed_scale * 100))
-		)
 	
 	# Check mic permission/driver state
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -626,10 +600,16 @@ func _ready() -> void:
 	pass
 
 	_setup_fullscreen_video_practice("res://image/saotruc.png")
+	_setup_practice_hud()
 
 
 func _process(delta: float) -> void:
+	if _is_paused:
+		return
 	var effective_delta = delta * _speed_scale
+	if _is_sample_playback:
+		_process_sample_playback(effective_delta)
+		return
 	if not _is_wait_mode and not _is_demo_mode and _count_in_timer > 0.0:
 		_count_in_timer -= effective_delta
 		var current_step = int(ceil(_count_in_timer))
@@ -678,9 +658,8 @@ func _process(delta: float) -> void:
 			else:
 				# If we are in Touch Mode, we still want Auto Scroll / Demo Mode to work!
 				if not _is_wait_mode or _is_demo_mode:
-					var effective_bpm = _song_bpm * _speed_scale
 					_current_note_elapsed += effective_delta
-					var target_duration = sheet_durations[_note_idx] * (60.0 / effective_bpm)
+					var target_duration = sheet_durations[_note_idx] * (60.0 / _song_bpm)
 					
 					# Demo Mode: automatically play note sounds
 					if _is_demo_mode:
@@ -1254,8 +1233,34 @@ func _play_flute_sound(note: String) -> void:
 	_active_player = AudioStreamPlayer.new()
 	_active_player.stream = _flute_streams[note]
 	_active_player.volume_db = -80.0 if (_recording and _mic_mode) else -3.0
+	_apply_practice_audio_speed(_active_player)
 	add_child(_active_player)
 	_active_player.play()
+
+func _apply_practice_audio_speed(player: AudioStreamPlayer) -> void:
+	# Timeline progression is scaled once in _process.  The audio stream receives
+	# the same multiplier, with a pitch-shift effect to preserve the played note.
+	player.bus = "SlowMotion"
+	player.pitch_scale = _speed_scale
+	var bus_idx := AudioServer.get_bus_index("SlowMotion")
+	if bus_idx != -1:
+		var effect := AudioServer.get_bus_effect(bus_idx, 0) as AudioEffectPitchShift
+		if effect:
+			effect.pitch_scale = 1.0 / _speed_scale
+
+func _sync_practice_audio_speed() -> void:
+	if _active_player and is_instance_valid(_active_player):
+		_apply_practice_audio_speed(_active_player)
+	for player in _backing_players:
+		if is_instance_valid(player):
+			_apply_practice_audio_speed(player)
+
+func _set_practice_audio_paused(paused: bool) -> void:
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stream_paused = paused
+	for player in _backing_players:
+		if is_instance_valid(player):
+			player.stream_paused = paused
 
 func _play_preview_or_sound() -> void:
 	if _recording and _mic_mode: return
@@ -1407,7 +1412,7 @@ func _connect_buttons() -> void:
 func _apply_adaptive_speed_scale() -> void:
 	if _user_override_speed:
 		return
-	# Adaptive difficulty: gợi ý tempo từ 10 lượt gần nhất, map vào 100/80/60/50%.
+	# Adaptive difficulty: gợi ý tempo từ 10 lượt gần nhất, map vào 100/80/60%.
 	var adaptive := SecureDataManager.get_adaptive_tempo_multiplier(SecureDataManager.active_lesson_id)
 	if adaptive >= 1.1:
 		_speed_scale = 1.0
@@ -1416,7 +1421,10 @@ func _apply_adaptive_speed_scale() -> void:
 	elif adaptive >= 0.7:
 		_speed_scale = 0.6
 	else:
-		_speed_scale = 0.5
+		_speed_scale = 0.6
+	_sync_practice_audio_speed()
+	if _practice_hud:
+		_practice_hud.set_speed(_speed_scale)
 
 func _toggle_record() -> void:
 	_recording = not _recording
@@ -2085,11 +2093,12 @@ func _reset() -> void:
 		_active_player = null
 
 func _go_back() -> void:
+	_stop_active_practice_without_result()
 	if _intro_audio_manager:
 		_intro_audio_manager.audio_player.stop()
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
-	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
+	t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn"))
 
 ## Pitch-detection stubs — to be replaced with real audio analysis
 func _start_pitch_detection() -> void:
@@ -2425,10 +2434,14 @@ func _play_zither_backing(note: String) -> void:
 	var pl := AudioStreamPlayer.new()
 	pl.stream = _zither_streams[clean_note]
 	pl.volume_db = -8.0 # softer zither backing track
-	pl.bus = "Master"
+	_apply_practice_audio_speed(pl)
 	add_child(pl)
+	_backing_players.append(pl)
 	pl.play()
-	get_tree().create_timer(2.5).timeout.connect(pl.queue_free)
+	pl.finished.connect(func() -> void:
+		_backing_players.erase(pl)
+		pl.queue_free()
+	)
 
 func _play_flute_sound_guide(note: String) -> void:
 	# Muted per user request: only recognize pitch, do not play guide sounds
@@ -3199,7 +3212,7 @@ func _setup_fullscreen_video_practice(guide_path: String) -> void:
 	# 5. Hide FluteBoard/StringsBoard guide at the bottom
 	var flute_board := $Root/FluteBoard as Control
 	if flute_board: flute_board.visible = false
-	var strings_board := $Root/StringsBoard as Control
+	var strings_board := $Root.get_node_or_null("StringsBoard") as Control
 	if strings_board: strings_board.visible = false
 	
 	# 6. Hide right-side detail vbox in Sao Truc
@@ -3290,6 +3303,144 @@ func _setup_fullscreen_video_practice(guide_path: String) -> void:
 		
 	# 9. Wait for user to tap Start
 	pass
+
+func _setup_practice_hud() -> void:
+	# The original scene controls remain available for lesson settings, but the
+	# practice navigation and speed controls now use the shared instrument HUD.
+	var legacy_back := $Root/TopBar/TopM/TopH/BackBtn as Button
+	if legacy_back:
+		legacy_back.visible = false
+	var legacy_menu := $Root/TopBar/TopM/TopH/MenuBtn as Button
+	if legacy_menu:
+		legacy_menu.visible = false
+	_practice_hud = PRACTICE_CONTROL_HUD.new()
+	add_child(_practice_hud)
+	_practice_hud.back_requested.connect(_go_back)
+	_practice_hud.speed_selected.connect(func(multiplier: float) -> void:
+		_user_override_speed = true
+		_speed_scale = multiplier
+		_sync_practice_audio_speed()
+		_practice_hud.set_speed(multiplier)
+		_va_say("Đã chỉnh tốc độ luyện tập thành %d%%." % int(multiplier * 100.0))
+	)
+	_practice_hud.pause_requested.connect(_pause_practice)
+	_practice_hud.resume_requested.connect(_resume_from_pause)
+	_practice_hud.restart_requested.connect(_restart_from_pause)
+	_practice_hud.sample_requested.connect(_start_sample_from_pause)
+	_practice_hud.set_hud_visible(true)
+
+func _pause_practice() -> void:
+	if _is_paused:
+		return
+	_is_paused = true
+	# Do not stop or recreate streams here: stream_paused retains the exact
+	# sample position so resume continues the active demo/backing sound.
+	_set_practice_audio_paused(true)
+	if _practice_hud:
+		_practice_hud.set_action_labels("Tiếp tục", "Nghe mẫu")
+		_practice_hud.set_pause_visible(true)
+
+func _resume_from_pause() -> void:
+	if _sample_ready:
+		_restart_from_pause()
+		return
+	_is_paused = false
+	_set_practice_audio_paused(false)
+	_ignore_input_timer = maxf(_ignore_input_timer, 0.15)
+	if _practice_hud:
+		_practice_hud.set_pause_visible(false)
+
+func _stop_active_practice_without_result() -> void:
+	_is_paused = false
+	_is_sample_playback = false
+	_sample_ready = false
+	_is_demo_mode = false
+	_backing_playing = false
+	_set_practice_audio_paused(false)
+	if _recording:
+		_recording = false
+		_stop_pitch_detection()
+		var visualizer = _waveform_visualizer
+		if visualizer and visualizer.has_method("stop_recording") and _mic_mode:
+			visualizer.stop_recording()
+	_update_rec_pulse(false)
+	record_btn.text = "Bắt đầu luyện tập"
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stop()
+		_active_player.queue_free()
+		_active_player = null
+	for player in _backing_players:
+		if is_instance_valid(player):
+			player.stop()
+			player.queue_free()
+	_backing_players.clear()
+
+func _restart_from_pause() -> void:
+	_stop_active_practice_without_result()
+	_note_idx = 0
+	_score = 75.0
+	_current_note_elapsed = 0.0
+	_count_in_timer = 3.0
+	_count_in_step = 3
+	_total_mistakes = 0
+	_detected_onsets.clear()
+	_pitch_scores.clear()
+	_breath_scores.clear()
+	_build_notation()
+	_build_flute()
+	_update_target_indicator()
+	if _practice_hud:
+		_practice_hud.set_pause_visible(false)
+		_practice_hud.set_action_labels()
+	_toggle_record()
+
+func _start_sample_from_pause() -> void:
+	_stop_active_practice_without_result()
+	_note_idx = 0
+	_current_note_elapsed = 0.0
+	_count_in_timer = 0.0
+	_is_sample_playback = true
+	_sample_ready = false
+	if _practice_hud:
+		_practice_hud.set_pause_visible(false)
+	_va_say("Nghe mẫu toàn bộ giai điệu. Khi kết thúc, con có thể luyện tập hoặc nghe lại.")
+	_process_sample_playback(0.0)
+
+func _process_sample_playback(delta: float) -> void:
+	if sheet_notes.is_empty():
+		_finish_sample_playback()
+		return
+	var note := sheet_notes[_note_idx]
+	if _current_note_elapsed <= 0.0 and not _is_rest_note(note):
+		_play_flute_sound(note)
+	_current_note_elapsed += delta
+	var duration := sheet_durations[_note_idx] * (60.0 / _song_bpm)
+	if _current_note_elapsed < duration:
+		return
+	_current_note_elapsed = 0.0
+	_note_idx += 1
+	if _note_idx >= sheet_notes.size():
+		_finish_sample_playback()
+		return
+	_build_notation()
+	_update_target_indicator()
+
+func _finish_sample_playback() -> void:
+	_is_sample_playback = false
+	_sample_ready = true
+	_is_paused = true
+	# _process_sample_playback advances past the last element before arriving
+	# here.  Keep the visual cursor on a valid final note while the pause card is
+	# displayed; otherwise the staff/visualizer can index past its note array.
+	if not sheet_notes.is_empty():
+		_note_idx = sheet_notes.size() - 1
+	if _active_player and is_instance_valid(_active_player):
+		_active_player.stop()
+		_active_player.queue_free()
+		_active_player = null
+	if _practice_hud:
+		_practice_hud.set_action_labels("Luyện tập", "Nghe lại")
+		_practice_hud.set_pause_visible(true)
 
 func _setup_audio_bus() -> void:
 	var bus_idx = AudioServer.get_bus_index("SlowMotion")

@@ -137,7 +137,7 @@ func _render() -> void:
 		child.queue_free()
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var mobile := get_viewport_rect().size.x < 650.0
+	var mobile := _is_compact_layout()
 
 	var stage := _create_frosted_stage(mobile)
 	content_box.add_child(stage["panel"])
@@ -146,29 +146,30 @@ func _render() -> void:
 	# Eyebrow tag
 	stage_v.add_child(_create_eyebrow("%s · LUYỆN TẬP TƯƠNG TÁC" % _instrument_title()))
 
-	# Header VBox
-	var header_v := VBoxContainer.new()
-	header_v.alignment = BoxContainer.ALIGNMENT_CENTER
-	header_v.add_theme_constant_override("separation", 6)
-	stage_v.add_child(header_v)
+	# “Luyện tập” is already the mobile app-bar title. Avoid repeating that
+	# hierarchy in the content panel; desktop keeps the larger stage heading.
+	if not mobile:
+		var header_v := VBoxContainer.new()
+		header_v.alignment = BoxContainer.ALIGNMENT_CENTER
+		header_v.add_theme_constant_override("separation", 6)
+		stage_v.add_child(header_v)
 
-	var title_h := Label.new()
-	title_h.text = "HOẠT ĐỘNG LUYỆN TẬP"
-	title_h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_h.add_theme_font_size_override("font_size", 26 if mobile else 30)
-	var font_b := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
-	if font_b: title_h.add_theme_font_override("font", font_b)
-	title_h.add_theme_color_override("font_color", C_NAVY)
-	header_v.add_child(title_h)
+		var title_h := Label.new()
+		title_h.text = "HOẠT ĐỘNG LUYỆN TẬP"
+		title_h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_h.add_theme_font_size_override("font_size", 30)
+		var font_b := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+		if font_b: title_h.add_theme_font_override("font", font_b)
+		title_h.add_theme_color_override("font_color", C_NAVY)
+		header_v.add_child(title_h)
 
-	var summary := Label.new()
-	summary.text = _summary_text()
-	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	summary.add_theme_font_size_override("font_size", 15 if mobile else 16)
-	summary.add_theme_color_override("font_color", Color(0.35, 0.38, 0.35))
-	header_v.add_child(summary)
-
-	stage_v.add_child(_create_accent_divider())
+		var summary := Label.new()
+		summary.text = _summary_text()
+		summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		summary.add_theme_font_size_override("font_size", 16)
+		summary.add_theme_color_override("font_color", Color(0.35, 0.38, 0.35))
+		header_v.add_child(summary)
+		stage_v.add_child(_create_accent_divider())
 
 	var is_stacked := get_viewport_rect().size.x < 1180.0
 	var cards_row := BoxContainer.new()
@@ -216,7 +217,7 @@ func _render_category_picker(category: String) -> void:
 		child.queue_free()
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var mobile := get_viewport_rect().size.x < 650.0
+	var mobile := _is_compact_layout()
 	var is_quiz := category == "quiz"
 
 	var stage := _create_frosted_stage(mobile)

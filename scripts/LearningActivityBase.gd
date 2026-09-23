@@ -23,10 +23,18 @@ func _ready() -> void:
 	Context.ensure_defaults()
 	_build_shell()
 
+func _is_compact_layout() -> bool:
+	# The project uses a fixed landscape viewport, so viewport width alone cannot
+	# identify a phone after stretching. OS mobile is authoritative at runtime;
+	# the root metadata keeps the layout deterministic in headless UI tests.
+	return OS.has_feature("mobile") \
+		or bool(get_tree().root.get_meta("force_compact_layout", false)) \
+		or get_viewport_rect().size.x < 600.0
+
 # _draw override removed — background is handled by TextureRect child
 
 func _build_shell() -> void:
-	var mobile := get_viewport_rect().size.x < 600.0
+	var mobile := _is_compact_layout()
 	var background := TextureRect.new()
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -48,7 +56,9 @@ func _build_shell() -> void:
 	add_child(root_box)
 
 	var top := PanelContainer.new()
-	top.custom_minimum_size = Vector2(0, 78 if mobile else 86)
+	# The account trigger has a 70px touch target. Keep enough vertical room on
+	# phones so it is never clipped by the compact top bar.
+	top.custom_minimum_size = Vector2(0, 96 if mobile else 86)
 	top.add_theme_stylebox_override("panel", _panel(Color(1.0, 0.99, 0.97, 0.66), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.34), 0, 1))
 	root_box.add_child(top)
 	var top_blur := ColorRect.new()
@@ -68,7 +78,10 @@ func _build_shell() -> void:
 	top_margin.add_child(top_row)
 	
 	var back := Button.new()
-	back.custom_minimum_size = Vector2(48 if mobile else 54, 48 if mobile else 54)
+	var back_size := 64 if mobile else 68
+	back.name = "ActivityBackButton"
+	back.tooltip_text = "Quay lại"
+	back.custom_minimum_size = Vector2(back_size, back_size)
 	back.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
 	back.expand_icon = true
 	back.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -80,7 +93,7 @@ func _build_shell() -> void:
 
 	var sb_n := StyleBoxFlat.new()
 	sb_n.bg_color = Color.WHITE
-	sb_n.set_corner_radius_all(27)
+	sb_n.set_corner_radius_all(back_size / 2)
 	sb_n.border_width_bottom = 2
 	sb_n.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
 	
@@ -98,7 +111,7 @@ func _build_shell() -> void:
 	back.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 	# Bouncy hover/press micro-interactions
-	back.pivot_offset = Vector2(24 if mobile else 27, 24 if mobile else 27)
+	back.pivot_offset = Vector2(back_size * 0.5, back_size * 0.5)
 	back.mouse_entered.connect(func() -> void:
 		create_tween().tween_property(back, "scale", Vector2(1.15, 1.15), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
@@ -115,12 +128,16 @@ func _build_shell() -> void:
 
 	back.pressed.connect(_go_back)
 	top_row.add_child(back)
+
+	# The circular arrow is self-explanatory on the activity screen. Do not repeat
+	# “Luyện tập” beside it; the stage itself provides the activity context.
 	var header_label := Label.new()
 	header_label.text = "Luyện tập"
 	header_label.add_theme_font_size_override("font_size", 24 if mobile else 28)
 	header_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
 	header_label.add_theme_color_override("font_color", C_NAVY)
 	header_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	header_label.visible = false
 	top_row.add_child(header_label)
 	var context_box := VBoxContainer.new()
 	context_box.visible = false
@@ -148,6 +165,20 @@ func _build_shell() -> void:
 	status_chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_chip.visible = false
 	top_row.add_child(status_chip)
+	var top_spacer := Control.new()
+	top_spacer.name = "TopSpacer"
+	top_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_row.add_child(top_spacer)
+
+	# Keep the same account entry point as the curriculum screens. The menu
+	# contains both Hồ sơ and Bộ sưu tập thành tựu, rather than forcing a learner
+	# to leave the activity screen and navigate through the home page.
+	var profile_pill := preload("res://scripts/DS.gd").build_profile_pill()
+	profile_pill.tooltip_text = "Mở hồ sơ và thành tựu"
+	top_row.add_child(profile_pill)
+	var account_menu := preload("res://scripts/CurriculumAccountMenu.gd").new()
+	account_menu.pill = profile_pill
+	add_child(account_menu)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
