@@ -56,9 +56,75 @@ static var data := {
 	# but they still belong in the learner's local activity history.
 	"local_activity_history": []
 }
+static var _default_profile: Dictionary = data.duplicate(true)
+static var _profiles: Dictionary = {}
+static var _active_profile_key := "guest"
+static var _store_loaded := false
+
+
+static func _fresh_profile() -> Dictionary:
+	return _default_profile.duplicate(true)
+
+
+static func _load_store() -> void:
+	if _store_loaded:
+		return
+	_store_loaded = true
+	if not FileAccess.file_exists(SAVE_FILE_PATH):
+		_profiles[_active_profile_key] = _fresh_profile()
+		data = _profiles[_active_profile_key].duplicate(true)
+		return
+	var file := FileAccess.open_encrypted_with_pass(SAVE_FILE_PATH, FileAccess.READ, ENCRYPTION_KEY)
+	if file == null:
+		_profiles[_active_profile_key] = _fresh_profile()
+		data = _profiles[_active_profile_key].duplicate(true)
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		_profiles[_active_profile_key] = _fresh_profile()
+		data = _profiles[_active_profile_key].duplicate(true)
+		return
+	var stored: Dictionary = parsed
+	if stored.get("profiles") is Dictionary:
+		_profiles = stored["profiles"].duplicate(true)
+	else:
+		# One-time migration from the old single-account save. Its recorded userId
+		# is used when available; anonymous data remains isolated as guest data.
+		var legacy_key := "user_%s" % str(stored.get("user_id", "guest")) if int(stored.get("user_id", 0)) > 0 else "guest"
+		_profiles[legacy_key] = stored.duplicate(true)
+	if not _profiles.has(_active_profile_key):
+		_profiles[_active_profile_key] = _fresh_profile()
+	data = _profiles[_active_profile_key].duplicate(true)
+
+
+static func activate_account(user_id: Variant) -> void:
+	var id := str(user_id).strip_edges()
+	if id.is_empty() or id == "0":
+		return
+	_load_store()
+	_profiles[_active_profile_key] = data.duplicate(true)
+	_active_profile_key = "user_" + id
+	if not _profiles.has(_active_profile_key):
+		_profiles[_active_profile_key] = _fresh_profile()
+	data = _profiles[_active_profile_key].duplicate(true)
+	data["user_id"] = int(user_id)
+	save_data()
+
+
+static func activate_guest() -> void:
+	_load_store()
+	_profiles[_active_profile_key] = data.duplicate(true)
+	_active_profile_key = "guest"
+	if not _profiles.has(_active_profile_key):
+		_profiles[_active_profile_key] = _fresh_profile()
+	data = _profiles[_active_profile_key].duplicate(true)
+	save_data()
 
 static func save_data() -> void:
-	var json_str := JSON.stringify(data)
+	_load_store()
+	_profiles[_active_profile_key] = data.duplicate(true)
+	var json_str := JSON.stringify({"version": 2, "profiles": _profiles})
 	var file := FileAccess.open_encrypted_with_pass(SAVE_FILE_PATH, FileAccess.WRITE, ENCRYPTION_KEY)
 	if file:
 		file.store_string(json_str)
@@ -67,31 +133,10 @@ static func save_data() -> void:
 		printerr("Failed to save secure offline data.")
 
 static func load_data() -> void:
-	if not FileAccess.file_exists(SAVE_FILE_PATH):
-		# Default initialization
-		save_data()
-		return
-
-	var file := FileAccess.open_encrypted_with_pass(SAVE_FILE_PATH, FileAccess.READ, ENCRYPTION_KEY)
-	if file:
-		var json_str := file.get_as_text()
-		file.close()
-
-		var json := JSON.new()
-		var parse_err := json.parse(json_str)
-		if parse_err == OK:
-			var parsed_data = json.get_data()
-			if parsed_data is Dictionary:
-				for key in parsed_data.keys():
-					data[key] = parsed_data[key]
-			else:
-				save_data()
-		else:
-			printerr("Secure save file corrupted. Resetting data.")
-			save_data()
-	else:
-		printerr("Failed to decrypt secure offline data. Resetting data.")
-		save_data()
+	_load_store()
+	if not _profiles.has(_active_profile_key):
+		_profiles[_active_profile_key] = _fresh_profile()
+	data = _profiles[_active_profile_key].duplicate(true)
 
 static func sync_backend_progress(progress_list: Array) -> void:
 	_ensure_progress_containers()
@@ -208,6 +253,18 @@ static func record_local_activity(activity: Dictionary) -> void:
 static func get_local_activity_history() -> Array:
 	var value: Variant = data.get("local_activity_history", [])
 	return value.duplicate(true) if value is Array else []
+
+
+static func get_local_completed_lesson_count() -> int:
+	var completed: Variant = data.get("completed_lessons", {})
+	if not completed is Dictionary:
+		return 0
+	var unique: Dictionary = {}
+	for instrument_items: Variant in completed.values():
+		if instrument_items is Array:
+			for lesson_id: Variant in instrument_items:
+				unique[str(lesson_id)] = true
+	return unique.size()
 
 
 static func sync_backend_summary(summary_data: Dictionary) -> void:

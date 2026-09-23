@@ -264,6 +264,15 @@ func submit_attempt_feedback(attempt_id: int, comment: String) -> Dictionary:
 	return await request_json(path, HTTPClient.METHOD_POST, {"comment": comment})
 
 
+## Học viên tải phản hồi của giảng viên khi mở chi tiết một lượt tập.
+## This is deliberately on-demand, not a background polling loop.
+func get_attempt_feedback(attempt_id: int) -> Dictionary:
+	if attempt_id <= 0:
+		return {"status": 400, "body": {}, "message": "Lượt tập không hợp lệ."}
+	var path := ApiRoutes.build(ApiRoutes.PRACTICE_ATTEMPT_FEEDBACK % str(attempt_id))
+	return await request_json(path, HTTPClient.METHOD_GET)
+
+
 # ── PROGRESS & ACHIEVEMENTS APIs ──────────────────────────────────────
 
 ## Lấy tiến độ học tập của bản thân
@@ -298,7 +307,9 @@ func complete_lesson_progress(
 	if score >= 0.0:
 		payload["score"] = score
 	var path := ApiRoutes.build(ApiRoutes.COMPLETE_LESSON % str(lesson_id))
-	return await request_json(path, HTTPClient.METHOD_POST, payload)
+	# Completion has its own durable queue in BackendReport. Do not turn an
+	# offline request into HTTP 202 here: no reward may be applied before BE ACK.
+	return await request_json(path, HTTPClient.METHOD_POST, payload, true, false)
 
 ## Lấy lịch sử biến động điểm/xu
 func get_point_transactions(user_id: int) -> Dictionary:
@@ -569,10 +580,19 @@ func request_json(
 # ── OFFLINE MODE HELPERS ──────────────────────────────────────────────
 
 func _get_cache_path() -> String:
-	return "user://offline_cache.json"
+	return "user://offline_cache_%s.json" % _offline_storage_scope()
 	
 func _get_sync_queue_path() -> String:
-	return "user://offline_sync_queue.json"
+	return "user://offline_sync_queue_%s.json" % _offline_storage_scope()
+
+
+func _offline_storage_scope() -> String:
+	# Never let cached GET responses or queued mutations cross accounts on a
+	# shared device. user_code is supplied by the authenticated backend session.
+	var raw := AuthSessionStore.user_code.strip_edges()
+	if raw.is_empty():
+		return "guest"
+	return raw.to_lower().replace("/", "_").replace("\\", "_").replace("..", "_")
 
 func _read_cache(path: String) -> Dictionary:
 	var cache_file = _get_cache_path()
