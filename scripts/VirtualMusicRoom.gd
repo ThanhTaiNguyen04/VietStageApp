@@ -2685,6 +2685,15 @@ func _get_cosmetic_key(item: Dictionary) -> String:
 		return "cosmetic_%d" % cosmetic_id
 	return "cosmetic_%d" % str(item.get("assetUrl", item.get("name", "unknown"))).hash()
 
+
+func _get_cosmetic_star_price(item: Dictionary) -> int:
+	# Giá mua chỉ do backend quyết định. Không dùng giá mặc định khi response thiếu dữ liệu.
+	var raw_price: Variant = item.get("starPrice", null)
+	if not (typeof(raw_price) in [TYPE_INT, TYPE_FLOAT]):
+		return -1
+	var price := int(raw_price)
+	return price if price >= 0 else -1
+
 func _get_cosmetic_asset_url(item: Dictionary) -> String:
 	var asset_url := str(item.get("assetUrl", item.get("asset_url", ""))).strip_edges()
 	if asset_url.begins_with("http://") or asset_url.begins_with("https://"):
@@ -3575,7 +3584,7 @@ func _update_shop_items() -> void:
 
 func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContainer:
 	var name = item.get("name", "Vật phẩm")
-	var cost = int(item.get("unlockValue", 3))
+	var cost := _get_cosmetic_star_price(item)
 	var desc = item.get("description", "Vật phẩm trang trí cho phòng nhạc.")
 	
 	var card := PanelContainer.new()
@@ -3654,7 +3663,7 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 	cost_hbox.add_child(req_star_icon)
 	
 	var cost_lbl := Label.new()
-	cost_lbl.text = "%d Sao" % cost
+	cost_lbl.text = "%d Sao" % cost if cost >= 0 else "Chưa có giá"
 	cost_lbl.add_theme_font_size_override("font_size", 13)
 	cost_lbl.add_theme_color_override("font_color", C_GOLD)
 	if _font_body_bold:
@@ -3692,13 +3701,18 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		_style_disabled_button(btn)
 		btn.disabled = true
 	elif not owned:
-		btn.text = "MỞ KHÓA"
-		if stars >= cost:
-			_style_primary_btn(btn)
-			btn.disabled = false
-		else:
+		if cost < 0:
+			btn.text = "CHƯA CÓ GIÁ"
 			_style_disabled_button(btn)
 			btn.disabled = true
+		else:
+			btn.text = "MỞ KHÓA"
+			if stars >= cost:
+				_style_primary_btn(btn)
+				btn.disabled = false
+			else:
+				_style_disabled_button(btn)
+				btn.disabled = true
 	else:
 		btn.disabled = false
 		var active = item.get("isEquipped", false)
