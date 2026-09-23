@@ -1586,6 +1586,9 @@ func _on_level1_voice_finished() -> void:
 			_lesson1_pause_overlay.visible = true
 
 func _start_level1_listening() -> void:
+	var calibration_mic = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+	if _mic_mode and calibration_mic and not await calibration_mic.ensure_noise_calibrated():
+		return
 	if _lesson1_focus_state == Lesson1FocusState.COMPLETED:
 		return
 	if not ProjectSettings.get_setting("audio/driver/enable_input"):
@@ -2075,6 +2078,10 @@ func _get_level1_current_step_seconds(speed: float) -> float:
 	return _get_level1_seconds_per_note(speed)
 
 func _toggle_level1_sequence() -> void:
+	if _level1_state not in ["playing", "countdown"] and _mic_mode and not _is_demo_mode:
+		var calibration_mic = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+		if calibration_mic and not await calibration_mic.ensure_noise_calibrated():
+			return
 	if _level1_state == "playing" or _level1_state == "countdown":
 		_level1_state = "paused"
 		_recording = false
@@ -3586,6 +3593,10 @@ func _connect_buttons() -> void:
 	_make_button_bouncy(reset_btn)
 
 func _toggle_record() -> void:
+	if not _recording and _mic_mode and not _is_demo_mode:
+		var mic_analyzer = $Root/RecordBar/RecordM/RecordH.get_node_or_null("WaveformVisualizer")
+		if mic_analyzer and not await mic_analyzer.ensure_noise_calibrated():
+			return
 	if _level1_lesson1_mode:
 		_toggle_level1_lesson1_listening()
 		return
