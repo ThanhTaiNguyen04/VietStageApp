@@ -181,7 +181,9 @@ func _ready() -> void:
 	_setup_drawing_callbacks()
 
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	roadmap_scroll.resized.connect(_update_roadmap_scroll_extent)
 	_on_viewport_size_changed()
+	_update_roadmap_scroll_extent.call_deferred()
 
 	_animate_in()
 
@@ -315,7 +317,8 @@ func _setup_drawing_callbacks() -> void:
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
 			is_unlocked = SecureDataManager.is_lesson_completed(inst, "Node1")
 
-		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12) if is_unlocked else Color(0.18, 0.22, 0.19, 0.12)
+		is_unlocked = true # Temporary open access; preserve actual progress.
+		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12)
 		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
 		var angle_fill := (pct / 100.0) * TAU
@@ -353,7 +356,8 @@ func _setup_drawing_callbacks() -> void:
 		else:
 			pct = 0.0
 
-		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12) if is_unlocked else Color(0.18, 0.22, 0.19, 0.12)
+		is_unlocked = true # Temporary open access; preserve actual progress.
+		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12)
 		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
 		var angle_fill := (pct / 100.0) * TAU
@@ -1609,7 +1613,8 @@ func _build_roadmap_cards() -> void:
 		path_soloist_title.hide()
 		path_chords_title.hide()
 		
-		card_level_7.position = Vector2(1060, 275)
+		# Position is assigned centrally by _layout_roadmap so all three
+		# level cards keep the same fixed width and spacing.
 		_set_title_with_icon(roadmap_guide, "map", str(dan_tranh_roadmap["guide"]))
 		
 		basic_title.text = str(dan_tranh_levels[1]["title"])
@@ -1753,7 +1758,12 @@ func _build_roadmap_cards() -> void:
 			_set_details_text(basic_details, 2, 0, 0, false)
 
 	# Dynamic progression styling for Card Essentials
-	var is_ess_unlocked := is_basic_completed
+	# Temporary open access; never mark lessons completed or award stars here.
+	# Proposed API names, NOT active; backend must confirm this contract:
+	# isUnlocked == false -> white alpha 0.45 (locked).
+	# isUnlocked == true and learningStatus == NOT_STARTED -> white alpha 0.82.
+	# learningStatus == IN_PROGRESS or COMPLETED -> green.
+	var is_ess_unlocked := true
 	if not is_ess_unlocked:
 		var ess_lock_sb := _flat(Color(0.96, 0.97, 0.95, 0.82), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 24)
 		ess_lock_sb.border_width_left = 6; ess_lock_sb.border_width_right = 6
@@ -1771,7 +1781,7 @@ func _build_roadmap_cards() -> void:
 		else:
 			_set_details_text(ess_details, 8 if instrument == "dan_tranh" else 3, 0, 0, false)
 	else:
-		var ess_sb := _flat(C_CARD_BG_DK, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 24)
+		var ess_sb := _flat(C_CARD_BG, Color.WHITE, 24)
 		ess_sb.border_width_left = 6; ess_sb.border_width_right = 6
 		ess_sb.border_width_top = 6; ess_sb.border_width_bottom = 6
 		card_essentials.add_theme_stylebox_override("panel", ess_sb)
@@ -1864,9 +1874,10 @@ func _build_roadmap_cards() -> void:
 	else:
 		level_3_stats = _get_dan_tranh_level_status(7)
 		is_level_3_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
+	is_level_3_unlocked = true # Temporary open access, independent of progress.
 	var level_3_sb := _flat(
-		C_CARD_BG_DK if is_level_3_unlocked else Color(0.96, 0.97, 0.95, 0.82),
-		Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35) if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
+		C_CARD_BG if is_level_3_unlocked else Color(0.96, 0.97, 0.95, 0.82),
+		Color.WHITE if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
 		24
 	)
 	level_3_sb.border_width_left = 6; level_3_sb.border_width_right = 6
@@ -1950,23 +1961,60 @@ func _style_circular_play_btn(btn: Button) -> void:
 	btn.add_child(draw_node)
 
 # ─── Animate In ────────────────────────────────────────────────────────────────
+func _update_roadmap_scroll_extent() -> void:
+	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+	if instrument not in ["dan_tranh", "dan_bau", "trong_chau"]:
+		return
+	var right_edge := 0.0
+	for card in [card_basic, card_essentials, card_level_7]:
+		if is_instance_valid(card) and card.visible:
+			right_edge = maxf(right_edge, card.position.x + card.size.x)
+	# Containers receive their actual width after the initial layout pass.
+	roadmap_content.custom_minimum_size.x = maxf(right_edge + 40.0, roadmap_scroll.size.x + 230.0)
+
+var _roadmap_drag_pending := false
+var _roadmap_dragging := false
+var _roadmap_drag_origin := Vector2.ZERO
+var _roadmap_drag_scroll := 0
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_roadmap_drag_pending = roadmap_scroll.get_global_rect().has_point(event.position) and not _account_menu_open
+			_roadmap_dragging = false
+			_roadmap_drag_origin = event.position
+			_roadmap_drag_scroll = roadmap_scroll.scroll_horizontal
+		else:
+			if _roadmap_dragging:
+				# A drag must not activate the lesson under the release position.
+				get_viewport().set_input_as_handled()
+				for card in [card_basic, card_essentials, card_level_7]:
+					var hit_area := card.get_node_or_null("DanTranhLevelHitArea") as Button
+					if hit_area:
+						hit_area.set_pressed_no_signal(false)
+			_roadmap_drag_pending = false
+			_roadmap_dragging = false
+	elif event is InputEventMouseMotion and _roadmap_drag_pending:
+		var distance: float = event.position.x - _roadmap_drag_origin.x
+		if absf(distance) > 8.0:
+			_roadmap_dragging = true
+		if _roadmap_dragging:
+			roadmap_scroll.scroll_horizontal = _roadmap_drag_scroll - int(distance)
+			get_viewport().set_input_as_handled()
+
 func _animate_in() -> void:
 	roadmap_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	var items := [card_basic, card_essentials, card_soloist_unlock, card_chords_unlock, card_soloist_skills, card_chords_skills, card_classical, card_level_7, card_pop_chords]
-	var delay := 0.0
 	for item in items:
 		if not is_instance_valid(item): continue
 		_make_card_clickable(item)
-		item.modulate.a = 0.0
-		item.position.x += 40.0
-		var t := create_tween().set_parallel(true)
-		t.tween_property(item, "modulate:a", 1.0, 0.45).set_delay(delay)
-		t.tween_property(item, "position:x", item.position.x - 40.0, 0.45).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		delay += 0.08
+		# Keep roadmap cards anchored. Position tweening caused visible horizontal
+		# in/out movement whenever the roadmap was rebuilt after progress sync.
+		item.modulate.a = 1.0
 
 func _make_card_clickable(card: Control) -> void:
 	if not is_instance_valid(card): return
-	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_set_children_mouse_filter_pass(card)
 
@@ -1979,7 +2027,7 @@ func _connect_dan_tranh_level_card(card: Control, level_number: int) -> void:
 		hit_area.name = "DanTranhLevelHitArea"
 		hit_area.flat = true
 		hit_area.focus_mode = Control.FOCUS_NONE
-		hit_area.mouse_filter = Control.MOUSE_FILTER_STOP
+		hit_area.mouse_filter = Control.MOUSE_FILTER_PASS
 		hit_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var empty_style := StyleBoxEmpty.new()
 		hit_area.add_theme_stylebox_override("normal", empty_style)
@@ -2209,7 +2257,7 @@ func _connect_buttons() -> void:
 			elif inst == "sao_truc":
 				_open_sao_truc_level(2)
 			else:
-				var is_ess_unlocked := SecureDataManager.is_lesson_completed(inst, "Node1")
+				var is_ess_unlocked := true # Temporary open access.
 				if not is_ess_unlocked:
 					_virtual_artist_play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
 					return
@@ -2626,6 +2674,10 @@ func _on_viewport_size_changed() -> void:
 		
 		var is_3_levels = (instrument == "dan_tranh" or instrument == "dan_bau" or instrument == "trong_chau" or instrument == "sao_truc")
 		var total_w: float = x_sk + card_w + 40.0 if is_3_levels else x_pop + card_w + 40.0
+		if is_3_levels:
+			# Keep room to pan even when all three cards fit on screen.
+			# Extend only the trailing canvas; card positions and gaps stay fixed.
+			total_w = maxf(total_w, roadmap_scroll.size.x + card_w * 0.5)
 		roadmap_content.custom_minimum_size = Vector2(total_w, roadmap_h)
 
 		card_basic.position = Vector2(x_basic, y_mid)

@@ -405,6 +405,10 @@ func _create_circle_button(display_number: String, lesson_title: String, unlocke
 		border_color = C_JADE_LIGHT
 		text_color = C_TEXT
 
+	# Temporary open-access appearance; completion data stays unchanged.
+	bg_color = Color(0.09, 0.27, 0.18, 1.0)
+	border_color = Color.WHITE
+	text_color = Color.WHITE
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -424,13 +428,14 @@ func _create_circle_button(display_number: String, lesson_title: String, unlocke
 		else:
 			s_hover.bg_color = Color(0.97, 0.97, 0.97, 1.0)
 
+	s_hover.bg_color = bg_color.lightened(0.08)
 	button.add_theme_stylebox_override("normal", s_normal)
 	button.add_theme_stylebox_override("hover", s_hover)
 	button.add_theme_stylebox_override("pressed", s_normal)
 	button.add_theme_stylebox_override("disabled", s_normal)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_color_override("font_color", text_color)
-	button.add_theme_color_override("font_hover_color", C_JADE if (unlocked and not completed) else text_color)
+	button.add_theme_color_override("font_hover_color", text_color)
 	button.add_theme_color_override("font_pressed_color", text_color)
 	button.add_theme_color_override("font_disabled_color", text_color)
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font

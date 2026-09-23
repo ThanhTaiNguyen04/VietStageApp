@@ -138,11 +138,11 @@ func _refresh_from_api() -> void:
 
 func _populate_from_local_cache() -> void:
 	SecureDataManager.load_data()
-	var local_user_name = str(SecureDataManager.data.get("user_name", "Học viên VietStage"))
-	var local_email = str(SecureDataManager.data.get("user_email", "learner@vietstage.vn"))
-	var local_code = str(SecureDataManager.data.get("user_code", "VS-8888"))
-	var local_role = str(SecureDataManager.data.get("user_role", "LEARNER"))
-	var local_id = SecureDataManager.data.get("user_id", 1)
+	var local_user_name = str(SecureDataManager.data.get("user_name", ""))
+	var local_email = str(SecureDataManager.data.get("user_email", ""))
+	var local_code = str(SecureDataManager.data.get("user_code", ""))
+	var local_role = str(SecureDataManager.data.get("user_role", ""))
+	var local_id = SecureDataManager.data.get("user_id", null)
 	var local_avatar = str(SecureDataManager.data.get("user_avatar_url", ""))
 	
 	_profile = {
@@ -152,7 +152,7 @@ func _populate_from_local_cache() -> void:
 		"role": local_role,
 		"id": local_id,
 		"active": true,
-		"createdAt": "2026-01-01",
+		"createdAt": "",
 		"avatarUrl": local_avatar
 	}
 	_render_profile()
@@ -160,12 +160,12 @@ func _populate_from_local_cache() -> void:
 
 func _get_local_summary() -> Dictionary:
 	return {
-		"total_points": SecureDataManager.data.get("total_points", 1240),
+		"total_points": SecureDataManager.data.get("xp", null),
 		"total_stars": SecureDataManager.get_total_stars(),
-		"completed_lessons": SecureDataManager.data.get("completed_lessons", 8),
-		"current_streak": SecureDataManager.data.get("current_streak", 7),
-		"longest_streak": SecureDataManager.data.get("longest_streak", 14),
-		"adaptive_difficulty": "Bình thường"
+		"completed_lessons": SecureDataManager.get_local_completed_lesson_count(),
+		"current_streak": SecureDataManager.data.get("daily_streak", null),
+		"longest_streak": SecureDataManager.data.get("longest_streak", null),
+		"adaptive_difficulty": null
 	}
 
 

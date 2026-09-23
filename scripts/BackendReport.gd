@@ -80,22 +80,35 @@ func report_lesson_completion(
 	if lesson.is_empty():
 		return {"submitted": false, "reason": "lesson_binding_mismatch"}
 	var lesson_id := int(lesson.get("id", 0))
+	var client_attempt_id := _uuid()
+	var completed_at := _iso_now()
 	var response: Dictionary = await _api.complete_lesson_progress(
 		lesson_id,
-		_uuid(),
-		_iso_now(),
+		client_attempt_id,
+		completed_at,
 		score
 	)
-	if not _is_success(response):
+	var completion_data: Variant = response.get("body", {}).get("data", {})
+	if not completion_data is Dictionary:
+		completion_data = {}
+	# HTTP 202 is an app-side queued request, never an acknowledgement. A lesson
+	# only changes local progress once BE explicitly confirms completed=true.
+	if _is_pending_response(response):
+		SecureDataManager.enqueue_pending_game_attempt({
+			"kind": "lesson_completion", "lesson_id": lesson_id,
+			"client_attempt_id": client_attempt_id, "completed_at": completed_at,
+			"score": score, "instrument": instrument, "local_lesson_id": local_lesson_id,
+			"title": "Hoàn thành bài học", "lessonTitle": str(lesson.get("title", "Bài học")),
+		})
+		activity_history_changed.emit()
+		return {"submitted": false, "queued": true, "reason": "completion_pending", "message": "Kết quả đang chờ đồng bộ."}
+	if not _is_server_acknowledged(response) or not bool(completion_data.get("completed", false)):
 		return {
 			"submitted": false,
 			"reason": "completion_failed",
 			"status": int(response.get("status", 0)),
 			"message": _api.error_message(response, "Không thể ghi nhận hoàn thành bài học."),
 		}
-	var completion_data: Variant = response.get("body", {}).get("data", {})
-	if not completion_data is Dictionary:
-		completion_data = {}
 	var lesson_stars := int(completion_data.get(
 		"lessonStars",
 		completion_data.get("stars", completion_data.get("starsEarned", 0))
@@ -528,10 +541,22 @@ func retry_pending_game_attempts() -> void:
 		elif str(item.get("kind", "")) == "lesson_assessment":
 			var payload: Dictionary = item.get("payload", {})
 			response = await _api.submit_lesson_assessment(int(item.get("lesson_id", 0)), payload)
+		elif str(item.get("kind", "")) == "lesson_completion":
+			response = await _api.complete_lesson_progress(
+				int(item.get("lesson_id", 0)), str(item.get("client_attempt_id", "")),
+				str(item.get("completed_at", "")), float(item.get("score", -1.0))
+			)
 		else:
 			continue
 		var reward := _attempt_data(response)
-		if _is_success(response) and not reward.is_empty() and int(reward.get("id", 0)) > 0:
+		if str(item.get("kind", "")) == "lesson_completion":
+			if _is_server_acknowledged(response) and bool(reward.get("completed", false)):
+				SecureDataManager.apply_confirmed_lesson_completion(str(item.get("instrument", "")), str(item.get("local_lesson_id", "")), int(reward.get("lessonStars", 0)))
+				SecureDataManager.apply_backend_reward(reward)
+				SecureDataManager.remove_pending_game_attempt(str(item.get("client_attempt_id", "")))
+				activity_history_changed.emit()
+			continue
+		if _is_server_acknowledged(response) and not reward.is_empty() and int(reward.get("id", 0)) > 0:
 			SecureDataManager.apply_backend_reward(reward)
 			if str(item.get("kind", "")) == "lesson_assessment":
 				_apply_assessment_completion(reward, str(item.get("instrument", "")), str(item.get("local_lesson_id", "")))
@@ -610,6 +635,15 @@ func _extract_array(response: Dictionary) -> Array:
 func _is_success(response: Dictionary) -> bool:
 	var status := int(response.get("status", 0))
 	return status >= 200 and status < 300
+
+
+func _is_server_acknowledged(response: Dictionary) -> bool:
+	var status := int(response.get("status", 0))
+	return status >= 200 and status < 300 and status != 202
+
+
+func _is_pending_response(response: Dictionary) -> bool:
+	return int(response.get("status", 0)) in [0, 202]
 
 
 func _attempt_data(response: Dictionary) -> Dictionary:

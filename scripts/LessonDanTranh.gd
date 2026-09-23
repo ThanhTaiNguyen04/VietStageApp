@@ -1946,43 +1946,8 @@ func _is_harmonic_or_octave_of_target(det_note: String, det_idx: int, target_not
 	return det_note == target_note and det_idx == target_idx
 
 func _start_calibration_state() -> void:
-	current_state = State.CALIBRATION
-	teacher_area.visible = true
-	feedback_area.visible = true
-	complete_btn.visible = false
-	staff_display.visible = false
-	if staff_card: staff_card.visible = false
-	if title_plaque: title_plaque.visible = false
-	if pill_badge: pill_badge.visible = false
-	if sub_instr_row: sub_instr_row.visible = false
-	if pitch_box:
-		pitch_box.visible = true
-	
-	if mic_status_lbl:
-		mic_status_lbl.text = "🎙️ Đang đo nhiễu nền..."
-		mic_status_lbl.add_theme_color_override("font_color", Color(0.95, 0.72, 0.18))
-	
-	var msg = "Chào bạn! Hãy giữ im lặng trong 2 giây để tôi đo tiếng ồn nền của phòng nhé..."
-	speech_text.text = msg
-	if ai_audio:
-		ai_audio.speak_vietnamese(msg)
-		
-	analyzer.start_calibration()
-	get_tree().create_timer(2.2).timeout.connect(func():
-		var db = analyzer.finish_calibration()
-		if mic_status_lbl:
-			mic_status_lbl.text = "🟢 Đã hiệu chuẩn: %.1f dB" % db
-			mic_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
-		
-		var cal_msg = "Xong! Tiếng nền ở mức %.1f dB. Tôi đã tối ưu hóa micro." % db
-		speech_text.text = cal_msg
-		if ai_audio:
-			ai_audio.speak_vietnamese(cal_msg)
-			
-		get_tree().create_timer(2.0).timeout.connect(func():
-			_start_intro()
-		)
-	)
+	if await analyzer.ensure_noise_calibrated():
+		_start_intro()
 
 func _start_intro():
 	current_state = State.INTRO
@@ -2213,6 +2178,9 @@ func _finish_theory_lesson() -> void:
 	_on_back()
 
 func _start_practice_single():
+	_stop_technique_sample()
+	if not await analyzer.ensure_noise_calibrated():
+		return
 	current_state = State.PRACTICE_SINGLE
 	_apply_adaptive_speed()
 	if practice_hud:
@@ -4540,6 +4508,8 @@ func _is_note_missing(note_idx: int) -> bool:
 
 func _start_practice():
 	_stop_technique_sample()
+	if not await analyzer.ensure_noise_calibrated():
+		return
 	current_state = State.PRACTICE
 	if practice_hud:
 		practice_hud.set_hud_visible(true)

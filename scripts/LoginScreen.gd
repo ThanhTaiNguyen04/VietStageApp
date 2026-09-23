@@ -1007,6 +1007,7 @@ func _save_profile(response: Dictionary) -> void:
 	var email := str(profile.get("email", _pending_email)).strip_edges()
 	if full_name.is_empty():
 		full_name = _name_from_email(email)
+	SecureDataManager.activate_account(profile.get("id", 0))
 	SecureDataManager.data["user_id"] = profile.get("id", 0)
 	SecureDataManager.data["user_name"] = full_name
 	SecureDataManager.data["user_email"] = email
@@ -1019,6 +1020,9 @@ func _save_profile(response: Dictionary) -> void:
 func _save_profile_fallback() -> void:
 	var email := _pending_email
 	var full_name := _pending_name if not _pending_name.is_empty() else _name_from_email(email)
+	# The user ID is not available in this fallback; use the stable backend code
+	# as an isolated profile key until the next /users/me response supplies it.
+	SecureDataManager.activate_account(AuthSessionStore.user_code)
 	SecureDataManager.data["user_name"] = full_name
 	SecureDataManager.data["user_email"] = email
 	SecureDataManager.data["user_code"] = AuthSessionStore.user_code
@@ -1105,6 +1109,7 @@ func _name_from_email(email: String) -> String:
 
 func _on_guest_pressed() -> void:
 	AuthSessionStore.clear_session()
+	SecureDataManager.activate_guest()
 	SecureDataManager.data["user_name"] = "Khách"
 	SecureDataManager.data["user_email"] = "khach@vietstage.vn"
 	# Xóa trang trí khỏi phòng nhạc để tài khoản khách luôn bắt đầu sạch

@@ -8,6 +8,7 @@ signal request_failed(reason: String)
 
 @export var api_url: String = "https://anew-handgrip-elope.ngrok-free.dev/api/chat"
 @export var model_name: String = "mai-musician-fast"
+# Retained for existing scenes; validated JSON is now mandatory.
 @export var use_structured_json: bool = true
 @export var api_key: String = ""
 
@@ -22,17 +23,13 @@ var lesson_code := ""
 var screen_context := ""
 var session_id := ""
 var last_sources: Array[String] = []
-var last_in_scope := true
+var last_in_scope := false
+var last_status := ""
+var _response_bytes := PackedByteArray()
+var _request_started_ms := 0
 
-var chunk_buffer := ""
 var structured_buffer := ""
-var current_sentence := ""
 var parsed_emotion := "neutral"
-var emotion_checked := false
-var full_response_accumulated := ""
-
-var _request_uses_json := false
-var _fallback_attempted := false
 var _http_status := 0
 
 func _ready() -> void:
@@ -42,11 +39,11 @@ func _ready() -> void:
 	reset_conversation()
 
 func reset_conversation() -> void:
+	_close_client()
 	var crypto := Crypto.new()
 	var random_bytes: PackedByteArray = crypto.generate_random_bytes(16)
 	session_id = random_bytes.hex_encode()
 	last_sources.clear()
-	last_in_scope = true
 	_reset_response_state()
 
 func configure_context(context: Dictionary) -> void:
@@ -66,19 +63,19 @@ func send_prompt(user_prompt: String) -> void:
 
 	_close_client()
 	pending_prompt = clean_prompt
-	_fallback_attempted = false
-	_request_uses_json = use_structured_json
+	# Only the validated JSON contract can reach text and speech output.
 	_reset_response_state()
+	_request_started_ms = Time.get_ticks_msec()
 	_connect_to_server()
 
 func _reset_response_state() -> void:
-	chunk_buffer = ""
 	structured_buffer = ""
-	current_sentence = ""
 	parsed_emotion = "neutral"
-	emotion_checked = false
-	full_response_accumulated = ""
 	_http_status = 0
+	_response_bytes.clear()
+	last_sources.clear()
+	last_in_scope = false
+	last_status = ""
 
 func _connect_to_server() -> void:
 	var target := _parse_api_target()
@@ -108,6 +105,10 @@ func _process(_delta: float) -> void:
 	if client == null:
 		set_process(false)
 		return
+	if Time.get_ticks_msec() - _request_started_ms > 110000:
+		request_failed.emit("Mai trả lời quá lâu. Bạn vui lòng thử lại.")
+		_close_client()
+		return
 
 	client.poll()
 	var status := client.get_status()
@@ -128,18 +129,11 @@ func _process(_delta: float) -> void:
 			_http_status = client.get_response_code()
 		var chunk := client.read_response_body_chunk()
 		if not chunk.is_empty():
-			if _request_uses_json:
-				structured_buffer += chunk.get_string_from_utf8()
-			else:
-				_process_stream_chunk(chunk)
+			_response_bytes.append_array(chunk)
 	elif status == HTTPClient.STATUS_CONNECTED:
 		is_requesting = false
-		if _request_uses_json:
-			var retried_with_streaming := _finish_structured_response()
-			if retried_with_streaming:
-				return
-		else:
-			_finish_streaming_response()
+		structured_buffer = _response_bytes.get_string_from_utf8()
+		_finish_structured_response()
 		_close_client()
 	elif status in [HTTPClient.STATUS_CONNECTION_ERROR, HTTPClient.STATUS_DISCONNECTED]:
 		is_requesting = false
@@ -192,11 +186,8 @@ func _parse_api_target() -> Dictionary:
 		path = clean_url.substr(slash_index)
 		clean_url = clean_url.substr(0, slash_index)
 
-	if _request_uses_json:
-		if path.ends_with("/api/chat"):
-			path += "/json"
-	elif path.ends_with("/api/chat/json"):
-		path = path.trim_suffix("/json")
+	if path.ends_with("/api/chat"):
+		path += "/json"
 
 	var host := clean_url
 	var port := 443 if use_tls else 80
@@ -209,9 +200,9 @@ func _parse_api_target() -> Dictionary:
 	return {"use_tls": use_tls, "host": host, "port": port, "path": path}
 
 func _finish_structured_response() -> bool:
-	if _http_status in [404, 405] and not _fallback_attempted:
-		_retry_with_streaming_endpoint()
-		return true
+	if _http_status in [404, 405]:
+		request_failed.emit("Máy chủ MaiBrain cần cập nhật API trả lời có kiểm soát.")
+		return false
 	if _http_status < 200 or _http_status >= 300:
 		var server_message := _extract_json_error(structured_buffer)
 		request_failed.emit(server_message if not server_message.is_empty() else "MaiBrain trả lỗi HTTP %d." % _http_status)
@@ -222,13 +213,17 @@ func _finish_structured_response() -> bool:
 		request_failed.emit("MaiBrain trả dữ liệu JSON không hợp lệ.")
 		return false
 	var data: Dictionary = parsed
+	if not is_valid_chat_response(data):
+		request_failed.emit("MaiBrain trả dữ liệu chưa được xác nhận. Bạn vui lòng thử lại.")
+		return false
 	var answer := str(data.get("answer", "")).strip_edges()
 	if answer.is_empty():
 		request_failed.emit("MaiBrain không trả nội dung câu trả lời.")
 		return false
 
 	parsed_emotion = _normalize_emotion(str(data.get("emotion", "neutral")))
-	last_in_scope = bool(data.get("inScope", true))
+	last_in_scope = data["inScope"]
+	last_status = data["status"]
 	last_sources.clear()
 	var source_values: Variant = data.get("sources", [])
 	if source_values is Array:
@@ -240,80 +235,30 @@ func _finish_structured_response() -> bool:
 	response_finished.emit()
 	return false
 
-func _retry_with_streaming_endpoint() -> void:
-	_fallback_attempted = true
-	_request_uses_json = false
-	_close_client()
-	_reset_response_state()
-	_connect_to_server()
+static func is_valid_chat_response(data: Dictionary) -> bool:
+	if data.get("success") != true or not data.get("inScope") is bool:
+		return false
+	if not data.get("answer") is String or str(data["answer"]).strip_edges().is_empty():
+		return false
+	if not data.get("sources") is Array:
+		return false
+	for source: Variant in data["sources"]:
+		if not source is String or str(source).is_empty():
+			return false
+	match data.get("status", ""):
+		"ANSWERED":
+			return data["inScope"] == true and not data["sources"].is_empty()
+		"OUT_OF_SCOPE":
+			return data["inScope"] == false and data["sources"].is_empty()
+		"INSUFFICIENT_KNOWLEDGE":
+			return data["inScope"] == true and data["sources"].is_empty()
+	return false
 
 func _extract_json_error(raw: String) -> String:
 	var parsed: Variant = JSON.parse_string(raw)
 	if parsed is Dictionary:
 		return str(parsed.get("answer", parsed.get("message", parsed.get("error", ""))))
 	return ""
-
-func _process_stream_chunk(chunk: PackedByteArray) -> void:
-	chunk_buffer += chunk.get_string_from_utf8()
-	while "\n" in chunk_buffer:
-		var index := chunk_buffer.find("\n")
-		var line := chunk_buffer.substr(0, index).strip_edges()
-		chunk_buffer = chunk_buffer.substr(index + 1)
-		if not line.is_empty():
-			_parse_stream_json_line(line)
-
-func _parse_stream_json_line(line: String) -> void:
-	var parsed: Variant = JSON.parse_string(line)
-	if not parsed is Dictionary:
-		return
-	var data: Dictionary = parsed
-	var token := str(data.get("response", ""))
-	if not token.is_empty():
-		_handle_token(token)
-
-func _handle_token(token: String) -> void:
-	current_sentence += token
-	full_response_accumulated += token
-	if not emotion_checked:
-		var trimmed := current_sentence.strip_edges()
-		if trimmed.begins_with("[") and "]" in trimmed:
-			var close_index := trimmed.find("]")
-			parsed_emotion = _normalize_emotion(trimmed.substr(1, close_index - 1))
-			current_sentence = trimmed.substr(close_index + 1)
-			emotion_checked = true
-		elif not trimmed.begins_with("[") and trimmed.length() > 12:
-			emotion_checked = true
-
-	if emotion_checked and _contains_sentence_delimiter(token):
-		var sentence := current_sentence.strip_edges()
-		if sentence.length() > 2:
-			response_chunk_received.emit(sentence, parsed_emotion)
-			current_sentence = ""
-
-func _contains_sentence_delimiter(value: String) -> bool:
-	for delimiter: String in [".", "?", "!", ";", ":", "\n"]:
-		if delimiter in value:
-			return true
-	return false
-
-func _finish_streaming_response() -> void:
-	if not chunk_buffer.strip_edges().is_empty():
-		_parse_stream_json_line(chunk_buffer.strip_edges())
-		chunk_buffer = ""
-	var remaining := current_sentence.strip_edges()
-	if not remaining.is_empty():
-		response_chunk_received.emit(remaining, parsed_emotion)
-
-	var text_content := full_response_accumulated.strip_edges()
-	if text_content.begins_with("["):
-		var close_bracket := text_content.find("]")
-		if close_bracket != -1:
-			text_content = text_content.substr(close_bracket + 1).strip_edges()
-	if text_content.is_empty():
-		request_failed.emit("Máy chủ AI không trả nội dung.")
-		return
-	response_received.emit(text_content, parsed_emotion)
-	response_finished.emit()
 
 func _normalize_emotion(value: String) -> String:
 	var normalized := value.to_lower().strip_edges()
