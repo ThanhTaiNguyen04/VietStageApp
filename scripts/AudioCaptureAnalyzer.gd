@@ -104,7 +104,9 @@ const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
 const INSTRUMENT_MIN_DECAY_DB := 0.2
 const INSTRUMENT_MIN_LATE_DECAY_DB := 0.05
 const INSTRUMENT_MIN_TAIL_RATIO := 0.01
-const INSTRUMENT_MIN_PERIODICITY := 5.0
+# Lowered from 5.0→2.0: high-freq strings (La4, Sol4) in room conditions
+# only reach ~3-5% periodicity score; 5.0 caused false reject "aperiodic"
+const INSTRUMENT_MIN_PERIODICITY := 2.0
 const INSTRUMENT_MIN_STRING_TONALITY := 0.005
 const INSTRUMENT_MIN_CREST_FACTOR := 1.02
 const DAN_TRANH_GATE_FREQUENCIES: Array[float] = [
@@ -704,9 +706,11 @@ func _estimate_pitch(samples: PackedFloat32Array) -> float:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
 	
+	# YIN threshold 0.12 (raised from 0.08): plucked strings have fast decay,
+	# a strict 0.08 threshold misses valid pitches in real-room recording conditions.
 	if _analyzer:
-		return _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.08, min_f, max_f)
-	return _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
+		return _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.12, min_f, max_f)
+	return _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.12)
 
 func _handle_silence(delta: float) -> void:
 	_time_since_last_pitch += delta
