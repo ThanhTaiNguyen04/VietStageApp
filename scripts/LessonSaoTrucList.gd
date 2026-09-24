@@ -660,16 +660,14 @@ func _open_lesson(node_id: String) -> void:
 			bg_dim.queue_free()
 			popup.queue_free()
 			SecureDataManager.data["is_challenge_mode"] = false
-			if node_id.contains("video"): _fade_to("res://scenes/VideoPlayer.tscn")
-			else: _fade_to("res://scenes/LessonSaoTruc.tscn")
+			_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
 		)
 		
 		btn_challenge.pressed.connect(func() -> void:
 			bg_dim.queue_free()
 			popup.queue_free()
 			SecureDataManager.data["is_challenge_mode"] = true
-			if node_id.contains("video"): _fade_to("res://scenes/VideoPlayer.tscn")
-			else: _fade_to("res://scenes/LessonSaoTruc.tscn")
+			_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
 		)
 		
 		btn_cancel.pressed.connect(func() -> void:
@@ -678,8 +676,8 @@ func _open_lesson(node_id: String) -> void:
 		)
 	else:
 		SecureDataManager.data["is_challenge_mode"] = false
-		if node_id.contains("video"): _fade_to("res://scenes/VideoPlayer.tscn")
-		else: _fade_to("res://scenes/LessonSaoTruc.tscn")
+		_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
+
 
 
 
