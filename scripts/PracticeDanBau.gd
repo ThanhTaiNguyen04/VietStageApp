@@ -44,6 +44,7 @@ var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
 var _correct_pitch_hold_time := 0.0
+var _error_delay_remaining := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
 var _string_streams: Array[AudioStreamWAV] = []
@@ -1234,6 +1235,11 @@ func _simulate_tick() -> void:
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
 func _process_real_audio(delta: float) -> void:
+	if _error_delay_remaining > 0.0:
+		_error_delay_remaining -= delta
+		if _error_delay_remaining > 0.0:
+			return
+
 	if _eval_cooldown > 0.0:
 		_eval_cooldown -= delta
 		return
@@ -1326,6 +1332,7 @@ func _process_real_audio(delta: float) -> void:
 			else:
 				var status_text = "Cần luyện thêm (Cao)" if cents > 0 else "Cần luyện thêm (Thấp)"
 				pitch_status.text = status_text
+				_error_delay_remaining = 1.5
 				# pitch_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 				# pitch_note.add_theme_color_override("font_color", C_WARN)
 				
@@ -1352,6 +1359,7 @@ func _process_real_audio(delta: float) -> void:
 			detected_note = NOTES_VN[closest_idx]
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
+			_error_delay_remaining = 1.5
 			# pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 			# pitch_note.add_theme_color_override("font_color", C_RED_ERR)
 			_score = clamp(_score - 0.5 * delta, 0, 100)

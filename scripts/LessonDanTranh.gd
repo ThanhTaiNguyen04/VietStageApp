@@ -286,10 +286,10 @@ var notes_judged := {}
 var intro_step: int = 0
 var intro_playback_token: int = 0
 var time_correct: float = 0.0
-var REQUIRED_HOLD_TIME: float = 0.20
+var REQUIRED_HOLD_TIME: float = 0.02
 
 var wrong_note_time: float = 0.0
-var REQUIRED_WRONG_HOLD_TIME: float = 0.18
+var REQUIRED_WRONG_HOLD_TIME: float = 0.02
 
 var active_falling_notes = []
 var practice_time: float = 0.0
@@ -340,20 +340,20 @@ func _ready():
 		mappings.append(NOTE_TO_STRING[n])
 	profile.frequencies = PackedFloat32Array(freqs)
 	profile.physical_mappings = mappings
-	profile.min_frequency = 180.0
-	profile.max_frequency = 2050.0
-	profile.volume_threshold_db = -58.0
+	profile.min_frequency = 150.0
+	profile.max_frequency = 2100.0
+	profile.volume_threshold_db = -65.0
 	# A phone microphone and a real đàn tranh can drift more than a synthesized
 	# reference. ±60 cents still keeps adjacent pentatonic strings well apart.
-	profile.cents_tolerance = 60.0
-	profile.hold_time_sec = 0.20
+	profile.cents_tolerance = 85.0
+	profile.hold_time_sec = 0.02
 	profile.is_plucked_instrument = true
 	
 	analyzer.pitch_profile = profile
 	
-	analyzer.min_frequency = 180.0
-	analyzer.max_frequency = 1900.0
-	analyzer.volume_threshold_db = -58.0
+	analyzer.min_frequency = 150.0
+	analyzer.max_frequency = 2100.0
+	analyzer.volume_threshold_db = -65.0
 	if not analyzer.dan_tranh_note_started.is_connected(_on_dan_tranh_note_started):
 		analyzer.dan_tranh_note_started.connect(_on_dan_tranh_note_started)
 	if not analyzer.dan_tranh_rapid_attack.is_connected(_on_dan_tranh_rapid_attack):
@@ -1553,7 +1553,7 @@ func _play_error_flash_effect() -> void:
 	error_flash_tween.parallel().tween_property(error_flash_badge, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(1.04, 1.04), 0.26).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	error_flash_tween.tween_property(error_flash_badge, "scale", Vector2.ONE, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	error_flash_tween.tween_interval(1.25)
+	error_flash_tween.tween_interval(2.5)
 	error_flash_tween.tween_property(error_flash_badge, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	error_flash_tween.parallel().tween_property(error_flash_badge, "position", error_tooltip_final_position + Vector2(0.0, 12.0), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	error_flash_tween.parallel().tween_property(error_flash_badge, "scale", Vector2(0.94, 0.94), 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -2169,6 +2169,10 @@ func _finish_theory_lesson() -> void:
 
 func _start_practice_single():
 	_stop_technique_sample()
+	if intro_overlay:
+		intro_overlay.visible = false
+	_shrink_teacher()
+	
 	if not await analyzer.ensure_noise_calibrated():
 		return
 	current_state = State.PRACTICE_SINGLE
@@ -2177,9 +2181,6 @@ func _start_practice_single():
 	# speed selector as all other đàn tranh practice screens.
 	if speed_bar_container:
 		speed_bar_container.visible = true
-	if intro_overlay:
-		intro_overlay.visible = false
-	_shrink_teacher()
 	feedback_area.visible = true
 	staff_display.visible = true
 	if staff_card: staff_card.visible = true
@@ -2377,7 +2378,7 @@ func _process_practice_single(delta: float) -> void:
 	# 2. Check if user played a WRONG note via microphone (requires 0.18s debounce hold time)
 	if analyzer and wrong_note_cooldown <= 0.0:
 		var db = analyzer.current_amplitude_db
-		if db > -28.0:
+		if db > -50.0:
 			var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 			var det_name = note_info.get("note_name", "None")
 			var det_idx = note_info.get("string_index", -1)
@@ -4496,11 +4497,13 @@ func _is_note_missing(note_idx: int) -> bool:
 
 func _start_practice():
 	_stop_technique_sample()
+	if intro_overlay:
+		intro_overlay.visible = false
+	_shrink_teacher()
+	
 	if not await analyzer.ensure_noise_calibrated():
 		return
 	current_state = State.PRACTICE
-	if intro_overlay:
-		intro_overlay.visible = false
 	if error_flash_tween and error_flash_tween.is_running():
 		error_flash_tween.kill()
 	if error_pulse_tween and error_pulse_tween.is_running():
@@ -4512,7 +4515,6 @@ func _start_practice():
 	error_feedback_target_note = ""
 	error_feedback_title = "Chưa đúng"
 	error_feedback_detail = ""
-	_shrink_teacher()
 	feedback_area.visible = true
 	practice_idx = 0
 	practice_time = 0.0
@@ -4717,6 +4719,8 @@ func _process_practice(delta):
 				break
 				
 	var move_dist = scroll_speed * current_speed_multiplier * delta if not freeze_unhit_notes else 0.0
+	if wrong_note_cooldown > 0.0:
+		move_dist = 0.0
 	var all_passed = true
 	
 	for note in active_falling_notes:
@@ -4808,7 +4812,7 @@ func _process_practice(delta):
 				# 2. Check if user played WRONG note (requires 0.18s debounce hold time)
 				if not _is_micro_scoring_blocked() and analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
 					var db = analyzer.current_amplitude_db
-					if db > -28.0:
+					if db > -50.0:
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
 						var det_name = note_info.get("note_name", "None")
 						var det_idx = note_info.get("string_index", -1)
@@ -4928,9 +4932,9 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 
 	var hold_time_needed = REQUIRED_HOLD_TIME
 	if not is_poly and target_hz > 1000.0:
-		hold_time_needed = 0.08  # ~5 frames for extremely high strings (Đô3, Mi3, Sol4, La4)
+		hold_time_needed = REQUIRED_HOLD_TIME
 	elif not is_poly and target_hz > 600.0:
-		hold_time_needed = 0.12  # ~7 frames for high strings (Sol3, La3)
+		hold_time_needed = REQUIRED_HOLD_TIME
 
 	if not is_match:
 		time_correct = max(0.0, time_correct - delta * 2.0)
