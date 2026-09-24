@@ -7,8 +7,8 @@ extends RefCounted
 # Source: LessonSaoTrucList.gd / ALL_LESSONS
 const ALL_LESSONS = [
 	{
-		"id": "sao_truc_level1_1_video", "level": 1, "title": "B�I 1", "note": "L�m quen S�o Tr�c",
-		"video": "C�ch c?m s�o tr�c & l?y hoi.", "practice": "Th?c h�nh.", "subtitles": []
+		"id": "sao_truc_level1_1_video", "level": 1, "title": "BÀI 1", "note": "Làm quen Sáo Trúc",
+		"video": "Cách cầm sáo trúc & lấy hơi.", "practice": "Thực hành cầm sáo.", "subtitles": []
 	},
 	{
 		"id": "Node2", "level": 2, "title": "BÀI 1", "note": "Nốt Si (B4)",
@@ -404,5 +404,4 @@ const NOTE_FREQS = {
 	"La_low": 440.00,
 	"Si_low": 493.88
 }
-
 
