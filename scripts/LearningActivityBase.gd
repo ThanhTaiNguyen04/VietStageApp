@@ -477,7 +477,9 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 	actions.add_child(back_button)
 
 func _metric_card(icon: String, label_text: String, value: String, color: Color) -> PanelContainer:
-	var mobile := get_viewport_rect().size.x < 600.0
+	# Result cards are also built by headless/unit fixtures before attachment.
+	# Avoid querying a viewport that does not exist in that lifecycle phase.
+	var mobile := is_inside_tree() and get_viewport_rect().size.x < 600.0
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(0, 96 if mobile else 108)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -46,7 +46,12 @@ const C_STAFF_LINE := Color("#1e293b") # Slate-800
 
 
 func _ready() -> void:
+	# The base renderer defaults to 210 px; honor the responsive height set by
+	# the game before this node enters the tree.
+	var requested_height := custom_minimum_size.y
 	super._ready()
+	if requested_height > 0.0:
+		custom_minimum_size.y = requested_height
 	mouse_filter = MOUSE_FILTER_PASS
 
 
@@ -219,9 +224,9 @@ func _gui_input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var width := maxf(size.x, 300.0)
-	var height := maxf(size.y, 140.0 if width < 450.0 else 160.0)
+	var height := maxf(size.y, 132.0)
 	var compact := width < 450.0
-	var spacing := 20.0 if compact else (23.0 if width < 700.0 else 26.0)
+	var spacing := 18.0 if height < 150.0 else (20.0 if compact or height < 180.0 else (23.0 if width < 700.0 else 26.0))
 	var center_y := height * 0.48 # Line 3 (Middle line B4 / Si) is centered slightly above midpoint
 	var left_margin := 8.0 if compact else 16.0
 	var right_margin := width - (8.0 if compact else 16.0)
@@ -267,15 +272,18 @@ func _draw() -> void:
 	# 5. Determine the 2 measures on current screen
 	var m_0 := current_page * MEASURES_PER_PAGE
 	var m_1 := m_0 + 1
+	var visible_measures := mini(MEASURES_PER_PAGE, maxi(1, total_measures - m_0))
 
 	# 6. Horizontal layout: Usable width, mid barline, end barline
 	var start_note_x := ts_x + spacing * (1.8 if compact else 2.2)
 	var usable_width := maxf(160.0, right_margin - start_note_x)
-	var meas_width := usable_width * 0.5
+	var meas_width := usable_width / float(visible_measures)
 	var mid_barline_x := start_note_x + meas_width
 
-	# Middle Barline (Vạch nhịp giữa 2 ô rõ nét)
-	draw_line(Vector2(mid_barline_x, staff_top_y), Vector2(mid_barline_x, staff_bot_y), C_STAFF_LINE, 2.4, true)
+	# An odd final page has only one measure: do not draw a phantom barline
+	# or leave an empty second measure.
+	if visible_measures > 1:
+		draw_line(Vector2(mid_barline_x, staff_top_y), Vector2(mid_barline_x, staff_bot_y), C_STAFF_LINE, 2.4, true)
 
 	# Right Barline (Vạch nhịp cuối)
 	if m_1 >= total_measures - 1:
@@ -411,11 +419,11 @@ func _draw() -> void:
 				])
 				draw_colored_polygon(poly2, note_color)
 
-	# 10. Draw Moving Playhead cursor across the 2 measures
+	# 10. Draw the playhead across the measures actually visible on this page.
 	if current_time > 0.0 and current_time <= duration:
-		var page_beats := measure_beats * float(MEASURES_PER_PAGE)
+		var page_beats := measure_beats * float(visible_measures)
 		var current_beat := current_time * float(tempo_bpm) / 60.0
-		var beat_in_page := current_beat - float(current_page) * page_beats
+		var beat_in_page := current_beat - float(m_0) * measure_beats
 		if beat_in_page >= -0.05 and beat_in_page <= page_beats + 0.05:
 			var playhead_x := start_note_x + (clampf(beat_in_page, 0.0, page_beats) / page_beats) * usable_width
 			var top_y := staff_top_y - 12.0
@@ -429,9 +437,9 @@ func _draw() -> void:
 
 func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0) -> Dictionary:
 	var width := custom_width if custom_width > 0.0 else maxf(size.x, 300.0)
-	var height := custom_height if custom_height > 0.0 else maxf(size.y, 140.0 if width < 450.0 else 160.0)
+	var height := custom_height if custom_height > 0.0 else maxf(size.y, 132.0)
 	var compact := width < 450.0
-	var spacing := 20.0 if compact else (23.0 if width < 700.0 else 26.0)
+	var spacing := 18.0 if height < 150.0 else (20.0 if compact or height < 180.0 else (23.0 if width < 700.0 else 26.0))
 	var center_y := height * 0.48
 	var left_margin := 8.0 if compact else 16.0
 	var right_margin := width - (8.0 if compact else 16.0)
@@ -440,11 +448,11 @@ func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0)
 	var ts_x := clef_x + spacing * (2.2 if compact else 2.6)
 	var start_note_x := ts_x + spacing * (1.8 if compact else 2.2)
 	var usable_width := maxf(160.0, right_margin - start_note_x)
-	var meas_width := usable_width * 0.5
-	var mid_barline_x := start_note_x + meas_width
-
 	var m_0 := current_page * MEASURES_PER_PAGE
 	var m_1 := m_0 + 1
+	var visible_measures := mini(MEASURES_PER_PAGE, maxi(1, total_measures - m_0))
+	var meas_width := usable_width / float(visible_measures)
+	var mid_barline_x := start_note_x + meas_width
 
 	var meas_0_indices: Array[int] = []
 	var meas_1_indices: Array[int] = []
@@ -603,5 +611,3 @@ func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0)
 		"pulse_map": pulse_map,
 		"beamed_indices": beamed_indices,
 	}
-
-

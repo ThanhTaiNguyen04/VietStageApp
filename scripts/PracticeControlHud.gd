@@ -28,6 +28,9 @@ var _sample_button: Button
 var _resume_label: Label
 var _sample_label: Label
 var _selected_speed := 1.0
+var _pause_right_limit := -1.0
+var _speed_centered := false
+var _compact_speed_buttons := false
 
 func _ready() -> void:
 	name = "PracticeControlHud"
@@ -45,12 +48,49 @@ func set_hud_visible(value: bool) -> void:
 		set_pause_visible(false)
 
 func set_playback_controls_visible(value: bool) -> void:
-	if _speed_panel:
-		_speed_panel.visible = value
-	if _pause_button:
-		_pause_button.visible = value
+	set_speed_controls_visible(value)
+	set_pause_button_visible(value)
 	if not value:
 		set_pause_visible(false)
+
+
+func set_speed_controls_visible(value: bool) -> void:
+	if _speed_panel:
+		_speed_panel.visible = value
+
+
+func set_pause_button_visible(value: bool) -> void:
+	if _pause_button:
+		_pause_button.visible = value
+
+
+func set_pause_right_limit(limit_x: float) -> void:
+	_pause_right_limit = limit_x
+	_layout_controls()
+
+
+func set_speed_centered(value: bool) -> void:
+	_speed_centered = value
+	_layout_controls()
+
+
+func needs_second_row(viewport_width: float) -> bool:
+	_apply_speed_density(viewport_width)
+	var speed_width := _speed_panel.get_combined_minimum_size().x
+	var pause_x := (_pause_right_limit if _pause_right_limit > 0.0 else viewport_width - 40.0) - 68.0
+	return pause_x - 16.0 - speed_width < 124.0
+
+
+func _apply_speed_density(viewport_width: float) -> void:
+	var compact := viewport_width < 680.0
+	if compact == _compact_speed_buttons:
+		return
+	_compact_speed_buttons = compact
+	var row := _speed_panel.get_child(0) as HBoxContainer
+	row.add_theme_constant_override("separation", 6 if compact else 8)
+	for button in _speed_buttons:
+		button.custom_minimum_size = Vector2(50, 48) if compact else Vector2(68, 34)
+		button.add_theme_font_size_override("font_size", 15 if compact else 18)
 
 func set_speed(multiplier: float) -> void:
 	_selected_speed = multiplier
@@ -112,6 +152,9 @@ func _build_controls() -> void:
 		speed_button.focus_mode = Control.FOCUS_NONE
 		speed_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		speed_button.add_theme_font_size_override("font_size", 18)
+		var speed_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+		if speed_font:
+			speed_button.add_theme_font_override("font", speed_font)
 		speed_button.pressed.connect(func() -> void: speed_selected.emit(multiplier))
 		speed_row.add_child(speed_button)
 		_speed_buttons.append(speed_button)
@@ -176,12 +219,21 @@ func _build_controls() -> void:
 	_pause_actions.add_child(_sample_button)
 
 func _layout_controls() -> void:
+	_apply_speed_density(size.x)
 	_back_button.position = Vector2(40, 24)
-	_pause_button.position = Vector2(maxf(40.0, size.x - 108.0), 24)
-	if size.x < 980.0:
-		_speed_panel.position = Vector2(maxf(16.0, (size.x - _speed_panel.get_combined_minimum_size().x) * 0.5), 102)
+	var pause_right_edge := _pause_right_limit if _pause_right_limit > 0.0 else size.x - 40.0
+	_pause_button.position = Vector2(maxf(40.0, pause_right_edge - 68.0), 24)
+	var speed_width := _speed_panel.get_combined_minimum_size().x
+	var centered_x := (size.x - speed_width) * 0.5
+	var centered_fits := _speed_centered and centered_x >= 116.0 and centered_x + speed_width <= _pause_button.position.x - 8.0
+	var right_x := _pause_button.position.x - 16.0 - speed_width
+	var speed_y := 27.0 if _compact_speed_buttons else 34.0
+	if centered_fits:
+		_speed_panel.position = Vector2(centered_x, speed_y)
+	elif right_x >= _back_button.position.x + 68.0 + 16.0:
+		_speed_panel.position = Vector2(right_x, speed_y)
 	else:
-		_speed_panel.position = Vector2(maxf(120.0, size.x - 124.0 - _speed_panel.get_combined_minimum_size().x), 34)
+		_speed_panel.position = Vector2(maxf(16.0, (size.x - _speed_panel.get_combined_minimum_size().x) * 0.5), 102)
 	if _pause_card:
 		if size.x < 620.0:
 			_pause_actions.columns = 1
