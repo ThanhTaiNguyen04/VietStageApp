@@ -2,6 +2,10 @@ extends RefCounted
 
 static var instrument := "dan_tranh"
 static var local_lesson_ids: Array[String] = []
+static var backend_lesson_id := 0
+static var lesson_code := ""
+static var instrument_id := 0
+static var skill_level_id := 0
 static var return_scene := "res://scenes/MainMenu.tscn"
 static var activity := ""
 
@@ -12,6 +16,21 @@ static func configure(instrument_key: String, lesson_ids: Array, scene_path: Str
 		local_lesson_ids.append(str(lesson_id))
 	return_scene = scene_path
 	activity = ""
+	backend_lesson_id = 0
+	lesson_code = ""
+	instrument_id = 0
+	skill_level_id = 0
+
+
+static func set_backend_lesson(lesson: Dictionary) -> void:
+	backend_lesson_id = int(lesson.get("id", 0))
+	lesson_code = str(lesson.get("lessonCode", lesson.get("lesson_code", "")))
+	var instrument_data: Variant = lesson.get("instrument", {})
+	if instrument_data is Dictionary:
+		instrument_id = int((instrument_data as Dictionary).get("id", 0))
+	var level_data: Variant = lesson.get("skillLevel", lesson.get("skill_level", {}))
+	if level_data is Dictionary:
+		skill_level_id = int((level_data as Dictionary).get("id", 0))
 
 static func ensure_defaults() -> void:
 	if local_lesson_ids.is_empty():
@@ -98,4 +117,31 @@ static func normalize_note(value: String) -> String:
 	var prefix := RegEx.new()
 	prefix.compile("^[a-zA-Z][.)]\\s*")
 	note = prefix.sub(note, "", true).strip_edges()
+	return note
+
+
+## Chuẩn hóa tên nốt để SO SÁNH: bỏ dấu tiếng Việt, lowercase, bỏ octave và khoảng trắng thừa.
+## Dùng cho đối chiếu đáp án trong MelodyCompletion, không dùng để vẽ khuông nhạc.
+static func normalize_note_compare(value: String) -> String:
+	var note := normalize_note(value).to_lower()
+	note = note.replace("đ", "d")
+	note = note.replace("ố", "o").replace("ồ", "o").replace("ổ", "o").replace("ỗ", "o").replace("ộ", "o")
+	note = note.replace("ô", "o")
+	note = note.replace("ế", "e").replace("ề", "e").replace("ể", "e").replace("ễ", "e").replace("ệ", "e")
+	note = note.replace("ê", "e")
+	note = note.replace("ớ", "o").replace("ờ", "o").replace("ở", "o").replace("ỡ", "o").replace("ợ", "o")
+	note = note.replace("ơ", "o")
+	note = note.replace("ứ", "u").replace("ừ", "u").replace("ử", "u").replace("ữ", "u").replace("ự", "u")
+	note = note.replace("ư", "u")
+	note = note.replace("á", "a").replace("à", "a").replace("ả", "a").replace("ã", "a").replace("ạ", "a")
+	note = note.replace("ấ", "a").replace("ầ", "a").replace("ẩ", "a").replace("ẫ", "a").replace("ậ", "a")
+	note = note.replace("ắ", "a").replace("ằ", "a").replace("ẳ", "a").replace("ẵ", "a").replace("ặ", "a")
+	note = note.replace("í", "i").replace("ì", "i").replace("ỉ", "i").replace("ĩ", "i").replace("ị", "i")
+	note = note.replace("ó", "o").replace("ò", "o").replace("ỏ", "o").replace("õ", "o").replace("ọ", "o")
+	note = note.replace("ú", "u").replace("ù", "u").replace("ủ", "u").replace("ũ", "u").replace("ụ", "u")
+	note = note.replace("ý", "y").replace("ỳ", "y").replace("ỷ", "y").replace("ỹ", "y").replace("ỵ", "y")
+	note = note.strip_edges()
+	var octave_re := RegEx.new()
+	octave_re.compile("[0-9]+\\s*$")
+	note = octave_re.sub(note, "", true).strip_edges()
 	return note

@@ -649,8 +649,11 @@ float AudioAnalyzer::correct_octave_doubling(float detected_pitch, const PackedF
 	float mag_yin = goertzel_magnitude(samples, detected_pitch, sample_rate);
 	float mag_cand = goertzel_magnitude(samples, cand_freq, sample_rate);
 
-	// If there is significant energy at half the detected pitch, it's highly likely octave doubling occurred.
-	if (mag_yin > 0.0f && (mag_cand / mag_yin) > 0.30f) {
+	// If there is significant energy at half the detected pitch, it's likely octave doubling.
+	// Threshold raised 0.30→0.55: đàn tranh has naturally strong 2nd harmonic (30-50% of
+	// fundamental), so 0.30 incorrectly shifted valid notes down one octave.
+	// 0.55 ensures correction only when the sub-octave clearly dominates.
+	if (mag_yin > 0.0f && (mag_cand / mag_yin) > 0.55f) {
 		return cand_freq;
 	}
 

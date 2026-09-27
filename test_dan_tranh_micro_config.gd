@@ -56,6 +56,22 @@ func _run() -> void:
 		printerr("FAILED: Ngưỡng micro quá cao: %.1f dB" % analyzer.volume_threshold_db)
 		quit(1)
 		return
+	if not analyzer.has_method("start_microphone_capture") \
+			or not analyzer.has_method("get_microphone_diagnostics"):
+		printerr("FAILED: Analyzer thiếu watchdog/chẩn đoán micro iOS")
+		quit(1)
+		return
+	var diagnostics: Dictionary = analyzer.get_microphone_diagnostics()
+	for required_key in ["status", "player_playing", "frames_received", "last_frame_count", "amplitude_db", "pitch_hz", "native_analyzer", "platform"]:
+		if not diagnostics.has(required_key):
+			printerr("FAILED: Chẩn đoán micro thiếu trường %s" % required_key)
+			quit(1)
+			return
+	var record_bus_index := AudioServer.get_bus_index("Record")
+	if record_bus_index < 0 or not AudioServer.is_bus_mute(record_bus_index):
+		printerr("FAILED: Bus Record phải mute để tránh phát ngược tiếng micro ra loa")
+		quit(1)
+		return
 
 	print(
 		"PASS: Micro mobile đã cấu hình quyền; analyzer bao phủ 17 dây (196–1760 Hz), ngưỡng %.1f dB"

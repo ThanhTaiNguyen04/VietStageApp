@@ -44,6 +44,7 @@ var _mic_mode    := true
 var _score       := 75.0
 var _sim_timer   := 0.0
 var _correct_pitch_hold_time := 0.0
+var _error_delay_remaining := 0.0
 var _float_tween : Tween
 var _note_idx    := 0
 var _string_streams: Array[AudioStreamWAV] = []
@@ -293,7 +294,7 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed:
 			var chat = AIChatPopup.new()
 			add_child(chat)
-			chat.open_chat("dan_bau")
+			chat.open_chat("dan_bau", {"screenContext": "lesson_practice"})
 	)
 
 func _process(delta: float) -> void:
@@ -1234,6 +1235,11 @@ func _simulate_tick() -> void:
 	if randi() % 4 == 0: _va_say(SPEECHES[randi() % SPEECHES.size()])
 
 func _process_real_audio(delta: float) -> void:
+	if _error_delay_remaining > 0.0:
+		_error_delay_remaining -= delta
+		if _error_delay_remaining > 0.0:
+			return
+
 	if _eval_cooldown > 0.0:
 		_eval_cooldown -= delta
 		return
@@ -1326,6 +1332,7 @@ func _process_real_audio(delta: float) -> void:
 			else:
 				var status_text = "Cần luyện thêm (Cao)" if cents > 0 else "Cần luyện thêm (Thấp)"
 				pitch_status.text = status_text
+				_error_delay_remaining = 1.5
 				# pitch_status.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2))
 				# pitch_note.add_theme_color_override("font_color", C_WARN)
 				
@@ -1352,6 +1359,7 @@ func _process_real_audio(delta: float) -> void:
 			detected_note = NOTES_VN[closest_idx]
 			pitch_note.text = detected_note
 			pitch_status.text = "Lệch cao độ (Cần: %s)" % target_note
+			_error_delay_remaining = 1.5
 			# pitch_status.add_theme_color_override("font_color", C_RED_ERR)
 			# pitch_note.add_theme_color_override("font_color", C_RED_ERR)
 			_score = clamp(_score - 0.5 * delta, 0, 100)
@@ -1433,7 +1441,7 @@ func _setup_collapsible_linh() -> void:
 	linh_mini_btn.pressed.connect(func():
 		var chat = AIChatPopup.new()
 		add_child(chat)
-		chat.open_chat("dan_bau")
+		chat.open_chat("dan_bau", {"screenContext": "lesson_practice"})
 	)
 	_make_button_bouncy(linh_mini_btn)
 	_update_linh_visibility()
@@ -1482,7 +1490,6 @@ func _show_custom_result() -> void:
 	SecureDataManager.record_practice_result(SecureDataManager.active_lesson_id, _score)
 	
 	if _score >= 70.0:
-		SecureDataManager.complete_lesson(inst, SecureDataManager.active_lesson_id, stars)
 		_sync_practice_to_backend(inst, SecureDataManager.active_lesson_id)
 		
 	var popup_scene := load("res://scenes/CustomPopup.tscn") as PackedScene
@@ -1490,20 +1497,7 @@ func _show_custom_result() -> void:
 		var popup = popup_scene.instantiate()
 		add_child(popup)
 		
-		var next_lesson_name := "Khóa Học Tiếp"
-		if SecureDataManager.active_lesson_id.begins_with("dan_bau_coban_"):
-			var clean_id := SecureDataManager.active_lesson_id.replace("_practice", "").replace("_video", "")
-			var idx := int(clean_id.replace("dan_bau_coban_", ""))
-			if idx < 5:
-				next_lesson_name = "Đàn Bầu Cơ Bản %d" % (idx + 1)
-			else:
-				next_lesson_name = "Độc Tấu Đàn Bầu"
-		elif SecureDataManager.active_lesson_id == "Node2":
-			next_lesson_name = "Uốn Vòi Đàn"
-		elif SecureDataManager.active_lesson_id == "Node3":
-			next_lesson_name = "Luyến Láy"
-			
-		popup.setup_result(_score, 85.0, 78.0, 81.0, 100, "Đã mở khóa: " + next_lesson_name)
+		popup.setup_result(_score, 85.0, 78.0, 81.0, 0, "Sao và tiến trình đang chờ hệ thống xác nhận")
 		popup.closed.connect(func() -> void:
 			_go_back()
 		)
@@ -1511,15 +1505,13 @@ func _show_custom_result() -> void:
 func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
 	if not BackendReport.is_signed_in():
 		return
-	var result: Dictionary = await BackendReport.report_practice(inst, local_lesson_id, {
+	BackendReport.report_practice_and_complete(inst, local_lesson_id, {
 		"pitch": _get_average_score(_pitch_scores, 80.0),
 		"rhythm": _last_rhythm_score,
 		"dynamics": 0.0,
 		"tonal_quality": _get_average_score(_tone_scores, 80.0),
 		"breath": 0.0,
-	})
-	if not result.get("submitted", false):
-		push_warning("[PracticeDanBau] Không đồng bộ lượt tập: %s" % str(result.get("reason", "")))
+	}, _score)
 
 func _go_back() -> void:
 	var t := create_tween()

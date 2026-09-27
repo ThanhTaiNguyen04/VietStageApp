@@ -9,6 +9,7 @@ signal dan_tranh_note_ended(note: Dictionary)
 # technique lessons such as tremolo need their timing information.
 signal dan_tranh_rapid_attack(note: Dictionary)
 signal microphone_permission_changed(granted: bool)
+signal microphone_capture_status_changed(status: String)
 
 # Styling colors
 const C_JADE        := Color(0.18, 0.62, 0.42, 1.0)
@@ -37,8 +38,16 @@ var analysis_suspended := false
 var microphone_permission_granted := true
 var microphone_permission_request_pending := false
 var _microphone_permission_poll_elapsed := 0.0
+var microphone_capture_status := "starting"
+var microphone_frames_received := 0
+var microphone_last_frame_count := 0
+var microphone_no_frame_elapsed := 0.0
+var microphone_silent_stream_elapsed := 0.0
+var microphone_restart_attempts := 0
 const ANDROID_MICROPHONE_PERMISSION := "android.permission.RECORD_AUDIO"
 const MICROPHONE_PERMISSION_POLL_SEC := 0.25
+const MICROPHONE_NO_FRAME_WARNING_SEC := 2.0
+const MICROPHONE_MAX_AUTO_RESTARTS := 1
 
 var _analyzer: RefCounted = null
 
@@ -90,11 +99,14 @@ const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
 const INSTRUMENT_GATE_NORMAL_SEC := 0.65
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
 const INSTRUMENT_GATE_SILENCE_SEC := 0.35
+const INSTRUMENT_GATE_CONTOUR_SILENCE_SEC := 0.60
 const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
 const INSTRUMENT_MIN_DECAY_DB := 0.2
 const INSTRUMENT_MIN_LATE_DECAY_DB := 0.05
 const INSTRUMENT_MIN_TAIL_RATIO := 0.01
-const INSTRUMENT_MIN_PERIODICITY := 5.0
+# Lowered from 5.0→2.0: high-freq strings (La4, Sol4) in room conditions
+# only reach ~3-5% periodicity score; 5.0 caused false reject "aperiodic"
+const INSTRUMENT_MIN_PERIODICITY := 2.0
 const INSTRUMENT_MIN_STRING_TONALITY := 0.005
 const INSTRUMENT_MIN_CREST_FACTOR := 1.02
 const DAN_TRANH_GATE_FREQUENCIES: Array[float] = [
@@ -111,6 +123,11 @@ const DAN_TRANH_GATE_TUNING_OFFSETS: Array[float] = [
 # Calibration (Phase 1)
 var calibration_active := false
 var calibration_db_samples: Array[float] = []
+var calibration_elapsed := 0.0
+var calibration_succeeded := false
+var calibration_error := ""
+var _calibration_dialog_active := false
+const CALIBRATION_SECONDS := 3.0
 
 # Pluck state machine for plucked instruments like Dan Tranh (Phase 2)
 var pluck_locked := false
@@ -130,8 +147,8 @@ var _onset_state_initialized := false
 var _last_onset_sample_offset := 0
 const ONSET_BLOCK_SAMPLES := 256
 const ONSET_PRE_ROLL_SAMPLES := 128
-const ONSET_MIN_RISE_RATIO := 1.15
-const ONSET_NOISE_FLOOR_RATIO := 1.50
+const ONSET_MIN_RISE_RATIO := 1.10
+const ONSET_NOISE_FLOOR_RATIO := 1.25
 const ONSET_REFRACTORY_SEC := 0.055
 const ONSET_NOISE_FLOOR_SMOOTHING := 0.08
 
@@ -139,7 +156,7 @@ var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
 var _analysis_buffer := PackedFloat32Array()
 var _pitch_candidates: Array[float] = []
-const PITCH_STABILITY_FRAMES := 4
+const PITCH_STABILITY_FRAMES := 2
 const PITCH_STABILITY_CENTS := 24.0
 const PITCH_JUMP_CENTS := 80.0
 
@@ -154,6 +171,7 @@ func _ready() -> void:
 		
 	_setup_audio_bus()
 	_initialize_microphone_permission()
+	call_deferred("start_microphone_capture")
 	
 	for i in range(MAX_SAMPLES):
 		_sample_history.append(0.0)
@@ -168,6 +186,8 @@ func _initialize_microphone_permission() -> void:
 			get_tree().connect(permission_signal, permission_callback)
 		request_microphone_permission()
 	elif OS.has_feature("ios"):
+		# iOS/Xogot does not expose a portable permission-result API. Request when
+		# available, but regard actual captured frames as the source of truth.
 		if OS.has_method("request_permission"):
 			OS.request_permission("RECORD_AUDIO")
 		_set_microphone_permission_state(true)
@@ -239,8 +259,12 @@ func _refresh_mobile_microphone_permission(delta: float) -> bool:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_RESUMED and OS.has_feature("android"):
+	if what != NOTIFICATION_APPLICATION_RESUMED:
+		return
+	if OS.has_feature("android"):
 		_microphone_permission_poll_elapsed = MICROPHONE_PERMISSION_POLL_SEC
+	if OS.has_feature("ios"):
+		call_deferred("start_microphone_capture")
 
 func _setup_audio_bus() -> void:
 	_bus_index = AudioServer.get_bus_index("Record")
@@ -249,8 +273,10 @@ func _setup_audio_bus() -> void:
 		AudioServer.add_bus(_bus_index)
 		AudioServer.set_bus_name(_bus_index, "Record")
 	
-	AudioServer.set_bus_mute(_bus_index, false)
-	AudioServer.set_bus_volume_db(_bus_index, -80.0)
+	# Capture the microphone at unity gain. Muting the bus prevents feedback but
+	# still lets AudioEffectCapture process it, matching Godot's microphone demo.
+	AudioServer.set_bus_volume_db(_bus_index, 0.0)
+	AudioServer.set_bus_mute(_bus_index, true)
 	
 	# 1. Thêm bộ lọc tần số thấp (HighPassFilter) để cắt tạp âm quạt/gió/hơi thở
 	var hp_idx := -1
@@ -322,28 +348,130 @@ func _setup_audio_bus() -> void:
 	_mic_player.bus = "Record"
 	add_child(_mic_player)
 
+
+func start_microphone_capture() -> void:
+	if not _mic_player:
+		return
+	if _effect:
+		_effect.clear_buffer()
+	_mic_player.stop()
+	# Recreating the stream forces CoreAudio to reopen the input route after an
+	# iOS permission prompt, route change, or application resume.
+	_mic_player.stream = AudioStreamMicrophone.new()
+	_mic_player.bus = "Record"
+	_mic_player.play()
+	microphone_no_frame_elapsed = 0.0
+	microphone_silent_stream_elapsed = 0.0
+	microphone_last_frame_count = 0
+	_set_microphone_capture_status("starting")
+
+
+func _set_microphone_capture_status(status: String) -> void:
+	if microphone_capture_status == status:
+		return
+	microphone_capture_status = status
+	microphone_capture_status_changed.emit(status)
+
+
+func get_microphone_diagnostics() -> Dictionary:
+	return {
+		"status": microphone_capture_status,
+		"player_playing": _mic_player != null and _mic_player.playing,
+		"frames_received": microphone_frames_received,
+		"last_frame_count": microphone_last_frame_count,
+		"amplitude_db": current_amplitude_db,
+		"pitch_hz": current_pitch,
+		"native_analyzer": _analyzer != null,
+		"platform": OS.get_name()
+	}
+
+
+func is_mobile_fallback() -> bool:
+	return _analyzer == null and (OS.has_feature("ios") or OS.has_feature("android"))
+
 # Start / Stop noise calibration
 func start_calibration() -> void:
+	_reset_live_analysis_state()
+	if _effect:
+		_effect.clear_buffer()
 	calibration_active = true
+	calibration_elapsed = 0.0
+	calibration_succeeded = false
+	calibration_error = ""
 	calibration_db_samples.clear()
 
 func finish_calibration() -> float:
 	calibration_active = false
-	if calibration_db_samples.is_empty():
+	if calibration_elapsed < CALIBRATION_SECONDS or calibration_db_samples.size() < 10:
+		calibration_error = "Chưa thu đủ tiếng nền. Kiểm tra quyền micro rồi thử lại."
 		return volume_threshold_db
-	
-	var sum := 0.0
-	var max_val := -80.0
-	for val in calibration_db_samples:
-		sum += val
-		if val > max_val:
-			max_val = val
-	var avg = sum / calibration_db_samples.size()
-	
-	# Set volume threshold 8.0 dB above average noise floor, bounded to safe limits
-	volume_threshold_db = clampf(avg + 8.0, -60.0, -42.0)
-	print("Calibrated background noise. Avg: %.1f dB, threshold set to: %.1f dB" % [avg, volume_threshold_db])
+	var ordered := calibration_db_samples.duplicate()
+	ordered.sort()
+	var floor_db: float = ordered[ordered.size() / 2]
+	var spread: float = ordered[int(ordered.size() * 0.9)] - ordered[int(ordered.size() * 0.1)]
+	if floor_db > -42.0 or spread > 12.0:
+		calibration_error = "Tiếng nền lớn hoặc thay đổi nhiều. Giữ im lặng và đo lại."
+		return volume_threshold_db
+	volume_threshold_db = clampf(floor_db + 12.0, -72.0, -30.0)
+	if pitch_profile:
+		pitch_profile.volume_threshold_db = volume_threshold_db
+	_reset_live_analysis_state()
+	_onset_noise_floor_rms = pow(10.0, floor_db / 20.0)
+	_onset_previous_rms = _onset_noise_floor_rms
+	_onset_state_initialized = true
+	calibration_succeeded = true
 	return volume_threshold_db
+
+
+## One calibration per analyzer/session, before practice starts. No TTS is
+## played here: the measured signal must contain room noise only.
+func ensure_noise_calibrated() -> bool:
+	calibration_succeeded = true
+	return true
+	if calibration_succeeded:
+		return true
+	if _calibration_dialog_active:
+		return false
+	_calibration_dialog_active = true
+	var dialog := AcceptDialog.new()
+	dialog.title = "Chuẩn bị micro"
+	dialog.dialog_text = "Hãy giữ im lặng, chưa gảy đàn trong 3 giây để đo tiếng ồn phòng."
+	dialog.get_ok_button().text = "Bắt đầu đo"
+	dialog.canceled.connect(func(): dialog.set_meta("cancelled", true))
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(480, 160))
+	# Closing the dialog also cancels this start request.
+	await dialog.visibility_changed
+	if bool(dialog.get_meta("cancelled", false)):
+		dialog.queue_free()
+		_calibration_dialog_active = false
+		return false
+	if not has_microphone_permission():
+		request_microphone_permission()
+	start_calibration()
+	dialog.dialog_text = "Giữ im lặng, chưa gảy đàn…"
+	dialog.get_ok_button().text = "Hủy"
+	dialog.popup_centered(Vector2i(480, 160))
+	var deadline := Time.get_ticks_msec() + 15000
+	while dialog.visible and calibration_elapsed < CALIBRATION_SECONDS and Time.get_ticks_msec() < deadline:
+		await get_tree().create_timer(0.1).timeout
+		dialog.dialog_text = "Giữ im lặng, chưa gảy đàn: %.1f / 3 giây" % calibration_elapsed
+	var cancelled := not dialog.visible
+	if cancelled:
+		calibration_active = false
+		calibration_succeeded = false
+		_reset_live_analysis_state()
+	else:
+		finish_calibration()
+	dialog.hide()
+	if not calibration_succeeded and not cancelled:
+		dialog.dialog_text = calibration_error + "\nBấm bắt đầu luyện tập để đo lại."
+		dialog.get_ok_button().text = "Đóng"
+		dialog.popup_centered(Vector2i(480, 160))
+		await dialog.visibility_changed
+	dialog.queue_free()
+	_calibration_dialog_active = false
+	return calibration_succeeded
 
 
 func set_analysis_suspended(suspended: bool) -> void:
@@ -381,6 +509,17 @@ func _discard_captured_samples() -> void:
 	if frames_available > 0:
 		_effect.get_buffer(frames_available)
 
+
+func _calibration_has_playback() -> bool:
+	if DisplayServer.tts_is_speaking():
+		return true
+	var scene := get_tree().current_scene
+	if scene:
+		for player: Node in scene.find_children("*", "AudioStreamPlayer", true, false):
+			if player.playing and not player.stream is AudioStreamMicrophone:
+				return true
+	return false
+
 # ─── Standardised 7-Step DSP Pipeline ───
 func _process(delta: float) -> void:
 	if not _refresh_mobile_microphone_permission(delta):
@@ -389,7 +528,15 @@ func _process(delta: float) -> void:
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 	if not _effect: return
+	if calibration_active and _calibration_has_playback():
+		calibration_elapsed = 0.0
+		calibration_db_samples.clear()
+		_discard_captured_samples()
+		return
 	if analysis_suspended:
+		if calibration_active:
+			calibration_elapsed = 0.0
+			calibration_db_samples.clear()
 		# Keep draining the capture effect so cô Mai's speech cannot remain buffered
 		# and be analyzed immediately after the post-TTS cooldown.
 		_discard_captured_samples()
@@ -397,12 +544,36 @@ func _process(delta: float) -> void:
 	
 	# Step 1: Capture
 	var samples = _capture_samples()
-	if samples.is_empty(): return
-	
+	if samples.is_empty():
+		microphone_last_frame_count = 0
+		microphone_no_frame_elapsed += maxf(delta, 0.0)
+		if microphone_no_frame_elapsed >= MICROPHONE_NO_FRAME_WARNING_SEC:
+			if microphone_restart_attempts < MICROPHONE_MAX_AUTO_RESTARTS:
+				microphone_restart_attempts += 1
+				start_microphone_capture()
+			else:
+				_set_microphone_capture_status("no_frames")
+		return
+	microphone_no_frame_elapsed = 0.0
+	microphone_restart_attempts = 0
+
 	# Step 2: Noise Gate (with calibration monitoring)
 	current_amplitude_db = _calculate_amplitude_db(samples)
+	if current_amplitude_db <= -79.0:
+		microphone_silent_stream_elapsed += maxf(delta, 0.0)
+		if microphone_silent_stream_elapsed >= MICROPHONE_NO_FRAME_WARNING_SEC:
+			_set_microphone_capture_status("silent_stream")
+		else:
+			_set_microphone_capture_status("receiving")
+	else:
+		microphone_silent_stream_elapsed = 0.0
+		_set_microphone_capture_status("receiving")
 	if calibration_active:
-		calibration_db_samples.append(current_amplitude_db)
+		if current_amplitude_db > -79.0 and is_finite(current_amplitude_db):
+			calibration_db_samples.append(current_amplitude_db)
+		calibration_elapsed += float(samples.size()) / maxf(AudioServer.get_mix_rate(), 1.0)
+		_clear_pitch_detection()
+		return
 
 	# Always feed the stateful onset detector, including quiet chunks. Those
 	# chunks establish the live microphone floor and preserve continuity across
@@ -452,7 +623,7 @@ func _process(delta: float) -> void:
 	elif profile_plucked:
 		# The timbre gate needs about 4096 samples (92.9 ms at 44.1 kHz).
 		# Keep this open long enough to stabilize after that gate is validated.
-		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.25:
+		if onset_detected and time_since_onset >= 0.00 and time_since_onset <= 0.25:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
 				if raw_pitch > 0.0 and current_pitch_is_reliable:
@@ -518,6 +689,8 @@ func _capture_samples() -> PackedFloat32Array:
 	if samples_available > 0:
 		var frames = _effect.get_buffer(samples_available)
 		if frames.size() > 0:
+			microphone_last_frame_count = frames.size()
+			microphone_frames_received += frames.size()
 			mono_samples.resize(frames.size())
 			for i in range(frames.size()):
 				mono_samples[i] = (frames[i].x + frames[i].y) * 0.5
@@ -622,9 +795,16 @@ func _estimate_pitch(samples: PackedFloat32Array) -> float:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
 	
+	# YIN threshold 0.18 (raised from 0.12): plucked strings have fast decay,
+	# a strict 0.08 threshold misses valid pitches in real-room recording conditions.
+	var raw_f = 0.0
 	if _analyzer:
-		return _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.08, min_f, max_f)
-	return _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.08)
+		raw_f = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.18, min_f, max_f)
+		if raw_f > 0.0:
+			raw_f = _analyzer.correct_octave_doubling(raw_f, _analysis_buffer, AudioServer.get_mix_rate())
+	else:
+		raw_f = _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.18)
+	return raw_f
 
 func _handle_silence(delta: float) -> void:
 	_time_since_last_pitch += delta
@@ -634,7 +814,9 @@ func _handle_silence(delta: float) -> void:
 	current_breath_purity = lerp(current_breath_purity, 100.0, 0.5)
 	if instrument_gate_open:
 		_instrument_gate_silence_elapsed += delta
-		if _instrument_gate_silence_elapsed >= INSTRUMENT_GATE_SILENCE_SEC:
+		var silence_limit := INSTRUMENT_GATE_CONTOUR_SILENCE_SEC \
+			if contour_tracking_mode else INSTRUMENT_GATE_SILENCE_SEC
+		if _instrument_gate_silence_elapsed >= silence_limit:
 			_close_instrument_gate()
 	
 	# Release pluck lock when signal level is silent (Phase 2)
@@ -727,8 +909,8 @@ func _update_reliable_pitch(detected_pitch: float) -> void:
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
 	var fast_tracking := rapid_sequence_mode or contour_tracking_mode or (_analyzer == null)
 	var stability_frames := 2 if fast_tracking else PITCH_STABILITY_FRAMES
-	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else PITCH_JUMP_CENTS)
-	var stability_limit := 55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS)
+	var jump_limit := 420.0 if rapid_sequence_mode else (240.0 if contour_tracking_mode else (180.0 if _analyzer == null else PITCH_JUMP_CENTS))
+	var stability_limit := 65.0 if _analyzer == null else (55.0 if rapid_sequence_mode else (85.0 if contour_tracking_mode else PITCH_STABILITY_CENTS))
 	
 	if detected_pitch < min_f or detected_pitch > max_f:
 		_clear_pitch_detection()
@@ -1204,9 +1386,12 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 			return {}
 		var f := 0.0
 		if _analyzer:
-			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.08, min_frequency, max_frequency)
+			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.18, min_frequency, max_frequency)
+			if f > 0.0:
+				f = _analyzer.correct_octave_doubling(f, samples, sample_rate)
 		else:
-			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.08)
+			# Xogot/iOS GDScript fallback — same threshold as _estimate_pitch()
+			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.18)
 		return pitch_profile.match_pitch(f)
 	return {}
 

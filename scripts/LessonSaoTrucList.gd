@@ -17,7 +17,6 @@ const LearningActivityContextScript := preload("res://scripts/LearningActivityCo
 @onready var top_bar           : PanelContainer = $Root/RightContent/TopBar
 @onready var back_btn          : Button         = $Root/RightContent/TopBar/TopM/TopH/BackBtn
 @onready var page_title        : Label          = $Root/RightContent/TopBar/TopM/TopH/PageTitle
-@onready var change_course_btn : Button         = $Root/RightContent/TopBar/TopM/TopH/ChangeCourseBtn
 @onready var scroll_container  : ScrollContainer = $Root/RightContent/ScrollContainer
 @onready var lessons_hbox      : HBoxContainer  = $Root/RightContent/ScrollContainer/MarginContainer/LessonsHBox
 
@@ -34,115 +33,17 @@ var btn_leaderboard            : Button
 var _sidebar_icons_cache := {}
 
 static var selected_level: int = 1
+static var selected_source_levels: Array = [1, 2]
 var _tap_timer: float = 0.0
 
 # 🗃️ Dynamic Lesson Data (10 Lessons for 5 Levels)
-const ALL_LESSONS = [
-	{
-		"id": "sao_truc_level1_1", "level": 1, "title": "BÀI 1", "note": "Cầm sáo & Tư thế",
-		"video": "Cách cầm sáo trúc đúng tư thế.", "practice": "Thực hành cầm sáo.", "subtitles": []
-	},
-	{
-		"id": "sao_truc_level1_2", "level": 1, "title": "BÀI 2", "note": "Hơi thở cơ bản",
-		"video": "Cách lấy hơi bụng.", "practice": "Luyện thở hơi dài.", "subtitles": []
-	},
-	{
-		"id": "Node2", "level": 2, "title": "BÀI 1", "note": "Nốt Si (B5)",
-		"video": "Hướng dẫn thổi nốt Si.", "practice": "Thực hành nốt Si.", "subtitles": []
-	},
-	{
-		"id": "Node3", "level": 2, "title": "BÀI 2", "note": "Nốt La (A5)",
-		"video": "Hướng dẫn thổi nốt La.", "practice": "Thực hành nốt La.", "subtitles": []
-	},
-	{
-		"id": "Node4", "level": 2, "title": "BÀI 3", "note": "Nốt Sol (G5)",
-		"video": "Hướng dẫn thổi nốt Sol.", "practice": "Thực hành nốt Sol.", "subtitles": []
-	},
-	{
-		"id": "Node5", "level": 2, "title": "BÀI 4", "note": "Nốt Fa (F5)",
-		"video": "Hướng dẫn thổi nốt Fa.", "practice": "Thực hành nốt Fa.", "subtitles": []
-	},
-	{
-		"id": "Node6", "level": 2, "title": "BÀI 5", "note": "Nốt Mi (E5)",
-		"video": "Hướng dẫn thổi nốt Mi.", "practice": "Thực hành nốt Mi.", "subtitles": []
-	},
-	{
-		"id": "Node7", "level": 2, "title": "BÀI 6", "note": "Nốt Rê (D5)",
-		"video": "Hướng dẫn thổi nốt Rê.", "practice": "Thực hành nốt Rê.", "subtitles": []
-	},
-	{
-		"id": "Node8", "level": 2, "title": "BÀI 7", "note": "Nốt Đô (C5)",
-		"video": "Hướng dẫn thổi nốt Đô.", "practice": "Thực hành nốt Đô.", "subtitles": []
-	},
-	{
-		"id": "sao_truc_level3_1", "level": 3, "title": "BÀI 1", "note": "Khúc Nhạc Vui (Khung 1)"
-	},
-	{
-		"id": "sao_truc_level3_2", "level": 3, "title": "BÀI 2", "note": "Khúc Nhạc Vui (Khung 2)"
-	},
-	{
-		"id": "sao_truc_level3_3", "level": 3, "title": "BÀI 3", "note": "Khúc Nhạc Vui (Khung 3)"
-	},
-	{
-		"id": "sao_truc_level3_4", "level": 3, "title": "BÀI 4", "note": "Khúc Nhạc Vui (Khung 4)"
-	},
-	{
-		"id": "sao_truc_level3_5", "level": 3, "title": "BÀI 5", "note": "Khúc Nhạc Vui (Khung 5)"
-	},
-	{
-		"id": "sao_truc_level3_6", "level": 3, "title": "BÀI 6", "note": "Khúc Nhạc Vui (Hoàn chỉnh)"
-	},
-	{
-		"id": "sao_truc_level4_1", "level": 4, "title": "BÀI 1", "note": "Inh Lả Ơi (Câu 1)"
-	},
-	{
-		"id": "sao_truc_level4_2", "level": 4, "title": "BÀI 2", "note": "Inh Lả Ơi (Câu 2)"
-	},
-	{
-		"id": "sao_truc_level4_3", "level": 4, "title": "BÀI 3", "note": "Inh Lả Ơi (Câu 3)"
-	},
-	{
-		"id": "sao_truc_level4_4", "level": 4, "title": "BÀI 4", "note": "Inh Lả Ơi (Câu 4)"
-	},
-	{
-		"id": "sao_truc_level4_5", "level": 4, "title": "BÀI 5", "note": "Inh Lả Ơi (Hoàn chỉnh)"
-	},
-	{
-		"id": "sao_truc_level5_1", "level": 5, "title": "BÀI 1", "note": "Futari no Kimochi (Đoạn 1 - P1)"
-	},
-	{
-		"id": "sao_truc_level5_2", "level": 5, "title": "BÀI 2", "note": "Futari no Kimochi (Đoạn 1 - P2)"
-	},
-	{
-		"id": "sao_truc_level5_3", "level": 5, "title": "BÀI 3", "note": "Futari no Kimochi (Đoạn 1 - HC)"
-	},
-	{
-		"id": "sao_truc_level5_4", "level": 5, "title": "BÀI 4", "note": "Futari no Kimochi (Đoạn 2 - P1)"
-	},
-	{
-		"id": "sao_truc_level5_5", "level": 5, "title": "BÀI 5", "note": "Futari no Kimochi (Đoạn 2 - P2)"
-	},
-	{
-		"id": "sao_truc_level5_6", "level": 5, "title": "BÀI 6", "note": "Futari no Kimochi (Đoạn 2 - HC)"
-	},
-	{
-		"id": "sao_truc_level5_7", "level": 5, "title": "BÀI 7", "note": "Futari no Kimochi (Hoàn chỉnh toàn bài)"
-	},
-	{ "id": "Node35", "level": 6, "title": "BÀI 1", "note": "Gặp Mẹ Trong Mơ (Khung 1)" },
-	{ "id": "Node36", "level": 6, "title": "BÀI 2", "note": "Gặp Mẹ Trong Mơ (Khung 2)" },
-	{ "id": "Node37", "level": 6, "title": "BÀI 3", "note": "Gặp Mẹ Trong Mơ (Khung 3)" },
-	{ "id": "Node38", "level": 6, "title": "BÀI 4", "note": "Gặp Mẹ Trong Mơ (Khung 4)" },
-	{ "id": "Node39", "level": 6, "title": "BÀI 5", "note": "Gặp Mẹ Trong Mơ (Khung 5)" },
-	{ "id": "Node40", "level": 6, "title": "BÀI 6", "note": "Gặp Mẹ Trong Mơ (Khung 6)" },
-	{ "id": "Node41", "level": 6, "title": "BÀI 7", "note": "Gặp Mẹ Trong Mơ (Khung 7)" },
-	{ "id": "Node42", "level": 6, "title": "BÀI 8", "note": "Gặp Mẹ Trong Mơ (Hoàn chỉnh)" }
-]
+const ALL_LESSONS = preload("res://scripts/SaoTrucBundledLessonData.gd").ALL_LESSONS
 var LESSONS: Array = []
 
 func _ready() -> void:
 	LESSONS = []
 	for l in ALL_LESSONS:
-		if l.get("level", 1) == selected_level:
+		if int(l.get("level", 1)) in selected_source_levels:
 			LESSONS.append(l)
 
 	SecureDataManager.load_data()
@@ -166,7 +67,6 @@ func _ready() -> void:
 
 	_build_theme()
 	_connect_buttons()
-	_build_quiz_btn()
 	_build_profile_btn()
 
 	_build_lesson_list()
@@ -239,63 +139,12 @@ func _build_theme() -> void:
 	_style_text_btn(back_btn, C_JADE, C_GOLD)
 	_make_btn_bouncy(back_btn)
 
-	# Outlined style for ChangeCourseBtn
-	var s_outline := StyleBoxFlat.new()
-	s_outline.bg_color = Color(0, 0, 0, 0)
-	s_outline.border_color = C_JADE
-	s_outline.border_width_left = 3
-	s_outline.border_width_right = 3
-	s_outline.border_width_top = 3
-	s_outline.border_width_bottom = 3
-	s_outline.corner_radius_top_left = 24
-	s_outline.corner_radius_top_right = 24
-	s_outline.corner_radius_bottom_left = 24
-	s_outline.corner_radius_bottom_right = 24
-
-	var s_outline_hover := s_outline.duplicate() as StyleBoxFlat
-	s_outline_hover.bg_color = Color(C_JADE.r, C_JADE.g, C_JADE.b, 0.08)
-
-	change_course_btn.text = "Đổi khóa học"
-	change_course_btn.add_theme_stylebox_override("normal", s_outline)
-	change_course_btn.add_theme_stylebox_override("hover", s_outline_hover)
-	change_course_btn.add_theme_stylebox_override("pressed", s_outline)
-	change_course_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	change_course_btn.add_theme_color_override("font_color", C_JADE)
-	change_course_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	_make_btn_bouncy(change_course_btn)
-
 func _connect_buttons() -> void:
 	back_btn.pressed.connect(func() -> void:
 		var t := create_tween()
 		t.tween_property(self, "modulate:a", 0.0, 0.22)
 		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
 	)
-
-	change_course_btn.pressed.connect(func() -> void:
-		var t := create_tween()
-		t.tween_property(self, "modulate:a", 0.0, 0.22)
-		t.tween_callback(func() -> void: get_tree().change_scene_to_file("res://scenes/MainMenu.tscn"))
-	)
-
-func _build_quiz_btn() -> void:
-	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
-	if toph == null or change_course_btn == null:
-		return
-	var quiz_btn := Button.new()
-	quiz_btn.name = "QuizBtn"
-	quiz_btn.text = "📝 Quiz"
-	quiz_btn.custom_minimum_size = Vector2(148, 48)
-	quiz_btn.add_theme_font_size_override("font_size", 17)
-	quiz_btn.add_theme_stylebox_override("normal", _flat(Color.TRANSPARENT, C_JADE, 18, 2))
-	quiz_btn.add_theme_stylebox_override("hover", _flat(Color(C_GOLD, 0.12), C_GOLD, 18, 2))
-	quiz_btn.add_theme_stylebox_override("pressed", _flat(Color(C_GOLD, 0.15), C_GOLD, 18, 2))
-	quiz_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	quiz_btn.add_theme_color_override("font_color", C_JADE)
-	quiz_btn.add_theme_color_override("font_hover_color", C_GOLD)
-	quiz_btn.pressed.connect(_open_quiz)
-	_make_btn_bouncy(quiz_btn)
-	toph.add_child(quiz_btn)
-	toph.move_child(quiz_btn, change_course_btn.get_index())
 
 func _build_profile_btn() -> void:
 	var toph := $Root/RightContent/TopBar/TopM/TopH as HBoxContainer
@@ -305,18 +154,11 @@ func _build_profile_btn() -> void:
 	spacer.name = "TopSpacerRight"
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	toph.add_child(spacer)
-	var pill := DS.build_profile_pill()
-	var trigger := pill.get_node_or_null("TriggerButton") as Button
-	if trigger:
-		trigger.pressed.connect(func() -> void: _fade_to_scene("res://scenes/AccountScreen.tscn"))
+	var pill := preload("res://scripts/DS.gd").build_profile_pill()
 	toph.add_child(pill)
-
-func _open_quiz() -> void:
-	var ids: Array[String] = []
-	for l in LESSONS:
-		ids.append(str(l.get("id", "")))
-	LearningActivityContextScript.configure("sao_truc", ids, "res://scenes/LessonSaoTrucList.tscn")
-	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
+	var account_menu := preload("res://scripts/CurriculumAccountMenu.gd").new()
+	account_menu.pill = pill
+	add_child(account_menu)
 
 func _build_sidebar() -> void:
 	var side_s := _flat(Color(0.95, 0.93, 0.89, 0.6), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), 0, 0)
@@ -510,9 +352,11 @@ func _build_lesson_list() -> void:
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
 		col.add_theme_constant_override("separation", 24)
 
-		# Top: Lesson Title Label
+		# Đánh số liên tục theo level mới. Dữ liệu nguồn của từng level cũ đều
+		# bắt đầu lại từ "BÀI 1", nên không dùng lesson_item["title"] ở đây.
+		# ID bài vẫn giữ nguyên để không ảnh hưởng tiến độ đã lưu.
 		var title_lbl := Label.new()
-		title_lbl.text = lesson_item["title"]
+		title_lbl.text = "BÀI %d" % (i + 1)
 		title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title_lbl.add_theme_color_override("font_color", C_TEXT if is_unlocked else C_TEXT_MUTED)
 		title_lbl.add_theme_font_size_override("font_size", 20)
@@ -567,6 +411,10 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		border_color = C_JADE_LIGHT # Jade border
 		text_color = C_TEXT # Dark charcoal text
 
+	# Temporary open-access appearance; completion data stays unchanged.
+	bg_color = Color(0.09, 0.27, 0.18, 1.0)
+	border_color = Color.WHITE
+	text_color = Color.WHITE
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -587,12 +435,13 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		else:
 			s_hover.bg_color = Color(1.0, 1.0, 1.0, 0.95)
 
+	s_hover.bg_color = bg_color.lightened(0.08)
 	btn.add_theme_stylebox_override("normal", s_normal)
 	btn.add_theme_stylebox_override("hover", s_hover)
 	btn.add_theme_stylebox_override("pressed", s_normal)
 	btn.add_theme_stylebox_override("disabled", s_normal)
 	btn.add_theme_color_override("font_color", text_color)
-	btn.add_theme_color_override("font_hover_color", C_JADE if (is_unlocked and not is_completed) else text_color)
+	btn.add_theme_color_override("font_hover_color", text_color)
 	btn.add_theme_color_override("font_pressed_color", text_color)
 	btn.add_theme_color_override("font_disabled_color", text_color)
 
@@ -653,7 +502,6 @@ func _apply_responsive_layout() -> void:
 	top_margin.add_theme_constant_override("margin_top", 16 if mobile else 24)
 	top_margin.add_theme_constant_override("margin_bottom", 12 if mobile else 16)
 	page_title.add_theme_font_size_override("font_size", 20 if mobile else 28)
-	change_course_btn.custom_minimum_size.x = 110 if mobile else 180
 	var sep := 65 if mobile else 100
 	lessons_hbox.add_theme_constant_override("separation", sep)
 	for col in lessons_hbox.get_children():
@@ -812,14 +660,14 @@ func _open_lesson(node_id: String) -> void:
 			bg_dim.queue_free()
 			popup.queue_free()
 			SecureDataManager.data["is_challenge_mode"] = false
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
 		)
 		
 		btn_challenge.pressed.connect(func() -> void:
 			bg_dim.queue_free()
 			popup.queue_free()
 			SecureDataManager.data["is_challenge_mode"] = true
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
 		)
 		
 		btn_cancel.pressed.connect(func() -> void:
@@ -828,4 +676,8 @@ func _open_lesson(node_id: String) -> void:
 		)
 	else:
 		SecureDataManager.data["is_challenge_mode"] = false
-		_fade_to("res://scenes/LessonSaoTruc.tscn")
+		_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
+
+
+
+

@@ -428,6 +428,30 @@ func _create_achievement_card(achievement: Dictionary) -> PanelContainer:
 
 func _apply_achievement_icon(url: String, target: TextureRect, earned: bool) -> void:
 	var cleaned := url.strip_edges()
+	var symbol_map := {
+		"♫": "music",
+		"⏱": "hourglass",
+		"★": "star",
+		"🔥": "flame",
+		"🏆": "trophy",
+		"✨": "sparkles",
+		"🌟": "star",
+		"🎯": "trending-up",
+		"music": "music",
+		"star": "star",
+		"flame": "flame",
+		"trophy": "trophy",
+		"gamepad": "gamepad-2"
+	}
+	if symbol_map.has(cleaned):
+		var icon_name := str(symbol_map[cleaned])
+		var path := "res://assets/textures/lucide/" + icon_name + ".svg"
+		var tex := load(path) as Texture2D
+		if tex:
+			target.texture = tex
+			target.modulate = C_GOLD if earned else C_TEXT_MUTED
+			return
+
 	if cleaned.is_empty():
 		return
 	if _icon_cache.has(cleaned):
@@ -690,6 +714,12 @@ func _animate_in() -> void:
 
 
 func _go_back() -> void:
+	var return_scene := str(SecureDataManager.data.get("navigation_return_scene", ""))
+	if return_scene in ["res://scenes/VirtualMusicRoom.tscn", "res://scenes/LessonDanTranhList.tscn", "res://scenes/LessonDanBau.tscn", "res://scenes/LessonSaoTrucList.tscn", "res://scenes/LessonTrongChau.tscn"]:
+		SecureDataManager.data.erase("navigation_return_scene")
+		SecureDataManager.save_data()
+		get_tree().change_scene_to_file(return_scene)
+		return
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 

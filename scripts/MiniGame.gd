@@ -1016,8 +1016,7 @@ func _show_end_summary() -> void:
 		SecureDataManager.save_data()
 		
 	if score >= 200:
-		SecureDataManager.complete_lesson(inst, "Node3", 3) # Unlocks Node 4!
-		result_lbl.text = "Bạn đạt được %d điểm! Rất đáng khen ngợi.\n+ %d XP  ·  Mở Khóa Học Tiếp!" % [score, earned_xp]
+		result_lbl.text = "Bạn đạt được %d điểm! Rất đáng khen ngợi.\nKết quả cũ này chưa được dùng để cộng sao hoặc mở khóa bài." % score
 	else:
 		result_lbl.text = "Bạn đạt được %d điểm! Hãy cố gắng luyện tập thêm tai nhạc nữa nhé." % score
 		

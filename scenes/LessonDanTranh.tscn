@@ -129,9 +129,9 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -500.0
-offset_right = 320.0
-offset_bottom = 0.0
+offset_top = -800.0
+offset_right = 520.0
+offset_bottom = 50.0
 grow_vertical = 0
 texture = ExtResource("4_char")
 expand_mode = 1
@@ -139,17 +139,13 @@ stretch_mode = 5
 
 [node name="DialogBox" type="PanelContainer" parent="TeacherArea"]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -440.0
-offset_top = -180.0
-offset_right = 440.0
-offset_bottom = -50.0
-grow_horizontal = 2
-grow_vertical = 0
+offset_left = 460.0
+offset_top = -650.0
+offset_right = 1400.0
+offset_bottom = -250.0
 
 [node name="M" type="MarginContainer" parent="TeacherArea/DialogBox"]
 layout_mode = 2
@@ -201,6 +197,7 @@ grow_vertical = 1
 script = ExtResource("5_analyzer")
 
 [node name="FeedbackArea" type="VBoxContainer" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 0
 anchor_top = 0.0
