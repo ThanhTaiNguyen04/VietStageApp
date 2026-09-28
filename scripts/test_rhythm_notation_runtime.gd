@@ -53,18 +53,16 @@ func test_g_clef_and_time_signature():
 	assert(staff.total_pages == 1, "Expected 1 page for 1 measure in 2-measure layout")
 	assert(staff.measure_beats == 4.0, "Expected 4.0 measure_beats for 4/4")
 	
-	# Verify clef anchor properties:
-	var height = staff.size.y
-	var center_y = height * 0.50 # Line 3 (B4)
-	var spacing = 20.0 # for width 400
-	var line_2_y = center_y + 1.0 * spacing # Line 2 (Sol 4 / G4)
-	var clef_scale = 5.6
-	var clef_font_size = int(spacing * clef_scale)
-	var clef_baseline_y = line_2_y + (clef_font_size * 0.125)
-	
-	# Spiral center Y = clef_baseline_y - (clef_font_size * 0.125) = line_2_y!
-	var spiral_y = clef_baseline_y - (clef_font_size * 0.125)
-	assert(abs(spiral_y - line_2_y) < 0.001, "G-clef spiral must anchor exactly on Line 2 (Sol 4)")
+	# Verify real renderer positions and the bundled music glyphs.
+	staff.configure_rhythm(["E4", "G4", "B4"], times, 2.4, false, false, [], [4, 4], dur_beats, 100)
+	var geometry: Dictionary = staff._notation_geometry(400, 150)
+	var records: Array = staff.compute_note_records(400, 150)["records"]
+	assert(is_equal_approx(records[0].y, geometry.center_y + 2 * geometry.spacing), "E4 must sit on the bottom line")
+	assert(is_equal_approx(records[1].y, geometry.center_y + geometry.spacing), "G4 must sit on the clef anchor line")
+	assert(is_equal_approx(records[2].y, geometry.center_y), "B4 must sit on the middle line")
+	assert(staff.MUSIC_FONT.has_char(0xE050), "Bundled font must contain the G clef")
+	assert(staff.MUSIC_FONT.has_char(0xE086) and staff.MUSIC_FONT.has_char(0xE088), "Bundled font must contain the 6/8 digits")
+	staff.free()
 	print("✔ test_g_clef_and_time_signature passed")
 
 func test_two_measure_screen_layout():
@@ -282,12 +280,12 @@ func test_result_screen_zero_score_handling():
 	
 	# Check round result with 0 hits / 0 score
 	screen._build_round_result(0, 100)
-	var card_body = screen.content_box.get_child(0).get_child(0).get_child(0)
+	var card_body = screen.content_box.get_child(-1)
 	
 	# Find heading
 	var heading_found := false
 	var heading_text := ""
-	for child in card_body.get_children():
+	for child in card_body.find_children("*", "Label", true, false):
 		if child is Label and ("chưa" in child.text.to_lower() or "hoàn thành" in child.text.to_lower()):
 			heading_found = true
 			heading_text = child.text
@@ -299,10 +297,10 @@ func test_result_screen_zero_score_handling():
 	
 	# Check final result with 0 score
 	screen._build_final_result()
-	var final_card = screen.content_box.get_child(0).get_child(0).get_child(0)
+	var final_card = screen.content_box.get_child(-1)
 	var final_heading_found := false
 	var final_heading_text := ""
-	for child in final_card.get_children():
+	for child in final_card.find_children("*", "Label", true, false):
 		if child is Label and ("chưa" in child.text.to_lower() or "hoàn thành" in child.text.to_lower()):
 			final_heading_found = true
 			final_heading_text = child.text

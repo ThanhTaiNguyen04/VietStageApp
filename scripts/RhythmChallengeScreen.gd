@@ -1339,7 +1339,21 @@ func _add_round_plaque(parent: VBoxContainer, round_title: String) -> void:
 	plaque_style.content_margin_top = 3 if compact else 8
 	plaque_style.content_margin_bottom = 3 if compact else 9
 	plaque.add_theme_stylebox_override("panel", plaque_style)
-	parent.add_child(plaque)
+	# Place the title above the score card, outside the notation's drawing area.
+	# Keep it in the same scroll host on small screens.
+	var card := parent.get_parent()
+	var center := card.get_parent()
+	var host := center.get_parent()
+	var section := VBoxContainer.new()
+	section.name = "RhythmScoreSection"
+	section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	section.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	section.add_theme_constant_override("separation", 10 if compact else 22)
+	var position_in_host := center.get_index()
+	host.add_child(section)
+	host.move_child(section, position_in_host)
+	section.add_child(plaque)
+	center.reparent(section)
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 1)
 	plaque.add_child(stack)

@@ -4,13 +4,48 @@ extends "res://scripts/LearningMelodyStaffDisplay.gd"
 ## Features:
 ## - 5-line staff with Treble Clef centered on Line 2 (G4 / Sol 4)
 ## - Configurable Time Signatures (2/4, 3/4, 4/4, 6/8)
-## - Measure pagination (1 measure per page) with auto-flip on playhead crossing
+## - Measure pagination (2 measures per page) with auto-flip on playhead crossing
 ## - Precise horizontal placement based on note start beats
 ## - Standard note shapes by duration (whole/half hollow, quarter/8th/16th solid, dots)
 ## - Standard beam grouping (3+3 in 6/8, quarter-beat groups in 2/4, 3/4, 4/4) and isolated flags
 ## - Minimalist UI: no bottom note tags, no top MISS badges, sleek playhead cursor
 
 signal measure_changed(current_measure: int, total_measures: int)
+
+const MUSIC_FONT = preload("res://assets/fonts/Bravura.otf")
+
+
+func _notation_geometry(width: float, height: float) -> Dictionary:
+	# Reserve room for the actual register, including ledger lines and stems.
+	# Keep the scale stable across pages so turning a page never moves the staff.
+	var above := 3.5
+	var below := 3.5
+	for note in notes:
+		var step := _parse_diatonic_step(note)
+		above = maxf(above, float(step - 6) * 0.5 + 1.0)
+		below = maxf(below, float(6 - step) * 0.5 + 1.0)
+	var spacing := minf(24.0 if width >= 700.0 else 20.0, (height - 16.0) / (above + below))
+	var center_y := (height - (above + below) * spacing) * 0.5 + above * spacing
+	var left := 12.0
+	var clef_x := left + spacing * 0.5
+	var ts_x := clef_x + spacing * 3.4
+	return {"spacing": spacing, "center_y": center_y, "left": left,
+		"right": width - 12.0, "clef_x": clef_x, "ts_x": ts_x,
+		"start_x": ts_x + spacing * 2.7}
+
+
+func _time_signature_glyphs(value: int) -> String:
+	var result := ""
+	for digit in str(value):
+		result += String.chr(0xE080 + int(digit))
+	return result
+
+
+func _parse_diatonic_step(note_str: String) -> int:
+	var pitch := note_str.to_lower().strip_edges()
+	if pitch.length() == 2 and pitch[0] in "cdefgab" and pitch[1].is_valid_int():
+		return "cdefgab".find(pitch[0]) + (int(pitch[1]) - 4) * 7
+	return super._parse_diatonic_step(note_str)
 
 var beat_times: Array[float] = []
 var judgements: Array[String] = []
@@ -225,11 +260,11 @@ func _gui_input(event: InputEvent) -> void:
 func _draw() -> void:
 	var width := maxf(size.x, 300.0)
 	var height := maxf(size.y, 132.0)
-	var compact := width < 450.0
-	var spacing := 18.0 if height < 150.0 else (20.0 if compact or height < 180.0 else (23.0 if width < 700.0 else 26.0))
-	var center_y := height * 0.48 # Line 3 (Middle line B4 / Si) is centered slightly above midpoint
-	var left_margin := 8.0 if compact else 16.0
-	var right_margin := width - (8.0 if compact else 16.0)
+	var geometry := _notation_geometry(width, height)
+	var spacing: float = geometry.spacing
+	var center_y: float = geometry.center_y
+	var left_margin: float = geometry.left
+	var right_margin: float = geometry.right
 
 	# 1. Draw 5 Staff Lines
 	# Line 1 (bottom): center_y + 2.0 * spacing (E4 / Mi 4)
@@ -247,27 +282,27 @@ func _draw() -> void:
 	draw_line(Vector2(left_margin, staff_top_y), Vector2(left_margin, staff_bot_y), C_STAFF_LINE, 3.8, true)
 
 	# 3. Draw Treble Clef (Khóa Sol) centered on Line 2 (G4 / Sol 4)
-	var font := ThemeDB.fallback_font
+	var font := MUSIC_FONT
 	var line_2_y := center_y + 1.0 * spacing
-	var clef_scale := 5.6
+	var clef_scale := 4.0
 	var clef_font_size := int(spacing * clef_scale)
-	var clef_x := left_margin + (2.0 if compact else 4.0)
-	# Anchor the spiral loop of the G-clef on Line 2 (spiral is 0.125 * font_size above font baseline)
-	var clef_baseline_y := line_2_y + (clef_font_size * 0.125)
+	var clef_x: float = geometry.clef_x
+	# Bravura's SMuFL origin is the G4 line; one staff space is 1/4 em.
+	var clef_baseline_y := line_2_y
 	if font:
-		draw_string(font, Vector2(clef_x, clef_baseline_y), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, clef_font_size, C_STAFF_LINE)
+		draw_string(font, Vector2(clef_x, clef_baseline_y), "\uE050", HORIZONTAL_ALIGNMENT_LEFT, -1, clef_font_size, C_STAFF_LINE)
 
 	# 4. Draw Time Signature (Chỉ số nhịp ở đầu khuông)
-	var num_font := bold_font if bold_font else font
-	var ts_size := int(spacing * 2.1)
-	var ts_x := clef_x + spacing * (2.2 if compact else 2.6)
+	var num_font := MUSIC_FONT
+	var ts_size := int(spacing * 4.0)
+	var ts_x: float = geometry.ts_x
 	if num_font:
-		var num_str := str(time_signature[0] if time_signature.size() > 0 else 4)
-		var den_str := str(time_signature[1] if time_signature.size() > 1 else 4)
+		var num_str := _time_signature_glyphs(int(time_signature[0]))
+		var den_str := _time_signature_glyphs(int(time_signature[1]))
 		# Numerator: in upper 2 spaces (between line 3 and line 5), baseline near line 3
-		draw_string(num_font, Vector2(ts_x, center_y - spacing * 0.05), num_str, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, C_STAFF_LINE)
+		draw_string(num_font, Vector2(ts_x, center_y - spacing), num_str, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, C_STAFF_LINE)
 		# Denominator: in lower 2 spaces (between line 1 and line 3), baseline near line 1
-		draw_string(num_font, Vector2(ts_x, center_y + spacing * 1.95), den_str, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, C_STAFF_LINE)
+		draw_string(num_font, Vector2(ts_x, center_y + spacing), den_str, HORIZONTAL_ALIGNMENT_LEFT, -1, ts_size, C_STAFF_LINE)
 
 	# 5. Determine the 2 measures on current screen
 	var m_0 := current_page * MEASURES_PER_PAGE
@@ -275,7 +310,7 @@ func _draw() -> void:
 	var visible_measures := mini(MEASURES_PER_PAGE, maxi(1, total_measures - m_0))
 
 	# 6. Horizontal layout: Usable width, mid barline, end barline
-	var start_note_x := ts_x + spacing * (1.8 if compact else 2.2)
+	var start_note_x: float = geometry.start_x
 	var usable_width := maxf(160.0, right_margin - start_note_x)
 	var meas_width := usable_width / float(visible_measures)
 	var mid_barline_x := start_note_x + meas_width
@@ -303,8 +338,7 @@ func _draw() -> void:
 	var pulse_map: Dictionary = layout_data.get("pulse_map", {})
 	var beamed_indices: Array = layout_data.get("beamed_indices", [])
 
-	var note_head_rx := spacing * 0.68
-	var note_head_ry := spacing * 0.46
+	var note_head_rx := spacing * 0.59
 	var stem_width := 2.6
 
 	# 8. Draw Ledger lines, Note heads, and Dots
@@ -329,33 +363,22 @@ func _draw() -> void:
 				var ly := center_y - float(ledger_step - 6) * (spacing * 0.5)
 				draw_line(Vector2(note_x - note_head_rx * 1.55, ly), Vector2(note_x + note_head_rx * 1.55, ly), C_STAFF_LINE, 1.8, true)
 
-		# Note head
-		var head_poly := PackedVector2Array()
-		var segs := 18
-		for s in range(segs):
-			var a := float(s) * TAU / float(segs)
-			var rx := note_head_rx * cos(a)
-			var ry := note_head_ry * sin(a)
-			# Standard italic slant ~ -18 degrees
-			var rot := -0.32
-			var sx := rx * cos(rot) - ry * sin(rot)
-			var sy := rx * sin(rot) + ry * cos(rot)
-			head_poly.append(Vector2(note_x + sx, note_y + sy))
-
-		if bool(rec["is_hollow"]):
-			# Hollow note head (half/whole note)
-			draw_colored_polygon(head_poly, Color(1, 1, 1, 0.96))
-			draw_polyline(head_poly, note_color, 2.4, true)
-		else:
-			# Solid note head (quarter/8th/16th)
-			draw_colored_polygon(head_poly, note_color)
+		# SMuFL noteheads preserve the engraved contour and hollow counter.
+		var glyph := "\uE0A4"
+		if not bool(rec["has_stem"]):
+			glyph = "\uE0A2"
+		elif bool(rec["is_hollow"]):
+			glyph = "\uE0A3"
+		var glyph_size := int(spacing * 4.0)
+		var glyph_width := MUSIC_FONT.get_string_size(glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, glyph_size).x
+		draw_string(MUSIC_FONT, Vector2(note_x - glyph_width * 0.5, note_y), glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, glyph_size, note_color)
 
 		# Dotted note: draw dot in space adjacent to note head
 		if bool(rec["is_dotted"]):
 			var dot_x := note_x + note_head_rx * 1.45
 			var dot_y := note_y
 			if abs(diatonic_step % 2) == 0:
-				dot_y -= spacing * 0.35 # in the space above the line
+				dot_y -= spacing * 0.5 # center of the space above the line
 			draw_circle(Vector2(dot_x, dot_y), spacing * 0.18, note_color)
 
 	# 9. Draw Stems & Beams / Flags
@@ -377,47 +400,34 @@ func _draw() -> void:
 
 			draw_line(p1, p2, beam_color, beam_w, true)
 
-			# Check if sixteenth notes need secondary beam
-			var has_16th := false
-			for rec: Dictionary in group:
-				if float(rec["dur_beat"]) <= 0.26:
-					has_16th = true
-					break
-			if has_16th:
-				var offset_y := (beam_w * 1.5) if bool(first_rec["stem_up"]) else -(beam_w * 1.5)
-				draw_line(p1 + Vector2(0, offset_y), p2 + Vector2(0, offset_y), beam_color, beam_w, true)
+			# Secondary beams only join adjacent sixteenths; an isolated
+			# sixteenth gets a short beamlet, never a beam over an eighth.
+			var offset_y := beam_w * 1.6 * (1.0 if bool(first_rec["stem_up"]) else -1.0)
+			for i in range(group.size()):
+				var rec: Dictionary = group[i]
+				if float(rec["dur_beat"]) > 0.26:
+					continue
+				var from := Vector2(rec["stem_x"], rec["stem_tip_y"] + offset_y)
+				var next_is_short := i + 1 < group.size() and float(group[i + 1]["dur_beat"]) <= 0.26
+				var prev_is_short := i > 0 and float(group[i - 1]["dur_beat"]) <= 0.26
+				if next_is_short:
+					var next: Dictionary = group[i + 1]
+					draw_line(from, Vector2(next["stem_x"], next["stem_tip_y"] + offset_y), beam_color, beam_w, true)
+				elif not prev_is_short:
+					var direction := -1.0 if i == group.size() - 1 else 1.0
+					var neighbor: Dictionary = group[i - 1] if direction < 0.0 else group[i + 1]
+					var hook_dx := direction * minf(spacing, absf(float(neighbor["stem_x"]) - from.x) * 0.4)
+					var slope := (p2.y - p1.y) / maxf(1.0, p2.x - p1.x)
+					draw_line(from, from + Vector2(hook_dx, hook_dx * slope), beam_color, beam_w, true)
 
-	# Draw isolated flags for 8th and 16th notes not in a beam group
+	# SMuFL flags attach at the stem tip for either stem direction.
 	for rec: Dictionary in note_records:
-		var idx: int = rec["index"]
 		var dur: float = rec["dur_beat"]
-		if dur <= 0.55 and not beamed_indices.has(idx) and bool(rec["has_stem"]):
-			var stem_x: float = rec["stem_x"]
-			var tip_y: float = rec["stem_tip_y"]
-			var stem_up: bool = rec["stem_up"]
-			var note_color: Color = rec["color"]
-			var flag_w := spacing * 0.75
-			var dy_dir := 1.0 if stem_up else -1.0
-
-			# Primary flag shape
-			var poly1 := PackedVector2Array([
-				Vector2(stem_x, tip_y),
-				Vector2(stem_x + flag_w, tip_y + dy_dir * spacing * 0.85),
-				Vector2(stem_x + flag_w * 0.5, tip_y + dy_dir * spacing * 1.15),
-				Vector2(stem_x, tip_y + dy_dir * spacing * 0.65),
-			])
-			draw_colored_polygon(poly1, note_color)
-
-			# Secondary flag for 16th note
+		if dur <= 0.76 and not beamed_indices.has(rec["index"]) and bool(rec["has_stem"]):
+			var glyph := "\uE240" if bool(rec["stem_up"]) else "\uE241"
 			if dur <= 0.26:
-				var offset_y := dy_dir * spacing * 0.45
-				var poly2 := PackedVector2Array([
-					Vector2(stem_x, tip_y + offset_y),
-					Vector2(stem_x + flag_w, tip_y + offset_y + dy_dir * spacing * 0.85),
-					Vector2(stem_x + flag_w * 0.5, tip_y + offset_y + dy_dir * spacing * 1.15),
-					Vector2(stem_x, tip_y + offset_y + dy_dir * spacing * 0.65),
-				])
-				draw_colored_polygon(poly2, note_color)
+				glyph = "\uE242" if bool(rec["stem_up"]) else "\uE243"
+			draw_string(MUSIC_FONT, Vector2(rec["stem_x"], rec["stem_tip_y"]), glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, int(spacing * 4.0), rec["color"])
 
 	# 10. Draw the playhead across the measures actually visible on this page.
 	if current_time > 0.0 and current_time <= duration:
@@ -439,14 +449,11 @@ func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0)
 	var width := custom_width if custom_width > 0.0 else maxf(size.x, 300.0)
 	var height := custom_height if custom_height > 0.0 else maxf(size.y, 132.0)
 	var compact := width < 450.0
-	var spacing := 18.0 if height < 150.0 else (20.0 if compact or height < 180.0 else (23.0 if width < 700.0 else 26.0))
-	var center_y := height * 0.48
-	var left_margin := 8.0 if compact else 16.0
-	var right_margin := width - (8.0 if compact else 16.0)
-
-	var clef_x := left_margin + (2.0 if compact else 4.0)
-	var ts_x := clef_x + spacing * (2.2 if compact else 2.6)
-	var start_note_x := ts_x + spacing * (1.8 if compact else 2.2)
+	var geometry := _notation_geometry(width, height)
+	var spacing: float = geometry.spacing
+	var center_y: float = geometry.center_y
+	var right_margin: float = geometry.right
+	var start_note_x: float = geometry.start_x
 	var usable_width := maxf(160.0, right_margin - start_note_x)
 	var m_0 := current_page * MEASURES_PER_PAGE
 	var m_1 := m_0 + 1
@@ -464,9 +471,8 @@ func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0)
 		elif m_idx == m_1:
 			meas_1_indices.append(i)
 
-	var note_head_rx := spacing * 0.68
-	var note_head_ry := spacing * 0.46
-	var stem_length := spacing * 2.85
+	var note_head_rx := spacing * 0.59
+	var stem_length := spacing * 3.5
 
 	var note_records: Array[Dictionary] = []
 	var inner_w := meas_width - (6.0 if compact else 14.0)
@@ -516,7 +522,7 @@ func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0)
 		var is_dotted := absf(dur_beat - 3.0) < 0.06 or absf(dur_beat - 1.5) < 0.06 or absf(dur_beat - 0.75) < 0.06
 
 		var pulse_group := -1
-		if dur_beat <= 0.55:
+		if dur_beat <= 0.76:
 			var p_in_meas := 0
 			if time_signature[0] == 6 and time_signature[1] == 8:
 				p_in_meas = 0 if beat_in_meas < 1.49 else 1
@@ -573,7 +579,7 @@ func compute_note_records(custom_width: float = 0.0, custom_height: float = 0.0)
 
 			var y_first := float(first_rec["y"])
 			var y_last := float(last_rec["y"])
-			var max_dy := spacing * 1.0
+			var max_dy := spacing * 0.5
 			var dy := clampf((y_last - y_first) * 0.5, -max_dy, max_dy)
 
 			var base_p1_y := 0.0

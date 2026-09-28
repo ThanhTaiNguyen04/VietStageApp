@@ -147,6 +147,13 @@ static func normalize_note_key(instrument: String, raw_note: String) -> String:
 	if scientific.search(note):
 		return note
 
+	# Unmarked flute solfege belongs to the first register. Do not let the
+	# legacy accented-octave aliases below turn Mi/Sol into E6/G6.
+	if instrument == "sao_truc":
+		var first_register := {"đô": "c5", "do": "c5", "rê": "d5", "re": "d5", "mi": "e5", "fa": "f5", "sol": "g5", "so": "g5", "la": "a5", "si": "b5", "ti": "b5"}
+		if first_register.has(note):
+			return first_register[note]
+
 	# Accented single syllable solfege checks:
 	# Quãng trầm: sò -> g3, là -> a3, sì -> b3, đồ -> c3/c4
 	if note == "so" or note == "so1" or note == "sol1" or note == "so" or note == "sò":
