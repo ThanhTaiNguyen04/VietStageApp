@@ -70,8 +70,6 @@ var sync_failures: Array[Dictionary] = []
 var online_session := false
 
 var custom_top_bar: PanelContainer
-var header_breadcrumb_label: Label
-var header_title_label: Label
 var status_label: Label
 var microphone_label: Label
 var accuracy_label: Label
@@ -84,17 +82,6 @@ var compact_footer: PanelContainer
 var click_player: AudioStreamPlayer
 var click_stream: AudioStreamWAV
 var accent_stream: AudioStreamWAV
-
-# Musical Lesson and AI companion additions
-var ai_speech_label: Label
-var ai_avatar_rect: TextureRect
-var active_note_label: Label
-var combo_label: Label
-var metronome_dot: Control
-var combo_count: int = 0
-var max_combo: int = 0
-var last_beat_pulse_idx: int = -1
-var ai_tip_idx: int = 0
 
 var load_generation := 0
 var session_generation := 0
@@ -153,7 +140,7 @@ func _set_hud_mode(playback_active: bool) -> void:
 	if is_instance_valid(custom_top_bar):
 		var speed_visible := flow_state in [FlowState.INTRO, FlowState.PREVIEW, FlowState.PLAYING, FlowState.PAUSED]
 		var needs_second_row := speed_visible and practice_hud.needs_second_row(get_viewport_rect().size.x)
-		custom_top_bar.custom_minimum_size = Vector2(1.0, 160.0 if needs_second_row else (84.0 if _is_mobile() else 86.0))
+		custom_top_bar.custom_minimum_size.y = 160.0 if needs_second_row else (84.0 if _is_mobile() else 86.0)
 	practice_hud.set_hud_visible(true)
 	# The shared tempo control is available before a round starts; pause appears
 	# only while the performance clock is active.
@@ -162,7 +149,6 @@ func _set_hud_mode(playback_active: bool) -> void:
 	if not playback_active and flow_state != FlowState.PAUSED:
 		practice_hud.set_pause_visible(false)
 	practice_hud.set_speed(selected_speed_multiplier)
-	_update_header_info()
 
 
 func _on_hud_speed_selected(multiplier: float) -> void:
@@ -195,66 +181,15 @@ func _setup_custom_header_and_backdrop() -> void:
 	if room_wash:
 		room_wash.color = Color(0.95, 0.93, 0.89, 0.95)
 
-	# Synchronized TopBar matching Practice screens and PracticeControlHud
+	# Transparent spacer for the shared HUD. Profile remains on the activity screen;
+	# round progress is displayed with the round title instead.
 	var mobile := _is_mobile()
 	custom_top_bar = PanelContainer.new()
 	custom_top_bar.name = "RhythmCustomTopBar"
-	custom_top_bar.custom_minimum_size = Vector2(1, 84 if mobile else 86)
-	
-	var top_style := StyleBoxFlat.new()
-	top_style.bg_color = Color(0.96, 0.94, 0.90, 0.96)
-	top_style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45)
-	top_style.border_width_bottom = 2
-	top_style.shadow_color = Color(0.12, 0.08, 0.05, 0.08)
-	top_style.shadow_size = 6
-	top_style.shadow_offset = Vector2(0, 3)
-	custom_top_bar.add_theme_stylebox_override("panel", top_style)
+	custom_top_bar.custom_minimum_size = Vector2(0, 84 if mobile else 86)
+	custom_top_bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	root_box.add_child(custom_top_bar)
 	root_box.move_child(custom_top_bar, 0)
-
-	custom_top_bar.clip_contents = true
-	custom_top_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var bar_margin := MarginContainer.new()
-	bar_margin.name = "HeaderBarMargin"
-	bar_margin.clip_contents = true
-	bar_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bar_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar_margin.custom_minimum_size = Vector2(1, 0)
-	bar_margin.add_theme_constant_override("margin_left", 60 if mobile else 114)
-	bar_margin.add_theme_constant_override("margin_right", 120 if mobile else 280)
-	bar_margin.add_theme_constant_override("margin_top", 8)
-	bar_margin.add_theme_constant_override("margin_bottom", 8)
-	custom_top_bar.add_child(bar_margin)
-
-	var bar_vbox := VBoxContainer.new()
-	bar_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	bar_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar_vbox.custom_minimum_size = Vector2(1, 0)
-	bar_vbox.add_theme_constant_override("separation", 1)
-	bar_margin.add_child(bar_vbox)
-
-	header_breadcrumb_label = Label.new()
-	header_breadcrumb_label.name = "HeaderBreadcrumb"
-	header_breadcrumb_label.text = "THỬ THÁCH NHỊP ĐIỆU · %s" % _instrument_title().to_upper()
-	header_breadcrumb_label.add_theme_font_override("font", _font_bold())
-	header_breadcrumb_label.add_theme_font_size_override("font_size", 10 if mobile else 12)
-	header_breadcrumb_label.add_theme_color_override("font_color", C_GOLD)
-	header_breadcrumb_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	header_breadcrumb_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_breadcrumb_label.custom_minimum_size = Vector2(1, 0)
-	bar_vbox.add_child(header_breadcrumb_label)
-
-	header_title_label = Label.new()
-	header_title_label.name = "HeaderTitle"
-	header_title_label.text = "Đọc khuông nhạc"
-	header_title_label.add_theme_font_override("font", _font_bold())
-	header_title_label.add_theme_font_size_override("font_size", 15 if mobile else 19)
-	header_title_label.add_theme_color_override("font_color", C_NAVY)
-	header_title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	header_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_title_label.custom_minimum_size = Vector2(1, 0)
-	bar_vbox.add_child(header_title_label)
 
 func _setup_performance_audio() -> void:
 	sample_player = InstrumentSamplePlayerScript.new()
@@ -441,9 +376,6 @@ func _reset_run() -> void:
 	playing = false
 	rhythm_index = 0
 	challenge_started_at = ""
-	combo_count = 0
-	max_combo = 0
-	last_beat_pulse_idx = -1
 	round_accuracy_points = 0
 	round_hits = 0
 	round_correct_pitch_count = 0
@@ -462,321 +394,6 @@ func _reset_run() -> void:
 	sync_failures.clear()
 
 
-func _update_header_info() -> void:
-	if not is_instance_valid(header_title_label):
-		return
-	var total_rounds := maxi(1, rhythms.size())
-	var current_round := clampi(rhythm_index + 1, 1, total_rounds)
-	var title_text := "Đọc khuông nhạc"
-	if rhythm_index >= 0 and rhythm_index < rhythms.size():
-		title_text = str(rhythms[rhythm_index].get("title", "Đọc khuông nhạc"))
-	var num := int(current_time_signature[0]) if current_time_signature.size() > 0 else 4
-	var den := int(current_time_signature[1]) if current_time_signature.size() > 1 else 4
-	if _is_mobile():
-		header_title_label.text = "Vòng %d/%d: %s" % [current_round, total_rounds, title_text]
-	else:
-		header_title_label.text = "Vòng %d/%d: %s (%d/%d · %d BPM)" % [current_round, total_rounds, title_text, num, den, current_tempo_bpm]
-	if is_instance_valid(header_breadcrumb_label):
-		header_breadcrumb_label.text = "THỬ THÁCH NHỊP ĐIỆU · %s" % _instrument_title().to_upper()
-
-
-func _get_instrument_tips() -> Array[String]:
-	match Context.instrument:
-		"sao_truc":
-			return [
-				"💡 Mẹo Sáo Trúc: Giữ môi khép nhẹ, thổi luồng hơi tập trung và không gồng ngón tay.",
-				"💡 Mẹo Thế Bấm: Đặt ngón tay phủ kín hoàn toàn lỗ sáo để nốt phát ra tròn trịa và đúng cao độ.",
-				"💡 Mẹo Giữ Nhịp: Nhịp nhẹ gót chân theo từng phách để tay bấm nốt đều đặn hơn.",
-				"💡 Mẹo Cột Hơi: Lấy hơi bằng bụng để giữ trường độ các nốt ngân dài thật ổn định."
-			]
-		"dan_tranh":
-			return [
-				"💡 Mẹo Đàn Tranh: Đặt móng gảy nghiêng góc khoảng 45 độ so với dây đàn để âm vang thanh thoát.",
-				"💡 Mẹo Gảy Dây: Thả lỏng cổ tay, dùng lực từ các khớp ngón tay để gảy dứt khoát.",
-				"💡 Mẹo Nhịp Phách: Chuẩn bị ngón tay chạm dây trước phách gõ khoảng nửa nhịp.",
-				"💡 Mẹo Ngân Vang: Để dây đàn rung tự nhiên sau khi gảy xong một phách ngân."
-			]
-		"trong_chau":
-			return [
-				"💡 Mẹo Trống Chầu: Tiếng 'Tom' đánh vào giữa mặt trống, tiếng 'Chát' gõ vào vành tang trống.",
-				"💡 Mẹo Cầm Dùi: Cầm dùi trống bằng ngón cái và ngón trỏ, các ngón còn lại đỡ nhẹ để cổ tay bật nảy.",
-				"💡 Mẹo Tiết Tấu: Lắng nghe phách chính và phách đệm để gõ nhịp hòa quyện."
-			]
-		_:
-			return [
-				"💡 Mẹo Âm Nhạc: Lắng nghe kỹ tiếng gõ nhịp (click) để bắt đúng phách đầu tiên của ô nhịp.",
-				"💡 Mẹo Luyện Tập: Bấm 'Nghe mẫu' trước để quen tai với giai điệu và tiết tấu.",
-				"💡 Mẹo Nhịp Điệu: Đếm nhịp 1 - 2 - 3 - 4 trong đầu theo nhịp gõ của metronome."
-			]
-
-
-func _on_ai_tip_clicked() -> void:
-	var tips := _get_instrument_tips()
-	if tips.is_empty():
-		return
-	ai_tip_idx = (ai_tip_idx + 1) % tips.size()
-	if is_instance_valid(ai_speech_label):
-		ai_speech_label.text = tips[ai_tip_idx]
-		_pulse_control(ai_speech_label, 1.04)
-
-
-static func _get_vietnamese_note_name(raw_note: String) -> String:
-	var s := raw_note.strip_edges()
-	var upper := s.to_upper()
-	if upper.begins_with("C"):
-		return "Đô" + upper.substr(1)
-	elif upper.begins_with("D"):
-		return "Rê" + upper.substr(1)
-	elif upper.begins_with("E"):
-		return "Mi" + upper.substr(1)
-	elif upper.begins_with("F"):
-		return "Fa" + upper.substr(1)
-	elif upper.begins_with("G"):
-		return "Sol" + upper.substr(1)
-	elif upper.begins_with("A"):
-		return "La" + upper.substr(1)
-	elif upper.begins_with("B"):
-		return "Si" + upper.substr(1)
-	return raw_note
-
-
-func _create_ai_companion_box(dialogue_mode: String, default_text: String) -> PanelContainer:
-	var mobile := _is_mobile()
-	var panel := PanelContainer.new()
-	panel.name = "AICompanionCard"
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#fffefb")
-	style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.65)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(16)
-	style.shadow_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.12)
-	style.shadow_size = 8
-	style.shadow_offset = Vector2(0, 3)
-	style.content_margin_left = 12 if mobile else 16
-	style.content_margin_right = 12 if mobile else 16
-	style.content_margin_top = 8 if mobile else 10
-	style.content_margin_bottom = 8 if mobile else 10
-	panel.add_theme_stylebox_override("panel", style)
-
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 12 if mobile else 16)
-	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(hbox)
-
-	var avatar_vbox := VBoxContainer.new()
-	avatar_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	avatar_vbox.add_theme_constant_override("separation", 3)
-	hbox.add_child(avatar_vbox)
-
-	var avatar_frame := PanelContainer.new()
-	var frame_style := StyleBoxFlat.new()
-	var av_size := 50.0 if mobile else 58.0
-	avatar_frame.custom_minimum_size = Vector2(av_size, av_size)
-	frame_style.set_corner_radius_all(int(av_size / 2.0))
-	frame_style.border_color = C_GOLD
-	frame_style.set_border_width_all(2)
-	frame_style.bg_color = Color("#f4ede0")
-	frame_style.shadow_size = 4
-	frame_style.shadow_color = Color(0.1, 0.1, 0.1, 0.12)
-	avatar_frame.add_theme_stylebox_override("panel", frame_style)
-	avatar_vbox.add_child(avatar_frame)
-
-	ai_avatar_rect = TextureRect.new()
-	ai_avatar_rect.name = "AIAvatarRect"
-	ai_avatar_rect.texture = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
-	ai_avatar_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ai_avatar_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	ai_avatar_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	avatar_frame.add_child(ai_avatar_rect)
-
-	var name_tag := Label.new()
-	name_tag.text = "Cô Mai AI"
-	name_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_tag.add_theme_font_override("font", _font_bold())
-	name_tag.add_theme_font_size_override("font_size", 10 if mobile else 11)
-	name_tag.add_theme_color_override("font_color", C_NAVY)
-	avatar_vbox.add_child(name_tag)
-
-	var bubble_vbox := VBoxContainer.new()
-	bubble_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bubble_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	bubble_vbox.add_theme_constant_override("separation", 4)
-	hbox.add_child(bubble_vbox)
-
-	var bubble_top_row := HBoxContainer.new()
-	bubble_top_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bubble_vbox.add_child(bubble_top_row)
-
-	var bubble_badge := Label.new()
-	match dialogue_mode:
-		"INTRO":
-			bubble_badge.text = "🌸 CÔ MAI HƯỚNG DẪN BÀI HỌC"
-		"PLAYING":
-			bubble_badge.text = "🎯 PHẢN HỒI THỜI GIAN THỰC (AI LIVE)"
-		"RESULT":
-			bubble_badge.text = "🌟 ĐÁNH GIÁ CHUYÊN MÔN TỪ CÔ MAI"
-		_:
-			bubble_badge.text = "🌸 CÔ MAI ĐỒNG HÀNH"
-	bubble_badge.add_theme_font_override("font", _font_bold())
-	bubble_badge.add_theme_font_size_override("font_size", 11 if mobile else 12)
-	bubble_badge.add_theme_color_override("font_color", C_GREEN_DARK)
-	bubble_top_row.add_child(bubble_badge)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bubble_top_row.add_child(spacer)
-
-	var tip_btn := Button.new()
-	tip_btn.name = "AITipButton"
-	tip_btn.text = "💡 Mẹo chơi"
-	tip_btn.custom_minimum_size = Vector2(76, 24)
-	tip_btn.add_theme_font_override("font", _font_bold())
-	tip_btn.add_theme_font_size_override("font_size", 10 if mobile else 11)
-	var tip_sb := StyleBoxFlat.new()
-	tip_sb.bg_color = Color("#f0f8f4")
-	tip_sb.border_color = Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.4)
-	tip_sb.set_border_width_all(1)
-	tip_sb.set_corner_radius_all(10)
-	tip_sb.content_margin_left = 6
-	tip_sb.content_margin_right = 6
-	tip_btn.add_theme_stylebox_override("normal", tip_sb)
-	tip_btn.add_theme_stylebox_override("hover", tip_sb)
-	tip_btn.add_theme_stylebox_override("pressed", tip_sb)
-	tip_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	tip_btn.add_theme_color_override("font_color", C_GREEN_DARK)
-	tip_btn.pressed.connect(_on_ai_tip_clicked)
-	bubble_top_row.add_child(tip_btn)
-
-	ai_speech_label = Label.new()
-	ai_speech_label.name = "AISpeechLabel"
-	ai_speech_label.text = default_text
-	ai_speech_label.add_theme_font_override("font", _font_regular())
-	ai_speech_label.add_theme_font_size_override("font_size", 12 if mobile else 14)
-	ai_speech_label.add_theme_color_override("font_color", C_TEXT)
-	ai_speech_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	bubble_vbox.add_child(ai_speech_label)
-
-	return panel
-
-
-func _create_musical_lesson_hud() -> HBoxContainer:
-	var mobile := _is_mobile()
-	var row := HBoxContainer.new()
-	row.name = "MusicalLessonHud"
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", 10 if mobile else 16)
-
-	active_note_label = Label.new()
-	active_note_label.name = "ActiveNoteLabel"
-	active_note_label.text = "🎵 Nốt mục tiêu: Đang nạp..."
-	active_note_label.add_theme_font_override("font", _font_bold())
-	active_note_label.add_theme_font_size_override("font_size", 12 if mobile else 14)
-	active_note_label.add_theme_color_override("font_color", C_NAVY)
-	var note_chip := _chip(active_note_label, Color("#fef8ea"), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.55))
-	row.add_child(note_chip)
-
-	var metro_box := HBoxContainer.new()
-	metro_box.add_theme_constant_override("separation", 6)
-	metro_box.alignment = BoxContainer.ALIGNMENT_CENTER
-
-	metronome_dot = ColorRect.new()
-	metronome_dot.name = "MetronomeDot"
-	metronome_dot.custom_minimum_size = Vector2(10, 10)
-	metronome_dot.color = C_GOLD
-	metro_box.add_child(metronome_dot)
-
-	var tempo_lbl := Label.new()
-	tempo_lbl.name = "TempoLabel"
-	tempo_lbl.text = "♩ %d BPM" % current_tempo_bpm
-	tempo_lbl.add_theme_font_override("font", _font_bold())
-	tempo_lbl.add_theme_font_size_override("font_size", 12 if mobile else 13)
-	tempo_lbl.add_theme_color_override("font_color", C_NAVY)
-	metro_box.add_child(tempo_lbl)
-
-	var metro_chip := PanelContainer.new()
-	metro_chip.add_theme_stylebox_override("panel", _soft_panel(Color("#f7f5ef"), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 14))
-	metro_chip.add_child(metro_box)
-	row.add_child(metro_chip)
-
-	combo_label = Label.new()
-	combo_label.name = "ComboLabel"
-	combo_label.text = "🔥 COMBO x0"
-	combo_label.add_theme_font_override("font", _font_bold())
-	combo_label.add_theme_font_size_override("font_size", 12 if mobile else 14)
-	combo_label.add_theme_color_override("font_color", Color("#d97706"))
-	var combo_chip := _chip(combo_label, Color("#fff4e6"), Color(0.9, 0.5, 0.1, 0.45))
-	combo_chip.name = "ComboChip"
-	combo_chip.visible = false
-	row.add_child(combo_chip)
-
-	_update_active_note_display(0.0)
-	return row
-
-
-func _update_active_note_display(elapsed: float) -> void:
-	if not is_instance_valid(active_note_label) or performance_notes.is_empty():
-		return
-	var active_idx := 0
-	for i in range(beat_times.size()):
-		if elapsed >= beat_times[i] - 0.2:
-			active_idx = i
-	if active_idx < performance_notes.size():
-		var raw := performance_notes[active_idx]
-		var vn_name := _get_vietnamese_note_name(raw)
-		var notation_list := _notation_notes()
-		var sci_name := notation_list[active_idx] if active_idx < notation_list.size() else raw
-		active_note_label.text = "🎵 Nốt hiện tại: %s (%s) · Phách %d/%d" % [vn_name, sci_name.to_upper(), active_idx + 1, beat_times.size()]
-
-
-func _create_result_stats_summary(score: int, max_score: int, pitch_acc: float, time_acc: float, best_combo: int) -> Control:
-	var mobile := _is_mobile()
-	var grid := HBoxContainer.new()
-	grid.name = "ResultStatsGrid"
-	grid.alignment = BoxContainer.ALIGNMENT_CENTER
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("separation", 10 if mobile else 14)
-
-	var stars := RhythmModel.stars_for_score(score, max_score)
-	var star_str := ""
-	for s in range(3):
-		star_str += "★ " if s < stars else "☆ "
-	star_str = star_str.strip_edges()
-
-	var star_lbl := Label.new()
-	star_lbl.text = star_str
-	star_lbl.add_theme_font_size_override("font_size", 20 if mobile else 24)
-	star_lbl.add_theme_color_override("font_color", Color("#d97706"))
-	var star_chip := _chip(star_lbl, Color("#fef8ea"), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.45))
-	grid.add_child(star_chip)
-
-	var p_lbl := Label.new()
-	p_lbl.text = "🎯 Cao độ: %.0f%%" % pitch_acc
-	p_lbl.add_theme_font_override("font", _font_bold())
-	p_lbl.add_theme_font_size_override("font_size", 12 if mobile else 13)
-	p_lbl.add_theme_color_override("font_color", C_OK if pitch_acc >= 75.0 else C_TEXT)
-	grid.add_child(_chip(p_lbl, Color("#f0f9f3"), Color(C_OK.r, C_OK.g, C_OK.b, 0.3)))
-
-	var t_lbl := Label.new()
-	t_lbl.text = "⏱️ Nhịp: %.0f%%" % time_acc
-	t_lbl.add_theme_font_override("font", _font_bold())
-	t_lbl.add_theme_font_size_override("font_size", 12 if mobile else 13)
-	t_lbl.add_theme_color_override("font_color", C_OK if time_acc >= 75.0 else C_TEXT)
-	grid.add_child(_chip(t_lbl, Color("#f0f9f3"), Color(C_OK.r, C_OK.g, C_OK.b, 0.3)))
-
-	if best_combo > 1:
-		var c_lbl := Label.new()
-		c_lbl.text = "🔥 Combo: x%d" % best_combo
-		c_lbl.add_theme_font_override("font", _font_bold())
-		c_lbl.add_theme_font_size_override("font_size", 12 if mobile else 13)
-		c_lbl.add_theme_color_override("font_color", Color("#d97706"))
-		grid.add_child(_chip(c_lbl, Color("#fff4e6"), Color(0.9, 0.5, 0.1, 0.4)))
-
-	return grid
-
-
 func _build_intro() -> void:
 	if rhythms.is_empty() or rhythm_index < 0 or rhythm_index >= rhythms.size():
 		return
@@ -784,7 +401,6 @@ func _build_intro() -> void:
 	_set_hud_mode(false)
 	_clear_content()
 	_prepare_current_round()
-	_update_header_info()
 
 	var current := rhythms[rhythm_index]
 	var mobile := _is_mobile()
@@ -792,8 +408,6 @@ func _build_intro() -> void:
 	card_body.add_theme_constant_override("separation", 6 if mobile else 10)
 	card_body.name = "RhythmIntroCard"
 	_add_round_plaque(card_body, str(current.get("title", "Đọc khuông nhạc")))
-
-	var intro_msg := "Chào bạn! Bài học này luyện nhịp %d/%d ở tốc độ %d BPM. Hãy quan sát khuông nhạc, bấm 'Nghe mẫu' để cảm nhận phách gõ, sau đó bấm 'Bắt đầu' khi sẵn sàng nhé!" % [int(current_time_signature[0]), int(current_time_signature[1]), current_tempo_bpm]
 
 	# Primary visual area: Musical Staff (2 measures per screen)
 	staff = Control.new()
@@ -803,23 +417,12 @@ func _build_intro() -> void:
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, false, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 	staff.call("update_progress", 0.0, judgements)
+	card_body.add_child(staff)
 
+	# Dedicated measure navigator placed directly under staff (only if total_measures > 2)
 	var nav_row := _create_measure_navigator(staff)
-
-	if _is_compact_height():
-		# In ultra-compact landscape viewports, staff must stay immediately below plaque
-		# so that the notation remains completely visible above the sticky footer.
-		card_body.add_child(staff)
-		if nav_row:
-			card_body.add_child(nav_row)
-		card_body.add_child(_create_musical_lesson_hud())
-		card_body.add_child(_create_ai_companion_box("INTRO", intro_msg))
-	else:
-		card_body.add_child(_create_ai_companion_box("INTRO", intro_msg))
-		card_body.add_child(_create_musical_lesson_hud())
-		card_body.add_child(staff)
-		if nav_row:
-			card_body.add_child(nav_row)
+	if nav_row:
+		card_body.add_child(nav_row)
 	_add_event_legend(card_body, mobile)
 
 	# Microphone readiness indicator
@@ -977,13 +580,8 @@ func _run_countdown(generation: int) -> void:
 	_set_flow_state(FlowState.COUNTDOWN)
 	_set_hud_mode(false)
 	_clear_content()
-	_update_header_info()
 	var mobile := _is_mobile()
-	var card_body := _add_centered_card(C_GREEN, 640.0)
-
-	var cd_msg := "Chuẩn bị nhạc cụ nào! Hãy lắng nghe tiếng đếm nhịp và cùng vào phách thật đúng nhé!"
-	card_body.add_child(_create_ai_companion_box("INTRO", cd_msg))
-
+	var card_body := _add_centered_card(C_GREEN, 580.0)
 	var prompt := _label("Sẵn sàng diễn tấu theo khuông nhạc", 18 if mobile else 22, C_NAVY)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
@@ -995,7 +593,7 @@ func _run_countdown(generation: int) -> void:
 	countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(countdown_label)
 
-	var hint := _label("Chơi từng nốt trên nhạc cụ thật khi vạch nhịp đi qua nốt nhạc.", 14, C_MUTED)
+	var hint := _label("Chơi từng nốt trên nhạc cụ thật khi playhead đi qua nốt xám.", 14, C_MUTED)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card_body.add_child(hint)
 
@@ -1005,11 +603,6 @@ func _run_countdown(generation: int) -> void:
 		countdown_label.text = value
 		_play_click(value == "BẮT ĐẦU!")
 		_pulse_control(countdown_label, 1.12)
-		if is_instance_valid(ai_speech_label):
-			if value == "BẮT ĐẦU!":
-				ai_speech_label.text = "Bắt đầu nào! Chúc bạn có một màn diễn tấu thật tuyệt vời! 🎶"
-			else:
-				ai_speech_label.text = "Đếm nhịp: %s... Chuẩn bị ngón tay và hơi thở nhé!" % value
 		await get_tree().create_timer(0.65).timeout
 
 	if generation != session_generation or not is_inside_tree():
@@ -1153,16 +746,6 @@ func _process(_delta: float) -> void:
 		_update_microphone_indicator()
 	_update_live_metrics()
 
-	# Pulse metronome dot on every beat
-	var beat_duration := 60.0 / float(maxi(1, current_tempo_bpm))
-	var current_beat_number := int(elapsed / beat_duration)
-	if current_beat_number != last_beat_pulse_idx and is_instance_valid(metronome_dot):
-		last_beat_pulse_idx = current_beat_number
-		_pulse_control(metronome_dot, 1.4)
-
-	# Update active note display
-	_update_active_note_display(elapsed)
-
 
 func _play_sample_event(index: int) -> void:
 	if index < 0 or index >= performance_notes.size() or not is_inside_tree():
@@ -1180,15 +763,14 @@ func _play_sample_event(index: int) -> void:
 func _build_game() -> void:
 	_clear_content(false)
 	var mobile := _is_mobile()
-	_update_header_info()
-
+	# During a round, notation and immediate feedback are the only information a
+	# learner needs.  Round title, mic status, counts and legends are intentionally
+	# removed to leave the largest possible visual field for the score.
 	var card_body := _add_centered_card(C_GOLD, 1800.0)
 	card_body.name = "RhythmPlayCard"
 	card_body.add_theme_constant_override("separation", 8 if mobile else 12)
 	if rhythm_index < rhythms.size():
 		_add_round_plaque(card_body, str(rhythms[rhythm_index].get("title", "Đọc khuông nhạc")))
-
-	var play_msg := "Cô đang lắng nghe tiếng đàn/sáo... Hãy chơi nốt nhạc thật chuẩn khi vạch đỏ chạm tới từng nốt nhé!"
 
 	# Primary Musical Staff with moving Playhead
 	staff = Control.new()
@@ -1198,37 +780,24 @@ func _build_game() -> void:
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, true, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 	staff.call("update_progress", 0.0, judgements)
+	card_body.add_child(staff)
 
 	var nav_row := _create_measure_navigator(staff)
-
-	if _is_compact_height():
-		# In ultra-compact landscape viewports, staff must stay immediately below plaque
-		# so that the notation remains completely visible above the sticky footer.
-		card_body.add_child(staff)
-		if nav_row:
-			card_body.add_child(nav_row)
-		card_body.add_child(_create_musical_lesson_hud())
-		card_body.add_child(_create_ai_companion_box("PLAYING", play_msg))
-	else:
-		card_body.add_child(_create_ai_companion_box("PLAYING", play_msg))
-		card_body.add_child(_create_musical_lesson_hud())
-		card_body.add_child(staff)
-		if nav_row:
-			card_body.add_child(nav_row)
+	if nav_row:
+		card_body.add_child(nav_row)
 	_add_event_legend(card_body, mobile)
 
-	# Live hit & mic status chip
 	status_label = Label.new()
 	status_label.name = "GameStatusLabel"
 	status_label.text = "Đang nghe"
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	status_label.custom_minimum_size = Vector2(160, 40)
+	status_label.custom_minimum_size = Vector2(156, 40)
 	status_label.add_theme_font_size_override("font_size", 15 if mobile else 17)
 	status_label.add_theme_color_override("font_color", C_OK)
 	status_label.add_theme_font_override("font", _font_bold())
-	var feedback_chip := _chip(status_label, Color("#f0f9f3"), Color(C_OK.r, C_OK.g, C_OK.b, 0.35))
+	var feedback_chip := _chip(status_label, Color("#f0f9f3"), Color(C_OK.r, C_OK.g, C_OK.b, 0.30))
 	if _is_compact_height():
 		compact_footer = _create_compact_footer()
 		compact_footer.add_child(feedback_chip)
@@ -1318,12 +887,6 @@ func _set_judgement(index: int, value: String) -> void:
 	if index < 0 or index >= judgements.size() or not judgements[index].is_empty():
 		return
 	judgements[index] = value
-	if value in ["PERFECT", "GOOD"]:
-		combo_count += 1
-		max_combo = maxi(max_combo, combo_count)
-	elif value in ["WRONG_NOTE", "MISS"]:
-		combo_count = 0
-
 	if value == "PERFECT":
 		round_accuracy_points += 100
 		_show_feedback("Đúng (+100)", C_OK)
@@ -1335,42 +898,6 @@ func _set_judgement(index: int, value: String) -> void:
 		_show_feedback("Chưa đúng", C_BAD)
 	else:
 		_show_feedback("Chưa đúng", C_BAD)
-
-	if is_instance_valid(combo_label):
-		var combo_chip := combo_label.get_parent() as Control
-		if combo_count >= 2:
-			combo_label.text = "🔥 COMBO x%d" % combo_count
-			if combo_chip:
-				combo_chip.visible = true
-			_pulse_control(combo_label, 1.25)
-		else:
-			if combo_chip:
-				combo_chip.visible = false
-
-	# AI Companion Live Dialogue Reaction
-	if is_instance_valid(ai_speech_label):
-		if value == "PERFECT":
-			var praises := [
-				"🌟 Hoàn hảo! Cao độ và phách gõ cực kỳ chuẩn xác! (Combo x%d)" % combo_count,
-				"🎯 Xuất sắc! Chuẩn từng miligiây! (Combo x%d)" % combo_count,
-				"✨ Tuyệt vời! Bạn đang duy trì phong độ rất tốt! (Combo x%d)" % combo_count
-			]
-			ai_speech_label.text = praises[randi() % praises.size()]
-			_pulse_control(ai_speech_label, 1.05)
-		elif value == "GOOD":
-			var goods := [
-				"👏 Rất tốt! Bắt đúng nhịp rồi! (Combo x%d)" % combo_count,
-				"🎵 Đúng nhịp! Giữ vững tay nhé! (Combo x%d)" % combo_count
-			]
-			ai_speech_label.text = goods[randi() % goods.size()]
-			_pulse_control(ai_speech_label, 1.03)
-		elif value == "WRONG_NOTE":
-			ai_speech_label.text = "🎶 Sai cao độ rồi! Chú ý ngón bấm/dây đàn ở nốt kế tiếp nhé."
-			_pulse_control(ai_speech_label, 1.03)
-		elif value == "MISS":
-			ai_speech_label.text = "⏳ Hơi chậm nhịp! Hãy thả lỏng và đón phách kế tiếp nào."
-			_pulse_control(ai_speech_label, 1.03)
-
 	if is_instance_valid(staff):
 		staff.call("update_progress", float(Time.get_ticks_msec() - round_started_at_ms) / 1000.0, judgements)
 
@@ -1380,16 +907,14 @@ func _show_feedback(text_value: String, color: Color) -> void:
 		return
 	status_label.text = text_value
 	status_label.add_theme_color_override("font_color", color)
-	_pulse_control(status_label, 1.08)
+	_pulse_control(status_label, 1.05)
 	if not is_inside_tree() or get_tree() == null:
 		return
 	var gen := session_generation
 	get_tree().create_timer(1.0).timeout.connect(func() -> void:
 		if gen == session_generation and is_instance_valid(status_label) and playing:
-			status_label.text = "Đang nghe"
+			status_label.text = "● Đang nghe"
 			status_label.add_theme_color_override("font_color", C_OK)
-		if gen == session_generation and is_instance_valid(ai_speech_label) and playing:
-			ai_speech_label.text = "Cô đang lắng nghe tiếng nhạc cụ... Hãy chơi nốt nhạc khi vạch đỏ chạm tới từng nốt nhé!"
 	)
 
 
@@ -1510,7 +1035,6 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 	_set_flow_state(FlowState.ROUND_RESULT)
 	_set_hud_mode(false)
 	_clear_content()
-	_update_header_info()
 
 	var mobile := _is_mobile()
 	var card_body := _add_centered_card(C_GOLD, 1760.0)
@@ -1518,24 +1042,11 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 		_add_round_plaque(card_body, str(rhythms[rhythm_index].get("title", "Đọc khuông nhạc")))
 
 	var is_valid := round_score > 0 and round_hits > 0
-	var pitch_acc := RhythmModel.pitch_accuracy_percent(round_correct_pitch_count, _target_event_count())
-	var time_acc := RhythmModel.timing_accuracy_percent(round_on_time_count, _target_event_count())
-
-	# Cô Mai Pedagogical Feedback in RPG Chat Box
-	var ai_feedback := ""
-	if round_score >= 85:
-		ai_feedback = "🌟 Thật tuyệt vời! Bạn đã hoàn thành xuất sắc vòng này với độ chuẩn xác cao độ %.0f%% và nhịp phách %.0f%%. Hãy tiếp tục phát huy ở vòng tiếp theo nhé!" % [pitch_acc, time_acc]
-	elif round_score >= 60:
-		ai_feedback = "👏 Làm tốt lắm! Bạn đạt %d/%d điểm. Nhịp phách cơ bản đã vững (%.0f%%), hãy chú ý thêm một chút đến cao độ (%.0f%%) để đạt điểm tối đa!" % [round_score, round_max_score, time_acc, pitch_acc]
-	else:
-		ai_feedback = "💪 Đừng vội nản lòng nhé! Âm nhạc truyền thống đòi hỏi đôi tai thẩm âm kiên trì. Hãy thử lại hoặc bấm 'Nghe mẫu' để cảm nhận phách gõ rõ hơn nhé."
-	card_body.add_child(_create_ai_companion_box("RESULT", ai_feedback))
-
 	# Retain musical staff with colored judgements
 	var result_staff: Control = Control.new()
 	result_staff.name = "RoundResultStaff"
 	result_staff.set_script(RhythmStaffDisplayScript)
-	result_staff.custom_minimum_size = Vector2(0, 180 if mobile else 270)
+	result_staff.custom_minimum_size = Vector2(0, 210 if mobile else 315)
 	result_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	result_staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, true, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 	result_staff.call("update_progress", round_duration, judgements)
@@ -1545,38 +1056,29 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 	if res_nav:
 		card_body.add_child(res_nav)
 
-	# Rich Performance Stats Panel with Stars and Accuracy
-	var stats_row := _create_result_stats_summary(round_score, round_max_score, pitch_acc, time_acc, max_combo)
-	card_body.add_child(stats_row)
-
-	var summary := _label("%s  ·  Điểm %d/%d  ·  Cao độ %.0f%%  ·  Nhịp %.0f%%" % ["Hoàn thành vòng" if is_valid else "Chưa đạt", round_score, round_max_score, pitch_acc, time_acc], 14 if mobile else 16, C_GREEN_DARK)
+	var pitch_acc := RhythmModel.pitch_accuracy_percent(round_correct_pitch_count, _target_event_count())
+	var time_acc := RhythmModel.timing_accuracy_percent(round_on_time_count, _target_event_count())
+	var summary := _label("%s  ·  Điểm %d/%d  ·  Cao độ %.0f%%  ·  Nhịp %.0f%%" % ["Hoàn thành vòng" if is_valid else "Chưa đạt", round_score, round_max_score, pitch_acc, time_acc], 14 if mobile else 17, C_GREEN_DARK)
 	summary.name = "RoundResultSummary"
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	card_body.add_child(summary)
 
-	var actions := BoxContainer.new()
-	actions.vertical = mobile
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 12)
-	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card_body.add_child(actions)
-
 	if is_valid:
-		var next_button := _button("Vòng tiếp theo  →", 0, 56, C_GREEN)
+		var next_button := _button("Vòng tiếp theo", 0, 56, C_GREEN)
 		next_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		next_button.pressed.connect(func() -> void:
 			rhythm_index += 1
 			_build_intro()
 		)
-		actions.add_child(next_button)
+		card_body.add_child(next_button)
 	else:
-		var retry_button := _button("Thử lại vòng này", 0, 56, C_GREEN)
+		var retry_button := _button("Thử lại", 0, 56, C_GREEN)
 		retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		retry_button.pressed.connect(func() -> void:
 			_build_intro()
 		)
-		actions.add_child(retry_button)
+		card_body.add_child(retry_button)
 
 		var skip_button := _secondary_button("Bỏ qua vòng này  →", 0, 48, C_GREEN_DARK)
 		skip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1584,7 +1086,7 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 			rhythm_index += 1
 			_build_intro()
 		)
-		actions.add_child(skip_button)
+		card_body.add_child(skip_button)
 
 
 func _build_submitting(message: String) -> void:
@@ -1596,7 +1098,6 @@ func _build_final_result() -> void:
 	_set_flow_state(FlowState.FINAL_RESULT)
 	_set_hud_mode(false)
 	_clear_content()
-	_update_header_info()
 
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1609,21 +1110,12 @@ func _build_final_result() -> void:
 	var pitch_acc := RhythmModel.pitch_accuracy_percent(total_correct_pitch_count, total_beat_count)
 	var time_acc := RhythmModel.timing_accuracy_percent(total_on_time_count, total_beat_count)
 
-	var ai_final_msg := ""
-	if has_valid_score and total_score >= int(total_max_score * 0.85):
-		ai_final_msg = "🌟 Quá xuất sắc! Bạn đã hoàn thành toàn bộ thử thách nhịp điệu với thành tích đỉnh cao (Tổng điểm: %d/%d). Kỹ năng giữ nhịp và cảm thụ cao độ của bạn đã tiến bộ vượt bậc!" % [total_score, total_max_score]
-	elif has_valid_score and total_score >= int(total_max_score * 0.60):
-		ai_final_msg = "👏 Chúc mừng bạn đã hoàn thành bài luyện! Độ chuẩn xác cao độ đạt %.0f%% và nhịp đạt %.0f%%. Tiếp tục duy trì luyện tập thường xuyên nhé!" % [pitch_acc, time_acc]
-	else:
-		ai_final_msg = "💪 Cố lên bạn nhé! Âm nhạc truyền thống cần thời gian luyện cảm nhịp và thế bấm. Hãy bấm 'Chơi lại' để chinh phục số điểm cao hơn!"
-	card_body.add_child(_create_ai_companion_box("RESULT", ai_final_msg))
-
 	# Retain musical staff with results
 	if not performance_notes.is_empty():
 		var final_staff: Control = Control.new()
 		final_staff.name = "FinalResultStaff"
 		final_staff.set_script(RhythmStaffDisplayScript)
-		final_staff.custom_minimum_size = Vector2(0, 180 if mobile else 270)
+		final_staff.custom_minimum_size = Vector2(0, 210 if mobile else 315)
 		final_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		final_staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, true, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 		final_staff.call("update_progress", round_duration, judgements)
@@ -1632,9 +1124,6 @@ func _build_final_result() -> void:
 		var fin_nav := _create_measure_navigator(final_staff)
 		if fin_nav:
 			card_body.add_child(fin_nav)
-
-	var stats_grid := _create_result_stats_summary(total_score, total_max_score, pitch_acc, time_acc, max_combo)
-	card_body.add_child(stats_grid)
 
 	var summary := _label("%s  ·  Điểm %d/%d  ·  Cao độ %.0f%%  ·  Nhịp %.0f%%" % ["Hoàn thành" if has_valid_score else "Chưa đạt", total_score, total_max_score, pitch_acc, time_acc], 14 if mobile else 17, C_GREEN_DARK)
 	summary.name = "FinalResultSummary"
@@ -1963,13 +1452,13 @@ func _add_centered_card(accent: Color, max_width: float) -> VBoxContainer:
 		center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	else:
 		var vp_w := get_viewport_rect().size.x if is_inside_tree() and get_viewport() != null else 800.0
-		center.custom_minimum_size.x = maxf(280.0, vp_w - (48.0 if _is_mobile() else 96.0))
+		center.custom_minimum_size.x = maxf(280.0, vp_w - (32.0 if _is_mobile() else 84.0))
 	card_host.add_child(center)
 	var card := PanelContainer.new()
 	var vp_w := get_viewport_rect().size.x if is_inside_tree() and get_viewport() != null else 800.0
-	# The base activity scroll already has 16 px margins on mobile plus vertical scrollbar.
-	# Keep the inner card within that width so the root never grows beyond the viewport.
-	var margin_side := 24.0 if _is_mobile() else 36.0
+	# The base activity scroll already has 16 px margins on mobile. Keep the
+	# inner card within that width so the root never grows beyond the viewport.
+	var margin_side := 16.0 if _is_mobile() else 24.0
 	var available := maxf(280.0, vp_w - margin_side * 2.0)
 	card.custom_minimum_size = Vector2(minf(max_width, available), 0)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2222,12 +1711,6 @@ func _set_flow_state(next_state: int) -> void:
 
 
 func _on_viewport_size_changed() -> void:
-	if is_instance_valid(custom_top_bar):
-		var bar_margin := custom_top_bar.get_node_or_null("HeaderBarMargin") as MarginContainer
-		if is_instance_valid(bar_margin):
-			var mobile := _is_mobile()
-			bar_margin.add_theme_constant_override("margin_left", 60 if mobile else 114)
-			bar_margin.add_theme_constant_override("margin_right", 120 if mobile else 280)
 	_set_hud_mode(flow_state == FlowState.PLAYING)
 	if flow_state == FlowState.INTRO:
 		_build_intro()
