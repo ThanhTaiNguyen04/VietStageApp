@@ -210,6 +210,20 @@ func test_instrument_note_normalization():
 	var next_step := int(records[1]["diatonic_step"])
 	var c4_step := int(records[2]["diatonic_step"])
 	assert(low_step < next_step and next_step < c4_step, "Staff positions must increase with the real đàn tranh register, got %d, %d, %d" % [low_step, next_step, c4_step])
+
+	# Sáo trúc is an 8va transposing instrument: written pitch is C4-C6 on the staff
+	Context.configure("sao_truc", [], "res://scenes/MainMenu.tscn")
+	var sao_notes: Array[String] = ["Đô", "Rê", "Mi", "Sol", "La", "Đô2"]
+	screen.performance_notes = sao_notes
+	var sao_notation: Array[String] = screen._notation_notes()
+	assert(sao_notation == ["c4", "d4", "e4", "g4", "a4", "c5"], "Sáo trúc notes must map to standard written pitches C4-C5, got %s" % str(sao_notation))
+	staff.configure_rhythm(sao_notation, [0.0, 0.5, 1.0, 1.5, 2.0, 2.5], 3.0, false, true, [], [6, 8], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5], 90)
+	var sao_records: Array = staff.compute_note_records(1200, 260)["records"]
+	assert(sao_records.size() == 6, "All 6 notes must be present")
+	assert(int(sao_records[0]["diatonic_step"]) == 0, "Đô must be step 0 (C4, ledger line below)")
+	assert(int(sao_records[5]["diatonic_step"]) == 7, "Đô2 must be step 7 (C5, space 3)")
+	assert(bool(sao_records[0]["stem_up"]) == true, "Group 1 stems must point up")
+	assert(bool(sao_records[5]["stem_up"]) == true, "Group 2 stems must point up")
 	print("✔ test_instrument_note_normalization passed")
 
 

@@ -18,8 +18,8 @@ const MUSIC_FONT = preload("res://assets/fonts/Bravura.otf")
 func _notation_geometry(width: float, height: float) -> Dictionary:
 	# Reserve room for the actual register, including ledger lines and stems.
 	# Keep the scale stable across pages so turning a page never moves the staff.
-	var above := 3.5
-	var below := 3.5
+	var above := 4.0
+	var below := 4.0
 	for note in notes:
 		var step := _parse_diatonic_step(note)
 		above = maxf(above, float(step - 6) * 0.5 + 1.0)

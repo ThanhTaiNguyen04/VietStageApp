@@ -40,7 +40,7 @@ func _run() -> void:
 		_check(plaque.get_global_rect().end.y < staff.get_global_rect().position.y, "Title overlaps score")
 		var records: Array = staff.compute_note_records()["records"]
 		_check(records.size() == 6, "Flute sample must have six eighth notes")
-		var steps := [7, 8, 9, 11, 12, 14]
+		var steps := [0, 1, 2, 4, 5, 7]
 		for i in records.size():
 			_check(records[i].diatonic_step == steps[i], "Wrong staff pitch")
 			_check(records[i].y > 0 and records[i].y < staff.size.y, "Note outside score bounds")

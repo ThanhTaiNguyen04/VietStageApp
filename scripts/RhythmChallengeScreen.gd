@@ -236,8 +236,46 @@ func _notation_notes() -> Array[String]:
 	var result: Array[String] = []
 	for authored_note in performance_notes:
 		var scientific := InstrumentSamplePlayer.normalize_note_key(Context.instrument, authored_note)
+		if Context.instrument == "sao_truc":
+			scientific = _to_sao_truc_written_pitch(scientific if not scientific.is_empty() else authored_note)
 		result.append(scientific if not scientific.is_empty() else authored_note)
 	return result
+
+
+static func _to_sao_truc_written_pitch(raw_note: String) -> String:
+	var s := raw_note.strip_edges().to_lower()
+	# Sáo trúc (flute in C5) is an 8va transposing instrument in standard notation:
+	# it sounds an octave higher than written (C5-C7 physical acoustic pitches).
+	# Standard music notation transposes it one octave lower (C4-C6) to fit cleanly
+	# within the treble staff without unnecessary ledger lines, matching Vietnamese
+	# conservatory curricula and international flute engraving standards.
+	if s.length() == 2 and s[0] in "cdefgab" and s[1].is_valid_int():
+		var oct := int(s[1])
+		if oct >= 5:
+			return "%s%d" % [s[0], oct - 1]
+		return s
+	var clean := s.replace(" ", "").replace("_", "")
+	var written_map := {
+		"đô": "c4", "do": "c4", "đô1": "c4", "do1": "c4",
+		"rê": "d4", "re": "d4", "rê1": "d4", "re1": "d4",
+		"mi": "e4", "mi1": "e4",
+		"fa": "f4", "fa1": "f4",
+		"sol": "g4", "so": "g4", "sol1": "g4", "so1": "g4",
+		"la": "a4", "la1": "a4",
+		"si": "b4", "ti": "b4", "si1": "b4",
+		"đô2": "c5", "do2": "c5", "đố": "c5",
+		"rê2": "d5", "re2": "d5", "rế": "d5",
+		"mi2": "e5", "mí": "e5",
+		"fa2": "f5", "fá": "f5",
+		"sol2": "g5", "so2": "g5", "sól": "g5",
+		"la2": "a5", "lá": "a5",
+		"si2": "b5", "sĩ": "b5",
+		"đô3": "c6", "do3": "c6"
+	}
+	if written_map.has(clean):
+		return written_map[clean]
+	return raw_note
+
 
 
 func _on_sample_note_started(index: int) -> void:
