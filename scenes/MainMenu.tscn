@@ -200,6 +200,7 @@ size_flags_vertical = 4
 theme_override_constants/separation = 16
 
 [node name="StreakPill" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow"]
+visible = false
 layout_mode = 2
 
 [node name="SPMargin" type="MarginContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow/StreakPill"]
@@ -215,6 +216,7 @@ theme_override_font_sizes/font_size = 18
 text = "7 ngày"
 
 [node name="XPPill" type="PanelContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow"]
+visible = false
 layout_mode = 2
 
 [node name="XPMargin" type="MarginContainer" parent="Root/RightContent/TopBar/TopRow/StatsRow/XPPill"]
