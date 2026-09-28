@@ -16,6 +16,20 @@ func _ready() -> void:
 	title_label.text = "HOẠT ĐỘNG BÀI HỌC"
 	await _load_activity_content()
 	_render()
+	get_viewport().size_changed.connect(_refresh_layout)
+
+func _refresh_layout() -> void:
+	if _current_category.is_empty():
+		_render()
+	else:
+		_render_category_picker(_current_category)
+
+func _stage_width() -> float:
+	var outer_margin := 32.0 if _is_compact_layout() else 84.0
+	return minf(1180.0, maxf(0.0, get_viewport_rect().size.x - outer_margin - 16.0))
+
+func _stack_cards() -> bool:
+	return _stage_width() < 1100.0
 
 ## Attempts are submitted per activity. This screen only discovers which
 ## activities exist in the selected lesson and must not submit an assessment.
@@ -49,10 +63,9 @@ func _load_activity_content() -> void:
 func _create_frosted_stage(is_mobile: bool) -> Dictionary:
 	var stage_panel := PanelContainer.new()
 	stage_panel.name = "FrostedStage"
-	stage_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL if is_mobile else Control.SIZE_SHRINK_CENTER
+	stage_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	stage_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	if not is_mobile:
-		stage_panel.custom_minimum_size = Vector2(1180, 0)
+	stage_panel.custom_minimum_size = Vector2(_stage_width(), 0)
 
 	var stage_sb := StyleBoxFlat.new()
 	stage_sb.bg_color = Color(1.0, 0.99, 0.97, 0.52) # Soft translucent frosted glass
@@ -171,7 +184,7 @@ func _render() -> void:
 		header_v.add_child(summary)
 		stage_v.add_child(_create_accent_divider())
 
-	var is_stacked := get_viewport_rect().size.x < 1180.0
+	var is_stacked := _stack_cards()
 	var cards_row := BoxContainer.new()
 	cards_row.vertical = is_stacked
 	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -235,6 +248,7 @@ func _render_category_picker(category: String) -> void:
 	var heading := Label.new()
 	heading.text = "CHỌN DẠNG BÀI QUIZ" if is_quiz else "CHỌN TRÒ CHƠI MINIGAME"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.add_theme_font_size_override("font_size", 26 if mobile else 30)
 	var font_b := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	if font_b: heading.add_theme_font_override("font", font_b)
@@ -244,13 +258,14 @@ func _render_category_picker(category: String) -> void:
 	var subtitle := Label.new()
 	subtitle.text = "Mỗi hoạt động có thử thách và lưu kết quả đánh giá riêng." if is_quiz else "Chọn trò chơi để bắt đầu rèn luyện kỹ năng âm nhạc."
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	subtitle.add_theme_font_size_override("font_size", 15 if mobile else 16)
 	subtitle.add_theme_color_override("font_color", Color(0.35, 0.38, 0.35))
 	header_v.add_child(subtitle)
 
 	stage_v.add_child(_create_accent_divider())
 
-	var is_stacked := get_viewport_rect().size.x < 1180.0
+	var is_stacked := _stack_cards()
 	var cards_row := BoxContainer.new()
 	cards_row.vertical = is_stacked
 	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -393,13 +408,13 @@ func _create_visual_emblem(icon_name: String, is_locked: bool) -> Control:
 
 func _activity_card(kicker: String, heading: String, description: String, meta_items: Array, activity_id: String, icon_lucide: String, _is_primary: bool = true) -> PanelContainer:
 	var mobile := get_viewport_rect().size.x < 650.0
-	var is_stacked := get_viewport_rect().size.x < 1180.0
+	var is_stacked := _stack_cards()
 	var menu_card := activity_id in ["quiz_menu", "minigame_menu"]
 	var locked := not menu_card and _canonical_lesson_id > 0 and _online_content and not bool(_available.get(activity_id, false))
 
 	var card := PanelContainer.new()
 	if is_stacked:
-		card.custom_minimum_size = Vector2(0, 260)
+		card.custom_minimum_size = Vector2(0, 220 if mobile else 260)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	else:
 		card.custom_minimum_size = Vector2(530, 290)
@@ -450,6 +465,7 @@ func _activity_card(kicker: String, heading: String, description: String, meta_i
 	var kicker_lbl := Label.new()
 	kicker_lbl.name = "Kicker"
 	kicker_lbl.text = kicker.to_upper()
+	kicker_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	kicker_lbl.add_theme_font_size_override("font_size", 14)
 	if font_bold: kicker_lbl.add_theme_font_override("font", font_bold)
 	kicker_lbl.add_theme_color_override("font_color", Color(0.72, 0.50, 0.10) if not locked else Color(0.45, 0.48, 0.45))
@@ -481,11 +497,14 @@ func _activity_card(kicker: String, heading: String, description: String, meta_i
 	# Details
 	var details_box := _create_details_hbox(meta_items, locked)
 	details_box.name = "Details"
+	# Secondary metadata must not force the card wider than a narrow viewport.
+	details_box.visible = not mobile
 	text_v.add_child(details_box)
 
 	# Right: Visual Emblem
 	var visual := _create_visual_emblem(icon_lucide, locked)
 	visual.name = "Visual"
+	visual.visible = not mobile
 	row.add_child(visual)
 
 	# Clickable HitArea button
