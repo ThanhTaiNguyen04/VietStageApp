@@ -238,6 +238,18 @@ func _parse_diatonic_step(note_str: String) -> int:
 	if s.begins_with("zt_"):
 		s = s.substr(3)
 
+	# Scientific Pitch Notation is unambiguous and must take precedence over the
+	# legacy instrument aliases below. In particular, G3 is below middle C while
+	# the older alias table used "g3" to mean Sol in the next register.
+	const SCIENTIFIC_STEPS = {
+		"c3": -7, "d3": -6, "e3": -5, "f3": -4, "g3": -3, "a3": -2, "b3": -1,
+		"c4": 0, "d4": 1, "e4": 2, "f4": 3, "g4": 4, "a4": 5, "b4": 6,
+		"c5": 7, "d5": 8, "e5": 9, "f5": 10, "g5": 11, "a5": 12, "b5": 13,
+		"c6": 14, "d6": 15, "e6": 16, "f6": 17, "g6": 18, "a6": 19, "b6": 20,
+	}
+	if SCIENTIFIC_STEPS.has(s):
+		return int(SCIENTIFIC_STEPS[s])
+
 	# 1. Tra cứu trực tiếp bảng nốt
 	const EXACT_MAP = {
 		# Xướng âm tiếng Việt chuẩn trung (Middle Octave)

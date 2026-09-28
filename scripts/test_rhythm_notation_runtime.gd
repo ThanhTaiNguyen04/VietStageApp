@@ -1,18 +1,40 @@
 extends SceneTree
 
+const Context = preload("res://scripts/LearningActivityContext.gd")
+
 func _init():
 	print("--- Running test_rhythm_notation_runtime.gd ---")
 	test_g_clef_and_time_signature()
 	test_two_measure_screen_layout()
+	test_single_measure_uses_full_staff_width()
 	test_two_measure_playhead_and_page_flip()
 	test_speed_selector_and_bpm_scaling()
+	test_instrument_note_normalization()
 	test_two_measure_navigator()
 	test_result_screen_zero_score_handling()
 	test_game_screen_speed_chip_and_status()
+	test_sample_target_legend()
 	test_all_note_durations_and_shapes()
 	test_stem_directions_and_beaming()
 	print("=== ALL RUNTIME NOTATION TESTS PASSED ===")
 	quit(0)
+
+func test_sample_target_legend():
+	var screen_script = load("res://scripts/RhythmChallengeScreen.gd")
+	var screen = Control.new()
+	screen.set_script(screen_script)
+	var parent = VBoxContainer.new()
+	var modes: Array[String] = ["SAMPLE", "TARGET"]
+	screen.event_modes = modes
+	screen._add_event_legend(parent, true)
+	assert(parent.get_child_count() == 1, "Mixed Sample/Target round needs a concise legend")
+	var legend = parent.get_child(0)
+	assert(legend.get_child_count() == 2, "Legend needs both Sample and Target labels")
+	assert((legend.get_child(0) as Label).text.contains("mẫu"), "First legend label must identify Sample notes")
+	assert((legend.get_child(1) as Label).text.contains("bạn chơi"), "Second legend label must identify Target notes")
+	parent.free()
+	screen.free()
+	print("✔ test_sample_target_legend passed")
 
 func test_g_clef_and_time_signature():
 	var staff_script = load("res://scripts/RhythmStaffDisplay.gd")
@@ -31,18 +53,16 @@ func test_g_clef_and_time_signature():
 	assert(staff.total_pages == 1, "Expected 1 page for 1 measure in 2-measure layout")
 	assert(staff.measure_beats == 4.0, "Expected 4.0 measure_beats for 4/4")
 	
-	# Verify clef anchor properties:
-	var height = staff.size.y
-	var center_y = height * 0.50 # Line 3 (B4)
-	var spacing = 20.0 # for width 400
-	var line_2_y = center_y + 1.0 * spacing # Line 2 (Sol 4 / G4)
-	var clef_scale = 5.6
-	var clef_font_size = int(spacing * clef_scale)
-	var clef_baseline_y = line_2_y + (clef_font_size * 0.125)
-	
-	# Spiral center Y = clef_baseline_y - (clef_font_size * 0.125) = line_2_y!
-	var spiral_y = clef_baseline_y - (clef_font_size * 0.125)
-	assert(abs(spiral_y - line_2_y) < 0.001, "G-clef spiral must anchor exactly on Line 2 (Sol 4)")
+	# Verify real renderer positions and the bundled music glyphs.
+	staff.configure_rhythm(["E4", "G4", "B4"], times, 2.4, false, false, [], [4, 4], dur_beats, 100)
+	var geometry: Dictionary = staff._notation_geometry(400, 150)
+	var records: Array = staff.compute_note_records(400, 150)["records"]
+	assert(is_equal_approx(records[0].y, geometry.center_y + 2 * geometry.spacing), "E4 must sit on the bottom line")
+	assert(is_equal_approx(records[1].y, geometry.center_y + geometry.spacing), "G4 must sit on the clef anchor line")
+	assert(is_equal_approx(records[2].y, geometry.center_y), "B4 must sit on the middle line")
+	assert(staff.MUSIC_FONT.has_char(0xE050), "Bundled font must contain the G clef")
+	assert(staff.MUSIC_FONT.has_char(0xE086) and staff.MUSIC_FONT.has_char(0xE088), "Bundled font must contain the 6/8 digits")
+	staff.free()
 	print("✔ test_g_clef_and_time_signature passed")
 
 func test_two_measure_screen_layout():
@@ -67,6 +87,19 @@ func test_two_measure_screen_layout():
 	assert(staff.note_start_beats[4] == 4.0, "Note 4 starts at beat 4 (measure 1)")
 	assert(staff.note_start_beats[5] == 6.0, "Note 5 starts at beat 6 (measure 1)")
 	print("✔ test_two_measure_screen_layout passed")
+
+func test_single_measure_uses_full_staff_width():
+	var staff_script = load("res://scripts/RhythmStaffDisplay.gd")
+	var staff = Control.new()
+	staff.set_script(staff_script)
+	staff.size = Vector2(800, 200)
+	staff.configure_rhythm(["C4", "D4", "E4", "G4"], [0.0, 1.0, 2.0, 3.0], 4.0, false, false, [], [4, 4], [1.0, 1.0, 1.0, 1.0], 60)
+	assert(staff.total_measures == 1, "Four quarter notes in 4/4 must form one measure")
+	var records: Array = staff.compute_note_records(800, 200)["records"]
+	assert(records.size() == 4, "All notes must remain in the single measure")
+	assert(float(records[-1]["x"]) > 560.0, "One measure must use the full staff width, not leave an empty second measure")
+	staff.free()
+	print("✔ test_single_measure_uses_full_staff_width passed")
 
 func test_two_measure_playhead_and_page_flip():
 	var staff_script = load("res://scripts/RhythmStaffDisplay.gd")
@@ -123,22 +156,22 @@ func test_speed_selector_and_bpm_scaling():
 	assert(abs(screen.beat_times[0] - 0.0) < 0.01, "Beat 0 at 0.0s")
 	assert(abs(screen.beat_times[1] - 0.75) < 0.01, "Beat 1 at 0.75s")
 	
-	# 2. Slow speed: 0.75x -> 60 BPM
-	screen.selected_speed_multiplier = 0.75
+	# 2. Slow speed: 60% -> 48 BPM
+	screen.selected_speed_multiplier = 0.6
 	screen._prepare_current_round()
-	assert(screen.current_tempo_bpm == 60, "Expected 60 BPM at 0.75x speed, got %d" % screen.current_tempo_bpm)
-	assert(abs(screen.beat_times[1] - 1.0) < 0.01, "Beat 1 at 1.0s at 0.75x speed")
+	assert(screen.current_tempo_bpm == 48, "Expected 48 BPM at 60%% speed, got %d" % screen.current_tempo_bpm)
+	assert(abs(screen.beat_times[1] - 1.25) < 0.01, "Beat 1 at 1.25s at 60% speed")
 	
-	# 3. Fast speed: 1.25x -> 100 BPM
-	screen.selected_speed_multiplier = 1.25
+	# 3. Fast speed: 120% -> 96 BPM
+	screen.selected_speed_multiplier = 1.2
 	screen._prepare_current_round()
-	assert(screen.current_tempo_bpm == 100, "Expected 100 BPM at 1.25x speed, got %d" % screen.current_tempo_bpm)
-	assert(abs(screen.beat_times[1] - 0.6) < 0.01, "Beat 1 at 0.6s at 1.25x speed")
+	assert(screen.current_tempo_bpm == 96, "Expected 96 BPM at 120%% speed, got %d" % screen.current_tempo_bpm)
+	assert(abs(screen.beat_times[1] - 0.625) < 0.01, "Beat 1 at 0.625s at 120% speed")
 	
 	# 4. Speed selector UI component test
 	var selector = screen._create_speed_selector(false)
 	assert(selector != null, "SpeedSelector component must exist")
-	assert(selector.get_child_count() == 3, "Expected 3 speed buttons (0.75x, 1x, 1.25x)")
+	assert(selector.get_child_count() == 4, "Expected 4 speed buttons (60%, 80%, 100%, 120%)")
 	
 	# Test locked speed selector
 	var locked_selector = screen._create_speed_selector(true)
@@ -146,6 +179,53 @@ func test_speed_selector_and_bpm_scaling():
 		assert(btn is Button and btn.disabled == true, "Speed buttons must be disabled when locked during gameplay")
 	
 	print("✔ test_speed_selector_and_bpm_scaling passed")
+
+
+func test_instrument_note_normalization():
+	# Dây đàn tranh are named by lesson order, not by scientific pitch. The staff
+	# must use their real pitches so high strings do not render as low notes.
+	Context.configure("dan_tranh", [], "res://scenes/MainMenu.tscn")
+	var screen_script = load("res://scripts/RhythmChallengeScreen.gd")
+	var screen = Control.new()
+	screen.set_script(screen_script)
+	var authored_notes: Array[String] = ["Sol1", "La1", "Đô2", "Rê2", "Mi2", "Sol2", "La2", "Đô3", "Rê3", "Mi3", "Sol3", "La3", "Đô4", "Rê4", "Mi4", "Sol4", "La4"]
+	screen.performance_notes = authored_notes
+	var notation: Array[String] = screen._notation_notes()
+	assert(notation == ["g3", "a3", "c4", "d4", "e4", "g4", "a4", "c5", "d5", "e5", "g5", "a5", "c6", "d6", "e6", "g6", "a6"], "Đàn tranh strings must map to their real scientific pitches")
+
+	var staff_script = load("res://scripts/RhythmStaffDisplay.gd")
+	var staff = Control.new()
+	staff.set_script(staff_script)
+	staff.size = Vector2(1200, 260)
+	var times: Array[float] = []
+	var durations: Array[float] = []
+	for index in notation.size():
+		times.append(float(index))
+		durations.append(1.0)
+	staff.configure_rhythm(notation, times, 17.0, false, true, [], [4, 4], durations, 60)
+	var records: Array = staff.compute_note_records(1200, 260)["records"]
+	# The renderer lays out one measure at a time, so validate the first rendered
+	# strings while the complete register is validated above by normalized values.
+	var low_step := int(records[0]["diatonic_step"])
+	var next_step := int(records[1]["diatonic_step"])
+	var c4_step := int(records[2]["diatonic_step"])
+	assert(low_step < next_step and next_step < c4_step, "Staff positions must increase with the real đàn tranh register, got %d, %d, %d" % [low_step, next_step, c4_step])
+
+	# Sáo trúc is an 8va transposing instrument: written pitch is C4-C6 on the staff
+	Context.configure("sao_truc", [], "res://scenes/MainMenu.tscn")
+	var sao_notes: Array[String] = ["Đô", "Rê", "Mi", "Sol", "La", "Đô2"]
+	screen.performance_notes = sao_notes
+	var sao_notation: Array[String] = screen._notation_notes()
+	assert(sao_notation == ["c4", "d4", "e4", "g4", "a4", "c5"], "Sáo trúc notes must map to standard written pitches C4-C5, got %s" % str(sao_notation))
+	staff.configure_rhythm(sao_notation, [0.0, 0.5, 1.0, 1.5, 2.0, 2.5], 3.0, false, true, [], [6, 8], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5], 90)
+	var sao_records: Array = staff.compute_note_records(1200, 260)["records"]
+	assert(sao_records.size() == 6, "All 6 notes must be present")
+	assert(int(sao_records[0]["diatonic_step"]) == 0, "Đô must be step 0 (C4, ledger line below)")
+	assert(int(sao_records[5]["diatonic_step"]) == 7, "Đô2 must be step 7 (C5, space 3)")
+	assert(bool(sao_records[0]["stem_up"]) == true, "Group 1 stems must point up")
+	assert(bool(sao_records[5]["stem_up"]) == true, "Group 2 stems must point up")
+	print("✔ test_instrument_note_normalization passed")
+
 
 func test_two_measure_navigator():
 	var screen_script = load("res://scripts/RhythmChallengeScreen.gd")
@@ -214,12 +294,12 @@ func test_result_screen_zero_score_handling():
 	
 	# Check round result with 0 hits / 0 score
 	screen._build_round_result(0, 100)
-	var card_body = screen.content_box.get_child(0).get_child(0).get_child(0)
+	var card_body = screen.content_box.get_child(-1)
 	
 	# Find heading
 	var heading_found := false
 	var heading_text := ""
-	for child in card_body.get_children():
+	for child in card_body.find_children("*", "Label", true, false):
 		if child is Label and ("chưa" in child.text.to_lower() or "hoàn thành" in child.text.to_lower()):
 			heading_found = true
 			heading_text = child.text
@@ -231,10 +311,10 @@ func test_result_screen_zero_score_handling():
 	
 	# Check final result with 0 score
 	screen._build_final_result()
-	var final_card = screen.content_box.get_child(0).get_child(0).get_child(0)
+	var final_card = screen.content_box.get_child(-1)
 	var final_heading_found := false
 	var final_heading_text := ""
-	for child in final_card.get_children():
+	for child in final_card.find_children("*", "Label", true, false):
 		if child is Label and ("chưa" in child.text.to_lower() or "hoàn thành" in child.text.to_lower()):
 			final_heading_found = true
 			final_heading_text = child.text
@@ -262,19 +342,20 @@ func test_game_screen_speed_chip_and_status():
 	]
 	screen.rhythms = r_arr
 	screen.rhythm_index = 0
-	screen.selected_speed_multiplier = 0.75
+	screen.selected_speed_multiplier = 1.0
 	screen._build_game()
 	
-	# 1. Verify locked speed chip exists and shows 0.75×
+	# 1. Tempo belongs to the shared practice HUD, never to a duplicate chip in
+	# the active game card.
 	var locked_chip = screen.find_child("LockedSpeedChip", true, false)
-	assert(locked_chip != null, "LockedSpeedChip must exist in game screen")
-	var chip_label = locked_chip.get_child(0) as Label
-	assert(chip_label != null and chip_label.text == "0.75×", "LockedSpeedChip must display '0.75×', got '%s'" % (chip_label.text if chip_label else "null"))
+	assert(locked_chip == null, "Active game must not duplicate the HUD speed selector")
+	var legend = screen.find_child("RhythmLegend", true, false)
+	assert(legend == null, "Active game must not show a redundant note legend")
 	
-	# 2. Verify status label starts with '● Đang nghe' (no repeated 'Micro')
+	# 2. Verify status stays concise; microphone state is shown only before play.
 	var status_lbl = screen.find_child("GameStatusLabel", true, false) as Label
 	assert(status_lbl != null, "GameStatusLabel must exist")
-	assert(status_lbl.text == "● Đang nghe", "Initial status must be '● Đang nghe', got '%s'" % status_lbl.text)
+	assert(status_lbl.text == "Đang nghe", "Initial status must be 'Đang nghe', got '%s'" % status_lbl.text)
 	
 	# 3. Verify concise feedback states: 'Chưa đúng' and 'Đúng'
 	screen._show_feedback("Chưa đúng", Color.RED)
@@ -405,4 +486,3 @@ func test_stem_directions_and_beaming():
 			assert(note_rec["stem_up"] == dir0, "All notes in beam group must share common stem direction")
 	
 	print("✔ test_stem_directions_and_beaming passed")
-

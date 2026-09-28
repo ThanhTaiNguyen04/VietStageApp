@@ -34,8 +34,8 @@ func _run() -> void:
 
 	_check(int(screen.get("flow_state")) == INTRO, "offline phải vào màn intro")
 	_check((screen.get("rhythms") as Array).size() > 0, "intro phải có dữ liệu mẫu")
-	_check(_find_button(screen, "▶  Nghe mẫu") != null, "intro phải có nút Nghe mẫu")
-	_check(_find_button(screen, "Bắt đầu  →") != null, "intro phải có nút Bắt đầu")
+	_check(_find_button(screen, "Nghe mẫu") != null, "intro phải có nút Nghe mẫu")
+	_check(_find_button(screen, "Bắt đầu") != null, "intro phải có nút Bắt đầu")
 
 	# Dữ liệu offline chỉ có TARGET; tạo một SAMPLE để kiểm tra preview
 	# không phụ thuộc vào nốt học viên cần chơi.
@@ -72,7 +72,8 @@ func _run() -> void:
 	_check(int(screen.get("total_score")) > 0, "diễn tấu đúng phải tạo điểm")
 	_check(int(screen.get("total_max_score")) > 0, "kết quả phải có max score")
 	_check(_find_button(screen, "Chơi lại") != null, "kết quả phải có nút Chơi lại")
-	_check(_find_button(screen, "Về hoạt động") != null, "kết quả phải có nút Về hoạt động")
+	var hud_back := screen.find_child("PracticeHudBack", true, false) as Button
+	_check(hud_back != null and hud_back.visible, "kết quả phải giữ nút Quay lại cố định trên HUD")
 	_finish()
 
 

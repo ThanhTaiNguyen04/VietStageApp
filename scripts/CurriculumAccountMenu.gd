@@ -52,7 +52,7 @@ func _ready() -> void:
 		var label := overlay.find_child(label_name, true, false) as Label
 		label.add_theme_font_override("font", regular if label_name == "HeaderMeta" else bold)
 		label.add_theme_color_override("font_color", Color("#16a34a") if label_name == "OnlineLabel" else Color("#64748b") if label_name == "HeaderMeta" else Color("#0f172a"))
-	for action in [["ProfileAction", "user", "AccountScreen"], ["AchievementAction", "trophy", "ProgressScreen"], ["SettingsAction", "settings", "AccountSettings"], ["LogoutAction", "log-out", "logout"]]:
+	for action in [["ProfileAction", "user", "AccountScreen"], ["AchievementAction", "trophy", "ProgressScreen"], ["SettingsAction", "settings", "AccountSettings"], ["ActivityHistoryAction", "calendar-days", "ActivityHistoryScreen"], ["LogoutAction", "log-out", "logout"]]:
 		var button := overlay.find_child(action[0], true, false) as Button
 		_style_account_action(button, action[1], action[2] == "logout")
 		button.add_theme_font_override("font", bold)

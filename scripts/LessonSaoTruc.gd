@@ -10,9 +10,11 @@ const C_JADE       := Color(0.1, 0.7, 0.3, 1.0)
 const C_ERROR      := Color(0.8, 0.1, 0.1, 1.0)
 
 const LearningActivityContextScript := preload("res://scripts/LearningActivityContext.gd")
+const PRACTICE_CONTROL_HUD := preload("res://scripts/PracticeControlHud.gd")
 
 enum State { INTRO, PRACTICE, MID_INTRO, RHYTHM_GAME, COMPLETED }
 var current_state = State.INTRO
+var practice_hud: PracticeControlHud = null
 
 static var is_song_library_mode := false
 static var custom_song_title := ""
@@ -204,73 +206,7 @@ func _ready():
 			bgm_player.volume_db = val
 	)
 
-	# ── BPM / Pause controls (top-right, visible during rhythm & practice) ──
-	bpm_controls_row = HBoxContainer.new()
-	bpm_controls_row.name = "BpmControlsRow"
-	bpm_controls_row.add_theme_constant_override("separation", 6)
-	bpm_controls_row.anchor_left = 1.0
-	bpm_controls_row.anchor_right = 1.0
-	bpm_controls_row.anchor_top = 0.0
-	bpm_controls_row.anchor_bottom = 0.0
-	bpm_controls_row.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	bpm_controls_row.offset_right = -16
-	bpm_controls_row.offset_top = 16
-	bpm_controls_row.visible = false
-	add_child(bpm_controls_row)
-
-	_build_bpm_btn("60%",  0.6)
-	_build_bpm_btn("80%",  0.8)
-	_build_bpm_btn("100%", 1.0)
-	_build_bpm_btn("120%", 1.2)
-
-	# Pause button
-	pause_btn = Button.new()
-	pause_btn.name = "PauseBtn"
-	pause_btn.text = "⏸"
-	pause_btn.custom_minimum_size = Vector2(56, 50)
-	pause_btn.add_theme_font_size_override("font_size", 26)
-	var sb_pause = StyleBoxFlat.new()
-	sb_pause.bg_color = Color(0.22, 0.18, 0.1, 0.92)
-	sb_pause.border_color = Color(0.75, 0.6, 0.3, 0.6)
-	sb_pause.border_width_left = 2; sb_pause.border_width_right = 2
-	sb_pause.border_width_top = 2; sb_pause.border_width_bottom = 2
-	sb_pause.corner_radius_top_left = 10; sb_pause.corner_radius_top_right = 10
-	sb_pause.corner_radius_bottom_left = 10; sb_pause.corner_radius_bottom_right = 10
-	pause_btn.add_theme_stylebox_override("normal", sb_pause)
-	pause_btn.add_theme_stylebox_override("hover", sb_pause)
-	pause_btn.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
-	bpm_controls_row.add_child(pause_btn)
-	pause_btn.pressed.connect(func():
-		is_paused = !is_paused
-		pause_btn.text = "▶" if is_paused else "⏸"
-	)
-
-	# Restart/replay button
-	var restart_btn = Button.new()
-	restart_btn.name = "RestartBtn"
-	restart_btn.text = "↺"
-	restart_btn.custom_minimum_size = Vector2(56, 50)
-	restart_btn.add_theme_font_size_override("font_size", 26)
-	var sb_restart = StyleBoxFlat.new()
-	sb_restart.bg_color = Color(0.22, 0.18, 0.1, 0.92)
-	sb_restart.border_color = Color(0.75, 0.6, 0.3, 0.6)
-	sb_restart.border_width_left = 2; sb_restart.border_width_right = 2
-	sb_restart.border_width_top = 2; sb_restart.border_width_bottom = 2
-	sb_restart.corner_radius_top_left = 10; sb_restart.corner_radius_top_right = 10
-	sb_restart.corner_radius_bottom_left = 10; sb_restart.corner_radius_bottom_right = 10
-	restart_btn.add_theme_stylebox_override("normal", sb_restart)
-	restart_btn.add_theme_stylebox_override("hover", sb_restart)
-	restart_btn.add_theme_color_override("font_color", C_GOLD)
-	bpm_controls_row.add_child(restart_btn)
-	restart_btn.pressed.connect(func():
-		is_paused = false
-		pause_btn.text = "⏸"
-		if current_state == State.PRACTICE:
-			_practice_time = 0.0
-			_current_practice_idx = 0
-		elif current_state == State.RHYTHM_GAME:
-			_start_rhythm_game()
-	)
+	_setup_shared_practice_hud()
 
 
 	back_btn.pressed.connect(_on_back_pressed)
@@ -528,21 +464,7 @@ func _setup_premium_practice_ui():
 	move_child(screen_frame, get_node("Root").get_index())
 	
 	if is_instance_valid(back_btn):
-		back_btn.offset_left = 32
-		back_btn.offset_top = 26
-		back_btn.custom_minimum_size = Vector2(155, 48)
-		back_btn.text = "← Quay Lại"
-		var btn_sb = StyleBoxFlat.new()
-		btn_sb.bg_color = Color(0.24, 0.15, 0.09, 1.0)
-		btn_sb.border_color = Color(0.88, 0.70, 0.35, 1.0)
-		btn_sb.border_width_left = 2; btn_sb.border_width_right = 2; btn_sb.border_width_top = 2; btn_sb.border_width_bottom = 2
-		btn_sb.corner_radius_top_left = 24; btn_sb.corner_radius_top_right = 24; btn_sb.corner_radius_bottom_left = 24; btn_sb.corner_radius_bottom_right = 24
-		btn_sb.shadow_color = Color(0.1, 0.05, 0.0, 0.35); btn_sb.shadow_size = 5; btn_sb.shadow_offset = Vector2(0, 3)
-		back_btn.add_theme_stylebox_override("normal", btn_sb)
-		back_btn.add_theme_stylebox_override("hover", btn_sb)
-		back_btn.add_theme_stylebox_override("pressed", btn_sb)
-		back_btn.add_theme_color_override("font_color", Color(0.98, 0.92, 0.82, 1.0))
-		back_btn.add_theme_font_size_override("font_size", 22)
+		back_btn.visible = false
 		
 
 
@@ -907,55 +829,69 @@ func _process_sample(delta):
 				_start_practice()
 			return
 
-func _build_bpm_btn(lbl: String, mul: float) -> void:
-	var btn = Button.new()
-	btn.text = lbl
-	btn.name = "BpmBtn_" + lbl.replace("%", "pct")
-	btn.custom_minimum_size = Vector2(88, 50)
-	btn.add_theme_font_size_override("font_size", 22)
-	var sb_norm = StyleBoxFlat.new()
-	sb_norm.bg_color = Color(0.22, 0.18, 0.1, 0.92)
-	sb_norm.border_color = Color(0.75, 0.6, 0.3, 0.6)
-	sb_norm.border_width_left = 2; sb_norm.border_width_right = 2
-	sb_norm.border_width_top = 2; sb_norm.border_width_bottom = 2
-	sb_norm.corner_radius_top_left = 10; sb_norm.corner_radius_top_right = 10
-	sb_norm.corner_radius_bottom_left = 10; sb_norm.corner_radius_bottom_right = 10
-	var sb_act = StyleBoxFlat.new()
-	sb_act.bg_color = C_GOLD
-	sb_act.corner_radius_top_left = 10; sb_act.corner_radius_top_right = 10
-	sb_act.corner_radius_bottom_left = 10; sb_act.corner_radius_bottom_right = 10
-	if mul == 1.0:
-		btn.add_theme_stylebox_override("normal", sb_act)
-		btn.add_theme_color_override("font_color", Color(0.12, 0.08, 0.02, 1.0))
-	else:
-		btn.add_theme_stylebox_override("normal", sb_norm)
-		btn.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
-	btn.add_theme_stylebox_override("hover", sb_norm)
-	bpm_controls_row.add_child(btn)
-	btn.pressed.connect(_on_bpm_btn_pressed.bind(mul, lbl))
+func _setup_shared_practice_hud() -> void:
+	if back_btn:
+		back_btn.visible = false
+	if bpm_controls_row:
+		bpm_controls_row.visible = false
+	practice_hud = PRACTICE_CONTROL_HUD.new()
+	add_child(practice_hud)
+	practice_hud.z_index = 150
+	practice_hud.back_requested.connect(_on_back_pressed)
+	practice_hud.speed_selected.connect(_on_hud_speed_selected)
+	practice_hud.pause_requested.connect(_toggle_pause)
+	practice_hud.resume_requested.connect(_on_hud_resume)
+	practice_hud.restart_requested.connect(_on_hud_restart)
+	practice_hud.sample_requested.connect(_on_hud_sample)
+	practice_hud.set_hud_visible(true)
+	practice_hud.set_playback_controls_visible(false)
 
-func _on_bpm_btn_pressed(mul: float, lbl: String) -> void:
-	bpm_multiplier = mul
-	for child in bpm_controls_row.get_children():
-		if not (child is Button): continue
-		var is_sel = child.text == lbl
-		var s_act = StyleBoxFlat.new()
-		s_act.bg_color = C_GOLD
-		s_act.corner_radius_top_left = 10; s_act.corner_radius_top_right = 10
-		s_act.corner_radius_bottom_left = 10; s_act.corner_radius_bottom_right = 10
-		var s_norm = StyleBoxFlat.new()
-		s_norm.bg_color = Color(0.22, 0.18, 0.1, 0.92)
-		s_norm.border_color = Color(0.75, 0.6, 0.3, 0.6)
-		s_norm.border_width_left = 2; s_norm.border_width_right = 2
-		s_norm.border_width_top = 2; s_norm.border_width_bottom = 2
-		s_norm.corner_radius_top_left = 10; s_norm.corner_radius_top_right = 10
-		s_norm.corner_radius_bottom_left = 10; s_norm.corner_radius_bottom_right = 10
-		if is_sel:
-			child.add_theme_stylebox_override("normal", s_act)
-			child.add_theme_color_override("font_color", Color(0.12, 0.08, 0.02, 1.0))
-		else:
-			child.add_theme_stylebox_override("normal", s_norm)
-			child.add_theme_color_override("font_color", Color(0.9, 0.85, 0.75, 1.0))
+func _on_hud_speed_selected(multiplier: float) -> void:
+	bpm_multiplier = multiplier
+	if practice_hud:
+		practice_hud.set_speed(multiplier)
+	if staff_display:
+		staff_display.current_bpm = 60.0 * bpm_multiplier
+
+func _toggle_pause() -> void:
+	is_paused = not is_paused
+	if practice_hud:
+		practice_hud.set_pause_visible(is_paused)
+	if is_paused:
+		if sample_active:
+			sample_active = false
+			if sample_player:
+				sample_player.stop()
+		if _playback_player and is_instance_valid(_playback_player) and _playback_player.is_playing():
+			_playback_player.stop()
+
+func _on_hud_resume() -> void:
+	is_paused = false
+	if practice_hud:
+		practice_hud.set_pause_visible(false)
+
+func _on_hud_restart() -> void:
+	is_paused = false
+	if practice_hud:
+		practice_hud.set_pause_visible(false)
+	if current_state == State.PRACTICE:
+		_practice_time = 0.0
+		_current_practice_idx = 0
+		_start_practice()
+	elif current_state == State.RHYTHM_GAME:
+		_start_rhythm_game()
+
+func _on_hud_sample() -> void:
+	is_paused = false
+	if practice_hud:
+		practice_hud.set_pause_visible(false)
+	_play_current_sample()
+
+func _build_bpm_btn(_lbl: String, _mul: float) -> void:
+	pass
+
+func _on_bpm_btn_pressed(mul: float, _lbl: String) -> void:
+	_on_hud_speed_selected(mul)
 
 func _process(delta):
 	# Update teacher talking animation
@@ -991,9 +927,13 @@ func _process(delta):
 		var hy = rect.position.y + rect.size.y * HOLE_PROP_Y
 		_holes[i].position = Vector2(hx - 50 + hole_offset_x, hy - 50 + hole_offset_y)
 
-	# Show BPM controls during active practice/rhythm
+	if back_btn:
+		back_btn.visible = false
 	if bpm_controls_row:
-		bpm_controls_row.visible = (current_state == State.PRACTICE or current_state == State.RHYTHM_GAME)
+		bpm_controls_row.visible = false
+	if practice_hud:
+		var is_playing = (current_state == State.PRACTICE or current_state == State.RHYTHM_GAME)
+		practice_hud.set_playback_controls_visible(is_playing)
 
 	# Sync metronome speed with BPM multiplier
 	if staff_display:
@@ -2297,6 +2237,12 @@ func _play_recording():
 		_playback_player.play()
 
 func _on_back_pressed():
+	if sample_active:
+		sample_active = false
+		if sample_player:
+			sample_player.stop()
+	if practice_hud:
+		practice_hud.set_pause_visible(false)
 	if is_song_library_mode:
 		is_song_library_mode = false
 		var t = create_tween()
