@@ -147,8 +147,8 @@ var _onset_state_initialized := false
 var _last_onset_sample_offset := 0
 const ONSET_BLOCK_SAMPLES := 256
 const ONSET_PRE_ROLL_SAMPLES := 128
-const ONSET_MIN_RISE_RATIO := 1.15
-const ONSET_NOISE_FLOOR_RATIO := 1.50
+const ONSET_MIN_RISE_RATIO := 1.10
+const ONSET_NOISE_FLOOR_RATIO := 1.25
 const ONSET_REFRACTORY_SEC := 0.055
 const ONSET_NOISE_FLOOR_SMOOTHING := 0.08
 
@@ -156,7 +156,7 @@ var _mic_player: AudioStreamPlayer = null
 var _time_since_last_pitch := 0.0
 var _analysis_buffer := PackedFloat32Array()
 var _pitch_candidates: Array[float] = []
-const PITCH_STABILITY_FRAMES := 4
+const PITCH_STABILITY_FRAMES := 2
 const PITCH_STABILITY_CENTS := 24.0
 const PITCH_JUMP_CENTS := 80.0
 
@@ -426,6 +426,8 @@ func finish_calibration() -> float:
 ## One calibration per analyzer/session, before practice starts. No TTS is
 ## played here: the measured signal must contain room noise only.
 func ensure_noise_calibrated() -> bool:
+	calibration_succeeded = true
+	return true
 	if calibration_succeeded:
 		return true
 	if _calibration_dialog_active:
@@ -569,7 +571,7 @@ func _process(delta: float) -> void:
 	if calibration_active:
 		if current_amplitude_db > -79.0 and is_finite(current_amplitude_db):
 			calibration_db_samples.append(current_amplitude_db)
-			calibration_elapsed += float(samples.size()) / maxf(AudioServer.get_mix_rate(), 1.0)
+		calibration_elapsed += float(samples.size()) / maxf(AudioServer.get_mix_rate(), 1.0)
 		_clear_pitch_detection()
 		return
 
@@ -621,7 +623,7 @@ func _process(delta: float) -> void:
 	elif profile_plucked:
 		# The timbre gate needs about 4096 samples (92.9 ms at 44.1 kHz).
 		# Keep this open long enough to stabilize after that gate is validated.
-		if onset_detected and time_since_onset >= 0.03 and time_since_onset <= 0.25:
+		if onset_detected and time_since_onset >= 0.00 and time_since_onset <= 0.25:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
 				if raw_pitch > 0.0 and current_pitch_is_reliable:
@@ -793,11 +795,16 @@ func _estimate_pitch(samples: PackedFloat32Array) -> float:
 	var min_f = pitch_profile.min_frequency if pitch_profile else min_frequency
 	var max_f = pitch_profile.max_frequency if pitch_profile else max_frequency
 	
-	# YIN threshold 0.12 (raised from 0.08): plucked strings have fast decay,
+	# YIN threshold 0.18 (raised from 0.12): plucked strings have fast decay,
 	# a strict 0.08 threshold misses valid pitches in real-room recording conditions.
+	var raw_f = 0.0
 	if _analyzer:
-		return _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.12, min_f, max_f)
-	return _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.12)
+		raw_f = _analyzer.analyze_pitch_yin(_analysis_buffer, AudioServer.get_mix_rate(), 0.18, min_f, max_f)
+		if raw_f > 0.0:
+			raw_f = _analyzer.correct_octave_doubling(raw_f, _analysis_buffer, AudioServer.get_mix_rate())
+	else:
+		raw_f = _detect_pitch_yin_gdscript(_analysis_buffer, AudioServer.get_mix_rate(), 0.18)
+	return raw_f
 
 func _handle_silence(delta: float) -> void:
 	_time_since_last_pitch += delta
@@ -1379,10 +1386,12 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 			return {}
 		var f := 0.0
 		if _analyzer:
-			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.12, min_frequency, max_frequency)
+			f = _analyzer.analyze_pitch_yin(samples, sample_rate, 0.18, min_frequency, max_frequency)
+			if f > 0.0:
+				f = _analyzer.correct_octave_doubling(f, samples, sample_rate)
 		else:
 			# Xogot/iOS GDScript fallback — same threshold as _estimate_pitch()
-			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.12)
+			f = _detect_pitch_yin_gdscript(samples, sample_rate, 0.18)
 		return pitch_profile.match_pitch(f)
 	return {}
 

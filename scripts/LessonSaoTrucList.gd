@@ -660,14 +660,14 @@ func _open_lesson(node_id: String) -> void:
 			bg_dim.queue_free()
 			popup.queue_free()
 			SecureDataManager.data["is_challenge_mode"] = false
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			_start_lesson_content(node_id)
 		)
 		
 		btn_challenge.pressed.connect(func() -> void:
 			bg_dim.queue_free()
 			popup.queue_free()
 			SecureDataManager.data["is_challenge_mode"] = true
-			_fade_to("res://scenes/LessonSaoTruc.tscn")
+			_start_lesson_content(node_id)
 		)
 		
 		btn_cancel.pressed.connect(func() -> void:
@@ -676,4 +676,19 @@ func _open_lesson(node_id: String) -> void:
 		)
 	else:
 		SecureDataManager.data["is_challenge_mode"] = false
-		_fade_to("res://scenes/LessonSaoTruc.tscn")
+		_start_lesson_content(node_id)
+
+
+func _start_lesson_content(node_id: String) -> void:
+	if node_id in ["sao_truc_level1_1", "sao_truc_level1_1_video"]:
+		# Runtime load avoids a preload cycle with SaoTrucCourseData.
+		var course_data = load("res://scripts/SaoTrucCourseData.gd")
+		course_data.configure_intro(SecureDataManager.data)
+		InstrumentSelect.selected_instrument = "sao_truc"
+		_fade_to("res://scenes/VideoPlayer.tscn")
+	else:
+		_fade_to("res://scenes/VideoPlayer.tscn" if "video" in node_id else "res://scenes/LessonSaoTruc.tscn")
+
+
+
+

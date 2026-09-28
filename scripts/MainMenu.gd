@@ -213,8 +213,8 @@ func _fetch_and_sync_progress() -> void:
 			_update_profile_menu_data()
 			_apply_stat_pills(summary_data)
 			if streak_pill and xp_pill:
-				streak_pill.visible = true
-				xp_pill.visible = true
+				streak_pill.visible = false
+				xp_pill.visible = false
 	_fetch_daily_challenges()
 	var backend_report = get_node_or_null("/root/BackendReport")
 	if backend_report and backend_report.has_method("fetch_and_install_catalog"):
@@ -882,9 +882,9 @@ func _apply_stat_pills(summary: Dictionary) -> void:
 	if xp_label:
 		xp_label.text = "%d XP" % points
 	if streak_pill:
-		streak_pill.visible = true
+		streak_pill.visible = false
 	if xp_pill:
-		xp_pill.visible = true
+		xp_pill.visible = false
 
 # ── Daily challenges ──────────────────────────────────────────────────────────
 

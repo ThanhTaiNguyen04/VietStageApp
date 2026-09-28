@@ -595,7 +595,9 @@ func _on_complete() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if _is_dan_tranh_lesson_1_video(lesson_id):
+		if lesson_id in ["sao_truc_level1_1", "sao_truc_level1_1_video"]:
+			_return_to_sao_truc_level_one()
+		elif _is_dan_tranh_lesson_1_video(lesson_id):
 			# Bài 1: xem video xong chuyển sang phần cô Mai thuyết minh.
 			SecureDataManager.active_lesson_id = "dan_tranh_level_1_bai_1_practice"
 			get_tree().change_scene_to_file("res://scenes/LessonDanTranh.tscn")
@@ -615,6 +617,11 @@ func _on_complete() -> void:
 func _is_dan_tranh_lesson_1_video(lesson_id: String) -> bool:
 	return lesson_id == "dan_tranh_level_1_bai_1_video"
 
+func _return_to_sao_truc_level_one() -> void:
+	var course_data = load("res://scripts/SaoTrucCourseData.gd")
+	var target: String = course_data.select_level(1)
+	get_tree().change_scene_to_file(target)
+
 func _go_back() -> void:
 	video_stream_player.stop()
 	var inst := str(SecureDataManager.data.get("selected_instrument", InstrumentSelect.selected_instrument))
@@ -626,7 +633,9 @@ func _go_back() -> void:
 	var t := create_tween()
 	t.tween_property(self, "modulate:a", 0.0, 0.22)
 	t.tween_callback(func() -> void:
-		if inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
+		if lesson_id in ["sao_truc_level1_1", "sao_truc_level1_1_video"]:
+			_return_to_sao_truc_level_one()
+		elif inst == "dan_bau" or lesson_id.begins_with("dan_bau_"):
 			get_tree().change_scene_to_file("res://scenes/LessonDanBau.tscn")
 		else:
 			var target := "res://scenes/LessonDanTranhList.tscn" if _is_dan_tranh_lesson_1_video(lesson_id) else ("res://scenes/LessonDanTranh.tscn" if lesson_id.begins_with("dan_tranh_level_") else "res://scenes/MainMenu.tscn")
