@@ -176,13 +176,21 @@ func ensure_exercises(lesson_id: int) -> Dictionary:
 
 
 ## Đảm bảo quizzes của một lesson được cache vào SecureDataManager.
+func _active_activity_items(items: Array) -> Array:
+	var active: Array = []
+	for value: Variant in items:
+		if value is Dictionary and str(value.get("status", "ACTIVE")).to_upper() == "ACTIVE":
+			active.append(value)
+	return active
+
+
 func ensure_quizzes(lesson_id: int) -> Array:
 	if SecureDataManager.be_quizzes.has(lesson_id):
 		return SecureDataManager.be_quizzes[lesson_id]
 	var response: Dictionary = await _api.get_lesson_quizzes(lesson_id)
 	if not _is_success(response):
 		return []
-	var quizzes: Array = _extract_array(response)
+	var quizzes: Array = _active_activity_items(_extract_array(response))
 	SecureDataManager.cache_be_quizzes(lesson_id, quizzes)
 	return quizzes
 
@@ -240,7 +248,7 @@ func ensure_minigame_list(lesson_id: int, force_refresh: bool = false) -> Array:
 	var response: Dictionary = await _api.get_lesson_minigames(lesson_id)
 	if not _is_success(response):
 		return []
-	var minigames: Array = _extract_array(response)
+	var minigames: Array = _active_activity_items(_extract_array(response))
 	SecureDataManager.cache_be_minigames(lesson_id, minigames)
 	return minigames
 
@@ -477,7 +485,7 @@ func report_practice_and_complete(
 
 ## Nộp kết quả khi client đã chọn chính xác challenge từ BE.
 ## Dùng cho các màn chơi có nhiều challenge trong cùng một lesson.
-func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: int, started_at: String = "", completed_at: String = "", client_attempt_id: String = "") -> Dictionary:
+func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: int, started_at: String = "", completed_at: String = "", client_attempt_id: String = "", play_data: String = "") -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
 	if minigame_id <= 0:
@@ -491,7 +499,8 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 		score,
 		attempt_id,
 		start_value,
-		complete_value
+		complete_value,
+		play_data
 	)
 	var attempt_data := _attempt_data(response)
 	# A 2xx response is not an acknowledgement unless it identifies the persisted
@@ -499,7 +508,7 @@ func report_minigame_by_id(minigame_id: int, score: int, _client_preview_stars: 
 	if not _is_success(response) or attempt_data.is_empty() or int(attempt_data.get("id", 0)) <= 0:
 		SecureDataManager.enqueue_pending_game_attempt({
 			"kind": "minigame", "minigame_id": minigame_id, "score": score,
-			"started_at": start_value, "completed_at": complete_value, "client_attempt_id": attempt_id,
+			"started_at": start_value, "completed_at": complete_value, "client_attempt_id": attempt_id, "play_data": play_data,
 		})
 		activity_history_changed.emit()
 		return {
@@ -616,7 +625,7 @@ func retry_pending_game_attempts() -> void:
 		if str(item.get("kind", "")) == "quiz":
 			response = await _api.submit_quiz_attempt(int(item.get("quiz_id", 0)), str(item.get("selected_answer", "")), str(item.get("client_attempt_id", "")))
 		elif str(item.get("kind", "")) == "minigame":
-			response = await _api.submit_minigame_attempt(int(item.get("minigame_id", 0)), int(item.get("score", 0)), str(item.get("client_attempt_id", "")), str(item.get("started_at", "")), str(item.get("completed_at", "")))
+			response = await _api.submit_minigame_attempt(int(item.get("minigame_id", 0)), int(item.get("score", 0)), str(item.get("client_attempt_id", "")), str(item.get("started_at", "")), str(item.get("completed_at", "")), str(item.get("play_data", "")))
 		elif str(item.get("kind", "")) == "lesson_assessment":
 			var payload: Dictionary = item.get("payload", {})
 			response = await _api.submit_lesson_assessment(int(item.get("lesson_id", 0)), payload)

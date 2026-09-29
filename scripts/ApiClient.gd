@@ -179,7 +179,8 @@ func submit_minigame_attempt(
 	score: int,
 	client_attempt_id: String,
 	started_at: String,
-	completed_at: String
+	completed_at: String,
+	play_data: String = ""
 ) -> Dictionary:
 	var payload := {
 		"score": score,
@@ -187,6 +188,8 @@ func submit_minigame_attempt(
 		"startedAt": started_at,
 		"completedAt": completed_at,
 	}
+	if not play_data.is_empty():
+		payload["playData"] = play_data
 	var path := ApiRoutes.build(ApiRoutes.MINIGAME_ATTEMPTS % str(minigame_id))
 	# BackendReport has a dedicated durable queue for game attempts, just like
 	# quiz attempts. Keep the generic queue from returning a false HTTP 202 ACK.
