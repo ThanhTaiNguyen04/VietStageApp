@@ -16,6 +16,8 @@ const LessonAssessmentCoordinator = preload("res://scripts/LessonAssessmentCoord
 
 var _api: Node = null
 var _retry_pending_in_progress := false
+var last_minigame_fetch_succeeded := true
+var last_minigame_fetch_error := ""
 
 
 func _ready() -> void:
@@ -157,6 +159,7 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Arr
 		await fetch_and_install_catalog()
 	var result: Array = []
 	var bound_ids: Array[int] = []
+	var seen_quiz_ids: Dictionary = {}
 	print("[QuizDebug] fetching for local_ids: ", local_lesson_ids, " instrument: ", instrument)
 	for local_id: Variant in local_lesson_ids:
 		var lesson: Dictionary = SecureDataManager.resolve_be_lesson(instrument, str(local_id))
@@ -164,35 +167,24 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Arr
 		if lesson.is_empty():
 			continue
 		var lesson_id := int(lesson.get("id", 0))
+		if lesson_id <= 0:
+			continue
 		LearningActivityContext.set_backend_lesson(lesson)
 		bound_ids.append(lesson_id)
 		var quizzes: Array = await ensure_quizzes(lesson_id)
 		print("[QuizDebug] ensure_quizzes returned size: ", quizzes.size())
 		for quiz: Variant in quizzes:
-			if quiz is Dictionary:
-				result.append(quiz)
-	# Do not silently broaden a lesson assessment to another lesson. A missing
-	# canonical binding is local-only content, never a cross-lesson fallback.
-	if false and result.is_empty():
-		var instrument_lesson_ids := SecureDataManager.be_lesson_ids_for_instrument(instrument)
-		if not instrument_lesson_ids.is_empty():
-			push_warning("[Quiz] Không lấy được quiz theo lesson local, quét toàn bộ %d lesson của %s để lấy quiz." % [instrument_lesson_ids.size(), instrument])
-		var seen_quiz_ids: Dictionary = {}
-		for quiz: Variant in result:
-			if quiz is Dictionary:
-				seen_quiz_ids[int(quiz.get("id", 0))] = true
-		for lesson_id: int in instrument_lesson_ids:
-			if bound_ids.has(lesson_id):
+			if not quiz is Dictionary:
 				continue
-			var quizzes: Array = await ensure_quizzes(lesson_id)
-			for quiz: Variant in quizzes:
-				if not quiz is Dictionary:
-					continue
-				var quiz_id := int(quiz.get("id", 0))
-				if seen_quiz_ids.has(quiz_id):
-					continue
+			var quiz_dict: Dictionary = quiz
+			var quiz_id := int(quiz_dict.get("id", 0))
+			if quiz_id > 0 and seen_quiz_ids.has(quiz_id):
+				continue
+			if quiz_id > 0:
 				seen_quiz_ids[quiz_id] = true
-				result.append(quiz)
+			var enriched := quiz_dict.duplicate(true)
+			enriched["lesson_id"] = lesson_id
+			result.append(enriched)
 	return result
 
 
@@ -201,6 +193,8 @@ func ensure_minigame_list(lesson_id: int, force_refresh: bool = false) -> Array:
 		return SecureDataManager.be_minigames[lesson_id]
 	var response: Dictionary = await _api.get_lesson_minigames(lesson_id)
 	if not _is_success(response):
+		last_minigame_fetch_succeeded = false
+		last_minigame_fetch_error = _api.error_message(response, "Không thể tải danh sách minigame từ máy chủ.")
 		return []
 	var minigames: Array = _extract_array(response)
 	SecureDataManager.cache_be_minigames(lesson_id, minigames)
@@ -208,6 +202,8 @@ func ensure_minigame_list(lesson_id: int, force_refresh: bool = false) -> Array:
 
 
 func fetch_minigames_for_level(instrument: String, local_lesson_ids: Array, expected_challenge_type: String = "", force_refresh: bool = true) -> Array:
+	last_minigame_fetch_succeeded = true
+	last_minigame_fetch_error = ""
 	if SecureDataManager.be_catalog.is_empty():
 		await fetch_and_install_catalog()
 	var result: Array = []

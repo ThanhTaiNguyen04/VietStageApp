@@ -828,9 +828,7 @@ func _play_quiz_audio(quiz: Dictionary) -> void:
 		return
 	var frequency := _frequency_for_note(_quiz_note(quiz))
 	if Context.instrument == "dan_tranh":
-		var zither_stream: AudioStreamWAV = DanTranhAudio.load_recorded_sample(_quiz_note(quiz))
-		if zither_stream == null:
-			zither_stream = DanTranhAudio.generate_pluck_stream(frequency)
+		var zither_stream: AudioStreamWAV = DanTranhAudio.generate_pluck_stream(frequency)
 		audio_player = AudioStreamPlayer.new()
 		audio_player.stream = zither_stream
 		add_child(audio_player)

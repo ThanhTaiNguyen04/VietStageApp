@@ -374,16 +374,31 @@ func _load_challenges() -> void:
 	if generation != load_generation or not is_inside_tree():
 		return
 	if SecureDataManager.be_catalog.is_empty():
-		_use_offline_data()
+		_set_flow_state(FlowState.ERROR)
+		_build_load_error("Không thể kết nối máy chủ", "Không thể tải danh mục bài học từ máy chủ. Bạn có thể thử tải lại hoặc chơi offline.", true)
 		return
 
 	target_challenges = await report.fetch_minigames_for_level(Context.instrument, Context.local_lesson_ids, "RHYTHM_MATCH", true)
 	if generation != load_generation or not is_inside_tree():
 		return
 
+	if not report.last_minigame_fetch_succeeded:
+		_set_flow_state(FlowState.ERROR)
+		var err_msg: String = report.last_minigame_fetch_error
+		if err_msg.is_empty():
+			err_msg = "Không thể tải dữ liệu thử thách từ máy chủ. Bạn có thể thử tải lại hoặc chơi offline."
+		_build_load_error("Lỗi tải thử thách", err_msg, true)
+		return
+
+	if target_challenges.is_empty():
+		_set_flow_state(FlowState.ERROR)
+		_build_empty_state("Chưa có thử thách nhịp điệu", "Bài học này hiện chưa có nội dung thử thách nhịp điệu trên hệ thống.", true)
+		return
+
 	rhythms = RhythmModel.parse_challenges(target_challenges, Context.instrument)
 	if rhythms.is_empty():
-		_use_offline_data()
+		_set_flow_state(FlowState.ERROR)
+		_build_load_error("Dữ liệu không hợp lệ", "Nội dung thử thách từ máy chủ không thể phân tích cú pháp hợp lệ.", true)
 		return
 
 	result_sync_status = "pending"
@@ -1359,6 +1374,47 @@ func _build_load_error(title: String, description: String, allow_retry: bool = t
 	offline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	offline.pressed.connect(_use_offline_data)
 	actions.add_child(offline)
+
+
+func _build_empty_state(title: String, description: String, allow_offline: bool = true) -> void:
+	_set_hud_mode(false)
+	_clear_content()
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var mobile := _is_mobile()
+	var card_body := _add_centered_card(Color(0.77, 0.58, 0.15), 640.0)
+
+	var icon := _label("♫", 54, Color(0.77, 0.58, 0.15))
+	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card_body.add_child(icon)
+
+	var heading := _label(title, 20 if mobile else 24, C_NAVY)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var bold_font := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	if bold_font:
+		heading.add_theme_font_override("font", bold_font)
+	card_body.add_child(heading)
+
+	var detail := _label(description, 14 if mobile else 16, C_MUTED)
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card_body.add_child(detail)
+
+	var actions := BoxContainer.new()
+	actions.vertical = mobile
+	actions.add_theme_constant_override("separation", 12)
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card_body.add_child(actions)
+
+	var back_btn := _button("Quay lại", 0, 54, C_NAVY)
+	back_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	back_btn.pressed.connect(_go_back)
+	actions.add_child(back_btn)
+
+	if allow_offline:
+		var offline := _secondary_button("Chơi thử offline", 0, 54, C_GREEN_DARK)
+		offline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		offline.pressed.connect(_use_offline_data)
+		actions.add_child(offline)
 
 
 func _prepare_current_round() -> void:
