@@ -132,7 +132,19 @@ const LESSON_DIALOGUES = preload("res://scripts/SaoTrucBundledLessonData.gd").LE
 
 const NOTE_FREQS = preload("res://scripts/SaoTrucBundledLessonData.gd").NOTE_FREQS
 
+var _dashboard_session_lesson_id := ""
+
+func _start_dashboard_session() -> void:
+	await BackendReport.begin_practice_session("sao_truc", _dashboard_session_lesson_id)
+
+
+func _exit_tree() -> void:
+	BackendReport.end_practice_session("sao_truc", _dashboard_session_lesson_id)
+
+
 func _ready():
+	_dashboard_session_lesson_id = SecureDataManager.active_lesson_id
+	call_deferred("_start_dashboard_session")
 	is_challenge_mode = SecureDataManager.data.get("is_challenge_mode", false)
 	
 	volume_bar.visible = false

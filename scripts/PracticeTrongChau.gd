@@ -58,7 +58,19 @@ const SPEECHES : Array[String] = [
 static var current_song_title := ""
 static var current_song_sheet : Array[String] = []
 
+var _dashboard_session_lesson_id := ""
+
+func _start_dashboard_session() -> void:
+	await BackendReport.begin_practice_session("trong_chau", _dashboard_session_lesson_id)
+
+
+func _exit_tree() -> void:
+	BackendReport.end_practice_session("trong_chau", _dashboard_session_lesson_id)
+
+
 func _ready() -> void:
+	_dashboard_session_lesson_id = SecureDataManager.active_lesson_id
+	call_deferred("_start_dashboard_session")
 	_setup_collapsible_linh()
 	
 	if current_song_title != "" and current_song_sheet.size() > 0:

@@ -355,7 +355,19 @@ const SPEECHES : Array[String] = [
 	"Cổ tay thả lỏng,\ngảy dứt khoát hơn.",
 ]
 
+var _dashboard_session_lesson_id := ""
+
+func _start_dashboard_session() -> void:
+	await BackendReport.begin_practice_session("dan_tranh", _dashboard_session_lesson_id)
+
+
+func _exit_tree() -> void:
+	BackendReport.end_practice_session("dan_tranh", _dashboard_session_lesson_id)
+
+
 func _ready() -> void:
+	_dashboard_session_lesson_id = SecureDataManager.active_lesson_id
+	call_deferred("_start_dashboard_session")
 	_level1_mode = LEVEL1_CONFIGS.has(SecureDataManager.active_lesson_id)
 	_level1_lesson1_mode = false
 	_level1_lesson2_mode = SecureDataManager.active_lesson_id == LEVEL1_LESSON2_ID

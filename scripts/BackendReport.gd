@@ -16,6 +16,8 @@ const LessonAssessmentCoordinator = preload("res://scripts/LessonAssessmentCoord
 
 var _api: Node = null
 var _retry_pending_in_progress := false
+var _active_practice_session_id := 0
+var _active_practice_session_key := ""
 
 
 func _ready() -> void:
@@ -356,6 +358,46 @@ func fetch_lesson_assets(lesson_id: int) -> Array:
 
 ## Nộp kết quả lượt tập. scores keys: pitch, rhythm, dynamics,
 ## tonal_quality, breath (0..100). Returns Dictionary { submitted, ... }.
+## Opens a session when the learner enters practice. The session remains open
+## until submission or the practice scene exits, so duration is meaningful.
+func begin_practice_session(instrument: String, local_lesson_id: String) -> Dictionary:
+	if not is_signed_in():
+		return {"started": false, "reason": "not_signed_in"}
+	var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
+	if lesson.is_empty():
+		return {"started": false, "reason": "lesson_binding_mismatch"}
+	var key := "%s:%s" % [instrument, local_lesson_id]
+	if _active_practice_session_id > 0 and _active_practice_session_key == key:
+		return {"started": true, "session_id": _active_practice_session_id}
+	if _active_practice_session_id > 0:
+		await _finish_active_practice_session()
+	var response: Dictionary = await _api.start_practice_session()
+	if not _is_success(response):
+		return {"started": false, "reason": "session_failed", "status": int(response.get("status", 0))}
+	var body: Dictionary = response.get("body", {})
+	var session_data: Dictionary = body.get("data", {}) if body.get("data", {}) is Dictionary else {}
+	var session_id := int(session_data.get("id", 0))
+	if session_id <= 0:
+		return {"started": false, "reason": "invalid_session"}
+	_active_practice_session_id = session_id
+	_active_practice_session_key = key
+	return {"started": true, "session_id": session_id}
+
+
+func end_practice_session(instrument: String, local_lesson_id: String) -> void:
+	var key := "%s:%s" % [instrument, local_lesson_id]
+	if _active_practice_session_key == key:
+		await _finish_active_practice_session()
+
+
+func _finish_active_practice_session() -> void:
+	var session_id := _active_practice_session_id
+	_active_practice_session_id = 0
+	_active_practice_session_key = ""
+	if session_id > 0 and is_signed_in():
+		await _api.end_practice_session(session_id)
+
+
 func report_practice(instrument: String, local_lesson_id: String, scores: Dictionary) -> Dictionary:
 	if not is_signed_in():
 		return {"submitted": false, "reason": "not_signed_in"}
@@ -371,12 +413,13 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 		return {"submitted": false, "reason": "no_exercise_binding"}
 	var exercise_id := int(exercise.get("id", 0))
 
-	var session_response: Dictionary = await _api.start_practice_session()
-	if not _is_success(session_response):
-		return {"submitted": false, "reason": "session_failed", "status": int(session_response.get("status", 0))}
-	var session_body: Dictionary = session_response.get("body", {})
-	var session_data: Dictionary = session_body.get("data", {}) if session_body.get("data", {}) is Dictionary else {}
-	var session_id := int(session_data.get("id", 0))
+	var session_key := "%s:%s" % [instrument, local_lesson_id]
+	var session_id := _active_practice_session_id if _active_practice_session_key == session_key else 0
+	if session_id <= 0:
+		var session_result := await begin_practice_session(instrument, local_lesson_id)
+		if not bool(session_result.get("started", false)):
+			return {"submitted": false, "reason": str(session_result.get("reason", "session_failed")), "status": int(session_result.get("status", 0))}
+		session_id = int(session_result.get("session_id", 0))
 
 	var attempt_response: Dictionary = await _api.submit_practice_attempt(
 		session_id,
@@ -389,7 +432,7 @@ func report_practice(instrument: String, local_lesson_id: String, scores: Dictio
 		_uuid(),
 		_iso_now()
 	)
-	await _api.end_practice_session(session_id)
+	await _finish_active_practice_session()
 
 	if not _is_success(attempt_response):
 		return {
