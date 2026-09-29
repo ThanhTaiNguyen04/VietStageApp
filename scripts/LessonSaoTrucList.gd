@@ -334,15 +334,11 @@ func _build_lesson_list() -> void:
 		var lesson_item : Dictionary = LESSONS[i]
 		var id := lesson_item["id"] as String
 
-		# Unlocking checks
-		var is_unlocked := false
-		if i == 0:
-			is_unlocked = true
-		else:
-			var prev_id := LESSONS[i - 1]["id"] as String
-			is_unlocked = true # FORCE UNLOCK
+		# Server access is primary; cached/bundled progression is the offline fallback.
+		var is_unlocked := SecureDataManager.is_lesson_unlocked(inst, id)
 
 		var is_completed := completed_lessons.has(id) or completed_lessons.has(id + "_practice")
+		var is_in_progress := SecureDataManager.get_lesson_learning_status(inst, id) == "IN_PROGRESS"
 
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
@@ -386,7 +382,7 @@ func _build_lesson_list() -> void:
 		else:
 			btn.text = "🎵\n%s" % lesson_item["note"]
 
-		_style_circle_btn(btn, is_unlocked, is_completed)
+		_style_circle_btn(btn, is_unlocked, is_completed, is_in_progress)
 		_make_btn_bouncy(btn)
 		row.add_child(btn)
 
@@ -396,7 +392,7 @@ func _build_lesson_list() -> void:
 
 		lessons_hbox.add_child(col)
 
-func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> void:
+func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool, is_in_progress: bool = false) -> void:
 	# Jade Green & Gold Traditional Lacquer Theme
 	var bg_color := Color(0.95, 0.93, 0.89, 0.6) # Light warm gray-cream for locked
 	var border_color := Color(0.85, 0.82, 0.78, 1.0) # Gray border for locked
@@ -410,11 +406,11 @@ func _style_circle_btn(btn: Button, is_unlocked: bool, is_completed: bool) -> vo
 		bg_color = Color(1.0, 1.0, 1.0, 0.8) # semi-transparent white for glass effect
 		border_color = C_JADE_LIGHT # Jade border
 		text_color = C_TEXT # Dark charcoal text
+		if is_in_progress:
+			bg_color = C_JADE
+			border_color = C_GOLD
+			text_color = Color.WHITE
 
-	# Temporary open-access appearance; completion data stays unchanged.
-	bg_color = Color(0.09, 0.27, 0.18, 1.0)
-	border_color = Color.WHITE
-	text_color = Color.WHITE
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -475,8 +471,10 @@ func _draw_connecting_lines() -> void:
 
 		centers.append(center)
 
-		# Determine unlock status - currently forcing true to match UI
-		node_unlocked.append(true)
+		var lesson_id := ""
+		if i < LESSONS.size():
+			lesson_id = str(LESSONS[i].get("id", ""))
+		node_unlocked.append(SecureDataManager.is_lesson_unlocked(inst, lesson_id))
 
 	if centers.is_empty():
 		return
@@ -554,6 +552,13 @@ func _make_btn_bouncy(btn: Button) -> void:
 	)
 
 func _open_lesson(node_id: String) -> void:
+	if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("sao_truc", node_id):
+		return
+	var backend_report = get_node_or_null("/root/BackendReport")
+	if not SecureDataManager.has_temporary_full_access() and backend_report and backend_report.has_method("start_lesson"):
+		var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
+		if start_result.get("reason", "") == "locked":
+			return
 	SecureDataManager.active_lesson_id = node_id
 
 	var song_title = node_id

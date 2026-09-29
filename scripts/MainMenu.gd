@@ -197,6 +197,14 @@ func _ready() -> void:
 func _fetch_and_sync_progress() -> void:
 	if _api_client == null:
 		return
+	var backend_report = get_node_or_null("/root/BackendReport")
+	if backend_report and backend_report.has_method("fetch_and_install_catalog"):
+		await backend_report.fetch_and_install_catalog()
+	var course_response = await _api_client.get_app_course_progress()
+	if _api_client._is_success(course_response):
+		var course_data: Variant = course_response.get("body", {}).get("data", {})
+		if course_data is Dictionary:
+			SecureDataManager.sync_backend_course_progress(course_data)
 	var response = await _api_client.get_my_progress()
 	if _api_client._is_success(response):
 		var list = response.get("body", {}).get("data", [])
@@ -216,9 +224,6 @@ func _fetch_and_sync_progress() -> void:
 				streak_pill.visible = false
 				xp_pill.visible = false
 	_fetch_daily_challenges()
-	var backend_report = get_node_or_null("/root/BackendReport")
-	if backend_report and backend_report.has_method("fetch_and_install_catalog"):
-		backend_report.fetch_and_install_catalog()
 
 func _fetch_profile_identity() -> void:
 	if _api_client == null:
@@ -278,7 +283,7 @@ func _setup_drawing_callbacks() -> void:
 		elif inst == "trong_chau":
 			pct = _get_trong_chau_card_status("basic").get("pct", 0)
 		else:
-			if SecureDataManager.is_lesson_completed(inst, "Node1"):
+			if SecureDataManager.is_lesson_completed(inst, "Node1") or SecureDataManager.has_temporary_full_access():
 				pct = 100.0
 
 		var angle_fill := (pct / 100.0) * TAU
@@ -313,11 +318,12 @@ func _setup_drawing_callbacks() -> void:
 			pct = _get_trong_chau_card_status("essentials").get("pct", 0)
 			is_unlocked = bool(_get_trong_chau_card_status("basic").get("completed", false))
 		else:
-			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
+			if SecureDataManager.is_lesson_completed(inst, "Node1") or SecureDataManager.has_temporary_full_access(): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
 			is_unlocked = SecureDataManager.is_lesson_completed(inst, "Node1")
+		if SecureDataManager.has_temporary_full_access():
+			is_unlocked = true
 
-		is_unlocked = true # Temporary open access; preserve actual progress.
 		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12)
 		vis_essentials.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
@@ -355,8 +361,9 @@ func _setup_drawing_callbacks() -> void:
 			is_unlocked = bool(_get_trong_chau_card_status("essentials").get("completed", false))
 		else:
 			pct = 0.0
+		if SecureDataManager.has_temporary_full_access():
+			is_unlocked = true
 
-		is_unlocked = true # Temporary open access; preserve actual progress.
 		var ring_bg_color := Color(1.0, 1.0, 1.0, 0.12)
 		vis_level_3.draw_arc(Vector2(cx, cy), r, 0, TAU, 32, ring_bg_color, 7.0, true)
 
@@ -1763,7 +1770,9 @@ func _build_roadmap_cards() -> void:
 	# isUnlocked == false -> white alpha 0.45 (locked).
 	# isUnlocked == true and learningStatus == NOT_STARTED -> white alpha 0.82.
 	# learningStatus == IN_PROGRESS or COMPLETED -> green.
-	var is_ess_unlocked := true
+	var is_ess_unlocked := bool(_get_dan_tranh_level_status(1).get("completed", false))
+	if SecureDataManager.has_temporary_full_access():
+		is_ess_unlocked = true
 	if not is_ess_unlocked:
 		var ess_lock_sb := _flat(Color(0.96, 0.97, 0.95, 0.82), Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55), 24)
 		ess_lock_sb.border_width_left = 6; ess_lock_sb.border_width_right = 6
@@ -1874,7 +1883,8 @@ func _build_roadmap_cards() -> void:
 	else:
 		level_3_stats = _get_dan_tranh_level_status(7)
 		is_level_3_unlocked = bool(_get_dan_tranh_level_status(2).get("completed", false))
-	is_level_3_unlocked = true # Temporary open access, independent of progress.
+	if SecureDataManager.has_temporary_full_access():
+		is_level_3_unlocked = true
 	var level_3_sb := _flat(
 		C_CARD_BG if is_level_3_unlocked else Color(0.96, 0.97, 0.95, 0.82),
 		Color.WHITE if is_level_3_unlocked else Color(C_RED_SON.r, C_RED_SON.g, C_RED_SON.b, 0.55),
@@ -2257,11 +2267,11 @@ func _connect_buttons() -> void:
 			elif inst == "sao_truc":
 				_open_sao_truc_level(2)
 			else:
-				var is_ess_unlocked := true # Temporary open access.
+				var is_ess_unlocked := SecureDataManager.is_lesson_unlocked(inst, "Node3")
 				if not is_ess_unlocked:
 					_virtual_artist_play_happy("Bạn ơi, hãy xem xong video Hướng Dẫn ở bài Nhập Môn để mở khóa bài Luyện Tập nhé!")
 					return
-				if SecureDataManager.is_lesson_completed(inst, "Node1"):
+				if SecureDataManager.is_lesson_completed(inst, "Node1") or SecureDataManager.has_temporary_full_access():
 					SecureDataManager.active_lesson_id = "Node3"
 					_go_practice_room_for_node(3)
 				else:

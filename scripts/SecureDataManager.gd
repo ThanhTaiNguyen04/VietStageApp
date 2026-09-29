@@ -5,6 +5,13 @@ class_name SecureDataManager
 const SAVE_FILE_PATH := "user://vietstage_progress.dat"
 const ENCRYPTION_KEY := "VietStageCapstone2026_TraditionalInstrument_GameBasedLearning"
 
+# Temporary local access for acceptance testing while the backend full-access
+# rule is being deployed. Remove these entries after the backend confirms it.
+const TEMPORARY_FULL_ACCESS_EMAILS := [
+	"thanhdattb19@gmail.com",
+	"phuclong2710@gmail.com",
+]
+
 # Remove this map after BE exposes canonical instrumentCode and lessonCode for
 # every progress record and the production data migration is complete.
 const LEGACY_BACKEND_LESSON_MAP := {
@@ -161,6 +168,68 @@ static func sync_backend_progress(progress_list: Array) -> void:
 			_remove_backend_completion(instrument, node_id)
 
 	save_data()
+
+
+## Đồng bộ contract GET /api/app/courses/progress.
+## API là nguồn chính khi có dữ liệu; cache local chỉ được dùng khi API lỗi/offline.
+static func sync_backend_course_progress(course_data: Dictionary) -> bool:
+	var lessons_value: Variant = course_data.get("lessons", [])
+	var levels_value: Variant = course_data.get("levels", [])
+	if not lessons_value is Array or not levels_value is Array:
+		return false
+	_ensure_progress_containers()
+	data["backend_lesson_access"] = {}
+	data["backend_level_access"] = {}
+	data["backend_course_access_loaded"] = true
+	for raw_level: Variant in levels_value:
+		if raw_level is Dictionary:
+			var level: Dictionary = raw_level
+			var level_id := int(level.get("levelId", 0))
+			if level_id > 0:
+				data["backend_level_access"][str(level_id)] = level.duplicate(true)
+	for raw_lesson: Variant in lessons_value:
+		if not raw_lesson is Dictionary:
+			continue
+		var access: Dictionary = raw_lesson
+		var lesson_id := int(access.get("lessonId", 0))
+		if lesson_id <= 0:
+			continue
+		data["backend_lesson_access"][str(lesson_id)] = access.duplicate(true)
+		var catalog_lesson := _backend_lesson_by_id(lesson_id)
+		if catalog_lesson.is_empty():
+			continue
+		var resolved := resolve_backend_progress_item(catalog_lesson)
+		if resolved.is_empty():
+			continue
+		var instrument := str(resolved.get("instrument", ""))
+		var node_id := str(resolved.get("node_id", ""))
+		if instrument.is_empty() or node_id.is_empty():
+			continue
+		if bool(access.get("isUnlocked", false)):
+			_unlock_lesson(instrument, node_id)
+		if bool(access.get("completed", false)):
+			_apply_backend_completion(instrument, node_id, maxi(0, int(access.get("lessonStars", 0))))
+	save_data()
+	return true
+
+
+static func is_backend_course_access_loaded() -> bool:
+	return bool(data.get("backend_course_access_loaded", false))
+
+
+static func has_temporary_full_access() -> bool:
+	var email := str(data.get("user_email", "")).strip_edges().to_lower()
+	return email in TEMPORARY_FULL_ACCESS_EMAILS
+
+
+static func get_backend_lesson_access(instrument: String, lesson_id: String) -> Dictionary:
+	var lesson := resolve_be_lesson_exact(instrument, lesson_id)
+	var backend_id := int(lesson.get("id", 0))
+	var all_access: Variant = data.get("backend_lesson_access", {})
+	if backend_id <= 0 or not all_access is Dictionary:
+		return {}
+	var value: Variant = all_access.get(str(backend_id), {})
+	return value.duplicate(true) if value is Dictionary else {}
 
 
 ## Chỉ gọi sau khi backend xác nhận hoàn thành bài.
@@ -430,10 +499,21 @@ static func is_lesson_completed(instrument: String, lesson_id: String) -> bool:
 	return false
 
 static func is_lesson_unlocked(instrument: String, lesson_id: String) -> bool:
-	return true # UNLOCKED ALL FOR TESTING
-	#if data.unlocked_lessons.has(instrument):
-	#	return data.unlocked_lessons[instrument].has(lesson_id)
-	#return false
+	if has_temporary_full_access():
+		return true
+	var access := get_backend_lesson_access(instrument, lesson_id)
+	if not access.is_empty():
+		return bool(access.get("isUnlocked", false))
+	if data.unlocked_lessons.has(instrument):
+		return data.unlocked_lessons[instrument].has(lesson_id)
+	return false
+
+
+static func get_lesson_learning_status(instrument: String, lesson_id: String) -> String:
+	var access := get_backend_lesson_access(instrument, lesson_id)
+	if not access.is_empty():
+		return str(access.get("learningStatus", "NOT_STARTED"))
+	return "COMPLETED" if is_lesson_completed(instrument, lesson_id) else "NOT_STARTED"
 
 static func complete_lesson(instrument: String, lesson_id: String, stars: int) -> void:
 	if not data.completed_lessons.has(instrument):
@@ -685,6 +765,13 @@ static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: Str
 			var legacy: Dictionary = LEGACY_BACKEND_LESSON_MAP[id]
 			if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
 				return lesson
+	return {}
+
+
+static func _backend_lesson_by_id(lesson_id: int) -> Dictionary:
+	for item: Variant in be_catalog:
+		if item is Dictionary and int((item as Dictionary).get("id", 0)) == lesson_id:
+			return (item as Dictionary)
 	return {}
 
 
