@@ -754,7 +754,7 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 			if report != null and report.is_signed_in():
 				var challenge_start := str(challenge_started_at.get(current_id, started_at))
 				var client_attempt_id := _client_attempt_id("melody")
-				var play_data := JSON.stringify({"challengeType": "MELODY_COMPLETE", "selected": selected, "expected": expected, "isCorrect": correct, "correctRounds": correct_rounds})
+				var play_data := JSON.stringify({"selectedNotes": [selected], "correctNotes": [expected], "isCorrect": correct, "correctRounds": correct_rounds})
 				var result: Dictionary = await report.report_minigame_by_id(current_id, challenge_score, challenge_stars, challenge_start, _now_iso(), client_attempt_id, play_data)
 				if bool(result.get("submitted", false)):
 					result_sync_status = "be"

@@ -982,7 +982,7 @@ func _finish_round() -> void:
 			"started_at": challenge_started_at,
 			"completed_at": _now_iso(),
 			"client_attempt_id": _new_attempt_id(),
-			"play_data": JSON.stringify({"challengeType": "RHYTHM_MATCH", "targetCount": target_count, "hits": round_hits, "accuracyPoints": round_accuracy_points}),
+			"play_data": JSON.stringify({"totalTargets": target_count, "hits": round_hits, "accuracy": round_accuracy}),
 			"title": str(current.get("title", "Đọc khuông nhạc")),
 		}
 		if online_session and int(payload["minigame_id"]) > 0:
