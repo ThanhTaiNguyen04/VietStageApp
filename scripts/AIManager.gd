@@ -6,7 +6,7 @@ signal response_chunk_received(text: String, emotion: String)
 signal response_finished()
 signal request_failed(reason: String)
 
-@export var api_url: String = "https://anew-handgrip-elope.ngrok-free.dev/api/chat"
+@export var api_url: String = ""
 @export var model_name: String = "mai-musician-fast"
 # Retained for existing scenes; validated JSON is now mandatory.
 @export var use_structured_json: bool = true
@@ -34,6 +34,8 @@ var _http_status := 0
 
 func _ready() -> void:
 	set_process(false)
+	if api_url.is_empty():
+		api_url = AppConfig.get_maibrain_chat_url()
 	if api_key.is_empty():
 		api_key = OS.get_environment("MAIBRAIN_API_KEY")
 	reset_conversation()
@@ -147,7 +149,7 @@ func _send_http_request() -> void:
 		_close_client()
 		return
 
-	var headers := PackedStringArray(["Content-Type: application/json", "ngrok-skip-browser-warning: 1"])
+	var headers := PackedStringArray(["Content-Type: application/json"])
 	if not api_key.is_empty():
 		headers.append("X-MaiBrain-Key: " + api_key)
 

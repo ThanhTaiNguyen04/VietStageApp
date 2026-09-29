@@ -98,7 +98,19 @@ const SPEECHES : Array[String] = [
 	"Cao độ chuẩn âm sắc truyền thống,\ntiếp tục nào.",
 	"Tiếng bầu ngân nga mềm mại,\nnhịp điệu rất đẹp.",
 ]
+var _dashboard_session_lesson_id := ""
+
+func _start_dashboard_session() -> void:
+	await BackendReport.begin_practice_session("dan_bau", _dashboard_session_lesson_id)
+
+
+func _exit_tree() -> void:
+	BackendReport.end_practice_session("dan_bau", _dashboard_session_lesson_id)
+
+
 func _ready() -> void:
+	_dashboard_session_lesson_id = SecureDataManager.active_lesson_id
+	call_deferred("_start_dashboard_session")
 	# Setup collapsible LinhPanel system
 	_setup_collapsible_linh()
 	

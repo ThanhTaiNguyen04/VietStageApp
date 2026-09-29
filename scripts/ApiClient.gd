@@ -179,7 +179,8 @@ func submit_minigame_attempt(
 	score: int,
 	client_attempt_id: String,
 	started_at: String,
-	completed_at: String
+	completed_at: String,
+	play_data: String = ""
 ) -> Dictionary:
 	var payload := {
 		"score": score,
@@ -187,6 +188,8 @@ func submit_minigame_attempt(
 		"startedAt": started_at,
 		"completedAt": completed_at,
 	}
+	if not play_data.is_empty():
+		payload["playData"] = play_data
 	var path := ApiRoutes.build(ApiRoutes.MINIGAME_ATTEMPTS % str(minigame_id))
 	# BackendReport has a dedicated durable queue for game attempts, just like
 	# quiz attempts. Keep the generic queue from returning a false HTTP 202 ACK.
@@ -292,6 +295,17 @@ func get_my_progress(instrument_id: int = 0, skill_level_id: int = 0) -> Diction
 ## Lấy tổng quan tiến độ (Streak, XP, ...)
 func get_my_progress_summary() -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.USER_PROGRESS_SUMMARY), HTTPClient.METHOD_GET)
+
+
+## Quyền truy cập và trạng thái học cho toàn bộ bài/level của tài khoản hiện tại.
+func get_app_course_progress() -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.APP_COURSE_PROGRESS), HTTPClient.METHOD_GET)
+
+
+## Ghi nhận bắt đầu học. Backend quyết định bài có được mở hay không.
+func start_app_course_lesson(lesson_id: int) -> Dictionary:
+	var path := ApiRoutes.build(ApiRoutes.APP_COURSE_START_LESSON % str(lesson_id))
+	return await request_json(path, HTTPClient.METHOD_POST, {}, true, false)
 
 ## Hoàn thành một bài trong giáo trình. Backend quyết định sao và tiến trình.
 func complete_lesson_progress(

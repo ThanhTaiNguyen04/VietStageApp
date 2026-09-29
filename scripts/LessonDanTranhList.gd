@@ -16,8 +16,8 @@ const LearningActivityContextScript := preload("res://scripts/LearningActivityCo
 const DanTranhApiCourseContractScript := preload("res://scripts/DanTranhApiCourseContract.gd")
 
 static var selected_level: int = 1
-const REQUIRE_SEQUENTIAL_UNLOCK := false # Tạm mở toàn bộ bài; đổi thành true để khôi phục lộ trình tuần tự.
-const SHOW_ALL_LESSONS_AS_AVAILABLE := true # Chế độ chỉnh sửa: mọi card trắng, mở và bấm được; không xóa tiến độ đã lưu.
+const REQUIRE_SEQUENTIAL_UNLOCK := true
+const SHOW_ALL_LESSONS_AS_AVAILABLE := false
 var _sidebar_icon_cache: Dictionary = {}
 var _sidebar_expanded := true
 var _sidebar_tween: Tween = null
@@ -278,11 +278,10 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		var previous_id := str(previous.get("%s_id" % previous_activity, _lesson_id(previous_number, previous_activity)))
 		lesson_ready = completed.has(previous_id)
 	var practice_completed: bool = completed.has(practice_id)
-	var practice_unlocked: bool = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
-	if SHOW_ALL_LESSONS_AS_AVAILABLE:
-		lesson_ready = true
-		practice_completed = false
-		practice_unlocked = true
+	var practice_in_progress := SecureDataManager.get_lesson_learning_status("dan_tranh", practice_id) == "IN_PROGRESS"
+	var practice_unlocked: bool = SecureDataManager.is_lesson_unlocked("dan_tranh", practice_id)
+	if not SecureDataManager.is_backend_course_access_loaded():
+		practice_unlocked = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
 
 	var column := VBoxContainer.new()
 	column.custom_minimum_size = Vector2.ZERO
@@ -292,7 +291,7 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	column.add_theme_constant_override("separation", 24)
 
 	# Giữ hình tròn bài học và đặt cả số bài lẫn tên bài bên trong.
-	var lesson_button := _create_circle_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed)
+	var lesson_button := _create_circle_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed, practice_in_progress)
 	lesson_button.name = "LessonBtn"
 	lesson_button.z_index = 10
 	# Bài mở đầu phải bắt đầu bằng video giới thiệu; xem xong mới vào phần cô Mai
@@ -375,7 +374,7 @@ func _create_small_btn(label: String, unlocked: bool) -> Button:
 	_make_bouncy(button)
 	return button
 
-func _create_circle_button(display_number: String, lesson_title: String, unlocked: bool, completed: bool) -> Button:
+func _create_circle_button(display_number: String, lesson_title: String, unlocked: bool, completed: bool, in_progress: bool = false) -> Button:
 	var button := Button.new()
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.custom_minimum_size = Vector2(250, 250)
@@ -404,11 +403,10 @@ func _create_circle_button(display_number: String, lesson_title: String, unlocke
 		bg_color = Color.WHITE
 		border_color = C_JADE_LIGHT
 		text_color = C_TEXT
-
-	# Temporary open-access appearance; completion data stays unchanged.
-	bg_color = Color(0.09, 0.27, 0.18, 1.0)
-	border_color = Color.WHITE
-	text_color = Color.WHITE
+		if in_progress:
+			bg_color = C_JADE
+			border_color = C_GOLD
+			text_color = Color.WHITE
 	var s_normal := StyleBoxFlat.new()
 	s_normal.bg_color = bg_color
 	s_normal.border_color = border_color
@@ -666,6 +664,15 @@ func _go_to_levels() -> void:
 
 func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	var lesson_number := int(lesson["number"])
+	var id_field := "video_id" if activity == "video" else "practice_id"
+	var start_id := str(lesson.get(id_field, _lesson_id(lesson_number, activity)))
+	if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("dan_tranh", start_id):
+		return
+	var backend_report = get_node_or_null("/root/BackendReport")
+	if not SecureDataManager.has_temporary_full_access() and backend_report and backend_report.has_method("start_lesson"):
+		var start_result: Dictionary = await backend_report.start_lesson("dan_tranh", start_id)
+		if start_result.get("reason", "") == "locked":
+			return
 	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])

@@ -2565,7 +2565,9 @@ func _fetch_cosmetics_data() -> void:
 			_set_shop_status("", false)
 			if body is Dictionary:
 				SecureDataManager.apply_backend_reward(body)
-			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []))
+			# Vật phẩm đã sở hữu vẫn phải được giữ khi admin ngừng bán (INACTIVE).
+			# Chỉ catalog vật phẩm chưa sở hữu mới lọc trạng thái này.
+			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []), true)
 			_cosmetics_locked = _filter_room_decor_items(body.get("locked", []))
 
 			# Backend là nguồn chính cho trạng thái trang bị; local chỉ là cache offline.
@@ -2660,7 +2662,7 @@ func _new_client_request_id() -> String:
 	var random_bytes := Crypto.new().generate_random_bytes(16)
 	return random_bytes.hex_encode()
 
-func _filter_room_decor_items(value: Variant) -> Array:
+func _filter_room_decor_items(value: Variant, include_inactive: bool = false) -> Array:
 	var source: Array = []
 	if value is Array:
 		source = value
@@ -2675,7 +2677,7 @@ func _filter_room_decor_items(value: Variant) -> Array:
 		var item := entry as Dictionary
 		var item_type := str(item.get("itemType", item.get("item_type", "ROOM_DECOR")))
 		var status := str(item.get("status", "ACTIVE"))
-		if item_type == "ROOM_DECOR" and status != "INACTIVE":
+		if item_type == "ROOM_DECOR" and (include_inactive or status != "INACTIVE"):
 			result.append(item)
 	return result
 

@@ -28,6 +28,10 @@ static func get_api_timeout_seconds() -> float:
 	return DEFAULT_API_TIMEOUT_SECONDS
 
 
+static func get_maibrain_chat_url() -> String:
+	return _get_value("MAIBRAIN_CHAT_URL").trim_suffix("/")
+
+
 static func get_api_configuration_error() -> String:
 	var base_url := get_api_base_url()
 	if base_url.is_empty():
@@ -57,6 +61,8 @@ static func _get_packaged_value(key: String) -> String:
 			return str(PACKAGED_CONFIG.get("api_base_url")).strip_edges()
 		"VIETSTAGE_API_PREFIX":
 			return str(PACKAGED_CONFIG.get("api_prefix")).strip_edges()
+		"MAIBRAIN_CHAT_URL":
+			return str(PACKAGED_CONFIG.get("maibrain_chat_url")).strip_edges()
 		_:
 			return ""
 

@@ -1047,6 +1047,7 @@ func _finish_round() -> void:
 			"started_at": challenge_started_at,
 			"completed_at": _now_iso(),
 			"client_attempt_id": _new_attempt_id(),
+			"play_data": JSON.stringify({"totalTargets": target_count, "hits": round_hits, "accuracy": round_accuracy}),
 			"title": str(current.get("title", "Đọc khuông nhạc")),
 		}
 		if online_session and int(payload["minigame_id"]) > 0:
@@ -1081,7 +1082,8 @@ func _submit_payload(payload: Dictionary) -> bool:
 	var start_str := str(payload.get("started_at", ""))
 	var completed_str := str(payload.get("completed_at", ""))
 	var client_id := str(payload.get("client_attempt_id", ""))
-	var result: Dictionary = await report.report_minigame_by_id(minigame_id, score, preview_stars, start_str, completed_str, client_id)
+	var play_data := str(payload.get("play_data", ""))
+	var result: Dictionary = await report.report_minigame_by_id(minigame_id, score, preview_stars, start_str, completed_str, client_id, play_data)
 	if bool(result.get("submitted", false)):
 		submitted_count += 1
 		backend_stars_earned = maxi(backend_stars_earned, int(result.get("stars_earned", 0)))
