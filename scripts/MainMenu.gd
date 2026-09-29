@@ -283,7 +283,7 @@ func _setup_drawing_callbacks() -> void:
 		elif inst == "trong_chau":
 			pct = _get_trong_chau_card_status("basic").get("pct", 0)
 		else:
-			if SecureDataManager.is_lesson_completed(inst, "Node1") or SecureDataManager.has_temporary_full_access():
+			if SecureDataManager.is_lesson_completed(inst, "Node1"):
 				pct = 100.0
 
 		var angle_fill := (pct / 100.0) * TAU
@@ -318,7 +318,7 @@ func _setup_drawing_callbacks() -> void:
 			pct = _get_trong_chau_card_status("essentials").get("pct", 0)
 			is_unlocked = bool(_get_trong_chau_card_status("basic").get("completed", false))
 		else:
-			if SecureDataManager.is_lesson_completed(inst, "Node1") or SecureDataManager.has_temporary_full_access(): pct += 50.0
+			if SecureDataManager.is_lesson_completed(inst, "Node1"): pct += 50.0
 			if SecureDataManager.is_lesson_completed(inst, "Node3"): pct += 50.0
 			is_unlocked = SecureDataManager.is_lesson_completed(inst, "Node1")
 		if SecureDataManager.has_temporary_full_access():
