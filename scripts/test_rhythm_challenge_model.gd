@@ -118,6 +118,10 @@ func _test_sample_assets() -> void:
 	}
 	for instrument: String in supported:
 		for note: String in supported[instrument]:
+			if instrument == "dan_tranh":
+				_check(player.preflight(instrument, [note], -1).ok, "Đàn tranh phải tạo được âm mẫu đúng dây: " + note)
+				_check(player.sample_path(instrument, note).is_empty(), "Mini game không được phát lại mẫu Kayageum")
+				continue
 			var path := player.sample_path(instrument, note)
 			_check(not path.is_empty() and ResourceLoader.exists(path), "%s %s phải có WAV nghe mẫu" % [instrument, note])
 	player.free()
@@ -125,13 +129,13 @@ func _test_sample_assets() -> void:
 
 func _test_real_dan_tranh_profile() -> void:
 	var profile := DanTranhAudio.make_real_string_pitch_profile()
-	_check(profile.notes.size() == 17, "Đàn Tranh phải dùng đúng 17 dây thu thật")
-	_check(profile.notes[0] == "G3" and profile.notes[16] == "A6", "Dải đàn tranh thu thật phải từ G3 đến A6")
+	_check(profile.notes.size() == 17, "Đàn Tranh phải dùng đúng 17 vị trí dây")
+	_check(profile.notes[0] == "G3" and profile.notes[16] == "A6", "Dải 17 dây phải từ G3 đến A6")
 	_check(profile.match_pitch(440.0).get("note_name") == "A4", "440 Hz phải nhận là dây La2/A4")
 	_check(profile.match_pitch(349.23).get("is_match") == false, "Fa không được nhận là dây thu thật riêng")
 	var player := InstrumentSamplePlayer.new()
-	_check(player.sample_path("dan_tranh", "F4").is_empty(), "Không phát WAV Fa tổng hợp trong minigame đàn tranh")
-	_check(player.sample_path("dan_tranh", "B5").is_empty(), "Không phát WAV Si tổng hợp trong minigame đàn tranh")
+	_check(not player.preflight("dan_tranh", ["F4"], -1).ok, "Không tạo riêng dây Fa ngoài bộ 17 dây")
+	_check(not player.preflight("dan_tranh", ["B5"], -1).ok, "Không tạo riêng dây Si ngoài bộ 17 dây")
 	player.free()
 
 

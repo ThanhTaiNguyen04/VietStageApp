@@ -38,6 +38,7 @@ func _run() -> void:
 		var staff = screen.staff
 		var plaque = screen.find_child("RhythmTitlePlaque", true, false)
 		_check(plaque.get_global_rect().end.y < staff.get_global_rect().position.y, "Title overlaps score")
+		_check(staff.get_global_rect().position.y - plaque.get_global_rect().end.y <= 50.0, "Too much space between title and notation card")
 		var records: Array = staff.compute_note_records()["records"]
 		_check(records.size() == 6, "Flute sample must have six eighth notes")
 		var steps := [0, 1, 2, 4, 5, 7]

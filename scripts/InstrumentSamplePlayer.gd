@@ -1,8 +1,8 @@
 extends Node
 class_name InstrumentSamplePlayer
 
-## Plays only packaged, recorded instrument samples. It deliberately has no
-## synthesis fallback: an incomplete sample library is a content error.
+## Uses the same procedural đàn tranh string tone as its practice lesson.
+## Other instruments use their packaged audio assets.
 signal note_started(sequence_index: int)
 signal playback_finished()
 signal playback_failed(details: Dictionary)
@@ -18,18 +18,7 @@ const DAN_BAU_PATHS := {
 	"c6": "res://assets/audio/dan_bau_do6.wav",
 }
 
-const DAN_TRANH_PATHS := {
-	"g3": "res://assets/audio/dan_tranh_cc0/G3.wav", "a3": "res://assets/audio/dan_tranh_cc0/A3.wav",
-	"c4": "res://assets/audio/dan_tranh_cc0/C4.wav", "d4": "res://assets/audio/dan_tranh_cc0/D4.wav",
-	"e4": "res://assets/audio/dan_tranh_cc0/E4.wav",
-	"g4": "res://assets/audio/dan_tranh_cc0/G4.wav", "a4": "res://assets/audio/dan_tranh_cc0/A4.wav",
-	"c5": "res://assets/audio/dan_tranh_cc0/C5.wav",
-	"d5": "res://assets/audio/dan_tranh_cc0/D5.wav", "e5": "res://assets/audio/dan_tranh_cc0/E5.wav",
-	"g5": "res://assets/audio/dan_tranh_cc0/G5.wav", "a5": "res://assets/audio/dan_tranh_cc0/A5.wav",
-	"c6": "res://assets/audio/dan_tranh_cc0/C6.wav", "d6": "res://assets/audio/dan_tranh_cc0/D6.wav",
-	"e6": "res://assets/audio/dan_tranh_cc0/E6.wav", "g6": "res://assets/audio/dan_tranh_cc0/G6.wav",
-	"a6": "res://assets/audio/dan_tranh_cc0/A6.wav",
-}
+const DAN_TRANH_AUDIO = preload("res://scripts/DanTranhAudio.gd")
 
 const SAO_TRUC_PATHS := {
 	"c5": "res://assets/audio/sao_truc/C5.wav", "d5": "res://assets/audio/sao_truc/D5.wav",
@@ -42,9 +31,15 @@ const SAO_TRUC_PATHS := {
 	"c7": "res://assets/audio/sao_truc/C7.wav",
 }
 
+const TRONG_CHAU_PATHS := {
+	"tịch": "res://assets/audio/trong_chau/center_hit.mp3",
+	"cắc": "res://assets/audio/trong_chau/rim_hit.mp3",
+}
+
 var _player: AudioStreamPlayer
 var _generation := 0
 var _playing := false
+var _dan_tranh_streams: Dictionary = {}
 
 func _ready() -> void:
 	_player = AudioStreamPlayer.new()
@@ -64,6 +59,10 @@ func is_playing() -> bool:
 	return _playing
 
 func sample_path(instrument: String, raw_note: String) -> String:
+	if instrument == "dan_tranh":
+		return ""
+	if instrument == "trong_chau":
+		return str(TRONG_CHAU_PATHS.get(raw_note.strip_edges().to_lower(), ""))
 	var key := normalize_note_key(instrument, raw_note)
 	var paths: Dictionary = _paths_for(instrument)
 	return str(paths.get(key, ""))
@@ -74,6 +73,10 @@ func preflight(instrument: String, notes: Array, missing_index: int) -> Dictiona
 		if index == missing_index:
 			continue
 		var raw_note := str(notes[index])
+		if instrument == "dan_tranh":
+			if _dan_tranh_frequency(raw_note) <= 0.0:
+				missing.append({"index": index, "note": raw_note, "path": ""})
+			continue
 		var path := sample_path(instrument, raw_note)
 		if path.is_empty() or not _file_or_resource_exists(path):
 			missing.append({"index": index, "note": raw_note, "path": path})
@@ -90,6 +93,50 @@ func play_sequence(instrument: String, notes: Array, missing_index: int, bpm: fl
 	_run_sequence(_generation, instrument, notes.duplicate(), missing_index, maxf(1.0, bpm))
 	return {"ok": true}
 
+func play_timed_sequence(instrument: String, notes: Array, note_times: Array[float], durations: Array[float]) -> Dictionary:
+	stop()
+	if notes.size() != note_times.size() or notes.size() != durations.size():
+		return {"ok": false, "missing": [], "reason": "invalid_timing"}
+	var check := preflight(instrument, notes, -1)
+	if not bool(check.get("ok", false)):
+		playback_failed.emit(check)
+		return check
+	_generation += 1
+	_playing = true
+	_run_timed_sequence(_generation, instrument, notes.duplicate(), note_times.duplicate(), durations.duplicate())
+	return {"ok": true}
+
+func _run_timed_sequence(generation: int, instrument: String, notes: Array, note_times: Array[float], durations: Array[float]) -> void:
+	var streams: Array[AudioStream] = []
+	for note in notes:
+		var prepared := _stream_for(instrument, str(note))
+		if prepared == null:
+			_playing = false
+			playback_failed.emit({"ok": false, "missing": [{"note": str(note)}]})
+			return
+		streams.append(prepared)
+	await get_tree().process_frame
+	if generation != _generation or not is_inside_tree():
+		return
+	var started_usec := Time.get_ticks_usec()
+	for index in notes.size():
+		while float(Time.get_ticks_usec() - started_usec) / 1000000.0 < note_times[index]:
+			await get_tree().process_frame
+		if generation != _generation or not is_inside_tree():
+			return
+		note_started.emit(index)
+		_player.stream = streams[index]
+		_player.play()
+		var next_time := note_times[index + 1] if index + 1 < note_times.size() else note_times[index] + durations[index]
+		var note_length := maxf(0.01, minf(durations[index], next_time - note_times[index]))
+		while float(Time.get_ticks_usec() - started_usec) / 1000000.0 < note_times[index] + note_length:
+			await get_tree().process_frame
+		if generation != _generation or not is_inside_tree():
+			return
+		_player.stop()
+	_playing = false
+	playback_finished.emit()
+
 func _run_sequence(generation: int, instrument: String, notes: Array, missing_index: int, bpm: float) -> void:
 	var beat_seconds := 60.0 / bpm
 	for index in range(notes.size()):
@@ -97,7 +144,7 @@ func _run_sequence(generation: int, instrument: String, notes: Array, missing_in
 			return
 		if index == missing_index:
 			continue
-		var stream := _load_audio_stream(sample_path(instrument, str(notes[index])))
+		var stream := _stream_for(instrument, str(notes[index]))
 		if stream == null:
 			_playing = false
 			playback_failed.emit({"ok": false, "missing": [{"index": index, "note": str(notes[index])}]})
@@ -116,6 +163,22 @@ static func _file_or_resource_exists(path: String) -> bool:
 	if path.is_empty():
 		return false
 	return ResourceLoader.exists(path) or FileAccess.file_exists(path)
+
+static func _dan_tranh_frequency(raw_note: String) -> float:
+	var key := normalize_note_key("dan_tranh", raw_note).to_upper()
+	var index := DAN_TRANH_AUDIO.REAL_STRING_NOTES.find(key)
+	return float(DAN_TRANH_AUDIO.REAL_STRING_FREQUENCIES[index]) if index >= 0 else 0.0
+
+func _stream_for(instrument: String, raw_note: String) -> AudioStream:
+	if instrument == "dan_tranh":
+		var key := normalize_note_key(instrument, raw_note)
+		if not _dan_tranh_streams.has(key):
+			var frequency := _dan_tranh_frequency(raw_note)
+			if frequency <= 0.0:
+				return null
+			_dan_tranh_streams[key] = DAN_TRANH_AUDIO.generate_pluck_stream(frequency)
+		return _dan_tranh_streams[key] as AudioStream
+	return _load_audio_stream(sample_path(instrument, raw_note))
 
 static func _load_audio_stream(path: String) -> AudioStream:
 	if path.is_empty():
@@ -267,4 +330,5 @@ static func _paths_for(instrument: String) -> Dictionary:
 	match instrument:
 		"dan_bau": return DAN_BAU_PATHS
 		"sao_truc": return SAO_TRUC_PATHS
-		_: return DAN_TRANH_PATHS
+		"trong_chau": return TRONG_CHAU_PATHS
+		_: return {}

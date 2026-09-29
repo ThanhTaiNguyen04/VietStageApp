@@ -24,7 +24,7 @@ func _notation_geometry(width: float, height: float) -> Dictionary:
 		var step := _parse_diatonic_step(note)
 		above = maxf(above, float(step - 6) * 0.5 + 1.0)
 		below = maxf(below, float(6 - step) * 0.5 + 1.0)
-	var spacing := minf(24.0 if width >= 700.0 else 20.0, (height - 16.0) / (above + below))
+	var spacing := minf(32.0 if width >= 700.0 else 20.0, (height - 16.0) / (above + below))
 	var center_y := (height - (above + below) * spacing) * 0.5 + above * spacing
 	var left := 12.0
 	var clef_x := left + spacing * 0.5

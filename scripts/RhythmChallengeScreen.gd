@@ -50,6 +50,7 @@ var staff: Control
 var sample_player: Node
 var audio_analyzer: AudioCaptureAnalyzer
 var last_detected_at_ms := -1000
+var last_drum_amplitude_db := -80.0
 
 var round_accuracy_points := 0
 var round_hits := 0
@@ -203,6 +204,10 @@ func _setup_performance_audio() -> void:
 		return
 	audio_analyzer.name = "RhythmAudioCaptureAnalyzer"
 	audio_analyzer.pitch_profile = _make_pitch_profile()
+	audio_analyzer.min_frequency = audio_analyzer.pitch_profile.min_frequency
+	audio_analyzer.max_frequency = audio_analyzer.pitch_profile.max_frequency
+	audio_analyzer.volume_threshold_db = audio_analyzer.pitch_profile.volume_threshold_db
+	audio_analyzer.rapid_sequence_mode = true
 	add_child(audio_analyzer)
 	audio_analyzer.set_analysis_suspended(true)
 
@@ -211,21 +216,59 @@ func _make_pitch_profile() -> InstrumentPitchProfile:
 	if Context.instrument == "dan_tranh":
 		# Minigame 1 only accepts the 17 real strings and uses their physical
 		# range, avoiding false matches to chromatic notes without a real sample.
-		return DanTranhAudio.make_real_string_pitch_profile(60.0)
+		return DanTranhAudio.make_real_string_pitch_profile(85.0)
 	var profile := InstrumentPitchProfile.new()
-	profile.cents_tolerance = 75.0
-	profile.min_frequency = 120.0
-	profile.max_frequency = 2200.0
-	profile.is_plucked_instrument = Context.instrument == "dan_tranh"
+	profile.volume_threshold_db = -45.0
+	profile.hold_time_sec = 0.20
+	profile.is_plucked_instrument = Context.instrument == "dan_bau"
+	if Context.instrument == "sao_truc":
+		profile.min_frequency = 250.0
+		profile.max_frequency = 2200.0
+		profile.cents_tolerance = 40.0
+		profile.hold_time_sec = 0.40
+	elif Context.instrument == "dan_bau":
+		profile.min_frequency = 85.0
+		profile.max_frequency = 1100.0
+		profile.cents_tolerance = 25.0
+	else:
+		profile.min_frequency = 120.0
+		profile.max_frequency = 2200.0
+		profile.cents_tolerance = 75.0
 	var names: Array[String] = []
 	var frequencies := PackedFloat32Array()
-	for midi in range(48, 85):
-		var note_names := ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-		names.append("%s%d" % [note_names[midi % 12], midi / 12 - 1])
+	var supported_notes: Array[String] = []
+	match Context.instrument:
+		"sao_truc":
+			supported_notes.assign(InstrumentSamplePlayer.SAO_TRUC_PATHS.keys())
+		"dan_bau":
+			supported_notes.assign(InstrumentSamplePlayer.DAN_BAU_PATHS.keys())
+	for raw_note in supported_notes:
+		var note := raw_note.to_upper()
+		var pitch_class := {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}.get(note.substr(0, 1), -1) as int
+		if pitch_class < 0:
+			continue
+		var midi := (int(note.substr(1)) + 1) * 12 + pitch_class
+		names.append(note)
 		frequencies.append(440.0 * pow(2.0, (float(midi) - 69.0) / 12.0))
+	if names.is_empty():
+		for midi in range(48, 85):
+			var note_names := ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+			names.append("%s%d" % [note_names[midi % 12], midi / 12 - 1])
+			frequencies.append(440.0 * pow(2.0, (float(midi) - 69.0) / 12.0))
 	profile.notes = names
 	profile.frequencies = frequencies
 	return profile
+
+func _sample_durations() -> Array[float]:
+	var durations: Array[float] = []
+	for index in performance_notes.size():
+		if index < current_durations_beats.size():
+			durations.append(current_durations_beats[index] * 60.0 / float(current_tempo_bpm))
+		elif index + 1 < beat_times.size():
+			durations.append(beat_times[index + 1] - beat_times[index])
+		else:
+			durations.append(60.0 / float(current_tempo_bpm))
+	return durations
 
 
 func _notation_notes() -> Array[String]:
@@ -309,7 +352,7 @@ func _on_sample_failed(details: Dictionary) -> void:
 		_set_preview_button_state("Nghe mẫu")
 	if is_instance_valid(preview_status):
 		var missing: Array = details.get("missing", [])
-		preview_status.text = "Thiếu WAV thu thật cho nốt mẫu (%d asset). Không dùng âm tổng hợp." % missing.size()
+		preview_status.text = "Không chuẩn bị được âm mẫu cho %d nốt." % missing.size()
 		preview_status.add_theme_color_override("font_color", C_BAD)
 
 
@@ -413,7 +456,7 @@ func _build_intro() -> void:
 	staff = Control.new()
 	staff.name = "RhythmPreviewStaff"
 	staff.set_script(RhythmStaffDisplayScript)
-	staff.custom_minimum_size = Vector2(0, 136 if _is_compact_height() else (190 if mobile else 285))
+	staff.custom_minimum_size = Vector2(0, 136 if _is_compact_height() else (260 if mobile else 310))
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, false, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 	staff.call("update_progress", 0.0, judgements)
@@ -518,13 +561,13 @@ func _play_sample() -> void:
 	if is_instance_valid(audio_analyzer):
 		audio_analyzer.set_analysis_suspended(true)
 
-	var bpm := float(current_tempo_bpm)
 	var sample_res: Dictionary = {}
 	if is_instance_valid(sample_player):
-		sample_res = sample_player.call("play_sequence", Context.instrument, performance_notes, -1, bpm)
+		sample_res = sample_player.call("play_timed_sequence", Context.instrument, performance_notes, beat_times, _sample_durations())
 
 	if not bool(sample_res.get("ok", false)):
-		_run_preview(generation)
+		if generation == preview_generation:
+			_on_sample_failed(sample_res)
 
 
 func _run_preview(generation: int) -> void:
@@ -694,10 +737,10 @@ func _play_sample_from_pause() -> void:
 		audio_analyzer.set_analysis_suspended(true)
 	var played := false
 	if is_instance_valid(sample_player):
-		var response: Dictionary = sample_player.call("play_sequence", Context.instrument, performance_notes, -1, float(current_tempo_bpm))
+		var response: Dictionary = sample_player.call("play_timed_sequence", Context.instrument, performance_notes, beat_times, _sample_durations())
 		played = bool(response.get("ok", false))
 	if not played:
-		_run_paused_sample(generation)
+		_finish_paused_sample()
 
 
 func _run_paused_sample(generation: int) -> void:
@@ -776,7 +819,7 @@ func _build_game() -> void:
 	staff = Control.new()
 	staff.name = "RhythmStaff"
 	staff.set_script(RhythmStaffDisplayScript)
-	staff.custom_minimum_size = Vector2(0, 136 if _is_compact_height() else (225 if mobile else 340))
+	staff.custom_minimum_size = Vector2(0, 136 if _is_compact_height() else (260 if mobile else 310))
 	staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, true, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 	staff.call("update_progress", 0.0, judgements)
@@ -830,7 +873,10 @@ func _process_live_note(elapsed: float) -> void:
 		return
 
 	if Context.instrument == "trong_chau":
-		if audio_analyzer.current_amplitude_db > -45.0 or audio_analyzer.current_pitch_is_reliable:
+		var amplitude := audio_analyzer.current_amplitude_db
+		var is_hit := amplitude > -45.0 and amplitude - last_drum_amplitude_db >= 7.0
+		last_drum_amplitude_db = amplitude
+		if is_hit:
 			var decision := RhythmModel.judge_performance_note(elapsed, beat_times, judgements, true, PERFECT_WINDOW, GOOD_WINDOW)
 			var index := int(decision.get("index", -1))
 			if index >= 0 and index < performance_notes.size():
@@ -845,6 +891,10 @@ func _process_live_note(elapsed: float) -> void:
 		return
 
 	if not audio_analyzer.current_pitch_is_reliable or audio_analyzer.current_pitch <= 0.0:
+		return
+	# A matching frequency alone could be a voice or another instrument. The
+	# practice analyzer opens this gate after accepting a real string attack.
+	if Context.instrument in ["dan_tranh", "dan_bau"] and not audio_analyzer.instrument_gate_open:
 		return
 
 	var candidate_decision := RhythmModel.judge_tap(elapsed, beat_times, judgements, PERFECT_WINDOW, GOOD_WINDOW)
@@ -880,7 +930,7 @@ func _matches_expected_pitch(frequency: float, expected_note: String) -> bool:
 	var midi := (int(octave_text) + 1) * 12 + int(semitone_map[letter])
 	var reference := 440.0 * pow(2.0, (float(midi) - 69.0) / 12.0)
 	var cents := 1200.0 * log(frequency / reference) / log(2.0)
-	return absf(cents) <= 75.0
+	return absf(cents) <= (audio_analyzer.pitch_profile.cents_tolerance if is_instance_valid(audio_analyzer) and audio_analyzer.pitch_profile else 75.0)
 
 
 func _set_judgement(index: int, value: String) -> void:
@@ -1031,6 +1081,42 @@ func _submit_payload(payload: Dictionary) -> bool:
 		return false
 
 
+func _create_result_metrics(score: int, max_score: int, correct_notes: int, note_count: int, pitch_percent: float, timing_percent: float) -> Control:
+	var grid := GridContainer.new()
+	grid.name = "ResultMetricsGrid"
+	grid.columns = 4 if not _is_mobile() and not _is_compact_height() else 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 8)
+	var metrics := [
+		["ĐIỂM", "%d/%d" % [score, max_score]],
+		["NỐT ĐÚNG", "%d/%d" % [correct_notes, note_count]],
+		["CAO ĐỘ", "%.0f%%" % pitch_percent],
+		["ĐÚNG NHỊP", "%.0f%%" % timing_percent],
+	]
+	for metric in metrics:
+		var panel := PanelContainer.new()
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.95, 0.97, 0.94, 0.95)
+		style.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.5)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(12)
+		style.set_content_margin_all(8)
+		panel.add_theme_stylebox_override("panel", style)
+		var value_box := VBoxContainer.new()
+		panel.add_child(value_box)
+		var metric_title := _label(metric[0], 11, C_MUTED)
+		metric_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		value_box.add_child(metric_title)
+		var metric_value := _label(metric[1], 18 if _is_mobile() else 22, C_NAVY)
+		metric_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		metric_value.add_theme_font_override("font", _font_bold())
+		value_box.add_child(metric_value)
+		grid.add_child(panel)
+	return grid
+
+
 func _build_round_result(round_score: int, round_max_score: int) -> void:
 	_set_flow_state(FlowState.ROUND_RESULT)
 	_set_hud_mode(false)
@@ -1046,7 +1132,7 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 	var result_staff: Control = Control.new()
 	result_staff.name = "RoundResultStaff"
 	result_staff.set_script(RhythmStaffDisplayScript)
-	result_staff.custom_minimum_size = Vector2(0, 210 if mobile else 315)
+	result_staff.custom_minimum_size = Vector2(0, 150 if _is_compact_height() else (240 if mobile else 310))
 	result_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	result_staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, true, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 	result_staff.call("update_progress", round_duration, judgements)
@@ -1063,6 +1149,7 @@ func _build_round_result(round_score: int, round_max_score: int) -> void:
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	card_body.add_child(summary)
+	card_body.add_child(_create_result_metrics(round_score, round_max_score, round_hits, _target_event_count(), pitch_acc, time_acc))
 
 	if is_valid:
 		var next_button := _button("Vòng tiếp theo", 0, 56, C_GREEN)
@@ -1115,7 +1202,7 @@ func _build_final_result() -> void:
 		var final_staff: Control = Control.new()
 		final_staff.name = "FinalResultStaff"
 		final_staff.set_script(RhythmStaffDisplayScript)
-		final_staff.custom_minimum_size = Vector2(0, 210 if mobile else 315)
+		final_staff.custom_minimum_size = Vector2(0, 150 if _is_compact_height() else (240 if mobile else 310))
 		final_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		final_staff.call("configure_rhythm", _notation_notes(), beat_times, round_duration, false, true, event_modes, current_time_signature, current_durations_beats, current_tempo_bpm)
 		final_staff.call("update_progress", round_duration, judgements)
@@ -1131,6 +1218,12 @@ func _build_final_result() -> void:
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.add_theme_font_override("font", _font_bold())
 	card_body.add_child(summary)
+	card_body.add_child(_create_result_metrics(total_score, total_max_score, total_correct_pitch_count, total_beat_count, pitch_acc, time_acc))
+
+	var instruction := _label("Xem nốt đúng/sai trên khuông · Chơi lại để cải thiện cao độ và nhịp", 12 if mobile else 14, C_MUTED)
+	instruction.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	instruction.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card_body.add_child(instruction)
 
 	var sync_text := "Lượt này chưa lưu vào lịch sử"
 	var sync_color := C_MUTED
@@ -1316,6 +1409,7 @@ func _prepare_current_round() -> void:
 	var last_dur_sec := (current_durations_beats[-1] * 60.0 / float(current_tempo_bpm)) if not current_durations_beats.is_empty() else (0.8 / selected_speed_multiplier)
 	round_duration = last_beat_sec + last_dur_sec + 0.4
 	last_detected_at_ms = -1000
+	last_drum_amplitude_db = -80.0
 
 
 func _clear_content(stop_preview: bool = true) -> void:
@@ -1385,7 +1479,7 @@ func _add_round_plaque(parent: VBoxContainer, round_title: String) -> void:
 	var section := VBoxContainer.new()
 	section.name = "RhythmScoreSection"
 	section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	section.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	section.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	section.add_theme_constant_override("separation", 10 if compact else 22)
 	var position_in_host := center.get_index()
 	host.add_child(section)
@@ -1434,23 +1528,17 @@ func _add_centered_card(accent: Color, max_width: float) -> VBoxContainer:
 	# Phones in landscape can have only ~300 px below the header. Keep the
 	# complete round summary reachable instead of letting the card extend beyond
 	# the viewport.
-	var card_host: Control
-	if _is_mobile() or _is_compact_height():
-		var scroll := ScrollContainer.new()
-		scroll.name = "RhythmCardScroll"
-		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		content_box.add_child(scroll)
-		card_host = scroll
-	else:
-		card_host = content_box
+	var scroll := ScrollContainer.new()
+	scroll.name = "RhythmCardScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_box.add_child(scroll)
+	var card_host: Control = scroll
 
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	if not (_is_mobile() or _is_compact_height()):
-		center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	else:
+	if _is_mobile() or _is_compact_height():
 		var vp_w := get_viewport_rect().size.x if is_inside_tree() and get_viewport() != null else 800.0
 		center.custom_minimum_size.x = maxf(280.0, vp_w - (32.0 if _is_mobile() else 84.0))
 	card_host.add_child(center)

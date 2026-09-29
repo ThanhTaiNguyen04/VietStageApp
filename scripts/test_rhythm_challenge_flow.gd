@@ -36,6 +36,15 @@ func _run() -> void:
 	_check((screen.get("rhythms") as Array).size() > 0, "intro phải có dữ liệu mẫu")
 	_check(_find_button(screen, "Nghe mẫu") != null, "intro phải có nút Nghe mẫu")
 	_check(_find_button(screen, "Bắt đầu") != null, "intro phải có nút Bắt đầu")
+	var recorded_player: InstrumentSamplePlayer = screen.get("sample_player")
+	_check(recorded_player.preflight("dan_tranh", screen.get("performance_notes"), -1).ok, "đàn tranh phải có âm mẫu đúng nhạc cụ")
+	_check(recorded_player.sample_path("dan_tranh", "Đô2").is_empty(), "mini game không được phát mẫu Kayageum/Guzheng")
+	_check(recorded_player.preflight("trong_chau", ["Tịch", "Cắc"], -1).ok, "trống chầu phải dùng mẫu tiếng mặt/vành trống")
+	_check(recorded_player.preflight("sao_truc", ["Đô", "Rê", "Mi"], -1).ok, "sáo trúc phải dùng mẫu sáo")
+	_check(recorded_player.preflight("dan_bau", ["c4", "sol4", "c5"], -1).ok, "đàn bầu phải dùng mẫu đàn bầu")
+	var timing: Array[float] = screen._sample_durations()
+	_check(timing.size() == (screen.get("performance_notes") as Array).size(), "mỗi nốt mẫu phải có trường độ")
+	_check(timing.size() < 6 or timing[2] < timing[0] and timing[5] > timing[0], "âm mẫu phải theo nốt móc đơn và nốt trắng")
 
 	# Dữ liệu offline chỉ có TARGET; tạo một SAMPLE để kiểm tra preview
 	# không phụ thuộc vào nốt học viên cần chơi.
@@ -64,6 +73,7 @@ func _run() -> void:
 			if is_perf and is_instance_valid(analyzer):
 				analyzer.set("current_pitch", 261.63) # C4 / Đô2
 				analyzer.set("current_pitch_is_reliable", true)
+				analyzer.set("instrument_gate_open", true)
 				screen.call("_process_live_note", target)
 			else:
 				screen.call("_tap")
@@ -72,6 +82,13 @@ func _run() -> void:
 	_check(int(screen.get("total_score")) > 0, "diễn tấu đúng phải tạo điểm")
 	_check(int(screen.get("total_max_score")) > 0, "kết quả phải có max score")
 	_check(_find_button(screen, "Chơi lại") != null, "kết quả phải có nút Chơi lại")
+	_check(screen.find_child("ResultMetricsGrid", true, false) is GridContainer, "kết quả phải có bảng điểm, nốt đúng, cao độ và nhịp")
+	for instrument in ["sao_truc", "dan_bau"]:
+		Context.instrument = instrument
+		var profile: InstrumentPitchProfile = screen._make_pitch_profile()
+		_check(profile.notes.size() > 0 and profile.notes.size() == profile.frequencies.size(), "hồ sơ micro phải chứa đúng các nốt của " + instrument)
+		_check(profile.notes.size() == InstrumentSamplePlayer._paths_for(instrument).size(), "micro chỉ nên xét các nốt có mẫu của " + instrument)
+	Context.instrument = "dan_tranh"
 	var hud_back := screen.find_child("PracticeHudBack", true, false) as Button
 	_check(hud_back != null and hud_back.visible, "kết quả phải giữ nút Quay lại cố định trên HUD")
 	_finish()
