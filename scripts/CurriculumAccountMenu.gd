@@ -163,6 +163,7 @@ func _navigate(destination: String) -> void:
 		confirmation.ok_button_text = "Đăng xuất"
 		confirmation.cancel_button_text = "Ở lại"
 		add_child(confirmation)
+		_style_logout_confirmation(confirmation)
 		confirmation.canceled.connect(confirmation.queue_free)
 		confirmation.confirmed.connect(_logout)
 		confirmation.popup_centered()
@@ -170,6 +171,55 @@ func _navigate(destination: String) -> void:
 	SecureDataManager.data["navigation_return_scene"] = get_tree().current_scene.scene_file_path
 	SecureDataManager.save_data()
 	get_tree().change_scene_to_file("res://scenes/" + destination + ".tscn")
+
+func _style_logout_confirmation(confirmation: ConfirmationDialog) -> void:
+	confirmation.min_size = Vector2(420, 220)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#fffdf8")
+	panel_style.border_color = Color("#d4a72c")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(20)
+	panel_style.shadow_color = Color(0.08, 0.05, 0.02, 0.32)
+	panel_style.shadow_size = 18
+	panel_style.shadow_offset = Vector2(0, 7)
+	confirmation.add_theme_stylebox_override("panel", panel_style)
+	confirmation.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font)
+	confirmation.add_theme_font_size_override("font_size", 18)
+	confirmation.add_theme_color_override("font_color", Color("#3f3326"))
+
+	var cancel := confirmation.get_cancel_button()
+	var cancel_style := StyleBoxFlat.new()
+	cancel_style.bg_color = Color("#fffdf8")
+	cancel_style.border_color = Color("#1d6b4f")
+	cancel_style.set_border_width_all(2)
+	cancel_style.set_corner_radius_all(18)
+	cancel_style.content_margin_left = 20
+	cancel_style.content_margin_right = 20
+	var cancel_hover := cancel_style.duplicate() as StyleBoxFlat
+	cancel_hover.bg_color = Color("#e8f3ec")
+	cancel.add_theme_stylebox_override("normal", cancel_style)
+	cancel.add_theme_stylebox_override("hover", cancel_hover)
+	cancel.add_theme_stylebox_override("pressed", cancel_hover)
+	cancel.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	cancel.add_theme_color_override("font_color", Color("#1d6b4f"))
+	cancel.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
+
+	var confirm := confirmation.get_ok_button()
+	var confirm_style := StyleBoxFlat.new()
+	confirm_style.bg_color = Color("#bb3b2a")
+	confirm_style.border_color = Color("#d4a72c")
+	confirm_style.set_border_width_all(2)
+	confirm_style.set_corner_radius_all(18)
+	confirm_style.content_margin_left = 20
+	confirm_style.content_margin_right = 20
+	var confirm_hover := confirm_style.duplicate() as StyleBoxFlat
+	confirm_hover.bg_color = Color("#d14a37")
+	confirm.add_theme_stylebox_override("normal", confirm_style)
+	confirm.add_theme_stylebox_override("hover", confirm_hover)
+	confirm.add_theme_stylebox_override("pressed", confirm_hover)
+	confirm.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	confirm.add_theme_color_override("font_color", Color.WHITE)
+	confirm.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
 
 func _logout() -> void:
 	await api.logout()

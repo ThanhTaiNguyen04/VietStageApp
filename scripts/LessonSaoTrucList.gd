@@ -555,9 +555,11 @@ func _open_lesson(node_id: String) -> void:
 	if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("sao_truc", node_id):
 		return
 	var backend_report = get_node_or_null("/root/BackendReport")
-	if not SecureDataManager.has_temporary_full_access() and backend_report and backend_report.has_method("start_lesson"):
+	if backend_report and backend_report.has_method("start_lesson"):
 		var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
-		if start_result.get("reason", "") == "locked":
+		# Tài khoản kiểm thử vẫn ghi nhận IN_PROGRESS; quyền mở tạm chỉ bỏ qua
+		# phản hồi khóa của server trong lúc rule full-access chưa được triển khai.
+		if start_result.get("reason", "") == "locked" and not SecureDataManager.has_temporary_full_access():
 			return
 	SecureDataManager.active_lesson_id = node_id
 

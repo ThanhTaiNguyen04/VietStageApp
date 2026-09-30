@@ -253,6 +253,8 @@ const UNRECOGNIZED_AUDIO_HINT_DELAY := 0.30
 # Local progress key / future LessonResponse.lessonCode. Never replace this
 # string with LessonResponse.id: completed lessons and stars use this key.
 var current_lesson_code: String
+var completion_submission_in_progress := false
+var completion_score := 100.0
 # Compatibility alias while the existing local gameplay remains unchanged.
 var current_lesson_id: String:
 	get:
@@ -2167,15 +2169,11 @@ func _is_practice_prompt(step_data: Dictionary) -> bool:
 
 func _finish_theory_lesson() -> void:
 	current_state = State.COMPLETED
+	completion_score = 100.0
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
 		analyzer.contour_tracking_mode = false
-	var completed: Array = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
-	if not completed.has(current_lesson_id):
-		completed.append(current_lesson_id)
-		SecureDataManager.data.completed_lessons["dan_tranh"] = completed
-		SecureDataManager.save_data()
-	_on_back()
+	await _confirm_lesson_completion_and_return()
 
 func _start_practice_single():
 	_stop_technique_sample()
@@ -5085,12 +5083,6 @@ func _finish_practice():
 	if practice_hud:
 		practice_hud.set_hud_visible(false)
 	
-	var completed = SecureDataManager.data.completed_lessons.get("dan_tranh", [])
-	if not completed.has(current_lesson_id):
-		completed.append(current_lesson_id)
-		SecureDataManager.data.completed_lessons["dan_tranh"] = completed
-		SecureDataManager.save_data()
-
 	# Compute separate ratings (Phase 3)
 	var total_attempts = _dan_tranh_attempts.size()
 	var pitch_score = 0.0
@@ -5132,6 +5124,7 @@ func _finish_practice():
 		tech_score = 80.0
 		
 	var composite_score = clamp(pitch_score * 0.5 + rhythm_score * 0.3 + tech_score * 0.2, 0.0, 100.0)
+	completion_score = composite_score
 	SecureDataManager.record_practice_result(current_lesson_id, composite_score)
 	
 	var popup_scene = load("res://scenes/CustomPopup.tscn")
@@ -5153,7 +5146,23 @@ func _on_back():
 	get_tree().change_scene_to_file("res://scenes/LessonDanTranhList.tscn")
 
 func _on_complete():
-	_on_back()
+	if current_state != State.COMPLETED:
+		return
+	await _confirm_lesson_completion_and_return()
+
+
+func _confirm_lesson_completion_and_return() -> void:
+	if completion_submission_in_progress:
+		return
+	completion_submission_in_progress = true
+	var result: Dictionary = {"submitted": false, "reason": "not_signed_in"}
+	if BackendReport.is_signed_in():
+		result = await BackendReport.report_lesson_completion("dan_tranh", current_lesson_id, completion_score)
+	if bool(result.get("submitted", false)) or bool(result.get("queued", false)):
+		_on_back()
+		return
+	completion_submission_in_progress = false
+	push_warning("Không thể đồng bộ hoàn thành bài: %s" % str(result.get("message", result.get("reason", "unknown"))))
 
 # --- Định dạng phong cách nút Quay Lại (kế thừa từ Virtual Music Room) ---
 func _style_hud_icon_button(btn: Button) -> void:
