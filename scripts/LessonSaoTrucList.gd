@@ -377,6 +377,8 @@ func _build_lesson_list() -> void:
 
 		if is_completed:
 			btn.text = "✔️\n%s\nHoàn thành" % lesson_item["note"]
+		elif SecureDataManager.get_lesson_learning_status(inst, id) == "PENDING_SYNC":
+			btn.text = "%s\nChờ đồng bộ" % lesson_item["note"]
 		elif not is_unlocked:
 			btn.text = "🔒"
 		else:
@@ -556,11 +558,13 @@ func _open_lesson(node_id: String) -> void:
 		return
 	var backend_report = get_node_or_null("/root/BackendReport")
 	if backend_report and backend_report.has_method("start_lesson"):
-		var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
-		# Tài khoản kiểm thử vẫn ghi nhận IN_PROGRESS; quyền mở tạm chỉ bỏ qua
-		# phản hồi khóa của server trong lúc rule full-access chưa được triển khai.
-		if start_result.get("reason", "") == "locked" and not SecureDataManager.has_temporary_full_access():
-			return
+		if SecureDataManager.has_temporary_full_access():
+			# The autoload survives navigation; start reporting must not block entry.
+			backend_report.start_lesson.call_deferred("sao_truc", node_id)
+		else:
+			var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
+			if start_result.get("reason", "") == "locked":
+				return
 	SecureDataManager.active_lesson_id = node_id
 
 	var song_title = node_id

@@ -1,0 +1,895 @@
+{
+	"data": {
+		"content": [
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:57.366741",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 68.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_3_bai_7_practice",
+				"mediaAssets": [],
+				"orderIndex": 1.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Luyện ngón tốc độ cao – Mã Vũ",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.478624",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 61.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_7_bai_18_practice",
+				"mediaAssets": [],
+				"orderIndex": 1.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật Á",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-08-08T02:55:27.680807",
+				"createdBy": {
+					"fullName": "Lê Văn Khang",
+					"id": 4.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": "Cách lấy hơi và thổi",
+				"exercises": [
+					{
+						"configJson": null,
+						"description": "Luyện tập lấy hơi",
+						"exerciseType": null,
+						"id": 3.0,
+						"orderIndex": 1.0,
+						"passThreshold": 60.0,
+						"practiceMode": null,
+						"schemaVersion": null,
+						"title": "Thực hành thổi Sáo 1"
+					}
+				],
+				"id": 3.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 3.0,
+					"instrumentCode": "INS-SÁ-241",
+					"name": "Sáo"
+				},
+				"isVisible": false,
+				"lessonCode": "LSN-SÁ-BEGINNER-973",
+				"mediaAssets": [],
+				"orderIndex": 1.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Bài 1: Cách thổi Sáo",
+				"updatedAt": "2026-08-08T04:20:22.939681"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.143812",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 50.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_1_video",
+				"mediaAssets": [],
+				"orderIndex": 1.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Tìm hiểu nhạc cụ Đàn tranh",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:14.420394",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 89.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_4_bai_9_practice",
+				"mediaAssets": [],
+				"orderIndex": 2.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật nhấn Rung tay trái",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.263591",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 51.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_5_practice",
+				"mediaAssets": [],
+				"orderIndex": 2.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Nhịp điệu cơ bản",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.600461",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 62.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_7_bai_19_practice",
+				"mediaAssets": [],
+				"orderIndex": 2.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật nhấn",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.385104",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 52.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_4_practice",
+				"mediaAssets": [],
+				"orderIndex": 3.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Đọc bản nhạc cơ bản",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.724095",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 63.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_7_bai_20_practice",
+				"mediaAssets": [],
+				"orderIndex": 3.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật song thanh",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:14.542656",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 90.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_5_bai_12_practice",
+				"mediaAssets": [],
+				"orderIndex": 3.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Boss Stage – Thử thách sinh tồn",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.503471",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 53.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_8_practice",
+				"mediaAssets": [],
+				"orderIndex": 4.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật gảy ngón 2",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:14.665431",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 91.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_6_bai_17_practice",
+				"mediaAssets": [],
+				"orderIndex": 4.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Bài 5: Chuyển hợp âm",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.84656",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 64.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_7_bai_21_practice",
+				"mediaAssets": [],
+				"orderIndex": 4.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật rung dây",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:14.790488",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 92.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_8_bai_30_practice",
+				"mediaAssets": [],
+				"orderIndex": 5.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật Vê",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.6302",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 54.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_7_practice",
+				"mediaAssets": [],
+				"orderIndex": 5.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật gảy ngón 1",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.966782",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 65.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_2_bai_13_practice",
+				"mediaAssets": [],
+				"orderIndex": 5.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Luyện bài Sứ thanh hoa – Nửa đoạn đầu",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.750743",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 55.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_9_practice",
+				"mediaAssets": [],
+				"orderIndex": 6.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Kỹ thuật gảy ngón 3",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:14.91272",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 93.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_8_bai_31_practice",
+				"mediaAssets": [],
+				"orderIndex": 6.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Hợp âm ba âm cơ bản",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:57.129576",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 66.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_2_bai_14_practice",
+				"mediaAssets": [],
+				"orderIndex": 6.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Luyện bài Sứ thanh hoa – Nửa đoạn cuối",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:57.247807",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 67.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_2_bai_15_practice",
+				"mediaAssets": [],
+				"orderIndex": 7.0,
+				"skillLevel": {
+					"id": 2.0,
+					"levelName": "Intermediate"
+				},
+				"techniques": [],
+				"title": "Hoàn thiện bài Sứ thanh hoa",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:15.035184",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 94.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_8_bai_32_practice",
+				"mediaAssets": [],
+				"orderIndex": 7.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Hợp âm Đô trưởng",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.871806",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 56.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_2_practice",
+				"mediaAssets": [],
+				"orderIndex": 7.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Luyện gảy các nốt cơ bản – Phần 1",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:59:15.155865",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 95.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_8_bai_33_practice",
+				"mediaAssets": [],
+				"orderIndex": 8.0,
+				"skillLevel": {
+					"id": 3.0,
+					"levelName": "Advanced"
+				},
+				"techniques": [],
+				"title": "Hợp âm La thứ",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:55.987727",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 57.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_1_bai_3_practice",
+				"mediaAssets": [],
+				"orderIndex": 8.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Luyện gảy các nốt cơ bản – Phần 2",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.109525",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 58.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_2_bai_10_practice",
+				"mediaAssets": [],
+				"orderIndex": 9.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Luyện bài Lý cây đa – Nửa đoạn đầu",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.229393",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 59.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_2_bai_11_practice",
+				"mediaAssets": [],
+				"orderIndex": 10.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Luyện bài Lý cây đa – Nửa đoạn cuối",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-08-08T04:01:49.911133",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": "Cách cầm sáo và làm quen với sáo trúc",
+				"exercises": [],
+				"id": 4.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 3.0,
+					"instrumentCode": "INS-SÁ-241",
+					"name": "Sáo"
+				},
+				"isVisible": false,
+				"lessonCode": "LESSON_SAO_10",
+				"mediaAssets": [],
+				"orderIndex": 10.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Bài 1: Làm quen Sáo Trúc",
+				"updatedAt": "2026-08-08T04:04:37.772185"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-09-16T07:58:56.360497",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": null,
+				"exercises": [],
+				"id": 60.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 1.0,
+					"instrumentCode": "INS-ĐÀ-205",
+					"name": "Đàn Tranh"
+				},
+				"isVisible": false,
+				"lessonCode": "dan_tranh_level_2_bai_12_practice",
+				"mediaAssets": [],
+				"orderIndex": 11.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Hoàn thiện bài Lý cây đa",
+				"updatedAt": "2026-09-17T07:52:08.700146"
+			},
+			{
+				"approvalStatus": "DRAFT",
+				"contents": [],
+				"createdAt": "2026-08-08T04:01:49.992644",
+				"createdBy": {
+					"fullName": "Trần Thị Thu Thủy",
+					"id": 3.0,
+					"role": "INSTRUCTOR"
+				},
+				"description": "Học cách lấy hơi dài và thổi ra tiếng sáo chuẩn",
+				"exercises": [],
+				"id": 5.0,
+				"instrument": {
+					"iconUrl": null,
+					"id": 3.0,
+					"instrumentCode": "INS-SÁ-241",
+					"name": "Sáo"
+				},
+				"isVisible": false,
+				"lessonCode": "LESSON_SAO_11",
+				"mediaAssets": [],
+				"orderIndex": 11.0,
+				"skillLevel": {
+					"id": 1.0,
+					"levelName": "Beginner"
+				},
+				"techniques": [],
+				"title": "Bài 2: Kỹ thuật lấy hơi và thổi",
+				"updatedAt": "2026-08-08T04:04:37.893212"
+			}
+		],
+		"last": true,
+		"page": 1.0,
+		"size": 200.0,
+		"totalElements": 29.0,
+		"totalPages": 1.0
+	},
+	"message": "Get Lesson successfully",
+	"success": true
+}

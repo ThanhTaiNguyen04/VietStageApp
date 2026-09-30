@@ -5158,10 +5158,13 @@ func _confirm_lesson_completion_and_return() -> void:
 	var result: Dictionary = {"submitted": false, "reason": "not_signed_in"}
 	if BackendReport.is_signed_in():
 		result = await BackendReport.report_lesson_completion("dan_tranh", current_lesson_id, completion_score)
+	await BackendReport.show_lesson_completion_result(self, result)
 	if bool(result.get("submitted", false)) or bool(result.get("queued", false)):
 		_on_back()
 		return
 	completion_submission_in_progress = false
+	complete_btn.visible = true
+	complete_btn.text = "Thử lưu lại kết quả"
 	push_warning("Không thể đồng bộ hoàn thành bài: %s" % str(result.get("message", result.get("reason", "unknown"))))
 
 # --- Định dạng phong cách nút Quay Lại (kế thừa từ Virtual Music Room) ---

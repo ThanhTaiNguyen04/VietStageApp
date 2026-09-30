@@ -45,17 +45,23 @@ static func get_level_status(level_number: int, save_data: Dictionary) -> Dictio
 		var lesson: Dictionary = lesson_value
 		var lesson_number := int(lesson["number"])
 		var prefix := "%s_level_%d_bai_%d_" % [INSTRUMENT_ID, level_number, lesson_number]
-		if str(lesson.get("video", "")) != "":
+		if str(lesson.get("type", "practice")) == "video":
 			step_ids.append(str(lesson.get("video_id", prefix + "video")))
-		if str(lesson.get("type", "practice")) != "video":
+		else:
 			step_ids.append(str(lesson.get("practice_id", prefix + "practice")))
 
 	var completed_count := 0
 	var total_stars := 0
 	for step_id in step_ids:
-		if completed.has(step_id):
+		var done := false
+		var best_stars := 0
+		for saved_id: Variant in completed:
+			if SecureDataManager.canonical_lesson_id(INSTRUMENT_ID, str(saved_id)) == step_id:
+				done = true
+				best_stars = maxi(best_stars, int(stars.get(saved_id, 0)))
+		if done:
 			completed_count += 1
-			total_stars += int(stars.get(step_id, 0))
+			total_stars += best_stars
 	var percentage := 0
 	if not step_ids.is_empty():
 		percentage = int(float(completed_count) / float(step_ids.size()) * 100.0)

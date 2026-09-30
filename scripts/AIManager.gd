@@ -1,6 +1,8 @@
 class_name AIManager
 extends HTTPRequest
 
+const AppConfig = preload("res://scripts/AppConfig.gd")
+
 signal response_received(text: String, emotion: String)
 signal response_chunk_received(text: String, emotion: String)
 signal response_finished()

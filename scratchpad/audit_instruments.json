@@ -1,0 +1,34 @@
+{
+	"data": [
+		{
+			"description": "Vietnamese 16-string zither",
+			"iconUrl": null,
+			"id": 1.0,
+			"instrumentCode": "INS-ĐÀ-205",
+			"name": "Đàn Tranh"
+		},
+		{
+			"description": "Vietnamese monochord",
+			"iconUrl": null,
+			"id": 2.0,
+			"instrumentCode": "INS-ĐÀ-034",
+			"name": "Đàn Bầu"
+		},
+		{
+			"description": "Vietnamese bamboo flute",
+			"iconUrl": null,
+			"id": 3.0,
+			"instrumentCode": "INS-SÁ-241",
+			"name": "Sáo"
+		},
+		{
+			"description": "Vietnamese traditional drum",
+			"iconUrl": null,
+			"id": 4.0,
+			"instrumentCode": "INS-TR-844",
+			"name": "Trống Chầu"
+		}
+	],
+	"message": "Get all instruments successfully",
+	"success": true
+}

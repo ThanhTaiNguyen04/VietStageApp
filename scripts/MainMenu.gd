@@ -1771,6 +1771,8 @@ func _build_roadmap_cards() -> void:
 	# isUnlocked == true and learningStatus == NOT_STARTED -> white alpha 0.82.
 	# learningStatus == IN_PROGRESS or COMPLETED -> green.
 	var is_ess_unlocked := bool(_get_dan_tranh_level_status(1).get("completed", false))
+	if instrument == "sao_truc":
+		is_ess_unlocked = bool(_get_sao_truc_card_status("basic").get("completed", false))
 	if SecureDataManager.has_temporary_full_access():
 		is_ess_unlocked = true
 	if not is_ess_unlocked:
@@ -2065,6 +2067,10 @@ func _connect_sao_truc_level_card(card: Control, level_number: int) -> void:
 	hit_area.tooltip_text = "Xem các bài học Level %d" % level_number
 
 func _open_dan_tranh_level(level_number: int) -> void:
+	var previous := 2 if level_number == 7 else level_number - 1
+	if level_number > 1 and not SecureDataManager.has_temporary_full_access() and not bool(_get_dan_tranh_level_status(previous).get("completed", false)):
+		_virtual_artist_play_happy("Hãy hoàn thành tất cả bài học ở level trước để mở level này nhé!")
+		return
 	_fade_to(DAN_TRANH_COURSE_DATA.select_level(level_number))
 
 func _open_dan_bau_level(level_number: int) -> void:
@@ -2074,6 +2080,10 @@ func _open_trong_chau_course() -> void:
 	_fade_to(TRONG_CHAU_COURSE_DATA.get_lesson_scene())
 
 func _open_sao_truc_level(level_number: int) -> void:
+	var previous := "basic" if level_number == 2 else "intermediate"
+	if level_number > 1 and not SecureDataManager.has_temporary_full_access() and not bool(_get_sao_truc_card_status(previous).get("completed", false)):
+		_virtual_artist_play_happy("Hãy hoàn thành tất cả bài học ở level trước để mở level này nhé!")
+		return
 	_fade_to(SAO_TRUC_COURSE_DATA.select_level(level_number))
 
 func _set_children_mouse_filter_pass(node: Node) -> void:
