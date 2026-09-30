@@ -2274,20 +2274,29 @@ func _open_quiz() -> void:
 
 func _on_complete():
 	var inst = str(SecureDataManager.data.get("selected_instrument", "sao_truc"))
-	_sync_practice_to_backend(inst, active_node_id)
+	# Chỉ rời màn hình sau khi BackendReport đã nhận phản hồi hoàn thành.
+	# Trước đây lời gọi bất đồng bộ bị bỏ qua ngay khi đổi scene, nên server
+	# thường không kịp ghi nhận bài đã hoàn thành.
+	var result: Dictionary = await _sync_practice_to_backend(inst, active_node_id)
+	if not bool(result.get("submitted", false)) and not bool(result.get("queued", false)):
+		push_warning("Không thể đồng bộ hoàn thành bài: %s" % str(result.get("message", result.get("reason", "unknown"))))
+		return
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
-func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> void:
+func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> Dictionary:
 	if not BackendReport.is_signed_in():
-		return
+		return {"submitted": false, "reason": "not_signed_in"}
 	var acc := _lesson_accuracy
-	BackendReport.report_practice_and_complete(inst, local_lesson_id, {
+	# Lượt tập là dữ liệu bổ sung. Dù một exercise chưa được map trên server,
+	# bài đã hoàn thành vẫn phải được gửi tới endpoint completion.
+	await BackendReport.report_practice(inst, local_lesson_id, {
 		"pitch": acc,
 		"rhythm": acc,
 		"dynamics": 0.0,
 		"tonal_quality": 0.0,
 		"breath": acc,
-	}, acc)
+	})
+	return await BackendReport.report_lesson_completion(inst, local_lesson_id, acc)
 
 func _on_retry():
 	get_tree().reload_current_scene()
