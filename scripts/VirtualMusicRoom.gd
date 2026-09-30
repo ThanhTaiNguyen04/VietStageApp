@@ -3214,9 +3214,21 @@ func _confirm_profile_logout() -> void:
 	stay_style.border_color = Color("#1d5b42")
 	stay_style.set_border_width_all(2)
 	stay_style.set_corner_radius_all(25)
+	var stay_hover := stay_style.duplicate() as StyleBoxFlat
+	stay_hover.bg_color = Color("#e6f3ea")
+	stay_hover.border_color = Color("#2b7958")
+	stay_hover.shadow_color = Color(0.11, 0.36, 0.25, 0.18)
+	stay_hover.shadow_size = 8
+	var stay_pressed := stay_style.duplicate() as StyleBoxFlat
+	stay_pressed.bg_color = Color("#cfe8d7")
+	stay_pressed.border_color = Color("#174a35")
 	stay.add_theme_stylebox_override("normal", stay_style)
+	stay.add_theme_stylebox_override("hover", stay_hover)
+	stay.add_theme_stylebox_override("pressed", stay_pressed)
 	stay.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	stay.add_theme_color_override("font_color", Color("#1d5b42"))
+	stay.add_theme_color_override("font_hover_color", Color("#174a35"))
+	stay.add_theme_color_override("font_pressed_color", Color("#174a35"))
 	stay.add_theme_font_size_override("font_size", 16)
 	if bold: stay.add_theme_font_override("font", bold)
 	actions.add_child(stay)
