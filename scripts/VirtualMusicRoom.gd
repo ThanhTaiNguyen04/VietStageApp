@@ -3157,15 +3157,110 @@ func _open_profile_destination(path: String) -> void:
 func _confirm_profile_logout() -> void:
 	if profile_quick_menu:
 		_close_profile_quick_menu()
-	var confirmation := ConfirmationDialog.new()
-	confirmation.title = "Đăng xuất"
-	confirmation.dialog_text = "Kết thúc phiên đăng nhập hiện tại?"
-	confirmation.ok_button_text = "Đăng xuất"
-	confirmation.cancel_button_text = "Ở lại"
-	confirmation.confirmed.connect(_logout_from_profile_menu)
-	confirmation.canceled.connect(confirmation.queue_free)
-	$HUD.add_child(confirmation)
-	confirmation.popup_centered()
+	var layer := CanvasLayer.new()
+	layer.layer = 120
+	add_child(layer)
+	var dimmer := ColorRect.new()
+	dimmer.color = Color(0.04, 0.06, 0.04, 0.58)
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(dimmer)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(435, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#fffdf8")
+	panel_style.border_color = Color("#d4a72c")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(26)
+	panel_style.shadow_color = Color(0.05, 0.04, 0.02, 0.32)
+	panel_style.shadow_size = 20
+	panel_style.shadow_offset = Vector2(0, 8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 38)
+	margin.add_theme_constant_override("margin_right", 38)
+	margin.add_theme_constant_override("margin_top", 34)
+	margin.add_theme_constant_override("margin_bottom", 32)
+	panel.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 22)
+	margin.add_child(content)
+	var bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
+	var title := Label.new()
+	title.text = "Đăng xuất"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color("#1d5b42"))
+	title.add_theme_font_size_override("font_size", 27)
+	if bold: title.add_theme_font_override("font", bold)
+	content.add_child(title)
+	var message := Label.new()
+	message.text = "Kết thúc phiên đăng nhập hiện tại?"
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_color_override("font_color", Color("#8b8177"))
+	message.add_theme_font_size_override("font_size", 16)
+	content.add_child(message)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 16)
+	content.add_child(actions)
+	var stay := Button.new()
+	stay.text = "Ở lại"
+	stay.custom_minimum_size = Vector2(0, 50)
+	stay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var stay_style := StyleBoxFlat.new()
+	stay_style.bg_color = Color("#fffdf8")
+	stay_style.border_color = Color("#1d5b42")
+	stay_style.set_border_width_all(2)
+	stay_style.set_corner_radius_all(25)
+	stay.add_theme_stylebox_override("normal", stay_style)
+	stay.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	stay.add_theme_color_override("font_color", Color("#1d5b42"))
+	stay.add_theme_font_size_override("font_size", 16)
+	if bold: stay.add_theme_font_override("font", bold)
+	actions.add_child(stay)
+	var logout := Button.new()
+	logout.text = "Đăng xuất"
+	logout.custom_minimum_size = Vector2(0, 50)
+	logout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var logout_style := StyleBoxFlat.new()
+	logout_style.bg_color = Color("#df2d20")
+	logout_style.border_color = Color("#e8ad32")
+	logout_style.set_border_width_all(2)
+	logout_style.set_corner_radius_all(25)
+	logout_style.shadow_color = Color(0.87, 0.18, 0.12, 0.32)
+	logout_style.shadow_size = 10
+	var logout_hover := logout_style.duplicate() as StyleBoxFlat
+	logout_hover.bg_color = Color("#fa3d2d")
+	logout_hover.border_color = Color("#f2c34b")
+	logout_hover.shadow_color = Color(0.95, 0.20, 0.12, 0.48)
+	logout_hover.shadow_size = 14
+	var logout_pressed := logout_style.duplicate() as StyleBoxFlat
+	logout_pressed.bg_color = Color("#bd2118")
+	logout_pressed.border_color = Color("#d89922")
+	logout_pressed.shadow_size = 4
+	logout.add_theme_stylebox_override("normal", logout_style)
+	logout.add_theme_stylebox_override("hover", logout_hover)
+	logout.add_theme_stylebox_override("pressed", logout_pressed)
+	logout.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	logout.add_theme_color_override("font_color", Color.WHITE)
+	logout.add_theme_color_override("font_hover_color", Color.WHITE)
+	logout.add_theme_color_override("font_pressed_color", Color("#fff3e6"))
+	logout.add_theme_font_size_override("font_size", 16)
+	if bold: logout.add_theme_font_override("font", bold)
+	actions.add_child(logout)
+	stay.pressed.connect(layer.queue_free)
+	logout.pressed.connect(func() -> void:
+		layer.queue_free()
+		_logout_from_profile_menu()
+	)
+	panel.scale = Vector2(0.94, 0.94)
+	panel.pivot_offset = panel.custom_minimum_size * 0.5
+	var tween := create_tween().set_parallel(true)
+	dimmer.modulate.a = 0.0
+	tween.tween_property(dimmer, "modulate:a", 1.0, 0.16)
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _logout_from_profile_menu() -> void:
 	if _api_client:
