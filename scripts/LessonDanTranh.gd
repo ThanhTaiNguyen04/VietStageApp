@@ -2173,11 +2173,33 @@ func _finish_theory_lesson() -> void:
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
 		analyzer.contour_tracking_mode = false
-	# Theory-only lessons have no score → silently report completion to backend
-	# without showing the "Kết quả đang chờ đồng bộ" popup (which confuses users).
+	await _confirm_theory_lesson_completion_and_return()
+
+func _confirm_theory_lesson_completion_and_return() -> void:
+	if completion_submission_in_progress:
+		return
+	completion_submission_in_progress = true
+	var result: Dictionary = {"submitted": false, "reason": "not_signed_in"}
 	if BackendReport.is_signed_in():
-		BackendReport.report_lesson_completion.call_deferred("dan_tranh", current_lesson_id, completion_score)
+		result = await BackendReport.report_lesson_completion("dan_tranh", current_lesson_id, completion_score)
+	# Show a clean completion dialog (no technical sync jargon for theory lessons)
+	var dialog := AcceptDialog.new()
+	dialog.title = "Hoàn thành bài học!"
+	if bool(result.get("submitted", false)):
+		var stars := int(result.get("lesson_stars", result.get("stars_earned", 3)))
+		dialog.dialog_text = "Bạn đã hoàn thành bài học lý thuyết!\n🌟 Sao nhận được: %d/3" % stars
+	elif bool(result.get("queued", false)):
+		dialog.dialog_text = "Bạn đã hoàn thành bài học!\n🌟 Sao sẽ được cập nhật khi kết nối lại."
+	else:
+		dialog.dialog_text = "Bạn đã xem xong bài học.\n(Chưa đăng nhập — tiến độ chưa được lưu.)"
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(480, 180))
+	await dialog.visibility_changed
+	dialog.queue_free()
+	completion_submission_in_progress = false
 	_on_back()
+
+
 
 func _start_practice_single():
 	_stop_technique_sample()
