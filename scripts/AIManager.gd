@@ -1,6 +1,8 @@
 class_name AIManager
 extends HTTPRequest
 
+const AppConfig = preload("res://scripts/AppConfig.gd")
+
 signal response_received(text: String, emotion: String)
 signal response_chunk_received(text: String, emotion: String)
 signal response_finished()
@@ -32,13 +34,16 @@ var structured_buffer := ""
 var parsed_emotion := "neutral"
 var _http_status := 0
 
+func _init() -> void:
+	api_url = AppConfig.get_maibrain_chat_url()
+	reset_conversation()
+
 func _ready() -> void:
 	set_process(false)
 	if api_url.is_empty():
 		api_url = AppConfig.get_maibrain_chat_url()
 	if api_key.is_empty():
 		api_key = OS.get_environment("MAIBRAIN_API_KEY")
-	reset_conversation()
 
 func reset_conversation() -> void:
 	_close_client()
@@ -59,6 +64,8 @@ func send_prompt(user_prompt: String) -> void:
 	if clean_prompt.is_empty():
 		request_failed.emit("Câu hỏi đang để trống.")
 		return
+	if api_url.is_empty():
+		api_url = AppConfig.get_maibrain_chat_url()
 	if api_url.is_empty():
 		request_failed.emit("Chưa cấu hình URL MaiBrain.")
 		return
