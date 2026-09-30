@@ -2173,7 +2173,11 @@ func _finish_theory_lesson() -> void:
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
 		analyzer.contour_tracking_mode = false
-	await _confirm_lesson_completion_and_return()
+	# Theory-only lessons have no score → silently report completion to backend
+	# without showing the "Kết quả đang chờ đồng bộ" popup (which confuses users).
+	if BackendReport.is_signed_in():
+		BackendReport.report_lesson_completion.call_deferred("dan_tranh", current_lesson_id, completion_score)
+	_on_back()
 
 func _start_practice_single():
 	_stop_technique_sample()
