@@ -582,9 +582,20 @@ func _va_success_prompt() -> void:
 	if is_instance_valid(complete_btn):
 		complete_btn.text = "✓ Hoàn Thành & Quay Lại"
 
+var completion_submission_in_progress := false
+
 func _on_complete() -> void:
+	if completion_submission_in_progress:
+		return
 	video_stream_player.stop()
 	var lesson_id := SecureDataManager.active_lesson_id
+	if lesson_id in ["sao_truc_level1_1", "sao_truc_level1_1_video"]:
+		completion_submission_in_progress = true
+		var result: Dictionary = await BackendReport.report_lesson_completion("sao_truc", "sao_truc_level1_1_video", 100.0)
+		await BackendReport.show_lesson_completion_result(self, result)
+		completion_submission_in_progress = false
+		if not bool(result.get("submitted", false)) and not bool(result.get("queued", false)):
+			return
 	# Xem video không tự hoàn thành bài và không tự cộng sao.
 	# Sao chỉ được ghi khi học viên hoàn thành toàn bộ bài và backend xác nhận.
 	SecureDataManager.video_completed = true

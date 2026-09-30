@@ -38,14 +38,24 @@ func is_signed_in() -> bool:
 func fetch_and_install_catalog() -> void:
 	if not is_signed_in():
 		return
-	await retry_pending_game_attempts()
 	var instruments_response: Dictionary = await _api.get_instruments()
-	var lessons_response: Dictionary = await _api.get_lessons()
 	var instruments: Array = _extract_array(instruments_response)
-	var lessons: Array = _extract_array(lessons_response)
+	var lessons: Array = []
+	var page := 1
+	while true:
+		var response: Dictionary = await _api.get_lessons(0, 0, "", page, 100)
+		if not _is_success(response):
+			return
+		var items := _extract_array(response)
+		lessons.append_array(items)
+		var page_data: Variant = response.get("body", {}).get("data", {})
+		if items.is_empty() or not page_data is Dictionary or page >= int(page_data.get("totalPages", 1)):
+			break
+		page += 1
 	if instruments.is_empty() and lessons.is_empty():
 		return
 	SecureDataManager.install_be_catalog(instruments, lessons)
+	await retry_pending_game_attempts()
 
 
 ## Làm mới lộ trình và tổng sao từ backend.
@@ -118,7 +128,14 @@ func report_lesson_completion(
 		await fetch_and_install_catalog()
 	var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
 	if lesson.is_empty():
-		return {"submitted": false, "reason": "lesson_binding_mismatch"}
+		SecureDataManager.enqueue_pending_game_attempt({
+			"kind": "lesson_completion", "lesson_id": 0,
+			"client_attempt_id": _uuid(), "completed_at": _iso_now(),
+			"score": score, "instrument": instrument, "local_lesson_id": local_lesson_id,
+			"title": "Hoàn thành bài học", "lessonTitle": local_lesson_id,
+		})
+		activity_history_changed.emit()
+		return {"submitted": false, "queued": true, "reason": "lesson_binding_mismatch", "message": "Đã lưu kết quả bài học dự phòng. Máy chủ chưa có mã bài tương ứng; sao và tiến độ đang chờ đồng bộ."}
 	var lesson_id := int(lesson.get("id", 0))
 	var client_attempt_id := _uuid()
 	var completed_at := _iso_now()
@@ -133,7 +150,7 @@ func report_lesson_completion(
 		completion_data = {}
 	# HTTP 202 is an app-side queued request, never an acknowledgement. A lesson
 	# only changes local progress once BE explicitly confirms completed=true.
-	if _is_pending_response(response):
+	if _is_pending_response(response) or int(response.get("status", 0)) >= 500 or int(response.get("status", 0)) == 404:
 		SecureDataManager.enqueue_pending_game_attempt({
 			"kind": "lesson_completion", "lesson_id": lesson_id,
 			"client_attempt_id": client_attempt_id, "completed_at": completed_at,
@@ -162,6 +179,21 @@ func report_lesson_completion(
 		"stars_earned": int(completion_data.get("starsEarned", completion_data.get("stars_earned", 0))),
 		"lesson_stars": lesson_stars,
 	}
+
+
+func show_lesson_completion_result(parent: Node, result: Dictionary) -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = "Kết quả bài học"
+	if bool(result.get("submitted", false)):
+		dialog.dialog_text = "Đã hoàn thành bài học!\nSao của bài: %d/3\nSao nhận thêm: %d" % [int(result.get("lesson_stars", 0)), int(result.get("stars_earned", 0))]
+	elif bool(result.get("queued", false)):
+		dialog.dialog_text = str(result.get("message", "Đã lưu kết quả, đang chờ đồng bộ.")) + "\nSao và tiến độ sẽ cập nhật khi máy chủ xác nhận."
+	else:
+		dialog.dialog_text = str(result.get("message", "Chưa ghi nhận được kết quả. Vui lòng đăng nhập và thử lại."))
+	parent.add_child(dialog)
+	dialog.popup_centered(Vector2i(540, 220))
+	await dialog.visibility_changed
+	dialog.queue_free()
 
 
 ## Đảm bảo exercises của một lesson được cache vào SecureDataManager.
@@ -626,8 +658,14 @@ func retry_pending_game_attempts() -> void:
 			var payload: Dictionary = item.get("payload", {})
 			response = await _api.submit_lesson_assessment(int(item.get("lesson_id", 0)), payload)
 		elif str(item.get("kind", "")) == "lesson_completion":
+			var target_id := int(item.get("lesson_id", 0))
+			if target_id <= 0:
+				var binding := SecureDataManager.resolve_be_lesson_exact(str(item.get("instrument", "")), str(item.get("local_lesson_id", "")))
+				target_id = int(binding.get("id", 0))
+				if target_id <= 0:
+					continue
 			response = await _api.complete_lesson_progress(
-				int(item.get("lesson_id", 0)), str(item.get("client_attempt_id", "")),
+				target_id, str(item.get("client_attempt_id", "")),
 				str(item.get("completed_at", "")), float(item.get("score", -1.0))
 			)
 		else:

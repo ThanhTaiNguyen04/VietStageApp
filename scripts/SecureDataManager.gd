@@ -248,7 +248,7 @@ static func apply_confirmed_lesson_completion(
 		data["stars"][normalized] = {}
 	if not data["unlocked_lessons"].has(normalized):
 		data["unlocked_lessons"][normalized] = ["Node1"]
-	_record_completed(normalized, local_lesson_id, maxi(0, stars))
+	_record_completed(normalized, canonical_lesson_id(normalized, local_lesson_id), maxi(0, stars))
 	var lesson_number := local_lesson_number(local_lesson_id)
 	if lesson_number > 0:
 		_unlock_lesson(normalized, "Node%d" % (lesson_number + 1))
@@ -355,6 +355,18 @@ static func sync_backend_summary(summary_data: Dictionary) -> void:
 # Resolves the BE contract without mutating local progress. Canonical fields are
 # preferred; numeric IDs only bridge the current inconsistent production data.
 static func resolve_backend_progress_item(item: Dictionary) -> Dictionary:
+	var catalog := _backend_lesson_by_id(int(item.get("lessonId", item.get("id", 0))))
+	var lesson_code := str(item.get("lessonCode", catalog.get("lessonCode", "")))
+	if lesson_code.begins_with("dan_tranh_level_"):
+		return {"instrument": "dan_tranh", "node_id": canonical_lesson_id("dan_tranh", lesson_code), "source": "lessonCode"}
+	if lesson_code.begins_with("sao_truc_"):
+		return {"instrument": "sao_truc", "node_id": lesson_code, "source": "lessonCode"}
+	if lesson_code.begins_with("Node") and _lesson_matches_instrument(catalog, "sao_truc"):
+		return {"instrument": "sao_truc", "node_id": lesson_code, "source": "lessonCode"}
+	if lesson_code == "LESSON_SAO_10":
+		return {"instrument": "sao_truc", "node_id": "sao_truc_level1_1_video", "source": "lessonCode"}
+	if not catalog.is_empty() and not lesson_code.is_empty() and (_lesson_matches_instrument(catalog, "dan_tranh") or _lesson_matches_instrument(catalog, "sao_truc")):
+		return {} # Obsolete numeric mappings must not overwrite another lesson.
 	var direct_instrument := _normalize_instrument_key(str(item.get("instrumentKey", "")))
 	if direct_instrument.is_empty():
 		direct_instrument = _normalize_instrument_key(str(item.get("instrumentCode", "")))
@@ -485,7 +497,7 @@ static func _normalize_instrument_key(value: String) -> String:
 	var normalized := value.strip_edges().to_lower().replace("-", "_").replace(" ", "_")
 	if "dan_tranh" in normalized or "đàn_tranh" in normalized:
 		return "dan_tranh"
-	if "sao_truc" in normalized or "sáo_trúc" in normalized or "sáo_truc" in normalized:
+	if "sao_truc" in normalized or "sáo_trúc" in normalized or "sáo_truc" in normalized or normalized in ["sáo", "sao"]:
 		return "sao_truc"
 	if "dan_bau" in normalized or "đàn_bầu" in normalized or "đàn_bau" in normalized:
 		return "dan_bau"
@@ -495,8 +507,18 @@ static func _normalize_instrument_key(value: String) -> String:
 
 static func is_lesson_completed(instrument: String, lesson_id: String) -> bool:
 	if data.completed_lessons.has(instrument):
-		return data.completed_lessons[instrument].has(lesson_id)
+		for value: Variant in data.completed_lessons[instrument]:
+			if canonical_lesson_id(instrument, str(value)) == canonical_lesson_id(instrument, lesson_id):
+				return true
 	return false
+
+static func canonical_lesson_id(instrument: String, lesson_id: String) -> String:
+	if instrument == "dan_tranh" and lesson_id.begins_with("dan_tranh_level_"):
+		if lesson_id == "dan_tranh_level_1_bai_1_practice":
+			return "dan_tranh_level_1_bai_1_video"
+		if lesson_id.ends_with("_video") and lesson_id != "dan_tranh_level_1_bai_1_video":
+			return lesson_id.trim_suffix("_video") + "_practice"
+	return lesson_id
 
 static func is_lesson_unlocked(instrument: String, lesson_id: String) -> bool:
 	if has_temporary_full_access():
@@ -510,6 +532,12 @@ static func is_lesson_unlocked(instrument: String, lesson_id: String) -> bool:
 
 
 static func get_lesson_learning_status(instrument: String, lesson_id: String) -> String:
+	if is_lesson_completed(instrument, lesson_id):
+		return "COMPLETED"
+	for item: Variant in get_pending_game_attempts():
+		if item is Dictionary and str(item.get("kind", "")) == "lesson_completion" and str(item.get("instrument", "")) == instrument:
+			if canonical_lesson_id(instrument, str(item.get("local_lesson_id", ""))) == canonical_lesson_id(instrument, lesson_id):
+				return "PENDING_SYNC"
 	var access := get_backend_lesson_access(instrument, lesson_id)
 	if not access.is_empty():
 		return str(access.get("learningStatus", "NOT_STARTED"))
@@ -694,7 +722,7 @@ static func be_instrument_id(instrument_key: String) -> int:
 		if not item is Dictionary:
 			continue
 		var code := str(item.get("instrumentCode", item.get("name", "")).to_lower()).replace("-", "_").replace(" ", "_")
-		if _normalize_instrument_key(code) == normalized:
+		if _normalize_instrument_key(code) == normalized or _normalize_instrument_key(str(item.get("name", ""))) == normalized:
 			return int(item.get("id", 0))
 	return 0
 
@@ -750,6 +778,24 @@ static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: Str
 	if be_catalog.is_empty():
 		return {}
 	var inst := _normalize_instrument_key(instrument_key)
+	var canonical := canonical_lesson_id(inst, local_lesson_id)
+	for lesson: Dictionary in be_catalog:
+		if _lesson_matches_instrument(lesson, inst) and str(lesson.get("lessonCode", "")) == canonical:
+			return lesson
+	if inst == "sao_truc" and canonical == "sao_truc_level1_1_video":
+		for lesson: Dictionary in be_catalog:
+			if _lesson_matches_instrument(lesson, inst) and str(lesson.get("lessonCode", "")) == "LESSON_SAO_10":
+				return lesson
+	if inst in ["dan_tranh", "sao_truc"]:
+		# Compatibility for old Node-only catalogs without canonical codes.
+		var legacy_matches: Array[Dictionary] = []
+		if local_lesson_id.begins_with("Node"):
+			for lesson: Dictionary in be_catalog:
+				if str(lesson.get("lessonCode", "")).is_empty() and _lesson_matches_instrument(lesson, inst) and int(lesson.get("orderIndex", 0)) == local_lesson_number(local_lesson_id):
+					legacy_matches.append(lesson)
+		if legacy_matches.size() == 1:
+			return legacy_matches[0]
+		return {} # orderIndex repeats across levels; never report to a guessed ID.
 	var local_number := local_lesson_number(local_lesson_id)
 
 	if local_number > 0:
@@ -816,6 +862,8 @@ static func _lesson_matches_instrument(lesson: Dictionary, inst: String) -> bool
 	var code := ""
 	if instrument_value is Dictionary:
 		code = _normalize_instrument_key(str(instrument_value.get("instrumentCode", instrument_value.get("name", ""))))
+		if code.is_empty():
+			code = _normalize_instrument_key(str(instrument_value.get("name", "")))
 	if code.is_empty():
 		code = _normalize_instrument_key(str(lesson.get("instrumentKey", "")))
 	if not code.is_empty() and code == inst:

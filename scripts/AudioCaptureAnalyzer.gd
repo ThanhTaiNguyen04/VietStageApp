@@ -96,9 +96,9 @@ const INSTRUMENT_TIMBRE_RETRY_SAMPLES := 512
 const INSTRUMENT_TIMBRE_MAX_WINDOWS := 3
 const INSTRUMENT_ATTACK_MAX_SAMPLES := INSTRUMENT_ATTACK_ANALYSIS_SAMPLES \
 	+ INSTRUMENT_TIMBRE_RETRY_SAMPLES * (INSTRUMENT_TIMBRE_MAX_WINDOWS - 1)
-const INSTRUMENT_GATE_NORMAL_SEC := 0.65
+const INSTRUMENT_GATE_NORMAL_SEC := 1.0
 const INSTRUMENT_GATE_CONTOUR_SEC := 7.0
-const INSTRUMENT_GATE_SILENCE_SEC := 0.35
+const INSTRUMENT_GATE_SILENCE_SEC := 0.45
 const INSTRUMENT_GATE_CONTOUR_SILENCE_SEC := 0.60
 const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
 const INSTRUMENT_MIN_DECAY_DB := 0.2
@@ -426,6 +426,8 @@ func finish_calibration() -> float:
 ## One calibration per analyzer/session, before practice starts. No TTS is
 ## played here: the measured signal must contain room noise only.
 func ensure_noise_calibrated() -> bool:
+	# Always return true — calibration UI is optional; the lesson runs without it.
+	# The threshold can still be tuned via start_calibration() / finish_calibration().
 	calibration_succeeded = true
 	return true
 	if calibration_succeeded:
@@ -622,8 +624,10 @@ func _process(delta: float) -> void:
 		raw_pitch = _estimate_pitch(samples)
 	elif profile_plucked:
 		# The timbre gate needs about 4096 samples (92.9 ms at 44.1 kHz).
-		# Keep this open long enough to stabilize after that gate is validated.
-		if onset_detected and time_since_onset >= 0.00 and time_since_onset <= 0.25:
+		# Extended window to 0.40 s so the timbre gate has time to accept the
+		# attack before we begin pitch estimation, then pitch candidates can
+		# accumulate PITCH_STABILITY_FRAMES readings before being marked reliable.
+		if onset_detected and time_since_onset >= 0.00 and time_since_onset <= 0.40:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
 				if raw_pitch > 0.0 and current_pitch_is_reliable:
@@ -634,10 +638,15 @@ func _process(delta: float) -> void:
 	# Step 5: Stabilization
 	if raw_pitch > 0.0:
 		_update_reliable_pitch(raw_pitch)
+	# Do NOT clear pitch candidates while a timbre classification is still in
+	# progress (_instrument_attack_candidate_active). The C++ analyzer needs
+	# roughly 4096 samples (~93 ms) to accept the attack; clearing pitch here
+	# was resetting candidates on every frame, so PITCH_STABILITY_FRAMES was
+	# never accumulated and no note was ever emitted ("nháy nháy" bug).
 	if profile_plucked and not instrument_gate_open \
-			and not _instrument_attack_candidate_active:
-		# When C++ analyzer is active, perform strict clearing. In pure GDScript fallback (e.g. Xogot/remote debug),
-		# preserve reliable pitch so detection remains active.
+			and not _instrument_attack_candidate_active \
+			and not onset_detected:
+		# Only clear when there is truly no pending attack at all.
 		if _analyzer != null:
 			_clear_pitch_detection()
 	

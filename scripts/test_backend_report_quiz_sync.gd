@@ -24,7 +24,7 @@ func _run() -> void:
 	AuthSessionStore.ensure_loaded()
 	AuthSessionStore.access_token = "sync-test-token"
 	Secure.load_data()
-	var original_pending: Array = Secure.data.get("pending_game_attempts", []).duplicate(true)
+	var original_data: Dictionary = Secure.data.duplicate(true)
 	var original_catalog: Array = Secure.be_catalog.duplicate(true)
 	Secure.data["pending_game_attempts"] = []
 
@@ -73,9 +73,22 @@ func _run() -> void:
 	fake.completion_response = {"status": 201, "body": {"data": {"completed": true, "lessonStars": 3, "starsEarned": 3, "totalStars": 3}}}
 	await report.retry_pending_game_attempts()
 	assert(Secure.get_pending_game_attempts().is_empty())
+	# Missing bundled content is retained for later binding, without fake stars.
+	Secure.be_catalog = [{"id": 50, "lessonCode": "dan_tranh_level_1_bai_1_video", "instrument": {"name": "Đàn Tranh"}}]
+	var missing: Dictionary = await report.report_lesson_completion("sao_truc", "Node42", 100.0)
+	assert(missing.get("queued") == true)
+	assert(Secure.get_lesson_learning_status("sao_truc", "Node42") == "PENDING_SYNC")
+	assert(not Secure.is_lesson_completed("sao_truc", "Node42"))
+	await report.retry_pending_game_attempts()
+	assert(Secure.get_pending_game_attempts().size() == 1)
+	Secure.be_catalog.append({"id": 142, "lessonCode": "Node42", "instrument": {"name": "Sáo"}})
+	fake.completion_response = {"status": 200, "body": {"data": {"completed": true, "lessonStars": 3}}}
+	await report.retry_pending_game_attempts()
+	assert(Secure.get_pending_game_attempts().is_empty())
+	assert(Secure.is_lesson_completed("sao_truc", "Node42"))
 	Secure.be_catalog = original_catalog
 
-	Secure.data["pending_game_attempts"] = original_pending
+	Secure.data = original_data
 	Secure.save_data()
 	print("BackendReport quiz ACK and offline queue PASS")
 	quit()

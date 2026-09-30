@@ -277,10 +277,10 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 		var previous_activity := "video" if str(previous.get("type", "practice")) == "video" else "practice"
 		var previous_id := str(previous.get("%s_id" % previous_activity, _lesson_id(previous_number, previous_activity)))
 		lesson_ready = completed.has(previous_id)
-	var practice_completed: bool = completed.has(practice_id)
+	var practice_completed: bool = SecureDataManager.is_lesson_completed("dan_tranh", practice_id)
 	var practice_in_progress := SecureDataManager.get_lesson_learning_status("dan_tranh", practice_id) == "IN_PROGRESS"
 	var practice_unlocked: bool = SecureDataManager.is_lesson_unlocked("dan_tranh", practice_id)
-	if not SecureDataManager.is_backend_course_access_loaded():
+	if not SecureDataManager.has_temporary_full_access() and not SecureDataManager.is_backend_course_access_loaded():
 		practice_unlocked = not REQUIRE_SEQUENTIAL_UNLOCK or practice_completed or lesson_ready
 
 	var column := VBoxContainer.new()
@@ -293,6 +293,8 @@ func _create_lesson_path(lesson: Dictionary, index: int, lessons: Array, complet
 	# Giữ hình tròn bài học và đặt cả số bài lẫn tên bài bên trong.
 	var lesson_button := _create_circle_button(display_number, str(lesson["title"]), practice_unlocked, practice_completed, practice_in_progress)
 	lesson_button.name = "LessonBtn"
+	if SecureDataManager.get_lesson_learning_status("dan_tranh", practice_id) == "PENDING_SYNC":
+		lesson_button.text = "BÀI %s\n%s\nChờ đồng bộ" % [display_number, str(lesson["title"])]
 	lesson_button.z_index = 10
 	# Bài mở đầu phải bắt đầu bằng video giới thiệu; xem xong mới vào phần cô Mai
 	# hướng dẫn và thực hành trong LessonDanTranh.
@@ -670,11 +672,13 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 		return
 	var backend_report = get_node_or_null("/root/BackendReport")
 	if backend_report and backend_report.has_method("start_lesson"):
-		var start_result: Dictionary = await backend_report.start_lesson("dan_tranh", start_id)
-		# Tài khoản kiểm thử vẫn ghi nhận IN_PROGRESS; quyền mở tạm chỉ bỏ qua
-		# phản hồi khóa của server trong lúc rule full-access chưa được triển khai.
-		if start_result.get("reason", "") == "locked" and not SecureDataManager.has_temporary_full_access():
-			return
+		if SecureDataManager.has_temporary_full_access():
+			# The autoload survives navigation; start reporting must not block entry.
+			backend_report.start_lesson.call_deferred("dan_tranh", start_id)
+		else:
+			var start_result: Dictionary = await backend_report.start_lesson("dan_tranh", start_id)
+			if start_result.get("reason", "") == "locked":
+				return
 	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])
