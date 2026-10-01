@@ -269,7 +269,10 @@ func _ready():
 		target_hz = NOTE_FREQS.get(active_note, 0.0)
 		
 		# Setup Intro Speech
-		if LESSON_DIALOGUES.has(active_node_id):
+		var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
+		if not remote_speech.is_empty():
+			txt = str(remote_speech[0].get("text", ""))
+		elif LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["intro"]
 		else:
 			txt = "Chào mừng bạn đến bài học! Hôm nay chúng ta sẽ làm quen với nốt " + active_note + ", để thổi nốt " + active_note + " bạn " + lesson_info["desc"].to_lower() + ". Nào cùng thử nhé!"
@@ -1854,7 +1857,10 @@ func _hit_note():
 		start_rhythm_btn.pressed.connect(_start_rhythm_game)
 		
 		var txt = ""
-		if LESSON_DIALOGUES.has(active_node_id):
+		var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
+		if remote_speech.size() > 1:
+			txt = str(remote_speech[1].get("text", ""))
+		elif LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["mid"]
 		elif active_node_id.begins_with("sao_truc_level5_") or active_node_id in ["Node35", "Node36", "Node37", "Node38", "Node39", "Node40", "Node41", "Node42"]:
 			txt = "Tốt lắm! Bạn đã làm quen với các nốt nhạc. Bây giờ chúng ta cùng thổi theo nhịp điệu của bài nhé!"

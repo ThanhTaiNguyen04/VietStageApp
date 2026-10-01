@@ -364,6 +364,7 @@ func _ready():
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
+	current_lesson_code = SecureDataManager.canonical_lesson_id("dan_tranh", current_lesson_id)
 	# The selector sets this flag immediately before opening the Á lesson. The
 	# title fallback also supports direct scene testing without stale lesson data.
 	if force_glissando_start or PracticeRoom.current_song_title.begins_with(LEVEL_7_GLISSANDO_TITLE):

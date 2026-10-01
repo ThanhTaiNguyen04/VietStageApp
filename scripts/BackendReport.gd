@@ -394,6 +394,61 @@ func fetch_lesson_assets(lesson_id: int) -> Array:
 	return _extract_array(response)
 
 
+## Tải lời hướng dẫn của đúng bài đang mở. Không thay đổi dữ liệu bundled;
+## caller vẫn dùng bundled khi endpoint thiếu dữ liệu hoặc trả lỗi.
+func fetch_lesson_teacher_speech(instrument: String, local_lesson_id: String) -> Array:
+	if not is_signed_in():
+		return []
+	if SecureDataManager.be_catalog.is_empty():
+		await fetch_and_install_catalog()
+	var lesson := SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
+	if lesson.is_empty():
+		return []
+	var lesson_code := str(lesson.get("lessonCode", ""))
+	if lesson_code.is_empty():
+		return []
+	var cached := SecureDataManager.get_be_teacher_speech(lesson_code)
+	if not cached.is_empty():
+		return cached
+	var response: Dictionary = await _api.get_lesson_contents(int(lesson.get("id", 0)))
+	if not _is_success(response):
+		return []
+	var steps := _teacher_speech_steps(_extract_array(response))
+	if not steps.is_empty():
+		SecureDataManager.cache_be_teacher_speech(lesson_code, steps)
+		SecureDataManager.cache_be_teacher_speech(SecureDataManager.canonical_lesson_id(instrument, local_lesson_id), steps)
+	return steps
+
+
+func _teacher_speech_steps(contents: Array) -> Array:
+	var ordered: Array[Dictionary] = []
+	for raw_item: Variant in contents:
+		if not raw_item is Dictionary:
+			continue
+		var item: Dictionary = raw_item
+		var text := str(item.get("contentText", item.get("content_text", item.get("text", "")))).strip_edges()
+		if text.is_empty():
+			continue
+		var parsed: Variant = JSON.parse_string(text) if text.begins_with("{") else null
+		if parsed is Dictionary:
+			var document: Dictionary = parsed
+			var blocks: Variant = document.get("blocks", [])
+			if blocks is Array:
+				for block_value: Variant in blocks:
+					if block_value is Dictionary:
+						var block: Dictionary = block_value
+						var block_text := str(block.get("text", "")).strip_edges()
+						if not block_text.is_empty():
+							ordered.append({"order": int(item.get("orderIndex", item.get("order_index", 0))), "action": "speak", "text": block_text})
+				continue
+		ordered.append({"order": int(item.get("orderIndex", item.get("order_index", 0))), "action": "speak", "text": text})
+	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["order"]) < int(b["order"]))
+	var steps: Array = []
+	for item: Dictionary in ordered:
+		steps.append({"action": "speak", "text": str(item["text"])})
+	return steps
+
+
 # ── Practice attempts ──────────────────────────────────────────────────
 
 ## Nộp kết quả lượt tập. scores keys: pitch, rhythm, dynamics,

@@ -694,6 +694,7 @@ static var be_catalog: Array = []
 static var be_exercises: Dictionary = {}   # lesson_id -> Array[exercise]
 static var be_minigames: Dictionary = {}   # lesson_id -> Array[minigame]
 static var be_quizzes: Dictionary = {}     # lesson_id -> Array[quiz]
+static var be_teacher_speech: Dictionary = {} # lesson_code -> Array[{action, text}]
 
 ## Ghi nhận catalog từ GET /api/instruments và GET /api/lessons.
 static func install_be_catalog(instruments: Array, lessons: Array) -> void:
@@ -702,6 +703,7 @@ static func install_be_catalog(instruments: Array, lessons: Array) -> void:
 	be_exercises.clear()
 	be_minigames.clear()
 	be_quizzes.clear()
+	be_teacher_speech.clear()
 	save_data()
 
 
@@ -713,6 +715,18 @@ static func cache_be_minigames(lesson_id: int, minigames: Array) -> void:
 
 static func cache_be_quizzes(lesson_id: int, quizzes: Array) -> void:
 	be_quizzes[lesson_id] = quizzes
+
+
+## Nội dung API chỉ được cache trong phiên hiện tại. Dữ liệu cứng vẫn là
+## fallback khi API không trả được nội dung hợp lệ.
+static func cache_be_teacher_speech(lesson_code: String, steps: Array) -> void:
+	if not lesson_code.is_empty() and not steps.is_empty():
+		be_teacher_speech[lesson_code] = steps.duplicate(true)
+
+
+static func get_be_teacher_speech(lesson_code: String) -> Array:
+	var steps: Variant = be_teacher_speech.get(lesson_code, [])
+	return steps.duplicate(true) if steps is Array else []
 
 
 ## Tra cứu instrumentId (số) từ key nội bộ ("dan_tranh", "sao_truc", …).

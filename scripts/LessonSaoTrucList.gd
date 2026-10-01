@@ -565,6 +565,10 @@ func _open_lesson(node_id: String) -> void:
 			var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
 			if start_result.get("reason", "") == "locked":
 				return
+		# API is primary for the teacher introduction when it is available.
+		# The bundled lesson remains intact as the offline/error fallback.
+		if backend_report.has_method("fetch_lesson_teacher_speech"):
+			await backend_report.fetch_lesson_teacher_speech("sao_truc", node_id)
 	SecureDataManager.active_lesson_id = node_id
 
 	var song_title = node_id

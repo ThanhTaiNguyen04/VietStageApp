@@ -679,6 +679,10 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 			var start_result: Dictionary = await backend_report.start_lesson("dan_tranh", start_id)
 			if start_result.get("reason", "") == "locked":
 				return
+		# Load remote teacher speech before the scene starts. A failed or empty
+		# response is intentionally ignored: LessonDanTranh keeps bundled data.
+		if backend_report.has_method("fetch_lesson_teacher_speech"):
+			await backend_report.fetch_lesson_teacher_speech("dan_tranh", start_id)
 	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])
