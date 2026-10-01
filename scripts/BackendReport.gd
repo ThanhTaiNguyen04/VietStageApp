@@ -20,6 +20,7 @@ var _active_practice_session_id := 0
 var _active_practice_session_key := ""
 var last_minigame_fetch_succeeded := true
 var last_minigame_fetch_error := ""
+var last_quiz_fetch_succeeded := true
 
 
 func _ready() -> void:
@@ -43,7 +44,7 @@ func fetch_and_install_catalog() -> void:
 	var lessons: Array = []
 	var page := 1
 	while true:
-		var response: Dictionary = await _api.get_lessons(0, 0, "", page, 100)
+		var response: Dictionary = await _api.get_lessons(0, 0, "APPROVED", page, 100, true)
 		if not _is_success(response):
 			return
 		var items := _extract_array(response)
@@ -218,11 +219,12 @@ func _active_activity_items(items: Array) -> Array:
 	return active
 
 
-func ensure_quizzes(lesson_id: int) -> Array:
-	if SecureDataManager.be_quizzes.has(lesson_id):
+func ensure_quizzes(lesson_id: int, force_refresh: bool = false) -> Array:
+	if not force_refresh and SecureDataManager.be_quizzes.has(lesson_id):
 		return SecureDataManager.be_quizzes[lesson_id]
 	var response: Dictionary = await _api.get_lesson_quizzes(lesson_id)
 	if not _is_success(response):
+		last_quiz_fetch_succeeded = false
 		return []
 	var quizzes: Array = _active_activity_items(_extract_array(response))
 	SecureDataManager.cache_be_quizzes(lesson_id, quizzes)
@@ -232,7 +234,8 @@ func ensure_quizzes(lesson_id: int) -> Array:
 ## Gom toàn bộ câu hỏi trắc nghiệm của các bài nội bộ (cùng level) để ôn tập.
 ## Nếu không binding được lesson nào theo local id, tự quét toàn bộ lesson cùng nhạc cụ
 ## để FE vẫn lấy được quiz thật của BE (bỏ ràng buộc với bài học khi test giao diện).
-func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Array:
+func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array, force_refresh: bool = false) -> Array:
+	last_quiz_fetch_succeeded = true
 	if SecureDataManager.be_catalog.is_empty():
 		await fetch_and_install_catalog()
 	var result: Array = []
@@ -249,7 +252,7 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Arr
 			continue
 		LearningActivityContext.set_backend_lesson(lesson)
 		bound_ids.append(lesson_id)
-		var quizzes: Array = await ensure_quizzes(lesson_id)
+		var quizzes: Array = await ensure_quizzes(lesson_id, force_refresh)
 		print("[QuizDebug] ensure_quizzes returned size: ", quizzes.size())
 		for quiz: Variant in quizzes:
 			if not quiz is Dictionary:

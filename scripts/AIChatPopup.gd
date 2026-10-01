@@ -722,8 +722,6 @@ func _on_ai_response_received(text: String, _emotion: String) -> void:
 	ai_send_btn.disabled = false
 	ai_input.editable = true
 	_log_to_ui("[Mai]: " + text)
-	if ai_manager.last_status == "ANSWERED" and not ai_manager.last_sources.is_empty():
-		_log_to_ui("[Nguồn đã duyệt]: " + ", ".join(ai_manager.last_sources))
 
 func _on_ai_chunk_received(chunk_text: String, emotion: String) -> void:
 	if ai_manager.last_status != "ANSWERED":

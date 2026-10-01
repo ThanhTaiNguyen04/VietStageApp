@@ -396,6 +396,12 @@ func _style_option_button_state(button: Button, state: String) -> void:
 		if text_label:
 			text_label.add_theme_color_override("font_color", Color("#c62828"))
 
+	elif state == "pending":
+		style.bg_color = Color("#fff7e6")
+		style.border_color = Color("#d97706")
+		button.add_theme_stylebox_override("disabled", style)
+		button.add_theme_color_override("font_disabled_color", Color("#8a4b08"))
+
 func _show_loading() -> void:
 	var loading := _label("Đang tải câu hỏi từ bài học...", 17, C_MUTED)
 	loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -417,14 +423,12 @@ func _begin_quiz() -> void:
 		await _backend_fetch_gate
 		if _backend_fetch_finished:
 			if _backend_quizzes.is_empty():
-				_load_sample_quizzes(true)
-				_set_source_badge("Dữ liệu mẫu · BE chưa có quiz", true)
+				_show_message("Bài học này chưa có câu hỏi trắc nghiệm." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
 			else:
 				await _install_backend_quizzes(_backend_quizzes)
 		else:
 			_backend_fetch_timed_out = true
-			_load_sample_quizzes(true)
-			_set_source_badge("Dữ liệu mẫu · BE chậm", true)
+			_show_message("Đang chờ câu hỏi từ máy chủ. Bạn có thể thử tải lại.", true)
 	else:
 		_load_sample_quizzes(false)
 
@@ -457,12 +461,15 @@ func _show_quiz_ui() -> void:
 		floating_back_button.visible = true
 
 func _fetch_backend_quizzes(report: Node) -> void:
-	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids)
+	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids, true)
 	_backend_quizzes = _filter_valid_quizzes(loaded)
 	_backend_fetch_finished = true
 	_backend_fetch_gate.emit()
 	if _backend_fetch_timed_out:
-		_set_source_badge("Dữ liệu mẫu · BE chậm", true)
+		if _backend_quizzes.is_empty():
+			_show_message("Bài học này chưa có câu hỏi trắc nghiệm." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
+		else:
+			await _install_backend_quizzes(_backend_quizzes)
 
 func _install_backend_quizzes(valid: Array) -> void:
 	quizzes = valid.duplicate(true)
@@ -484,13 +491,12 @@ func _fetch_from_backend() -> void:
 	var report := _report()
 	if report == null or not report.is_signed_in():
 		return
-	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids)
+	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids, true)
 	var valid: Array = _filter_valid_quizzes(loaded)
 	if valid.is_empty():
-		_set_source_badge("Dữ liệu mẫu · BE chưa có quiz", true)
+		_show_message("Bài học này chưa có câu hỏi trắc nghiệm." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
 		return
-	if not _using_sample_quizzes or question_index > 0 or answered or score > 0 or correct_count > 0:
-		_set_source_badge("Dữ liệu BE đã tải", false)
+	if question_index > 0 or answered or score > 0 or correct_count > 0:
 		return
 	await _install_backend_quizzes(valid)
 
@@ -516,7 +522,7 @@ func _sort_quizzes() -> void:
 	quizzes.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("orderIndex", 0)) < int(b.get("orderIndex", 0)))
 
-func _show_message(message: String) -> void:
+func _show_message(message: String, can_retry: bool = false) -> void:
 	if progress_bar:
 		progress_bar.get_parent().visible = false
 	if bottom_feedback_panel:
@@ -529,6 +535,11 @@ func _show_message(message: String) -> void:
 	var message_label := _label(message, 22, C_MUTED)
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content_box.add_child(message_label)
+	if can_retry:
+		var retry := _button("Thử tải lại", 180, 50, C_NAVY)
+		retry.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		retry.pressed.connect(_retry_fetch)
+		content_box.add_child(retry)
 	var back := _button("Quay lại", 180, 50, C_NAVY)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(_go_back)
@@ -935,6 +946,8 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 			score += int(pending_preview.get("previewPoints", QUIZ_PREVIEW_POINTS))
 			local_preview_count += 1
 		_style_option_button_state(button, "correct")
+	elif is_backend_quiz and not bool(result.get("submitted", false)):
+		_style_option_button_state(button, "pending")
 	else:
 		_style_option_button_state(button, "incorrect")
 

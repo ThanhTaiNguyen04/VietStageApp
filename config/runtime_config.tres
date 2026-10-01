@@ -6,4 +6,4 @@
 script = ExtResource("1_runtime_config")
 api_base_url = "https://vietstage-web-backend.onrender.com"
 api_prefix = "/api"
-maibrain_chat_url = ""
+maibrain_chat_url = "http://127.0.0.1:3000/api/chat"
