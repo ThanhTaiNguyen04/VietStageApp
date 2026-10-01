@@ -2283,7 +2283,6 @@ func _on_complete():
 	# Trước đây lời gọi bất đồng bộ bị bỏ qua ngay khi đổi scene, nên server
 	# thường không kịp ghi nhận bài đã hoàn thành.
 	var result: Dictionary = await _sync_practice_to_backend(inst, active_node_id)
-	await BackendReport.show_lesson_completion_result(self, result)
 	completion_submission_in_progress = false
 	if not bool(result.get("submitted", false)) and not bool(result.get("queued", false)):
 		push_warning("Không thể đồng bộ hoàn thành bài: %s" % str(result.get("message", result.get("reason", "unknown"))))
