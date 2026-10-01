@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://quiz_screen_001"]
 
 [ext_resource type="Script" path="res://scripts/QuizScreen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/minigame_rhythm_bg.jpg" id="2_bg"]
 
 [node name="QuizScreen" type="Control"]
 layout_mode = 3
@@ -11,6 +12,26 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="DimOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.98, 0.97, 0.95, 0.88)
+
 [node name="Root" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -18,121 +39,217 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = 6
 
-[node name="TopBar" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(0, 90)
-layout_mode = 2
-
-[node name="TopM" type="MarginContainer" parent="Root/TopBar"]
-layout_mode = 2
-theme_override_constants/margin_left = 48
-theme_override_constants/margin_right = 48
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="TopH" type="HBoxContainer" parent="Root/TopBar/TopM"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="BackBtn" type="Button" parent="Root/TopBar/TopM/TopH"]
-custom_minimum_size = Vector2(180, 56)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_font_sizes/font_size = 20
-text = "Quay Lại"
-
-[node name="Spacer" type="Control" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Title" type="Label" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 26
-text = "KIỂM TRA KIẾN THỨC"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="SpacerRight" type="Control" parent="Root/TopBar/TopM/TopH"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Card" type="PanelContainer" parent="Root"]
-custom_minimum_size = Vector2(1000, 640)
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 6
-
-[node name="CardM" type="MarginContainer" parent="Root/Card"]
-layout_mode = 2
-theme_override_constants/margin_left = 48
-theme_override_constants/margin_right = 48
-theme_override_constants/margin_top = 32
-theme_override_constants/margin_bottom = 32
-
-[node name="GameVBox" type="VBoxContainer" parent="Root/Card/CardM"]
-layout_mode = 2
-theme_override_constants/separation = 24
-alignment = 1
-
-[node name="HeaderRow" type="HBoxContainer" parent="Root/Card/CardM/GameVBox"]
-layout_mode = 2
-
-[node name="ProgressLbl" type="Label" parent="Root/Card/CardM/GameVBox/HeaderRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "CÂU 1 / 1"
-
-[node name="HeaderSpacer" type="Control" parent="Root/Card/CardM/GameVBox/HeaderRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ScoreLbl" type="Label" parent="Root/Card/CardM/GameVBox/HeaderRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "ĐIỂM: 0"
-horizontal_alignment = 2
-
-[node name="QuestionLbl" type="Label" parent="Root/Card/CardM/GameVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = ""
-horizontal_alignment = 1
-autowrap_mode = 3
-
-[node name="OptionsVBox" type="VBoxContainer" parent="Root/Card/CardM/GameVBox"]
-layout_mode = 2
-theme_override_constants/separation = 16
-size_flags_horizontal = 4
-
-[node name="FeedbackPanel" type="PanelContainer" parent="Root/Card/CardM/GameVBox"]
-custom_minimum_size = Vector2(0, 72)
-layout_mode = 2
-visible = false
-
-[node name="FeedbackM" type="MarginContainer" parent="Root/Card/CardM/GameVBox/FeedbackPanel"]
+[node name="TopBar" type="MarginContainer" parent="Root"]
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 24
-theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 2
+
+[node name="TopH" type="HBoxContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="BackBtn" type="Button" parent="Root/TopBar/TopH"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 22
+text = "←"
+
+[node name="TitlePill" type="PanelContainer" parent="Root/TopBar/TopH"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Margin" type="MarginContainer" parent="Root/TopBar/TopH/TitlePill"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 8
+
+[node name="Title" type="Label" parent="Root/TopBar/TopH/TitlePill/Margin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "📜 KIỂM TRA KIẾN THỨC & NHẬN DIỆN NỐT"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="Root/TopBar/TopH"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatChip" type="PanelContainer" parent="Root/TopBar/TopH"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Margin" type="MarginContainer" parent="Root/TopBar/TopH/StatChip"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 8
+
+[node name="StatLbl" type="Label" parent="Root/TopBar/TopH/StatChip/Margin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "⭐ 0 Sao"
+
+[node name="ContentMargin" type="MarginContainer" parent="Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 2
+theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 12
 
-[node name="FeedbackLbl" type="Label" parent="Root/Card/CardM/GameVBox/FeedbackPanel/FeedbackM"]
+[node name="CenterBox" type="CenterContainer" parent="Root/ContentMargin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = ""
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Card" type="PanelContainer" parent="Root/ContentMargin/CenterBox"]
+custom_minimum_size = Vector2(860, 450)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CardM" type="MarginContainer" parent="Root/ContentMargin/CenterBox/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 16
+
+[node name="GameVBox" type="VBoxContainer" parent="Root/ContentMargin/CenterBox/Card/CardM"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="HeaderRow" type="HBoxContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox"]
+layout_mode = 2
+
+[node name="ProgressPill" type="PanelContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow"]
+layout_mode = 2
+
+[node name="M" type="MarginContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ProgressPill"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 4
+
+[node name="ProgressLbl" type="Label" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ProgressPill/M"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "CÂU 1 / 6"
+
+[node name="TypePill" type="PanelContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow"]
+layout_mode = 2
+
+[node name="M" type="MarginContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/TypePill"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 4
+
+[node name="TypeLbl" type="Label" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/TypePill/M"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🎼 NHẬN DIỆN NỐT"
+
+[node name="HeaderSpacer" type="Control" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScorePill" type="PanelContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow"]
+layout_mode = 2
+
+[node name="M" type="MarginContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ScorePill"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 4
+
+[node name="ScoreLbl" type="Label" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ScorePill/M"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "ĐIỂM: 0"
+
+[node name="QuestionLbl" type="Label" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Câu hỏi trắc nghiệm..."
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="BottomRow" type="HBoxContainer" parent="Root/Card/CardM/GameVBox"]
+[node name="StaffContainer" type="PanelContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="StaffM" type="MarginContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 8
+
+[node name="StaffHBox" type="HBoxContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer/StaffM"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="StaffView" type="Control" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer/StaffM/StaffHBox"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayNoteBtn" type="Button" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer/StaffM/StaffHBox"]
+custom_minimum_size = Vector2(130, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 14
+text = "🔊 Nghe nốt"
+
+[node name="OptionsGrid" type="GridContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 10
+columns = 2
+
+[node name="FeedbackPanel" type="PanelContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox"]
+visible = false
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+
+[node name="FeedbackM" type="MarginContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/FeedbackPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 4
+
+[node name="FeedbackLbl" type="Label" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/FeedbackPanel/FeedbackM"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="BottomRow" type="HBoxContainer" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="NextBtn" type="Button" parent="Root/Card/CardM/GameVBox/BottomRow"]
-custom_minimum_size = Vector2(240, 56)
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Tiếp Tục →"
+[node name="NextBtn" type="Button" parent="Root/ContentMargin/CenterBox/Card/CardM/GameVBox/BottomRow"]
 visible = false
+custom_minimum_size = Vector2(220, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Tiếp Tục ➔"

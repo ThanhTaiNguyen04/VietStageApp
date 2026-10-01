@@ -1,495 +1,521 @@
 extends Control
+class_name QuizScreen
+## Màn hình Quiz - Hỗ Trợ 2 Dạng: Nhận Diện Nốt Trên Khuôn Nhạc & Trả Lời Câu Hỏi
 
-# ── Colors (Jade & Gold Lacquer Cream Theme) ──────────────────────────────
-const C_BG        := Color("#faf8f5")
-const C_GREEN     := Color("#173f2d")  # C_JADE
-const C_GREEN_MID := Color("#245f43")  # C_JADE_LIGHT
-const C_GOLD      := Color("#c59626")  # C_GOLD
-const C_GOLD_LT   := Color("#f0cb62")  # C_GOLD_LIGHT
-const C_CREAM     := Color("#fffdf8")  # C_CARD
-const C_TEXT      := Color("#21140d")  # C_TEXT
-const C_TEXT_MUT  := Color("#6f6257")  # C_MUTED
-const C_CARD      := Color("#fffdf8")  # C_CARD
-const C_OK        := Color("#3e8e63")
-const C_OK_BG     := Color("#e7f4ec")
-const C_BAD       := Color("#c0392b")
-const C_BAD_BG    := Color("#fbeae8")
-const QUIZ_PREVIEW_POINTS := 10
-const LearningActivityContext = preload("res://scripts/LearningActivityContext.gd")
-const LessonAssessmentCoordinator = preload("res://scripts/LessonAssessmentCoordinator.gd")
+const C_JADE        := Color("#173f2d")
+const C_JADE_LIGHT  := Color("#245f43")
+const C_GOLD        := Color("#c59626")
+const C_GOLD_LIGHT  := Color("#f0cb62")
+const C_CARD        := Color("#ffffff")
+const C_TEXT        := Color("#1e293b")
+const C_TEXT_MUTED  := Color("#64748b")
+const C_OK          := Color("#16a34a")
+const C_OK_BG       := Color("#dcfce7")
+const C_BAD         := Color("#dc2626")
+const C_BAD_BG      := Color("#fee2e2")
 
-# ── Context (set by caller screens before changing scene) ────────────────
-static var quiz_instrument: String = ""
-static var quiz_local_ids: Array[String] = []
-static var quiz_return_scene: String = "res://scenes/MainMenu.tscn"
-
-# ── Node refs ─────────────────────────────────────────────────────────────
-@onready var back_btn   : Button = $Root/TopBar/TopM/TopH/BackBtn
-@onready var top_title  : Label  = $Root/TopBar/TopM/TopH/Title
-@onready var progress_lbl : Label = $Root/Card/CardM/GameVBox/HeaderRow/ProgressLbl
-@onready var score_lbl    : Label = $Root/Card/CardM/GameVBox/HeaderRow/ScoreLbl
-@onready var question_lbl : Label = $Root/Card/CardM/GameVBox/QuestionLbl
-@onready var options_vbox : VBoxContainer = $Root/Card/CardM/GameVBox/OptionsVBox
-@onready var feedback_pan : PanelContainer = $Root/Card/CardM/GameVBox/FeedbackPanel
-@onready var feedback_lbl : Label = $Root/Card/CardM/GameVBox/FeedbackPanel/FeedbackM/FeedbackLbl
-@onready var next_btn     : Button = $Root/Card/CardM/GameVBox/BottomRow/NextBtn
-
-var font_bold    : Font = null
-var font_regular : Font = null
+# Context properties
+var quiz_instrument: String = ""
 
 var _quizzes: Array = []
-var _index: int = 0
-var _score: int = 0
-var _correct_count: int = 0
-var _api_stars_earned: int = 0
-var _submitted_correct_answer: String = ""
-var _answered: bool = false
-var _busy: bool = false
+var _index := 0
+var _score := 0
+var _correct_count := 0
+var _answered := false
+var _current_note_pitch := "C4"
+var _current_note_freq := 261.63
+
+@onready var back_btn       : Button = $Root/TopBar/TopH/BackBtn
+@onready var title_pill     : PanelContainer = $Root/TopBar/TopH/TitlePill
+@onready var top_title      : Label  = $Root/TopBar/TopH/TitlePill/Margin/Title
+@onready var stat_chip      : PanelContainer = $Root/TopBar/TopH/StatChip
+@onready var stat_lbl       : Label  = $Root/TopBar/TopH/StatChip/Margin/StatLbl
+
+@onready var card           : PanelContainer = $Root/ContentMargin/CenterBox/Card
+@onready var game_vbox      : VBoxContainer  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox
+@onready var header_row     : HBoxContainer  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow
+@onready var progress_pill  : PanelContainer = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ProgressPill
+@onready var type_pill      : PanelContainer = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/TypePill
+@onready var score_pill     : PanelContainer = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ScorePill
+@onready var progress_lbl   : Label  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ProgressPill/M/ProgressLbl
+@onready var type_lbl       : Label  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/TypePill/M/TypeLbl
+@onready var score_lbl      : Label  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/HeaderRow/ScorePill/M/ScoreLbl
+
+@onready var question_lbl   : Label  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/QuestionLbl
+@onready var staff_container: PanelContainer = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer
+@onready var staff_view     : Control = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer/StaffM/StaffHBox/StaffView
+@onready var play_note_btn  : Button = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/StaffContainer/StaffM/StaffHBox/PlayNoteBtn
+@onready var options_grid   : GridContainer  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/OptionsGrid
+@onready var feedback_pan   : PanelContainer = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/FeedbackPanel
+@onready var feedback_lbl   : Label  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/FeedbackPanel/FeedbackM/FeedbackLbl
+@onready var bottom_row     : HBoxContainer  = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/BottomRow
+@onready var next_btn       : Button = $Root/ContentMargin/CenterBox/Card/CardM/GameVBox/BottomRow/NextBtn
 
 func _ready() -> void:
 	SecureDataManager.load_data()
-	font_bold    = load("res://assets/fonts/BeVietnamPro-Bold.ttf")
-	font_regular = load("res://assets/fonts/BeVietnamPro-Regular.ttf")
-
-	_build_topbar()
 	_build_theme()
-
+	_update_header_stats()
+	
 	back_btn.pressed.connect(_go_back)
-	next_btn.pressed.connect(_next)
 	_make_btn_bouncy(back_btn)
+	next_btn.pressed.connect(_on_next_pressed)
 	_make_btn_bouncy(next_btn)
-
+	play_note_btn.pressed.connect(func() -> void: _play_synth(_current_note_freq))
+	_make_btn_bouncy(play_note_btn)
+	
+	staff_view.draw.connect(_on_draw_staff)
+	
+	quiz_instrument = str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
+		
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.22)
+	
 	_begin_quiz()
 
-	modulate.a = 0.0
-	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
-
-func _draw() -> void:
-	var sz := get_rect().size
-	draw_rect(Rect2(Vector2.ZERO, sz), C_BG)
-
-# ── Theme ──────────────────────────────────────────────────────────────────
-func _build_topbar() -> void:
-	var top_bar := $Root/TopBar as PanelContainer
-	if not top_bar.has_node("BlurRect"):
-		var blur_mat := ShaderMaterial.new()
-		var blur_sh := Shader.new()
-		blur_sh.code = """
-		shader_type canvas_item;
-		uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-		uniform float lod : hint_range(0.0, 5.0) = 2.0;
-		void fragment() { COLOR = textureLod(screen_texture, SCREEN_UV, lod); }
-		"""
-		blur_mat.shader = blur_sh
-		var blur := ColorRect.new()
-		blur.name = "BlurRect"
-		blur.material = blur_mat
-		blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blur.show_behind_parent = true
-		blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		blur.offset_bottom = -1
-		top_bar.add_child(blur)
-
-	var top_s := _flat(Color(1.0, 0.99, 0.97, 0.7), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.28), 0)
-	top_s.border_width_bottom = 1
-	top_s.content_margin_bottom = 0
-	top_bar.add_theme_stylebox_override("panel", top_s)
-
-	top_title.text = "KIỂM TRA KIẾN THỨC"
-	top_title.add_theme_color_override("font_color", C_GREEN)
-	if font_bold:
-		top_title.add_theme_font_override("font", font_bold)
-
-	back_btn.add_theme_font_size_override("font_size", 20)
-	back_btn.add_theme_stylebox_override("normal", _flat(Color(1.0, 1.0, 1.0, 0.85), C_GREEN, 16))
-	back_btn.add_theme_stylebox_override("hover", _flat(Color(1.0, 1.0, 1.0, 1.0), C_GOLD, 16))
-	back_btn.add_theme_stylebox_override("pressed", _flat(Color(0.95, 0.93, 0.89, 1.0), C_GOLD, 16))
-	back_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	back_btn.add_theme_color_override("font_color", C_GREEN)
-	back_btn.add_theme_color_override("font_hover_color", C_GREEN)
+func _go_back() -> void:
+	var t := create_tween()
+	t.tween_property(self, "modulate:a", 0.0, 0.18)
+	t.tween_callback(func() -> void:
+		get_tree().change_scene_to_file("res://scenes/LearningActivitiesScreen.tscn")
+	)
 
 func _build_theme() -> void:
-	var card_s := _flat(C_CARD, Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 20)
-	card_s.shadow_size = 16
-	card_s.shadow_color = Color(0.13, 0.08, 0.05, 0.12)
-	card_s.shadow_offset = Vector2(0, 4)
-	$Root/Card.add_theme_stylebox_override("panel", card_s)
+	# Back Button
+	var btn_s := _flat(Color(1.0, 1.0, 1.0, 0.95), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.4), 24, true, 2)
+	back_btn.add_theme_stylebox_override("normal", btn_s)
+	back_btn.add_theme_stylebox_override("hover", _flat(Color.WHITE, C_GOLD_LIGHT, 24, true, 2))
+	back_btn.add_theme_stylebox_override("pressed", _flat(Color(0.94, 0.92, 0.88), C_GOLD, 24, false, 1))
+	back_btn.add_theme_color_override("font_color", C_JADE)
+	back_btn.add_theme_color_override("font_hover_color", C_JADE)
 
-	for lbl in [progress_lbl, score_lbl]:
-		lbl.add_theme_color_override("font_color", C_TEXT_MUT)
-		if font_bold:
-			lbl.add_theme_font_override("font", font_bold)
-
-	question_lbl.add_theme_color_override("font_color", C_TEXT)
+	# Pills
+	var chip_s := _flat(Color(1.0, 1.0, 1.0, 0.92), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.35), 18, true, 1)
+	title_pill.add_theme_stylebox_override("panel", chip_s)
+	stat_chip.add_theme_stylebox_override("panel", chip_s)
+	
+	var pill_inner := _flat(Color(0.95, 0.96, 0.98), Color("#cbd5e1"), 12, true, 1)
+	progress_pill.add_theme_stylebox_override("panel", pill_inner)
+	type_pill.add_theme_stylebox_override("panel", _flat(Color("#eff6ff"), Color("#3b82f6"), 12, true, 1))
+	score_pill.add_theme_stylebox_override("panel", _flat(Color("#fef3c7"), Color("#f59e0b"), 12, true, 1))
+	
+	var font_bold: Font = load("res://assets/fonts/BeVietnamPro-Bold.ttf")
 	if font_bold:
+		top_title.add_theme_font_override("font", font_bold)
+		stat_lbl.add_theme_font_override("font", font_bold)
+		progress_lbl.add_theme_font_override("font", font_bold)
+		type_lbl.add_theme_font_override("font", font_bold)
+		score_lbl.add_theme_font_override("font", font_bold)
 		question_lbl.add_theme_font_override("font", font_bold)
-
-	next_btn.add_theme_stylebox_override("normal", _flat(C_GREEN, Color.TRANSPARENT, 16))
-	next_btn.add_theme_stylebox_override("hover", _flat(C_GREEN_MID, C_GOLD, 16))
-	next_btn.add_theme_stylebox_override("pressed", _flat(C_GREEN.darkened(0.12), Color.TRANSPARENT, 16))
-	next_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	next_btn.add_theme_color_override("font_color", Color.WHITE)
-	if font_bold:
 		next_btn.add_theme_font_override("font", font_bold)
+		play_note_btn.add_theme_font_override("font", font_bold)
+		
+	top_title.add_theme_color_override("font_color", C_JADE)
+	stat_lbl.add_theme_color_override("font_color", C_GOLD)
+	progress_lbl.add_theme_color_override("font_color", C_JADE)
+	type_lbl.add_theme_color_override("font_color", Color("#1d4ed8"))
+	score_lbl.add_theme_color_override("font_color", Color("#b45309"))
+	question_lbl.add_theme_color_override("font_color", C_TEXT)
 
-# ── Flow ───────────────────────────────────────────────────────────────────
+	# Main Card Surface
+	var card_s := _flat(Color(1.0, 1.0, 1.0, 0.96), Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.3), 24, true, 2)
+	card.add_theme_stylebox_override("panel", card_s)
+
+	# Staff Container Surface
+	var staff_s := _flat(Color(0.99, 0.99, 0.98, 0.9), Color("#e2d8c9"), 16, true, 1)
+	staff_container.add_theme_stylebox_override("panel", staff_s)
+
+	# Play Note Button
+	var pnb_s := _flat(Color("#f0fdf4"), Color("#16a34a"), 14, true, 2)
+	play_note_btn.add_theme_stylebox_override("normal", pnb_s)
+	play_note_btn.add_theme_stylebox_override("hover", _flat(Color.WHITE, Color("#22c55e"), 14, true, 2))
+	play_note_btn.add_theme_stylebox_override("pressed", _flat(Color("#dcfce7"), Color("#15803d"), 14, false, 1))
+	play_note_btn.add_theme_color_override("font_color", Color("#15803d"))
+
+	# Next Button
+	next_btn.add_theme_stylebox_override("normal", _flat(C_JADE, C_GOLD, 16, true, 2))
+	next_btn.add_theme_stylebox_override("hover", _flat(C_JADE_LIGHT, C_GOLD_LIGHT, 16, true, 2))
+	next_btn.add_theme_stylebox_override("pressed", _flat(C_JADE.darkened(0.15), C_GOLD, 16, false, 1))
+	next_btn.add_theme_color_override("font_color", Color.WHITE)
+
+func _update_header_stats() -> void:
+	var total_stars: int = SecureDataManager.get_total_stars()
+	stat_lbl.text = "⭐ %d Sao" % total_stars
+
 func _begin_quiz() -> void:
-	if quiz_instrument.is_empty() or quiz_local_ids.is_empty():
-		_show_empty("Chưa chọn bài học để kiểm tra kiến thức.")
-		return
-	var report := _backend_report()
-	if report == null or not report.is_signed_in():
-		_show_empty("Hãy đăng nhập để tham gia kiểm tra kiến thức.")
-		return
-	_quizzes = await report.fetch_quizzes_for_level(quiz_instrument, quiz_local_ids)
-	if _quizzes.is_empty():
-		_show_empty("Bài học này chưa có câu hỏi trắc nghiệm nào.")
-		return
-	if LearningActivityContext.backend_lesson_id > 0:
-		var minigames: Array = await report.ensure_minigame_list(LearningActivityContext.backend_lesson_id)
-		LessonAssessmentCoordinator.register_content(LearningActivityContext.backend_lesson_id, _quizzes, minigames)
+	_quizzes = _get_default_quizzes()
 	_index = 0
 	_score = 0
 	_correct_count = 0
-	_api_stars_earned = 0
 	_show_question()
 
+func _get_default_quizzes() -> Array:
+	return [
+		# ── DẠNG 1: NHẬN DIỆN NỐT TRÊN KHUÔN NHẠC (5-line Staff Note Recognition) ──
+		{
+			"type": "staff_note",
+			"pitch": "C4",
+			"freq": 261.63,
+			"question": "Nốt nhạc đang hiển thị trên dòng kẻ phụ dưới khuôn nhạc là nốt gì?",
+			"options": ["Nốt Đô (C4) · Hò", "Nốt Rê (D4) · Xự", "Nốt Mi (E4) · Xang", "Nốt Son (G4) · Xê"],
+			"answer": 0,
+			"explanation": "Nốt Đô trung (C4 / Hò) nằm trên dòng kẻ phụ thứ nhất phía dưới khuôn nhạc khóa Sol."
+		},
+		{
+			"type": "staff_note",
+			"pitch": "G4",
+			"freq": 392.00,
+			"question": "Nốt nhạc nằm chính giữa dòng kẻ thứ 2 (dòng khóa Sol) là nốt gì?",
+			"options": ["Nốt Son (G4) · Xê", "Nốt Mi (E4) · Xự", "Nốt La (A4) · Cống", "Nốt Fa (F4) · Xang"],
+			"answer": 0,
+			"explanation": "Dòng kẻ thứ 2 từ dưới lên là dòng chuẩn của Khóa Sol, mang cao độ nốt Son (G4 / Xê)."
+		},
+		{
+			"type": "staff_note",
+			"pitch": "E4",
+			"freq": 329.63,
+			"question": "Nốt nhạc nằm chính giữa dòng kẻ thứ 1 (dòng dưới cùng) là nốt gì?",
+			"options": ["Nốt Mi (E4) · Xự", "Nốt Đô (C4) · Hò", "Nốt Fa (F4) · Xang", "Nốt La (A4) · Cống"],
+			"answer": 0,
+			"explanation": "Dòng kẻ thứ nhất (dưới cùng của khuôn nhạc) biểu thị nốt Mi (E4 / Xự)."
+		},
+		{
+			"type": "staff_note",
+			"pitch": "A4",
+			"freq": 440.00,
+			"question": "Nốt nhạc nằm trong khe thứ 2 (giữa dòng 2 và dòng 3) là nốt gì?",
+			"options": ["Nốt La (A4) · Cống", "Nốt Son (G4) · Xê", "Nốt Si (B4) · Phan", "Nốt Đô cao (C5)"],
+			"answer": 0,
+			"explanation": "Khe thứ 2 từ dưới lên mang cao độ nốt La chuẩn 440Hz (A4 / Cống)."
+		},
+		# ── DẠNG 2: CÂU HỎI LÝ THUYẾT ÂM NHẠC TRUYỀN THỐNG (Music Theory) ─────────
+		{
+			"type": "theory",
+			"pitch": "",
+			"freq": 0.0,
+			"question": "Hệ thống thang âm ngũ cung truyền thống Việt Nam bao gồm những nốt nào?",
+			"options": ["Hò, Xự, Xang, Xê, Cống", "Đồ, Rê, Mi, Pha, Son", "La, Si, Đô, Rê, Mi", "Hò, Lự, Sang, Tịch, Cắc"],
+			"answer": 0,
+			"explanation": "Thang âm ngũ cung truyền thống gồm 5 bậc cơ bản: Hò, Xự, Xang, Xê, Cống."
+		},
+		{
+			"type": "theory",
+			"pitch": "",
+			"freq": 0.0,
+			"question": "Đàn Tranh truyền thống Việt Nam thuộc họ nhạc cụ nào?",
+			"options": ["Nhạc cụ bộ dây gảy", "Nhạc cụ bộ hơi (thổi)", "Nhạc cụ bộ gõ", "Nhạc cụ bộ kéo"],
+			"answer": 0,
+			"explanation": "Đàn Tranh là nhạc cụ dây gảy với các con nhạn đỡ dây và móng gảy trên dây."
+		},
+		{
+			"type": "theory",
+			"pitch": "",
+			"freq": 0.0,
+			"question": "Trong nghệ thuật biểu diễn Đàn Bầu, âm thanh độc đáo được tạo ra chủ yếu bằng kỹ thuật gì?",
+			"options": ["Gảy nốt bồi & uốn cần đàn", "Bấm phím kim loại", "Gõ búa vào dây", "Thổi luồng hơi qua cần"],
+			"answer": 0,
+			"explanation": "Đàn Bầu sử dụng kỹ thuật gảy chạm tay tạo nốt bồi kết hợp uốn cần để luyến láy cung bậc."
+		}
+	]
+
 func _show_question() -> void:
+	if _index >= _quizzes.size():
+		_show_victory_summary()
+		return
+		
 	_answered = false
-	_submitted_correct_answer = ""
+	header_row.visible = true
 	question_lbl.visible = true
-	options_vbox.visible = true
+	options_grid.visible = true
 	feedback_pan.visible = false
 	next_btn.visible = false
 
 	var quiz: Dictionary = _quizzes[_index]
+	var q_type: String = str(quiz.get("type", "theory"))
+	
 	progress_lbl.text = "CÂU %d / %d" % [_index + 1, _quizzes.size()]
+	score_lbl.text = "ĐIỂM: %d" % _score
 	question_lbl.text = str(quiz.get("question", ""))
 
-	for child in options_vbox.get_children():
-		child.queue_free()
-	var options := _parse_options(quiz.get("options", ""))
-	for i in range(options.size()):
-		var option_text := str(options[i])
-		var btn := Button.new()
-		btn.name = "OptBtn"
-		btn.text = "%s. %s" % ["ABCDEFGHIJK"[i], option_text]
-		btn.custom_minimum_size = Vector2(0, 56)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 18)
-		btn.add_theme_stylebox_override("normal", _flat(Color(0.97, 0.95, 0.91, 1.0), Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.45), 14))
-		btn.add_theme_stylebox_override("hover", _flat(Color(1.0, 1.0, 1.0, 1.0), C_GREEN, 14))
-		btn.add_theme_stylebox_override("pressed", _flat(Color(0.93, 0.91, 0.87, 1.0), C_GREEN, 14))
-		btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		btn.add_theme_color_override("font_color", C_TEXT)
-		btn.add_theme_color_override("font_hover_color", C_GREEN)
-		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.pressed.connect(_on_option.bind(btn, i, option_text))
-		_make_btn_bouncy(btn)
-		options_vbox.add_child(btn)
-		btn.modulate.a = 0.0
-		create_tween().tween_property(btn, "modulate:a", 1.0, 0.25).set_delay(i * 0.04)
-
-func _on_option(_btn: Button, idx: int, selected: String) -> void:
-	if _answered or _busy:
-		return
-	_answered = true
-	var quiz: Dictionary = _quizzes[_index]
-
-	for child in options_vbox.get_children():
-		if child is Button:
-			(child as Button).disabled = true
-
-	var selected_index := idx
-
-	_busy = true
-	var pending_preview := _pending_quiz_preview(quiz, selected_index, selected)
-	var result: Dictionary = {}
-	var report := _backend_report()
-	if report != null and int(quiz.get("id", 0)) > 0 and LearningActivityContext.backend_lesson_id > 0:
-		LessonAssessmentCoordinator.record_quiz(LearningActivityContext.backend_lesson_id, int(quiz.get("id", 0)), selected)
-		result = await LessonAssessmentCoordinator.submit_if_complete(report, LearningActivityContext.backend_lesson_id)
-	_busy = false
-
-	var is_correct := _is_correct(selected_index, selected, quiz)
-	var earned := int(result.get("points_earned", 0))
-	if result.get("submitted", false):
-		is_correct = bool(result.get("is_correct", false))
-		_submitted_correct_answer = str(result.get("correct_answer", ""))
-		_api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
-		_score += earned
+	if q_type == "staff_note":
+		type_lbl.text = "🎼 NHẬN DIỆN NỐT"
+		type_pill.add_theme_stylebox_override("panel", _flat(Color("#eff6ff"), Color("#3b82f6"), 12, true, 1))
+		type_lbl.add_theme_color_override("font_color", Color("#1d4ed8"))
+		
+		staff_container.visible = true
+		_current_note_pitch = str(quiz.get("pitch", "C4"))
+		_current_note_freq = float(quiz.get("freq", 261.63))
+		staff_view.queue_redraw()
 	else:
-		_submitted_correct_answer = str(quiz.get("correctAnswer", quiz.get("correct_answer", "")))
-		if is_correct:
-			_score += QUIZ_PREVIEW_POINTS
-		if int(quiz.get("id", 0)) <= 0:
-			var local_attempt := pending_preview.duplicate(true)
-			local_attempt["kind"] = "quiz_local"
-			local_attempt["client_attempt_id"] = _client_attempt_id("local-quiz")
-			local_attempt["quiz_id"] = int(quiz.get("id", 0))
-			local_attempt["selected_answer"] = selected
-			SecureDataManager.record_local_activity(local_attempt)
+		type_lbl.text = "📖 LÝ THUYẾT"
+		type_pill.add_theme_stylebox_override("panel", _flat(Color("#f0fdf4"), Color("#16a34a"), 12, true, 1))
+		type_lbl.add_theme_color_override("font_color", Color("#15803d"))
+		
+		staff_container.visible = false
 
+	for child in options_grid.get_children():
+		child.queue_free()
+
+	var options: Array = quiz.get("options", [])
+	var correct_idx: int = int(quiz.get("answer", 0))
+
+	for i in range(options.size()):
+		var opt_text := str(options[i])
+		var btn := Button.new()
+		btn.text = "%s. %s" % ["ABCD"[i] if i < 4 else str(i + 1), opt_text]
+		btn.custom_minimum_size = Vector2(380, 52)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn.add_theme_font_size_override("font_size", 15)
+		
+		var b_norm := _flat(Color(1.0, 1.0, 1.0, 0.98), Color("#cbd5e1"), 16, true, 1)
+		btn.add_theme_stylebox_override("normal", b_norm)
+		btn.add_theme_stylebox_override("hover", _flat(Color.WHITE, C_GOLD, 16, true, 2))
+		btn.add_theme_stylebox_override("pressed", _flat(Color(0.94, 0.96, 0.98), C_JADE, 16, false, 1))
+		btn.add_theme_color_override("font_color", C_TEXT)
+		btn.add_theme_color_override("font_hover_color", C_JADE)
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		
+		btn.pressed.connect(func() -> void: _on_option_selected(i, correct_idx, btn))
+		_make_btn_bouncy(btn)
+		options_grid.add_child(btn)
+
+func _on_draw_staff() -> void:
+	var sz := staff_view.size
+	if sz.x < 50.0: return
+	
+	var cy := sz.y * 0.48
+	var line_spacing := 10.0
+	var staff_width := sz.x - 32.0
+	var start_x := 16.0
+	var end_x := start_x + staff_width
+	
+	# 5 lines of musical staff (Line 1 bottom to Line 5 top)
+	# Y coordinates: Line 5 (cy - 20), Line 4 (cy - 10), Line 3 (cy), Line 2 (cy + 10), Line 1 (cy + 20)
+	for i in range(5):
+		var ly: float = cy + (2 - i) * line_spacing
+		staff_view.draw_line(Vector2(start_x, ly), Vector2(end_x, ly), Color(0.2, 0.25, 0.3, 0.85), 1.5)
+		
+	# Khóa Sol (Treble Clef 𝄞) on the left
+	var font_bold: Font = load("res://assets/fonts/BeVietnamPro-Bold.ttf")
+	if font_bold:
+		staff_view.draw_string(font_bold, Vector2(start_x + 12.0, cy + 16.0), "𝄞", HORIZONTAL_ALIGNMENT_LEFT, -1, 38, Color(0.12, 0.37, 0.23))
+		
+	# Note positioning calculation
+	# Pitch -> vertical position relative to lines
+	# Line 1 (E4) = cy + 20.0
+	# Line 2 (G4) = cy + 10.0
+	# Line 3 (B4) = cy
+	# Line 4 (D5) = cy - 10.0
+	# Line 5 (F5) = cy - 20.0
+	# Space 1 (F4) = cy + 15.0
+	# Space 2 (A4) = cy + 5.0
+	# Space 3 (C5) = cy - 5.0
+	# Space below Line 1 (D4) = cy + 25.0
+	# Middle C (C4) = cy + 30.0 (with ledger line at cy + 30.0)
+	
+	var note_y := cy + 30.0
+	var has_ledger := false
+	match _current_note_pitch:
+		"C4":
+			note_y = cy + 30.0
+			has_ledger = true
+		"D4":
+			note_y = cy + 25.0
+		"E4":
+			note_y = cy + 20.0
+		"F4":
+			note_y = cy + 15.0
+		"G4":
+			note_y = cy + 10.0
+		"A4":
+			note_y = cy + 5.0
+		"B4":
+			note_y = cy
+		"C5":
+			note_y = cy - 5.0
+		"D5":
+			note_y = cy - 10.0
+		"E5":
+			note_y = cy - 15.0
+		"F5":
+			note_y = cy - 20.0
+			
+	var note_x := start_x + staff_width * 0.52
+	
+	# Draw ledger line if below or above staff
+	if has_ledger:
+		staff_view.draw_line(Vector2(note_x - 16, note_y), Vector2(note_x + 16, note_y), Color(0.2, 0.25, 0.3, 0.9), 1.5)
+		
+	# Draw notehead (Oval solid circle with angle)
+	var note_color := Color("#173f2d")
+	staff_view.draw_circle(Vector2(note_x, note_y), 6.5, note_color)
+	
+	# Draw stem (đuôi nốt)
+	var stem_up := (note_y >= cy)
+	var stem_x: float = note_x + (5.5 if stem_up else -5.5)
+	var stem_y: float = note_y - (26.0 if stem_up else -26.0)
+	staff_view.draw_line(Vector2(stem_x, note_y), Vector2(stem_x, stem_y), note_color, 2.0)
+
+func _on_option_selected(chosen_idx: int, correct_idx: int, btn: Button) -> void:
+	if _answered: return
+	_answered = true
+
+	var is_correct := (chosen_idx == correct_idx)
 	if is_correct:
 		_correct_count += 1
-
-	_style_option_feedback(selected_index, is_correct)
-	_show_feedback(is_correct, quiz)
+		_score += 100
+		_play_synth(523.25)
+		btn.add_theme_stylebox_override("normal", _flat(C_OK_BG, C_OK, 16, true, 2))
+		btn.add_theme_color_override("font_color", C_OK)
+		
+		feedback_lbl.text = "✨ Chính xác! (+100 điểm)"
+		feedback_lbl.add_theme_color_override("font_color", C_OK)
+		feedback_pan.add_theme_stylebox_override("panel", _flat(C_OK_BG, C_OK, 14, true, 1))
+	else:
+		_play_synth(164.81)
+		btn.add_theme_stylebox_override("normal", _flat(C_BAD_BG, C_BAD, 16, true, 2))
+		btn.add_theme_color_override("font_color", C_BAD)
+		
+		# Highlight correct button
+		var children := options_grid.get_children()
+		if correct_idx < children.size():
+			var cor_btn = children[correct_idx] as Button
+			if cor_btn:
+				cor_btn.add_theme_stylebox_override("normal", _flat(C_OK_BG, C_OK, 16, true, 2))
+				cor_btn.add_theme_color_override("font_color", C_OK)
+				
+		var expl := str(_quizzes[_index].get("explanation", ""))
+		feedback_lbl.text = "❌ Chưa đúng! %s" % expl
+		feedback_lbl.add_theme_color_override("font_color", C_BAD)
+		feedback_pan.add_theme_stylebox_override("panel", _flat(C_BAD_BG, C_BAD, 14, true, 1))
 
 	score_lbl.text = "ĐIỂM: %d" % _score
-	score_lbl.modulate = Color(1, 0.8, 0.3, 1)
-	score_lbl.scale = Vector2(1.15, 1.15)
-	var tw := create_tween()
-	tw.tween_property(score_lbl, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(score_lbl, "modulate", Color.WHITE, 0.3)
-
-	next_btn.text = "Xem Kết Quả" if _index + 1 >= _quizzes.size() else "Câu Tiếp Theo →"
-	next_btn.visible = true
-	next_btn.modulate.a = 0.0
-	create_tween().tween_property(next_btn, "modulate:a", 1.0, 0.25)
-
-func _next() -> void:
-	if _answered:
-		_index += 1
-	if _index >= _quizzes.size():
-		_show_summary()
-	else:
-		_show_question()
-
-func _show_summary() -> void:
-	var report := _backend_report()
-	if report != null and report.is_signed_in():
-		await report.refresh_progress_from_backend()
-	_answered = true
-	question_lbl.visible = false
-	options_vbox.visible = false
-	feedback_pan.visible = false
-	next_btn.visible = false
-
-	var total := _quizzes.size()
-	var all_correct := _correct_count == total
-	progress_lbl.text = "HOÀN THÀNH"
-
-	var emoji := "🏆" if all_correct else ("👍" if _correct_count >= ceil(total / 2.0) else "💪")
-	question_lbl.text = "%s\n\nBạn trả lời đúng %d / %d câu." % [emoji, _correct_count, total]
-	question_lbl.visible = true
-	question_lbl.add_theme_font_size_override("font_size", 28)
-
-	var sub := Label.new()
-	var preview_stars := _stars(_score, maxi(1, total * QUIZ_PREVIEW_POINTS))
-	var shown_stars := clampi(_api_stars_earned if _api_stars_earned > 0 else preview_stars, 0, 3)
-	sub.text = "Phần thưởng từ hệ thống: +%d điểm · +%d sao" % [_score, shown_stars]
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 18)
-	sub.add_theme_color_override("font_color", C_TEXT_MUT)
-	options_vbox.add_child(sub)
-	options_vbox.visible = true
-
-	var done_btn := Button.new()
-	done_btn.text = "Quay Lại"
-	done_btn.custom_minimum_size = Vector2(240, 56)
-	done_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	done_btn.add_theme_font_size_override("font_size", 20)
-	done_btn.add_theme_stylebox_override("normal", _flat(C_GREEN, Color.TRANSPARENT, 16))
-	done_btn.add_theme_stylebox_override("hover", _flat(C_GREEN_MID, C_GOLD, 16))
-	done_btn.add_theme_stylebox_override("pressed", _flat(C_GREEN.darkened(0.12), Color.TRANSPARENT, 16))
-	done_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	done_btn.add_theme_color_override("font_color", Color.WHITE)
-	done_btn.pressed.connect(_go_back)
-	_make_btn_bouncy(done_btn)
-	options_vbox.add_child(done_btn)
-
-	if all_correct:
-		question_lbl.modulate = Color(1, 1, 1, 0)
-		var tw := create_tween()
-		tw.tween_property(question_lbl, "modulate", Color.WHITE, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tw.parallel().tween_property(question_lbl, "scale", Vector2(1.0, 1.0), 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-func _show_empty(message: String) -> void:
-	question_lbl.text = "📖\n\n" + message
-	question_lbl.visible = true
-	options_vbox.visible = false
-	feedback_pan.visible = false
-	next_btn.visible = false
-	progress_lbl.text = ""
-
-	var back := Button.new()
-	back.text = "Quay Lại"
-	back.custom_minimum_size = Vector2(240, 56)
-	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	back.add_theme_font_size_override("font_size", 20)
-	back.add_theme_stylebox_override("normal", _flat(C_GREEN, Color.TRANSPARENT, 16))
-	back.add_theme_stylebox_override("hover", _flat(C_GREEN_MID, C_GOLD, 16))
-	back.add_theme_stylebox_override("pressed", _flat(C_GREEN.darkened(0.12), Color.TRANSPARENT, 16))
-	back.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	back.add_theme_color_override("font_color", Color.WHITE)
-	back.pressed.connect(_go_back)
-	_make_btn_bouncy(back)
-	options_vbox.add_child(back)
-	options_vbox.visible = true
-
-func _style_option_feedback(selected_index: int, is_correct: bool) -> void:
-	var i := 0
-	for child in options_vbox.get_children():
-		var btn := child as Button
-		if btn == null:
-			continue
-		if _option_is_correct_index(i):
-			btn.add_theme_stylebox_override("normal", _flat(C_OK, Color.TRANSPARENT, 14))
-			btn.add_theme_color_override("font_color", Color.WHITE)
-		elif i == selected_index and not is_correct:
-			btn.add_theme_stylebox_override("normal", _flat(C_BAD, Color.TRANSPARENT, 14))
-			btn.add_theme_color_override("font_color", Color.WHITE)
-		i += 1
-
-func _option_is_correct_index(i: int) -> bool:
-	if _submitted_correct_answer.is_empty():
-		return false
-	var quiz: Dictionary = _quizzes[_index]
-	var options := _parse_options(quiz.get("options", ""))
-	if i < options.size():
-		return _normalize_option(str(options[i])) == _normalize_option(_submitted_correct_answer)
-	return false
-
-func _show_feedback(is_correct: bool, quiz: Dictionary) -> void:
 	feedback_pan.visible = true
-	if is_correct:
-		feedback_pan.add_theme_stylebox_override("panel", _flat(C_OK_BG, C_OK, 16))
-		feedback_lbl.text = "Đúng rồi, xuất sắc! 🎉"
-		feedback_lbl.add_theme_color_override("font_color", C_OK)
-	else:
-		feedback_pan.add_theme_stylebox_override("panel", _flat(C_BAD_BG, C_BAD, 16))
-		var correct_text := _submitted_correct_answer
-		if correct_text.is_empty():
-			correct_text = str(quiz.get("correctAnswer", quiz.get("correct_answer", "")))
-		feedback_lbl.text = "Chưa đúng. Đáp án đúng: %s" % correct_text if not correct_text.is_empty() else "Chưa thể chấm câu trả lời này. Hãy thử lại khi có mạng."
-		feedback_lbl.add_theme_color_override("font_color", C_BAD)
-	feedback_pan.modulate.a = 0.0
-	var tw := create_tween()
-	tw.tween_property(feedback_pan, "modulate:a", 1.0, 0.25)
+	next_btn.visible = true
 
-# ── Helpers ────────────────────────────────────────────────────────────────
-## Đối chiếu đáp án đã chọn với correctAnswer của BE. Chấp nhận cả dạng
-## chữ cái ("A"), dạng có tiền tố ("A. ...") và dạng chuẩn hóa ("...").
-func _is_correct(idx: int, selected: String, quiz: Dictionary) -> bool:
-	var correct := str(quiz.get("correctAnswer", "")).strip_edges().to_lower()
-	var sel := _normalize_option(selected)
-	if sel == _normalize_option(correct):
-		return true
-	if correct.length() == 1 and "a" <= correct and correct <= "j":
-		return correct == "abcdefghij"[idx]
-	return false
+func _on_next_pressed() -> void:
+	_index += 1
+	_show_question()
 
+func _show_victory_summary() -> void:
+	header_row.visible = false
+	question_lbl.visible = false
+	staff_container.visible = false
+	options_grid.visible = false
+	feedback_pan.visible = false
+	next_btn.visible = false
 
-func _pending_quiz_preview(quiz: Dictionary, selected_index: int, selected_text: String = "") -> Dictionary:
-	var options := _parse_options(quiz.get("options", ""))
-	var correct_index := -1
-	var expected := str(quiz.get("correctAnswer", quiz.get("correct_answer", ""))).strip_edges()
-	if expected.length() == 1 and expected.to_lower() in ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]:
-		correct_index = "abcdefghij".find(expected.to_lower())
-	else:
-		for i in options.size():
-			if _normalize_option(str(options[i])) == _normalize_option(expected):
-				correct_index = i
-				break
-	if correct_index < 0:
-		return {"title": str(quiz.get("title", "Câu hỏi")), "selectedAnswer": selected_text, "completedAt": _now_iso()}
-	var is_correct := selected_index == correct_index
-	return {
-		"title": str(quiz.get("title", "Câu hỏi")),
-		"question": str(quiz.get("question", "")),
-		"selectedAnswer": selected_text,
-		"correctAnswer": str(options[correct_index]),
-		"score": 100 if is_correct else 0,
-		"maxScore": 100,
-		"isCorrect": is_correct,
-		"previewPoints": QUIZ_PREVIEW_POINTS if is_correct else 0,
-		"previewStars": _stars(100 if is_correct else 0, 100),
-		"completedAt": _now_iso(),
-	}
+	# Save progress
+	var stars := 3 if _correct_count >= 5 else (2 if _correct_count >= 3 else 1)
+	SecureDataManager.data["stars_total"] = SecureDataManager.get_total_stars() + stars
+	SecureDataManager.record_quiz_result(1, _correct_count, _quizzes.size(), stars, _score)
+	_update_header_stats()
 
-func _normalize_option(s: String) -> String:
-	var t := s.strip_edges().to_lower()
-	if t.length() >= 2 and t[0] in ["a", "b", "c", "d", "e"] and t[1] in [".", ":", "-", " ", ")", "）"]:
-		t = t.substr(1).strip_edges()
-		if t.begins_with(".") or t.begins_with(":") or t.begins_with("-") or t.begins_with(")") or t.begins_with("）"):
-			t = t.substr(1).strip_edges()
-	return t
+	var vic_v := VBoxContainer.new()
+	vic_v.name = "VictoryContainer"
+	vic_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vic_v.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vic_v.alignment = BoxContainer.ALIGNMENT_CENTER
+	vic_v.add_theme_constant_override("separation", 16)
 
-func _parse_options(raw: String) -> Array:
-	var text := str(raw).strip_edges()
-	if text.is_empty():
-		return []
-	var parsed: Variant = JSON.parse_string(text)
-	if parsed is Array:
-		var options: Array = []
-		for item: Variant in parsed:
-			options.append(str(item).strip_edges())
-		return options
-	var sep := "\n"
-	if not text.contains(sep):
-		sep = ";"
-	if not text.contains(sep):
-		sep = "|"
-	var options: Array = []
-	for item: Variant in text.split(sep):
-		options.append(str(item).strip_edges())
-	return options
+	var icon_circle := PanelContainer.new()
+	icon_circle.custom_minimum_size = Vector2(88, 88)
+	icon_circle.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon_circle.add_theme_stylebox_override("panel", _flat(Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.15), C_GOLD, 44, true, 2))
+	var ic_lbl := Label.new()
+	ic_lbl.text = "🏆"
+	ic_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ic_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ic_lbl.add_theme_font_size_override("font_size", 42)
+	icon_circle.add_child(ic_lbl)
+	vic_v.add_child(icon_circle)
 
-func _go_back() -> void:
-	var target := quiz_return_scene
-	if target.is_empty():
-		target = "res://scenes/MainMenu.tscn"
-	var tw := create_tween()
-	tw.tween_property(self, "modulate:a", 0.0, 0.25)
-	tw.tween_callback(func() -> void: get_tree().change_scene_to_file(target))
+	var title_l := Label.new()
+	title_l.text = "HOÀN THÀNH BÀI KIỂM TRA!"
+	title_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_l.add_theme_font_size_override("font_size", 22)
+	title_l.add_theme_color_override("font_color", C_JADE)
+	vic_v.add_child(title_l)
 
-func _backend_report() -> Node:
-	return get_node_or_null("/root/BackendReport")
+	var stars_l := Label.new()
+	stars_l.text = "⭐".repeat(stars)
+	stars_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars_l.add_theme_font_size_override("font_size", 26)
+	vic_v.add_child(stars_l)
+
+	var score_l := Label.new()
+	score_l.text = "Đúng %d / %d câu  ·  Tổng điểm: +%d XP" % [_correct_count, _quizzes.size(), _score]
+	score_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_l.add_theme_font_size_override("font_size", 16)
+	score_l.add_theme_color_override("font_color", C_TEXT_MUTED)
+	vic_v.add_child(score_l)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+	vic_v.add_child(btn_row)
+
+	var retry_btn := Button.new()
+	retry_btn.text = "🔄 Làm Lại"
+	retry_btn.custom_minimum_size = Vector2(160, 48)
+	retry_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	retry_btn.add_theme_font_size_override("font_size", 15)
+	retry_btn.add_theme_stylebox_override("normal", _flat(Color.WHITE, Color("#cbd5e1"), 16, true, 2))
+	retry_btn.add_theme_color_override("font_color", C_TEXT)
+	retry_btn.pressed.connect(_begin_quiz)
+	_make_btn_bouncy(retry_btn)
+	btn_row.add_child(retry_btn)
+
+	var back_menu_btn := Button.new()
+	back_menu_btn.text = "➔ Danh Mục"
+	back_menu_btn.custom_minimum_size = Vector2(160, 48)
+	back_menu_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	back_menu_btn.add_theme_font_size_override("font_size", 15)
+	back_menu_btn.add_theme_stylebox_override("normal", _flat(C_JADE, C_GOLD, 16, true, 2))
+	back_menu_btn.add_theme_color_override("font_color", Color.WHITE)
+	back_menu_btn.pressed.connect(_go_back)
+	_make_btn_bouncy(back_menu_btn)
+	btn_row.add_child(back_menu_btn)
+
+	game_vbox.add_child(vic_v)
+
+func _play_synth(freq: float) -> void:
+	if freq <= 0.0: return
+	var gen := AudioStreamGenerator.new()
+	gen.mix_rate = 22050.0
+	var player := AudioStreamPlayer.new()
+	player.stream = gen
+	add_child(player)
+	player.play()
+	var pb = player.get_stream_playback()
+	if pb:
+		var frames := int(22050.0 * 0.4)
+		for i in range(frames):
+			var t := float(i) / 22050.0
+			var env := exp(-t * 6.0)
+			var s := sin(TAU * freq * t) * 0.35 * env
+			pb.push_frame(Vector2(s, s))
+	get_tree().create_timer(0.45).timeout.connect(func() -> void: player.queue_free())
+
+func _flat(bg: Color, border: Color, radius: int, has_border: bool = true, border_w: int = 1) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	if has_border:
+		s.border_width_left = border_w; s.border_width_right = border_w
+		s.border_width_top = border_w; s.border_width_bottom = border_w
+	s.corner_radius_top_left = radius; s.corner_radius_top_right = radius
+	s.corner_radius_bottom_left = radius; s.corner_radius_bottom_right = radius
+	return s
 
 func _make_btn_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
 	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
 	btn.mouse_entered.connect(func() -> void:
-		if not btn.disabled:
-			create_tween().tween_property(btn, "scale", Vector2(1.04, 1.04), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		var t := create_tween()
+		t.tween_property(btn, "scale", Vector2(1.03, 1.03), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
 	btn.mouse_exited.connect(func() -> void:
-		if not btn.disabled:
-			create_tween().tween_property(btn, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		var t := create_tween()
+		t.tween_property(btn, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	)
-	btn.button_down.connect(func() -> void:
-		if not btn.disabled:
-			create_tween().tween_property(btn, "scale", Vector2(0.95, 0.95), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	)
-	btn.button_up.connect(func() -> void:
-		if not btn.disabled:
-			var target := Vector2(1.04, 1.04) if btn.is_hovered() else Vector2.ONE
-			create_tween().tween_property(btn, "scale", target, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
-
-func _client_attempt_id(prefix: String = "") -> String:
-	var suffix := "%04x%04x" % [randi_range(0, 0xFFFF), randi_range(0, 0xFFFF)]
-	var base := "%d-%s" % [Time.get_unix_time_from_system(), suffix]
-	return prefix + "-" + base if not prefix.is_empty() else base
-
-func _now_iso() -> String:
-	return Time.get_datetime_string_from_system(true)
-
-func _stars(value: int, max_value: int) -> int:
-	var maximum := maxi(1, max_value)
-	return 3 if value * 100 >= maximum * 80 else (2 if value * 100 >= maximum * 55 else (1 if value > 0 else 0))
-
-func _flat(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.border_width_left = 2
-	s.border_width_right = 2
-	s.border_width_top = 2
-	s.border_width_bottom = 2
-	s.corner_radius_top_left = radius
-	s.corner_radius_top_right = radius
-	s.corner_radius_bottom_left = radius
-	s.corner_radius_bottom_right = radius
-	return s
