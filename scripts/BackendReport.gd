@@ -426,6 +426,11 @@ func _teacher_speech_steps(contents: Array) -> Array:
 		if not raw_item is Dictionary:
 			continue
 		var item: Dictionary = raw_item
+		var content_type := str(item.get("contentType", item.get("content_type", ""))).to_upper()
+		# VIDEO_CUE/PRACTICE_INSTRUCTION must never replace bundled teacher
+		# dialogue. They describe a separate activity, not a line spoken by Mai.
+		if content_type not in ["TEACHER_SPEECH", "THEORY_TEXT", "TEXT"]:
+			continue
 		var text := str(item.get("contentText", item.get("content_text", item.get("text", "")))).strip_edges()
 		if text.is_empty():
 			continue
@@ -437,6 +442,9 @@ func _teacher_speech_steps(contents: Array) -> Array:
 				for block_value: Variant in blocks:
 					if block_value is Dictionary:
 						var block: Dictionary = block_value
+						var block_type := str(block.get("type", "")).to_upper()
+						if block_type not in ["TEACHER_SPEECH", "THEORY_TEXT", "TEXT"]:
+							continue
 						var block_text := str(block.get("text", "")).strip_edges()
 						if not block_text.is_empty():
 							ordered.append({"order": int(item.get("orderIndex", item.get("order_index", 0))), "action": "speak", "text": block_text})
