@@ -1,76 +1,95 @@
+## ==============================================================================
+## File: AIChatPopup.gd
+## Mô tả: Cửa sổ popup tương tác AI (Box Chat) giữa người dùng và nhân vật ảo cô Mai.
+## Chức năng chính:
+##  1. Giao diện Chat trực quan: khung log lịch sử, khung nhập văn bản, nút gửi, nút micro giọng nói.
+##  2. Hoạt ảnh chân dung cô Mai (2D Animated Sprite Sheet 24 frames) nói chuyện theo âm thanh TTS.
+##  3. Tích hợp AIManager (gửi/nhận câu hỏi qua AI backend RAG), STTManager (nhận diện giọng nói)
+##     và AIAudioManager (phát giọng đọc TTS và đồng bộ cử động miệng).
+##  4. Máy trạng thái giọng nói (Voice State Machine):
+##     - WAKING: Lắng nghe từ khóa đánh thức ("cô Mai ơi", "Mai ơi").
+##     - WAKING_RESPONSE: Cô Mai trả lời "Mai nghe đây".
+##     - LISTENING: Thu âm câu hỏi người dùng và gửi STT dịch thành chữ.
+##     - THINKING: Đợi phản hồi từ máy chủ AI MaiBrain.
+##     - SPEAKING: Cô Mai phát âm thanh trả lời và chớp môi/cử động.
+##     - TIMEOUT_RESPONSE: Tự động chào tạm biệt khi im lặng quá lâu.
+## ==============================================================================
+
 class_name AIChatPopup
 extends CanvasLayer
 
-# ─── Color Palette (Traditional Vietnamese Lacquer Red & Gold Theme) ───────────
+# ─── Bảng màu giao diện (Phong cách truyền thống Sơn mài & Nhũ vàng) ───────────
 const C_BG_DARK     := Color(0.95, 0.98, 0.96, 0.94)
 const C_BG_DARKER   := Color(1.00, 1.00, 1.00, 0.92)
 const C_RED_SON     := Color(0.09, 0.27, 0.18, 1.0)
 const C_RED_DK      := Color(0.04, 0.15, 0.10, 0.96)
-const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # golden yellow
-const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0) # bright gold
+const C_GOLD        := Color(0.77, 0.58, 0.15, 1.0) # Vàng kim
+const C_GOLD_LIGHT  := Color(0.95, 0.82, 0.45, 1.0) # Vàng sáng
 const C_CREAM       := Color(1.00, 0.97, 0.88, 1.0)
 const C_TEXT_MUTED  := Color(0.43, 0.38, 0.33, 1.0)
-# Exact colour used by the VirtualMusicRoom "Cửa hàng" label.
+# Màu chữ chuẩn đồng bộ với nhãn HUD trong phòng học ảo
 const C_ROOM_HUD_TEXT := Color("#173f2d")
 
-# AI Chat Managers
-var ai_manager : AIManager
-var stt_manager : STTManager
-var audio_manager : AIAudioManager
+# Các đối tượng quản lý AI / Audio
+var ai_manager : AIManager          ## Quản lý kết nối API AI MaiBrain
+var stt_manager : STTManager        ## Quản lý thu âm và nhận diện giọng nói STT
+var audio_manager : AIAudioManager  ## Quản lý phát giọng nói TTS cô Mai
 
-# UI Nodes
-var ai_chat_popup_root : Control
-var ai_portrait : Control
-var ai_chat_log : RichTextLabel
-var ai_input : LineEdit
-var ai_send_btn : Button
-var ai_mic_btn : Button
-var ai_status_lbl : Label
+# Các Node thành phần giao diện
+var ai_chat_popup_root : Control    ## Node gốc toàn màn hình chứa popup
+var ai_portrait : Control           ## Node vẽ chân dung chuyển động cô Mai
+var ai_chat_log : RichTextLabel     ## Khung hiển thị nội dung lịch sử chat
+var ai_input : LineEdit             ## Ô nhập văn bản câu hỏi
+var ai_send_btn : Button            ## Nút gửi câu hỏi
+var ai_mic_btn : Button             ## Nút bật/tắt thu âm giọng nói
+var ai_status_lbl : Label           ## Nhãn trạng thái (Sẵn sàng, Đang nghe, Đang nói...)
 
+# Bảng cài đặt thông số kết nối API
 var settings_panel : Control
 var api_url_input : LineEdit
 var model_name_input : LineEdit
 var api_key_input : LineEdit
 var stt_url_input : LineEdit
 
-# Textures
-var _tex_mai_talk_sheet : Texture2D
-var _tex_fallback : Texture2D
-var _portrait_is_talking := false
-var _portrait_frame := 0
-var _portrait_frame_elapsed := 0.0
-const PORTRAIT_FRAME_DURATION := 0.08
-const PORTRAIT_FRAME_COUNT := 24
-const PORTRAIT_SHEET_COLUMNS := 6
-const PORTRAIT_SHEET_ROWS := 4
+# Tài nguyên hình ảnh Sprite chân dung
+var _tex_mai_talk_sheet : Texture2D  ## Sprite sheet 24 khung hình cô Mai nói chuyện
+var _tex_fallback : Texture2D        ## Ảnh đại diện tĩnh dự phòng nếu không tải được sprite sheet
+var _portrait_is_talking := false    ## Trạng thái cô Mai có đang nói hay không
+var _portrait_frame := 0             ## Index khung hình hiện tại (0..23)
+var _portrait_frame_elapsed := 0.0   ## Bộ đếm thời gian chuyển khung hình
+const PORTRAIT_FRAME_DURATION := 0.08## Thời gian mỗi khung hình (0.08 giây)
+const PORTRAIT_FRAME_COUNT := 24     ## Tổng cộng 24 khung hình
+const PORTRAIT_SHEET_COLUMNS := 6    ## 6 cột trong sprite sheet
+const PORTRAIT_SHEET_ROWS := 4       ## 4 hàng trong sprite sheet
 
-# Fonts
+# Phông chữ giao diện
 var _font_title : Font
 var _font_body : Font
 var _font_body_bold : Font
 
-# Voice Loop State Machine
+## Máy trạng thái điều khiển vòng lặp giọng nói
 enum VoiceState {
-	WAKING,
-	WAKING_RESPONSE,
-	LISTENING,
-	THINKING,
-	SPEAKING,
-	TIMEOUT_RESPONSE,
-	INACTIVE
+	WAKING,             ## Đang nghe từ khóa đánh thức ("cô Mai ơi")
+	WAKING_RESPONSE,    ## Cô Mai vừa đáp lại "Mai nghe đây"
+	LISTENING,          ## Đang thu âm câu hỏi của người học
+	THINKING,           ## Đang chờ AI xử lý câu trả lời
+	SPEAKING,           ## Đang phát giọng đọc trả lời
+	TIMEOUT_RESPONSE,   ## Hết thời gian im lặng, thông báo kết thúc
+	INACTIVE            ## Tắt chế độ nghe giọng nói
 }
 
 var current_voice_state: VoiceState = VoiceState.INACTIVE
 var is_processing_stt: bool = false
-var wake_word_timer: Timer
-var listening_timer: Timer
-var total_silence_time: float = 0.0
-var wake_index: int = 0
-var question_index: int = 0
+var wake_word_timer: Timer          ## Timer định kỳ cắt file âm thanh kiểm tra từ khóa đánh thức
+var listening_timer: Timer          ## Timer đếm thời gian thu âm câu hỏi
+var total_silence_time: float = 0.0 ## Tổng thời gian im lặng tích lũy
+var wake_index: int = 0             ## Index luân phiên ghi file âm thanh wake word
+var question_index: int = 0         ## Index luân phiên ghi file âm thanh câu hỏi
 var _instrument_context: String = "general"
 
+## Khởi tạo tài nguyên, các manager con, timers và kết nối tín hiệu
 func _ready() -> void:
-	# Load assets
+	# Nạp các asset hình ảnh và font chữ
 	_tex_mai_talk_sheet = load("res://assets/textures/coMai/mai_upper_body_talk_24_frames.png") as Texture2D
 	_tex_fallback = load("res://assets/textures/avacogiaoMai_asset.png") as Texture2D
 	
@@ -78,7 +97,7 @@ func _ready() -> void:
 	_font_body = load("res://assets/fonts/BeVietnamPro-Regular.ttf") as Font
 	_font_body_bold = load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 	
-	# Instantiate AI managers
+	# Khởi tạo các Manager con quản lý AI, STT và Audio
 	ai_manager = AIManager.new()
 	ai_manager.name = "AIManager"
 	add_child(ai_manager)
@@ -91,7 +110,7 @@ func _ready() -> void:
 	audio_manager.name = "AIAudioManager"
 	add_child(audio_manager)
 
-	# Set up voice activation timers
+	# Thiết lập Timer kiểm tra từ khóa kích hoạt (chạy mỗi 3 giây)
 	wake_word_timer = Timer.new()
 	wake_word_timer.wait_time = 3.0
 	wake_word_timer.one_shot = false
@@ -99,6 +118,7 @@ func _ready() -> void:
 	wake_word_timer.timeout.connect(_on_wake_word_tick)
 	add_child(wake_word_timer)
 	
+	# Thiết lập Timer đếm thời gian nghe câu hỏi (5 giây mỗi đoạn)
 	listening_timer = Timer.new()
 	listening_timer.wait_time = 5.0
 	listening_timer.one_shot = true
@@ -106,32 +126,35 @@ func _ready() -> void:
 	listening_timer.timeout.connect(_on_listening_timeout)
 	add_child(listening_timer)
 
-	# Connect signals
+	# Kết nối các tín hiệu từ STTManager
 	stt_manager.transcription_completed.connect(_on_transcription_completed)
 	stt_manager.transcription_failed.connect(_on_transcription_failed)
 	stt_manager.recording_started.connect(_on_recording_started)
 	stt_manager.recording_stopped.connect(_on_recording_stopped)
 	
+	# Kết nối các tín hiệu từ AIManager
 	ai_manager.response_received.connect(_on_ai_response_received)
 	ai_manager.response_chunk_received.connect(_on_ai_chunk_received)
 	ai_manager.response_finished.connect(_on_ai_response_finished)
 	ai_manager.request_failed.connect(_on_ai_request_failed)
 	
+	# Kết nối các tín hiệu từ AIAudioManager
 	audio_manager.tts_started.connect(_on_tts_started)
 	audio_manager.tts_finished.connect(_on_tts_finished)
 	audio_manager.audio_amplitude_updated.connect(_on_audio_amplitude_updated)
 
-	# Construct UI
+	# Xây dựng toàn bộ cây giao diện người dùng
 	_build_ui()
 
+## Tạo giao diện động cho toàn bộ cửa sổ chat bằng mã nguồn Godot UI
 func _build_ui() -> void:
-	# Fullscreen root Control
+	# Node gốc toàn màn hình
 	ai_chat_popup_root = Control.new()
 	ai_chat_popup_root.name = "AIChatPopupRoot"
 	ai_chat_popup_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(ai_chat_popup_root)
 	
-	# Dim backdrop
+	# Lớp nền mờ (Backdrop), nhấn ra ngoài để đóng chat
 	var overlay = ColorRect.new()
 	overlay.color = Color.TRANSPARENT
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -141,7 +164,7 @@ func _build_ui() -> void:
 			_close_ai_chat()
 	)
 	
-	# Main Chat Box
+	# Khung bảng Chat chính (Hiệu ứng kính mờ - frosted glass)
 	var main_panel = PanelContainer.new()
 	main_panel.custom_minimum_size = Vector2(950, 600)
 	main_panel.anchor_left = 0.5; main_panel.anchor_right = 0.5
@@ -150,7 +173,7 @@ func _build_ui() -> void:
 	main_panel.offset_top = -300; main_panel.offset_bottom = 300
 	main_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	main_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	# Frosted-glass dialogue surface: the virtual room remains visible behind it.
+	# Mặt kính mờ: phòng học ảo vẫn hiển thị mờ phía sau
 	main_panel.add_theme_stylebox_override("panel", _flat_sb(Color(0.91, 0.97, 0.93, 0.48), Color(1.0, 1.0, 1.0, 0.72), 24, true, 0))
 	ai_chat_popup_root.add_child(main_panel)
 	
@@ -165,16 +188,14 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 16)
 	margin.add_child(vbox)
 	
-	# Header HBox
+	# Header thanh tiêu đề phía trên
 	var header = HBoxContainer.new()
 	vbox.add_child(header)
 	
 	var title_lbl = Label.new()
-	title_lbl.text = "Trò chuyện với Giáo viên ảo Mai"
 	title_lbl.text = "Trò chuyện với nghệ sĩ ảo cô Mai"
 	title_lbl.add_theme_font_override("font", _font_title)
 	title_lbl.add_theme_font_size_override("font_size", 26)
-	# Keep Mai's identity labels consistent with the room's "Cửa hàng" label.
 	title_lbl.add_theme_color_override("font_color", C_ROOM_HUD_TEXT)
 	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title_lbl)
@@ -200,13 +221,13 @@ func _build_ui() -> void:
 	header.add_child(close_btn)
 	_make_btn_bouncy(close_btn)
 	
-	# Body HBox Split
+	# Thân hộp thoại chia 2 cột (Trái: chân dung cô Mai; Phải: nội dung chat & input)
 	var main_split = HBoxContainer.new()
 	main_split.add_theme_constant_override("separation", 24)
 	main_split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(main_split)
 	
-	# Teacher portrait sits on the left, alongside the dialogue.
+	# Cột bên trái: Chân dung động của cô Mai
 	var left_col = VBoxContainer.new()
 	left_col.custom_minimum_size = Vector2(290, 0)
 	left_col.add_theme_constant_override("separation", 12)
@@ -243,13 +264,14 @@ func _build_ui() -> void:
 	ai_status_lbl.add_theme_color_override("font_color", C_ROOM_HUD_TEXT)
 	left_col.add_child(ai_status_lbl)
 
+	# Vạch phân cách màu vàng kim giữa 2 cột
 	var dialogue_divider := ColorRect.new()
 	dialogue_divider.color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.72)
 	dialogue_divider.custom_minimum_size = Vector2(1, 0)
 	dialogue_divider.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	main_split.add_child(dialogue_divider)
 
-	# Right Column (Chat Logs & Input)
+	# Cột bên phải: Danh sách tin nhắn & Hàng nhập câu hỏi
 	var right_col = VBoxContainer.new()
 	right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_col.add_theme_constant_override("separation", 12)
@@ -280,6 +302,7 @@ func _build_ui() -> void:
 	ai_chat_log.add_theme_constant_override("line_separation", 8)
 	log_margin.add_child(ai_chat_log)
 
+	# Hàng điều khiển: ô nhập câu hỏi, nút mic thu âm, nút gửi
 	var input_row = HBoxContainer.new()
 	input_row.add_theme_constant_override("separation", 10)
 	right_col.add_child(input_row)
@@ -311,7 +334,6 @@ func _build_ui() -> void:
 	ai_input.add_theme_stylebox_override("normal", le_style)
 	ai_input.add_theme_color_override("font_color", C_RED_DK)
 	ai_input.add_theme_color_override("font_placeholder_color", Color(0.12, 0.27, 0.19, 0.58))
-	# Layout: question field → microphone → send.
 	input_row.move_child(ai_mic_btn, 1)
 	
 	ai_send_btn = Button.new()
@@ -322,9 +344,7 @@ func _build_ui() -> void:
 	_style_ai_button(ai_send_btn, true)
 	_make_btn_bouncy(ai_send_btn)
 
-	# Dialogue follows the reference layout: conversation on the left, Cô Mai on the right.
-	
-	# Settings Panel setup
+	# Bảng cài đặt thông số kết nối (URL API, Key, Model)
 	settings_panel = PanelContainer.new()
 	settings_panel.visible = false
 	settings_panel.anchor_left = 0.5; settings_panel.anchor_right = 0.5
@@ -432,6 +452,7 @@ func _build_ui() -> void:
 	_style_ai_button(cancel_btn, false)
 	_make_btn_bouncy(cancel_btn)
 
+## Mở hộp thoại chat với ngữ cảnh nhạc cụ và bài học cụ thể
 func open_chat(instrument_context: String, supplied_context: Dictionary = {}) -> void:
 	_instrument_context = instrument_context
 	visible = true
@@ -439,12 +460,12 @@ func open_chat(instrument_context: String, supplied_context: Dictionary = {}) ->
 	var t = create_tween()
 	t.tween_property(ai_chat_popup_root, "modulate:a", 1.0, 0.25)
 	
-	# Load settings defaults
+	# Đồng bộ dữ liệu vào bảng cài đặt
 	api_url_input.text = ai_manager.api_url
 	model_name_input.text = ai_manager.model_name
 	api_key_input.text = ai_manager.api_key
 	
-	# Lời chào thuộc giao diện; system prompt và giới hạn kiến thức do MaiBrain quản lý.
+	# Chọn câu chào ban đầu phù hợp với nhạc cụ đang học
 	var greeting = ""
 	var tts_greeting = ""
 	
@@ -462,8 +483,7 @@ func open_chat(instrument_context: String, supplied_context: Dictionary = {}) ->
 			greeting = "[Mai]: Chào bạn! Mai có thể hỗ trợ bạn về VietStage và các nhạc cụ truyền thống Việt Nam hôm nay."
 			tts_greeting = "Chào bạn! Mai có thể hỗ trợ bạn về VietStage và các nhạc cụ truyền thống Việt Nam hôm nay."
 	
-	# MaiBrain là nơi duy nhất quản lý phạm vi và system prompt. Godot chỉ gửi
-	# ngữ cảnh màn hình để RAG tìm đúng bài học.
+	# Cấu hình ngữ cảnh phòng học vào AI manager
 	ai_manager.reset_conversation()
 	ai_manager.configure_context(_build_chat_context(instrument_context, supplied_context))
 	
@@ -471,8 +491,10 @@ func open_chat(instrument_context: String, supplied_context: Dictionary = {}) ->
 	_log_to_ui(greeting)
 	audio_manager.speak_vietnamese(tts_greeting)
 	
+	# Kích hoạt vòng lặp lắng nghe từ khóa
 	_start_waking_loop()
 
+## Xây dựng Dictionary ngữ cảnh đầy đủ (nhạc cụ, lessonCode, levelCode, screenContext)
 func _build_chat_context(instrument: String, supplied_context: Dictionary) -> Dictionary:
 	var local_lesson_id := str(supplied_context.get("lessonCode", SecureDataManager.active_lesson_id))
 	var resolved_lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, local_lesson_id)
@@ -492,6 +514,7 @@ func _build_chat_context(instrument: String, supplied_context: Dictionary) -> Di
 		))
 	}
 
+## Suy luận mã Level (LEVEL_1, LEVEL_2...) từ chuỗi ID bài học nội bộ
 func _infer_level_code(local_lesson_id: String) -> String:
 	var matcher := RegEx.new()
 	matcher.compile("level[_ -]?(\\d+)")
@@ -500,18 +523,20 @@ func _infer_level_code(local_lesson_id: String) -> String:
 		return "LEVEL_" + result.get_string(1)
 	return ""
 
+## Đóng hộp thoại chat an toàn và giải phóng tài nguyên
 func _close_ai_chat() -> void:
 	_stop_all_voice_activities()
 	var t = create_tween()
 	t.tween_property(ai_chat_popup_root, "modulate:a", 0.0, 0.20)
 	t.tween_callback(func():
-		queue_free() # Safely destroy the popup instance when closed!
+		queue_free()
 	)
 
+## Bật/tắt hiển thị bảng cài đặt thông số kết nối
 func _toggle_ai_settings() -> void:
 	settings_panel.visible = not settings_panel.visible
 
-
+## Tạo nút gợi ý câu hỏi nhanh (Quick Prompt)
 func _add_quick_prompt(container: HFlowContainer, label: String, prompt: String) -> void:
 	var button := Button.new()
 	button.text = label
@@ -529,7 +554,7 @@ func _add_quick_prompt(container: HFlowContainer, label: String, prompt: String)
 	container.add_child(button)
 	_make_btn_bouncy(button)
 
-
+## Áp dụng style màu sắc và hiệu ứng cho nút bấm trong giao diện chat
 func _style_ai_button(btn: Button, primary: bool) -> void:
 	var bg := Color(0.16, 0.47, 0.30, 0.98) if primary else Color(1.0, 1.0, 1.0, 0.76)
 	var border := C_GOLD_LIGHT if primary else Color(1.0, 1.0, 1.0, 0.82)
@@ -542,7 +567,7 @@ func _style_ai_button(btn: Button, primary: bool) -> void:
 	btn.add_theme_color_override("font_hover_color", fg)
 	btn.add_theme_color_override("font_pressed_color", fg)
 
-
+## Vòng lặp chuyển frame hình ảnh chân dung cô Mai khi đang nói
 func _process(delta: float) -> void:
 	if not is_instance_valid(ai_portrait):
 		return
@@ -556,13 +581,13 @@ func _process(delta: float) -> void:
 		_portrait_frame = 0
 		ai_portrait.queue_redraw()
 
-
+## Vẽ cắt từng khung hình từ Sprite Sheet 24 frames vào vùng hiển thị chân dung
 func _draw_mai_chat_portrait() -> void:
 	if not is_instance_valid(ai_portrait):
 		return
 	var portrait_size := ai_portrait.size
 	if _tex_mai_talk_sheet:
-		# The smooth sheet is a 6-column × 4-row grid of upper-body talking poses.
+		# Sprite sheet có 6 cột và 4 hàng
 		var frame_width := _tex_mai_talk_sheet.get_width() / float(PORTRAIT_SHEET_COLUMNS)
 		var frame_height := _tex_mai_talk_sheet.get_height() / float(PORTRAIT_SHEET_ROWS)
 		var source_rect := Rect2(
@@ -571,8 +596,6 @@ func _draw_mai_chat_portrait() -> void:
 			frame_width,
 			frame_height
 		)
-		# Preserve each portrait frame's aspect ratio to prevent adjacent cells
-		# in the sprite sheet from appearing in the chat portrait.
 		var aspect_ratio := frame_width / frame_height
 		var draw_width := minf(portrait_size.x, portrait_size.y * aspect_ratio)
 		var draw_height := draw_width / aspect_ratio
@@ -586,19 +609,19 @@ func _draw_mai_chat_portrait() -> void:
 	elif _tex_fallback:
 		ai_portrait.draw_texture_rect(_tex_fallback, Rect2(Vector2.ZERO, portrait_size), false)
 
-
+## Cập nhật lại vẽ chân dung khi có cập nhật biên độ âm thanh
 func _on_audio_amplitude_updated(_amplitude: float) -> void:
-	# TTS start/finish owns the talking state.  Do not stop the animation on
-	# brief silent samples between words, otherwise the portrait visibly jitters.
 	if is_instance_valid(ai_portrait):
 		ai_portrait.queue_redraw()
 
+## Đặt lại trạng thái chân dung về tĩnh khi kết thúc cảm xúc
 func _update_portrait_by_emotion() -> void:
 	_portrait_is_talking = false
 	_portrait_frame_elapsed = 0.0
 	if is_instance_valid(ai_portrait):
 		ai_portrait.queue_redraw()
 
+## Xử lý khi người dùng nhấn nút micro
 func _on_ai_mic_pressed() -> void:
 	if current_voice_state == VoiceState.LISTENING:
 		listening_timer.stop()
@@ -612,12 +635,15 @@ func _on_ai_mic_pressed() -> void:
 	else:
 		_transition_to_state(VoiceState.LISTENING)
 
+## Xử lý khi người dùng nhấn Enter trong ô nhập
 func _on_ai_input_submitted(_text: String) -> void:
 	_submit_chat()
 
+## Xử lý khi người dùng nhấn nút Gửi
 func _on_ai_send_pressed() -> void:
 	_submit_chat()
 
+## Gửi nội dung tin nhắn nhập từ ô chat lên AI
 func _submit_chat() -> void:
 	var text = ai_input.text.strip_edges()
 	if text.is_empty():
@@ -639,6 +665,7 @@ func _submit_chat() -> void:
 	audio_manager.start_streaming_speech()
 	ai_manager.send_prompt(text)
 
+## Ghi nội dung tin nhắn vào khung lịch sử hội thoại với định dạng BBCode
 func _log_to_ui(msg: String) -> void:
 	if msg.begins_with("\n[Bạn]: "):
 		var content = msg.substr(8)
@@ -652,10 +679,12 @@ func _log_to_ui(msg: String) -> void:
 	else:
 		ai_chat_log.append_text("[color=#70665c][i]" + msg + "[/i][/color]\n")
 
+## Xử lý khi nhận diện giọng nói STT hoàn tất thành văn bản
 func _on_transcription_completed(file_path: String, text: String) -> void:
 	is_processing_stt = false
 	var clean_text = text.strip_edges()
 	
+	# Trường hợp 1: Đang ở trạng thái chờ từ khóa đánh thức
 	if current_voice_state == VoiceState.WAKING:
 		if not file_path.contains("user_voice_wake"):
 			return
@@ -668,6 +697,7 @@ func _on_transcription_completed(file_path: String, text: String) -> void:
 		else:
 			pass
 			
+	# Trường hợp 2: Đang ở trạng thái lắng nghe câu hỏi
 	elif current_voice_state == VoiceState.LISTENING:
 		if not file_path.contains("user_voice_question"):
 			return
@@ -697,6 +727,7 @@ func _on_transcription_completed(file_path: String, text: String) -> void:
 			audio_manager.start_streaming_speech()
 			ai_manager.send_prompt(clean_text)
 
+## Xử lý khi việc nhận diện giọng nói STT gặp lỗi
 func _on_transcription_failed(file_path: String, reason: String) -> void:
 	is_processing_stt = false
 	print("Transcription failed for ", file_path, ": ", reason)
@@ -718,6 +749,7 @@ func _on_transcription_failed(file_path: String, reason: String) -> void:
 	else:
 		_start_waking_loop()
 
+## Xử lý khi AI hoàn tất trả về toàn bộ câu trả lời
 func _on_ai_response_received(text: String, _emotion: String) -> void:
 	ai_send_btn.disabled = false
 	ai_input.editable = true
@@ -725,6 +757,7 @@ func _on_ai_response_received(text: String, _emotion: String) -> void:
 	if ai_manager.last_status == "ANSWERED" and not ai_manager.last_sources.is_empty():
 		_log_to_ui("[Nguồn đã duyệt]: " + ", ".join(ai_manager.last_sources))
 
+## Xử lý khi nhận được từng đoạn văn bản từ AI streaming
 func _on_ai_chunk_received(chunk_text: String, emotion: String) -> void:
 	if ai_manager.last_status != "ANSWERED":
 		return
@@ -732,9 +765,11 @@ func _on_ai_chunk_received(chunk_text: String, emotion: String) -> void:
 	_update_portrait_by_emotion()
 	audio_manager.append_vietnamese_speech(chunk_text)
 
+## Xử lý khi AI báo hiệu đã kết thúc phiên gửi phản hồi
 func _on_ai_response_finished() -> void:
 	audio_manager.finish_streaming_speech()
 
+## Xử lý khi kết nối AI bị lỗi
 func _on_ai_request_failed(reason: String) -> void:
 	_update_status("Lỗi kết nối")
 	ai_send_btn.disabled = false
@@ -742,6 +777,7 @@ func _on_ai_request_failed(reason: String) -> void:
 	_log_to_ui("[System Lỗi]: " + reason)
 	_start_waking_loop()
 
+## Callback khi TTS bắt đầu phát giọng đọc
 func _on_tts_started() -> void:
 	_portrait_is_talking = true
 	_portrait_frame_elapsed = 0.0
@@ -750,6 +786,7 @@ func _on_tts_started() -> void:
 	if current_voice_state == VoiceState.THINKING:
 		_transition_to_state(VoiceState.SPEAKING)
 
+## Callback khi TTS phát xong toàn bộ giọng đọc
 func _on_tts_finished() -> void:
 	_portrait_is_talking = false
 	_portrait_frame_elapsed = 0.0
@@ -767,6 +804,7 @@ func _on_tts_finished() -> void:
 	else:
 		_start_waking_loop()
 
+## Callback khi micro bắt đầu thu âm
 func _on_recording_started() -> void:
 	if current_voice_state == VoiceState.LISTENING:
 		_update_status("Đang nghe...")
@@ -775,11 +813,13 @@ func _on_recording_started() -> void:
 		ai_mic_btn.text = "🎤"
 	audio_manager.audio_player.stop()
 
+## Callback khi micro kết thúc thu âm một đoạn
 func _on_recording_stopped(_file_path: String) -> void:
 	if current_voice_state == VoiceState.LISTENING:
 		_update_status("Đang dịch...")
 	ai_mic_btn.text = "🎤"
 
+## Nhịp đếm định kỳ để gửi file âm thanh kiểm tra từ khóa đánh thức
 func _on_wake_word_tick() -> void:
 	if current_voice_state != VoiceState.WAKING:
 		wake_word_timer.stop()
@@ -797,6 +837,7 @@ func _on_wake_word_tick() -> void:
 	stt_manager.stop_recording(wake_path, true)
 	stt_manager.start_recording()
 
+## Hết thời gian thu âm một lượt câu hỏi (5 giây), gửi đi nhận diện STT
 func _on_listening_timeout() -> void:
 	if current_voice_state != VoiceState.LISTENING:
 		return
@@ -806,6 +847,7 @@ func _on_listening_timeout() -> void:
 	var question_path = "user://user_voice_question_%d.wav" % question_index
 	stt_manager.stop_recording(question_path)
 
+## Chuyển đổi trạng thái máy giọng nói và cập nhật UI tương ứng
 func _transition_to_state(new_state: VoiceState) -> void:
 	var old_state = current_voice_state
 	current_voice_state = new_state
@@ -847,12 +889,15 @@ func _transition_to_state(new_state: VoiceState) -> void:
 			stt_manager.stop_recording("user://user_voice_wake_%d.wav" % wake_index, false)
 			audio_manager.audio_player.stop()
 
+## Bắt đầu vòng lặp chờ từ khóa đánh thức
 func _start_waking_loop() -> void:
 	_transition_to_state(VoiceState.WAKING)
 
+## Dừng toàn bộ hoạt động thu âm và xử lý giọng nói
 func _stop_all_voice_activities() -> void:
 	_transition_to_state(VoiceState.INACTIVE)
 
+## Cập nhật nhãn trạng thái và màu sắc tương ứng
 func _update_status(status_text: String) -> void:
 	ai_status_lbl.text = status_text
 	match status_text:
@@ -887,6 +932,7 @@ func _flat_sb(bg: Color, border: Color, radius: int, shadow: bool = false, offse
 		s.shadow_offset = Vector2(0, 4)
 	return s
 
+## Thêm hiệu ứng hoạt họa nảy (bouncy scale animation) khi rê chuột hoặc nhấn nút
 func _make_btn_bouncy(btn: Button) -> void:
 	btn.pivot_offset = btn.size / 2.0
 	btn.resized.connect(func() -> void: btn.pivot_offset = btn.size / 2.0)
