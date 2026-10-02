@@ -849,12 +849,17 @@ func _linh_talk(_txt: String) -> void:
 	# Speech bubble removed — teacher speaks through the popup now
 	pass
 
+## Callback khi người học click chuột trái vào nhân vật cô Mai trong phòng học ảo
+## Chức năng: Dừng âm thanh đang phát và mở cửa sổ Popup AI Box Chat để trò chuyện với cô Mai với ngữ cảnh chung "general"
 func _on_char_linh_gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+		# Dừng âm thanh phát nền nếu có
 		if _audio_manager:
 			_audio_manager.audio_player.stop()
+		# Khởi tạo và hiển thị popup Box Chat AI cô Mai
 		var chat = AIChatPopup.new()
 		$HUD.add_child(chat)
+		# Mở chat với ngữ cảnh phòng học ảo chung (general), chưa vào bài học cụ thể
 		chat.open_chat("general", {"screenContext": "virtual_music_room", "lessonCode": "", "levelCode": ""})
 
 

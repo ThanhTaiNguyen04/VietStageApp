@@ -2431,9 +2431,12 @@ func _ensure_compact_teacher_chat_button() -> void:
 	add_child(_teacher_chat_button)
 
 
+## Mở hộp thoại Popup Box Chat AI cô Mai trong bài học Đàn Tranh
+## Chức năng: Gắn popup chat vào cây Scene, truyền ngữ cảnh nhạc cụ "dan_tranh" và màn hình thực hành "lesson_practice"
 func _open_compact_teacher_chat() -> void:
 	var chat := AIChatPopup.new()
 	add_child(chat)
+	# Mở popup chat với ngữ cảnh nhạc cụ Đàn Tranh và chế độ bài thực hành
 	chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
 
 func _on_compact_teacher_clicked(event: InputEvent) -> void:

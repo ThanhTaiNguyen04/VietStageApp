@@ -453,10 +453,13 @@ func _shrink_teacher() -> void:
 	t.tween_property(wrapper, "scale", Vector2(0.35, 0.35), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.parallel().tween_property(wrapper, "position", Vector2(-80, get_viewport_rect().size.y - 320), 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
+## Callback khi người học click vào hình đại diện cô giáo Mai trong bài học Sáo Trúc
+## Chức năng: Khởi tạo và mở cửa sổ Box Chat AI cô Mai với ngữ cảnh nhạc cụ "sao_truc" và màn hình "lesson_theory"
 func _on_teacher_clicked(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var chat = AIChatPopup.new()
 		add_child(chat)
+		# Mở popup chat với ngữ cảnh nhạc cụ Sáo Trúc và lý thuyết bài học
 		chat.open_chat("sao_truc", {"screenContext": "lesson_theory"})
 
 func _setup_premium_practice_ui():
