@@ -2,6 +2,7 @@ extends "res://scripts/LearningActivityBase.gd"
 
 const InstrumentSamplePlayerScript = preload("res://scripts/InstrumentSamplePlayer.gd")
 const DanTranhAudio = preload("res://scripts/DanTranhAudio.gd")
+const PracticeControlHudScript = preload("res://scripts/PracticeControlHud.gd")
 
 var challenge: Dictionary = {}
 var challenge_id := 0
@@ -15,15 +16,15 @@ var started_at := ""
 var challenge_scores: Dictionary = {}
 var challenge_started_at: Dictionary = {}
 var melody_staff: Control
-var options_box: Container
 var feedback_label: Label
 var next_button: Button
 var listen_button: Button
 var reference_audio_url := ""
 var audio_player: AudioStreamPlayer
-var progress_bar: ProgressBar
-var score_label: Label
-var floating_back_button: Button
+var practice_hud: PracticeControlHud
+var custom_top_bar: PanelContainer
+var selected_speed_multiplier := 1.0
+var microphone_paused := false
 var answered := false
 var _audio_generation := 0
 var microphone_analyzer: AudioCaptureAnalyzer
@@ -48,13 +49,78 @@ func _ready() -> void:
 	if top_panel:
 		top_panel.visible = false
 		
-	# Build the unified sticky top bar (Back button + Progress Bar + Score Badge)
-	_build_sticky_top_bar()
-	
-	title_label.text = "MINI-GAME 2 - HOÀN THIỆN GIAI ĐIỆU"
+	_setup_custom_header_and_backdrop()
+	_setup_practice_hud()
+	title_label.text = "Hoàn thiện giai điệu"
 	_setup_microphone_analyzer()
 	_setup_sample_player()
+	get_viewport().size_changed.connect(_update_hud_layout)
+	_update_hud_layout()
 	_load_challenge()
+
+func _setup_custom_header_and_backdrop() -> void:
+	var room_background := get_child(0) as TextureRect
+	if room_background:
+		room_background.texture = load("res://assets/textures/bg_practice_room.png") as Texture2D
+	var room_wash := get_child(1) as ColorRect
+	if room_wash:
+		room_wash.color = Color(0.95, 0.93, 0.89, 0.95)
+	custom_top_bar = PanelContainer.new()
+	custom_top_bar.name = "MelodyCustomTopBar"
+	custom_top_bar.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	root_box.add_child(custom_top_bar)
+	root_box.move_child(custom_top_bar, 0)
+
+func _setup_practice_hud() -> void:
+	practice_hud = PracticeControlHudScript.new() as PracticeControlHud
+	practice_hud.name = "MelodyPracticeHud"
+	add_child(practice_hud)
+	practice_hud.back_requested.connect(_go_back)
+	practice_hud.speed_selected.connect(_on_hud_speed_selected)
+	practice_hud.pause_requested.connect(_pause_microphone)
+	practice_hud.resume_requested.connect(_resume_microphone)
+	practice_hud.restart_requested.connect(_restart_from_pause)
+	practice_hud.sample_requested.connect(_play_sample_from_pause)
+	practice_hud.set_speed_centered(false)
+	practice_hud.set_speed(selected_speed_multiplier)
+	practice_hud.set_pause_button_visible(false)
+
+func _update_hud_layout() -> void:
+	if not is_instance_valid(practice_hud) or not is_instance_valid(custom_top_bar):
+		return
+	var second_row := practice_hud.needs_second_row(get_viewport_rect().size.x)
+	custom_top_bar.custom_minimum_size.y = 160.0 if second_row else 86.0
+	practice_hud.set_pause_button_visible(microphone_armed and not microphone_paused)
+
+func _on_hud_speed_selected(multiplier: float) -> void:
+	selected_speed_multiplier = multiplier
+	practice_hud.set_speed(multiplier)
+
+func _pause_microphone() -> void:
+	if not microphone_armed or not is_instance_valid(microphone_analyzer):
+		return
+	microphone_paused = true
+	microphone_armed = false
+	microphone_analyzer.set_analysis_suspended(true)
+	practice_hud.set_pause_visible(true)
+	_update_hud_layout()
+
+func _resume_microphone() -> void:
+	if not microphone_paused:
+		return
+	microphone_paused = false
+	practice_hud.set_pause_visible(false)
+	_arm_microphone_for_note()
+
+func _restart_from_pause() -> void:
+	microphone_paused = false
+	practice_hud.set_pause_visible(false)
+	_show_round()
+
+func _play_sample_from_pause() -> void:
+	microphone_paused = false
+	practice_hud.set_pause_visible(false)
+	_play_recorded_samples()
 
 func _exit_tree() -> void:
 	if microphone_analyzer and is_instance_valid(microphone_analyzer):
@@ -91,6 +157,7 @@ func _process(delta: float) -> void:
 	microphone_candidate_elapsed += delta
 	if microphone_candidate_elapsed >= MICROPHONE_HOLD_SECONDS:
 		microphone_armed = false
+		_update_hud_layout()
 		if listen_for_note_button and is_instance_valid(listen_for_note_button):
 			listen_for_note_button.disabled = true
 		_answer_from_microphone(pitch)
@@ -152,8 +219,8 @@ func _load_challenge() -> void:
 		_parse_challenges(target_challenges)
 		if melodies.is_empty():
 			_build_load_error(
-				"Chưa tìm thấy thử thách MELODY_COMPLETE cho bài học này.",
-				"Cấu hình giai điệu trên hệ thống chưa đầy đủ hoặc không hợp lệ."
+				"Bài học này chưa có giai điệu để chơi.",
+				"Bạn có thể thử lại sau hoặc chơi thử với giai điệu mẫu."
 			)
 			return
 		_show_round()
@@ -167,7 +234,7 @@ func _use_offline_data() -> void:
 	var sample := _sample_data()
 	var source: Variant = sample.get("melody", {})
 	if not source is Dictionary:
-		_build_load_error("Không có dữ liệu mẫu giai điệu.", "Hãy thử lại khi có kết nối.", false)
+		_build_load_error("Chưa thể bắt đầu trò chơi.", "Hãy thử lại khi có kết nối.", false)
 		return
 	var sample_challenge: Dictionary = (source as Dictionary).duplicate(true)
 	sample_challenge["id"] = 0
@@ -246,7 +313,7 @@ func _build_load_error(title: String, description: String, allow_retry: bool = t
 		retry_btn.pressed.connect(func() -> void: _load_challenge())
 		actions.add_child(retry_btn)
 
-	var sample_btn := _button("Chơi bằng dữ liệu mẫu", 200, 48, Color("#6b21a8"))
+	var sample_btn := _secondary_button("Chơi thử", 160, 48, C_GREEN)
 	sample_btn.pressed.connect(func() -> void: _use_offline_data())
 	actions.add_child(sample_btn)
 
@@ -380,6 +447,10 @@ var card_body: VBoxContainer
 var action_box: VBoxContainer
 
 func _show_round() -> void:
+	microphone_paused = false
+	if is_instance_valid(practice_hud):
+		practice_hud.set_pause_visible(false)
+		practice_hud.set_pause_button_visible(false)
 	for child in content_box.get_children():
 		child.queue_free()
 	
@@ -406,101 +477,46 @@ func _show_round() -> void:
 	if active_challenge_id > 0 and not challenge_started_at.has(active_challenge_id):
 		challenge_started_at[active_challenge_id] = _now_iso()
 	
-	# Update progress bar value (matching Quiz style)
-	if progress_bar and melodies.size() > 0:
-		progress_bar.value = (float(melody_index) + 1.0) / float(melodies.size()) * 100.0
-	
-	var mobile := get_viewport_rect().size.x < 600.0
+	var mobile := _is_compact_layout()
+	var compact_height := get_viewport_rect().size.y < 780.0 or mobile
 
-	# 1. Main Hero Card (Frosted ivory card with soft warm sand border)
+	# Keep the shared notation visible before the action controls.
 	var card := PanelContainer.new()
+	card.name = "MelodyRoundCard"
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var sheet_style := StyleBoxFlat.new()
-	sheet_style.bg_color = Color(0.995, 0.99, 0.985, 0.96)
-	sheet_style.set_corner_radius_all(20)
-	sheet_style.set_border_width_all(2)
-	sheet_style.border_color = Color("#e2d8c9")
-	sheet_style.shadow_color = Color(0.08, 0.07, 0.05, 0.05)
-	sheet_style.shadow_size = 10
-	sheet_style.shadow_offset = Vector2(0, 4)
-	sheet_style.content_margin_left = 16 if mobile else 28
-	sheet_style.content_margin_right = 16 if mobile else 28
-	sheet_style.content_margin_top = 18 if mobile else 22
-	sheet_style.content_margin_bottom = 20 if mobile else 24
+	var sheet_style := _panel(Color(0.995, 0.99, 0.985, 0.96), Color("#e2d8c9"), 18, 1)
+	sheet_style.content_margin_left = 12 if mobile else 24
+	sheet_style.content_margin_right = 12 if mobile else 24
+	sheet_style.content_margin_top = 8 if compact_height else 16
+	sheet_style.content_margin_bottom = 8 if compact_height else 16
 	card.add_theme_stylebox_override("panel", sheet_style)
 	content_box.add_child(card)
-	
+
 	card_body = VBoxContainer.new()
-	card_body.add_theme_constant_override("separation", 16 if mobile else 20)
+	card_body.add_theme_constant_override("separation", 8 if compact_height else 14)
 	card.add_child(card_body)
-	
-	# 2. Prompt Row: Heading + Audio Replay Button
+
 	var prompt_row := HBoxContainer.new()
-	prompt_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	prompt_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	prompt_row.add_theme_constant_override("separation", 8)
 	card_body.add_child(prompt_row)
-	
-	var heading := _label("Nghe giai điệu rồi chọn nốt còn thiếu", 18 if mobile else 23, C_NAVY)
+	var heading := _label("Giai điệu %d/%d · Chơi nốt còn thiếu" % [melody_index + 1, melodies.size()], 16 if mobile else 20, C_NAVY)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	if ResourceLoader.exists("res://assets/fonts/Lora-Bold.ttf"):
-		heading.add_theme_font_override("font", load("res://assets/fonts/Lora-Bold.ttf") as Font)
 	prompt_row.add_child(heading)
-	
-	# Audio button with touch target >= 44x44 pt (48x48 px)
-	listen_button = Button.new()
-	listen_button.custom_minimum_size = Vector2(48, 48)
-	listen_button.size_flags_horizontal = Control.SIZE_SHRINK_END
-	listen_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	listen_button.icon = load("res://assets/textures/lucide/volume-2.svg") as Texture2D
-	listen_button.expand_icon = true
-	listen_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	listen_button.add_theme_constant_override("icon_max_width", 24)
-	
-	var btn_style_n := StyleBoxFlat.new()
-	btn_style_n.bg_color = Color.WHITE
-	btn_style_n.border_color = Color("#cbd5e1")
-	btn_style_n.set_border_width_all(2)
-	btn_style_n.border_width_bottom = 4
-	btn_style_n.set_corner_radius_all(24)
-	
-	var btn_style_h := btn_style_n.duplicate() as StyleBoxFlat
-	btn_style_h.bg_color = Color("#f8fafc")
-	btn_style_h.border_color = Color(C_GOLD.r, C_GOLD.g, C_GOLD.b, 0.8)
-	
-	var btn_style_p := btn_style_n.duplicate() as StyleBoxFlat
-	btn_style_p.bg_color = Color("#f1f5f9")
-	btn_style_p.border_width_top = 3
-	btn_style_p.border_width_bottom = 1
-	
-	listen_button.add_theme_stylebox_override("normal", btn_style_n)
-	listen_button.add_theme_stylebox_override("hover", btn_style_h)
-	listen_button.add_theme_stylebox_override("pressed", btn_style_p)
-	listen_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	listen_button.add_theme_color_override("icon_normal_color", C_NAVY)
-	listen_button.add_theme_color_override("icon_hover_color", Color("#d97706"))
-	
-	listen_button.pivot_offset = Vector2(24, 24)
-	listen_button.mouse_entered.connect(func() -> void:
-		create_tween().tween_property(listen_button, "scale", Vector2(1.08, 1.08), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
-	listen_button.mouse_exited.connect(func() -> void:
-		create_tween().tween_property(listen_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
-	# This replays packaged recorded samples, never synthesized answer audio.
-	listen_button.tooltip_text = "Phát mẫu các nốt đen"
+	listen_button = _secondary_button("Nghe mẫu", 112 if mobile else 130, 48, C_GREEN)
+	listen_button.tooltip_text = "Nghe giai điệu mẫu"
 	listen_button.pressed.connect(_play_recorded_samples)
 	prompt_row.add_child(listen_button)
 	sample_button = listen_button
-	
-	# 3. Staff Display (Exact diatonic Treble Clef staff)
+
 	melody_staff = Control.new()
+	melody_staff.name = "MelodyStaff"
 	melody_staff.set_script(load("res://scripts/LearningMelodyStaffDisplay.gd"))
-	melody_staff.custom_minimum_size = Vector2(0, 200 if mobile else 210)
-	melody_staff.call("configure", melody["notes"], int(melody["missing"]))
+	melody_staff.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card_body.add_child(melody_staff)
-	
+	melody_staff.custom_minimum_size = Vector2(0, 148 if compact_height else 210)
+	melody_staff.call("configure", melody["notes"], int(melody["missing"]))
+	melody_staff.queue_redraw()
 	# 4. The learner completes the blank by playing the physical instrument.
 	expected_note_raw = str(melody["notes"][int(melody["missing"])])
 	var microphone_panel := PanelContainer.new()
@@ -509,16 +525,14 @@ func _show_round() -> void:
 	var microphone_body := VBoxContainer.new()
 	microphone_body.add_theme_constant_override("separation", 8)
 	microphone_panel.add_child(microphone_body)
-	var microphone_heading := _label("Hoàn thành nốt khuyết bằng nhạc cụ thật", 17 if mobile else 19, C_NAVY)
-	microphone_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	microphone_body.add_child(microphone_heading)
-	microphone_status_label = _label("Đặt micro gần nhạc cụ, rồi nhấn bắt đầu và gảy/thổi nốt còn thiếu.", 13 if mobile else 15, C_MUTED)
+	microphone_status_label = _label("Nghe mẫu, rồi chơi nốt khuyết bằng nhạc cụ của bạn.", 14 if mobile else 16, C_MUTED)
 	microphone_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	microphone_body.add_child(microphone_status_label)
-	microphone_note_label = _label("Micro: đang chờ bật nhận diện", 14 if mobile else 16, C_MUTED)
+	microphone_note_label = _label("", 14 if mobile else 16, C_MUTED)
 	microphone_note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	microphone_note_label.visible = false
 	microphone_body.add_child(microphone_note_label)
-	listen_for_note_button = _button("Bắt đầu nghe nốt khuyết", 0, 54, C_GREEN)
+	listen_for_note_button = _button("Bắt đầu chơi", 0, 54, C_GREEN)
 	listen_for_note_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	listen_for_note_button.pressed.connect(_arm_microphone_for_note)
 	microphone_body.add_child(listen_for_note_button)
@@ -534,39 +548,6 @@ func _show_round() -> void:
 	action_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	action_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	card_body.add_child(action_box)
-	# Kept as an empty container for the shared scoring routine; answer choices
-	# are intentionally not attached to the scene in microphone mode.
-	var options_grid := GridContainer.new()
-	
-	var expected_raw := str(melody["notes"][int(melody["missing"])])
-	var expected_vn := _to_vietnamese_solfege(expected_raw)
-
-	# Convert all options to standard Vietnamese Solfege (Đô, Rê, Mi, Fa, Sol, La, Si)
-	var choices: Array = []
-	var raw_choices: Array = melody.get("options", [])
-	for c in raw_choices:
-		var vn_c := _to_vietnamese_solfege(str(c))
-		if not choices.has(vn_c):
-			choices.append(vn_c)
-	
-	if not choices.has(expected_vn):
-		choices.push_front(expected_vn)
-	
-	var default_pool := ["Đô", "Rê", "Mi", "Sol", "La", "Fa", "Si"]
-	for p in default_pool:
-		if choices.size() >= 4:
-			break
-		if not choices.has(p):
-			choices.append(p)
-		
-	for i in range(mini(4, choices.size())):
-		var choice = str(choices[i])
-		var option_btn := _create_premium_option_button(i, choice)
-		option_btn.pressed.connect(func() -> void: 
-			_answer(option_btn, i, choice, expected_vn, melody, options_grid)
-		)
-		options_grid.add_child(option_btn)
-		
 	started_at = _now_iso()
 
 func _microphone_panel_style() -> StyleBoxFlat:
@@ -598,13 +579,13 @@ func _play_recorded_samples() -> void:
 	if listen_for_note_button and is_instance_valid(listen_for_note_button):
 		listen_for_note_button.disabled = true
 	if microphone_status_label and is_instance_valid(microphone_status_label):
-		microphone_status_label.text = "Đang phát mẫu WAV của %s…" % _instrument_title().to_lower()
+		microphone_status_label.text = "Đang phát giai điệu mẫu…"
 		microphone_status_label.add_theme_color_override("font_color", C_MUTED)
 	var result: Dictionary = sample_player.play_sequence(
 		Context.instrument,
 		melody.get("notes", []),
 		int(melody.get("missing", -1)),
-		_safe_float(melody.get("bpm", InstrumentSamplePlayerScript.DEFAULT_BPM), InstrumentSamplePlayerScript.DEFAULT_BPM)
+		_safe_float(melody.get("bpm", InstrumentSamplePlayerScript.DEFAULT_BPM), InstrumentSamplePlayerScript.DEFAULT_BPM) * selected_speed_multiplier
 	)
 	if not bool(result.get("ok", false)):
 		sample_playback_active = false
@@ -630,9 +611,9 @@ func _on_sample_playback_finished() -> void:
 		sample_button.disabled = false
 	if listen_for_note_button and is_instance_valid(listen_for_note_button) and not answered:
 		listen_for_note_button.disabled = false
-		listen_for_note_button.text = "Bắt đầu nghe nốt khuyết"
+		listen_for_note_button.text = "Bắt đầu chơi"
 	if microphone_status_label and is_instance_valid(microphone_status_label):
-		microphone_status_label.text = "Mẫu đã phát xong. Nhấn 'Bắt đầu nghe nốt khuyết' rồi chơi nốt bằng nhạc cụ thật."
+		microphone_status_label.text = "Đến lượt bạn chơi nốt khuyết."
 		microphone_status_label.add_theme_color_override("font_color", C_MUTED)
 
 func _on_sample_playback_failed(details: Dictionary) -> void:
@@ -653,7 +634,7 @@ func _on_sample_playback_failed(details: Dictionary) -> void:
 		if item_value is Dictionary:
 			names.append(str((item_value as Dictionary).get("note", "?")))
 	if microphone_status_label and is_instance_valid(microphone_status_label):
-		microphone_status_label.text = "Lỗi cấu hình asset: Thiếu file WAV thu thật cho nốt (%s). Dừng chuỗi, không dùng âm tổng hợp." % ", ".join(names)
+		microphone_status_label.text = "Chưa phát được mẫu cho nốt %s. Hãy thử lại." % ", ".join(names)
 		microphone_status_label.add_theme_color_override("font_color", C_BAD)
 
 func _arm_microphone_for_note() -> void:
@@ -662,11 +643,14 @@ func _arm_microphone_for_note() -> void:
 	microphone_candidate_elapsed = 0.0
 	microphone_candidate_pitch = 0.0
 	microphone_armed = true
+	microphone_paused = false
 	microphone_analyzer.set_analysis_suspended(false)
 	microphone_analyzer.start_microphone_capture()
+	_update_hud_layout()
 	listen_for_note_button.text = "Đang lắng nghe…"
 	microphone_status_label.text = "Hãy chơi một nốt rõ, giữ âm ổn định trong chốc lát."
-	microphone_note_label.text = "Micro: đang nghe…"
+	microphone_note_label.visible = true
+	microphone_note_label.text = "Đang nghe nhạc cụ…"
 
 func _cents_from_expected(pitch: float, expected: String) -> float:
 	var reference := _frequency(expected)
@@ -678,7 +662,7 @@ func _update_microphone_labels(pitch: float, cents: float) -> void:
 	if microphone_note_label == null or not is_instance_valid(microphone_note_label):
 		return
 	var label_note := _to_vietnamese_solfege(_closest_note_name(pitch))
-	microphone_note_label.text = "Đang nhận: %s · %.0f Hz · lệch %+.0f cents" % [label_note, pitch, cents]
+	microphone_note_label.text = "Đang nhận: %s" % label_note
 	microphone_note_label.add_theme_color_override("font_color", C_OK if absf(cents) <= MICROPHONE_CENTS_TOLERANCE else C_BAD)
 
 func _closest_note_name(pitch: float) -> String:
@@ -693,12 +677,14 @@ func _closest_note_name(pitch: float) -> String:
 	return closest
 
 func _answer_from_microphone(pitch: float) -> void:
+	microphone_armed = false
+	_update_hud_layout()
 	if microphone_analyzer and is_instance_valid(microphone_analyzer):
 		microphone_analyzer.set_analysis_suspended(true)
 	var melody: Dictionary = melodies[melody_index % melodies.size()]
 	# Scoring has already checked octave-aware cents above. Feed the shared result
 	# pipeline the expected value so it records a correct physical performance.
-	_answer(Button.new(), 0, expected_note_raw, expected_note_raw, melody, GridContainer.new())
+	_answer(expected_note_raw, expected_note_raw, melody)
 
 func _to_vietnamese_solfege(raw: String) -> String:
 	var s := raw.strip_edges()
@@ -723,7 +709,7 @@ func _to_vietnamese_solfege(raw: String) -> String:
 		
 	return s
 
-func _answer(selected_btn: Button, selected_idx: int, selected: String, expected: String, melody: Dictionary, grid: GridContainer) -> void:
+func _answer(selected: String, expected: String, melody: Dictionary) -> void:
 	if answered or (next_button != null and is_instance_valid(next_button)):
 		return
 	answered = true
@@ -733,8 +719,6 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	if correct:
 		score += current_max
 		correct_rounds += 1
-		if score_label and is_instance_valid(score_label):
-			score_label.text = str(score)
 	melody_staff.call("show_answer", correct, selected)
 	
 	# Aggregate all rounds of a minigame and submit one final attempt per challenge.
@@ -768,20 +752,6 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 		else:
 			result_sync_status = "pending"
 	
-	# Disable buttons and highlight states
-	for child in grid.get_children():
-		if child is Button:
-			var btn := child as Button
-			btn.disabled = true
-			var btn_text := ""
-			var lbl = btn.find_child("TextLabel", true, false) as Label
-			if lbl:
-				btn_text = lbl.text
-			if _note_equal(btn_text, expected):
-				_style_option_button_state(btn, "correct")
-			elif btn == selected_btn and not correct:
-				_style_option_button_state(btn, "incorrect")
-				
 	# Clear previous feedback if any
 	for child in action_box.get_children():
 		child.queue_free()
@@ -813,8 +783,6 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 	banner.add_child(feedback_label)
 	
 	if melody_index + 1 >= melodies.size():
-		if progress_bar:
-			progress_bar.value = 100.0
 		if report != null and report.is_signed_in() and result_sync_status == "be":
 			await report.refresh_progress_from_backend()
 		elif result_sync_status == "offline":
@@ -846,7 +814,7 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 			if result_sync_status == "failed":
 				detail_msg += " Kết quả đang chờ đồng bộ lên máy chủ."
 			elif result_sync_status == "offline":
-				detail_msg += " (Dữ liệu mẫu/Offline)"
+				detail_msg += " Đây là lượt chơi thử."
 			_show_result("Giai điệu hoàn thành!", detail_msg, score, stars, _restart, accuracy)
 		)
 		action_box.add_child(next_button)
@@ -860,163 +828,6 @@ func _answer(selected_btn: Button, selected_idx: int, selected: String, expected
 		_show_round()
 	)
 	action_box.add_child(next_button)
-
-func _create_premium_option_button(index: int, text_value: String) -> Button:
-	var mobile := get_viewport_rect().size.x < 600.0
-	var btn_height := 58.0 if mobile else 66.0
-	var font_size_option := 17 if mobile else 19
-	var badge_size := Vector2(36, 36) if mobile else Vector2(40, 40)
-	var badge_font_size := 14 if mobile else 16
-	var badge_radius := 18 if mobile else 20
-
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(0, btn_height)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-
-	# Normal state (3D border bottom 4px)
-	var normal_style := StyleBoxFlat.new()
-	normal_style.bg_color = Color.WHITE
-	normal_style.border_color = Color("#cbd5e1")
-	normal_style.set_border_width_all(2)
-	normal_style.border_width_bottom = 4
-	normal_style.set_corner_radius_all(16)
-	button.add_theme_stylebox_override("normal", normal_style)
-
-	# Hover state
-	var hover_style := normal_style.duplicate() as StyleBoxFlat
-	hover_style.bg_color = Color("#f8fafc")
-	hover_style.border_color = Color("#94a3b8")
-	button.add_theme_stylebox_override("hover", hover_style)
-
-	# Pressed state
-	var pressed_style := normal_style.duplicate() as StyleBoxFlat
-	pressed_style.bg_color = Color("#f1f5f9")
-	pressed_style.border_color = Color("#64748b")
-	pressed_style.border_width_top = 3
-	pressed_style.border_width_bottom = 1
-	button.add_theme_stylebox_override("pressed", pressed_style)
-
-	# Disabled state default
-	var disabled_style := normal_style.duplicate() as StyleBoxFlat
-	button.add_theme_stylebox_override("disabled", disabled_style)
-
-	# Internal layout container
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_top", 4)
-	margin.add_theme_constant_override("margin_bottom", 4)
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(margin)
-
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14)
-	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(hbox)
-
-	# Circle badge container for letter (A, B, C, D) - Touch-friendly target visual
-	var badge_panel := PanelContainer.new()
-	badge_panel.name = "Badge"
-	badge_panel.custom_minimum_size = badge_size
-	badge_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-
-	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = Color("#f1f5f9")
-	badge_style.border_color = Color("#cbd5e1")
-	badge_style.set_border_width_all(1)
-	badge_style.set_corner_radius_all(badge_radius)
-	badge_panel.add_theme_stylebox_override("panel", badge_style)
-
-	var badge_label := Label.new()
-	badge_label.text = char(65 + index)
-	if ResourceLoader.exists("res://assets/fonts/BeVietnamPro-Bold.ttf"):
-		badge_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	badge_label.add_theme_font_size_override("font_size", badge_font_size)
-	badge_label.add_theme_color_override("font_color", C_NAVY)
-	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge_panel.add_child(badge_label)
-	hbox.add_child(badge_panel)
-
-	# Answer text label
-	var text_label := Label.new()
-	text_label.name = "TextLabel"
-	text_label.text = text_value
-	if ResourceLoader.exists("res://assets/fonts/BeVietnamPro-Bold.ttf"):
-		text_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	text_label.add_theme_font_size_override("font_size", font_size_option)
-	text_label.add_theme_color_override("font_color", C_TEXT)
-	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hbox.add_child(text_label)
-
-	# Tactile micro-interactions
-	button.pivot_offset = Vector2(80, 28)
-	button.mouse_entered.connect(func() -> void:
-		if not button.disabled:
-			create_tween().tween_property(button, "scale", Vector2(1.02, 1.02), 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	)
-	button.mouse_exited.connect(func() -> void:
-		if not button.disabled:
-			create_tween().tween_property(button, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	)
-
-	return button
-
-func _style_option_button_state(button: Button, state: String) -> void:
-	var style := button.get_theme_stylebox("disabled") as StyleBoxFlat
-	if style == null:
-		style = StyleBoxFlat.new()
-		style.set_corner_radius_all(16)
-		style.set_border_width_all(2)
-		style.border_width_bottom = 4
-	else:
-		style = style.duplicate() as StyleBoxFlat
-
-	var badge_panel := button.find_child("Badge", true, false) as PanelContainer
-	var text_label := button.find_child("TextLabel", true, false) as Label
-
-	if state == "correct":
-		style.bg_color = Color("#e8f5e9")
-		style.border_color = Color("#4caf50")
-		button.add_theme_stylebox_override("disabled", style)
-		button.add_theme_color_override("font_disabled_color", Color("#2e7d32"))
-
-		if badge_panel:
-			var badge_style := badge_panel.get_theme_stylebox("panel") as StyleBoxFlat
-			if badge_style:
-				badge_style = badge_style.duplicate() as StyleBoxFlat
-				badge_style.bg_color = Color("#4caf50")
-				badge_style.border_color = Color("#2e7d32")
-				badge_panel.add_theme_stylebox_override("panel", badge_style)
-			var badge_label := badge_panel.get_child(0) as Label
-			if badge_label:
-				badge_label.add_theme_color_override("font_color", Color.WHITE)
-
-		if text_label:
-			text_label.add_theme_color_override("font_color", Color("#2e7d32"))
-	elif state == "incorrect":
-		style.bg_color = Color("#ffebee")
-		style.border_color = Color("#ef5350")
-		button.add_theme_stylebox_override("disabled", style)
-		button.add_theme_color_override("font_disabled_color", Color("#c62828"))
-
-		if badge_panel:
-			var badge_style := badge_panel.get_theme_stylebox("panel") as StyleBoxFlat
-			if badge_style:
-				badge_style = badge_style.duplicate() as StyleBoxFlat
-				badge_style.bg_color = Color("#ef5350")
-				badge_style.border_color = Color("#c62828")
-				badge_panel.add_theme_stylebox_override("panel", badge_style)
-			var badge_label := badge_panel.get_child(0) as Label
-			if badge_label:
-				badge_label.add_theme_color_override("font_color", Color.WHITE)
-
-		if text_label:
-			text_label.add_theme_color_override("font_color", Color("#c62828"))
 
 func _note_equal(left: String, right: String) -> bool:
 	return _to_vietnamese_solfege(left) == _to_vietnamese_solfege(right)
@@ -1127,119 +938,6 @@ func _frequency(note: String) -> float:
 	if s.begins_with("g5") or s.begins_with("sól"): return 783.99
 	if s.begins_with("a5") or s.begins_with("lá"): return 880.00
 	return 392.00
-
-# Builds a unified, clean, single-row top navigation bar (Back + Progress Bar + Score Pill)
-func _build_sticky_top_bar() -> void:
-	var mobile := get_viewport_rect().size.x < 600.0
-
-	var top_container := MarginContainer.new()
-	top_container.name = "MinigameTopBar"
-	top_container.add_theme_constant_override("margin_left", 14 if mobile else 28)
-	top_container.add_theme_constant_override("margin_right", 14 if mobile else 28)
-	top_container.add_theme_constant_override("margin_top", 12 if mobile else 16)
-	top_container.add_theme_constant_override("margin_bottom", 6)
-
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 14 if mobile else 20)
-	top_container.add_child(hbox)
-
-	# 1. Floating Back Button (Touch target >= 44 pt: 48x48 on mobile, 54x54 on desktop)
-	var btn_size := 48.0 if mobile else 54.0
-	floating_back_button = Button.new()
-	floating_back_button.custom_minimum_size = Vector2(btn_size, btn_size)
-	floating_back_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	floating_back_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hbox.add_child(floating_back_button)
-
-	floating_back_button.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
-	floating_back_button.expand_icon = true
-	floating_back_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	floating_back_button.add_theme_constant_override("icon_max_width", int(btn_size * 0.5))
-
-	var style_n := StyleBoxFlat.new()
-	style_n.bg_color = Color.WHITE
-	style_n.set_corner_radius_all(int(btn_size * 0.5))
-	style_n.border_width_bottom = 4
-	style_n.border_color = Color("#cbd5e1")
-	style_n.shadow_color = Color(0, 0, 0, 0.05)
-	style_n.shadow_size = 4
-	style_n.shadow_offset = Vector2(0, 2)
-
-	var style_h := style_n.duplicate() as StyleBoxFlat
-	style_h.bg_color = Color("#FDFCF9")
-	style_h.border_color = Color("#94a3b8")
-
-	var style_p := style_n.duplicate() as StyleBoxFlat
-	style_p.bg_color = Color("#F5F0E5")
-	style_p.border_width_bottom = 0
-
-	floating_back_button.add_theme_stylebox_override("normal", style_n)
-	floating_back_button.add_theme_stylebox_override("hover", style_h)
-	floating_back_button.add_theme_stylebox_override("pressed", style_p)
-	floating_back_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	floating_back_button.add_theme_color_override("icon_normal_color", C_NAVY)
-
-	floating_back_button.pressed.connect(_go_back)
-
-	floating_back_button.pivot_offset = Vector2(btn_size * 0.5, btn_size * 0.5)
-	floating_back_button.mouse_entered.connect(func() -> void:
-		create_tween().tween_property(floating_back_button, "scale", Vector2(1.08, 1.08), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
-	floating_back_button.mouse_exited.connect(func() -> void:
-		create_tween().tween_property(floating_back_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
-
-	# 2. Progress Bar
-	progress_bar = ProgressBar.new()
-	progress_bar.max_value = 100.0
-	progress_bar.value = 0.0
-	progress_bar.show_percentage = false
-	progress_bar.custom_minimum_size = Vector2(0, 14 if mobile else 18)
-	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	progress_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-
-	var bar_radius := 7 if mobile else 9
-	progress_bar.add_theme_stylebox_override("background", _panel(Color("#e9edf5"), Color("#e9edf5"), bar_radius, 0))
-	progress_bar.add_theme_stylebox_override("fill", _panel(C_BLUE, C_BLUE, bar_radius, 0))
-	hbox.add_child(progress_bar)
-
-	# 3. Score Badge Pill (Integrated cleanly into header row)
-	var score_pill := PanelContainer.new()
-	score_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var s_style := StyleBoxFlat.new()
-	s_style.bg_color = Color("#edf3ec")
-	s_style.border_color = Color("#2e7d32")
-	s_style.set_border_width_all(2)
-	s_style.set_corner_radius_all(16)
-	s_style.content_margin_left = 14 if mobile else 18
-	s_style.content_margin_right = 14 if mobile else 18
-	s_style.content_margin_top = 6 if mobile else 8
-	s_style.content_margin_bottom = 6 if mobile else 8
-	score_pill.add_theme_stylebox_override("panel", s_style)
-	hbox.add_child(score_pill)
-
-	var s_hbox := HBoxContainer.new()
-	s_hbox.add_theme_constant_override("separation", 8)
-	score_pill.add_child(s_hbox)
-
-	var s_icon := TextureRect.new()
-	s_icon.texture = load("res://assets/textures/lucide/trophy.svg") as Texture2D
-	s_icon.custom_minimum_size = Vector2(20 if mobile else 24, 20 if mobile else 24)
-	s_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	s_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	s_icon.modulate = Color("#e7ae22")
-	s_hbox.add_child(s_icon)
-
-	score_label = Label.new()
-	score_label.text = str(score)
-	if ResourceLoader.exists("res://assets/fonts/BeVietnamPro-Bold.ttf"):
-		score_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	score_label.add_theme_font_size_override("font_size", 17 if mobile else 20)
-	score_label.add_theme_color_override("font_color", Color("#1b5e20"))
-	s_hbox.add_child(score_label)
-
-	root_box.add_child(top_container)
-	root_box.move_child(top_container, 1)
 
 func _safe_int(val: Variant, default: int = 0) -> int:
 	if val == null:
