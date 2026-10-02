@@ -650,9 +650,11 @@ func _ready() -> void:
 	modulate.a = 0.0
 	create_tween().tween_property(self, "modulate:a", 1.0, 0.35)
 
+	# Thiết lập tương tác click vào cô giáo Mai để mở Box Chat AI
 	char_linh.mouse_filter = Control.MOUSE_FILTER_STOP
 	char_linh.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed:
+			# Khởi tạo và mở popup Box Chat AI cô Mai với ngữ cảnh đàn tranh trong phòng luyện tập
 			var chat = AIChatPopup.new()
 			add_child(chat)
 			chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})

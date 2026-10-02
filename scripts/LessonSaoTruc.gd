@@ -269,7 +269,10 @@ func _ready():
 		target_hz = NOTE_FREQS.get(active_note, 0.0)
 		
 		# Setup Intro Speech
-		if LESSON_DIALOGUES.has(active_node_id):
+		var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
+		if not remote_speech.is_empty():
+			txt = str(remote_speech[0].get("text", ""))
+		elif LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["intro"]
 		else:
 			txt = "Chào mừng bạn đến bài học! Hôm nay chúng ta sẽ làm quen với nốt " + active_note + ", để thổi nốt " + active_note + " bạn " + lesson_info["desc"].to_lower() + ". Nào cùng thử nhé!"
@@ -450,10 +453,13 @@ func _shrink_teacher() -> void:
 	t.tween_property(wrapper, "scale", Vector2(0.35, 0.35), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.parallel().tween_property(wrapper, "position", Vector2(-80, get_viewport_rect().size.y - 320), 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
+## Callback khi người học click vào hình đại diện cô giáo Mai trong bài học Sáo Trúc
+## Chức năng: Khởi tạo và mở cửa sổ Box Chat AI cô Mai với ngữ cảnh nhạc cụ "sao_truc" và màn hình "lesson_theory"
 func _on_teacher_clicked(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var chat = AIChatPopup.new()
 		add_child(chat)
+		# Mở popup chat với ngữ cảnh nhạc cụ Sáo Trúc và lý thuyết bài học
 		chat.open_chat("sao_truc", {"screenContext": "lesson_theory"})
 
 func _setup_premium_practice_ui():
@@ -1854,7 +1860,10 @@ func _hit_note():
 		start_rhythm_btn.pressed.connect(_start_rhythm_game)
 		
 		var txt = ""
-		if LESSON_DIALOGUES.has(active_node_id):
+		var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
+		if remote_speech.size() > 1:
+			txt = str(remote_speech[1].get("text", ""))
+		elif LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["mid"]
 		elif active_node_id.begins_with("sao_truc_level5_") or active_node_id in ["Node35", "Node36", "Node37", "Node38", "Node39", "Node40", "Node41", "Node42"]:
 			txt = "Tốt lắm! Bạn đã làm quen với các nốt nhạc. Bây giờ chúng ta cùng thổi theo nhịp điệu của bài nhé!"
@@ -2283,7 +2292,6 @@ func _on_complete():
 	# Trước đây lời gọi bất đồng bộ bị bỏ qua ngay khi đổi scene, nên server
 	# thường không kịp ghi nhận bài đã hoàn thành.
 	var result: Dictionary = await _sync_practice_to_backend(inst, active_node_id)
-	await BackendReport.show_lesson_completion_result(self, result)
 	completion_submission_in_progress = false
 	if not bool(result.get("submitted", false)) and not bool(result.get("queued", false)):
 		push_warning("Không thể đồng bộ hoàn thành bài: %s" % str(result.get("message", result.get("reason", "unknown"))))

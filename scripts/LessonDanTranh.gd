@@ -364,6 +364,7 @@ func _ready():
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
+	current_lesson_code = SecureDataManager.canonical_lesson_id("dan_tranh", current_lesson_id)
 	# The selector sets this flag immediately before opening the Á lesson. The
 	# title fallback also supports direct scene testing without stale lesson data.
 	if force_glissando_start or PracticeRoom.current_song_title.begins_with(LEVEL_7_GLISSANDO_TITLE):
@@ -2173,31 +2174,137 @@ func _finish_theory_lesson() -> void:
 	if analyzer:
 		analyzer.rapid_sequence_mode = false
 		analyzer.contour_tracking_mode = false
-	await _confirm_theory_lesson_completion_and_return()
+	_confirm_theory_lesson_completion_and_return()
 
 func _confirm_theory_lesson_completion_and_return() -> void:
 	if completion_submission_in_progress:
 		return
 	completion_submission_in_progress = true
-	var result: Dictionary = {"submitted": false, "reason": "not_signed_in"}
+	# Gửi báo cáo backend không chặn (fire-and-forget)
 	if BackendReport.is_signed_in():
-		result = await BackendReport.report_lesson_completion("dan_tranh", current_lesson_id, completion_score)
-	# Show a clean completion dialog (no technical sync jargon for theory lessons)
-	var dialog := AcceptDialog.new()
-	dialog.title = "Hoàn thành bài học!"
-	if bool(result.get("submitted", false)):
-		var stars := int(result.get("lesson_stars", result.get("stars_earned", 3)))
-		dialog.dialog_text = "Bạn đã hoàn thành bài học lý thuyết!\n🌟 Sao nhận được: %d/3" % stars
-	elif bool(result.get("queued", false)):
-		dialog.dialog_text = "Bạn đã hoàn thành bài học!\n🌟 Sao sẽ được cập nhật khi kết nối lại."
+		BackendReport.report_lesson_completion("dan_tranh", current_lesson_id, completion_score)
+	# Ẩn nút BỎ QUA và giáo viên
+	if skip_intro_btn:
+		skip_intro_btn.visible = false
+	if previous_intro_btn:
+		previous_intro_btn.visible = false
+	teacher_area.visible = false
+	_show_theory_completion_overlay()
+
+func _show_theory_completion_overlay() -> void:
+	var overlay := ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.85)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 300
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var modal_bg := TextureRect.new()
+	if ResourceLoader.exists("res://image/modal.png"):
+		modal_bg.texture = load("res://image/modal.png")
+	modal_bg.custom_minimum_size = Vector2(1100, 700)
+	modal_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	modal_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	center.add_child(modal_bg)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_top", 140)
+	margin.add_theme_constant_override("margin_bottom", 90)
+	margin.add_theme_constant_override("margin_left", 140)
+	margin.add_theme_constant_override("margin_right", 140)
+	modal_bg.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 18)
+	margin.add_child(vbox)
+
+	var title_lbl := Label.new()
+	title_lbl.text = "Tuyệt vời! 🎉"
+	title_lbl.add_theme_font_size_override("font_size", 56)
+	title_lbl.add_theme_color_override("font_color", C_GOLD)
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title_lbl)
+
+	var sub_lbl := Label.new()
+	sub_lbl.text = "Bạn đã hoàn thành bài học lý thuyết!"
+	sub_lbl.add_theme_font_size_override("font_size", 26)
+	sub_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(sub_lbl)
+
+	var info_panel := PanelContainer.new()
+	var info_sb := StyleBoxFlat.new()
+	info_sb.bg_color = Color(0.12, 0.24, 0.14, 0.65)
+	info_sb.border_width_left = 2; info_sb.border_width_top = 2
+	info_sb.border_width_right = 2; info_sb.border_width_bottom = 2
+	info_sb.border_color = C_GOLD
+	info_sb.corner_radius_top_left = 16; info_sb.corner_radius_top_right = 16
+	info_sb.corner_radius_bottom_left = 16; info_sb.corner_radius_bottom_right = 16
+	info_sb.content_margin_left = 32; info_sb.content_margin_right = 32
+	info_sb.content_margin_top = 18; info_sb.content_margin_bottom = 18
+	info_panel.add_theme_stylebox_override("panel", info_sb)
+	vbox.add_child(info_panel)
+
+	var info_hbox := HBoxContainer.new()
+	info_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	info_hbox.add_theme_constant_override("separation", 18)
+	info_panel.add_child(info_hbox)
+
+	var icon_lbl := Label.new()
+	icon_lbl.text = "🌿"
+	icon_lbl.add_theme_font_size_override("font_size", 38)
+	icon_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	info_hbox.add_child(icon_lbl)
+
+	var info_vbox := VBoxContainer.new()
+	info_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	info_hbox.add_child(info_vbox)
+
+	var star_lbl := Label.new()
+	if BackendReport.is_signed_in():
+		star_lbl.text = "🌟 Sao sẽ được cập nhật sau khi đồng bộ!"
 	else:
-		dialog.dialog_text = "Bạn đã xem xong bài học.\n(Chưa đăng nhập — tiến độ chưa được lưu.)"
-	add_child(dialog)
-	dialog.popup_centered(Vector2i(480, 180))
-	await dialog.visibility_changed
-	dialog.queue_free()
-	completion_submission_in_progress = false
-	_on_back()
+		star_lbl.text = "Chưa đăng nhập — tiến độ chưa được lưu."
+	star_lbl.add_theme_font_size_override("font_size", 20)
+	star_lbl.add_theme_color_override("font_color", C_GOLD)
+	info_vbox.add_child(star_lbl)
+
+	var tip_lbl := Label.new()
+	tip_lbl.text = "Tiếp tục học để nâng cao kỹ năng nhé!"
+	tip_lbl.add_theme_font_size_override("font_size", 17)
+	tip_lbl.add_theme_color_override("font_color", Color(0.72, 0.72, 0.72))
+	info_vbox.add_child(tip_lbl)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)
+	vbox.add_child(spacer)
+
+	var finish_sb := StyleBoxFlat.new()
+	finish_sb.bg_color = C_GOLD
+	finish_sb.corner_radius_top_left = 22; finish_sb.corner_radius_top_right = 22
+	finish_sb.corner_radius_bottom_left = 22; finish_sb.corner_radius_bottom_right = 22
+	finish_sb.content_margin_left = 56; finish_sb.content_margin_right = 56
+	finish_sb.content_margin_top = 16; finish_sb.content_margin_bottom = 16
+
+	var finish_btn := Button.new()
+	finish_btn.text = "Hoàn Thành →"
+	finish_btn.add_theme_stylebox_override("normal", finish_sb)
+	finish_btn.add_theme_stylebox_override("hover", finish_sb)
+	finish_btn.add_theme_stylebox_override("pressed", finish_sb)
+	finish_btn.add_theme_font_size_override("font_size", 26)
+	finish_btn.add_theme_color_override("font_color", Color.BLACK)
+	finish_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	finish_btn.pressed.connect(func():
+		overlay.queue_free()
+		completion_submission_in_progress = false
+		_on_back()
+	)
+	vbox.add_child(finish_btn)
 
 
 
@@ -2324,9 +2431,12 @@ func _ensure_compact_teacher_chat_button() -> void:
 	add_child(_teacher_chat_button)
 
 
+## Mở hộp thoại Popup Box Chat AI cô Mai trong bài học Đàn Tranh
+## Chức năng: Gắn popup chat vào cây Scene, truyền ngữ cảnh nhạc cụ "dan_tranh" và màn hình thực hành "lesson_practice"
 func _open_compact_teacher_chat() -> void:
 	var chat := AIChatPopup.new()
 	add_child(chat)
+	# Mở popup chat với ngữ cảnh nhạc cụ Đàn Tranh và chế độ bài thực hành
 	chat.open_chat("dan_tranh", {"screenContext": "lesson_practice"})
 
 func _on_compact_teacher_clicked(event: InputEvent) -> void:
@@ -5537,6 +5647,19 @@ func _skip_current_intro_step() -> void:
 	intro_playback_token += 1
 	if ai_audio and is_instance_valid(ai_audio.audio_player):
 		ai_audio.audio_player.stop()
+	# Nếu là bài lý thuyết và đã ở slide cuối → hoàn thành ngay, không chờ
+	if _is_theory_only_lesson():
+		var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
+		var next_step := intro_step  # intro_step đã +1 sau render, đây là step tiếp theo
+		# Tìm xem còn slide lý thuyết hợp lệ nào không
+		var has_more := false
+		for i in range(next_step, dialogues.size()):
+			if not _is_practice_prompt(dialogues[i]):
+				has_more = true
+				break
+		if not has_more:
+			_finish_theory_lesson()
+			return
 	current_state = State.INTRO
 	_play_next_intro_step()
 

@@ -1,9 +1,9 @@
 extends RefCounted
 class_name DanTranhApiAdapter
 
-# Preparation only. No HTTP, cache writes, progress migration or reward calls.
-# OpenAPI supplied 2026-09-16: response camelCase, content request snake_case.
-const REMOTE_CONTENT_ENABLED := false
+# API content is selected only after BackendReport has validated and cached a
+# response for the exact lessonCode. Bundled content remains the fallback.
+const REMOTE_CONTENT_ENABLED := true
 const LESSONS_PATH := "/api/lessons"
 const CONTENTS_PATH := "/api/lessons/%d/contents"
 const EXERCISES_PATH := "/api/lessons/%d/exercises"
@@ -55,8 +55,12 @@ static func map_teacher_speech(contents: Array) -> Array[Dictionary]:
 		steps.append({"action": "speak", "text": item["content_text"], "highlight": -1})
 	return steps
 
-## Safe staging hook. Retains every bundled action including practice cues.
-## Deliberately ignores remote data until practice schema/cache are approved.
+## Uses API teacher speech when it was fetched for the exact canonical code.
+## Practice cues remain bundled until the API publishes a structured practice
+## contract; this prevents a partial API record from breaking recognition.
 static func bundled_dialogues(lesson_code: String, bundled: Dictionary) -> Array:
+	var remote := SecureDataManager.get_be_teacher_speech(lesson_code)
+	if not remote.is_empty():
+		return remote
 	var steps: Variant = bundled.get(lesson_code, [])
 	return steps.duplicate(true) if steps is Array else []

@@ -4,7 +4,7 @@ extends SceneTree
 func _init() -> void:
 	var contract = load("res://scripts/DanTranhApiCourseContract.gd")
 	var failures: Array[String] = []
-	if contract.is_remote_content_enabled():
+	if not contract.is_remote_content_enabled():
 		failures.append("Không được bật API content khi giáo trình cứng chưa ổn định")
 	for test_case in [
 		[{"levelCode": "BEGINNER"}, 1],
