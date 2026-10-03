@@ -669,23 +669,24 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	var lesson_number := int(lesson["number"])
 	var id_field := "video_id" if activity == "video" else "practice_id"
 	var start_id := str(lesson.get(id_field, _lesson_id(lesson_number, activity)))
-	if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("dan_tranh", start_id):
-		return
+	# Tạm bỏ kiểm tra quyền mở bài từ API để toàn bộ level Đàn Tranh có thể
+	# mở trực tiếp bằng catalog cứng trong lúc kiểm thử nhận diện âm thanh.
+	# if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("dan_tranh", start_id):
+	# 	return
 	SecureDataManager.data["last_dan_tranh_quiz_lesson"] = str(lesson.get("quiz_lesson_id", lesson.get("practice_id", start_id)))
 	SecureDataManager.save_data()
-	var backend_report = get_node_or_null("/root/BackendReport")
-	if backend_report and backend_report.has_method("start_lesson"):
-		if SecureDataManager.has_temporary_full_access():
-			# The autoload survives navigation; start reporting must not block entry.
-			backend_report.start_lesson.call_deferred("dan_tranh", start_id)
-		else:
-			var start_result: Dictionary = await backend_report.start_lesson("dan_tranh", start_id)
-			if start_result.get("reason", "") == "locked":
-				return
-		# Load remote teacher speech before the scene starts. A failed or empty
-		# response is intentionally ignored: LessonDanTranh keeps bundled data.
-		if backend_report.has_method("fetch_lesson_teacher_speech"):
-			await backend_report.fetch_lesson_teacher_speech("dan_tranh", start_id)
+	# Tạm tắt các API mở bài và tải lời cô Mai của Đàn Tranh. Giữ nguyên đoạn
+	# dưới dạng comment để nối lại sau khi kiểm thử xong:
+	# var backend_report = get_node_or_null("/root/BackendReport")
+	# if backend_report and backend_report.has_method("start_lesson"):
+	# 	if SecureDataManager.has_temporary_full_access():
+	# 		backend_report.start_lesson.call_deferred("dan_tranh", start_id)
+	# 	else:
+	# 		var start_result: Dictionary = await backend_report.start_lesson("dan_tranh", start_id)
+	# 		if start_result.get("reason", "") == "locked":
+	# 			return
+	# 	if backend_report.has_method("fetch_lesson_teacher_speech"):
+	# 		await backend_report.fetch_lesson_teacher_speech("dan_tranh", start_id)
 	
 	# Load current lesson data so LessonDanTranh can read it
 	PracticeRoom.current_song_title = str(lesson["title"])

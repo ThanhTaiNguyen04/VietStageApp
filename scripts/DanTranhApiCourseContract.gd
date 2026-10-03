@@ -3,7 +3,9 @@ class_name DanTranhApiCourseContract
 
 # Contract chuẩn bị cho giáo trình điều khiển từ web. Chưa được phép dùng làm
 # nguồn runtime cho đến khi giáo trình cứng và API backend hoàn thiện.
-const REMOTE_CONTENT_ENABLED := true
+# Tạm thời giữ giáo trình Đàn Tranh chạy bằng dữ liệu cứng trong app.
+# Đổi lại thành true khi cần mở lại nguồn nội dung từ API.
+const REMOTE_CONTENT_ENABLED := false
 const INSTRUMENT_KEY := "dan_tranh"
 
 # API naming reference (OpenAPI 3.1, VietStage API): LessonResponse uses

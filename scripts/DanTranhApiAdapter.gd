@@ -3,7 +3,9 @@ class_name DanTranhApiAdapter
 
 # API content is selected only after BackendReport has validated and cached a
 # response for the exact lessonCode. Bundled content remains the fallback.
-const REMOTE_CONTENT_ENABLED := true
+# Tạm thời dùng toàn bộ nội dung Đàn Tranh từ dữ liệu cứng để kiểm thử nhận diện.
+# Đổi lại thành true khi cần nối lại nội dung bài học từ API.
+const REMOTE_CONTENT_ENABLED := false
 const LESSONS_PATH := "/api/lessons"
 const CONTENTS_PATH := "/api/lessons/%d/contents"
 const EXERCISES_PATH := "/api/lessons/%d/exercises"
@@ -59,8 +61,9 @@ static func map_teacher_speech(contents: Array) -> Array[Dictionary]:
 ## Practice cues remain bundled until the API publishes a structured practice
 ## contract; this prevents a partial API record from breaking recognition.
 static func bundled_dialogues(lesson_code: String, bundled: Dictionary) -> Array:
-	var remote := SecureDataManager.get_be_teacher_speech(lesson_code)
-	if not remote.is_empty():
-		return remote
+	if REMOTE_CONTENT_ENABLED:
+		var remote := SecureDataManager.get_be_teacher_speech(lesson_code)
+		if not remote.is_empty():
+			return remote
 	var steps: Variant = bundled.get(lesson_code, [])
 	return steps.duplicate(true) if steps is Array else []

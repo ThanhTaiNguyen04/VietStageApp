@@ -364,7 +364,14 @@ func _ready():
 	current_lesson_id = SecureDataManager.active_lesson_id
 	if not current_lesson_id or current_lesson_id == "":
 		current_lesson_id = "dan_tranh_level_1_bai_1_practice"
-	current_lesson_code = SecureDataManager.canonical_lesson_id("dan_tranh", current_lesson_id)
+	# Dữ liệu cứng lưu lời cô Mai theo local lesson ID. Riêng Bài 1, hàm
+	# canonical_lesson_id đổi hậu tố _practice thành _video để đồng bộ backend;
+	# dùng mã đó để tra data cứng sẽ làm mất toàn bộ lời hiển thị.
+	current_lesson_code = (
+		SecureDataManager.canonical_lesson_id("dan_tranh", current_lesson_id)
+		if COURSE_API_ADAPTER.REMOTE_CONTENT_ENABLED
+		else current_lesson_id
+	)
 	# The selector sets this flag immediately before opening the Á lesson. The
 	# title fallback also supports direct scene testing without stale lesson data.
 	if force_glissando_start or PracticeRoom.current_song_title.begins_with(LEVEL_7_GLISSANDO_TITLE):
@@ -1204,7 +1211,7 @@ func _uses_chord_basics_lesson_flow() -> bool:
 
 
 func _setup_top_pitch_box():
-	var l_num := "BÀI LUYỆN"
+	var l_num := "BÀI HỌC" if _is_theory_only_lesson() else "BÀI LUYỆN"
 	var l_title := "LUYỆN ĐÀN TRANH"
 	
 	if PracticeRoom.current_song_title != "":
@@ -1311,7 +1318,11 @@ func _setup_top_pitch_box():
 	sub_instr_row.add_child(line_left_cont)
 	
 	var sub_lbl = Label.new()
-	sub_lbl.text = "   🌿   Gảy đúng dây và lắng nghe âm thanh   🌿   "
+	sub_lbl.text = (
+		"   🌿   Cùng cô Mai tìm hiểu bài học   🌿   "
+		if _is_theory_only_lesson()
+		else "   🌿   Gảy đúng dây và lắng nghe âm thanh   🌿   "
+	)
 	sub_lbl.add_theme_color_override("font_color", Color(0.45, 0.30, 0.15, 1.0))
 	sub_lbl.add_theme_font_size_override("font_size", 26)
 	sub_instr_row.add_child(sub_lbl)
@@ -1958,11 +1969,15 @@ func _start_intro():
 	teacher_area.visible = true
 	feedback_area.visible = false
 	complete_btn.visible = false
+	# Các bài lý thuyết thuần vẫn giữ khung khuông nhạc làm nền, nhưng không
+	# hiển thị nốt hay bật các thành phần điều khiển thực hành.
 	staff_display.visible = true
 	if staff_card: staff_card.visible = true
+	# Giữ nguyên header của sheet (tên bài, nhạc cụ và hàng hướng dẫn) cho cả
+	# bài lý thuyết. Bài 1 chỉ khác bài thực hành ở chỗ không có nốt.
 	if title_plaque: title_plaque.visible = true
-	if pill_badge: pill_badge.visible = false
-	if sub_instr_row: sub_instr_row.visible = false
+	if pill_badge: pill_badge.visible = true
+	if sub_instr_row: sub_instr_row.visible = true
 	if speed_bar_container:
 		speed_bar_container.visible = false
 	if skip_intro_btn:
@@ -1977,9 +1992,14 @@ func _start_intro():
 	if pitch_box:
 		pitch_box.visible = false
 	if intro_overlay:
-		intro_overlay.visible = true
+		# Bài lý thuyết giữ nền sheet sáng, không phủ lớp xám làm tối giao diện.
+		intro_overlay.visible = not _is_theory_only_lesson()
 	_update_staff_layout()
-	_show_intro_sheet_preview()
+	if _is_theory_only_lesson():
+		staff_display.set_notes([])
+		staff_display.queue_redraw()
+	else:
+		_show_intro_sheet_preview()
 	_play_next_intro_step()
 
 func _create_intro_sheet_overlay() -> void:
@@ -1991,7 +2011,9 @@ func _create_intro_sheet_overlay() -> void:
 	intro_overlay.z_index = 20
 	intro_overlay.visible = false
 	add_child(intro_overlay)
-	staff_card.z_index = 5
+	# Đặt sheet phía trên lớp làm mờ để khuông nhạc trống vẫn nhìn rõ phía sau
+	# cô Mai. TeacherArea (z=40) và các nút điều hướng vẫn nằm trên sheet.
+	staff_card.z_index = 25
 	if title_plaque:
 		title_plaque.z_index = 30
 	if pill_badge:
@@ -2142,10 +2164,14 @@ func _play_next_intro_step():
 			staff_display.set_notes([])
 			staff_display.queue_redraw()
 		else:
-			# Các bài có thực hành luôn giữ sheet làm nền trong lúc cô Mai nói.
+			# Bài lý thuyết giữ khuông nhạc trống; bài thực hành mới hiện nốt xem trước.
 			staff_display.visible = true
 			if staff_card: staff_card.visible = true
-			_show_intro_sheet_preview()
+			if _is_theory_only_lesson():
+				staff_display.set_notes([])
+				staff_display.queue_redraw()
+			else:
+				_show_intro_sheet_preview()
 			
 		# Wait for speech to finish then go to next step
 		var wait_time = max(1.5, step_data["text"].length() * 0.1)
