@@ -148,6 +148,9 @@ func get_lesson_exercises(lesson_id: int) -> Dictionary:
 	return await request_json(path, HTTPClient.METHOD_GET)
 
 ## Lấy danh sách câu hỏi trắc nghiệm của bài học
+func get_instrument_quizzes(instrument_id: int) -> Dictionary:
+	return await request_json(ApiRoutes.build("/instruments/%s/quizzes" % str(instrument_id)), HTTPClient.METHOD_GET)
+
 func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 	var path := ApiRoutes.build(ApiRoutes.LESSON_QUIZZES % str(lesson_id))
 	return await request_json(path, HTTPClient.METHOD_GET)

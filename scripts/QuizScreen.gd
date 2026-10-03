@@ -145,9 +145,6 @@ func _begin_quiz() -> void:
 	if _quizzes.is_empty():
 		_show_empty("Bài học này chưa có câu hỏi trắc nghiệm nào.")
 		return
-	if LearningActivityContext.backend_lesson_id > 0:
-		var minigames: Array = await report.ensure_minigame_list(LearningActivityContext.backend_lesson_id)
-		LessonAssessmentCoordinator.register_content(LearningActivityContext.backend_lesson_id, _quizzes, minigames)
 	_index = 0
 	_score = 0
 	_correct_count = 0
@@ -206,9 +203,8 @@ func _on_option(_btn: Button, idx: int, selected: String) -> void:
 	var pending_preview := _pending_quiz_preview(quiz, selected_index, selected)
 	var result: Dictionary = {}
 	var report := _backend_report()
-	if report != null and int(quiz.get("id", 0)) > 0 and LearningActivityContext.backend_lesson_id > 0:
-		LessonAssessmentCoordinator.record_quiz(LearningActivityContext.backend_lesson_id, int(quiz.get("id", 0)), selected)
-		result = await LessonAssessmentCoordinator.submit_if_complete(report, LearningActivityContext.backend_lesson_id)
+	if report != null and int(quiz.get("id", 0)) > 0:
+		result = await report.report_quiz(int(quiz.get("id", 0)), selected, pending_preview)
 	_busy = false
 
 	var is_correct := _is_correct(selected_index, selected, quiz)

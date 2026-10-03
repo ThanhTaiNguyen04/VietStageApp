@@ -428,7 +428,7 @@ func _show_loading() -> void:
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	var stage := _create_frosted_stage(_is_compact_layout())
 	content_box.add_child(stage["panel"])
-	var loading := _label("Đang tải câu hỏi từ bài học...", 18, C_MUTED)
+	var loading := _label("Đang tải câu hỏi theo nhạc cụ...", 18, C_MUTED)
 	loading.name = "QuizStatusLabel"
 	loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	(stage["vbox"] as VBoxContainer).add_child(loading)
@@ -436,10 +436,6 @@ func _show_loading() -> void:
 func _begin_quiz() -> void:
 	var report := _report()
 	if report != null and report.is_signed_in():
-		var cached: Array = _filter_valid_quizzes(report.cached_quizzes_for_level(Context.instrument, Context.local_lesson_ids))
-		if not cached.is_empty():
-			await _install_backend_quizzes(cached)
-			return
 		_backend_fetch_finished = false
 		_backend_fetch_timed_out = false
 		_backend_quizzes = []
@@ -453,7 +449,7 @@ func _begin_quiz() -> void:
 		await _backend_fetch_gate
 		if _backend_fetch_finished:
 			if _backend_quizzes.is_empty():
-				_show_message("Bài học này chưa có câu hỏi trắc nghiệm." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
+				_show_message("Nhạc cụ này chưa có câu hỏi thuộc loại Quiz đã chọn." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
 			else:
 				await _install_backend_quizzes(_backend_quizzes)
 		else:
@@ -477,7 +473,7 @@ func _load_sample_quizzes(fetching_be: bool) -> void:
 	local_preview_count = 0
 	_using_sample_quizzes = true
 	if quizzes.is_empty():
-		_show_message("Bài học này chưa có câu hỏi trắc nghiệm.")
+		_show_message("Nhạc cụ này chưa có câu hỏi thuộc loại Quiz đã chọn.")
 		return
 	_show_quiz_ui()
 	_set_source_badge("Dữ liệu mẫu" if not fetching_be else "Dữ liệu mẫu · đang tải BE", false)
@@ -498,7 +494,7 @@ func _fetch_backend_quizzes(report: Node) -> void:
 	_backend_fetch_gate.emit()
 	if _backend_fetch_timed_out:
 		if _backend_quizzes.is_empty():
-			_show_message("Bài học này chưa có câu hỏi trắc nghiệm." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
+			_show_message("Nhạc cụ này chưa có câu hỏi thuộc loại Quiz đã chọn." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
 		else:
 			await _install_backend_quizzes(_backend_quizzes)
 
@@ -526,7 +522,7 @@ func _fetch_from_backend() -> void:
 	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids, true)
 	var valid: Array = _filter_valid_quizzes(loaded)
 	if valid.is_empty():
-		_show_message("Bài học này chưa có câu hỏi trắc nghiệm." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
+		_show_message("Nhạc cụ này chưa có câu hỏi thuộc loại Quiz đã chọn." if report.last_quiz_fetch_succeeded else "Chưa thể tải câu hỏi. Vui lòng thử lại.", true)
 		return
 	if question_index > 0 or answered or score > 0 or correct_count > 0:
 		return

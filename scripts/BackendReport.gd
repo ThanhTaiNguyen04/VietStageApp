@@ -21,6 +21,7 @@ var _active_practice_session_key := ""
 var last_minigame_fetch_succeeded := true
 var last_minigame_fetch_error := ""
 var last_quiz_fetch_succeeded := true
+var _instrument_quizzes: Dictionary = {}
 
 
 func _ready() -> void:
@@ -257,65 +258,29 @@ func ensure_quiz_catalog(instrument: String, local_lesson_ids: Array) -> void:
 				SecureDataManager.be_catalog.append(lesson)
 
 
-func cached_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Array:
-	var result: Array = []
-	var seen: Dictionary = {}
-	for local_id: Variant in local_lesson_ids:
-		var lesson := SecureDataManager.resolve_be_lesson_exact(instrument, str(local_id))
-		var lesson_id := int(lesson.get("id", 0))
-		if lesson_id <= 0 or not SecureDataManager.be_quizzes.has(lesson_id):
-			continue
-		for item: Variant in _active_activity_items(SecureDataManager.be_quizzes[lesson_id]):
-			var quiz: Dictionary = item
-			var quiz_id := int(quiz.get("id", 0))
-			if quiz_id <= 0 or seen.has(quiz_id):
-				continue
-			if result.is_empty():
-				LearningActivityContext.set_backend_lesson(lesson)
-			seen[quiz_id] = true
-			var enriched := quiz.duplicate(true)
-			enriched["lesson_id"] = lesson_id
-			result.append(enriched)
-	return result
+func cached_quizzes_for_level(instrument: String, _local_lesson_ids: Array) -> Array:
+	return _active_activity_items(_instrument_quizzes.get(instrument, []))
 
 
-## Gom câu hỏi của những bài học đã chọn, sau khi tìm đúng bài trên backend.
-func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array, force_refresh: bool = false) -> Array:
+## Instrument quizzes are independent of lesson completion assessments.
+func fetch_quizzes_for_level(instrument: String, _local_lesson_ids: Array, _force_refresh: bool = false) -> Array:
+	last_quiz_fetch_succeeded = false
+	var instrument_id := SecureDataManager.be_instrument_id(instrument)
+	if instrument_id <= 0:
+		var instruments_response: Dictionary = await _api.get_instruments()
+		if not _is_success(instruments_response):
+			return []
+		SecureDataManager.be_instruments = _extract_array(instruments_response)
+		instrument_id = SecureDataManager.be_instrument_id(instrument)
+	if instrument_id <= 0:
+		return []
+	var response: Dictionary = await _api.get_instrument_quizzes(instrument_id)
+	if not _is_success(response):
+		return []
 	last_quiz_fetch_succeeded = true
-	await ensure_quiz_catalog(instrument, local_lesson_ids)
-	var result: Array = []
-	var bound_ids: Array[int] = []
-	var seen_quiz_ids: Dictionary = {}
-	print("[QuizDebug] fetching for local_ids: ", local_lesson_ids, " instrument: ", instrument)
-	for local_id: Variant in local_lesson_ids:
-		var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, str(local_id))
-		print("[QuizDebug] resolve_be_lesson for ", local_id, " returned id: ", lesson.get("id", "EMPTY"))
-		if lesson.is_empty():
-			last_quiz_fetch_succeeded = false
-			continue
-		var lesson_id := int(lesson.get("id", 0))
-		if lesson_id <= 0:
-			continue
-		if bound_ids.has(lesson_id):
-			continue
-		bound_ids.append(lesson_id)
-		var quizzes: Array = await ensure_quizzes(lesson_id, force_refresh)
-		print("[QuizDebug] ensure_quizzes returned size: ", quizzes.size())
-		if not quizzes.is_empty() and result.is_empty():
-			LearningActivityContext.set_backend_lesson(lesson)
-		for quiz: Variant in quizzes:
-			if not quiz is Dictionary:
-				continue
-			var quiz_dict: Dictionary = quiz
-			var quiz_id := int(quiz_dict.get("id", 0))
-			if quiz_id > 0 and seen_quiz_ids.has(quiz_id):
-				continue
-			if quiz_id > 0:
-				seen_quiz_ids[quiz_id] = true
-			var enriched := quiz_dict.duplicate(true)
-			enriched["lesson_id"] = lesson_id
-			result.append(enriched)
-	return result
+	var quizzes: Array = _active_activity_items(_extract_array(response))
+	_instrument_quizzes[instrument] = quizzes.duplicate(true)
+	return quizzes
 
 
 func ensure_minigame_list(lesson_id: int, force_refresh: bool = false) -> Array:
