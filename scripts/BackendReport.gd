@@ -231,13 +231,58 @@ func ensure_quizzes(lesson_id: int, force_refresh: bool = false) -> Array:
 	return quizzes
 
 
-## Gom toàn bộ câu hỏi trắc nghiệm của các bài nội bộ (cùng level) để ôn tập.
-## Nếu không binding được lesson nào theo local id, tự quét toàn bộ lesson cùng nhạc cụ
-## để FE vẫn lấy được quiz thật của BE (bỏ ràng buộc với bài học khi test giao diện).
+## Resolve the selected quiz lessons with a small title query. A full catalog
+## response can exceed the API timeout, leaving the quiz screen waiting.
+func ensure_quiz_catalog(instrument: String, local_lesson_ids: Array) -> void:
+	for local_id: Variant in local_lesson_ids:
+		if not SecureDataManager.resolve_be_lesson_exact(instrument, str(local_id)).is_empty():
+			continue
+		var title := SecureDataManager.bundled_lesson_title(instrument, str(local_id))
+		if title.is_empty():
+			if SecureDataManager.be_catalog.is_empty():
+				await fetch_and_install_catalog()
+			continue
+		var response: Dictionary = await _api.get_lessons(0, 0, "APPROVED", 1, 20, true, title)
+		if not _is_success(response):
+			last_quiz_fetch_succeeded = false
+			continue
+		var page_data: Variant = response.get("body", {}).get("data", {})
+		if page_data is Dictionary and int(page_data.get("totalPages", 1)) > 1:
+			last_quiz_fetch_succeeded = false
+			continue
+		for lesson: Variant in _extract_array(response):
+			if lesson is Dictionary and not SecureDataManager.be_catalog.any(func(item: Variant) -> bool:
+				return item is Dictionary and int(item.get("id", 0)) == int(lesson.get("id", 0))
+			):
+				SecureDataManager.be_catalog.append(lesson)
+
+
+func cached_quizzes_for_level(instrument: String, local_lesson_ids: Array) -> Array:
+	var result: Array = []
+	var seen: Dictionary = {}
+	for local_id: Variant in local_lesson_ids:
+		var lesson := SecureDataManager.resolve_be_lesson_exact(instrument, str(local_id))
+		var lesson_id := int(lesson.get("id", 0))
+		if lesson_id <= 0 or not SecureDataManager.be_quizzes.has(lesson_id):
+			continue
+		for item: Variant in _active_activity_items(SecureDataManager.be_quizzes[lesson_id]):
+			var quiz: Dictionary = item
+			var quiz_id := int(quiz.get("id", 0))
+			if quiz_id <= 0 or seen.has(quiz_id):
+				continue
+			if result.is_empty():
+				LearningActivityContext.set_backend_lesson(lesson)
+			seen[quiz_id] = true
+			var enriched := quiz.duplicate(true)
+			enriched["lesson_id"] = lesson_id
+			result.append(enriched)
+	return result
+
+
+## Gom câu hỏi của những bài học đã chọn, sau khi tìm đúng bài trên backend.
 func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array, force_refresh: bool = false) -> Array:
 	last_quiz_fetch_succeeded = true
-	if SecureDataManager.be_catalog.is_empty():
-		await fetch_and_install_catalog()
+	await ensure_quiz_catalog(instrument, local_lesson_ids)
 	var result: Array = []
 	var bound_ids: Array[int] = []
 	var seen_quiz_ids: Dictionary = {}
@@ -253,10 +298,11 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array, force_
 			continue
 		if bound_ids.has(lesson_id):
 			continue
-		LearningActivityContext.set_backend_lesson(lesson)
 		bound_ids.append(lesson_id)
 		var quizzes: Array = await ensure_quizzes(lesson_id, force_refresh)
 		print("[QuizDebug] ensure_quizzes returned size: ", quizzes.size())
+		if not quizzes.is_empty() and result.is_empty():
+			LearningActivityContext.set_backend_lesson(lesson)
 		for quiz: Variant in quizzes:
 			if not quiz is Dictionary:
 				continue
@@ -644,7 +690,7 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 	# attempt.
 	# A 2xx response is not an acknowledgement unless it identifies the persisted
 	# attempt. Without data.id the app must retain the same client id for retry.
-	if not _is_success(response) or attempt_data.is_empty() or int(attempt_data.get("id", 0)) <= 0:
+	if not _is_server_acknowledged(response) or attempt_data.is_empty() or int(attempt_data.get("id", 0)) <= 0:
 		_log_quiz_sync_failure("submit", quiz_id, response)
 		var pending_attempt := pending_preview.duplicate(true)
 		pending_attempt.merge({
@@ -668,6 +714,7 @@ func report_quiz(quiz_id: int, selected_answer: String, pending_preview: Diction
 		"is_correct": bool(attempt_data.get("isCorrect", attempt_data.get("is_correct", false))),
 		"points_earned": int(attempt_data.get("pointsEarned", attempt_data.get("points_earned", 0))),
 		"stars_earned": int(attempt_data.get("starsEarned", attempt_data.get("stars_earned", 0))),
+		"spendable_stars": int(attempt_data.get("spendableStars", attempt_data.get("spendable_stars", -1))),
 		"correct_answer": str(attempt_data.get("correctAnswer", attempt_data.get("correct_answer", ""))),
 		"score": float(attempt_data.get("score", 0.0)),
 		"max_score": 100.0,

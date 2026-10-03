@@ -377,7 +377,7 @@ func _stars(score: int, max_score: int) -> int:
 	var maximum := maxi(1, max_score)
 	return 3 if score * 100 >= maximum * 80 else (2 if score * 100 >= maximum * 55 else (1 if score > 0 else 0))
 
-func _show_result(title: String, detail: String, score: int, stars: int, retry: Callable, accuracy: float = -1.0) -> void:
+func _show_result(title: String, detail: String, score: int, stars: int, retry: Callable, accuracy: float = -1.0, earned_xp: int = -1, earned_stars: int = -1, show_music_room: bool = false) -> void:
 	for child in content_box.get_children():
 		child.queue_free()
 	# Vertically center the result card in the available space
@@ -441,17 +441,17 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 	body.add_child(metrics)
 
 	if result_sync_status == "be":
-		var xp := maxi(0, score / 10)
+		var xp := earned_xp if earned_xp >= 0 else maxi(0, score / 10)
 		metrics.add_child(_metric_card("◆", "Điểm", "%d" % score, C_BLUE))
 		metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
-		metrics.add_child(_metric_card("★", "Stars", "%d / 3" % stars, C_GOLD))
+		metrics.add_child(_metric_card("★", "Sao nhận được" if earned_stars >= 0 else "Stars", "+%d" % earned_stars if earned_stars >= 0 else "%d / 3" % stars, C_GOLD))
 		metrics.add_child(_metric_card("⚡", "XP", "+%d" % xp, C_PURPLE))
 	elif result_sync_status == "failed":
-		var xp := maxi(0, score / 10)
+		var xp := earned_xp if earned_xp >= 0 else maxi(0, score / 10)
 		metrics.add_child(_metric_card("◆", "Điểm", "%d" % score, C_BLUE))
 		metrics.add_child(_metric_card("%", "Accuracy", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
-		metrics.add_child(_metric_card("★", "Sao (Dự kiến)", "%d / 3" % stars, C_GOLD))
-		metrics.add_child(_metric_card("⚡", "XP (Dự kiến)", "+%d" % xp, C_PURPLE))
+		metrics.add_child(_metric_card("★", "Sao đã nhận" if earned_stars >= 0 else "Sao (Dự kiến)", "+%d" % earned_stars if earned_stars >= 0 else "%d / 3" % stars, C_GOLD))
+		metrics.add_child(_metric_card("⚡", "XP đã nhận" if earned_xp >= 0 else "XP (Dự kiến)", "+%d" % xp, C_PURPLE))
 	else:
 		metrics.add_child(_metric_card("◆", "Điểm", "%d" % score, C_BLUE))
 		metrics.add_child(_metric_card("%", "Độ chính xác", "%.0f%%" % (accuracy if accuracy >= 0.0 else float(stars) / 3.0 * 100.0), C_GREEN))
@@ -475,6 +475,13 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 	back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back_button.pressed.connect(_go_back)
 	actions.add_child(back_button)
+	if show_music_room:
+		var room_button := _secondary_button("Đến Phòng nhạc", 0, 58 if mobile else 64, C_GOLD)
+		room_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		room_button.pressed.connect(func() -> void:
+			get_tree().change_scene_to_file("res://scenes/VirtualMusicRoom.tscn")
+		)
+		body.add_child(room_button)
 
 func _metric_card(icon: String, label_text: String, value: String, color: Color) -> PanelContainer:
 	# Result cards are also built by headless/unit fixtures before attachment.

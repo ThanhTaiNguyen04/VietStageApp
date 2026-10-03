@@ -799,16 +799,7 @@ static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: Str
 	# Instructor-created lessons use generated LSN-* codes. Match their bundled
 	# lesson by title only when the title is unique for this instrument.
 	if inst == "dan_tranh":
-		var bundled_title := ""
-		var levels: Array = preload("res://scripts/DanTranhBundledLessonData.gd").LEVELS
-		for level: Dictionary in levels:
-			for local_lesson: Dictionary in level.get("lessons", []):
-				var local_code := str(local_lesson.get("quiz_lesson_id", local_lesson.get("practice_id", "")))
-				if local_code == local_lesson_id or canonical_lesson_id(inst, local_code) == canonical:
-					bundled_title = str(local_lesson.get("title", "")).strip_edges().to_lower()
-					break
-			if not bundled_title.is_empty():
-				break
+		var bundled_title := bundled_lesson_title(inst, local_lesson_id).to_lower()
 		if not bundled_title.is_empty():
 			var title_matches: Array[Dictionary] = []
 			for lesson: Dictionary in be_catalog:
@@ -846,6 +837,25 @@ static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: Str
 			if str(legacy.get("instrument", "")) == inst and str(legacy.get("node_id", "")) == local_lesson_id:
 				return lesson
 	return {}
+
+
+static func bundled_lesson_title(instrument_key: String, local_lesson_id: String) -> String:
+	if _normalize_instrument_key(instrument_key) != "dan_tranh":
+		return ""
+	var levels: Array = preload("res://scripts/DanTranhBundledLessonData.gd").LEVELS
+	# Legacy navigation still opens the first three Dan Tranh lessons as Node1..3.
+	if local_lesson_id in ["Node1", "Node2", "Node3"]:
+		var first_level_lessons: Array = levels[0].get("lessons", [])
+		var position := int(local_lesson_id.trim_prefix("Node")) - 1
+		if position < first_level_lessons.size():
+			return str(first_level_lessons[position].get("title", "")).strip_edges()
+	var canonical := canonical_lesson_id("dan_tranh", local_lesson_id)
+	for level: Dictionary in levels:
+		for local_lesson: Dictionary in level.get("lessons", []):
+			var local_code := str(local_lesson.get("quiz_lesson_id", local_lesson.get("practice_id", "")))
+			if local_code == local_lesson_id or canonical_lesson_id("dan_tranh", local_code) == canonical:
+				return str(local_lesson.get("title", "")).strip_edges()
+	return ""
 
 
 static func _backend_lesson_by_id(lesson_id: int) -> Dictionary:

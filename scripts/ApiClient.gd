@@ -101,9 +101,12 @@ func get_lessons(
 	status: String = "",
 	page: int = 1,
 	size: int = 10,
-	is_visible: bool = false
+	is_visible: bool = false,
+	search: String = ""
 ) -> Dictionary:
 	var query_params := []
+	if not search.is_empty():
+		query_params.append("search=" + search.uri_encode())
 	if instrument_id > 0:
 		query_params.append("instrument_id=" + str(instrument_id))
 	if skill_level_id > 0:

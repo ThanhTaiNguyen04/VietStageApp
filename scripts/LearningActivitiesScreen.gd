@@ -38,8 +38,7 @@ func _load_activity_content() -> void:
 	var report := _report()
 	if report == null or not report.is_signed_in() or Context.local_lesson_ids.is_empty():
 		return
-	if SecureDataManager.be_catalog.is_empty():
-		await report.fetch_and_install_catalog()
+	await report.ensure_quiz_catalog(Context.instrument, Context.local_lesson_ids)
 
 	for local_id: Variant in Context.local_lesson_ids:
 		var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(Context.instrument, str(local_id))

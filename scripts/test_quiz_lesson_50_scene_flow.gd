@@ -8,10 +8,13 @@ class FakeApi extends Node:
 	var fetched_lesson_ids: Array[int] = []
 	var submitted_quiz_ids: Array[int] = []
 	var empty_mode := false
+	var fetch_failure_mode := false
 	var submit_failure_mode := false
 
 	func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 		fetched_lesson_ids.append(lesson_id)
+		if fetch_failure_mode:
+			return {"status": 0, "body": {}}
 		if empty_mode:
 			return {"status": 200, "body": {"data": []}}
 		return {"status": 200, "body": {"data": [{
@@ -62,7 +65,7 @@ func _run() -> void:
 	await screen._answer(first_option, 0, "La")
 	var feedback: Label = screen.get("feedback_label")
 	if fake.submitted_quiz_ids != [500] or int(screen.get("correct_count")) != 1 or int(screen.get("score")) != 10 or feedback == null or not feedback.text.contains("chính xác"):
-		printerr("Lesson 50 quiz scene FAIL: attempt or result was not applied")
+		printerr("Lesson 50 quiz scene FAIL: attempt or result was not applied; submissions=", fake.submitted_quiz_ids, " correct=", screen.get("correct_count"), " score=", screen.get("score"), " feedback=", feedback.text if feedback != null else "<null>")
 		quit(1)
 		return
 	screen.queue_free()
@@ -81,6 +84,28 @@ func _run() -> void:
 		quit(1)
 		return
 	empty_screen.queue_free()
+	await process_frame
+	Secure.be_quizzes.clear()
+	fake.empty_mode = false
+	fake.fetch_failure_mode = true
+	var failed_screen = scene.instantiate()
+	get_root().add_child(failed_screen)
+	for tick in 60:
+		if bool(failed_screen.get("_backend_fetch_finished")):
+			break
+		await process_frame
+	var failure_text := str(((failed_screen.get("content_box") as Node).get_child(0) as Label).text)
+	if bool(report.last_quiz_fetch_succeeded) or not failure_text.contains("Chưa thể tải"):
+		printerr("Lesson 50 quiz scene FAIL: fetch failure was shown as empty lesson")
+		quit(1)
+		return
+	fake.fetch_failure_mode = false
+	await failed_screen._retry_fetch()
+	if (failed_screen.get("quizzes") as Array).size() != 1:
+		printerr("Lesson 50 quiz scene FAIL: retry did not load quiz")
+		quit(1)
+		return
+	failed_screen.queue_free()
 	await process_frame
 	Secure.be_quizzes.clear()
 	fake.empty_mode = false

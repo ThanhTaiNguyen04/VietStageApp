@@ -7,8 +7,10 @@ const BackendReport = preload("res://scripts/BackendReport.gd")
 class FakeApi extends Node:
 	var response: Dictionary = {}
 	var completion_response: Dictionary = {}
+	var quiz_attempt_ids: Array[String] = []
 
-	func submit_quiz_attempt(_quiz_id: int, _selected: String, _attempt_id: String) -> Dictionary:
+	func submit_quiz_attempt(_quiz_id: int, _selected: String, attempt_id: String) -> Dictionary:
+		quiz_attempt_ids.append(attempt_id)
 		return response
 
 	func error_message(_response: Dictionary, fallback: String) -> String:
@@ -33,12 +35,13 @@ func _run() -> void:
 	var fake := FakeApi.new()
 	fake.response = {
 		"status": 201,
-		"body": {"data": {"id": 12, "isCorrect": true, "score": 100, "pointsEarned": 10, "starsEarned": 2}}
+		"body": {"data": {"id": 12, "isCorrect": true, "score": 100, "pointsEarned": 10, "starsEarned": 2, "spendableStars": 5}}
 	}
 	report._api = fake
 	var success: Dictionary = await report.report_quiz(10, "Đô", {"score": 100, "maxScore": 100})
 	assert(success.get("submitted") == true)
 	assert(success.get("points_earned") == 10)
+	assert(success.get("spendable_stars") == 5)
 	assert(Secure.get_pending_game_attempts().is_empty())
 
 	fake.response = {"status": 0, "body": {}, "message": "offline"}
@@ -53,11 +56,21 @@ func _run() -> void:
 	assert(missing_id.get("submitted") == false)
 	assert(missing_id.get("queued") == true)
 	assert(Secure.get_pending_game_attempts().size() == 2)
+	# HTTP 202 is not a confirmed reward, even if an intermediate response has an id.
+	fake.response = {"status": 202, "body": {"data": {"id": 99, "pointsEarned": 10, "starsEarned": 2}}}
+	var accepted: Dictionary = await report.report_quiz(10, "Mi")
+	assert(accepted.get("submitted") == false)
+	assert(Secure.get_pending_game_attempts().size() == 3)
+	var queued_ids: Array[String] = []
+	for item: Dictionary in Secure.get_pending_game_attempts():
+		queued_ids.append(str(item.get("client_attempt_id", "")))
 
 	# Retrying either queued item removes it only after a persisted id arrives.
 	fake.response = {"status": 201, "body": {"data": {"id": 13, "score": 100, "pointsEarned": 10}}}
 	await report.retry_pending_game_attempts()
 	assert(Secure.get_pending_game_attempts().is_empty())
+	for queued_id: String in queued_ids:
+		assert(fake.quiz_attempt_ids.count(queued_id) >= 2)
 
 	# A queued completion is not progress. It remains pending until the backend
 	# explicitly returns completed=true; stars are not awarded for HTTP 202.

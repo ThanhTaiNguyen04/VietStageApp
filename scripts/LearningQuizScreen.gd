@@ -11,6 +11,7 @@ var question_index := 0
 var score := 0
 var correct_count := 0
 var api_stars_earned := 0
+var api_spendable_stars := -1
 var submitted_attempt_count := 0
 var unsynced_attempt_count := 0
 var local_preview_count := 0
@@ -410,6 +411,10 @@ func _show_loading() -> void:
 func _begin_quiz() -> void:
 	var report := _report()
 	if report != null and report.is_signed_in():
+		var cached: Array = _filter_valid_quizzes(report.cached_quizzes_for_level(Context.instrument, Context.local_lesson_ids))
+		if not cached.is_empty():
+			await _install_backend_quizzes(cached)
+			return
 		_backend_fetch_finished = false
 		_backend_fetch_timed_out = false
 		_backend_quizzes = []
@@ -441,6 +446,7 @@ func _load_sample_quizzes(fetching_be: bool) -> void:
 	score = 0
 	correct_count = 0
 	api_stars_earned = 0
+	api_spendable_stars = -1
 	submitted_attempt_count = 0
 	unsynced_attempt_count = 0
 	local_preview_count = 0
@@ -480,6 +486,7 @@ func _install_backend_quizzes(valid: Array) -> void:
 	score = 0
 	correct_count = 0
 	api_stars_earned = 0
+	api_spendable_stars = -1
 	submitted_attempt_count = 0
 	unsynced_attempt_count = 0
 	local_preview_count = 0
@@ -937,6 +944,8 @@ func _answer(button: Button, selected_index: int, selected_text: String) -> void
 	if bool(result.get("submitted", false)):
 		earned_points = int(result.get("points_earned", 0))
 		api_stars_earned += maxi(0, int(result.get("stars_earned", 0)))
+		if int(result.get("spendable_stars", -1)) >= 0:
+			api_spendable_stars = int(result.get("spendable_stars", -1))
 
 	if is_correct:
 		correct_count += 1
@@ -1076,7 +1085,9 @@ func _show_quiz_result() -> void:
 		detail_text += " (Dữ liệu mẫu/Offline)"
 	elif result_sync_status == "failed":
 		detail_text += " Có %d câu chưa đồng bộ được lên máy chủ." % unsynced_attempt_count
-	_show_result("Quiz hoàn thành!", detail_text, score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0)
+	if api_spendable_stars >= 0:
+		detail_text += " Số dư sao có thể dùng: %d." % api_spendable_stars
+	_show_result("Quiz hoàn thành!", detail_text, score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0, score if submitted_attempt_count > 0 else -1, api_stars_earned if submitted_attempt_count > 0 else -1, submitted_attempt_count > 0)
 
 
 ## Trạng thái đồng bộ ở trang kết quả phải phản ánh attempt đã nộp, không chỉ
@@ -1104,6 +1115,7 @@ func _restart() -> void:
 	score = 0
 	correct_count = 0
 	api_stars_earned = 0
+	api_spendable_stars = -1
 	submitted_attempt_count = 0
 	unsynced_attempt_count = 0
 	local_preview_count = 0
