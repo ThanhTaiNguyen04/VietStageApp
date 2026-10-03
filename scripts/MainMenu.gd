@@ -2435,7 +2435,12 @@ func _connect_buttons() -> void:
 
 func _open_learning_activities() -> void:
 	var instrument := str(SecureDataManager.data.get("selected_instrument", "dan_tranh"))
-	LearningActivityContextScript.configure(instrument, [SecureDataManager.active_lesson_id], "res://scenes/MainMenu.tscn")
+	var lesson_id := SecureDataManager.active_lesson_id
+	if instrument == "dan_tranh":
+		lesson_id = str(SecureDataManager.data.get("last_dan_tranh_quiz_lesson", ""))
+		if lesson_id.is_empty():
+			lesson_id = DAN_TRANH_COURSE_DATA.current_quiz_lesson(SecureDataManager.active_lesson_id)
+	LearningActivityContextScript.configure(instrument, [lesson_id], "res://scenes/MainMenu.tscn")
 	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _set_active_tab(active: Button) -> void:

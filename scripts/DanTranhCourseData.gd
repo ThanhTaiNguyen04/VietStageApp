@@ -33,6 +33,51 @@ static func select_level(level_number: int) -> String:
 	return LESSON_LIST_SCENE
 
 
+static func quiz_lesson_for_lessons(lessons: Array, active_id: String) -> String:
+	var best_id := ""
+	var best_rank := -1
+	for lesson_value: Variant in lessons:
+		if not lesson_value is Dictionary:
+			continue
+		var lesson: Dictionary = lesson_value
+		var quiz_id := str(lesson.get("quiz_lesson_id", lesson.get("practice_id", lesson.get("video_id", ""))))
+		if quiz_id.is_empty():
+			continue
+		var canonical := SecureDataManager.canonical_lesson_id(INSTRUMENT_ID, quiz_id)
+		if canonical == SecureDataManager.canonical_lesson_id(INSTRUMENT_ID, active_id):
+			return quiz_id
+		var status := SecureDataManager.get_lesson_learning_status(INSTRUMENT_ID, quiz_id)
+		var rank := 2 if status == "IN_PROGRESS" else (1 if SecureDataManager.is_lesson_unlocked(INSTRUMENT_ID, quiz_id) else 0)
+		if rank > best_rank or rank == best_rank:
+			best_rank = rank
+			best_id = quiz_id
+	return best_id
+
+
+static func current_quiz_lesson(active_id: String) -> String:
+	for level: Dictionary in preload("res://scripts/DanTranhBundledLessonData.gd").LEVELS:
+		for lesson_value: Variant in level.get("lessons", []):
+			if lesson_value is Dictionary:
+				var lesson: Dictionary = lesson_value
+				var quiz_id := str(lesson.get("quiz_lesson_id", lesson.get("practice_id", lesson.get("video_id", ""))))
+				if SecureDataManager.canonical_lesson_id(INSTRUMENT_ID, quiz_id) == SecureDataManager.canonical_lesson_id(INSTRUMENT_ID, active_id):
+					return quiz_id
+	var best_id := ""
+	var best_rank := -1
+	for level: Dictionary in preload("res://scripts/DanTranhBundledLessonData.gd").LEVELS:
+		for lesson_value: Variant in level.get("lessons", []):
+			if not lesson_value is Dictionary:
+				continue
+			var lesson: Dictionary = lesson_value
+			var quiz_id := str(lesson.get("quiz_lesson_id", lesson.get("practice_id", lesson.get("video_id", ""))))
+			var status := SecureDataManager.get_lesson_learning_status(INSTRUMENT_ID, quiz_id)
+			var rank := 2 if status == "IN_PROGRESS" else (1 if SecureDataManager.is_lesson_unlocked(INSTRUMENT_ID, quiz_id) else 0)
+			if rank > best_rank or rank == best_rank:
+				best_rank = rank
+				best_id = quiz_id
+	return best_id
+
+
 static func get_level_status(level_number: int, save_data: Dictionary) -> Dictionary:
 	var level_data: Dictionary = LessonListScript.get_level_data(level_number)
 	if level_data.is_empty() or not level_data.has("lessons"):

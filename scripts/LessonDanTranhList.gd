@@ -654,7 +654,8 @@ func _connect_navigation() -> void:
 	btn_room.pressed.connect(func() -> void: _fade_to("res://scenes/VirtualMusicRoom.tscn"))
 	btn_songs.pressed.connect(func() -> void: _fade_to("res://scenes/SongScreen.tscn"))
 	btn_minigame.pressed.connect(func() -> void:
-		LearningActivityContextScript.configure("dan_tranh", [SecureDataManager.active_lesson_id], "res://scenes/LessonDanTranhList.tscn")
+		var lesson_id := DanTranhCourseData.quiz_lesson_for_lessons(get_level_data(selected_level).get("lessons", []), SecureDataManager.active_lesson_id)
+		LearningActivityContextScript.configure("dan_tranh", [lesson_id], "res://scenes/LessonDanTranhList.tscn")
 		_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 	)
 	btn_leaderboard.pressed.connect(_on_btn_leaderboard_pressed)
@@ -670,6 +671,8 @@ func _open_lesson(lesson: Dictionary, activity: String = "practice") -> void:
 	var start_id := str(lesson.get(id_field, _lesson_id(lesson_number, activity)))
 	if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("dan_tranh", start_id):
 		return
+	SecureDataManager.data["last_dan_tranh_quiz_lesson"] = str(lesson.get("quiz_lesson_id", lesson.get("practice_id", start_id)))
+	SecureDataManager.save_data()
 	var backend_report = get_node_or_null("/root/BackendReport")
 	if backend_report and backend_report.has_method("start_lesson"):
 		if SecureDataManager.has_temporary_full_access():
@@ -781,15 +784,11 @@ func _build_profile_btn() -> void:
 	add_child(account_menu)
 
 func _open_quiz() -> void:
-	var ids: Array[String] = []
 	var level_data := get_level_data(selected_level)
-	for lesson: Dictionary in level_data.get("lessons", []):
-		var number := int(lesson.get("number", 0))
-		if number > 0:
-			# Quiz dùng ID nghiệp vụ riêng của Bài 1–3. ID mở nội dung cô Mai
-			# không phải ID quiz, vì Bài 2–3 không có video và không có thực hành.
-			ids.append(str(lesson.get("quiz_lesson_id", lesson.get("practice_id", _lesson_id(number, "practice")))))
-	LearningActivityContextScript.configure("dan_tranh", ids, "res://scenes/LessonDanTranhList.tscn")
+	var lesson_id := DanTranhCourseData.quiz_lesson_for_lessons(level_data.get("lessons", []), SecureDataManager.active_lesson_id)
+	if lesson_id.is_empty():
+		return
+	LearningActivityContextScript.configure("dan_tranh", [lesson_id], "res://scenes/LessonDanTranhList.tscn")
 	_fade_to("res://scenes/LearningActivitiesScreen.tscn")
 
 func _apply_responsive_layout() -> void:
