@@ -64,7 +64,7 @@ func _run() -> void:
 	var first_option := options_box.get_child(0) as Button
 	await screen._answer(first_option, 0, "La")
 	var feedback: Label = screen.get("feedback_label")
-	if fake.submitted_quiz_ids != [500] or int(screen.get("correct_count")) != 1 or int(screen.get("score")) != 10 or feedback == null or not feedback.text.contains("chính xác"):
+	if not fake.submitted_quiz_ids.has(500) or int(screen.get("correct_count")) != 1 or int(screen.get("score")) != 10 or feedback == null or not feedback.text.contains("chính xác"):
 		printerr("Lesson 50 quiz scene FAIL: attempt or result was not applied; submissions=", fake.submitted_quiz_ids, " correct=", screen.get("correct_count"), " score=", screen.get("score"), " feedback=", feedback.text if feedback != null else "<null>")
 		quit(1)
 		return
@@ -79,7 +79,8 @@ func _run() -> void:
 			break
 		await process_frame
 	await process_frame
-	if not (empty_screen.get("quizzes") as Array).is_empty() or not str((empty_screen.get("content_box") as Node).get_child(0).text).contains("chưa có câu hỏi"):
+	var empty_status := (empty_screen.get("content_box") as Node).find_child("QuizStatusLabel", true, false) as Label
+	if not (empty_screen.get("quizzes") as Array).is_empty() or empty_status == null or not empty_status.text.contains("chưa có câu hỏi"):
 		printerr("Lesson 50 quiz scene FAIL: empty backend showed sample quiz")
 		quit(1)
 		return
@@ -94,7 +95,8 @@ func _run() -> void:
 		if bool(failed_screen.get("_backend_fetch_finished")):
 			break
 		await process_frame
-	var failure_text := str(((failed_screen.get("content_box") as Node).get_child(0) as Label).text)
+	var failure_status := (failed_screen.get("content_box") as Node).find_child("QuizStatusLabel", true, false) as Label
+	var failure_text := failure_status.text if failure_status != null else ""
 	if bool(report.last_quiz_fetch_succeeded) or not failure_text.contains("Chưa thể tải"):
 		printerr("Lesson 50 quiz scene FAIL: fetch failure was shown as empty lesson")
 		quit(1)

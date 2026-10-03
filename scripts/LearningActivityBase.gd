@@ -377,7 +377,7 @@ func _stars(score: int, max_score: int) -> int:
 	var maximum := maxi(1, max_score)
 	return 3 if score * 100 >= maximum * 80 else (2 if score * 100 >= maximum * 55 else (1 if score > 0 else 0))
 
-func _show_result(title: String, detail: String, score: int, stars: int, retry: Callable, accuracy: float = -1.0, earned_xp: int = -1, earned_stars: int = -1, show_music_room: bool = false) -> void:
+func _show_result(title: String, detail: String, score: int, stars: int, retry: Callable, accuracy: float = -1.0, earned_xp: int = -1, earned_stars: int = -1, show_music_room: bool = false, header_navigation_only: bool = false) -> void:
 	for child in content_box.get_children():
 		child.queue_free()
 	# Vertically center the result card in the available space
@@ -471,10 +471,11 @@ func _show_result(title: String, detail: String, score: int, stars: int, retry: 
 	retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	retry_button.pressed.connect(retry)
 	actions.add_child(retry_button)
-	var back_button := _secondary_button("Về hoạt động", 0, 58 if mobile else 64, C_NAVY)
-	back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	back_button.pressed.connect(_go_back)
-	actions.add_child(back_button)
+	if not header_navigation_only:
+		var back_button := _secondary_button("Về hoạt động", 0, 58 if mobile else 64, C_NAVY)
+		back_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		back_button.pressed.connect(_go_back)
+		actions.add_child(back_button)
 	if show_music_room:
 		var room_button := _secondary_button("Đến Phòng nhạc", 0, 58 if mobile else 64, C_GOLD)
 		room_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL

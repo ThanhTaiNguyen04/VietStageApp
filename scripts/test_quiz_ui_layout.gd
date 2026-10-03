@@ -26,9 +26,13 @@ func _run_layout_test() -> void:
 	screen._show_question()
 
 	# Assertions on elements
-	assert(screen.floating_back_button != null, "Back button must exist")
-	assert(screen.floating_back_button.custom_minimum_size == Vector2(84, 84), "Back button should be large 84x84")
+	assert(screen.floating_back_button == null, "Quiz must not create a second back button")
+	assert((screen.root_box.get_child(0) as Control).visible, "Shared activity header must be visible")
+	assert(screen.title_label.get_parent().visible, "Quiz title must be visible in the header")
+	assert((screen.get_child(0) as TextureRect).texture.resource_path.ends_with("bg_practice_room.png"), "Quiz must reuse practice-room artwork")
+	assert((screen.get_child(1) as ColorRect).color.a >= 0.85, "Cream wash must keep question content readable")
 	assert(screen.progress_bar != null, "Progress bar must exist")
+	assert(screen.progress_count_label.text == "1 / 1", "Question position must be visible")
 	assert(screen.score_label != null, "Score label must exist")
 	assert(screen.score_label.text == "20", "Score label should display score 20")
 	assert(screen.options_box != null, "Options box must exist")
@@ -51,4 +55,18 @@ func _run_layout_test() -> void:
 
 	print("[LayoutTest] LearningQuizScreen UI Layout and Structure PASS!")
 	screen.queue_free()
+	await process_frame
+	get_root().set_meta("force_compact_layout", true)
+	var compact := LearningQuizScreen.new()
+	get_root().add_child(compact)
+	compact.quizzes = [quiz]
+	compact.question_index = 0
+	compact._show_quiz_ui()
+	compact._show_question()
+	assert(compact.floating_back_button == null, "Compact quiz must not create a second back button")
+	compact._restart()
+	assert(compact.floating_back_button == null, "Restart must not restore a second back button")
+	assert((compact.root_box.get_child(0) as Control).visible, "Header must stay visible on compact layout")
+	compact.queue_free()
+	get_root().remove_meta("force_compact_layout")
 	quit()

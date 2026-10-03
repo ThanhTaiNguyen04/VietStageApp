@@ -42,8 +42,20 @@ var feedback_desc_label: Label
 var next_button: Button = null
 var floating_back_button: Button
 var score_label: Label
+var progress_count_label: Label
 var _quiz_stage_v: VBoxContainer = null
 var _auto_advance_token := 0
+var _original_design_size := Vector2i.ZERO
+
+func _enter_tree() -> void:
+	if OS.has_feature("mobile") or bool(get_tree().root.get_meta("force_compact_layout", false)):
+		_original_design_size = get_tree().root.content_scale_size
+		var window_size := get_tree().root.size
+		get_tree().root.content_scale_size = Vector2i(900, 420) if window_size.x > window_size.y else Vector2i(420, 840)
+
+func _exit_tree() -> void:
+	if _original_design_size != Vector2i.ZERO:
+		get_tree().root.set_deferred("content_scale_size", _original_design_size)
 
 func _find_scroll_container(parent: Node) -> ScrollContainer:
 	for child in parent.get_children():
@@ -54,26 +66,64 @@ func _find_scroll_container(parent: Node) -> ScrollContainer:
 			return res
 	return null
 
+func _configure_quiz_shell() -> void:
+	# Practice-room art under the quiet cream surface shared with Minigame.
+	var background := get_child(0) as TextureRect
+	if background:
+		background.name = "QuizPracticeBackground"
+		background.texture = load("res://assets/textures/bg_practice_room.png") as Texture2D
+	var wash := get_child(1) as ColorRect
+	if wash:
+		wash.name = "QuizCreamWash"
+		wash.color = Color(0.98, 0.96, 0.91, 0.88)
+	var top_panel := root_box.get_child(0) as PanelContainer
+	if top_panel:
+		top_panel.visible = true
+		top_panel.custom_minimum_size.y = 60 if _is_compact_layout() else 76
+		top_panel.add_theme_stylebox_override("panel", _panel(Color("#f4eee1"), Color("#d9bb67"), 0, 1))
+	var context_box := title_label.get_parent() as Control
+	if context_box:
+		context_box.visible = true
+		var breadcrumb := context_box.get_child(0) as Label
+		if breadcrumb:
+			breadcrumb.text = "%s · QUIZ" % _instrument_title()
+			breadcrumb.visible = not _is_compact_layout()
+	if _is_compact_layout():
+		var top_style := top_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+		top_style.content_margin_top = 0
+		top_style.content_margin_bottom = 0
+		top_style.content_margin_left = 0
+		top_style.content_margin_right = 0
+		top_panel.add_theme_stylebox_override("panel", top_style)
+		title_label.add_theme_font_size_override("font_size", 17)
+		var header_row := context_box.get_parent() as HBoxContainer
+		var header_margin := header_row.get_parent() as MarginContainer
+		for edge in ["left", "right", "top", "bottom"]:
+			header_margin.add_theme_constant_override("margin_" + edge, 8)
+		var back := header_row.find_child("ActivityBackButton", true, false) as Button
+		if back:
+			back.custom_minimum_size = Vector2(44, 44)
+		var spacer := header_row.find_child("TopSpacer", true, false) as Control
+		if spacer:
+			spacer.visible = false
+		# The account menu is available outside the focused quiz session.
+		(header_row.get_child(header_row.get_child_count() - 1) as Control).visible = false
+
 func _ready() -> void:
 	SecureDataManager.load_data()
 	super._ready()
-	_add_quiz_scrim()
-	title_label.text = "QUIZ - %s" % ("KIẾN THỨC NHẠC CỤ" if Context.activity == "quiz_knowledge" else "NHẬN DIỆN NỐT NHẠC")
-
-	# Hide the inherited top panel navbar
-	var top_panel = root_box.get_child(0)
-	if top_panel:
-		top_panel.visible = false
+	_configure_quiz_shell()
+	title_label.text = "Kiến thức nhạc cụ" if Context.activity == "quiz_knowledge" else "Nhận diện nốt nhạc"
 
 	# Optimize scroll container padding
 	var scroll = _find_scroll_container(root_box)
 	if scroll and scroll.get_child_count() > 0:
 		var scroll_margin = scroll.get_child(0) as MarginContainer
 		if scroll_margin:
-			scroll_margin.add_theme_constant_override("margin_top", 4)
-			scroll_margin.add_theme_constant_override("margin_bottom", 8)
-			scroll_margin.add_theme_constant_override("margin_left", 16)
-			scroll_margin.add_theme_constant_override("margin_right", 16)
+			scroll_margin.add_theme_constant_override("margin_top", 12)
+			scroll_margin.add_theme_constant_override("margin_bottom", 20)
+			scroll_margin.add_theme_constant_override("margin_left", 16 if _is_compact_layout() else 32)
+			scroll_margin.add_theme_constant_override("margin_right", 16 if _is_compact_layout() else 32)
 
 	# Build persistent elements
 	_build_sticky_progress_bar()
@@ -91,92 +141,57 @@ func _ready() -> void:
 	_begin_quiz()
 
 func _build_sticky_progress_bar() -> void:
-	var mobile := get_viewport_rect().size.x < 600.0
+	var mobile := _is_compact_layout()
 
 	var progress_container := MarginContainer.new()
 	progress_container.name = "QuizProgressContainer"
-	progress_container.add_theme_constant_override("margin_left", 16 if mobile else 28)
-	progress_container.add_theme_constant_override("margin_right", 16 if mobile else 28)
-	progress_container.add_theme_constant_override("margin_top", 12 if mobile else 16)
-	progress_container.add_theme_constant_override("margin_bottom", 6)
+	progress_container.add_theme_constant_override("margin_left", 16 if mobile else 48)
+	progress_container.add_theme_constant_override("margin_right", 16 if mobile else 48)
+	progress_container.add_theme_constant_override("margin_top", 8 if mobile else 12)
+	progress_container.add_theme_constant_override("margin_bottom", 4)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 18)
 	progress_container.add_child(hbox)
 
-	# 1. Large Sticky Back Button (84x84 circular 3D button)
-	floating_back_button = Button.new()
-	floating_back_button.custom_minimum_size = Vector2(84, 84)
-	floating_back_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	floating_back_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hbox.add_child(floating_back_button)
-
-	floating_back_button.icon = load("res://assets/textures/lucide/arrow-left.svg") as Texture2D
-	floating_back_button.expand_icon = true
-	floating_back_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	floating_back_button.add_theme_constant_override("icon_max_width", 42)
-
-	var style_n := StyleBoxFlat.new()
-	style_n.bg_color = Color.WHITE
-	style_n.set_corner_radius_all(42)
-	style_n.border_width_bottom = 5
-	style_n.border_color = Color("#cbd5e1")
-	style_n.shadow_color = Color(0, 0, 0, 0.06)
-	style_n.shadow_size = 6
-	style_n.shadow_offset = Vector2(0, 3)
-
-	var style_h := style_n.duplicate() as StyleBoxFlat
-	style_h.bg_color = Color("#FDFCF9")
-	style_h.border_color = Color("#94a3b8")
-
-	var style_p := style_n.duplicate() as StyleBoxFlat
-	style_p.bg_color = Color("#F5F0E5")
-	style_p.border_width_bottom = 1
-	style_p.border_width_top = 4
-
-	floating_back_button.add_theme_stylebox_override("normal", style_n)
-	floating_back_button.add_theme_stylebox_override("hover", style_h)
-	floating_back_button.add_theme_stylebox_override("pressed", style_p)
-	floating_back_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	floating_back_button.add_theme_color_override("icon_normal_color", C_NAVY)
-
-	floating_back_button.pressed.connect(_go_back)
-
-	floating_back_button.pivot_offset = Vector2(42, 42)
-	floating_back_button.mouse_entered.connect(func() -> void:
-		create_tween().tween_property(floating_back_button, "scale", Vector2(1.06, 1.06), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
-	floating_back_button.mouse_exited.connect(func() -> void:
-		create_tween().tween_property(floating_back_button, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	)
 
 	# 2. Progress Bar (Thick Duolingo style)
 	progress_bar = ProgressBar.new()
 	progress_bar.max_value = 100.0
 	progress_bar.value = 0.0
 	progress_bar.show_percentage = false
-	progress_bar.custom_minimum_size = Vector2(0, 20 if mobile else 24)
+	progress_bar.custom_minimum_size = Vector2(0, 8 if mobile else 12)
 	progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	progress_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var bar_radius := 10 if mobile else 12
-	progress_bar.add_theme_stylebox_override("background", _panel(Color("#e9edf5"), Color("#e9edf5"), bar_radius, 0))
-	progress_bar.add_theme_stylebox_override("fill", _panel(C_BLUE, C_BLUE, bar_radius, 0))
+	progress_bar.add_theme_stylebox_override("background", _panel(Color("#e8dfcf"), Color("#e8dfcf"), bar_radius, 0))
+	progress_bar.add_theme_stylebox_override("fill", _panel(C_GREEN, C_GREEN, bar_radius, 0))
+	for style_name in ["background", "fill"]:
+		var bar_style := progress_bar.get_theme_stylebox(style_name) as StyleBoxFlat
+		bar_style.content_margin_top = 0
+		bar_style.content_margin_bottom = 0
 	hbox.add_child(progress_bar)
+	progress_count_label = Label.new()
+	progress_count_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
+	progress_count_label.add_theme_font_size_override("font_size", 15 if mobile else 18)
+	progress_count_label.add_theme_color_override("font_color", C_NAVY)
+	progress_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hbox.add_child(progress_count_label)
 
 	# 3. Large Score Pill Capsule (3x larger, gamified Duolingo style)
 	var s_pill := PanelContainer.new()
 	s_pill.name = "ScorePill"
 	var s_style := StyleBoxFlat.new()
-	s_style.bg_color = Color("#edf3ec") # jade bg
-	s_style.border_color = Color("#2e7d32")
+	s_style.bg_color = Color("#fffaf0")
+	s_style.border_color = Color("#d9bb67")
 	s_style.set_border_width_all(2)
-	s_style.border_width_bottom = 5
-	s_style.set_corner_radius_all(24)
-	s_style.content_margin_left = 20
-	s_style.content_margin_right = 24
-	s_style.content_margin_top = 10
-	s_style.content_margin_bottom = 10
+	s_style.border_width_bottom = 2
+	s_style.set_corner_radius_all(16)
+	s_style.content_margin_left = 10 if mobile else 16
+	s_style.content_margin_right = 12 if mobile else 16
+	s_style.content_margin_top = 6
+	s_style.content_margin_bottom = 6
 	s_style.shadow_color = Color(0, 0, 0, 0.05)
 	s_style.shadow_size = 4
 	s_style.shadow_offset = Vector2(0, 2)
@@ -190,7 +205,7 @@ func _build_sticky_progress_bar() -> void:
 
 	var s_icon := TextureRect.new()
 	s_icon.texture = load("res://assets/textures/lucide/trophy.svg") as Texture2D
-	s_icon.custom_minimum_size = Vector2(32, 32)
+	s_icon.custom_minimum_size = Vector2(20, 20) if mobile else Vector2(28, 28)
 	s_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	s_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	s_icon.modulate = Color("#e7ae22") # Gold trophy icon
@@ -199,8 +214,8 @@ func _build_sticky_progress_bar() -> void:
 	score_label = Label.new()
 	score_label.text = str(score)
 	score_label.add_theme_font_override("font", load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font)
-	score_label.add_theme_font_size_override("font_size", 24)
-	score_label.add_theme_color_override("font_color", Color("#1b5e20"))
+	score_label.add_theme_font_size_override("font_size", 18 if mobile else 22)
+	score_label.add_theme_color_override("font_color", C_NAVY)
 	s_hbox.add_child(score_label)
 
 	# Insert in root_box as the second child, below the top panel
@@ -244,6 +259,12 @@ func _create_option_button(index: int, text_value: String) -> Button:
 		badge_radius = 25
 
 	var button := Button.new()
+	if _is_compact_layout():
+		btn_height = 56.0
+		font_size_option = 18
+		badge_size = Vector2(32, 32)
+		badge_font_size = 16
+		badge_radius = 16
 	button.custom_minimum_size = Vector2(0, btn_height)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -252,22 +273,22 @@ func _create_option_button(index: int, text_value: String) -> Button:
 
 	# Normal state (3D border bottom 5px)
 	var normal_style := StyleBoxFlat.new()
-	normal_style.bg_color = Color.WHITE
-	normal_style.border_color = Color("#cbd5e1") # slate-300
+	normal_style.bg_color = Color("#fffaf0")
+	normal_style.border_color = Color("#d9bb67")
 	normal_style.set_border_width_all(2)
-	normal_style.border_width_bottom = 5
-	normal_style.set_corner_radius_all(22)
+	normal_style.border_width_bottom = 1
+	normal_style.set_corner_radius_all(16)
 	button.add_theme_stylebox_override("normal", normal_style)
 
 	# Hover state
 	var hover_style := normal_style.duplicate() as StyleBoxFlat
-	hover_style.bg_color = Color("#f8fafc") # slate-50
+	hover_style.bg_color = Color("#f8edcf")
 	hover_style.border_color = Color(0.77, 0.58, 0.15, 0.85) # Gold accent on hover
 	button.add_theme_stylebox_override("hover", hover_style)
 
 	# Pressed state
 	var pressed_style := normal_style.duplicate() as StyleBoxFlat
-	pressed_style.bg_color = Color("#f1f5f9") # slate-100
+	pressed_style.bg_color = Color("#f0dfb5")
 	pressed_style.border_color = Color(0.77, 0.58, 0.15, 1.0)
 	pressed_style.border_width_top = 4
 	pressed_style.border_width_bottom = 2
@@ -298,8 +319,8 @@ func _create_option_button(index: int, text_value: String) -> Button:
 	badge_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = Color("#f1f5f9")
-	badge_style.border_color = Color("#cbd5e1")
+	badge_style.bg_color = Color("#f4ead0")
+	badge_style.border_color = Color("#d9bb67")
 	badge_style.set_border_width_all(2)
 	badge_style.set_corner_radius_all(badge_radius) # circular
 	badge_panel.add_theme_stylebox_override("panel", badge_style)
@@ -404,9 +425,13 @@ func _style_option_button_state(button: Button, state: String) -> void:
 		button.add_theme_color_override("font_disabled_color", Color("#8a4b08"))
 
 func _show_loading() -> void:
-	var loading := _label("Đang tải câu hỏi từ bài học...", 17, C_MUTED)
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	var stage := _create_frosted_stage(_is_compact_layout())
+	content_box.add_child(stage["panel"])
+	var loading := _label("Đang tải câu hỏi từ bài học...", 18, C_MUTED)
+	loading.name = "QuizStatusLabel"
 	loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content_box.add_child(loading)
+	(stage["vbox"] as VBoxContainer).add_child(loading)
 
 func _begin_quiz() -> void:
 	var report := _report()
@@ -464,7 +489,7 @@ func _show_quiz_ui() -> void:
 	if bottom_feedback_panel:
 		bottom_feedback_panel.visible = true
 	if floating_back_button:
-		floating_back_button.visible = true
+		floating_back_button.visible = false
 
 func _fetch_backend_quizzes(report: Node) -> void:
 	var loaded: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids, true)
@@ -539,18 +564,20 @@ func _show_message(message: String, can_retry: bool = false) -> void:
 
 	for child in content_box.get_children():
 		child.queue_free()
+	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	var stage := _create_frosted_stage(_is_compact_layout())
+	content_box.add_child(stage["panel"])
+	var stage_v := stage["vbox"] as VBoxContainer
 	var message_label := _label(message, 22, C_MUTED)
+	message_label.name = "QuizStatusLabel"
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content_box.add_child(message_label)
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	stage_v.add_child(message_label)
 	if can_retry:
 		var retry := _button("Thử tải lại", 180, 50, C_NAVY)
 		retry.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		retry.pressed.connect(_retry_fetch)
-		content_box.add_child(retry)
-	var back := _button("Quay lại", 180, 50, C_NAVY)
-	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	back.pressed.connect(_go_back)
-	content_box.add_child(back)
+		stage_v.add_child(retry)
 
 func _create_frosted_stage(is_mobile: bool) -> Dictionary:
 	var viewport_size := get_viewport_rect().size
@@ -560,41 +587,24 @@ func _create_frosted_stage(is_mobile: bool) -> Dictionary:
 	stage_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL if is_mobile else Control.SIZE_SHRINK_CENTER
 	stage_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	if not is_mobile:
-		var target_w := clampf(viewport_size.x * 0.94, 1100.0, 1360.0)
+		var target_w := minf(viewport_size.x * 0.88, 1100.0)
 		stage_panel.custom_minimum_size = Vector2(target_w, 0)
 
 	var stage_sb := StyleBoxFlat.new()
-	stage_sb.bg_color = Color(1.0, 0.99, 0.97, 0.62) # Soft translucent frosted glass
-	stage_sb.border_color = Color(0.77, 0.58, 0.15, 0.50) # Antique lacquer gold border
-	stage_sb.set_border_width_all(2)
-	stage_sb.set_corner_radius_all(30)
-	stage_sb.shadow_color = Color(0.04, 0.08, 0.06, 0.12)
-	stage_sb.shadow_size = 28
-	stage_sb.shadow_offset = Vector2(0, 8)
+	stage_sb.bg_color = Color("#fffdf8")
+	stage_sb.border_color = Color("#d9bb67")
+	stage_sb.set_border_width_all(1)
+	stage_sb.set_corner_radius_all(24)
+	stage_sb.shadow_color = Color(0.18, 0.15, 0.08, 0.14)
+	stage_sb.shadow_size = 16
+	stage_sb.shadow_offset = Vector2(0, 5)
 	stage_panel.add_theme_stylebox_override("panel", stage_sb)
 
-	# Frosted Blur Rect (hint_screen_texture)
-	var stage_blur := ColorRect.new()
-	stage_blur.name = "StageBlurRect"
-	stage_blur.show_behind_parent = true
-	stage_blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage_blur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var mat := ShaderMaterial.new()
-	var shader := Shader.new()
-	shader.code = """shader_type canvas_item;
-uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
-void fragment() {
-	COLOR = textureLod(screen_texture, SCREEN_UV, 2.4);
-}"""
-	mat.shader = shader
-	stage_blur.material = mat
-	stage_panel.add_child(stage_blur)
-
 	var stage_margin := MarginContainer.new()
-	stage_margin.add_theme_constant_override("margin_left", 20 if is_mobile else (28 if is_compact else 36))
-	stage_margin.add_theme_constant_override("margin_right", 20 if is_mobile else (28 if is_compact else 36))
-	stage_margin.add_theme_constant_override("margin_top", 18 if is_mobile else (18 if is_compact else 26))
-	stage_margin.add_theme_constant_override("margin_bottom", 18 if is_mobile else (18 if is_compact else 26))
+	stage_margin.add_theme_constant_override("margin_left", 18 if is_mobile else (26 if is_compact else 40))
+	stage_margin.add_theme_constant_override("margin_right", 18 if is_mobile else (26 if is_compact else 40))
+	stage_margin.add_theme_constant_override("margin_top", 12 if is_mobile else (22 if is_compact else 28))
+	stage_margin.add_theme_constant_override("margin_bottom", 12 if is_mobile else (22 if is_compact else 28))
 	stage_panel.add_child(stage_margin)
 
 	var stage_v := VBoxContainer.new()
@@ -613,7 +623,7 @@ func _show_question() -> void:
 
 	var quiz: Dictionary = quizzes[question_index]
 	var viewport_size := get_viewport_rect().size
-	var mobile := viewport_size.x < 600.0
+	var mobile := _is_compact_layout()
 	var v_height := viewport_size.y
 	var is_compact := v_height < 750.0
 
@@ -633,6 +643,10 @@ func _show_question() -> void:
 		staff_height = 240.0
 		staff_spacing = 42.0
 		font_size_prompt = 26
+	if mobile:
+		staff_height = 110.0 if v_height < 500.0 else 160.0
+		staff_spacing = 20.0 if v_height < 500.0 else 28.0
+		font_size_prompt = 18 if v_height < 500.0 else 20
 
 	_set_bottom_feedback_waiting()
 
@@ -644,6 +658,8 @@ func _show_question() -> void:
 	# Update score label in top bar
 	if score_label and is_instance_valid(score_label):
 		score_label.text = str(score)
+	if progress_count_label and is_instance_valid(progress_count_label):
+		progress_count_label.text = "%d / %d" % [question_index + 1, quizzes.size()]
 
 	content_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	var stage := _create_frosted_stage(mobile)
@@ -659,16 +675,15 @@ func _show_question() -> void:
 	var q_style := StyleBoxFlat.new()
 	q_style.bg_color = Color(1.0, 1.0, 1.0, 0.92)
 	q_style.border_color = Color(0.77, 0.58, 0.15, 0.45)
-	q_style.set_border_width_all(2)
-	q_style.border_width_bottom = 4
+	q_style.set_border_width_all(0)
 	q_style.set_corner_radius_all(18)
 	q_style.shadow_color = Color(0, 0, 0, 0.04)
-	q_style.shadow_size = 5
+	q_style.shadow_size = 0
 	q_style.shadow_offset = Vector2(0, 2)
 	q_style.content_margin_left = 22 if is_compact else 28
 	q_style.content_margin_right = 22 if is_compact else 28
-	q_style.content_margin_top = 12 if is_compact else 16
-	q_style.content_margin_bottom = 12 if is_compact else 16
+	q_style.content_margin_top = 4 if mobile else 12
+	q_style.content_margin_bottom = 4 if mobile else 12
 	question_card.add_theme_stylebox_override("panel", q_style)
 	stage_v.add_child(question_card)
 
@@ -684,12 +699,18 @@ func _show_question() -> void:
 
 	# 2. Staff Display (whiteboard card on top of frosted stage)
 	var show_staff := _is_note_question(quiz)
+	var question_body: BoxContainer = stage_v
+	if show_staff and mobile and v_height < 500.0:
+		question_body = HBoxContainer.new()
+		question_body.add_theme_constant_override("separation", 16)
+		stage_v.add_child(question_body)
 	if show_staff:
 		var staff_card := PanelContainer.new()
 		staff_card.name = "QuizStaffCard"
 		staff_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		staff_card.add_theme_stylebox_override("panel", _practice_staff_style())
-		stage_v.add_child(staff_card)
+		staff_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		question_body.add_child(staff_card)
 
 		var whiteboard_vbox := VBoxContainer.new()
 		whiteboard_vbox.add_theme_constant_override("separation", 2)
@@ -705,7 +726,7 @@ func _show_question() -> void:
 		card_header.add_child(card_header_spacer)
 
 		# Large audio button in top-right of staff card
-		var audio_btn_size := 48 if is_compact else 54
+		var audio_btn_size := 44 if mobile else 48
 		audio_button = Button.new()
 		audio_button.custom_minimum_size = Vector2(audio_btn_size, audio_btn_size)
 		audio_button.icon = load("res://assets/textures/lucide/volume-2.svg") as Texture2D
@@ -752,7 +773,7 @@ func _show_question() -> void:
 		# Staff display inside card
 		var staff: Control = load("res://scripts/StaffDisplay.gd").new()
 		staff.line_spacing = staff_spacing
-		staff.show_time_sig = true
+		staff.show_time_sig = not mobile
 		staff.beats_per_measure = 4
 		staff.time_sig_denominator = 4
 		staff.show_metronome = false
@@ -766,11 +787,11 @@ func _show_question() -> void:
 	# 3. Options Grid (on top of frosted stage)
 	options_box = GridContainer.new()
 	options_box.name = "OptionsGrid"
-	options_box.columns = 1 if mobile else 2
+	options_box.columns = 1 if viewport_size.x < 600.0 else 2
 	options_box.add_theme_constant_override("h_separation", 16 if is_compact else 20)
 	options_box.add_theme_constant_override("v_separation", 12 if is_compact else 16)
 	options_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stage_v.add_child(options_box)
+	question_body.add_child(options_box)
 
 	var options: Array = _parse_options(quiz.get("options", ""))
 	for i in range(options.size()):
@@ -791,15 +812,6 @@ func _show_question() -> void:
 	feedback_slot.modulate.a = 0.0
 	stage_v.add_child(feedback_slot)
 	feedback_label = feedback_slot
-
-func _add_quiz_scrim() -> void:
-	var scrim := ColorRect.new()
-	scrim.name = "QuizBackgroundScrim"
-	scrim.color = Color(0.04, 0.07, 0.06, 0.20)
-	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(scrim)
-	move_child(scrim, root_box.get_index())
 
 func _practice_staff_style() -> StyleBoxFlat:
 	var v_height := get_viewport_rect().size.y
@@ -1087,7 +1099,7 @@ func _show_quiz_result() -> void:
 		detail_text += " Có %d câu chưa đồng bộ được lên máy chủ." % unsynced_attempt_count
 	if api_spendable_stars >= 0:
 		detail_text += " Số dư sao có thể dùng: %d." % api_spendable_stars
-	_show_result("Quiz hoàn thành!", detail_text, score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0, score if submitted_attempt_count > 0 else -1, api_stars_earned if submitted_attempt_count > 0 else -1, submitted_attempt_count > 0)
+	_show_result("Quiz hoàn thành!", detail_text, score, stars, _restart, float(correct_count) / float(maxi(1, quizzes.size())) * 100.0, score if submitted_attempt_count > 0 else -1, api_stars_earned if submitted_attempt_count > 0 else -1, submitted_attempt_count > 0, true)
 
 
 ## Trạng thái đồng bộ ở trang kết quả phải phản ánh attempt đã nộp, không chỉ
@@ -1109,7 +1121,7 @@ func _restart() -> void:
 	if bottom_feedback_panel:
 		bottom_feedback_panel.visible = true
 	if floating_back_button:
-		floating_back_button.visible = true
+		floating_back_button.visible = false
 
 	question_index = 0
 	score = 0

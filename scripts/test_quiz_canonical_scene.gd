@@ -18,6 +18,8 @@ class FakeApi extends Node:
 		}], "totalPages": 1}}}
 	func submit_quiz_attempt(_quiz_id: int, _selected_answer: String, _attempt_id: String) -> Dictionary:
 		return {"status": 503, "body": {}}
+	func error_message(_response: Dictionary, fallback: String) -> String:
+		return fallback
 	func get_lesson_quizzes(lesson_id: int) -> Dictionary:
 		requested.append(lesson_id)
 		if fail_quiz_reads:
