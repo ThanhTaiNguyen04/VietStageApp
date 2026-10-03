@@ -42,14 +42,14 @@ func _load_activity_content() -> void:
 		await report.fetch_and_install_catalog()
 
 	for local_id: Variant in Context.local_lesson_ids:
-		var lesson: Dictionary = SecureDataManager.resolve_be_lesson(Context.instrument, str(local_id))
+		var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(Context.instrument, str(local_id))
 		if not lesson.is_empty():
 			var lesson_id := int(lesson.get("id", 0))
 			if lesson_id > 0 and _canonical_lesson_id <= 0:
 				_canonical_lesson_id = lesson_id
 				Context.set_backend_lesson(lesson)
 
-	var quizzes: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids)
+	var quizzes: Array = await report.fetch_quizzes_for_level(Context.instrument, Context.local_lesson_ids, true)
 	var minigames: Array = await report.fetch_minigames_for_level(Context.instrument, Context.local_lesson_ids, "", false)
 	_online_content = not quizzes.is_empty() or not minigames.is_empty()
 	_quiz_count = quizzes.size()

@@ -243,12 +243,15 @@ func fetch_quizzes_for_level(instrument: String, local_lesson_ids: Array, force_
 	var seen_quiz_ids: Dictionary = {}
 	print("[QuizDebug] fetching for local_ids: ", local_lesson_ids, " instrument: ", instrument)
 	for local_id: Variant in local_lesson_ids:
-		var lesson: Dictionary = SecureDataManager.resolve_be_lesson(instrument, str(local_id))
+		var lesson: Dictionary = SecureDataManager.resolve_be_lesson_exact(instrument, str(local_id))
 		print("[QuizDebug] resolve_be_lesson for ", local_id, " returned id: ", lesson.get("id", "EMPTY"))
 		if lesson.is_empty():
+			last_quiz_fetch_succeeded = false
 			continue
 		var lesson_id := int(lesson.get("id", 0))
 		if lesson_id <= 0:
+			continue
+		if bound_ids.has(lesson_id):
 			continue
 		LearningActivityContext.set_backend_lesson(lesson)
 		bound_ids.append(lesson_id)

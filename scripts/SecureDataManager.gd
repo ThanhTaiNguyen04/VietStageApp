@@ -796,6 +796,26 @@ static func resolve_be_lesson_exact(instrument_key: String, local_lesson_id: Str
 	for lesson: Dictionary in be_catalog:
 		if _lesson_matches_instrument(lesson, inst) and str(lesson.get("lessonCode", "")) == canonical:
 			return lesson
+	# Instructor-created lessons use generated LSN-* codes. Match their bundled
+	# lesson by title only when the title is unique for this instrument.
+	if inst == "dan_tranh":
+		var bundled_title := ""
+		var levels: Array = preload("res://scripts/DanTranhBundledLessonData.gd").LEVELS
+		for level: Dictionary in levels:
+			for local_lesson: Dictionary in level.get("lessons", []):
+				var local_code := str(local_lesson.get("quiz_lesson_id", local_lesson.get("practice_id", "")))
+				if local_code == local_lesson_id or canonical_lesson_id(inst, local_code) == canonical:
+					bundled_title = str(local_lesson.get("title", "")).strip_edges().to_lower()
+					break
+			if not bundled_title.is_empty():
+				break
+		if not bundled_title.is_empty():
+			var title_matches: Array[Dictionary] = []
+			for lesson: Dictionary in be_catalog:
+				if _lesson_matches_instrument(lesson, inst) and str(lesson.get("title", "")).strip_edges().to_lower() == bundled_title:
+					title_matches.append(lesson)
+			if title_matches.size() == 1:
+				return title_matches[0]
 	if inst == "sao_truc" and canonical == "sao_truc_level1_1_video":
 		for lesson: Dictionary in be_catalog:
 			if _lesson_matches_instrument(lesson, inst) and str(lesson.get("lessonCode", "")) == "LESSON_SAO_10":
