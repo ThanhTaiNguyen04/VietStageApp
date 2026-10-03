@@ -68,15 +68,13 @@ static func configure_intro(save_data: Dictionary) -> void:
 
 static func get_card_status(card_type: String, save_data: Dictionary) -> Dictionary:
 	var step_ids: Array = CARD_STEP_IDS.get(card_type, [])
-	var completed: Array = save_data.get("completed_lessons", {}).get(INSTRUMENT_ID, [])
-	var stars: Dictionary = save_data.get("stars", {}).get(INSTRUMENT_ID, {})
 	var completed_count := 0
 	var total_stars := 0
 	for step_id_value in step_ids:
 		var step_id := str(step_id_value)
-		if completed.has(step_id):
+		if SecureDataManager.is_lesson_completed(INSTRUMENT_ID, step_id):
 			completed_count += 1
-			total_stars += int(stars.get(step_id, 0))
+			total_stars += SecureDataManager.get_lesson_stars(INSTRUMENT_ID, step_id)
 	var step_count := step_ids.size()
 	var percentage := 0
 	if step_count > 0:

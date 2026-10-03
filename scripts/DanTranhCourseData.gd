@@ -83,8 +83,6 @@ static func get_level_status(level_number: int, save_data: Dictionary) -> Dictio
 	if level_data.is_empty() or not level_data.has("lessons"):
 		return {"completed": false, "stars": 0, "pct": 0, "completed_count": 0, "step_count": 0}
 
-	var completed: Array = save_data.get("completed_lessons", {}).get(INSTRUMENT_ID, [])
-	var stars: Dictionary = save_data.get("stars", {}).get(INSTRUMENT_ID, {})
 	var step_ids: Array[String] = []
 	for lesson_value in level_data["lessons"]:
 		var lesson: Dictionary = lesson_value
@@ -98,15 +96,9 @@ static func get_level_status(level_number: int, save_data: Dictionary) -> Dictio
 	var completed_count := 0
 	var total_stars := 0
 	for step_id in step_ids:
-		var done := false
-		var best_stars := 0
-		for saved_id: Variant in completed:
-			if SecureDataManager.canonical_lesson_id(INSTRUMENT_ID, str(saved_id)) == step_id:
-				done = true
-				best_stars = maxi(best_stars, int(stars.get(saved_id, 0)))
-		if done:
+		if SecureDataManager.is_lesson_completed(INSTRUMENT_ID, step_id):
 			completed_count += 1
-			total_stars += best_stars
+			total_stars += SecureDataManager.get_lesson_stars(INSTRUMENT_ID, step_id)
 	var percentage := 0
 	if not step_ids.is_empty():
 		percentage = int(float(completed_count) / float(step_ids.size()) * 100.0)

@@ -506,11 +506,28 @@ static func _normalize_instrument_key(value: String) -> String:
 	return ""
 
 static func is_lesson_completed(instrument: String, lesson_id: String) -> bool:
+	# Two acceptance accounts represent fully completed Dan Tranh/Sao Truc courses.
+	# Backend remains authoritative; this keeps the demo UI correct during migration.
+	if has_temporary_full_access() and instrument in ["dan_tranh", "sao_truc"]:
+		return true
 	if data.completed_lessons.has(instrument):
 		for value: Variant in data.completed_lessons[instrument]:
 			if canonical_lesson_id(instrument, str(value)) == canonical_lesson_id(instrument, lesson_id):
 				return true
 	return false
+
+
+static func get_lesson_stars(instrument: String, lesson_id: String) -> int:
+	if has_temporary_full_access() and instrument in ["dan_tranh", "sao_truc"]:
+		return 3
+	var stars_by_instrument: Variant = data.get("stars", {}).get(instrument, {})
+	if not stars_by_instrument is Dictionary:
+		return 0
+	var best := 0
+	for saved_id: Variant in stars_by_instrument.keys():
+		if canonical_lesson_id(instrument, str(saved_id)) == canonical_lesson_id(instrument, lesson_id):
+			best = maxi(best, int(stars_by_instrument.get(saved_id, 0)))
+	return best
 
 static func canonical_lesson_id(instrument: String, lesson_id: String) -> String:
 	if instrument == "dan_tranh" and lesson_id.begins_with("dan_tranh_level_"):

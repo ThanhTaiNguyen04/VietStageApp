@@ -2570,9 +2570,9 @@ func _fetch_cosmetics_data() -> void:
 			_set_shop_status("", false)
 			if body is Dictionary:
 				SecureDataManager.apply_backend_reward(body)
-			# Vật phẩm đã sở hữu vẫn phải được giữ khi admin ngừng bán (INACTIVE).
-			# Chỉ catalog vật phẩm chưa sở hữu mới lọc trạng thái này.
-			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []), true)
+			# Vật phẩm INACTIVE phải ẩn hoàn toàn khỏi cửa hàng và phòng trang trí.
+			# Quyền sở hữu vẫn do backend giữ và sẽ xuất hiện lại khi admin kích hoạt.
+			_cosmetics_owned = _filter_room_decor_items(body.get("owned", []))
 			_cosmetics_locked = _filter_room_decor_items(body.get("locked", []))
 
 			# Backend là nguồn chính cho trạng thái trang bị; local chỉ là cache offline.
@@ -2667,7 +2667,7 @@ func _new_client_request_id() -> String:
 	var random_bytes := Crypto.new().generate_random_bytes(16)
 	return random_bytes.hex_encode()
 
-func _filter_room_decor_items(value: Variant, include_inactive: bool = false) -> Array:
+func _filter_room_decor_items(value: Variant) -> Array:
 	var source: Array = []
 	if value is Array:
 		source = value
@@ -2682,7 +2682,7 @@ func _filter_room_decor_items(value: Variant, include_inactive: bool = false) ->
 		var item := entry as Dictionary
 		var item_type := str(item.get("itemType", item.get("item_type", "ROOM_DECOR")))
 		var status := str(item.get("status", "ACTIVE"))
-		if item_type == "ROOM_DECOR" and (include_inactive or status != "INACTIVE"):
+		if item_type == "ROOM_DECOR" and status == "ACTIVE":
 			result.append(item)
 	return result
 
@@ -3648,7 +3648,7 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 			_card_particle_timer = 999.0
 			_player_expression = "happy"
 			get_tree().create_timer(1.2).timeout.connect(func(): _player_expression = "normal")
-			_set_shop_status("Đã mở khóa %s." % str(item.get("name", "vật phẩm")), false)
+			_set_shop_status("Đã mua %s." % str(item.get("name", "vật phẩm")), false)
 			_update_star_badge()
 			await _fetch_cosmetics_data()
 		else:
@@ -3659,7 +3659,7 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 		var is_equipped := bool(item.get("isEquipped", item.get("is_equipped", false)))
 		var equip_response = await _api_client.equip_cosmetic(cosmetic_id, not is_equipped)
 		if _api_client._is_success(equip_response):
-			_set_shop_status("Đã %s %s." % ["cất" if is_equipped else "trưng bày", str(item.get("name", "vật phẩm"))], false)
+			_set_shop_status("Đã %s %s." % ["bỏ trang trí" if is_equipped else "trang trí", str(item.get("name", "vật phẩm"))], false)
 			await _fetch_cosmetics_data()
 		else:
 			_set_shop_status(_api_client.error_message(equip_response, "Không thể cập nhật trạng thái trang bị."), true)
@@ -3807,7 +3807,7 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 		_style_disabled_button(btn)
 		btn.disabled = true
 	elif not BackendReport.is_signed_in():
-		btn.text = "ĐĂNG NHẬP ĐỂ MỞ KHÓA"
+		btn.text = "ĐĂNG NHẬP ĐỂ MUA"
 		_style_disabled_button(btn)
 		btn.disabled = true
 	elif not _cosmetics_account_ready or _cosmetics_loading:
@@ -3820,7 +3820,7 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 			_style_disabled_button(btn)
 			btn.disabled = true
 		else:
-			btn.text = "MỞ KHÓA"
+			btn.text = "MUA · %d SAO" % cost
 			if stars >= cost:
 				_style_primary_btn(btn)
 				btn.disabled = false
@@ -3829,12 +3829,12 @@ func _create_shop_card(item: Dictionary, owned: bool, stars: int) -> PanelContai
 				btn.disabled = true
 	else:
 		btn.disabled = false
-		var active = item.get("isEquipped", false)
+		var active = bool(item.get("isEquipped", item.get("is_equipped", false)))
 		if active:
-			btn.text = "CẤT ĐI"
+			btn.text = "ĐÃ TRANG TRÍ · BẤM ĐỂ BỎ"
 			_style_outline_btn(btn)
 		else:
-			btn.text = "TRƯNG BÀY"
+			btn.text = "TRANG TRÍ"
 			_style_primary_btn(btn)
 			
 		# Clean extra emojis from equipped button texts and add style box customization if needed
