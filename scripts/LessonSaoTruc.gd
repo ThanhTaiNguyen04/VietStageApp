@@ -269,10 +269,11 @@ func _ready():
 		target_hz = NOTE_FREQS.get(active_note, 0.0)
 		
 		# Setup Intro Speech
-		var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
-		if not remote_speech.is_empty():
-			txt = str(remote_speech[0].get("text", ""))
-		elif LESSON_DIALOGUES.has(active_node_id):
+		# Tạm tắt nội dung API; giữ nhánh này để mở lại sau.
+		# var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
+		# if not remote_speech.is_empty():
+		# 	txt = str(remote_speech[0].get("text", ""))
+		if LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["intro"]
 		else:
 			txt = "Chào mừng bạn đến bài học! Hôm nay chúng ta sẽ làm quen với nốt " + active_note + ", để thổi nốt " + active_note + " bạn " + lesson_info["desc"].to_lower() + ". Nào cùng thử nhé!"
@@ -1860,10 +1861,11 @@ func _hit_note():
 		start_rhythm_btn.pressed.connect(_start_rhythm_game)
 		
 		var txt = ""
-		var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
-		if remote_speech.size() > 1:
-			txt = str(remote_speech[1].get("text", ""))
-		elif LESSON_DIALOGUES.has(active_node_id):
+		# Tạm tắt nội dung API; đoạn giữa bài cũng dùng lời cô Mai data cứng.
+		# var remote_speech := SecureDataManager.get_be_teacher_speech(active_node_id)
+		# if remote_speech.size() > 1:
+		# 	txt = str(remote_speech[1].get("text", ""))
+		if LESSON_DIALOGUES.has(active_node_id):
 			txt = LESSON_DIALOGUES[active_node_id]["mid"]
 		elif active_node_id.begins_with("sao_truc_level5_") or active_node_id in ["Node35", "Node36", "Node37", "Node38", "Node39", "Node40", "Node41", "Node42"]:
 			txt = "Tốt lắm! Bạn đã làm quen với các nốt nhạc. Bây giờ chúng ta cùng thổi theo nhịp điệu của bài nhé!"
@@ -2295,7 +2297,10 @@ func _on_complete():
 	completion_submission_in_progress = false
 	if not bool(result.get("submitted", false)) and not bool(result.get("queued", false)):
 		push_warning("Không thể đồng bộ hoàn thành bài: %s" % str(result.get("message", result.get("reason", "unknown"))))
+		await BackendReport.show_lesson_completion_result(self, result)
 		return
+	if bool(result.get("queued", false)):
+		await BackendReport.show_lesson_completion_result(self, result)
 	get_tree().change_scene_to_file("res://scenes/LessonSaoTrucList.tscn")
 
 func _sync_practice_to_backend(inst: String, local_lesson_id: String) -> Dictionary:

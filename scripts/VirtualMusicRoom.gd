@@ -2557,10 +2557,11 @@ func _fetch_cosmetics_data() -> void:
 			_cosmetics_all = _filter_room_decor_items(response.get("body", {}).get("data", []))
 			
 		var my_response = await _api_client.get_my_cosmetics()
-		if _api_client._is_success(my_response):
+		if _api_client._is_success(my_response) and my_response.get("body", {}).get("success", true) != false:
 			var body = my_response.get("body", {}).get("data", {})
 			if not body is Dictionary or not body.get("owned") is Array or not body.get("locked") is Array or not (typeof(body.get("totalStars")) in [TYPE_INT, TYPE_FLOAT]) or not (typeof(body.get("spendableStars")) in [TYPE_INT, TYPE_FLOAT]):
 				_cosmetics_loading = false
+				_update_star_badge()
 				push_warning("[Cosmetics] GET /api/users/me/cosmetics: invalid response schema (stars/owned/locked)")
 				_set_shop_status("Dữ liệu số sao hoặc vật phẩm không hợp lệ. Tạm thời chưa thể mua hoặc trang bị.", true)
 				if shop_popup and shop_popup.visible:
@@ -2588,12 +2589,20 @@ func _fetch_cosmetics_data() -> void:
 				_apply_backend_cosmetic_layout(layout_response.get("body", {}).get("data", {}))
 		else:
 			var status := int(my_response.get("status", 0))
-			if status == 401:
+			if status >= 200 and status < 300:
+				_set_shop_status(_api_client.error_message(my_response, "Máy chủ chưa xác nhận dữ liệu vật phẩm của tài khoản."), true)
+			elif status == 401:
 				_set_shop_status("Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại để dùng cửa hàng.", true)
 			elif status == 403:
 				_set_shop_status("Tài khoản chưa được phép truy cập vật phẩm. Vui lòng liên hệ hỗ trợ.", true)
+			elif status == 0:
+				_set_shop_status("Không kết nối được máy chủ để kiểm tra số sao và vật phẩm đã mua. Vui lòng kiểm tra mạng rồi mở lại cửa hàng.", true)
+			elif status >= 500:
+				_set_shop_status("Máy chủ không tải được số sao và vật phẩm đã mua (HTTP %d). Cần kiểm tra API /users/me/cosmetics." % status, true)
+			elif status == 404:
+				_set_shop_status("Máy chủ chưa có API kiểm tra vật phẩm đã mua (HTTP 404).", true)
 			else:
-				_set_shop_status("Chưa tải được số sao và vật phẩm đã sở hữu. Tạm thời chưa thể mua hoặc trang bị.", true)
+				_set_shop_status("Chưa tải được số sao và vật phẩm đã mua (HTTP %d). Tạm thời chưa thể mua hoặc trang trí." % status, true)
 	else:
 		# Nếu backend bảo vệ catalog bằng Bearer token, người chưa đăng nhập sẽ thấy yêu cầu đăng nhập.
 		var response = await _api_client.get_all_cosmetics("ROOM_DECOR")
@@ -2610,6 +2619,7 @@ func _fetch_cosmetics_data() -> void:
 			
 	# Spawn lại các vật phẩm trang bị thực tế từ API và cập nhật shop
 	_cosmetics_loading = false
+	_update_star_badge()
 	if _cosmetics_account_ready:
 		_spawn_decorations()
 	if shop_popup and shop_popup.visible:
@@ -2680,8 +2690,8 @@ func _filter_room_decor_items(value: Variant) -> Array:
 		if not entry is Dictionary:
 			continue
 		var item := entry as Dictionary
-		var item_type := str(item.get("itemType", item.get("item_type", "ROOM_DECOR")))
-		var status := str(item.get("status", "ACTIVE"))
+		var item_type := str(item.get("itemType", item.get("item_type", "")))
+		var status := str(item.get("status", ""))
 		if item_type == "ROOM_DECOR" and status == "ACTIVE":
 			result.append(item)
 	return result
@@ -2881,7 +2891,7 @@ func _setup_hud_shop_button() -> void:
 	
 	var badge_label := Label.new()
 	badge_label.name = "Label"
-	badge_label.text = "%d" % SecureDataManager.get_spendable_stars()
+	badge_label.text = "—" if BackendReport.is_signed_in() and not _cosmetics_account_ready else "%d" % SecureDataManager.get_spendable_stars()
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge_label.add_theme_font_size_override("font_size", 16)
@@ -3298,7 +3308,7 @@ func _update_star_badge() -> void:
 	if not label:
 		label = $HUD.get_node_or_null("HUDHBox/StarBadge/Margin/Label") as Label
 	if label:
-		label.text = "%d" % SecureDataManager.get_spendable_stars()
+		label.text = "—" if BackendReport.is_signed_in() and not _cosmetics_account_ready else "%d" % SecureDataManager.get_spendable_stars()
 
 
 func _default_cosmetic_size(item: Dictionary) -> Vector2:
@@ -3463,6 +3473,9 @@ func _draw_decor_item(c: Control, item: Dictionary, size_scale: float = 1.0) -> 
 func _open_shop_popup() -> void:
 	if not shop_popup:
 		_setup_shop_popup()
+	# Refresh balance and ownership each time; the backend may have recovered
+	# since this room was opened, or another device may have bought an item.
+	_fetch_cosmetics_data()
 	_update_shop_items()
 	_apply_popup_layout(shop_popup, _is_mobile_layout)
 	_player_expression = "focused"
@@ -3638,7 +3651,7 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 
 	if not owned:
 		var purchase_response = await _api_client.purchase_cosmetic(cosmetic_id, _new_client_request_id())
-		if _api_client._is_success(purchase_response):
+		if _api_client._is_success(purchase_response) and purchase_response.get("body", {}).get("success", true) != false:
 			var purchase_body: Variant = purchase_response.get("body", {})
 			var purchase_data: Variant = purchase_body
 			if purchase_body is Dictionary and purchase_body.get("data") is Dictionary:
@@ -3658,7 +3671,7 @@ func _on_shop_action_pressed(item: Dictionary, owned: bool) -> void:
 	else:
 		var is_equipped := bool(item.get("isEquipped", item.get("is_equipped", false)))
 		var equip_response = await _api_client.equip_cosmetic(cosmetic_id, not is_equipped)
-		if _api_client._is_success(equip_response):
+		if _api_client._is_success(equip_response) and equip_response.get("body", {}).get("success", true) != false:
 			_set_shop_status("Đã %s %s." % ["bỏ trang trí" if is_equipped else "trang trí", str(item.get("name", "vật phẩm"))], false)
 			await _fetch_cosmetics_data()
 		else:

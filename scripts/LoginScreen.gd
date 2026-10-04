@@ -1108,6 +1108,8 @@ func _name_from_email(email: String) -> String:
 	return email.split("@")[0].replace(".", " ").capitalize()
 
 func _on_guest_pressed() -> void:
+	if AuthSessionStore.has_access_token():
+		await BackendReport.end_usage_session()
 	AuthSessionStore.clear_session()
 	SecureDataManager.activate_guest()
 	SecureDataManager.data["user_name"] = "Khách"
