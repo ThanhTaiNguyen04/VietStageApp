@@ -25,6 +25,8 @@ func _initialize() -> void:
 	invalid = valid.duplicate(true)
 	invalid["sources"] = []
 	assert(not Manager.is_valid_chat_response(invalid))
+	invalid["answerBasis"] = "MODEL_KNOWLEDGE"
+	assert(Manager.is_valid_chat_response(invalid))
 	for status: String in ["OUT_OF_SCOPE", "INSUFFICIENT_KNOWLEDGE"]:
 		var refusal := {"success": true, "status": status, "inScope": status == "INSUFFICIENT_KNOWLEDGE", "answer": "Mai chưa thể trả lời câu hỏi này.", "sources": []}
 		manager.structured_buffer = JSON.stringify(refusal)

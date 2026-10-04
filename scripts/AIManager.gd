@@ -289,7 +289,7 @@ static func is_valid_chat_response(data: Dictionary) -> bool:
 			return false
 	match data.get("status", ""):
 		"ANSWERED":
-			return data["inScope"] == true and not data["sources"].is_empty()
+			return data["inScope"] == true and (not data["sources"].is_empty() or data.get("answerBasis", "") == "MODEL_KNOWLEDGE")
 		"OUT_OF_SCOPE":
 			return data["inScope"] == false and data["sources"].is_empty()
 		"INSUFFICIENT_KNOWLEDGE":
