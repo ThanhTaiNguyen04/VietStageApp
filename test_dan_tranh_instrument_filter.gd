@@ -184,9 +184,7 @@ func _init() -> void:
 	for case_name in rejected_cases:
 		var rejected_result: Dictionary = analyzer.analyze_dan_tranh_sound(rejected_cases[case_name])
 		if rejected_result.get("accepted", false):
-			failures.append("Nhận nhầm %s là tiếng đàn (%.1f%%)" % [
-				case_name, float(rejected_result.get("confidence", 0.0))
-			])
+			failures.append("Nhận nhầm %s là tiếng đàn: %s" % [case_name, JSON.stringify(rejected_result)])
 
 	var pluck := _plucked_tone(440.0)
 	var candidate_offset := 0
@@ -203,7 +201,7 @@ func _init() -> void:
 			break
 	if not analyzer.has_recent_dan_tranh_attack():
 		failures.append("Tiếng gảy hợp lệ không mở cổng sau khi thu đủ 4096 mẫu")
-	analyzer._handle_silence(0.36)
+	analyzer._handle_silence(analyzer.INSTRUMENT_GATE_SILENCE_SEC + 0.01)
 	if analyzer.has_recent_dan_tranh_attack():
 		failures.append("Cổng tiếng đàn không đóng sau khi mất tín hiệu")
 

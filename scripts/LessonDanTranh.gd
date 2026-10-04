@@ -293,6 +293,30 @@ var REQUIRED_HOLD_TIME: float = 0.02
 
 var wrong_note_time: float = 0.0
 var REQUIRED_WRONG_HOLD_TIME: float = 0.02
+var _last_completed_beginner_attack := -1
+
+func _is_beginner_note_practice() -> bool:
+	return current_lesson_id.begins_with("dan_tranh_level_1_") \
+		or current_lesson_id.begins_with("dan_tranh_level_2_")
+
+func _note_pitch_tolerance_cents(note_name: String = "") -> float:
+	if not _is_beginner_note_practice():
+		return 65.0
+	# The supplied fifth-string recording settles ~80-87 cents flat after
+	# its transient. Allow a small decay margin, still below Fa2's +100 cents.
+	return 90.0 if note_name == "Mi2" else 80.0
+
+func _wrong_note_confirmation_sec() -> float:
+	return 0.18 if _is_beginner_note_practice() else REQUIRED_WRONG_HOLD_TIME
+
+func _is_completed_beginner_attack() -> bool:
+	return _is_beginner_note_practice() and analyzer != null \
+		and _last_completed_beginner_attack > 0 \
+		and int(analyzer.get("_instrument_gate_generation")) == _last_completed_beginner_attack
+
+func _remember_completed_beginner_attack() -> void:
+	if _is_beginner_note_practice() and analyzer:
+		_last_completed_beginner_attack = int(analyzer.get("_instrument_gate_generation"))
 
 var active_falling_notes = []
 var practice_time: float = 0.0
@@ -446,6 +470,7 @@ func _ready():
 		if pos < min_pos: min_pos = pos
 		if pos > max_pos: max_pos = pos
 	
+	_apply_bundled_finger2_score()
 	var optimal_spacing = 65.0
 	if max_pos > min_pos:
 		var span = max_pos - min_pos
@@ -1881,15 +1906,15 @@ func _update_continuous_pitch_hud(delta: float = 0.016):
 		# Update status label real-time continuously using robust pitch matching.
 		if robust_match:
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
+				pitch_status_lbl.text = "🟢 Đúng cao độ · đang xác nhận nốt"
 				pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
 		elif raw_cents < -35.0:
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents)" % raw_cents
+				pitch_status_lbl.text = "🔴 THẤP HƠN (%.0f cents) · kiểm tra dây/chỉnh âm" % raw_cents
 				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 		else:
 			if pitch_status_lbl:
-				pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents)" % raw_cents
+				pitch_status_lbl.text = "🔴 CAO HƠN (+%.0f cents) · kiểm tra dây/chỉnh âm" % raw_cents
 				pitch_status_lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3))
 
 func _get_closest_dan_tranh_note_name(freq: float) -> String:
@@ -1931,17 +1956,12 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		return false
 
 	var cents_error := absf(1200.0 * log(pitch / target_hz) / log(2.0))
-	if cents_error <= 65.0:
+	var tolerance := _note_pitch_tolerance_cents(target_note_name)
+	if cents_error <= tolerance:
 		return true
 
-	# Dây thấp (Sol1=196Hz, La1=220Hz): YIN thường bắt harmonic thứ 2 (×2 freq).
-	# Khi pitch ≈ 2×target và target < 260Hz, chấp nhận là đúng dây vì context bài
-	# học luôn chỉ yêu cầu 1 dây cụ thể tại một thời điểm.
-	if target_hz < 260.0 and pitch > 0.0:
-		var octave_cents := absf(1200.0 * log(pitch / (target_hz * 2.0)) / log(2.0))
-		if octave_cents <= 65.0:
-			return true
-
+	# Octave correction belongs in the detector. A real upper-octave string
+	# must not complete a lower string merely because it is twice its frequency.
 	# Dùng native detector như phép đo tần số thứ 2 cho cùng nốt đó.
 	if analyzer and target_note_name != "":
 		var detected_note: Dictionary = analyzer.detect_dan_tranh_note(
@@ -1951,7 +1971,7 @@ func _is_pitch_match_robust(target_hz: float, target_note_name: String, pitch: f
 		var detected_frequency: float = detected_note.get("frequency", 0.0)
 		if detected_note.get("note_name", "None") == target_note_name and detected_frequency > 0.0:
 			var detected_cents := absf(1200.0 * log(detected_frequency / target_hz) / log(2.0))
-			return detected_cents <= 65.0
+			return detected_cents <= tolerance
 
 	return false
 
@@ -2076,7 +2096,7 @@ func _on_practice_now_pressed() -> void:
 	# Dừng lời đang phát và vô hiệu callback tự chuyển bước trước khi vào tập.
 	intro_playback_token += 1
 	if ai_audio and is_instance_valid(ai_audio.audio_player):
-		ai_audio.audio_player.stop()
+		ai_audio.stop_speech()
 	if _is_theory_only_lesson():
 		_finish_theory_lesson()
 		return
@@ -2548,7 +2568,7 @@ func _process_practice_single(delta: float) -> void:
 		return
 
 	# 2. Check if user played a WRONG note via microphone (requires 0.18s debounce hold time)
-	if analyzer and wrong_note_cooldown <= 0.0:
+	if analyzer and wrong_note_cooldown <= 0.0 and not _is_completed_beginner_attack():
 		var db = analyzer.current_amplitude_db
 		if db > -50.0:
 			var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
@@ -2558,7 +2578,7 @@ func _process_practice_single(delta: float) -> void:
 				and det_name in target_note.split("+")
 			if det_name != "None" and det_idx >= 0 and is_partial_polyphonic:
 				wrong_note_time += delta
-				if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+				if wrong_note_time >= _wrong_note_confirmation_sec():
 					wrong_note_time = 0.0
 					wrong_note_cooldown = 2.0
 					_show_polyphonic_incomplete(target_note)
@@ -2573,7 +2593,7 @@ func _process_practice_single(delta: float) -> void:
 				
 			if det_name != "None" and is_wrong and det_idx >= 0:
 				wrong_note_time += delta
-				if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+				if wrong_note_time >= _wrong_note_confirmation_sec():
 					wrong_note_time = 0.0
 					wrong_note_cooldown = 3.5
 					_on_wrong_note_played(det_name, det_idx, target_note, target_string_idx)
@@ -2647,6 +2667,7 @@ func _show_polyphonic_incomplete(target_note: String) -> void:
 		mic_status_lbl.add_theme_color_override("font_color", Color(0.80, 0.55, 0.12, 1.0))
 
 func _on_intro_note_correct(note_name: String) -> void:
+	_remember_completed_beginner_attack()
 	current_state = State.INTRO
 	var note_type = "quarter"
 	if current_lesson_id in ["dan_tranh_level_1_bai_1_practice", "dan_tranh_level_1_bai_2_practice", "dan_tranh_level_1_bai_3_practice", "dan_tranh_level_1_bai_4_practice", "dan_tranh_level_1_bai_5_practice", "dan_tranh_level_2_bai_5_practice"]:
@@ -2671,6 +2692,7 @@ func _on_intro_note_correct(note_name: String) -> void:
 
 
 func _on_single_note_correct(raw_note_name: String) -> void:
+	_remember_completed_beginner_attack()
 	current_state = State.INTRO
 	var notes = raw_note_name.split("+")
 	var staff_notes = []
@@ -4667,7 +4689,20 @@ func _is_note_missing(note_idx: int) -> bool:
 	return note_idx % 16 == 15
 
 
+func _apply_bundled_finger2_score() -> void:
+	if COURSE_API_ADAPTER.REMOTE_CONTENT_ENABLED or current_lesson_id != "dan_tranh_level_1_bai_8_practice":
+		return
+	# Replace the score retained by an already-open selector or direct scene
+	# launch with the canonical five-string exercise, including quarter-note Mi2.
+	for entry in preload("res://scripts/DanTranhBundledLessonData.gd").LEVELS[0]["lessons"]:
+		if int(entry.get("number", 0)) == 8:
+			lesson_sheet.assign(entry["sheet"])
+			lesson_durations.assign(entry["durations"])
+			current_song_fingerings.assign(entry["fingerings"])
+			return
+
 func _start_practice():
+	_apply_bundled_finger2_score()
 	_stop_technique_sample()
 	if intro_overlay:
 		intro_overlay.visible = false
@@ -4942,8 +4977,8 @@ func _process_practice(delta):
 							cents_err = 1200.0 * log(pitch / target_hz) / log(2.0)
 					
 					var tech_res = {"vibrato_detected": false, "bend_detected": false}
-					if analyzer and analyzer._analyzer and target_hz > 0.0:
-						tech_res = analyzer._analyzer.analyze_pitch_contour(analyzer._pitch_history, target_hz, AudioServer.get_mix_rate())
+					# A confirmed single pluck has no pitch contour. Press/vibrato
+					# exercises collect and score their own histories separately.
 					
 					var pluck_dist = abs(note["x"] - hit_x)
 					var timing_score = clamp(100.0 - pluck_dist * 2.0, 0.0, 100.0)
@@ -4977,6 +5012,7 @@ func _process_practice(delta):
 						pitch_status_lbl.text = "🟢 CHÍNH XÁC!"
 						pitch_status_lbl.add_theme_color_override("font_color", Color(0.25, 0.95, 0.45))
 					if ai_audio: ai_audio.speak_vietnamese("Tốt lắm! Chính xác hợp âm." if chord_group != -1 else "Tốt lắm! Chính xác nốt %s." % clean_note)
+					_remember_completed_beginner_attack()
 					wrong_note_time = 0.0
 					consecutive_hits += 1
 					consecutive_misses = 0
@@ -4984,7 +5020,7 @@ func _process_practice(delta):
 					continue
 					
 				# 2. Check if user played WRONG note (requires 0.18s debounce hold time)
-				if not _is_micro_scoring_blocked() and analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0:
+				if not _is_micro_scoring_blocked() and analyzer and wrong_note_cooldown <= 0.0 and mic_cooldown <= 0.0 and not _is_completed_beginner_attack():
 					var db = analyzer.current_amplitude_db
 					if db > -50.0:
 						var note_info = analyzer.detect_dan_tranh_note(analyzer._analysis_buffer, AudioServer.get_mix_rate())
@@ -4994,7 +5030,7 @@ func _process_practice(delta):
 							and det_name in raw_chord_name.split("+")
 						if det_name != "None" and det_idx >= 0 and is_partial_polyphonic:
 							wrong_note_time += delta
-							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+							if wrong_note_time >= _wrong_note_confirmation_sec():
 								wrong_note_time = 0.0
 								wrong_note_cooldown = 2.0
 								_show_polyphonic_incomplete(raw_chord_name)
@@ -5010,7 +5046,7 @@ func _process_practice(delta):
 						if det_name != "None" and is_wrong and det_idx >= 0:
 
 							wrong_note_time += delta
-							if wrong_note_time >= REQUIRED_WRONG_HOLD_TIME:
+							if wrong_note_time >= _wrong_note_confirmation_sec():
 								wrong_note_time = 0.0
 								wrong_note_cooldown = 3.5 # Cooldown to avoid repeating speech
 								_dan_tranh_attempts.append({
@@ -5067,6 +5103,9 @@ func _process_practice(delta):
 			glissando_progress_bar.value = completed
 
 func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name: String = "") -> bool:
+	if _is_completed_beginner_attack():
+		time_correct = 0.0
+		return false
 	if _is_micro_scoring_blocked() or not analyzer:
 		time_correct = 0.0
 		return false
@@ -5078,6 +5117,9 @@ func _check_mic_pitch(target_hz: float, delta: float = 0.016, _target_note_name:
 	var pitch: float = analyzer.current_pitch
 	var db: float = analyzer.current_amplitude_db
 	var is_poly = "+" in _target_note_name
+	if not is_poly and not analyzer.current_pitch_is_reliable:
+		time_correct = 0.0
+		return false
 	
 	# Relaxed volume threshold to pick up standard acoustic instruments
 	if db <= analyzer.volume_threshold_db:
@@ -5672,7 +5714,7 @@ func _skip_current_intro_step() -> void:
 	# its TTS before rendering only the next dialogue item.
 	intro_playback_token += 1
 	if ai_audio and is_instance_valid(ai_audio.audio_player):
-		ai_audio.audio_player.stop()
+		ai_audio.stop_speech()
 	# Nếu là bài lý thuyết và đã ở slide cuối → hoàn thành ngay, không chờ
 	if _is_theory_only_lesson():
 		var dialogues = COURSE_API_ADAPTER.bundled_dialogues(current_lesson_code, LESSON_DIALOGUES)
@@ -5699,7 +5741,7 @@ func _play_previous_intro_step() -> void:
 		return
 	intro_playback_token += 1
 	if ai_audio and is_instance_valid(ai_audio.audio_player):
-		ai_audio.audio_player.stop()
+		ai_audio.stop_speech()
 	current_state = State.INTRO
 	intro_step = max(0, intro_step - 2)
 	_play_next_intro_step()

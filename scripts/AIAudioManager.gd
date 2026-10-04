@@ -31,6 +31,18 @@ var current_playing_idx: int = -1              # Vị trí câu đang được p
 var current_sentence_text: String = ""         # Văn bản của câu đang phát
 var current_sentence_vowels: Array[String] = [] # Danh sách các nguyên âm tương ứng của câu đang phát
 var is_ai_finished: bool = true                # Đánh dấu xem AI đã gửi hết câu chưa (khi stream)
+var _speech_generation := 0
+
+func stop_speech() -> void:
+	_speech_generation += 1
+	if audio_player:
+		audio_player.stop()
+	DisplayServer.tts_stop()
+	current_playing_idx = -1
+	sentence_queue.clear()
+	is_ai_finished = true
+	_reset_mouth()
+	tts_finished.emit()
 
 ## Khởi tạo và kết nối node AudioStreamPlayer khi node sẵn sàng
 func _ready() -> void:
@@ -47,11 +59,7 @@ func _ready() -> void:
 ## Nhận toàn bộ đoạn văn bản tiếng Việt, ngắt thành từng câu và bắt đầu phát TTS
 func speak_vietnamese(text: String) -> void:
 	# Dừng âm thanh và TTS đang phát hiện tại
-	audio_player.stop()
-	DisplayServer.tts_stop()
-	current_playing_idx = -1
-	sentence_queue.clear()
-	is_ai_finished = true
+	stop_speech()
 	
 	# Chia nhỏ đoạn văn bản thành danh sách từng câu
 	var sentences = _split_into_sentences(text)
@@ -77,9 +85,7 @@ func speak_vietnamese(text: String) -> void:
 
 ## Bắt đầu phiên phát âm thanh dạng Streaming (nhận dữ liệu từng phần từ AI)
 func start_streaming_speech() -> void:
-	audio_player.stop()
-	current_playing_idx = -1
-	sentence_queue.clear()
+	stop_speech()
 	is_ai_finished = false
 
 ## Thêm một đoạn văn bản mới vào hàng đợi streaming và kích hoạt tải âm thanh
@@ -200,9 +206,14 @@ func _download_sentence(index: int) -> void:
 	item["downloading"] = true
 	
 	var http = HTTPRequest.new()
+	http.timeout = 8.0
+	var generation := _speech_generation
 	add_child(http)
 	
 	http.request_completed.connect(func(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+		if generation != _speech_generation:
+			http.queue_free()
+			return
 		_on_sentence_download_completed(index, http, result, response_code, body)
 	)
 	
@@ -315,8 +326,9 @@ func _play_next_sentence(index: int) -> void:
 			
 			# Ước lượng thời gian phát của native TTS dựa vào số ký tự
 			var duration = max(1.0, float(item["text"].length()) * 0.08)
+			var generation := _speech_generation
 			get_tree().create_timer(duration).timeout.connect(func():
-				if current_playing_idx == index:
+				if generation == _speech_generation and current_playing_idx == index:
 					_on_audio_finished()
 			)
 			

@@ -102,7 +102,9 @@ const INSTRUMENT_GATE_SILENCE_SEC := 0.45
 const INSTRUMENT_GATE_CONTOUR_SILENCE_SEC := 0.60
 const INSTRUMENT_MIN_ATTACK_RATIO := 1.02
 const INSTRUMENT_MIN_DECAY_DB := 0.2
-const INSTRUMENT_MIN_LATE_DECAY_DB := 0.05
+# The real recordings retain >0.5 dB of late decay. A consonant followed by
+# a sustained vowel can produce an initial attack but only ~0.2 dB here.
+const INSTRUMENT_MIN_LATE_DECAY_DB := 0.25
 const INSTRUMENT_MIN_TAIL_RATIO := 0.01
 # Lowered from 5.0→2.0: high-freq strings (La4, Sol4) in room conditions
 # only reach ~3-5% periodicity score; 5.0 caused false reject "aperiodic"
@@ -630,14 +632,17 @@ func _process(delta: float) -> void:
 		if onset_detected and time_since_onset >= 0.00 and time_since_onset <= 0.40:
 			if not pitch_estimation_done:
 				raw_pitch = _estimate_pitch(samples)
-				if raw_pitch > 0.0 and current_pitch_is_reliable:
-					pitch_estimation_done = true
 	else:
 		raw_pitch = _estimate_pitch(samples)
 	
 	# Step 5: Stabilization
 	if raw_pitch > 0.0:
 		_update_reliable_pitch(raw_pitch)
+		# Finalize only the newly stabilized reading, after the pluck gate opens.
+		# A reliable previous frame can become unreliable during the attack;
+		# locking before stabilization left pitch=0 for the rest of that pluck.
+		if profile_plucked and instrument_gate_open and current_pitch_is_reliable:
+			pitch_estimation_done = true
 	# Do NOT clear pitch candidates while a timbre classification is still in
 	# progress (_instrument_attack_candidate_active). The C++ analyzer needs
 	# roughly 4096 samples (~93 ms) to accept the attack; clearing pitch here
@@ -647,15 +652,14 @@ func _process(delta: float) -> void:
 			and not _instrument_attack_candidate_active \
 			and not onset_detected:
 		# Only clear when there is truly no pending attack at all.
-		if _analyzer != null:
-			_clear_pitch_detection()
+		_clear_pitch_detection()
 	
 	# Step 6: Note Mapping (Standardised core note mapping using InstrumentPitchProfile)
 	var mapped_note := {}
 	if current_pitch_is_reliable and current_pitch > 0.0 and pitch_profile != null \
-			and (not profile_plucked or instrument_gate_open or _analyzer == null):
+			and (not profile_plucked or instrument_gate_open):
 		mapped_note = pitch_profile.match_pitch(current_pitch)
-	if (instrument_gate_open or _analyzer == null) and _instrument_gate_string_index < 0 \
+	if instrument_gate_open and _instrument_gate_string_index < 0 \
 			and not mapped_note.is_empty() and mapped_note.get("is_match", false):
 		# Bind the gate to the first reliable pitch produced by this accepted
 		# string attack. Contour lessons can then prove that a bend still belongs
@@ -960,9 +964,7 @@ func get_current_dan_tranh_note() -> Dictionary:
 func has_recent_dan_tranh_attack() -> bool:
 	if analysis_suspended:
 		return false
-	if _analyzer == null:
-		return instrument_gate_open or (current_amplitude_db > volume_threshold_db and current_pitch > 0.0) or (current_pitch_is_reliable and current_pitch > 0.0)
-	return instrument_gate_open or (current_pitch_is_reliable and current_pitch > 0.0)
+	return instrument_gate_open
 
 
 func get_dan_tranh_attack_identity() -> Dictionary:
@@ -991,32 +993,20 @@ func _update_instrument_sound_gate(samples: PackedFloat32Array, is_onset: bool, 
 			_close_instrument_gate()
 
 	var now_msec := Time.get_ticks_msec()
-	var candidate_refractory := RAPID_ATTACK_REFRACTORY_MSEC if rapid_sequence_mode else (60 if _analyzer == null else 120)
+	var candidate_refractory := RAPID_ATTACK_REFRACTORY_MSEC if rapid_sequence_mode else 120
 	if is_onset and not _instrument_attack_candidate_active \
 			and now_msec - _instrument_last_candidate_msec >= candidate_refractory:
 		_instrument_attack_candidate_active = true
 		var candidate_start := clampi(_last_onset_sample_offset, 0, samples.size())
 		_instrument_attack_candidate = samples.slice(candidate_start)
 		_instrument_timbre_attempts = 0
-		_instrument_next_analysis_size = 1024 if (rapid_sequence_mode or _analyzer == null) else INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
+		_instrument_next_analysis_size = INSTRUMENT_ATTACK_ANALYSIS_SAMPLES
 		_instrument_last_rejection_reason = ""
 		_instrument_last_candidate_msec = now_msec
-		if _analyzer == null:
-			instrument_gate_open = true
-			_instrument_gate_generation += 1
-			current_instrument_confidence = 90.0
-			_instrument_gate_string_index = -1
-			_instrument_gate_note_name = ""
-			_instrument_gate_elapsed = 0.0
-			_instrument_gate_silence_elapsed = 0.0
-			if rapid_sequence_mode and now_msec - _rapid_attack_last_emit_msec >= RAPID_ATTACK_REFRACTORY_MSEC:
-				_rapid_attack_pending = true
-				_rapid_attack_pending_elapsed = 0.0
-		else:
-			instrument_gate_open = false
-			current_instrument_confidence = 0.0
-			_instrument_gate_string_index = -1
-			_instrument_gate_note_name = ""
+		instrument_gate_open = false
+		current_instrument_confidence = 0.0
+		_instrument_gate_string_index = -1
+		_instrument_gate_note_name = ""
 	elif _instrument_attack_candidate_active:
 		_instrument_attack_candidate.append_array(samples)
 
@@ -1388,7 +1378,7 @@ func detect_dan_tranh_note(samples: PackedFloat32Array, sample_rate: float) -> D
 		# Reuse the pitch already stabilized for the currently validated attack.
 		# Reclassifying a later rolling buffer can lose the original transient and
 		# incorrectly turn a recognized physical string back into "None".
-		if (instrument_gate_open or _analyzer == null) and current_pitch_is_reliable and current_pitch > 0.0:
+		if instrument_gate_open and current_pitch_is_reliable and current_pitch > 0.0:
 			return pitch_profile.match_pitch(current_pitch)
 		var classification := analyze_dan_tranh_sound(samples, sample_rate)
 		if not classification.get("accepted", false):
@@ -1423,13 +1413,6 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 	var amplitude_db := _calculate_amplitude_db(samples)
 	if amplitude_db < threshold:
 		result["reason"] = "too_quiet"
-		return result
-
-	if _analyzer == null:
-		# Pure GDScript fallback (e.g. iOS Remote Debug / Xogot):
-		result["accepted"] = true
-		result["confidence"] = 90.0
-		result["reason"] = "dan_tranh_pluck_fallback"
 		return result
 
 	var size := samples.size()
@@ -1487,13 +1470,13 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 	result["crest_factor"] = crest_factor
 	result["peak_position"] = peak_position
 
-	var min_attack := INSTRUMENT_MIN_ATTACK_RATIO if _analyzer != null else 1.01
-	var min_decay := INSTRUMENT_MIN_DECAY_DB if _analyzer != null else 0.05
-	var min_late_decay := INSTRUMENT_MIN_LATE_DECAY_DB if _analyzer != null else 0.01
-	var min_tail := INSTRUMENT_MIN_TAIL_RATIO if _analyzer != null else 0.005
-	var min_periodicity := INSTRUMENT_MIN_PERIODICITY if _analyzer != null else 1.0
-	var min_tonality := INSTRUMENT_MIN_STRING_TONALITY if _analyzer != null else 0.001
-	var min_crest := INSTRUMENT_MIN_CREST_FACTOR if _analyzer != null else 1.01
+	var min_attack := INSTRUMENT_MIN_ATTACK_RATIO
+	var min_decay := INSTRUMENT_MIN_DECAY_DB
+	var min_late_decay := INSTRUMENT_MIN_LATE_DECAY_DB
+	var min_tail := INSTRUMENT_MIN_TAIL_RATIO
+	var min_periodicity := INSTRUMENT_MIN_PERIODICITY
+	var min_tonality := INSTRUMENT_MIN_STRING_TONALITY
+	var min_crest := INSTRUMENT_MIN_CREST_FACTOR
 
 	if attack_ratio < min_attack:
 		result["reason"] = "no_fast_attack"

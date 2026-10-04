@@ -93,6 +93,8 @@ func set_device_data(device_data: Dictionary):
 		]
 		if badge_text == "Pairing Required":
 			tooltip += "\n⚠️ Click to enter pairing code"
+		elif badge_text == "Paired":
+			tooltip += "\nClick to pair again if the phone rejects the connection"
 		elif is_version_rejected:
 			tooltip += "\n⚠️ Click to re-enable this version"
 		device_label.tooltip_text = tooltip
@@ -126,8 +128,8 @@ func update_state(state: String):
 func _gui_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			# Emit click signal if device is rejected OR needs pairing
-			if is_version_rejected or badge_text == "Pairing Required":
+			# Paired devices may need a new PIN if the phone forgot the pairing.
+			if is_version_rejected or badge_text in ["Pairing Required", "Paired"]:
 				device_clicked.emit(device_id, device_godot_version)
 				accept_event()
 

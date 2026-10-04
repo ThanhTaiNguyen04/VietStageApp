@@ -713,6 +713,8 @@ func processTcpListener():
 							var fail_reason = msg.get("reason", "Unknown error")
 							printerr("Sync failed: %s" % fail_reason)
 							_update_device_state_by_ip(client_ip, "Error")
+							if "pairing" in str(fail_reason).to_lower():
+								_mark_device_for_repairing(client_ip)
 
 						"game_started":
 							var client_ip = client.get_connected_host()
@@ -1454,6 +1456,23 @@ func _on_pairing_failed(device_id: String, reason: String) -> void:
 	# Auto-cleanup dialog when closed
 	dialog.confirmed.connect(func(): dialog.queue_free())
 
+## The phone may forget a pairing while this editor still has a saved record.
+## Clear that record when the phone rejects a sync so the device can be paired again.
+func _mark_device_for_repairing(device_ip: String) -> void:
+	var device_data = _get_device_by_ip(device_ip)
+	if device_data.is_empty():
+		return
+	var device_id = str(device_data.get("deviceId", ""))
+	if device_id.is_empty():
+		return
+	pairing_manager.unpair_device(device_id)
+	discovered_devices[device_id]["sessionToken"] = ""
+	discovered_devices[device_id]["isPaired"] = false
+	discovered_devices[device_id]["canConnect"] = _can_device_connect(discovered_devices[device_id])
+	discovered_devices[device_id]["badgeText"] = _get_device_badge_text(discovered_devices[device_id])
+	_sync_devices_to_export_platform()
+	_refresh_device_list()
+
 ## Show warning dialog about native iOS libraries
 func show_native_library_warning(warning_msg: String) -> void:
 	# Only show popup dialog if warnings are enabled
@@ -2005,9 +2024,12 @@ func _on_device_clicked(device_id: String, godot_version: String):
 
 	# Check if device can connect without pairing
 	if can_connect:
-		# Device is already paired or same account - this click is for version mismatch
-		debug_print("Clicked on rejected device: " + device_id + ", version: " + godot_version)
 		var editor_version = get_current_godot_version()
+		if device_data.get("versionApproved", true):
+			# A saved pairing can be stale on the phone. Allow entering a fresh PIN.
+			_show_pairing_dialog(device_data)
+			return
+		debug_print("Clicked on rejected device: " + device_id + ", version: " + godot_version)
 
 		# Remove from rejected list so we can re-prompt
 		rejected_versions.erase(godot_version)
