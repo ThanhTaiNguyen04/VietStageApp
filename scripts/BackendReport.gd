@@ -18,6 +18,14 @@ var _api: Node = null
 var _retry_pending_in_progress := false
 var _active_practice_session_id := 0
 var _active_practice_session_key := ""
+var _usage_session_id := ""
+var _usage_session_user_code := ""
+var _usage_session_starting := false
+var _usage_session_ending := false
+var _usage_session_paused := false
+var _usage_session_needs_end := false
+var _usage_session_retry_at := 0.0
+var _usage_session_check_elapsed := 0.0
 var last_minigame_fetch_succeeded := true
 var last_minigame_fetch_error := ""
 var last_quiz_fetch_succeeded := true
@@ -28,6 +36,79 @@ func _ready() -> void:
 	_api = ApiClientScript.new()
 	add_child(_api)
 	call_deferred("retry_pending_game_attempts")
+
+
+func _process(delta: float) -> void:
+	_usage_session_check_elapsed += delta
+	if _usage_session_check_elapsed < 3.0:
+		return
+	_usage_session_check_elapsed = 0.0
+	if _usage_session_paused or _usage_session_starting or _usage_session_ending:
+		return
+	if _usage_session_needs_end and not _usage_session_id.is_empty() and is_signed_in():
+		await end_usage_session()
+		if not _usage_session_id.is_empty():
+			return
+	if not is_signed_in():
+		_usage_session_id = ""
+		_usage_session_user_code = ""
+		_usage_session_needs_end = false
+		_usage_session_retry_at = 0.0
+		return
+	var user_code := AuthSessionStore.user_code
+	if not _usage_session_id.is_empty() and _usage_session_user_code != user_code:
+		await end_usage_session()
+	if _usage_session_id.is_empty() and Time.get_unix_time_from_system() >= _usage_session_retry_at:
+		await _start_usage_session()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		_usage_session_paused = true
+		_usage_session_needs_end = true
+		end_usage_session()
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		_usage_session_paused = false
+		_usage_session_retry_at = 0
+
+
+func _start_usage_session() -> void:
+	if _usage_session_starting or _usage_session_ending or not is_signed_in():
+		return
+	_usage_session_starting = true
+	var user_code := AuthSessionStore.user_code
+	var response: Dictionary = await _api.start_usage_session()
+	_usage_session_starting = false
+	if _is_success(response) and response.get("body", {}).get("success", true) != false:
+		var response_data: Variant = response.get("body", {}).get("data", {})
+		if response_data is Dictionary:
+			var session_id := str(response_data.get("sessionId", ""))
+			if session_id.is_empty():
+				for value: Variant in response_data.values():
+					if value is String and str(value).length() == 36:
+						session_id = str(value)
+						break
+			if not session_id.is_empty():
+				_usage_session_id = session_id
+				_usage_session_user_code = user_code
+				if _usage_session_paused or not is_signed_in() or AuthSessionStore.user_code != user_code:
+					await end_usage_session()
+				return
+	# Avoid creating a new session on every frame while the service is unavailable.
+	_usage_session_retry_at = Time.get_unix_time_from_system() + 60
+
+
+func end_usage_session() -> void:
+	if _usage_session_ending or _usage_session_id.is_empty():
+		return
+	_usage_session_ending = true
+	var session_id := _usage_session_id
+	var response: Dictionary = await _api.end_usage_session(session_id)
+	_usage_session_ending = false
+	if _is_success(response) and response.get("body", {}).get("success", true) != false and _usage_session_id == session_id:
+		_usage_session_id = ""
+		_usage_session_user_code = ""
+		_usage_session_needs_end = false
 
 
 func is_signed_in() -> bool:
@@ -186,6 +267,19 @@ func report_lesson_completion(
 func show_lesson_completion_result(parent: Node, result: Dictionary) -> void:
 	var dialog := AcceptDialog.new()
 	dialog.title = "Kết quả bài học"
+	dialog.ok_button_text = "Đóng"
+	dialog.unresizable = true
+	dialog.add_theme_font_size_override("title_font_size", 24)
+	dialog.add_theme_font_size_override("font_size", 20)
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color("#f8f5eb")
+	panel.border_color = Color("#d8aa3e")
+	panel.set_border_width_all(3)
+	panel.set_corner_radius_all(14)
+	panel.set_content_margin_all(24)
+	dialog.add_theme_stylebox_override("panel", panel)
+	dialog.add_theme_color_override("font_color", Color("#193e30"))
+	dialog.add_theme_color_override("title_color", Color("#193e30"))
 	if bool(result.get("submitted", false)):
 		dialog.dialog_text = "Đã hoàn thành bài học!\nSao của bài: %d/3\nSao nhận thêm: %d" % [int(result.get("lesson_stars", 0)), int(result.get("stars_earned", 0))]
 	elif bool(result.get("queued", false)):
@@ -193,7 +287,7 @@ func show_lesson_completion_result(parent: Node, result: Dictionary) -> void:
 	else:
 		dialog.dialog_text = str(result.get("message", "Chưa ghi nhận được kết quả. Vui lòng đăng nhập và thử lại."))
 	parent.add_child(dialog)
-	dialog.popup_centered(Vector2i(540, 220))
+	dialog.popup_centered(Vector2i(620, 260))
 	await dialog.visibility_changed
 	dialog.queue_free()
 

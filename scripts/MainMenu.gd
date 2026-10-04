@@ -311,7 +311,7 @@ func _setup_drawing_callbacks() -> void:
 			pct = stats.get("pct", 0)
 			is_unlocked = bool(_get_dan_tranh_level_status(1).get("completed", false))
 		elif inst == "dan_bau" or inst == "sao_truc":
-			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("essentials")
+			var stats := _get_dan_bau_card_status("essentials") if inst == "dan_bau" else _get_sao_truc_card_status("intermediate")
 			pct = stats.get("pct", 0)
 			is_unlocked = bool(_get_sao_truc_card_status("basic").get("completed", false)) if inst == "sao_truc" else bool(_get_dan_bau_card_status("basic").get("completed", false))
 		elif inst == "trong_chau":

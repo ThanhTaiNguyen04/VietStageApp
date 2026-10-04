@@ -64,6 +64,15 @@ func get_activity_history_detail(event_id: String) -> Dictionary:
 	return await request_json(ApiRoutes.build(ApiRoutes.ACTIVITY_HISTORY) + "/" + event_id.uri_encode(), HTTPClient.METHOD_GET)
 
 
+func start_usage_session() -> Dictionary:
+	# A session must exist on the server before it can contribute to analytics.
+	return await request_json(ApiRoutes.build(ApiRoutes.USAGE_SESSION_START), HTTPClient.METHOD_POST, {"platform": "GODOT"}, true, false)
+
+
+func end_usage_session(usage_session_id: String) -> Dictionary:
+	return await request_json(ApiRoutes.build(ApiRoutes.USAGE_SESSION_END % usage_session_id.uri_encode()), HTTPClient.METHOD_POST, {}, true, false)
+
+
 # ── LEADERBOARD APIs ──────────────────────────────────────────────────
 
 ## Lấy danh sách Top bảng xếp hạng
@@ -484,7 +493,7 @@ func purchase_cosmetic(cosmetic_id: int, client_request_id: String) -> Dictionar
 	var path := ApiRoutes.build(ApiRoutes.MY_COSMETICS) + "/" + str(cosmetic_id) + "/purchase"
 	return await request_json(path, HTTPClient.METHOD_POST, {
 		"clientRequestId": client_request_id
-	})
+	}, true, false)
 
 ## Lấy và lưu cách bố trí vật phẩm để đồng bộ giữa các thiết bị.
 func get_cosmetic_layout() -> Dictionary:
@@ -504,7 +513,7 @@ func equip_cosmetic(cosmetic_id: int, is_equipped: bool) -> Dictionary:
 	var payload = {
 		"is_equipped": is_equipped
 	}
-	return await request_json(path, HTTPClient.METHOD_PUT, payload)
+	return await request_json(path, HTTPClient.METHOD_PUT, payload, true, false)
 
 ## Thay đổi mật khẩu người dùng
 func change_password(old_pass: String, new_pass: String, confirm_pass: String) -> Dictionary:
@@ -544,6 +553,9 @@ func upload_file(file_bytes: PackedByteArray, file_name: String, mime_type: Stri
 func logout() -> Dictionary:
 	var response := {"status": 200, "body": {}, "message": ""}
 	if AuthSessionStore.has_access_token():
+		var usage_tracker := get_node_or_null("/root/BackendReport")
+		if usage_tracker != null:
+			await usage_tracker.end_usage_session()
 		response = await _request_raw(
 			ApiRoutes.build(ApiRoutes.AUTH_LOGOUT),
 			HTTPClient.METHOD_POST,

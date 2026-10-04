@@ -556,19 +556,19 @@ func _make_btn_bouncy(btn: Button) -> void:
 func _open_lesson(node_id: String) -> void:
 	if SecureDataManager.is_backend_course_access_loaded() and not SecureDataManager.is_lesson_unlocked("sao_truc", node_id):
 		return
-	var backend_report = get_node_or_null("/root/BackendReport")
-	if backend_report and backend_report.has_method("start_lesson"):
-		if SecureDataManager.has_temporary_full_access():
-			# The autoload survives navigation; start reporting must not block entry.
-			backend_report.start_lesson.call_deferred("sao_truc", node_id)
-		else:
-			var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
-			if start_result.get("reason", "") == "locked":
-				return
-		# API is primary for the teacher introduction when it is available.
-		# The bundled lesson remains intact as the offline/error fallback.
-		if backend_report.has_method("fetch_lesson_teacher_speech"):
-			await backend_report.fetch_lesson_teacher_speech("sao_truc", node_id)
+	# Tạm dùng toàn bộ nội dung bài Sáo Trúc từ data cứng. Giữ các lời gọi
+	# khởi động bài và tải lời cô Mai ở dạng comment để bật lại sau khi test.
+	# API ghi hoàn thành và đồng bộ tiến độ vẫn hoạt động ở nơi khác.
+	# var backend_report = get_node_or_null("/root/BackendReport")
+	# if backend_report and backend_report.has_method("start_lesson"):
+	# 	if SecureDataManager.has_temporary_full_access():
+	# 		backend_report.start_lesson.call_deferred("sao_truc", node_id)
+	# 	else:
+	# 		var start_result: Dictionary = await backend_report.start_lesson("sao_truc", node_id)
+	# 		if start_result.get("reason", "") == "locked":
+	# 			return
+	# 	if backend_report.has_method("fetch_lesson_teacher_speech"):
+	# 		await backend_report.fetch_lesson_teacher_speech("sao_truc", node_id)
 	SecureDataManager.active_lesson_id = node_id
 
 	var song_title = node_id
