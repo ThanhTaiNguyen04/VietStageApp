@@ -1474,6 +1474,7 @@ func analyze_dan_tranh_sound(samples: PackedFloat32Array, sample_rate: float = 4
 	var min_decay := INSTRUMENT_MIN_DECAY_DB
 	var min_late_decay := INSTRUMENT_MIN_LATE_DECAY_DB
 	var min_tail := INSTRUMENT_MIN_TAIL_RATIO
+
 	var min_periodicity := INSTRUMENT_MIN_PERIODICITY
 	var min_tonality := INSTRUMENT_MIN_STRING_TONALITY
 	var min_crest := INSTRUMENT_MIN_CREST_FACTOR

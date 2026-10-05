@@ -325,8 +325,6 @@ func _build_lesson_list() -> void:
 		child.queue_free()
 
 	var inst := "sao_truc"
-	var completed_lessons : Array = SecureDataManager.data.get("completed_lessons", {}).get(inst, [])
-	var unlocked_lessons : Array = SecureDataManager.data.get("unlocked_lessons", {}).get(inst, ["sao_truc_level1_1_video"])
 
 	var f_bold := load("res://assets/fonts/BeVietnamPro-Bold.ttf") as Font
 
@@ -337,8 +335,11 @@ func _build_lesson_list() -> void:
 		# Server access is primary; cached/bundled progression is the offline fallback.
 		var is_unlocked := SecureDataManager.is_lesson_unlocked(inst, id)
 
-		var is_completed := completed_lessons.has(id) or completed_lessons.has(id + "_practice")
-		var is_in_progress := SecureDataManager.get_lesson_learning_status(inst, id) == "IN_PROGRESS"
+		# Use the same progress policy as course cards, including backend status.
+		# Preserve compatibility with saved practice IDs from earlier versions.
+		var learning_status := SecureDataManager.get_lesson_learning_status(inst, id)
+		var is_completed := learning_status == "COMPLETED" or SecureDataManager.is_lesson_completed(inst, id + "_practice")
+		var is_in_progress := learning_status == "IN_PROGRESS"
 
 		# Column layout for each lesson
 		var col := VBoxContainer.new()
@@ -377,7 +378,7 @@ func _build_lesson_list() -> void:
 
 		if is_completed:
 			btn.text = "✔️\n%s\nHoàn thành" % lesson_item["note"]
-		elif SecureDataManager.get_lesson_learning_status(inst, id) == "PENDING_SYNC":
+		elif learning_status == "PENDING_SYNC":
 			btn.text = "%s\nChờ đồng bộ" % lesson_item["note"]
 		elif not is_unlocked:
 			btn.text = "🔒"
